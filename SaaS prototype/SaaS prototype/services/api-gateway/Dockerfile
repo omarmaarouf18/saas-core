@@ -1,0 +1,48 @@
+# ===========================================================================
+# Multi-stage Dockerfile — Go Service
+# ===========================================================================
+# Stages:
+#   dev   → live-reload via cosmtrek/air  (used by docker-compose)
+#   build → compile static binary
+#   prod  → minimal scratch image
+# ===========================================================================
+
+# ---- Development Stage ---------------------------------------------------
+FROM golang:1.23-alpine AS dev
+
+RUN apk add --no-cache git \
+    && go install github.com/air-verse/air@latest
+
+WORKDIR /app
+
+COPY go.mod go.sum* ./
+RUN go mod download 2>/dev/null || true
+
+COPY . .
+
+EXPOSE 8080
+
+CMD ["air", "-c", ".air.toml"]
+
+# ---- Build Stage ---------------------------------------------------------
+FROM golang:1.23-alpine AS build
+
+WORKDIR /app
+
+COPY go.mod go.sum* ./
+RUN go mod download 2>/dev/null || true
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/service ./cmd/main.go
+
+# ---- Production Stage ----------------------------------------------------
+FROM alpine:3.20 AS prod
+
+RUN apk --no-cache add ca-certificates
+
+COPY --from=build /bin/service /bin/service
+
+EXPOSE 8080
+
+ENTRYPOINT ["/bin/service"]

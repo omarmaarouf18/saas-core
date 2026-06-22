@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Logic Vetting Interface</title>
+    <style>
+        body {
+            background-color: #0d0d0d;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+            font-size: 12px;
+        }
+        h3 {
+            margin: 0 0 10px 0;
+            color: #00ffff;
+            font-size: 14px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            flex: 0 0 auto;
+            margin-bottom: 15px;
+        }
+        .panel {
+            border: 1px solid #333;
+            padding: 10px;
+            background-color: #111;
+        }
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        .form-row label {
+            flex: 0 0 100px;
+            color: #ccc;
+        }
+        .form-row input, .form-row select {
+            flex: 1;
+            background-color: #000;
+            border: 1px solid #444;
+            color: #fff;
+            font-family: inherit;
+            padding: 4px;
+            font-size: 12px;
+        }
+        .form-row input:focus, .form-row select:focus {
+            outline: none;
+            border-color: #00ff00;
+        }
+        .btn-row {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        button {
+            background-color: #222;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            flex: 1;
+            text-transform: uppercase;
+        }
+        button:hover {
+            background-color: #00ff00;
+            color: #000;
+        }
+        .terminal {
+            flex: 1;
+            border: 1px solid #333;
+            background-color: #050505;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .term-header {
+            color: #ff00ff;
+            margin-bottom: 10px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+        .term-entry {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #222;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .req { color: #88ccff; }
+        .res-ok { color: #00ff00; }
+        .res-err { color: #ff3333; }
+        .timestamp { color: #555; font-size: 10px; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+    </style>
+</head>
+<body>
+
+    <div class="grid">
+        <!-- Panel 1 -->
+        <div class="panel">
+            <h3>Auth & KYE Initializer</h3>
+            <div class="form-row">
+                <label>Email</label>
+                <input type="text" id="authEmail" value="tenant@example.com">
+            </div>
+            <div class="form-row">
+                <label>Password</label>
+                <input type="text" id="authPassword" value="secret123">
+            </div>
+            <div class="form-row">
+                <label>Role</label>
+                <select id="authRole">
+                    <option value="owner">owner</option>
+                    <option value="user">user</option>
+                    <option value="employee">employee</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label>Owner ID</label>
+                <input type="text" id="authOwnerId" placeholder="(For employee KYE)">
+            </div>
+            <div class="btn-row">
+                <button onclick="doSignup()">Signup</button>
+                <button onclick="doLogin()">Login</button>
+            </div>
+        </div>
+
+        <!-- Panel 2 -->
+        <div class="panel">
+            <h3>Tenant Employee Control</h3>
+            <div class="form-row">
+                <label>Target Emp</label>
+                <input type="text" id="ctrlEmpEmail" placeholder="emp@example.com">
+            </div>
+            <div class="form-row">
+                <label>Owner Email</label>
+                <input type="text" id="ctrlOwnerEmail" placeholder="tenant@example.com">
+            </div>
+            <div class="form-row">
+                <label>State</label>
+                <select id="ctrlState">
+                    <option value="true">Active (Unfreeze)</option>
+                    <option value="false">Frozen (Freeze)</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label>Action</label>
+                <input type="text" id="ctrlAction" value="EXECUTE_DB_DUMP">
+            </div>
+            <div class="btn-row">
+                <button onclick="doToggle()">Toggle State</button>
+                <button onclick="doAction()">Emp Action</button>
+            </div>
+        </div>
+
+        <!-- Panel 3 -->
+        <div class="panel">
+            <h3>Geospatial & Audit Telemetry</h3>
+            <div class="form-row">
+                <label>Latitude</label>
+                <input type="text" id="geoLat" value="30.0444">
+            </div>
+            <div class="form-row">
+                <label>Longitude</label>
+                <input type="text" id="geoLon" value="31.2357">
+            </div>
+            <div class="form-row">
+                <label>Radius (KM)</label>
+                <input type="text" id="geoRadius" value="50">
+            </div>
+            <div class="btn-row" style="flex-direction: column; margin-top: 15px;">
+                <button onclick="doHaversine()">Haversine Engine (Services)</button>
+                <button onclick="doAuditLog()">Global Audit Log</button>
+            </div>
+        </div>
+        <!-- Panel 4 -->
+        <div class="panel">
+            <h3>Owner Service Config</h3>
+            <div class="form-row">
+                <label>Owner ID</label>
+                <input type="text" id="svcOwnerId" placeholder="tenant_owner">
+            </div>
+            <div class="form-row">
+                <label>Service Name</label>
+                <input type="text" id="svcName" value="Express Shipping">
+            </div>
+            <div class="form-row">
+                <label>Category</label>
+                <select id="svcCategory">
+                    <option value="shipping">shipping</option>
+                    <option value="delivery">delivery</option>
+                    <option value="transport">transport</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label>Base Price</label>
+                <input type="number" id="svcBasePrice" value="50">
+            </div>
+            <div class="form-row">
+                <label>Price/KM</label>
+                <input type="number" id="svcPriceKm" value="2.5">
+            </div>
+            <div class="form-row">
+                <label>Latitude</label>
+                <input type="number" id="svcLat" value="30.0444">
+            </div>
+            <div class="form-row">
+                <label>Longitude</label>
+                <input type="number" id="svcLon" value="31.2357">
+            </div>
+            <div class="btn-row">
+                <button onclick="doCreateService()">Create Service</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel 4 -->
+    <div class="terminal" id="terminal">
+        <div class="term-header">
+            <span>TERMINAL OUTPUT</span>
+            <button style="flex: 0 0 auto; padding: 2px 5px; border-color: #555; color: #aaa;" onclick="document.getElementById('termLog').innerHTML=''">CLEAR</button>
+        </div>
+        <div id="termLog"></div>
+    </div>
+
+    <script>
+        const BASE_URL = "http://localhost:8000";
+
+        // Intercept API Calls
+        async function req(method, path, bodyObj) {
+            const term = document.getElementById('termLog');
+            const url = BASE_URL + path;
+            const ts = new Date().toISOString().split('T')[1].replace('Z', '');
+            
+            let reqBodyStr = bodyObj ? JSON.stringify(bodyObj) : '';
+            let reqLog = `<div class="req"><span class="timestamp">[${ts}]</span> [REQ] ${method} ${url}\nPayload: ${reqBodyStr || 'N/A'}</div>`;
+            
+            const options = {
+                method: method,
+                headers: { 'Content-Type': 'application/json' }
+            };
+            if (bodyObj) options.body = reqBodyStr;
+
+            try {
+                const res = await fetch(url, options);
+                const status = res.status;
+                const text = await res.text();
+                let parsed = text;
+                try { parsed = JSON.stringify(JSON.parse(text), null, 2); } catch(e) {}
+                
+                let resClass = status >= 400 ? 'res-err' : 'res-ok';
+                let resLog = `<div class="${resClass}"><span class="timestamp">[${ts}]</span> [RES] HTTP ${status}\n${parsed}</div>`;
+                
+                term.innerHTML += `<div class="term-entry">${reqLog}${resLog}</div>`;
+                scrollToBottom();
+                return { status, data: JSON.parse(text || '{}') };
+            } catch (err) {
+                let errLog = `<div class="res-err"><span class="timestamp">[${ts}]</span> [ERR] NETWORK REJECTION: ${err.message}</div>`;
+                term.innerHTML += `<div class="term-entry">${reqLog}${errLog}</div>`;
+                scrollToBottom();
+                return { status: 0, error: err.message };
+            }
+        }
+
+        function scrollToBottom() {
+            const terminal = document.getElementById('terminal');
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // --- Panel 1 Actions ---
+        function doSignup() {
+            const payload = {
+                email: document.getElementById('authEmail').value,
+                password: document.getElementById('authPassword').value,
+                role: document.getElementById('authRole').value
+            };
+            const ownerId = document.getElementById('authOwnerId').value;
+            if (ownerId) payload.owner_id = ownerId;
+            req('POST', '/api/v1/auth/signup', payload);
+        }
+
+        function doLogin() {
+            const payload = {
+                email: document.getElementById('authEmail').value,
+                password: document.getElementById('authPassword').value
+            };
+            req('POST', '/api/v1/auth/login', payload);
+        }
+
+        // --- Panel 2 Actions ---
+        function doToggle() {
+            const payload = {
+                employee_email: document.getElementById('ctrlEmpEmail').value,
+                owner_email: document.getElementById('ctrlOwnerEmail').value,
+                set_active: document.getElementById('ctrlState').value === 'true'
+            };
+            req('POST', '/api/v1/auth/employee/toggle', payload);
+        }
+
+        function doAction() {
+            const payload = {
+                email: document.getElementById('ctrlEmpEmail').value,
+                action: document.getElementById('ctrlAction').value
+            };
+            req('POST', '/api/v1/auth/employee/action', payload);
+        }
+
+        // --- Panel 3 Actions ---
+        function doHaversine() {
+            const lat = document.getElementById('geoLat').value;
+            const lon = document.getElementById('geoLon').value;
+            const rad = document.getElementById('geoRadius').value;
+            req('GET', `/api/v1/users/services?sort_by=price&near_by=true&lat=${lat}&lon=${lon}&radius=${rad}`, null);
+        }
+
+        function doAuditLog() {
+            req('GET', '/api/v1/auth/audit-log', null);
+        }
+
+        // --- Panel 4 Actions ---
+        function doCreateService() {
+            const payload = {
+                owner_id: document.getElementById('svcOwnerId').value,
+                name: document.getElementById('svcName').value,
+                category: document.getElementById('svcCategory').value,
+                tenant_base_price: parseFloat(document.getElementById('svcBasePrice').value),
+                tenant_price_per_km: parseFloat(document.getElementById('svcPriceKm').value),
+                latitude: parseFloat(document.getElementById('svcLat').value),
+                longitude: parseFloat(document.getElementById('svcLon').value)
+            };
+            req('POST', '/api/v1/users/services', payload);
+        }
+    </script>
+</body>
+</html>
