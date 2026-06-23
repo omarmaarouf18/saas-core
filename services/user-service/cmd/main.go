@@ -1,20 +1,26 @@
-// User Service — Service discovery and job lifecycle tracking.
+// User Service — Service discovery, job lifecycle, and financial operations.
 //
-// Endpoints (relative to this service):
-//   GET  /users/services?sort_by=price&near_by=true  — List & filter services
-//   POST /users/jobs/track                            — Create a job tracking record
-//   GET  /health                                      — Health check
-//
-// Via the API Gateway:
-//   GET  /api/v1/users/services?sort_by=price&near_by=true
-//   POST /api/v1/users/jobs/track
+// Endpoints:
+//   GET  /users/services           — List & filter services (spatial index)
+//   POST /users/services           — Create a service
+//   POST /users/jobs/track         — Create job with escrow lock
+//   POST /users/jobs/complete      — Complete job with profit split
+//   GET  /users/wallet             — Get tenant wallet
+//   POST /users/wallet/deposit     — Deposit funds
+//   GET  /users/ledger             — Transaction ledger
+//   GET  /users/platform/config    — Platform fee config
+//   GET  /health                   — Health check
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/project/user-service/internal/handlers"
 	"github.com/project/user-service/internal/store"
@@ -25,26 +31,33 @@ func main() {
 	if port == "" {
 		port = "3003"
 	}
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017/saas_platform"
+	}
+	dbName := os.Getenv("MONGO_INITDB_DATABASE")
+	if dbName == "" {
+		dbName = "saas_platform"
+	}
 
-	// Initialize in-memory store (pre-seeded with sample services).
-	memStore := store.NewMemory()
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
 
-	// Create handler group and register routes.
-	userHandlers := handlers.NewUserService(memStore)
+	mongoStore, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		log.Fatalf("[USER] Failed to initialize MongoDB store: %v", err)
+	}
 
+	userHandlers := handlers.NewUserService(mongoStore)
 	mux := http.NewServeMux()
-
-	// User-service endpoints.
 	userHandlers.RegisterRoutes(mux)
 
-	// Health check.
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+		json.NewEncoder(w).Encode(map[string]string{"status": "ok", "storage": "mongodb"})
 	})
 
-	// Service info (root).
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
@@ -53,15 +66,26 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{
-			"service": "user-service",
-			"version": "0.1.0",
+			"service": "user-service", "version": "0.2.0", "storage": "mongodb",
 		})
 	})
 
 	addr := ":" + port
-	log.Printf("User Service listening on %s", addr)
-	log.Printf("Endpoints: GET /users/services, POST /users/services, POST /users/jobs/track")
-	if err := http.ListenAndServe(addr, mux); err != nil {
+	server := &http.Server{Addr: addr, Handler: mux}
+
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+		<-sigCh
+		log.Println("[USER] Shutting down...")
+		shutdownCtx, sc := context.WithTimeout(context.Background(), 10*time.Second)
+		defer sc()
+		server.Shutdown(shutdownCtx)
+		mongoStore.Close(shutdownCtx)
+	}()
+
+	log.Printf("User Service listening on %s (MongoDB-backed)", addr)
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}
 }

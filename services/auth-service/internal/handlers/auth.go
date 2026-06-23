@@ -12,17 +12,27 @@ import (
 	"time"
 
 	"github.com/project/auth-service/internal/models"
+	"github.com/project/auth-service/internal/otp"
 	"github.com/project/auth-service/internal/store"
 )
 
 // Auth holds dependencies for the authentication handlers.
 type Auth struct {
-	store *store.Memory
+	store      *store.MongoDB
+	dispatcher otp.OTPDispatcher
+	isLocal    bool // true when APP_ENV == "local"
 }
 
 // NewAuth creates a new Auth handler group.
-func NewAuth(s *store.Memory) *Auth {
-	return &Auth{store: s}
+//   - s:          MongoDB-backed persistent store
+//   - dispatcher: OTPDispatcher implementation (mock for local, real for prod)
+//   - appEnv:     value of the APP_ENV environment variable
+func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, appEnv string) *Auth {
+	isLocal := strings.EqualFold(appEnv, "local")
+	if isLocal {
+		log.Printf("[AUTH] ⚠ Running in LOCAL mode — OTP codes will be exposed in API responses")
+	}
+	return &Auth{store: s, dispatcher: dispatcher, isLocal: isLocal}
 }
 
 // RegisterRoutes mounts all auth endpoints on the given ServeMux.
@@ -46,12 +56,9 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 // Accepts: { "email", "password", "role", "owner_id"? }
 // Roles:   "owner", "user", "employee"
 //
-// Behavior:
-//   - Validates role type
-//   - For "employee": enforces OwnerID binding (must point to existing owner)
-//   - Generates an anti-spam status token
-//   - For "owner" role: sets KYC status to "pending_super_admin_approval"
-//   - Returns the created user (password excluded from JSON)
+// For "owner" and "user" roles, a 4-digit OTP is generated, encrypted
+// via AES-256-GCM, stored in MongoDB, and dispatched to the user.
+// When APP_ENV=local, the plaintext OTP is appended as "dev_otp" in the response.
 func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
@@ -84,6 +91,8 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
+
 	// KYE Enforce OwnerID binding for employees
 	if req.Role == models.RoleEmployee {
 		if req.OwnerID == "" {
@@ -93,7 +102,7 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// Verify owner exists and has RoleOwner
-		owner := a.store.GetByID(req.OwnerID)
+		owner := a.store.GetByID(ctx, req.OwnerID)
 		if owner == nil {
 			writeJSON(w, http.StatusBadRequest, map[string]string{
 				"error": fmt.Sprintf("specified owner_id %q does not exist", req.OwnerID),
@@ -112,7 +121,7 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 	user := &models.User{
 		ID:        generateID(),
 		Email:     req.Email,
-		Password:  req.Password, // plain-text for now (no DB, no bcrypt)
+		Password:  req.Password, // plain-text for now (bcrypt in production)
 		Role:      req.Role,
 		IsActive:  true, // Active by default
 		AntiSpam:  generateAntiSpamToken(),
@@ -121,14 +130,16 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 
 	if req.Role == models.RoleEmployee {
 		user.OwnerID = req.OwnerID
+		user.TenantID = req.OwnerID
 	}
 
-	// Owner-specific: KYC status check.
+	// Owner-specific: KYC status check. Owner is their own tenant.
 	if req.Role == models.RoleOwner {
 		user.KYCStatus = models.KYCPendingApproval
+		user.TenantID = user.ID
 	}
 
-	if err := a.store.CreateUser(user); err != nil {
+	if err := a.store.CreateUser(ctx, user); err != nil {
 		writeJSON(w, http.StatusConflict, map[string]string{
 			"error": err.Error(),
 		})
@@ -137,15 +148,46 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[AUTH] Signup: email=%s role=%s id=%s owner_id=%s", user.Email, user.Role, user.ID, user.OwnerID)
 
+	// For owner/user roles, generate and dispatch OTP on signup.
+	if req.Role == models.RoleOwner || req.Role == models.RoleUser {
+		otpCode := generate4DigitOTP()
+
+		// Encrypt and store in MongoDB (AES-256-GCM).
+		if err := a.store.SetOTP(ctx, user.Email, otpCode); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to set OTP: " + err.Error(),
+			})
+			return
+		}
+
+		// Dispatch via the configured dispatcher (mock logs to stdout).
+		if err := a.dispatcher.Dispatch(user.Email, otpCode); err != nil {
+			log.Printf("[AUTH] OTP dispatch error via %s: %v", a.dispatcher.Name(), err)
+		}
+
+		log.Printf("[AUTH] OTP generated for signup: email=%s code=%s dispatcher=%s",
+			user.Email, otpCode, a.dispatcher.Name())
+
+		resp := map[string]any{
+			"status":  "success",
+			"message": "OTP dispatched",
+		}
+		// Expose OTP in response ONLY in local environment.
+		if a.isLocal {
+			resp["dev_otp"] = otpCode
+		}
+
+		writeJSON(w, http.StatusCreated, resp)
+		return
+	}
+
+	// Employee signup — no OTP required.
 	writeJSON(w, http.StatusCreated, map[string]any{
-		"message":          "registration successful",
-		"user_id":          user.ID,
-		"email":            user.Email,
-		"role":             user.Role,
-		"anti_spam_token":  user.AntiSpam,
-		"kyc_status":       user.KYCStatus,
-		"owner_id":         user.OwnerID,
-		"is_active":        user.IsActive,
+		"status":  "success",
+		"message": "registration successful",
+		"user_id": user.ID,
+		"email":   user.Email,
+		"role":    user.Role,
 	})
 }
 
@@ -159,8 +201,10 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 //
 // Behavior:
 //   - Enforces IsActive status check for employees (frozen accounts blocked)
-//   - "owner" / "user": triggers mocked 2FA, returns otp_hint for testing
-//   - "employee":       bypasses 2FA, returns authenticated immediately
+//   - "owner" / "user": generates a 4-digit OTP, encrypts via AES-256,
+//     stores in MongoDB, dispatches via OTPDispatcher.
+//     When APP_ENV=local, appends "dev_otp" to the JSON response.
+//   - "employee": bypasses 2FA, returns authenticated immediately
 func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
@@ -177,7 +221,8 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := a.store.GetByEmail(req.Email)
+	ctx := r.Context()
+	user := a.store.GetByEmail(ctx, req.Email)
 	if user == nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
 			"error": "invalid email or password",
@@ -185,7 +230,7 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Plain-text password comparison (temporary, no DB, no bcrypt).
+	// Plain-text password comparison (temporary; use bcrypt in production).
 	if user.Password != req.Password {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
 			"error": "invalid email or password",
@@ -206,35 +251,44 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	// Role-based 2FA decision.
 	switch user.Role {
 	case models.RoleOwner, models.RoleUser:
-		// Generate a mocked 6-digit OTP.
-		otp := generateMockedOTP()
-		if err := a.store.SetOTP(user.Email, otp); err != nil {
+		// Generate a 4-digit OTP.
+		otpCode := generate4DigitOTP()
+
+		// Encrypt and store in MongoDB (AES-256-GCM).
+		if err := a.store.SetOTP(ctx, user.Email, otpCode); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{
 				"error": "failed to generate OTP: " + err.Error(),
 			})
 			return
 		}
 
-		log.Printf("[AUTH] 2FA triggered for %s (role=%s), mocked OTP=%s", user.Email, user.Role, otp)
-
-		resp := models.LoginResponse{
-			Message:     "credentials valid — 2FA verification required",
-			UserID:      user.ID,
-			Role:        user.Role,
-			Requires2FA: true,
-			OTPHint:     otp, // exposed for testing; remove in production
+		// Dispatch via the configured dispatcher (mock logs to stdout).
+		if err := a.dispatcher.Dispatch(user.Email, otpCode); err != nil {
+			log.Printf("[AUTH] OTP dispatch error via %s: %v", a.dispatcher.Name(), err)
 		}
+
+		log.Printf("[AUTH] 2FA triggered: email=%s role=%s code=%s dispatcher=%s",
+			user.Email, user.Role, otpCode, a.dispatcher.Name())
+
+		resp := map[string]any{
+			"status":  "success",
+			"message": "OTP dispatched",
+		}
+		// Expose OTP in response ONLY in local environment.
+		if a.isLocal {
+			resp["dev_otp"] = otpCode
+		}
+
 		writeJSON(w, http.StatusOK, resp)
 
 	case models.RoleEmployee:
 		// Employees bypass 2FA.
-		resp := models.LoginResponse{
-			Message:     "authenticated",
-			UserID:      user.ID,
-			Role:        user.Role,
-			Requires2FA: false,
-		}
-		writeJSON(w, http.StatusOK, resp)
+		writeJSON(w, http.StatusOK, map[string]any{
+			"status":  "success",
+			"message": "authenticated",
+			"user_id": user.ID,
+			"role":    user.Role,
+		})
 	}
 }
 
@@ -242,7 +296,9 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 // POST /auth/verify-otp
 // ---------------------------------------------------------------------------
 
-// VerifyOTP completes the 2FA flow by validating the mocked OTP code.
+// VerifyOTP completes the 2FA flow by validating the OTP code.
+// The store decrypts the AES-256-GCM encrypted OTP from MongoDB and
+// compares it against the submitted plaintext — identical to production.
 //
 // Accepts: { "email", "otp" }
 func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
@@ -268,18 +324,21 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.store.VerifyOTP(req.Email, req.OTP); err != nil {
+	ctx := r.Context()
+
+	if err := a.store.VerifyOTP(ctx, req.Email, req.OTP); err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
 			"error": err.Error(),
 		})
 		return
 	}
 
-	user := a.store.GetByEmail(req.Email)
+	user := a.store.GetByEmail(ctx, req.Email)
 
 	log.Printf("[AUTH] OTP verified: email=%s role=%s", user.Email, user.Role)
 
 	response := map[string]any{
+		"status":       "success",
 		"message":      "2FA verification successful — authenticated",
 		"user_id":      user.ID,
 		"role":         user.Role,
@@ -324,8 +383,10 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
+
 	// Get Owner
-	owner := a.store.GetByEmail(req.OwnerEmail)
+	owner := a.store.GetByEmail(ctx, req.OwnerEmail)
 	if owner == nil || owner.Role != models.RoleOwner {
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "invalid owner credentials or owner does not exist",
@@ -334,7 +395,7 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Toggle Active Status
-	err := a.store.ToggleEmployeeActive(req.EmployeeEmail, owner.ID, req.SetActive)
+	err := a.store.ToggleEmployeeActive(ctx, req.EmployeeEmail, owner.ID, req.SetActive)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": err.Error(),
@@ -361,7 +422,7 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------------------
 
 // SimulateEmployeeAction represents a simulated write operation by an employee.
-// It performs validation and appends the action to the in-memory audit log.
+// It performs validation and appends the action to the audit log.
 //
 // Accepts: { "email", "action" }
 func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
@@ -391,8 +452,10 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
+
 	// Fetch employee
-	emp := a.store.GetByEmail(req.Email)
+	emp := a.store.GetByEmail(ctx, req.Email)
 	if emp == nil || emp.Role != models.RoleEmployee {
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "specified user is not an employee or does not exist",
@@ -419,7 +482,7 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 		Timestamp:  time.Now().UTC(),
 		ClientIP:   clientIP,
 	}
-	a.store.AppendAudit(entry)
+	a.store.AppendAudit(ctx, entry)
 
 	log.Printf("[AUDIT] Action recorded: employee=%s tenant=%s action=%s ip=%s", emp.ID, emp.OwnerID, req.Action, clientIP)
 
@@ -442,8 +505,9 @@ func (a *Auth) GetAuditLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
 	tenantID := r.URL.Query().Get("tenant_id")
-	entries := a.store.GetAuditLog(tenantID)
+	entries := a.store.GetAuditLog(ctx, tenantID)
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"count":   len(entries),
@@ -479,15 +543,15 @@ func generateAntiSpamToken() string {
 	return hex.EncodeToString(b)
 }
 
-// generateMockedOTP returns a deterministic-length 6-digit code.
-func generateMockedOTP() string {
-	b := make([]byte, 3)
+// generate4DigitOTP returns a cryptographically random 4-digit numeric OTP.
+func generate4DigitOTP() string {
+	b := make([]byte, 2)
 	if _, err := rand.Read(b); err != nil {
-		return "123456"
+		return "1234"
 	}
-	// Convert to a 6-digit number by taking modulo.
-	num := (int(b[0])<<16 | int(b[1])<<8 | int(b[2])) % 1000000
-	return fmt.Sprintf("%06d", num)
+	// Convert 2 random bytes to a number in [0, 9999].
+	num := (int(b[0])<<8 | int(b[1])) % 10000
+	return fmt.Sprintf("%04d", num)
 }
 
 // getClientIP extracts the user's real IP from the request headers or RemoteAddr.

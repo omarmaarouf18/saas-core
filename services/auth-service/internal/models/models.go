@@ -32,17 +32,19 @@ const (
 
 // User represents a registered user in the platform.
 type User struct {
-	ID          string    `json:"id"`
-	Email       string    `json:"email"`
-	Password    string    `json:"-"`
-	Role        Role      `json:"role"`
-	OwnerID     string    `json:"owner_id,omitempty"`    // KYE: tenant binding (employees only)
-	IsActive    bool      `json:"is_active"`             // KYE: owner can freeze employee accounts
-	KYCStatus   KYCStatus `json:"kyc_status,omitempty"`
-	AntiSpam    string    `json:"anti_spam_token,omitempty"`
-	OTPCode     string    `json:"-"`
-	OTPVerified bool      `json:"otp_verified"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID          string    `json:"id"                        bson:"_id"`
+	Email       string    `json:"email"                     bson:"email"`
+	Phone       string    `json:"phone,omitempty"           bson:"phone,omitempty"`
+	Password    string    `json:"-"                         bson:"password"`
+	Role        Role      `json:"role"                      bson:"role"`
+	TenantID    string    `json:"tenant_id,omitempty"       bson:"tenant_id,omitempty"` // the tenant this user belongs to
+	OwnerID     string    `json:"owner_id,omitempty"        bson:"owner_id,omitempty"`  // KYE: tenant binding (employees only)
+	IsActive    bool      `json:"is_active"                 bson:"is_active"`           // KYE: owner can freeze employee accounts
+	KYCStatus   KYCStatus `json:"kyc_status,omitempty"      bson:"kyc_status,omitempty"`
+	AntiSpam    string    `json:"anti_spam_token,omitempty"  bson:"anti_spam"`
+	OTPCode     string    `json:"-"                         bson:"otp_code,omitempty"`
+	OTPVerified bool      `json:"otp_verified"              bson:"otp_verified"`
+	CreatedAt   time.Time `json:"created_at"                bson:"created_at"`
 }
 
 // SignupRequest is the expected JSON body for POST /auth/signup.
@@ -83,9 +85,10 @@ type ToggleEmployeeRequest struct {
 
 // AuditEntry records a single employee action for the Action Server log.
 type AuditEntry struct {
-	EmployeeID string    `json:"employee_id"`
-	TenantID   string    `json:"tenant_id"` // the OwnerID this employee belongs to
-	Action     string    `json:"action"`
-	Timestamp  time.Time `json:"timestamp"`
-	ClientIP   string    `json:"client_ip"`
+	ID         string    `json:"id"          bson:"_id,omitempty"`
+	EmployeeID string    `json:"employee_id" bson:"employee_id"`
+	TenantID   string    `json:"tenant_id"   bson:"tenant_id"` // the OwnerID this employee belongs to
+	Action     string    `json:"action"      bson:"action"`
+	Timestamp  time.Time `json:"timestamp"   bson:"timestamp"`
+	ClientIP   string    `json:"client_ip"   bson:"client_ip"`
 }

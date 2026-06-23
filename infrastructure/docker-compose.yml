@@ -118,6 +118,7 @@ services:
     environment:
       PORT: ${AUTH_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
       REDIS_URI: ${REDIS_URI}
       APP_ENV: ${APP_ENV}
       LOG_LEVEL: ${LOG_LEVEL}
@@ -143,6 +144,7 @@ services:
     environment:
       PORT: ${USER_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
       REDIS_URI: ${REDIS_URI}
       APP_ENV: ${APP_ENV}
       LOG_LEVEL: ${LOG_LEVEL}
@@ -168,6 +170,7 @@ services:
     environment:
       PORT: ${NOTIFICATION_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
       REDIS_URI: ${REDIS_URI}
       APP_ENV: ${APP_ENV}
       LOG_LEVEL: ${LOG_LEVEL}
