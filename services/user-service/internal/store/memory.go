@@ -17,13 +17,15 @@ import (
 
 // MongoDB is a persistent store for services, jobs, wallets, and the transaction ledger.
 type MongoDB struct {
-	client     *mongo.Client
-	db         *mongo.Database
-	services   *mongo.Collection
-	jobs       *mongo.Collection
-	wallets    *mongo.Collection
-	ledger     *mongo.Collection
-	platConfig *mongo.Collection
+	client        *mongo.Client
+	db            *mongo.Database
+	services      *mongo.Collection
+	jobs          *mongo.Collection
+	wallets       *mongo.Collection
+	ledger        *mongo.Collection
+	platConfig    *mongo.Collection
+	subscriptions *mongo.Collection
+	ratings       *mongo.Collection
 }
 
 // NewMongoDB connects to MongoDB and ensures all indexes.
@@ -40,13 +42,15 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 
 	db := client.Database(dbName)
 	s := &MongoDB{
-		client:     client,
-		db:         db,
-		services:   db.Collection("services"),
-		jobs:       db.Collection("jobs"),
-		wallets:    db.Collection("wallets"),
-		ledger:     db.Collection("transaction_ledger"),
-		platConfig: db.Collection("platform_config"),
+		client:        client,
+		db:            db,
+		services:      db.Collection("services"),
+		jobs:          db.Collection("jobs"),
+		wallets:       db.Collection("wallets"),
+		ledger:        db.Collection("transaction_ledger"),
+		platConfig:    db.Collection("platform_config"),
+		subscriptions: db.Collection("subscriptions"),
+		ratings:       db.Collection("ratings"),
 	}
 	if err := s.ensureIndexes(ctx); err != nil {
 		return nil, err
@@ -89,6 +93,16 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 		Keys: bson.D{{Key: "tenant_id", Value: 1}, {Key: "timestamp", Value: -1}},
 	}); err != nil {
 		return fmt.Errorf("ledger composite index: %w", err)
+	}
+	if _, err := s.subscriptions.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "tenant_id", Value: 1}}, Options: options.Index().SetUnique(true),
+	}); err != nil {
+		return fmt.Errorf("subscriptions tenant_id index: %w", err)
+	}
+	if _, err := s.ratings.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "rated_user", Value: 1}},
+	}); err != nil {
+		return fmt.Errorf("ratings rated_user index: %w", err)
 	}
 	log.Println("[USER-STORE] All indexes ensured")
 	return nil
@@ -484,4 +498,42 @@ func haversineKm(lat1, lon1, lat2, lon2 float64) float64 {
 		math.Cos(lat1*math.Pi/180)*math.Cos(lat2*math.Pi/180)*
 			math.Sin(dLon/2)*math.Sin(dLon/2)
 	return R * 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+}
+
+// GetSubscription returns the subscription for a tenant.
+func (s *MongoDB) GetSubscription(ctx context.Context, tenantID string) *models.Subscription {
+	var sub models.Subscription
+	err := s.subscriptions.FindOne(ctx, bson.M{"tenant_id": tenantID}).Decode(&sub)
+	if err != nil {
+		return nil
+	}
+	return &sub
+}
+
+// UpsertSubscription inserts or updates a subscription.
+func (s *MongoDB) UpsertSubscription(ctx context.Context, sub *models.Subscription) error {
+	opts := options.Replace().SetUpsert(true)
+	_, err := s.subscriptions.ReplaceOne(ctx, bson.M{"tenant_id": sub.TenantID}, sub, opts)
+	return err
+}
+
+// CreateRating stores a new rating in MongoDB.
+func (s *MongoDB) CreateRating(ctx context.Context, r *models.Rating) error {
+	_, err := s.ratings.InsertOne(ctx, r)
+	return err
+}
+
+// GetRatingsForUser returns all ratings received by a user.
+func (s *MongoDB) GetRatingsForUser(ctx context.Context, userID string) ([]*models.Rating, error) {
+	cursor, err := s.ratings.Find(ctx, bson.M{"rated_user": userID})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var ratings []*models.Rating
+	if err := cursor.All(ctx, &ratings); err != nil {
+		return nil, err
+	}
+	return ratings, nil
 }

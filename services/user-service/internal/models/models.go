@@ -169,3 +169,27 @@ type CompleteJobRequest struct {
 	JobID         string `json:"job_id"`
 	CashCollected bool   `json:"cash_collected"`
 }
+
+type PlanTier string
+const (
+	PlanFree PlanTier = "free"
+	PlanPaid PlanTier = "paid"
+)
+
+type Subscription struct {
+	ID        string    `json:"id"         bson:"_id"`
+	TenantID  string    `json:"tenant_id"  bson:"tenant_id"`
+	Tier      PlanTier  `json:"tier"       bson:"tier"`
+	StartedAt time.Time `json:"started_at" bson:"started_at"`
+	ExpiresAt time.Time `json:"expires_at,omitempty" bson:"expires_at,omitempty"` // zero = no expiry (free tier)
+}
+
+type Rating struct {
+	ID        string    `json:"id"         bson:"_id"`
+	JobID     string    `json:"job_id"     bson:"job_id"`
+	RatedBy   string    `json:"rated_by"   bson:"rated_by"`   // user ID submitting
+	RatedUser string    `json:"rated_user" bson:"rated_user"` // user ID being rated
+	Stars     int       `json:"stars"      bson:"stars"`      // 1-5
+	Comment   string    `json:"comment,omitempty" bson:"comment,omitempty"`
+	CreatedAt time.Time `json:"created_at" bson:"created_at"`
+}

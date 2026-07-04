@@ -49,6 +49,9 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users/wallet/deposit", u.WalletDeposit)
 	mux.HandleFunc("/users/ledger", u.GetLedger)
 	mux.HandleFunc("/users/platform/config", u.GetPlatformConfig)
+	mux.HandleFunc("/users/subscription", u.Subscription)
+	mux.HandleFunc("/users/jobs/rate", u.RateJob)
+	mux.HandleFunc("/users/ratings", u.GetRatings)
 }
 
 // ---------------------------------------------------------------------------
@@ -516,4 +519,167 @@ func (u *UserService) checkKYC(ownerID string) (string, error) {
 	}
 
 	return user.KYCStatus, nil
+}
+
+// ---------------------------------------------------------------------------
+// GET /users/subscription?tenant_id=xxx
+// POST /users/subscription
+// ---------------------------------------------------------------------------
+
+func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		tenantID := r.URL.Query().Get("tenant_id")
+		if tenantID == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
+			return
+		}
+		sub := u.store.GetSubscription(r.Context(), tenantID)
+		if sub == nil {
+			sub = &models.Subscription{
+				ID:        "sub-default-" + tenantID,
+				TenantID:  tenantID,
+				Tier:      models.PlanFree,
+				StartedAt: time.Now().UTC(),
+			}
+		}
+		writeJSON(w, http.StatusOK, sub)
+	case http.MethodPost:
+		var req struct {
+			TenantID string          `json:"tenant_id"`
+			Tier     models.PlanTier `json:"tier"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+			return
+		}
+		if req.TenantID == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id is required"})
+			return
+		}
+		if req.Tier != models.PlanFree && req.Tier != models.PlanPaid {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tier must be 'free' or 'paid'"})
+			return
+		}
+
+		sub := &models.Subscription{
+			ID:        fmt.Sprintf("sub-%d", time.Now().UnixNano()),
+			TenantID:  req.TenantID,
+			Tier:      req.Tier,
+			StartedAt: time.Now().UTC(),
+		}
+		if err := u.store.UpsertSubscription(r.Context(), sub); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, sub)
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// POST /users/jobs/rate
+// ---------------------------------------------------------------------------
+
+func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	var req struct {
+		JobID     string `json:"job_id"`
+		RatedBy   string `json:"rated_by"`
+		RatedUser string `json:"rated_user"`
+		Stars     int    `json:"stars"`
+		Comment   string `json:"comment"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+
+	if req.Stars < 1 || req.Stars > 5 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "stars must be between 1 and 5"})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	isOwnerRating := req.RatedBy == job.OwnerID && req.RatedUser == job.EmployeeID
+	isEmployeeRating := req.RatedBy == job.EmployeeID && req.RatedUser == job.OwnerID
+
+	if !isOwnerRating && !isEmployeeRating {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "not authorized to rate this job/user"})
+		return
+	}
+
+	if job.Status != models.JobStatusCompleted {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "cannot rate a job that is not completed"})
+		return
+	}
+
+	rating := &models.Rating{
+		ID:        fmt.Sprintf("rate-%d", time.Now().UnixNano()),
+		JobID:     req.JobID,
+		RatedBy:   req.RatedBy,
+		RatedUser: req.RatedUser,
+		Stars:     req.Stars,
+		Comment:   req.Comment,
+		CreatedAt: time.Now().UTC(),
+	}
+
+	if err := u.store.CreateRating(ctx, rating); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, rating)
+}
+
+// ---------------------------------------------------------------------------
+// GET /users/ratings?user_id=xxx
+// ---------------------------------------------------------------------------
+
+func (u *UserService) GetRatings(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
+		return
+	}
+
+	userID := r.URL.Query().Get("user_id")
+	if userID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "user_id required"})
+		return
+	}
+
+	ratings, err := u.store.GetRatingsForUser(r.Context(), userID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	totalStars := 0
+	for _, r := range ratings {
+		totalStars += r.Stars
+	}
+
+	avg := 0.0
+	if len(ratings) > 0 {
+		avg = float64(totalStars) / float64(len(ratings))
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"user_id":        userID,
+		"ratings":        ratings,
+		"average_rating": avg,
+		"count":          len(ratings),
+	})
 }
