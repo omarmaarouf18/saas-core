@@ -677,17 +677,27 @@ func generate4DigitOTP() string {
 
 // getClientIP extracts the user's real IP from the request headers or RemoteAddr.
 func getClientIP(r *http.Request) string {
+	var ip string
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 		parts := strings.Split(xff, ",")
-		return strings.TrimSpace(parts[0])
+		ip = strings.TrimSpace(parts[0])
+	} else if rip := r.Header.Get("X-Real-IP"); rip != "" {
+		ip = rip
+	} else {
+		ip = r.RemoteAddr
 	}
-	if rip := r.Header.Get("X-Real-IP"); rip != "" {
-		return rip
+
+	if strings.Contains(ip, "]") {
+		if idx := strings.LastIndex(ip, ":"); idx != -1 {
+			ip = ip[:idx]
+		}
+		ip = strings.Trim(ip, "[]")
+	} else {
+		if count := strings.Count(ip, ":"); count == 1 {
+			if idx := strings.LastIndex(ip, ":"); idx != -1 {
+				ip = ip[:idx]
+			}
+		}
 	}
-	// Strip port from RemoteAddr
-	parts := strings.Split(r.RemoteAddr, ":")
-	if len(parts) > 0 {
-		return parts[0]
-	}
-	return r.RemoteAddr
+	return ip
 }

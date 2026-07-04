@@ -15,13 +15,20 @@ import (
 type Notification struct {
 	hub            *hub.SSEHub
 	authServiceURL string
+	allowedOrigin  string
+	limiter        *RateLimiter
 }
 
 // NewNotification creates a new handler group.
-func NewNotification(h *hub.SSEHub, authServiceURL string) *Notification {
+func NewNotification(h *hub.SSEHub, authServiceURL string, allowedOrigin string) *Notification {
+	if allowedOrigin == "" {
+		allowedOrigin = "http://localhost:3000"
+	}
 	return &Notification{
 		hub:            h,
 		authServiceURL: authServiceURL,
+		allowedOrigin:  allowedOrigin,
+		limiter:        NewRateLimiter(5, 1*time.Minute),
 	}
 }
 
@@ -61,7 +68,7 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Origin", n.allowedOrigin)
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -168,6 +175,14 @@ type sendRequest struct {
 
 // Send pushes a notification to matching connected clients.
 func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
+	ip := getIP(r)
+	if limited, remaining := n.limiter.CheckAndRecord(ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
 		return

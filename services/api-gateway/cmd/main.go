@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/project/gateway/internal/config"
 	"github.com/project/gateway/internal/middleware"
@@ -65,8 +66,10 @@ func main() {
 		log.Printf("Route registered: %s → %s (env: %s)", route.Prefix, route.Target, route.EnvKey)
 	}
 
-	// ---- Wrap with global logging middleware ----
-	logged := middleware.Logging(mux)
+	// ---- Wrap with global rate limiting and logging middleware ----
+	limiter := middleware.NewRateLimiter(100, 1*time.Minute)
+	rateLimited := middleware.RateLimit(limiter)(mux)
+	logged := middleware.Logging(rateLimited)
 
 	// ---- Start server ----
 	addr := ":" + cfg.Port

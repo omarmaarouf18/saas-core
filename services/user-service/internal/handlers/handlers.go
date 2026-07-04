@@ -20,6 +20,7 @@ import (
 type UserService struct {
 	store          *store.MongoDB
 	authServiceURL string
+	limiter        *RateLimiter
 }
 
 // NewUserService creates a new handler group.
@@ -27,6 +28,7 @@ func NewUserService(s *store.MongoDB, authServiceURL string) *UserService {
 	return &UserService{
 		store:          s,
 		authServiceURL: authServiceURL,
+		limiter:        NewRateLimiter(5, 1*time.Minute),
 	}
 }
 
@@ -127,6 +129,14 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------------------
 
 func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
+	ip := getIP(r)
+	if limited, remaining := u.limiter.CheckAndRecord(ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
 		return
@@ -382,6 +392,14 @@ func (u *UserService) GetWallet(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------------------
 
 func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
+	ip := getIP(r)
+	if limited, remaining := u.limiter.CheckAndRecord(ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
 		return

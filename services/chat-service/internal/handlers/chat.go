@@ -53,6 +53,7 @@ type Chat struct {
 	userServiceURL string
 	tokenCache     map[string]time.Time
 	tokenCacheMu   sync.Mutex
+	limiter        *RateLimiter
 }
 
 // NewChat creates a new Chat handler group.
@@ -63,6 +64,7 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, authServiceURL string, userService
 		authServiceURL: authServiceURL,
 		userServiceURL: userServiceURL,
 		tokenCache:     make(map[string]time.Time),
+		limiter:        NewRateLimiter(5, 1*time.Minute),
 	}
 }
 
@@ -149,6 +151,16 @@ func (c *Chat) canAccessChannel(userID, channel string) bool {
 //
 //	GET /chat/ws?token=<user_token>
 func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
+	ip := getIP(r)
+	if limited, remaining := c.limiter.CheckAndRecord(ip); limited {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusTooManyRequests)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
 	// Parse the token query parameter for mocked user identification.
 	token := r.URL.Query().Get("token")
 	if token == "" {

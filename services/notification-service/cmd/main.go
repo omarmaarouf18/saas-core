@@ -28,8 +28,13 @@ func main() {
 		authServiceURL = "http://localhost:3002"
 	}
 
+	allowedOrigin := os.Getenv("ALLOWED_ORIGIN")
+	if allowedOrigin == "" {
+		allowedOrigin = "http://localhost:3000"
+	}
+
 	sseHub := hub.NewSSEHub()
-	notifHandlers := handlers.NewNotification(sseHub, authServiceURL)
+	notifHandlers := handlers.NewNotification(sseHub, authServiceURL, allowedOrigin)
 
 	mux := http.NewServeMux()
 	notifHandlers.RegisterRoutes(mux)
