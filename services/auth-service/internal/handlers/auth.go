@@ -616,6 +616,7 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 		"id":         user.ID,
 		"email":      user.Email,
 		"role":       user.Role,
+		"tenant_id":  user.TenantID,
 		"kyc_status": user.KYCStatus,
 		"is_active":  user.IsActive,
 	})

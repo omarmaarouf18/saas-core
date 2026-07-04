@@ -13,12 +13,16 @@ import (
 
 // Notification holds dependencies for notification handlers.
 type Notification struct {
-	hub *hub.SSEHub
+	hub            *hub.SSEHub
+	authServiceURL string
 }
 
 // NewNotification creates a new handler group.
-func NewNotification(h *hub.SSEHub) *Notification {
-	return &Notification{hub: h}
+func NewNotification(h *hub.SSEHub, authServiceURL string) *Notification {
+	return &Notification{
+		hub:            h,
+		authServiceURL: authServiceURL,
+	}
 }
 
 // RegisterRoutes mounts notification endpoints.
@@ -40,15 +44,17 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := r.URL.Query().Get("token")
-	tenantID := r.URL.Query().Get("tenant_id")
-	role := hub.Role(r.URL.Query().Get("role"))
-
-	if token == "" || tenantID == "" {
-		http.Error(w, `{"error":"token and tenant_id required"}`, http.StatusBadRequest)
+	if token == "" {
+		http.Error(w, `{"error":"token required"}`, http.StatusBadRequest)
 		return
 	}
-	if role == "" {
-		role = hub.RoleClient
+
+	tenantID, role, ok := n.verifyAndResolve(token)
+	if !ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte(`{"error": "invalid or inactive token"}`))
+		return
 	}
 
 	// Set SSE headers.
@@ -95,6 +101,56 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 			flusher.Flush()
 		}
 	}
+}
+
+func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool) {
+	if token == "" {
+		return "", "", false
+	}
+
+	url := fmt.Sprintf("%s/auth/user?id=%s", n.authServiceURL, token)
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Printf("[NOTIF] Error calling auth-service: %v", err)
+		return "", "", false
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("[NOTIF] Auth service returned status %d for token %s", resp.StatusCode, token)
+		return "", "", false
+	}
+
+	var user struct {
+		ID       string `json:"id"`
+		Role     string `json:"role"`
+		TenantID string `json:"tenant_id"`
+		IsActive bool   `json:"is_active"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		log.Printf("[NOTIF] Failed to decode user from auth-service: %v", err)
+		return "", "", false
+	}
+
+	if !user.IsActive {
+		log.Printf("[NOTIF] User %s is not active", user.ID)
+		return "", "", false
+	}
+
+	var r hub.Role
+	switch user.Role {
+	case "owner":
+		r = hub.RoleOwner
+	case "employee":
+		r = hub.RoleEmployee
+	case "user", "client":
+		r = hub.RoleClient
+	default:
+		r = hub.RoleClient
+	}
+
+	return user.TenantID, r, true
 }
 
 // ---------------------------------------------------------------------------

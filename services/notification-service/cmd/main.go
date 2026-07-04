@@ -23,8 +23,13 @@ func main() {
 		port = "3004"
 	}
 
+	authServiceURL := os.Getenv("AUTH_SERVICE_URL")
+	if authServiceURL == "" {
+		authServiceURL = "http://localhost:3002"
+	}
+
 	sseHub := hub.NewSSEHub()
-	notifHandlers := handlers.NewNotification(sseHub)
+	notifHandlers := handlers.NewNotification(sseHub, authServiceURL)
 
 	mux := http.NewServeMux()
 	notifHandlers.RegisterRoutes(mux)
