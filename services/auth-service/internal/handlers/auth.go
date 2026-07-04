@@ -14,6 +14,7 @@ import (
 	"github.com/project/auth-service/internal/models"
 	"github.com/project/auth-service/internal/otp"
 	"github.com/project/auth-service/internal/store"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Auth holds dependencies for the authentication handlers.
@@ -21,6 +22,7 @@ type Auth struct {
 	store      *store.MongoDB
 	dispatcher otp.OTPDispatcher
 	isLocal    bool // true when APP_ENV == "local"
+	limiter    *RateLimiter
 }
 
 // NewAuth creates a new Auth handler group.
@@ -32,7 +34,12 @@ func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, appEnv string) *Aut
 	if isLocal {
 		log.Printf("[AUTH] ⚠ Running in LOCAL mode — OTP codes will be exposed in API responses")
 	}
-	return &Auth{store: s, dispatcher: dispatcher, isLocal: isLocal}
+	return &Auth{
+		store:      s,
+		dispatcher: dispatcher,
+		isLocal:    isLocal,
+		limiter:    NewRateLimiter(),
+	}
 }
 
 // RegisterRoutes mounts all auth endpoints on the given ServeMux.
@@ -45,6 +52,7 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/employee/toggle", a.ToggleEmployee)
 	mux.HandleFunc("/auth/employee/action", a.SimulateEmployeeAction)
 	mux.HandleFunc("/auth/audit-log", a.GetAuditLog)
+	mux.HandleFunc("/auth/user", a.GetUser)
 }
 
 // ---------------------------------------------------------------------------
@@ -117,14 +125,21 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to hash password: " + err.Error(),
+		})
+		return
+	}
+
 	// Build user record.
 	user := &models.User{
 		ID:        generateID(),
 		Email:     req.Email,
-		Password:  req.Password, // plain-text for now (bcrypt in production)
+		Password:  string(hashedPassword),
 		Role:      req.Role,
 		IsActive:  true, // Active by default
-		AntiSpam:  generateAntiSpamToken(),
 		CreatedAt: time.Now().UTC(),
 	}
 
@@ -221,22 +236,54 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	clientIP := getClientIP(r)
+
+	// Check if IP is locked out
+	if locked, remaining := a.limiter.IsLocked(clientIP); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many failed attempts from this IP. Please try again in %.0f seconds.", remaining.Seconds()),
+		})
+		return
+	}
+
+	// Check if Email is locked out
+	if req.Email != "" {
+		if locked, remaining := a.limiter.IsLocked(req.Email); locked {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error": fmt.Sprintf("too many failed attempts for this email. Please try again in %.0f seconds.", remaining.Seconds()),
+			})
+			return
+		}
+	}
+
 	ctx := r.Context()
 	user := a.store.GetByEmail(ctx, req.Email)
 	if user == nil {
+		a.limiter.RecordFailure(clientIP)
+		if req.Email != "" {
+			a.limiter.RecordFailure(req.Email)
+		}
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
 			"error": "invalid email or password",
 		})
 		return
 	}
 
-	// Plain-text password comparison (temporary; use bcrypt in production).
-	if user.Password != req.Password {
+	// Verify hashed password using bcrypt.
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+		a.limiter.RecordFailure(clientIP)
+		if req.Email != "" {
+			a.limiter.RecordFailure(req.Email)
+		}
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
 			"error": "invalid email or password",
 		})
 		return
 	}
+
+	// Reset limits on success
+	a.limiter.Reset(clientIP)
+	a.limiter.Reset(req.Email)
 
 	// KYE Freeze Account check for Employees
 	if user.Role == models.RoleEmployee && !user.IsActive {
@@ -324,14 +371,38 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	clientIP := getClientIP(r)
+
+	// Check if IP is locked out
+	if locked, remaining := a.limiter.IsLocked(clientIP); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many failed attempts from this IP. Please try again in %.0f seconds.", remaining.Seconds()),
+		})
+		return
+	}
+
+	// Check if Email is locked out
+	if locked, remaining := a.limiter.IsLocked(req.Email); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many failed attempts for this email. Please try again in %.0f seconds.", remaining.Seconds()),
+		})
+		return
+	}
+
 	ctx := r.Context()
 
 	if err := a.store.VerifyOTP(ctx, req.Email, req.OTP); err != nil {
+		a.limiter.RecordFailure(clientIP)
+		a.limiter.RecordFailure(req.Email)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
 			"error": err.Error(),
 		})
 		return
 	}
+
+	// Reset limits on success
+	a.limiter.Reset(clientIP)
+	a.limiter.Reset(req.Email)
 
 	user := a.store.GetByEmail(ctx, req.Email)
 
@@ -390,6 +461,15 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 	if owner == nil || owner.Role != models.RoleOwner {
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "invalid owner credentials or owner does not exist",
+		})
+		return
+	}
+
+	// Verify owner is approved KYC
+	if owner.KYCStatus != models.KYCApproved {
+		log.Printf("[KYC BLOCKED] Owner %s (ID: %s) attempted to toggle employee %s, but KYC status is %q", owner.Email, owner.ID, req.EmployeeEmail, owner.KYCStatus)
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "action blocked: owner KYC approval is pending",
 		})
 		return
 	}
@@ -471,6 +551,20 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Verify employee's owner has approved KYC
+	owner := a.store.GetByID(ctx, emp.OwnerID)
+	if owner == nil || owner.KYCStatus != models.KYCApproved {
+		ownerStatus := "none"
+		if owner != nil {
+			ownerStatus = string(owner.KYCStatus)
+		}
+		log.Printf("[KYC BLOCKED] Employee %s (ID: %s, Owner ID: %s) attempted action %q, but owner KYC status is %q", emp.Email, emp.ID, emp.OwnerID, req.Action, ownerStatus)
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "action blocked: owner KYC approval is pending",
+		})
+		return
+	}
+
 	// Extract Client IP
 	clientIP := getClientIP(r)
 
@@ -489,6 +583,41 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"message":     "action recorded in audit log",
 		"audit_entry": entry,
+	})
+}
+
+// GET /auth/user?id=<user_id>
+func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "method not allowed, use GET",
+		})
+		return
+	}
+
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "id parameter is required",
+		})
+		return
+	}
+
+	ctx := r.Context()
+	user := a.store.GetByID(ctx, id)
+	if user == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error": "user not found",
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"id":         user.ID,
+		"email":      user.Email,
+		"role":       user.Role,
+		"kyc_status": user.KYCStatus,
+		"is_active":  user.IsActive,
 	})
 }
 
@@ -530,15 +659,6 @@ func generateID() string {
 	b := make([]byte, 8)
 	if _, err := rand.Read(b); err != nil {
 		return fmt.Sprintf("fallback-%d", time.Now().UnixNano())
-	}
-	return hex.EncodeToString(b)
-}
-
-// generateAntiSpamToken creates a longer random token (32 chars).
-func generateAntiSpamToken() string {
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return fmt.Sprintf("spam-%d", time.Now().UnixNano())
 	}
 	return hex.EncodeToString(b)
 }
