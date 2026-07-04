@@ -72,16 +72,13 @@ func (rl *RateLimiter) CheckAndRecord(key string) (bool, time.Duration) {
 	return false, 0
 }
 
+// getIP extracts the client IP from r.RemoteAddr only.
+// At the gateway edge there is no trusted upstream proxy, so
+// X-Forwarded-For and X-Real-IP are fully client-controlled and
+// MUST NOT be used for rate-limit keying — an attacker can spoof a
+// different value on every request to get a fresh bucket each time.
 func getIP(r *http.Request) string {
-	var ip string
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		parts := strings.Split(xff, ",")
-		ip = strings.TrimSpace(parts[0])
-	} else if rip := r.Header.Get("X-Real-IP"); rip != "" {
-		ip = rip
-	} else {
-		ip = r.RemoteAddr
-	}
+	ip := r.RemoteAddr
 
 	if strings.Contains(ip, "]") {
 		if idx := strings.LastIndex(ip, ":"); idx != -1 {

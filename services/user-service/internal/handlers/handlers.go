@@ -2,10 +2,12 @@
 package handlers
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math"
 	"net/http"
@@ -404,13 +406,34 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
 		return
 	}
+
+	// Buffer the body so we can decode it for tenant-scoped rate limiting
+	// and still have it available for the rest of the handler.
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "failed to read request body"})
+		return
+	}
+	r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+
 	var req models.DepositRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
 	}
 	if req.TenantID == "" || req.Amount <= 0 {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id and positive amount required"})
+		return
+	}
+
+	// Secondary rate-limit key: tenant_id. Even if IP-based limiting is
+	// somehow defeated, this catches repeated abuse against the same wallet.
+	// Mirrors how auth-service locks on both client IP and email independently.
+	tenantKey := "tenant:" + req.TenantID
+	if limited, remaining := u.limiter.CheckAndRecord(tenantKey); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many deposit requests for this tenant, locked out for %.0f seconds", remaining.Seconds()),
+		})
 		return
 	}
 

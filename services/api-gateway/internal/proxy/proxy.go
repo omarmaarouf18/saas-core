@@ -45,9 +45,7 @@ func New(route config.ServiceRoute) (http.Handler, error) {
 
 			// Preserve the original path in a header for backend observability.
 			req.Header.Set("X-Forwarded-Prefix", route.Prefix)
-			if req.Header.Get("X-Forwarded-For") == "" {
-				req.Header.Set("X-Forwarded-For", req.RemoteAddr)
-			}
+			req.Header.Set("X-Forwarded-For", req.RemoteAddr)
 		},
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
 			log.Printf("[PROXY ERROR] %s %s → %s: %v",
