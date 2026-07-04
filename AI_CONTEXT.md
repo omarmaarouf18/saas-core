@@ -1,0 +1,93 @@
+# AI Context: saas-core
+
+This file serves as a persistent, model-agnostic, single source of truth for the technical stack, architecture, feature status, security logs, and current gaps of the `saas-core` platform. Any agent or developer modifying this repository must update this document in the same commit.
+
+---
+
+## Project Summary
+
+The `saas-core` platform is a multi-tenant SaaS application providing a marketplace services directory, real-time messaging, and job tracking. 
+
+* **Tech Stack Deviation Note**: The codebase is implemented as **Go microservices** running on a containerized environment (Docker Compose) and backing onto MongoDB. This deviates from an original planning diagram that specified a Node.js and Socket.io stack. The microservices architecture and real-time messaging functionality were preserved, but migrated to Go for type safety and performance.
+
+---
+
+## Architecture Table
+
+The platform uses a microservices architecture coordinated via a reverse-proxy API Gateway.
+
+| Service | Default Port | Role | Data Store / Key Libraries |
+| :--- | :--- | :--- | :--- |
+| **api-gateway** | `8080` | Reverse proxy/routing edge for clients. Implements edge rate limiting and path rewriting. | Go Standard Library |
+| **auth-service** | `3002` | Handles tenant registration, password hashing (bcrypt), multi-role login, and encrypted 2FA OTPs. | MongoDB, `golang.org/x/crypto` |
+| **chat-service** | `3001` | Real-time WebSocket hub for messaging, segregated per job. | MongoDB, `github.com/gorilla/websocket` |
+| **notification-service** | `3004` | Real-time client alerts via Server-Sent Events (SSE). | Go Standard Library |
+| **user-service** | `3003` | Services directory (using spatial indexes), job tracking, e-wallets, ledger, and subscriptions. | MongoDB (with `2dsphere` index) |
+
+---
+
+## Feature Status
+
+Features are classified into three groups: Done & Verified, Explicitly Deferred by Decision, and Not Started Yet. Only features verified directly against the repository are marked as verified.
+
+### 1. Done & Verified
+
+| Feature | Implementation Detail | Commit SHA | Verification |
+| :--- | :--- | :--- | :--- |
+| **Bcrypt Password Hashing** | Replaced plaintext comparison in auth-service with bcrypt password hashing. | `48ece45eb6b0282194c2f7026a7a85c8fbd79917` | Verified in `auth-service/internal/handlers/auth.go`. ✅ |
+| **Dual-Key rate limiting & lockouts** | Enforced lockout limits in `auth-service` on client IP and email with exponential backoff. | `04185514a931e597de3e97da46b6842a691090db` | Verified in `auth-service/internal/handlers/limiter.go`. ✅ |
+| **OTP TTL Expiry & Cleanup** | Added a 5-minute TTL to OTPs and a background database sweep sweeping expired OTPs every minute. | `f3f313b97c034a4118aba1760403bf1a47911df1` | Verified in `auth-service/internal/store/memory.go`. ✅ |
+| **Owner KYC Status Checks** | Restricts service creation, deposits, and job tracking to owners with approved KYC status. | `49d453c92742deb58bf31e806da7f2a084ea1be2` | Verified in `user-service/internal/handlers/handlers.go`. ✅ |
+| **JSON Injection Fix in WebSocket**| Replaced manual string concatenation in chat broadcast with `json.Marshal`. | `d8e9f762fb9d3dff1e054285ef6e9c0954f35e4a` | Verified in `chat-service/internal/chat/hub.go`. ✅ |
+| **WebSocket Channel Authorization** | Restricts channel subscriptions to job participants (Owner or Employee) by querying user-service. | `54750d0711e56a2afc48508aed44c2515ac39433` | Verified in `chat-service/internal/handlers/chat.go`. ✅ |
+| **SSE Stream Authentication** | Enforces SSE connection token verification by querying auth-service. | `5dd15e27c7cc6f216b15e907e0eb2c1cbb26cde9` | Verified in `notification-service/internal/handlers/handlers.go`. ✅ |
+| **CORS Origins Restriction** | Restricted notification SSE stream CORS from wildcard `*` to configured `ALLOWED_ORIGIN`. | `49752a64c4a641153087c7e95958d37e33f3bc05` | Verified in `notification-service/internal/handlers/handlers.go`. ✅ |
+| **X-Forwarded-For Spoof Hardening**| Edge api-gateway overwrites X-Forwarded-For. Gateway limiter keys off `RemoteAddr` directly. | `aebb580fb7b5a9c7520034e865153fc08681cfb5` | Verified in `api-gateway/internal/middleware/limiter.go` and `proxy.go`. ✅ |
+| **COD Platform Fee Overdraft** | Deducts 15% platform fee directly from Owner e-wallet upon job completion, allowing negative balances. | `6edf1b7c825b37cc15b16dbc348026c4b689724b` | Verified in `user-service/internal/store/memory.go`. ✅ |
+
+### 2. Explicitly Deferred by Decision
+
+* **E-Wallet and Bank Card Payment Flows**
+  * **Decision**: Job tracking explicitly blocks payment methods other than `"cod"` at the endpoint controller boundary.
+  * **Reasoning**: To bypass processing complex online card holds in the initial platform rollout. Escrow locking and release database methods exist in the code but are deferred from client exposure.
+* **Manual KYC/KYB Approval Process (Ops Runbook)**
+  * **Decision**: Know Your Customer (KYC) approval for tenant owners is deliberately not automated or exposed via API endpoints.
+  * **Reasoning**: To maintain security and avoid exposing administrative endpoints that could be targeted by attackers. approvals must be handled manually by an operations engineer directly in the database (updating the `kyc_status` field to `"approved"`).
+* **Mock OTP SMS/Email Dispatcher**
+  * **Decision**: SMS dispatching is stubbed using a mock that logs OTPs to stdout. In local environment (`APP_ENV=local`), OTPs are exposed directly in response payloads as `dev_otp`.
+  * **Reasoning**: Speeds up development and avoids dependencies on external paid SMS gateways during local testing.
+
+### 3. Not Started Yet
+
+* **Unused Redis Cache Infrastructure**: A Redis service is running in Docker Compose and environment variables are passed to all containers, but no microservice codebase file currently imports a Redis client driver or utilizes caching/pub-sub.
+* **JWT / Cryptographically Signed Access Tokens**: No JWT token signing or expiration verification exists. The system uses raw `user_id` strings directly as tokens.
+* **Real Email/SMS Integration**: No Twilio, SendGrid, or SMTP dispatchers are set up.
+
+---
+
+## Known Open Items / Unverified Claims
+
+Only features verified directly against the running application are marked as verified (✅). The following items are implemented but remain unverified end-to-end or represent accepted security risks:
+
+* **Unverified Escrow Logic**: Escrow locking (`LockEscrow`) and release splits (`ReleaseEscrowWithSplit`) exist in `user-service/internal/store/memory.go`, but since the `/track` endpoint actively blocks any payment method other than `cod`, **this code path has never been executed or verified end-to-end**.
+* **auth-service XFF Trust-Boundary**: The rate limiter in `auth-service` retrieves IP addresses preferring the `X-Forwarded-For` header. If `auth-service` is ever exposed directly to the internet (bypassing the gateway), rate limits on login/OTP could be bypassed via header spoofing.
+* **Unencrypted Internal Communications**: Traffic between the Gateway and microservices, and between services themselves, is transmitted over plaintext HTTP.
+* **In-Memory Rate Limiting State**: All service-level rate limiters maintain status counts in-memory. If instances restart or scale out, limit counters are reset.
+* **Zero Automated Test Coverage**: The repository has **0% automated test coverage** (no `*_test.go` files). All verification claims are based on manual vetting via browser or `curl` requests.
+
+---
+
+## Standing Working Rule
+
+This file is a persistent document tracking the real state of the repository.
+
+> [!IMPORTANT]
+> **Every code change must update `AI_CONTEXT.md` in the SAME commit.**
+> Any pull request or commit that changes application behavior, adds endpoints, modifies security boundaries, or changes the tech stack but does not update `AI_CONTEXT.md` is considered incomplete. 
+> Keep the feature status and unverified claims list strictly in sync with actual code implementations.
+
+---
+
+## Immediate Next Step
+
+* **Immediate Next Step**: Awaiting next development task or user instructions.
