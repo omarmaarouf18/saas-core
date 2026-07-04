@@ -172,8 +172,9 @@ type CompleteJobRequest struct {
 
 type PlanTier string
 const (
-	PlanFree PlanTier = "free"
-	PlanPaid PlanTier = "paid"
+	PlanFree           PlanTier = "free"
+	PlanPaid           PlanTier = "paid"
+	PlanPendingPayment PlanTier = "pending_payment"
 )
 
 type Subscription struct {

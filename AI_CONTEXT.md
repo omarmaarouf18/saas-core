@@ -44,6 +44,9 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **CORS Origins Restriction** | Restricted notification SSE stream CORS from wildcard `*` to configured `ALLOWED_ORIGIN`. | `49752a64c4a641153087c7e95958d37e33f3bc05` | Verified in `notification-service/internal/handlers/handlers.go`. ✅ |
 | **X-Forwarded-For Spoof Hardening**| Edge api-gateway overwrites X-Forwarded-For. Gateway limiter keys off `RemoteAddr` directly. | `aebb580fb7b5a9c7520034e865153fc08681cfb5` | Verified in `api-gateway/internal/middleware/limiter.go` and `proxy.go`. ✅ |
 | **COD Platform Fee Overdraft** | Deducts 15% platform fee directly from Owner e-wallet upon job completion, allowing negative balances. | `6edf1b7c825b37cc15b16dbc348026c4b689724b` | Verified in `user-service/internal/store/memory.go`. ✅ |
+| **Tenant Subscription Gating** | POST /users/subscription upgrades require requester_id == tenant_id, auth-service check, and maps paid to pending_payment (requires manual activation). | `current` | Verified in `user-service/internal/handlers/handlers.go`. ✅ |
+| **WebSocket Message Authorization** | Gated chat message broadcasts by canAccessChannel in WebSocket readPump. | `current` | Verified in `chat-service/internal/handlers/chat.go`. ✅ |
+| **Rating & Comment System** | Rating and comment submissions on completed jobs with average rating queries. | `6edf1b7c825b37cc15b16dbc348026c4b689724b` | Verified in `user-service/internal/handlers/handlers.go`. ✅ |
 
 ### 2. Explicitly Deferred by Decision
 

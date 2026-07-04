@@ -311,6 +311,20 @@ func (c *Chat) readPump(conn *websocket.Conn, client *chat.Client) {
 
 		case "message":
 			if msg.Content != "" {
+				if !c.canAccessChannel(client.ID, msg.Channel) {
+					log.Printf("[CHAT BLOCKED] Client %s attempted to send message to channel %q, but access is unauthorized", client.ID, msg.Channel)
+					denied, _ := json.Marshal(map[string]string{
+						"type":    "error",
+						"channel": msg.Channel,
+						"error":   "not authorized for this channel",
+					})
+					select {
+					case client.Send <- denied:
+					default:
+					}
+					continue
+				}
+
 				chatMsg := &chat.Message{
 					Channel:  msg.Channel,
 					SenderID: client.ID,

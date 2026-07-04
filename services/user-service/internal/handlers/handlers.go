@@ -587,8 +587,9 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, sub)
 	case http.MethodPost:
 		var req struct {
-			TenantID string          `json:"tenant_id"`
-			Tier     models.PlanTier `json:"tier"`
+			TenantID    string          `json:"tenant_id"`
+			Tier        models.PlanTier `json:"tier"`
+			RequesterID string          `json:"requester_id"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
@@ -598,15 +599,61 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id is required"})
 			return
 		}
+		if req.RequesterID == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester_id is required"})
+			return
+		}
+		if req.RequesterID != req.TenantID {
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "forbidden: requester_id must match tenant_id"})
+			return
+		}
+
+		// Verify requester_id resolves to a real user via auth-service
+		url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, req.RequesterID)
+		resp, err := http.Get(url)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "auth service connection error: " + err.Error()})
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusNotFound {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "user not found"})
+			return
+		}
+		if resp.StatusCode != http.StatusOK {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("unexpected auth service status: %d", resp.StatusCode)})
+			return
+		}
+
+		// Validate tier
 		if req.Tier != models.PlanFree && req.Tier != models.PlanPaid {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tier must be 'free' or 'paid'"})
+			return
+		}
+
+		if req.Tier == models.PlanPaid {
+			sub := &models.Subscription{
+				ID:        fmt.Sprintf("sub-%d", time.Now().UnixNano()),
+				TenantID:  req.TenantID,
+				Tier:      models.PlanPendingPayment,
+				StartedAt: time.Now().UTC(),
+			}
+			if err := u.store.UpsertSubscription(r.Context(), sub); err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+				return
+			}
+			writeJSON(w, http.StatusAccepted, map[string]string{
+				"status":  "pending_payment",
+				"message": "Paid tier requires manual activation. Contact support to complete payment.",
+			})
 			return
 		}
 
 		sub := &models.Subscription{
 			ID:        fmt.Sprintf("sub-%d", time.Now().UnixNano()),
 			TenantID:  req.TenantID,
-			Tier:      req.Tier,
+			Tier:      models.PlanFree,
 			StartedAt: time.Now().UTC(),
 		}
 		if err := u.store.UpsertSubscription(r.Context(), sub); err != nil {
