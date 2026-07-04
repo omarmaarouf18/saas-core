@@ -3,6 +3,7 @@
 package chat
 
 import (
+	"encoding/json"
 	"log"
 	"sync"
 )
@@ -142,12 +143,11 @@ func (h *Hub) ChannelCount() int {
 // sendToClient attempts to write serialized message bytes to a client's
 // send buffer. Drops the message if the buffer is full (non-blocking).
 func (h *Hub) sendToClient(client *Client, msg *Message) {
-	// Serialize message inline to avoid import cycle; handlers do the
-	// full JSON marshal, but here we use a lightweight format.
-	data := []byte(`{"channel":"` + msg.Channel +
-		`","sender_id":"` + msg.SenderID +
-		`","content":"` + msg.Content +
-		`","type":"` + msg.Type + `"}`)
+	data, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("[HUB] Failed to marshal message: %v", err)
+		return
+	}
 
 	select {
 	case client.Send <- data:

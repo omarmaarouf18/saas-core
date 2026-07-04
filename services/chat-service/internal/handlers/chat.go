@@ -2,13 +2,18 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/project/chat-service/internal/chat"
+	"github.com/project/chat-service/internal/store"
 )
 
 const (
@@ -41,12 +46,21 @@ type wsMessage struct {
 
 // Chat holds dependencies for the WebSocket handlers.
 type Chat struct {
-	hub *chat.Hub
+	hub            *chat.Hub
+	store          *store.MongoDB
+	authServiceURL string
+	tokenCache     map[string]time.Time
+	tokenCacheMu   sync.Mutex
 }
 
 // NewChat creates a new Chat handler group.
-func NewChat(hub *chat.Hub) *Chat {
-	return &Chat{hub: hub}
+func NewChat(hub *chat.Hub, s *store.MongoDB, authServiceURL string) *Chat {
+	return &Chat{
+		hub:            hub,
+		store:          s,
+		authServiceURL: authServiceURL,
+		tokenCache:     make(map[string]time.Time),
+	}
 }
 
 // RegisterRoutes mounts chat endpoints on the given ServeMux.
@@ -55,6 +69,44 @@ func NewChat(hub *chat.Hub) *Chat {
 //	/api/v1/chat/ws → chat-service → /chat/ws
 func (c *Chat) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/chat/ws", c.HandleWebSocket)
+	mux.HandleFunc("/chat/history", c.GetHistory)
+}
+
+func (c *Chat) verifyToken(id string) bool {
+	if id == "" {
+		return false
+	}
+
+	c.tokenCacheMu.Lock()
+	expiry, found := c.tokenCache[id]
+	c.tokenCacheMu.Unlock()
+
+	if found && time.Now().Before(expiry) {
+		return true
+	}
+
+	// Verify against auth-service
+	url := fmt.Sprintf("%s/auth/user?id=%s", c.authServiceURL, id)
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Printf("[CHAT] Error calling auth-service: %v", err)
+		return false
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		var user struct {
+			ID string `json:"id"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&user); err == nil && user.ID != "" {
+			c.tokenCacheMu.Lock()
+			c.tokenCache[id] = time.Now().Add(60 * time.Second)
+			c.tokenCacheMu.Unlock()
+			return true
+		}
+	}
+
+	return false
 }
 
 // HandleWebSocket upgrades the HTTP connection to a WebSocket protocol.
@@ -66,6 +118,13 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	if token == "" {
 		http.Error(w, `{"error": "missing token query parameter"}`, http.StatusUnauthorized)
+		return
+	}
+
+	if !c.verifyToken(token) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid or unverified token"})
 		return
 	}
 
@@ -91,6 +150,44 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	// Launch read/write pumps in separate goroutines.
 	go c.writePump(conn, client)
 	go c.readPump(conn, client)
+}
+
+// GET /chat/history?channel=<channel>&limit=<n>
+func (c *Chat) GetHistory(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]string{"error": "method not allowed, use GET"})
+		return
+	}
+
+	channel := r.URL.Query().Get("channel")
+	if channel == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "channel parameter is required"})
+		return
+	}
+
+	limitStr := r.URL.Query().Get("limit")
+	limit := int64(50)
+	if limitStr != "" {
+		if l, err := strconv.ParseInt(limitStr, 10, 64); err == nil && l > 0 {
+			limit = l
+		}
+	}
+
+	history, err := c.store.GetHistory(r.Context(), channel, limit)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "failed to retrieve chat history: " + err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(history)
 }
 
 // readPump reads messages from the WebSocket connection and dispatches
@@ -154,12 +251,19 @@ func (c *Chat) readPump(conn *websocket.Conn, client *chat.Client) {
 
 		case "message":
 			if msg.Content != "" {
-				c.hub.Broadcast <- &chat.Message{
+				chatMsg := &chat.Message{
 					Channel:  msg.Channel,
 					SenderID: client.ID,
 					Content:  msg.Content,
 					Type:     "message",
 				}
+
+				// Persist message to MongoDB store
+				if err := c.store.PersistMessage(context.Background(), chatMsg); err != nil {
+					log.Printf("[WS] Failed to persist message: %v", err)
+				}
+
+				c.hub.Broadcast <- chatMsg
 			}
 
 		default:

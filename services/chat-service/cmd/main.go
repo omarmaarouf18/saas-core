@@ -15,13 +15,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/project/chat-service/internal/chat"
 	"github.com/project/chat-service/internal/handlers"
+	"github.com/project/chat-service/internal/store"
 )
 
 func main() {
@@ -30,12 +33,34 @@ func main() {
 		port = "3001"
 	}
 
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017/saas_platform"
+	}
+	dbName := os.Getenv("MONGO_INITDB_DATABASE")
+	if dbName == "" {
+		dbName = "saas_platform"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	mongoStore, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		log.Fatalf("[CHAT] Failed to initialize MongoDB store: %v", err)
+	}
+
+	authServiceURL := os.Getenv("AUTH_SERVICE_URL")
+	if authServiceURL == "" {
+		authServiceURL = "http://localhost:3002"
+	}
+
 	// Create and start the WebSocket hub.
 	hub := chat.NewHub()
 	go hub.Run()
 
 	// Create handler group and register routes.
-	chatHandlers := handlers.NewChat(hub)
+	chatHandlers := handlers.NewChat(hub, mongoStore, authServiceURL)
 
 	mux := http.NewServeMux()
 
