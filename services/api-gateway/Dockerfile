@@ -11,7 +11,7 @@
 FROM golang:1.23-alpine AS dev
 
 RUN apk add --no-cache git \
-    && go install github.com/air-verse/air@latest
+    && go install github.com/air-verse/air@v1.52.2
 
 WORKDIR /app
 
