@@ -48,7 +48,12 @@ func main() {
 		log.Fatalf("[USER] Failed to initialize MongoDB store: %v", err)
 	}
 
-	userHandlers := handlers.NewUserService(mongoStore)
+	authServiceURL := os.Getenv("AUTH_SERVICE_URL")
+	if authServiceURL == "" {
+		authServiceURL = "http://localhost:3002"
+	}
+
+	userHandlers := handlers.NewUserService(mongoStore, authServiceURL)
 	mux := http.NewServeMux()
 	userHandlers.RegisterRoutes(mux)
 

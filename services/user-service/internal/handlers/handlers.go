@@ -18,12 +18,16 @@ import (
 
 // UserService holds dependencies for the user-service handlers.
 type UserService struct {
-	store *store.MongoDB
+	store          *store.MongoDB
+	authServiceURL string
 }
 
 // NewUserService creates a new handler group.
-func NewUserService(s *store.MongoDB) *UserService {
-	return &UserService{store: s}
+func NewUserService(s *store.MongoDB, authServiceURL string) *UserService {
+	return &UserService{
+		store:          s,
+		authServiceURL: authServiceURL,
+	}
 }
 
 // RegisterRoutes mounts all user-service endpoints on the given ServeMux.
@@ -81,6 +85,23 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "owner_id, name, and category are required"})
 		return
 	}
+
+	// Verify owner exists and has approved KYC
+	kycStatus, err := u.checkKYC(req.OwnerID)
+	if err != nil {
+		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.OwnerID, err)
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "action blocked: unable to verify owner KYC status",
+		})
+		return
+	}
+	if kycStatus != "approved" {
+		log.Printf("[KYC BLOCKED] Owner %s attempted to create service, but KYC status is %q", req.OwnerID, kycStatus)
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "action blocked: owner KYC approval is pending",
+		})
+		return
+	}
 	if req.Category != "shipping" && req.Category != "delivery" && req.Category != "transport" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid category, must be: shipping, delivery, transport"})
 		return
@@ -113,6 +134,23 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.OwnerID == "" || req.ServiceID == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "owner_id and service_id are required"})
+		return
+	}
+
+	// Verify owner exists and has approved KYC
+	kycStatus, err := u.checkKYC(req.OwnerID)
+	if err != nil {
+		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.OwnerID, err)
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "action blocked: unable to verify owner KYC status",
+		})
+		return
+	}
+	if kycStatus != "approved" {
+		log.Printf("[KYC BLOCKED] Owner %s attempted to track job, but KYC status is %q", req.OwnerID, kycStatus)
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "action blocked: owner KYC approval is pending",
+		})
 		return
 	}
 
@@ -269,6 +307,23 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id and positive amount required"})
 		return
 	}
+
+	// Verify owner exists and has approved KYC
+	kycStatus, err := u.checkKYC(req.TenantID)
+	if err != nil {
+		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.TenantID, err)
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "action blocked: unable to verify owner KYC status",
+		})
+		return
+	}
+	if kycStatus != "approved" {
+		log.Printf("[KYC BLOCKED] Owner %s attempted to deposit to wallet, but KYC status is %q", req.TenantID, kycStatus)
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "action blocked: owner KYC approval is pending",
+		})
+		return
+	}
 	if err := u.store.Deposit(r.Context(), req.TenantID, req.Amount); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -346,4 +401,34 @@ func haversineKm(lat1, lon1, lat2, lon2 float64) float64 {
 		math.Cos(lat1*math.Pi/180)*math.Cos(lat2*math.Pi/180)*
 			math.Sin(dLon/2)*math.Sin(dLon/2)
 	return R * 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+}
+
+func (u *UserService) checkKYC(ownerID string) (string, error) {
+	url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, ownerID)
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return "", fmt.Errorf("owner not found")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("unexpected auth service status: %d", resp.StatusCode)
+	}
+
+	var user struct {
+		Role      string `json:"role"`
+		KYCStatus string `json:"kyc_status"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return "", err
+	}
+
+	if user.Role != "owner" {
+		return "", fmt.Errorf("specified user is not an owner")
+	}
+
+	return user.KYCStatus, nil
 }
