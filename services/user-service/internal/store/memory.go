@@ -388,6 +388,57 @@ func (s *MongoDB) GetPlatformConfig(ctx context.Context) *models.PlatformConfig 
 	return &cfg
 }
 
+// DeductCODFee computes the platform fee cut for COD jobs and deducts it directly from the tenant's wallet.
+func (s *MongoDB) DeductCODFee(ctx context.Context, tenantID, jobID string, amount float64) error {
+	var cfg models.PlatformConfig
+	if err := s.platConfig.FindOne(ctx, bson.M{"_id": "global"}).Decode(&cfg); err != nil {
+		return fmt.Errorf("platform config not found: %w", err)
+	}
+
+	feeAmount := math.Round(amount*cfg.PlatformFeePercentage) / 100
+	now := time.Now().UTC()
+
+	// Get or create wallet to find balance before
+	w, err := s.GetOrCreateWallet(ctx, tenantID)
+	if err != nil {
+		return err
+	}
+
+	// Deduct fee from total_balance and withdrawable_balance (allowing it to go negative)
+	_, err = s.wallets.UpdateOne(ctx,
+		bson.M{"tenant_id": tenantID},
+		bson.M{
+			"$inc": bson.M{"total_balance": -feeAmount, "withdrawable_balance": -feeAmount},
+			"$set": bson.M{"updated_at": now},
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	// Credit platform wallet with fee
+	s.wallets.UpdateOne(ctx, bson.M{"tenant_id": "platform"},
+		bson.M{
+			"$inc": bson.M{"total_balance": feeAmount, "withdrawable_balance": feeAmount},
+			"$set": bson.M{"updated_at": now},
+		},
+	)
+
+	// Record ledger entry
+	_, err = s.ledger.InsertOne(ctx, models.TransactionLedger{
+		ID:            fmt.Sprintf("tx-%d-fee", now.UnixNano()),
+		TenantID:      tenantID,
+		JobID:         jobID,
+		Type:          models.TxPlatformFee,
+		Amount:        feeAmount,
+		BalanceBefore: w.WithdrawableBalance,
+		BalanceAfter:  w.WithdrawableBalance - feeAmount,
+		Description:   fmt.Sprintf("platform fee %.1f%% (COD cash collected)", cfg.PlatformFeePercentage),
+		Timestamp:     now,
+	})
+	return err
+}
+
 // ---------------------------------------------------------------------------
 // Seed data
 // ---------------------------------------------------------------------------

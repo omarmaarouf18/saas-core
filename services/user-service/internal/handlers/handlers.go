@@ -137,6 +137,13 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.PaymentMethod != "cod" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid payment_method: only 'cod' is currently supported",
+		})
+		return
+	}
+
 	// Verify owner exists and has approved KYC
 	kycStatus, err := u.checkKYC(req.OwnerID)
 	if err != nil {
@@ -171,7 +178,8 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	job := &models.Job{
 		ID: generateID(), OwnerID: req.OwnerID, EmployeeID: req.EmployeeID,
 		ServiceID: req.ServiceID, Status: models.JobStatusPending,
-		Location: req.Location, CreatedAt: now, UpdatedAt: now,
+		Location: req.Location, PaymentMethod: req.PaymentMethod,
+		CreatedAt: now, UpdatedAt: now,
 	}
 
 	if err := u.store.CreateJob(ctx, job); err != nil {
@@ -179,7 +187,23 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Lock escrow for this job.
+	// Lock escrow only for non-COD (or skip for COD jobs)
+	if req.PaymentMethod == "cod" {
+		log.Printf("[USER] Job %s created (COD payment method)", job.ID)
+		// Progress to active.
+		u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive)
+		job.Status = models.JobStatusActive
+		job.UpdatedAt = time.Now().UTC()
+
+		writeJSON(w, http.StatusCreated, map[string]any{
+			"message":        "job tracking record created",
+			"lifecycle_note": "COD, all up to date",
+			"job":            job,
+		})
+		return
+	}
+
+	// Lock escrow for this job (e-wallet/bank card flow)
 	if err := u.store.LockEscrow(ctx, req.OwnerID, job.ID, escrowAmount); err != nil {
 		log.Printf("[USER] Escrow lock failed for job %s: %v", job.ID, err)
 		// Job created but unfunded — still report it.
@@ -242,7 +266,44 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 	dist := haversineKm(job.Location.Latitude, job.Location.Longitude, svc.Latitude, svc.Longitude)
 	amount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
 
-	// Release escrow with profit splitting.
+	// Handle COD payment method
+	if job.PaymentMethod == "cod" {
+		if !req.CashCollected {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "action blocked: cash collection must be confirmed (cash_collected: true) for COD jobs",
+			})
+			return
+		}
+
+		// Deduct platform fee directly from owner's wallet (allows negative balance)
+		if err := u.store.DeductCODFee(ctx, job.OwnerID, job.ID, amount); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to deduct platform fee: " + err.Error()})
+			return
+		}
+
+		u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusCompleted)
+		job.Status = models.JobStatusCompleted
+		job.UpdatedAt = time.Now().UTC()
+
+		cfg := u.store.GetPlatformConfig(ctx)
+		feePercent := 15.0
+		if cfg != nil {
+			feePercent = cfg.PlatformFeePercentage
+		}
+		fee := math.Round(amount*feePercent) / 100
+
+		log.Printf("[USER] COD Job %s completed: cash_collected=%.2f fee=%.2f deducted from owner wallet", job.ID, amount, fee)
+		writeJSON(w, http.StatusOK, map[string]any{
+			"message":          "COD job completed and platform fee deducted",
+			"job_id":           job.ID,
+			"total_amount":     amount,
+			"platform_fee":     fee,
+			"platform_fee_pct": feePercent,
+		})
+		return
+	}
+
+	// Release escrow with profit splitting (Non-COD flow)
 	if err := u.store.ReleaseEscrowWithSplit(ctx, job.OwnerID, job.ID, amount); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "escrow release failed: " + err.Error()})
 		return

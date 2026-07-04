@@ -78,14 +78,15 @@ type Location struct {
 
 // Job represents a trackable unit of work linking an owner, employee, and service.
 type Job struct {
-	ID         string    `json:"id"                    bson:"_id"`
-	OwnerID    string    `json:"owner_id"              bson:"owner_id"`
-	EmployeeID string    `json:"employee_id,omitempty" bson:"employee_id,omitempty"`
-	ServiceID  string    `json:"service_id"            bson:"service_id"`
-	Status     JobStatus `json:"status"                bson:"status"`
-	Location   Location  `json:"location"              bson:"location"`
-	CreatedAt  time.Time `json:"created_at"            bson:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"            bson:"updated_at"`
+	ID            string    `json:"id"                    bson:"_id"`
+	OwnerID       string    `json:"owner_id"              bson:"owner_id"`
+	EmployeeID    string    `json:"employee_id,omitempty" bson:"employee_id,omitempty"`
+	ServiceID     string    `json:"service_id"            bson:"service_id"`
+	Status        JobStatus `json:"status"                bson:"status"`
+	Location      Location  `json:"location"              bson:"location"`
+	PaymentMethod string    `json:"payment_method"        bson:"payment_method"`
+	CreatedAt     time.Time `json:"created_at"            bson:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"            bson:"updated_at"`
 }
 
 // ---------------------------------------------------------------------------
@@ -150,10 +151,11 @@ type CreateServiceRequest struct {
 
 // CreateJobRequest is the expected JSON body for POST /users/jobs/track.
 type CreateJobRequest struct {
-	OwnerID    string   `json:"owner_id"`
-	EmployeeID string   `json:"employee_id,omitempty"`
-	ServiceID  string   `json:"service_id"`
-	Location   Location `json:"location"`
+	OwnerID       string   `json:"owner_id"`
+	EmployeeID    string   `json:"employee_id,omitempty"`
+	ServiceID     string   `json:"service_id"`
+	Location      Location `json:"location"`
+	PaymentMethod string   `json:"payment_method"`
 }
 
 // DepositRequest is the expected JSON body for POST /users/wallet/deposit.
@@ -164,5 +166,6 @@ type DepositRequest struct {
 
 // CompleteJobRequest is the expected JSON body for POST /users/jobs/complete.
 type CompleteJobRequest struct {
-	JobID string `json:"job_id"`
+	JobID         string `json:"job_id"`
+	CashCollected bool   `json:"cash_collected"`
 }
