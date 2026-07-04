@@ -43,6 +43,7 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 		}
 	})
 	mux.HandleFunc("/users/jobs/track", u.TrackJob)
+	mux.HandleFunc("/users/jobs/get", u.GetJob)
 	mux.HandleFunc("/users/jobs/complete", u.CompleteJob)
 	mux.HandleFunc("/users/wallet", u.GetWallet)
 	mux.HandleFunc("/users/wallet/deposit", u.WalletDeposit)
@@ -326,6 +327,29 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		"platform_fee": fee, "platform_fee_pct": feePercent,
 		"net_to_tenant": net,
 	})
+}
+
+// ---------------------------------------------------------------------------
+// GET /users/jobs/get?id=xxx
+// ---------------------------------------------------------------------------
+
+func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "id parameter is required"})
+		return
+	}
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, id)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+	writeJSON(w, http.StatusOK, job)
 }
 
 // ---------------------------------------------------------------------------

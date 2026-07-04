@@ -55,12 +55,17 @@ func main() {
 		authServiceURL = "http://localhost:3002"
 	}
 
+	userServiceURL := os.Getenv("USER_SERVICE_URL")
+	if userServiceURL == "" {
+		userServiceURL = "http://localhost:3003"
+	}
+
 	// Create and start the WebSocket hub.
 	hub := chat.NewHub()
 	go hub.Run()
 
 	// Create handler group and register routes.
-	chatHandlers := handlers.NewChat(hub, mongoStore, authServiceURL)
+	chatHandlers := handlers.NewChat(hub, mongoStore, authServiceURL, userServiceURL)
 
 	mux := http.NewServeMux()
 

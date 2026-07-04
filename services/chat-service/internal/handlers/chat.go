@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -49,16 +50,18 @@ type Chat struct {
 	hub            *chat.Hub
 	store          *store.MongoDB
 	authServiceURL string
+	userServiceURL string
 	tokenCache     map[string]time.Time
 	tokenCacheMu   sync.Mutex
 }
 
 // NewChat creates a new Chat handler group.
-func NewChat(hub *chat.Hub, s *store.MongoDB, authServiceURL string) *Chat {
+func NewChat(hub *chat.Hub, s *store.MongoDB, authServiceURL string, userServiceURL string) *Chat {
 	return &Chat{
 		hub:            hub,
 		store:          s,
 		authServiceURL: authServiceURL,
+		userServiceURL: userServiceURL,
 		tokenCache:     make(map[string]time.Time),
 	}
 }
@@ -107,6 +110,38 @@ func (c *Chat) verifyToken(id string) bool {
 	}
 
 	return false
+}
+
+func (c *Chat) canAccessChannel(userID, channel string) bool {
+	// Non-job channels: still block everything by default. If there are
+	// legitimate non-job channels in use elsewhere in the app, they must
+	// be explicitly named/allowlisted here — do not default-allow.
+	if !strings.HasPrefix(channel, "job:") {
+		return false
+	}
+	jobID := strings.TrimPrefix(channel, "job:")
+	if jobID == "" {
+		return false
+	}
+
+	url := fmt.Sprintf("%s/users/jobs/get?id=%s", c.userServiceURL, jobID)
+	resp, err := http.Get(url)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		if resp != nil {
+			resp.Body.Close()
+		}
+		return false
+	}
+	defer resp.Body.Close()
+
+	var job struct {
+		OwnerID    string `json:"owner_id"`
+		EmployeeID string `json:"employee_id"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&job); err != nil {
+		return false
+	}
+	return userID == job.OwnerID || (job.EmployeeID != "" && userID == job.EmployeeID)
 }
 
 // HandleWebSocket upgrades the HTTP connection to a WebSocket protocol.
@@ -224,6 +259,19 @@ func (c *Chat) readPump(conn *websocket.Conn, client *chat.Client) {
 		switch msg.Action {
 		case "subscribe":
 			if msg.Channel != "" {
+				if !c.canAccessChannel(client.ID, msg.Channel) {
+					denied, _ := json.Marshal(map[string]string{
+						"type":    "error",
+						"channel": msg.Channel,
+						"error":   "not authorized for this channel",
+					})
+					select {
+					case client.Send <- denied:
+					default:
+					}
+					continue // do NOT fall through to hub.Subscribe
+				}
+
 				c.hub.Subscribe(client, msg.Channel)
 				// Send confirmation back to the client.
 				confirm, _ := json.Marshal(map[string]string{
