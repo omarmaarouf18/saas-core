@@ -78,6 +78,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("[AUTH] Failed to initialize MongoDB store: %v", err)
 	}
+	mongoStore.StartOTPCleanup(context.Background(), 1*time.Minute)
 
 	// Select OTP dispatcher based on environment.
 	var dispatcher otp.OTPDispatcher

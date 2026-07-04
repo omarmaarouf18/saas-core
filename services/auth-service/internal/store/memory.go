@@ -177,9 +177,11 @@ func (s *MongoDB) SetOTP(ctx context.Context, email, otp string) error {
 		return fmt.Errorf("store: OTP encryption failed: %w", err)
 	}
 
+	expiresAt := time.Now().Add(5 * time.Minute)
+
 	result, err := s.users.UpdateOne(ctx,
 		bson.M{"email": email},
-		bson.M{"$set": bson.M{"otp_code": encrypted, "otp_verified": false}},
+		bson.M{"$set": bson.M{"otp_code": encrypted, "otp_verified": false, "otp_expires_at": expiresAt}},
 	)
 	if err != nil {
 		return fmt.Errorf("store: set OTP: %w", err)
@@ -203,6 +205,16 @@ func (s *MongoDB) VerifyOTP(ctx context.Context, email, otp string) error {
 		return fmt.Errorf("no OTP pending for %q", email)
 	}
 
+	// Check if OTP has expired
+	if !user.OTPExpiresAt.IsZero() && user.OTPExpiresAt.Before(time.Now()) {
+		// Clear the expired code
+		_, _ = s.users.UpdateOne(ctx,
+			bson.M{"email": email},
+			bson.M{"$set": bson.M{"otp_code": ""}},
+		)
+		return fmt.Errorf("OTP has expired")
+	}
+
 	// Decrypt the stored OTP and compare against the submitted plaintext.
 	decrypted, err := s.cipher.Decrypt(user.OTPCode)
 	if err != nil {
@@ -221,6 +233,26 @@ func (s *MongoDB) VerifyOTP(ctx context.Context, email, otp string) error {
 		return fmt.Errorf("store: verify OTP: %w", err)
 	}
 	return nil
+}
+
+// StartOTPCleanup periodically sweeps MongoDB and invalidates expired OTPs.
+func (s *MongoDB) StartOTPCleanup(ctx context.Context, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	go func() {
+		for range ticker.C {
+			now := time.Now()
+			_, err := s.users.UpdateMany(ctx,
+				bson.M{
+					"otp_code":       bson.M{"$ne": ""},
+					"otp_expires_at": bson.M{"$lt": now},
+				},
+				bson.M{"$set": bson.M{"otp_code": ""}},
+			)
+			if err != nil {
+				log.Printf("[AUTH-STORE] Failed to sweep expired OTPs: %v", err)
+			}
+		}
+	}()
 }
 
 // ---------------------------------------------------------------------------
