@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -27,12 +28,14 @@ func TestUserServiceHandlers(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	
-	s, err := store.NewMongoDB(ctx, mongoURI, "saas_platform_test")
+	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping user-service integration tests: MongoDB not available at %s (%v)", mongoURI, err)
 		return
 	}
 	defer func() {
+		_ = s.DropDatabase(context.Background())
 		s.Close(context.Background())
 	}()
 
@@ -200,6 +203,68 @@ func TestUserServiceHandlers(t *testing.T) {
 		req = httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999&requester_id=" + tokenJobOwner, nil)
 		rec = httptest.NewRecorder()
 		u.GetJob(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for owner, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+	})
+
+	// Test 6: CompleteJob Access Control
+	t.Run("CompleteJob Access Control", func(t *testing.T) {
+		ctx := context.Background()
+		testJob := &models.Job{
+			ID:            "test-job-888",
+			OwnerID:       "job-owner-888",
+			EmployeeID:    "job-employee-888",
+			ServiceID:     "svc-001",
+			Status:        models.JobStatusActive,
+			PaymentMethod: "cod",
+		}
+		_ = s.CreateJob(ctx, testJob)
+
+		tokenMismatchedUser, _ := jwtutil.GenerateToken("mismatched-user-888", "user", "mismatched-user-888", "mismatch@example.com")
+		tokenJobOwner, _ := jwtutil.GenerateToken("job-owner-888", "owner", "job-owner-888", "owner@example.com")
+
+		// A. Valid internal token -> 200 OK
+		reqBody := map[string]any{
+			"job_id": "test-job-888",
+			"cash_collected": true,
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
+		req.Header.Set("X-Internal-Token", "mock-internal-token")
+		rec := httptest.NewRecorder()
+		u.CompleteJob(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for internal token, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// Reset job status to active for subsequent tests
+		_ = s.UpdateJobStatus(ctx, "test-job-888", models.JobStatusActive)
+
+		// B. Mismatched requester_id -> 403 Forbidden
+		reqBody = map[string]any{
+			"job_id": "test-job-888",
+			"cash_collected": true,
+			"requester_id": tokenMismatchedUser,
+		}
+		body, _ = json.Marshal(reqBody)
+		req = httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.CompleteJob(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for mismatched requester, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// C. Matching requester_id (Owner) -> 200 OK
+		reqBody = map[string]any{
+			"job_id": "test-job-888",
+			"cash_collected": true,
+			"requester_id": tokenJobOwner,
+		}
+		body, _ = json.Marshal(reqBody)
+		req = httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.CompleteJob(rec, req)
 		if rec.Code != http.StatusOK {
 			t.Errorf("Expected 200 OK for owner, got %d. Body: %s", rec.Code, rec.Body.String())
 		}

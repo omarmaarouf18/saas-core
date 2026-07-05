@@ -168,6 +168,7 @@ type DepositRequest struct {
 type CompleteJobRequest struct {
 	JobID         string `json:"job_id"`
 	CashCollected bool   `json:"cash_collected"`
+	RequesterID   string `json:"requester_id"`
 }
 
 type PlanTier string

@@ -62,6 +62,10 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 
 func (s *MongoDB) Close(ctx context.Context) error { return s.client.Disconnect(ctx) }
 
+func (s *MongoDB) DropDatabase(ctx context.Context) error {
+	return s.db.Drop(ctx)
+}
+
 func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 	// 2dsphere spatial index on services.location
 	if _, err := s.services.Indexes().CreateOne(ctx, mongo.IndexModel{

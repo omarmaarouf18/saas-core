@@ -294,6 +294,31 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
 		return
 	}
+
+	// Authorization check
+	isInternal := r.Header.Get("X-Internal-Token") == u.internalServiceToken
+	if !isInternal {
+		requesterToken := r.URL.Query().Get("requester_id")
+		if requesterToken == "" {
+			requesterToken = req.RequesterID
+		}
+		if requesterToken == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester_id parameter is required"})
+			return
+		}
+		resolvedRequester, err := resolveToken(requesterToken)
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+			return
+		}
+
+		if resolvedRequester != job.OwnerID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
+			log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to complete job %s owned by owner %s and employee %s", resolvedRequester, job.ID, job.OwnerID, job.EmployeeID)
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to complete this job"})
+			return
+		}
+	}
+
 	if job.Status == models.JobStatusCompleted {
 		writeJSON(w, http.StatusConflict, map[string]string{"error": "job already completed"})
 		return
