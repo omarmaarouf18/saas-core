@@ -48,24 +48,26 @@ type wsMessage struct {
 
 // Chat holds dependencies for the WebSocket handlers.
 type Chat struct {
-	hub            *chat.Hub
-	store          *store.MongoDB
-	authServiceURL string
-	userServiceURL string
-	tokenCache     map[string]time.Time
-	tokenCacheMu   sync.Mutex
-	limiter        *RateLimiter
+	hub                  *chat.Hub
+	store                *store.MongoDB
+	authServiceURL       string
+	userServiceURL       string
+	tokenCache           map[string]time.Time
+	tokenCacheMu         sync.Mutex
+	limiter              *RateLimiter
+	internalServiceToken string
 }
 
 // NewChat creates a new Chat handler group.
-func NewChat(hub *chat.Hub, s *store.MongoDB, authServiceURL string, userServiceURL string) *Chat {
+func NewChat(hub *chat.Hub, s *store.MongoDB, authServiceURL string, userServiceURL string, internalServiceToken string) *Chat {
 	return &Chat{
-		hub:            hub,
-		store:          s,
-		authServiceURL: authServiceURL,
-		userServiceURL: userServiceURL,
-		tokenCache:     make(map[string]time.Time),
-		limiter:        NewRateLimiter(5, 1*time.Minute),
+		hub:                  hub,
+		store:                s,
+		authServiceURL:       authServiceURL,
+		userServiceURL:       userServiceURL,
+		tokenCache:           make(map[string]time.Time),
+		limiter:              NewRateLimiter(5, 1*time.Minute),
+		internalServiceToken: internalServiceToken,
 	}
 }
 
@@ -128,7 +130,13 @@ func (c *Chat) canAccessChannel(userID, channel string) bool {
 	}
 
 	url := fmt.Sprintf("%s/users/jobs/get?id=%s", c.userServiceURL, jobID)
-	resp, err := http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return false
+	}
+	req.Header.Set("X-Internal-Token", c.internalServiceToken)
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		if resp != nil {
 			resp.Body.Close()

@@ -53,6 +53,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Automated Test Coverage** | Added table-driven and integration unit tests covering bcrypt hashing, rate limiter lockout, OTP expiry in auth-service, KYC gating, COD validation, subscription matching in user-service, and websocket channel access control in chat-service. | `current` | Verified via `go test` in all three services. ✅ |
 | **JWT Secret Hardening** | Removed hardcoded JWT secret fallback in all 4 services. Services now require JWT_SECRET env var on startup and fail-fast if it's missing. | `current` | Verified via startup crash test. ✅ |
 | **Gateway Secret Hardening** | Removed hardcoded X-Gateway-Secret. Both api-gateway and auth-service now require the GATEWAY_SECRET env var on startup and fail-fast if it's missing. | `current` | Verified via startup crash test. ✅ |
+| **Job Endpoint Access Control** | Secured GET /users/jobs/get?id= by restricting access to matching owners/employees (validated via JWT) or trusted internal clients via X-Internal-Token header. | `current` | Verified via user-service integration test. ✅ |
 
 ### 2. Explicitly Deferred by Decision
 
@@ -102,4 +103,4 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Working on backend issue 3: Fix GET /users/jobs/get?id= — currently has zero access control.
+* **Immediate Next Step**: Working on backend issue 4: Fix POST /auth/employee/toggle — currently trusts a claimed owner_email with no proof.

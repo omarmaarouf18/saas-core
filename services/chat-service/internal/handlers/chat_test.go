@@ -11,6 +11,13 @@ func TestCanAccessChannel(t *testing.T) {
 	// Spin up a mock User Service to return job details
 	mockUserServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		
+		if r.Header.Get("X-Internal-Token") != "mock-internal-token" {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+			return
+		}
+
 		jobID := r.URL.Query().Get("id")
 
 		if jobID == "valid-job-123" {
@@ -37,7 +44,7 @@ func TestCanAccessChannel(t *testing.T) {
 	defer mockUserServer.Close()
 
 	// Instantiate Chat handler group (we can pass nil hub and store as they aren't used in canAccessChannel)
-	chatHandler := NewChat(nil, nil, "", mockUserServer.URL)
+	chatHandler := NewChat(nil, nil, "", mockUserServer.URL, "mock-internal-token")
 
 	tests := []struct {
 		name       string

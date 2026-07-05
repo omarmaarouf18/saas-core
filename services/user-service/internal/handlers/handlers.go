@@ -22,17 +22,19 @@ import (
 
 // UserService holds dependencies for the user-service handlers.
 type UserService struct {
-	store          *store.MongoDB
-	authServiceURL string
-	limiter        *RateLimiter
+	store                *store.MongoDB
+	authServiceURL       string
+	limiter              *RateLimiter
+	internalServiceToken string
 }
 
 // NewUserService creates a new handler group.
-func NewUserService(s *store.MongoDB, authServiceURL string) *UserService {
+func NewUserService(s *store.MongoDB, authServiceURL string, internalServiceToken string) *UserService {
 	return &UserService{
-		store:          s,
-		authServiceURL: authServiceURL,
-		limiter:        NewRateLimiter(5, 1*time.Minute),
+		store:                s,
+		authServiceURL:       authServiceURL,
+		limiter:              NewRateLimiter(5, 1*time.Minute),
+		internalServiceToken: internalServiceToken,
 	}
 }
 
@@ -389,6 +391,31 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
 		return
 	}
+
+	// 1. Internal trusted token check
+	if r.Header.Get("X-Internal-Token") == u.internalServiceToken {
+		writeJSON(w, http.StatusOK, job)
+		return
+	}
+
+	// 2. External client check: require requester_id query param
+	requesterToken := r.URL.Query().Get("requester_id")
+	if requesterToken == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester_id parameter is required"})
+		return
+	}
+	resolvedRequester, err := resolveToken(requesterToken)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
+	if resolvedRequester != job.OwnerID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
+		log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to access job %s owned by owner %s and employee %s", resolvedRequester, job.ID, job.OwnerID, job.EmployeeID)
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to view this job"})
+		return
+	}
+
 	writeJSON(w, http.StatusOK, job)
 }
 

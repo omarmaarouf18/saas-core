@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/project/user-service/internal/models"
 	"github.com/project/user-service/internal/store"
 )
 
@@ -63,7 +64,7 @@ func TestUserServiceHandlers(t *testing.T) {
 	}))
 	defer mockAuthServer.Close()
 
-	u := NewUserService(s, mockAuthServer.URL)
+	u := NewUserService(s, mockAuthServer.URL, "mock-internal-token")
 
 	// Test 1: KYC gating blocks CreateService for non-approved owners
 	t.Run("CreateService KYC Gating", func(t *testing.T) {
@@ -135,7 +136,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		}))
 		defer mockAuthServer2.Close()
 		
-		u2 := NewUserService(s, mockAuthServer2.URL)
+		u2 := NewUserService(s, mockAuthServer2.URL, "mock-internal-token")
 
 		reqBody := map[string]any{
 			"tenant_id":    "tenant-id",
@@ -153,6 +154,43 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 		if !strings.Contains(rec.Body.String(), "requester_id must match tenant_id") {
 			t.Errorf("Expected mismatch error, got: %s", rec.Body.String())
+		}
+	})
+
+	// Test 5: GetJob Access Control
+	t.Run("GetJob Access Control", func(t *testing.T) {
+		ctx := context.Background()
+		testJob := &models.Job{
+			ID:         "test-job-999",
+			OwnerID:    "job-owner-999",
+			EmployeeID: "job-employee-999",
+			Status:     "pending",
+		}
+		_ = s.CreateJob(ctx, testJob)
+
+		// A. Valid internal token -> 200 OK
+		req := httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999", nil)
+		req.Header.Set("X-Internal-Token", "mock-internal-token")
+		rec := httptest.NewRecorder()
+		u.GetJob(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for internal token, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// B. Mismatched requester_id -> 403 Forbidden
+		req = httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999&requester_id=mismatched-user", nil)
+		rec = httptest.NewRecorder()
+		u.GetJob(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for mismatched requester, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// C. Matching requester_id (Owner) -> 200 OK
+		req = httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999&requester_id=job-owner-999", nil)
+		rec = httptest.NewRecorder()
+		u.GetJob(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for owner, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 	})
 }
