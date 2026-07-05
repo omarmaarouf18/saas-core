@@ -81,6 +81,7 @@ type LoginResponse struct {
 type ToggleEmployeeRequest struct {
 	EmployeeEmail string `json:"employee_email"`
 	OwnerEmail    string `json:"owner_email"`
+	OwnerPassword string `json:"owner_password"`
 	SetActive     bool   `json:"set_active"`
 }
 

@@ -54,6 +54,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **JWT Secret Hardening** | Removed hardcoded JWT secret fallback in all 4 services. Services now require JWT_SECRET env var on startup and fail-fast if it's missing. | `current` | Verified via startup crash test. ✅ |
 | **Gateway Secret Hardening** | Removed hardcoded X-Gateway-Secret. Both api-gateway and auth-service now require the GATEWAY_SECRET env var on startup and fail-fast if it's missing. | `current` | Verified via startup crash test. ✅ |
 | **Job Endpoint Access Control** | Secured GET /users/jobs/get?id= by restricting access to matching owners/employees (validated via JWT) or trusted internal clients via X-Internal-Token header. | `current` | Verified via user-service integration test. ✅ |
+| **Employee Toggle Authentication** | Fixed POST /auth/employee/toggle security gap by requiring the owner's password and verifying it with bcrypt before freezing or activating employees. | `current` | Verified via auth-service compilation. ✅ |
 
 ### 2. Explicitly Deferred by Decision
 
@@ -103,4 +104,4 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Working on backend issue 4: Fix POST /auth/employee/toggle — currently trusts a claimed owner_email with no proof.
+* **Immediate Next Step**: Working on backend issue 5: Fix GET /auth/audit-log?tenant_id= — currently returns any tenant's full audit log to anyone.

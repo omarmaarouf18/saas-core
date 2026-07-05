@@ -479,9 +479,9 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.EmployeeEmail == "" || req.OwnerEmail == "" {
+	if req.EmployeeEmail == "" || req.OwnerEmail == "" || req.OwnerPassword == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "employee_email and owner_email are required",
+			"error": "employee_email, owner_email, and owner_password are required",
 		})
 		return
 	}
@@ -493,6 +493,14 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 	if owner == nil || owner.Role != models.RoleOwner {
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "invalid owner credentials or owner does not exist",
+		})
+		return
+	}
+
+	// Verify owner password using bcrypt
+	if err := bcrypt.CompareHashAndPassword([]byte(owner.Password), []byte(req.OwnerPassword)); err != nil {
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "invalid owner credentials or password does not match",
 		})
 		return
 	}
