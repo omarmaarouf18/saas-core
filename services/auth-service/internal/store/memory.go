@@ -227,7 +227,7 @@ func (s *MongoDB) VerifyOTP(ctx context.Context, email, otp string) error {
 	// Mark as verified and clear the encrypted code atomically.
 	_, err = s.users.UpdateOne(ctx,
 		bson.M{"email": email},
-		bson.M{"$set": bson.M{"otp_verified": true, "otp_code": ""}},
+		bson.M{"$set": bson.M{"otp_verified": true, "otp_code": "", "is_confirmed": true}},
 	)
 	if err != nil {
 		return fmt.Errorf("store: verify OTP: %w", err)

@@ -40,6 +40,7 @@ type User struct {
 	TenantID     string    `json:"tenant_id,omitempty"       bson:"tenant_id,omitempty"` // the tenant this user belongs to
 	OwnerID      string    `json:"owner_id,omitempty"        bson:"owner_id,omitempty"`  // KYE: tenant binding (employees only)
 	IsActive     bool      `json:"is_active"                 bson:"is_active"`           // KYE: owner can freeze employee accounts
+	IsConfirmed  bool      `json:"is_confirmed"              bson:"is_confirmed"`
 	KYCStatus    KYCStatus `json:"kyc_status,omitempty"      bson:"kyc_status,omitempty"`
 	OTPCode      string    `json:"-"                         bson:"otp_code,omitempty"`
 	OTPExpiresAt time.Time `json:"-"                         bson:"otp_expires_at,omitempty"`

@@ -138,12 +138,13 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 
 	// Build user record.
 	user := &models.User{
-		ID:        generateID(),
-		Email:     req.Email,
-		Password:  string(hashedPassword),
-		Role:      req.Role,
-		IsActive:  true, // Active by default
-		CreatedAt: time.Now().UTC(),
+		ID:          generateID(),
+		Email:       req.Email,
+		Password:    string(hashedPassword),
+		Role:        req.Role,
+		IsActive:    true, // Active by default
+		IsConfirmed: req.Role == models.RoleEmployee,
+		CreatedAt:   time.Now().UTC(),
 	}
 
 	if req.Role == models.RoleEmployee {
@@ -287,6 +288,14 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	// Reset limits on success
 	a.limiter.Reset(clientIP)
 	a.limiter.Reset(req.Email)
+
+	// Signup verification check
+	if !user.IsConfirmed {
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "account is not confirmed. please verify the signup OTP first.",
+		})
+		return
+	}
 
 	// KYE Freeze Account check for Employees
 	if user.Role == models.RoleEmployee && !user.IsActive {
