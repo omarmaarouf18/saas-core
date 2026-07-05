@@ -67,6 +67,9 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **ID and OTP Cryptographic Hardening** | Removed weak fallbacks from generateID and generate4DigitOTP, causing fail-fast logs on failure. | `current` | Verified via compilation. ✅ |
 | **WebSocket Origin Verification** | Restricted WebSocket connection origins to match configured ALLOWED_ORIGIN in chat-service. | `current` | Verified via compilation and test suites. ✅ |
 | **WalletDeposit Upper Limit** | Enforced a maximum limit of 1,000,000 on WalletDeposit amounts in user-service. | `current` | Verified via user-service unit tests. ✅ |
+| **Host Ports Stripping** | Removed host port exposures for internal services in docker-compose.yml, replacing with expose. | `current` | Verified docker-compose.yml configuration. ✅ |
+| **OTP AES Key Configuration** | Added OTP_AES_KEY variable to docker-compose.yml, .env.example, and .env.local. | `current` | Verified environment configurations. ✅ |
+
 
 
 

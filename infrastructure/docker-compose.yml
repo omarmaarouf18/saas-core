@@ -88,8 +88,8 @@ services:
       target: dev
     container_name: saas-chat-service
     restart: unless-stopped
-    ports:
-      - "${CHAT_SERVICE_PORT}:${CHAT_SERVICE_PORT}"
+    expose:
+      - "${CHAT_SERVICE_PORT}"
     volumes:
       - ../services/chat-service:/app
     environment:
@@ -118,8 +118,8 @@ services:
       target: dev
     container_name: saas-auth-service
     restart: unless-stopped
-    ports:
-      - "${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}"
+    expose:
+      - "${AUTH_SERVICE_PORT}"
     volumes:
       - ../services/auth-service:/app
     environment:
@@ -132,6 +132,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       GATEWAY_SECRET: ${GATEWAY_SECRET}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      OTP_AES_KEY: ${OTP_AES_KEY}
     depends_on:
       mongo:
         condition: service_healthy
@@ -147,8 +148,8 @@ services:
       target: dev
     container_name: saas-user-service
     restart: unless-stopped
-    ports:
-      - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
+    expose:
+      - "${USER_SERVICE_PORT}"
     volumes:
       - ../services/user-service:/app
     environment:
@@ -176,8 +177,8 @@ services:
       target: dev
     container_name: saas-notification-service
     restart: unless-stopped
-    ports:
-      - "${NOTIFICATION_SERVICE_PORT}:${NOTIFICATION_SERVICE_PORT}"
+    expose:
+      - "${NOTIFICATION_SERVICE_PORT}"
     volumes:
       - ../services/notification-service:/app
     environment:
