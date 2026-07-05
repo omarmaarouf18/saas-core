@@ -12,8 +12,10 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/project/user-service/internal/jwtutil"
 	"github.com/project/user-service/internal/models"
 	"github.com/project/user-service/internal/store"
 )
@@ -94,6 +96,13 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	resolvedOwnerID, err := resolveToken(req.OwnerID)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
+		return
+	}
+	req.OwnerID = resolvedOwnerID
+
 	// Verify owner exists and has approved KYC
 	kycStatus, err := u.checkKYC(req.OwnerID)
 	if err != nil {
@@ -151,6 +160,22 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	if req.OwnerID == "" || req.ServiceID == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "owner_id and service_id are required"})
 		return
+	}
+
+	resolvedOwnerID, err := resolveToken(req.OwnerID)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
+		return
+	}
+	req.OwnerID = resolvedOwnerID
+
+	if req.EmployeeID != "" {
+		resolvedEmployeeID, err := resolveToken(req.EmployeeID)
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid employee token: " + err.Error()})
+			return
+		}
+		req.EmployeeID = resolvedEmployeeID
 	}
 
 	if req.PaymentMethod != "cod" {
@@ -381,6 +406,12 @@ func (u *UserService) GetWallet(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
 		return
 	}
+	resolvedTenantID, err := resolveToken(tenantID)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
+		return
+	}
+	tenantID = resolvedTenantID
 	wallet, err := u.store.GetOrCreateWallet(r.Context(), tenantID)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -425,6 +456,13 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id and positive amount required"})
 		return
 	}
+
+	resolvedTenantID, err := resolveToken(req.TenantID)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
+		return
+	}
+	req.TenantID = resolvedTenantID
 
 	// Secondary rate-limit key: tenant_id. Even if IP-based limiting is
 	// somehow defeated, this catches repeated abuse against the same wallet.
@@ -475,6 +513,12 @@ func (u *UserService) GetLedger(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
 		return
 	}
+	resolvedTenantID, err := resolveToken(tenantID)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
+		return
+	}
+	tenantID = resolvedTenantID
 	entries := u.store.GetLedger(r.Context(), tenantID)
 	writeJSON(w, http.StatusOK, map[string]any{"count": len(entries), "entries": entries})
 }
@@ -496,6 +540,17 @@ func (u *UserService) GetPlatformConfig(w http.ResponseWriter, r *http.Request) 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+func resolveToken(tokenStr string) (string, error) {
+	if strings.Count(tokenStr, ".") == 2 {
+		claims, err := jwtutil.ValidateToken(tokenStr)
+		if err != nil {
+			return "", err
+		}
+		return claims.UserID, nil
+	}
+	return tokenStr, nil
+}
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
@@ -575,6 +630,12 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
 			return
 		}
+		resolvedTenantID, err := resolveToken(tenantID)
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
+			return
+		}
+		tenantID = resolvedTenantID
 		sub := u.store.GetSubscription(r.Context(), tenantID)
 		if sub == nil {
 			sub = &models.Subscription{
@@ -603,6 +664,21 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester_id is required"})
 			return
 		}
+
+		resolvedTenantID, err := resolveToken(req.TenantID)
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
+			return
+		}
+		req.TenantID = resolvedTenantID
+
+		resolvedRequesterID, err := resolveToken(req.RequesterID)
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+			return
+		}
+		req.RequesterID = resolvedRequesterID
+
 		if req.RequesterID != req.TenantID {
 			writeJSON(w, http.StatusForbidden, map[string]string{"error": "forbidden: requester_id must match tenant_id"})
 			return
@@ -694,6 +770,20 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	resolvedRatedBy, err := resolveToken(req.RatedBy)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid rated_by token: " + err.Error()})
+		return
+	}
+	req.RatedBy = resolvedRatedBy
+
+	resolvedRatedUser, err := resolveToken(req.RatedUser)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid rated_user token: " + err.Error()})
+		return
+	}
+	req.RatedUser = resolvedRatedUser
+
 	ctx := r.Context()
 	job := u.store.GetJob(ctx, req.JobID)
 	if job == nil {
@@ -747,6 +837,13 @@ func (u *UserService) GetRatings(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "user_id required"})
 		return
 	}
+
+	resolvedUserID, err := resolveToken(userID)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid user token: " + err.Error()})
+		return
+	}
+	userID = resolvedUserID
 
 	ratings, err := u.store.GetRatingsForUser(r.Context(), userID)
 	if err != nil {

@@ -47,6 +47,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Tenant Subscription Gating** | POST /users/subscription upgrades require requester_id == tenant_id, auth-service check, and maps paid to pending_payment (requires manual activation). | `current` | Verified in `user-service/internal/handlers/handlers.go`. ✅ |
 | **WebSocket Message Authorization** | Gated chat message broadcasts by canAccessChannel in WebSocket readPump. | `current` | Verified in `chat-service/internal/handlers/chat.go`. ✅ |
 | **Rating & Comment System** | Rating and comment submissions on completed jobs with average rating queries. | `6edf1b7c825b37cc15b16dbc348026c4b689724b` | Verified in `user-service/internal/handlers/handlers.go`. ✅ |
+| **Cryptographically Signed JWTs** | Replaced raw user ID tokens with signed HS256 JWT tokens containing user ID, role, tenant ID, and email. Added POST /auth/refresh to reissue tokens. Downstream services validate JWT signatures and expiry locally. | `current` | Verified in `auth-service`, `chat-service`, `notification-service`, `user-service`. ✅ |
 
 ### 2. Explicitly Deferred by Decision
 
@@ -63,7 +64,6 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 ### 3. Not Started Yet
 
 * **Unused Redis Cache Infrastructure**: A Redis service is running in Docker Compose and environment variables are passed to all containers, but no microservice codebase file currently imports a Redis client driver or utilizes caching/pub-sub.
-* **JWT / Cryptographically Signed Access Tokens**: No JWT token signing or expiration verification exists. The system uses raw `user_id` strings directly as tokens.
 * **Real Email/SMS Integration**: No Twilio, SendGrid, or SMTP dispatchers are set up.
 
 ---
@@ -80,6 +80,14 @@ Only features verified directly against the running application are marked as ve
 
 ---
 
+## Breaking Token Policy Change (JWT Integration)
+
+With JWT support enabled:
+1. Client-facing endpoints expecting a `token` (such as `chat-service` WebSocket `?token=` and `notification-service` SSE stream `?token=`) must now pass a valid signed JWT token instead of raw user IDs.
+2. `user-service` JSON fields/query params (`owner_id`, `tenant_id`, `requester_id`, `user_id`, `rated_by`, `rated_user`) support JWT tokens. The backend will validate the token signature/expiry locally, extract the raw user ID, and map it.
+
+---
+
 ## Standing Working Rule
 
 This file is a persistent document tracking the real state of the repository.
@@ -93,4 +101,4 @@ This file is a persistent document tracking the real state of the repository.
 
 ## Immediate Next Step
 
-* **Immediate Next Step**: Awaiting user approval of [DESIGN.md](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/DESIGN.md) and [IMPLEMENTATION.md](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/IMPLEMENTATION.md) before starting implementation.
+* **Immediate Next Step**: Working on Part 2.2: Fix auth-service's X-Forwarded-For trust boundary.

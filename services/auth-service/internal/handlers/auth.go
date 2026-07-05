@@ -5,12 +5,14 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/project/auth-service/internal/jwtutil"
 	"github.com/project/auth-service/internal/models"
 	"github.com/project/auth-service/internal/otp"
 	"github.com/project/auth-service/internal/store"
@@ -49,6 +51,7 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/signup", a.Signup)
 	mux.HandleFunc("/auth/login", a.Login)
 	mux.HandleFunc("/auth/verify-otp", a.VerifyOTP)
+	mux.HandleFunc("/auth/refresh", a.Refresh)
 	mux.HandleFunc("/auth/employee/toggle", a.ToggleEmployee)
 	mux.HandleFunc("/auth/employee/action", a.SimulateEmployeeAction)
 	mux.HandleFunc("/auth/audit-log", a.GetAuditLog)
@@ -330,11 +333,19 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 
 	case models.RoleEmployee:
 		// Employees bypass 2FA.
+		token, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to generate token: " + err.Error(),
+			})
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]any{
 			"status":  "success",
 			"message": "authenticated",
 			"user_id": user.ID,
 			"role":    user.Role,
+			"token":   token,
 		})
 	}
 }
@@ -408,12 +419,21 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[AUTH] OTP verified: email=%s role=%s", user.Email, user.Role)
 
+	token, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to generate token: " + err.Error(),
+		})
+		return
+	}
+
 	response := map[string]any{
 		"status":       "success",
 		"message":      "2FA verification successful — authenticated",
 		"user_id":      user.ID,
 		"role":         user.Role,
 		"otp_verified": true,
+		"token":        token,
 	}
 
 	// Include KYC status for owners.
@@ -604,7 +624,19 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	user := a.store.GetByID(ctx, id)
+	lookupID := id
+	if strings.Count(id, ".") == 2 {
+		claims, err := jwtutil.ValidateToken(id)
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{
+				"error": "invalid token signature or expired: " + err.Error(),
+			})
+			return
+		}
+		lookupID = claims.UserID
+	}
+
+	user := a.store.GetByID(ctx, lookupID)
 	if user == nil {
 		writeJSON(w, http.StatusNotFound, map[string]string{
 			"error": "user not found",
@@ -642,6 +674,69 @@ func (a *Auth) GetAuditLog(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"count":   len(entries),
 		"entries": entries,
+	})
+}
+
+// ---------------------------------------------------------------------------
+// POST /auth/refresh
+// ---------------------------------------------------------------------------
+
+// Refresh accepts a POST request with an expired or active JWT token and reissues a new one.
+func (a *Auth) Refresh(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed, use POST"})
+		return
+	}
+
+	var req struct {
+		Token string `json:"token"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body: " + err.Error()})
+		return
+	}
+
+	if req.Token == "" {
+		// Fallback to Authorization header
+		authHeader := r.Header.Get("Authorization")
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			req.Token = strings.TrimPrefix(authHeader, "Bearer ")
+		}
+	}
+
+	if req.Token == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "token is required"})
+		return
+	}
+
+	// Validate token, allowing expired token to be parsed for refresh purposes
+	claims, err := jwtutil.ValidateToken(req.Token)
+	if err != nil && !errors.Is(err, jwtutil.ErrExpiredToken) {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid token: " + err.Error()})
+		return
+	}
+
+	ctx := r.Context()
+	user := a.store.GetByID(ctx, claims.UserID)
+	if user == nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "user associated with token not found"})
+		return
+	}
+
+	if !user.IsActive {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "user account is frozen/inactive"})
+		return
+	}
+
+	newToken, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to generate fresh token"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status": "success",
+		"token":  newToken,
 	})
 }
 

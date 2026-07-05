@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/project/notification-service/internal/hub"
+	"github.com/project/notification-service/internal/jwtutil"
 )
 
 // Notification holds dependencies for notification handlers.
@@ -115,7 +116,15 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool) {
 		return "", "", false
 	}
 
-	url := fmt.Sprintf("%s/auth/user?id=%s", n.authServiceURL, token)
+	// 1. Primary trust boundary: Validate JWT token signature and expiry locally
+	claims, err := jwtutil.ValidateToken(token)
+	if err != nil {
+		log.Printf("[NOTIF] JWT validation failed: %v", err)
+		return "", "", false
+	}
+
+	// 2. Secondary trust boundary: verify against auth-service using extracted user ID
+	url := fmt.Sprintf("%s/auth/user?id=%s", n.authServiceURL, claims.UserID)
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Printf("[NOTIF] Error calling auth-service: %v", err)
@@ -124,7 +133,7 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("[NOTIF] Auth service returned status %d for token %s", resp.StatusCode, token)
+		log.Printf("[NOTIF] Auth service returned status %d for user ID %s", resp.StatusCode, claims.UserID)
 		return "", "", false
 	}
 

@@ -14,6 +14,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/project/chat-service/internal/chat"
+	"github.com/project/chat-service/internal/jwtutil"
 	"github.com/project/chat-service/internal/store"
 )
 
@@ -161,30 +162,40 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse the token query parameter for mocked user identification.
+	// Parse the token query parameter for user identification.
 	token := r.URL.Query().Get("token")
 	if token == "" {
 		http.Error(w, `{"error": "missing token query parameter"}`, http.StatusUnauthorized)
 		return
 	}
 
-	if !c.verifyToken(token) {
+	// 1. Primary trust boundary: Validate JWT token signature and expiry locally
+	claims, err := jwtutil.ValidateToken(token)
+	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(map[string]string{"error": "invalid or unverified token"})
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid or expired token: " + err.Error()})
+		return
+	}
+
+	// 2. Secondary trust boundary: verify against auth-service (using user ID)
+	if !c.verifyToken(claims.UserID) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]string{"error": "user associated with token is not active or verified"})
 		return
 	}
 
 	// Upgrade HTTP → WebSocket.
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("[WS] Upgrade failed for token=%s: %v", token, err)
+		log.Printf("[WS] Upgrade failed for user=%s: %v", claims.UserID, err)
 		return
 	}
 
 	// Create a new hub client.
 	client := &chat.Client{
-		ID:       token,
+		ID:       claims.UserID,
 		Channels: make(map[string]bool),
 		Send:     make(chan []byte, 256),
 	}
