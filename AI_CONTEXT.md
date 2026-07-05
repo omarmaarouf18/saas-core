@@ -55,6 +55,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Gateway Secret Hardening** | Removed hardcoded X-Gateway-Secret. Both api-gateway and auth-service now require the GATEWAY_SECRET env var on startup and fail-fast if it's missing. | `current` | Verified via startup crash test. ✅ |
 | **Job Endpoint Access Control** | Secured GET /users/jobs/get?id= by restricting access to matching owners/employees (validated via JWT) or trusted internal clients via X-Internal-Token header. | `current` | Verified via user-service integration test. ✅ |
 | **Employee Toggle Authentication** | Fixed POST /auth/employee/toggle security gap by requiring the owner's password and verifying it with bcrypt before freezing or activating employees. | `current` | Verified via auth-service compilation. ✅ |
+| **Audit Log Access Control** | Secured GET /auth/audit-log by requiring requester_id query param and restricting access to matching tenant owner (validated via JWT). | `current` | Verified via auth-service unit test. ✅ |
 
 ### 2. Explicitly Deferred by Decision
 
@@ -104,4 +105,4 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Working on backend issue 5: Fix GET /auth/audit-log?tenant_id= — currently returns any tenant's full audit log to anyone.
+* **Immediate Next Step**: Awaiting user approval of DESIGN.md and IMPLEMENTATION.md to begin Phase 1 of frontend Flutter app.

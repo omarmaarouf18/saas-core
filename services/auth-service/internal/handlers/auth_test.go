@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -103,5 +105,35 @@ func TestOTPExpiryRejection(t *testing.T) {
 				t.Errorf("Expected expiry rejection check to return %v, got %v", tt.expectErr, hasExpired)
 			}
 		})
+	}
+}
+
+// TestGetAuditLogAccessControl verifies that requester_id is required and must match tenant_id
+func TestGetAuditLogAccessControl(t *testing.T) {
+	a := NewAuth(nil, nil, "local", "mock-gateway-secret")
+
+	// A. Mismatched tenant_id and requester_id -> 403 Forbidden
+	req := httptest.NewRequest("GET", "/auth/audit-log?tenant_id=tenant-1&requester_id=tenant-2", nil)
+	rec := httptest.NewRecorder()
+	a.GetAuditLog(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden for mismatched tenant_id, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// B. Missing tenant_id -> 400 Bad Request
+	req = httptest.NewRequest("GET", "/auth/audit-log?requester_id=tenant-1", nil)
+	rec = httptest.NewRecorder()
+	a.GetAuditLog(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request for missing tenant_id, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// C. Missing requester_id -> 400 Bad Request
+	req = httptest.NewRequest("GET", "/auth/audit-log?tenant_id=tenant-1", nil)
+	rec = httptest.NewRecorder()
+	a.GetAuditLog(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request for missing requester_id, got %d. Body: %s", rec.Code, rec.Body.String())
 	}
 }

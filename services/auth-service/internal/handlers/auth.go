@@ -687,8 +687,45 @@ func (a *Auth) GetAuditLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
 	tenantID := r.URL.Query().Get("tenant_id")
+	if tenantID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "tenant_id parameter is required",
+		})
+		return
+	}
+
+	requesterParam := r.URL.Query().Get("requester_id")
+	if requesterParam == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "requester_id parameter is required",
+		})
+		return
+	}
+
+	var resolvedRequesterID string
+	if strings.Count(requesterParam, ".") == 2 {
+		claims, err := jwtutil.ValidateToken(requesterParam)
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{
+				"error": "invalid requester token: " + err.Error(),
+			})
+			return
+		}
+		resolvedRequesterID = claims.UserID
+	} else {
+		resolvedRequesterID = requesterParam
+	}
+
+	if resolvedRequesterID != tenantID {
+		log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to access audit log for tenant %s", resolvedRequesterID, tenantID)
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "access denied: you are not authorized to view this tenant's audit log",
+		})
+		return
+	}
+
+	ctx := r.Context()
 	entries := a.store.GetAuditLog(ctx, tenantID)
 
 	writeJSON(w, http.StatusOK, map[string]any{
