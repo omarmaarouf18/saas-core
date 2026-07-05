@@ -1,5 +1,8 @@
 # AI Context: saas-core
 
+> [!IMPORTANT]
+> **Branch Workflow**: `main` = stable/deployable, kept in sync only via reviewed merges from `logic-exploitation`. All active development happens on `logic-exploitation`. Never commit directly to `main`.
+
 This file serves as a persistent, model-agnostic, single source of truth for the technical stack, architecture, feature status, security logs, and current gaps of the `saas-core` platform. Any agent or developer modifying this repository must update this document in the same commit.
 
 ---
