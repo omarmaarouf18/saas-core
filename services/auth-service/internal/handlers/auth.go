@@ -773,12 +773,16 @@ func generate4DigitOTP() string {
 // getClientIP extracts the user's real IP from the request headers or RemoteAddr.
 func getClientIP(r *http.Request) string {
 	var ip string
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		parts := strings.Split(xff, ",")
-		ip = strings.TrimSpace(parts[0])
-	} else if rip := r.Header.Get("X-Real-IP"); rip != "" {
-		ip = rip
-	} else {
+	if r.Header.Get("X-Gateway-Secret") == "saas-gateway-trust-token-9988" {
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			parts := strings.Split(xff, ",")
+			ip = strings.TrimSpace(parts[0])
+		} else if rip := r.Header.Get("X-Real-IP"); rip != "" {
+			ip = rip
+		}
+	}
+
+	if ip == "" {
 		ip = r.RemoteAddr
 	}
 

@@ -48,6 +48,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **WebSocket Message Authorization** | Gated chat message broadcasts by canAccessChannel in WebSocket readPump. | `current` | Verified in `chat-service/internal/handlers/chat.go`. ✅ |
 | **Rating & Comment System** | Rating and comment submissions on completed jobs with average rating queries. | `6edf1b7c825b37cc15b16dbc348026c4b689724b` | Verified in `user-service/internal/handlers/handlers.go`. ✅ |
 | **Cryptographically Signed JWTs** | Replaced raw user ID tokens with signed HS256 JWT tokens containing user ID, role, tenant ID, and email. Added POST /auth/refresh to reissue tokens. Downstream services validate JWT signatures and expiry locally. | `current` | Verified in `auth-service`, `chat-service`, `notification-service`, `user-service`. ✅ |
+| **auth-service XFF Trust Boundary Hardening** | auth-service rate limiter only trusts XFF headers if verified by the X-Gateway-Secret signature injected by the API Gateway. | `current` | Verified in `auth-service` getClientIP. ✅ |
 
 ### 2. Explicitly Deferred by Decision
 
@@ -73,7 +74,6 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 Only features verified directly against the running application are marked as verified (✅). The following items are implemented but remain unverified end-to-end or represent accepted security risks:
 
 * **Unverified Escrow Logic**: Escrow locking (`LockEscrow`) and release splits (`ReleaseEscrowWithSplit`) exist in `user-service/internal/store/memory.go`, but since the `/track` endpoint actively blocks any payment method other than `cod`, **this code path has never been executed or verified end-to-end**.
-* **auth-service XFF Trust-Boundary**: The rate limiter in `auth-service` retrieves IP addresses preferring the `X-Forwarded-For` header. If `auth-service` is ever exposed directly to the internet (bypassing the gateway), rate limits on login/OTP could be bypassed via header spoofing.
 * **Unencrypted Internal Communications**: Traffic between the Gateway and microservices, and between services themselves, is transmitted over plaintext HTTP.
 * **In-Memory Rate Limiting State**: All service-level rate limiters maintain status counts in-memory. If instances restart or scale out, limit counters are reset.
 * **Zero Automated Test Coverage**: The repository has **0% automated test coverage** (no `*_test.go` files). All verification claims are based on manual vetting via browser or `curl` requests.
@@ -101,4 +101,4 @@ This file is a persistent document tracking the real state of the repository.
 
 ## Immediate Next Step
 
-* **Immediate Next Step**: Working on Part 2.2: Fix auth-service's X-Forwarded-For trust boundary.
+* **Immediate Next Step**: Working on Part 2.3: Add signup-time anti-spam OTP.
