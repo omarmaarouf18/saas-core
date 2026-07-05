@@ -50,6 +50,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Cryptographically Signed JWTs** | Replaced raw user ID tokens with signed HS256 JWT tokens containing user ID, role, tenant ID, and email. Added POST /auth/refresh to reissue tokens. Downstream services validate JWT signatures and expiry locally. | `current` | Verified in `auth-service`, `chat-service`, `notification-service`, `user-service`. ✅ |
 | **auth-service XFF Trust Boundary Hardening** | auth-service rate limiter only trusts XFF headers if verified by the X-Gateway-Secret signature injected by the API Gateway. | `current` | Verified in `auth-service` getClientIP. ✅ |
 | **Signup-time Anti-spam OTP** | Gated signup with OTP confirmation. Accounts are created as unconfirmed (is_confirmed = false) and login is rejected until the signup OTP is verified. | `current` | Verified in `auth-service` Signup, Login, and VerifyOTP. ✅ |
+| **Automated Test Coverage** | Added table-driven and integration unit tests covering bcrypt hashing, rate limiter lockout, OTP expiry in auth-service, KYC gating, COD validation, subscription matching in user-service, and websocket channel access control in chat-service. | `current` | Verified via `go test` in all three services. ✅ |
 
 ### 2. Explicitly Deferred by Decision
 
@@ -77,7 +78,6 @@ Only features verified directly against the running application are marked as ve
 * **Unverified Escrow Logic**: Escrow locking (`LockEscrow`) and release splits (`ReleaseEscrowWithSplit`) exist in `user-service/internal/store/memory.go`, but since the `/track` endpoint actively blocks any payment method other than `cod`, **this code path has never been executed or verified end-to-end**.
 * **Unencrypted Internal Communications**: Traffic between the Gateway and microservices, and between services themselves, is transmitted over plaintext HTTP.
 * **In-Memory Rate Limiting State**: All service-level rate limiters maintain status counts in-memory. If instances restart or scale out, limit counters are reset.
-* **Zero Automated Test Coverage**: The repository has **0% automated test coverage** (no `*_test.go` files). All verification claims are based on manual vetting via browser or `curl` requests.
 
 ---
 
@@ -102,4 +102,4 @@ This file is a persistent document tracking the real state of the repository.
 
 ## Immediate Next Step
 
-* **Immediate Next Step**: Working on Part 2.4: Add automated test coverage for the highest-risk paths.
+* **Immediate Next Step**: Awaiting user approval of DESIGN.md and IMPLEMENTATION.md to begin Phase 1 of frontend Flutter app.
