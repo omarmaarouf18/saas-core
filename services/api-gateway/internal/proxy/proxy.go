@@ -31,6 +31,7 @@ func New(route config.ServiceRoute, gatewaySecret string) (http.Handler, error) 
 
 	proxy := &httputil.ReverseProxy{
 		Director: func(req *http.Request) {
+			req.Header.Del("X-Internal-Token")
 			req.URL.Scheme = target.Scheme
 			req.URL.Host = target.Host
 			req.Host = target.Host

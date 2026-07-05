@@ -58,6 +58,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Audit Log Access Control** | Secured GET /auth/audit-log by strictly requiring requester_id query param and restricting access to matching tenant owner (validated via JWT). Closed unverified bypass. | `current` | Verified via auth-service unit test and cURL validation. ✅ |
 | **GetUser Endpoint Access Control** | Secured GET /auth/user by requiring `X-Internal-Token` for internal service-to-service calls (chat/notification/user-service) and valid signed JWT for external callers. Removed raw-ID passthrough. Updated all 4 internal callers to inject `X-Internal-Token` header. Added `INTERNAL_SERVICE_TOKEN` fail-fast to notification-service. | `current` | Verified via compilation and existing test suites (all pass). ✅ |
 | **Hardcoded Secrets Audit** | Audited entire codebase for hardcoded secrets. Removed JWT fallbacks, X-Gateway-Secret, and confirmed via repo-wide regex audit that no other secrets exist. | `current` | Verified via repo-wide regex audit. ✅ |
+| **Gateway Internal Token Stripping** | Edge api-gateway removes any client-supplied `X-Internal-Token` before proxying requests to backends. | `current` | Verified in api-gateway proxy.go. ✅ |
+
 
 ### 2. Explicitly Deferred by Decision
 
