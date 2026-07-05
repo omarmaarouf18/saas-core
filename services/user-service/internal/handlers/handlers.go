@@ -503,8 +503,11 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
 	}
-	if req.TenantID == "" || req.Amount <= 0 {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id and positive amount required"})
+	const maxDepositAmount = 1_000_000
+	if req.TenantID == "" || req.Amount <= 0 || req.Amount > maxDepositAmount {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": fmt.Sprintf("tenant_id and positive amount up to %d required", maxDepositAmount),
+		})
 		return
 	}
 

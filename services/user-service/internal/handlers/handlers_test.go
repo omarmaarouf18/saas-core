@@ -269,4 +269,51 @@ func TestUserServiceHandlers(t *testing.T) {
 			t.Errorf("Expected 200 OK for owner, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 	})
+
+	// Test 7: WalletDeposit Max Amount Gating
+	t.Run("WalletDeposit Max Amount Gating", func(t *testing.T) {
+		// Mock auth lookup to return 200 OK for tenant ID with approved KYC status
+		mockAuthServer3 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]any{
+				"id":         "tenant-id",
+				"kyc_status": "approved",
+				"role":       "owner",
+				"is_active":  true,
+			})
+		}))
+		defer mockAuthServer3.Close()
+		
+		u3 := NewUserService(s, mockAuthServer3.URL, "mock-internal-token")
+
+		// A. Valid deposit limit: 500,000 -> 200 OK
+		reqBody := map[string]any{
+			"tenant_id": tokenTenant,
+			"amount":    500000.0,
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/users/wallet/deposit", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		u3.WalletDeposit(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for valid deposit, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// B. Exceeded deposit limit: 2,000,000 -> 400 Bad Request
+		reqBody = map[string]any{
+			"tenant_id": tokenTenant,
+			"amount":    2000000.0,
+		}
+		body, _ = json.Marshal(reqBody)
+		req = httptest.NewRequest("POST", "/users/wallet/deposit", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u3.WalletDeposit(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for exceeded deposit, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "amount up to 1000000 required") {
+			t.Errorf("Expected limit error message, got: %s", rec.Body.String())
+		}
+	})
 }

@@ -66,6 +66,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Token Refresh 7-Day Limit** | Gated token refresh to reject tokens that expired more than 7 days ago. | `current` | Verified via compilation and logic flow analysis. ✅ |
 | **ID and OTP Cryptographic Hardening** | Removed weak fallbacks from generateID and generate4DigitOTP, causing fail-fast logs on failure. | `current` | Verified via compilation. ✅ |
 | **WebSocket Origin Verification** | Restricted WebSocket connection origins to match configured ALLOWED_ORIGIN in chat-service. | `current` | Verified via compilation and test suites. ✅ |
+| **WalletDeposit Upper Limit** | Enforced a maximum limit of 1,000,000 on WalletDeposit amounts in user-service. | `current` | Verified via user-service unit tests. ✅ |
+
 
 
 
