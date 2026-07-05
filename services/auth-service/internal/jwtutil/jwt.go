@@ -25,8 +25,7 @@ type Claims struct {
 func getSecret() []byte {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		// Fallback for development/testing environment
-		return []byte("dev-secret-key-12345-never-use-in-prod")
+		panic("JWT_SECRET environment variable is required and must not be empty")
 	}
 	return []byte(secret)
 }

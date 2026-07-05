@@ -40,6 +40,10 @@ import (
 )
 
 func main() {
+	if os.Getenv("JWT_SECRET") == "" {
+		log.Fatal("JWT_SECRET environment variable is required and must not be empty")
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "3002"

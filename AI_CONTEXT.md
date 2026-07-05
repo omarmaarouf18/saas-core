@@ -51,6 +51,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **auth-service XFF Trust Boundary Hardening** | auth-service rate limiter only trusts XFF headers if verified by the X-Gateway-Secret signature injected by the API Gateway. | `current` | Verified in `auth-service` getClientIP. ✅ |
 | **Signup-time Anti-spam OTP** | Gated signup with OTP confirmation. Accounts are created as unconfirmed (is_confirmed = false) and login is rejected until the signup OTP is verified. | `current` | Verified in `auth-service` Signup, Login, and VerifyOTP. ✅ |
 | **Automated Test Coverage** | Added table-driven and integration unit tests covering bcrypt hashing, rate limiter lockout, OTP expiry in auth-service, KYC gating, COD validation, subscription matching in user-service, and websocket channel access control in chat-service. | `current` | Verified via `go test` in all three services. ✅ |
+| **JWT Secret Hardening** | Removed hardcoded JWT secret fallback in all 4 services. Services now require JWT_SECRET env var on startup and fail-fast if it's missing. | `current` | Verified via startup crash test. ✅ |
 
 ### 2. Explicitly Deferred by Decision
 
@@ -102,4 +103,4 @@ This file is a persistent document tracking the real state of the repository.
 
 ## Immediate Next Step
 
-* **Immediate Next Step**: Awaiting user approval of DESIGN.md and IMPLEMENTATION.md to begin Phase 1 of frontend Flutter app.
+* **Immediate Next Step**: Working on backend issue 2: Remove the hardcoded X-Gateway-Secret (api-gateway + auth-service).
