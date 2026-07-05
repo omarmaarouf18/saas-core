@@ -12,7 +12,6 @@ import (
 	"math"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/project/user-service/internal/jwtutil"
@@ -569,14 +568,11 @@ func (u *UserService) GetPlatformConfig(w http.ResponseWriter, r *http.Request) 
 // ---------------------------------------------------------------------------
 
 func resolveToken(tokenStr string) (string, error) {
-	if strings.Count(tokenStr, ".") == 2 {
-		claims, err := jwtutil.ValidateToken(tokenStr)
-		if err != nil {
-			return "", err
-		}
-		return claims.UserID, nil
+	claims, err := jwtutil.ValidateToken(tokenStr)
+	if err != nil {
+		return "", fmt.Errorf("invalid or missing token: %w", err)
 	}
-	return tokenStr, nil
+	return claims.UserID, nil
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {

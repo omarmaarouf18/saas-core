@@ -703,19 +703,14 @@ func (a *Auth) GetAuditLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var resolvedRequesterID string
-	if strings.Count(requesterParam, ".") == 2 {
-		claims, err := jwtutil.ValidateToken(requesterParam)
-		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{
-				"error": "invalid requester token: " + err.Error(),
-			})
-			return
-		}
-		resolvedRequesterID = claims.UserID
-	} else {
-		resolvedRequesterID = requesterParam
+	claims, err := jwtutil.ValidateToken(requesterParam)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "invalid requester token: " + err.Error(),
+		})
+		return
 	}
+	resolvedRequesterID := claims.UserID
 
 	if resolvedRequesterID != tenantID {
 		log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to access audit log for tenant %s", resolvedRequesterID, tenantID)

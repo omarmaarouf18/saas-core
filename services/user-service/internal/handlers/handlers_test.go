@@ -11,12 +11,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/project/user-service/internal/jwtutil"
 	"github.com/project/user-service/internal/models"
 	"github.com/project/user-service/internal/store"
 )
 
 func TestUserServiceHandlers(t *testing.T) {
 	// Initialize MongoDB store. Fallback or skip if not running.
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
 	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
 		mongoURI = "mongodb://localhost:27017"
@@ -66,10 +68,16 @@ func TestUserServiceHandlers(t *testing.T) {
 
 	u := NewUserService(s, mockAuthServer.URL, "mock-internal-token")
 
+	// Generate tokens for tests
+	tokenPendingOwner, _ := jwtutil.GenerateToken("kyc-pending-owner", "owner", "kyc-pending-owner", "pending@example.com")
+	tokenApprovedOwner, _ := jwtutil.GenerateToken("kyc-approved-owner", "owner", "kyc-approved-owner", "approved@example.com")
+	tokenMismatch, _ := jwtutil.GenerateToken("mismatch-id", "owner", "mismatch-id", "mismatch@example.com")
+	tokenTenant, _ := jwtutil.GenerateToken("tenant-id", "owner", "tenant-id", "tenant@example.com")
+
 	// Test 1: KYC gating blocks CreateService for non-approved owners
 	t.Run("CreateService KYC Gating", func(t *testing.T) {
 		reqBody := map[string]any{
-			"owner_id":          "kyc-pending-owner",
+			"owner_id":          tokenPendingOwner,
 			"name":              "Test Transport",
 			"category":          "transport",
 			"tenant_base_price": 5.0,
@@ -91,7 +99,7 @@ func TestUserServiceHandlers(t *testing.T) {
 	// Test 2: KYC gating blocks TrackJob for non-approved owners
 	t.Run("TrackJob KYC Gating", func(t *testing.T) {
 		reqBody := map[string]any{
-			"owner_id":       "kyc-pending-owner",
+			"owner_id":       tokenPendingOwner,
 			"service_id":     "some-service-id",
 			"payment_method": "cod",
 		}
@@ -109,7 +117,7 @@ func TestUserServiceHandlers(t *testing.T) {
 	// Test 3: COD payment method rejection for non-cod values
 	t.Run("TrackJob COD payment_method verification", func(t *testing.T) {
 		reqBody := map[string]any{
-			"owner_id":       "kyc-approved-owner",
+			"owner_id":       tokenApprovedOwner,
 			"service_id":     "some-service-id",
 			"payment_method": "wallet", // non-cod payment
 		}
@@ -139,9 +147,9 @@ func TestUserServiceHandlers(t *testing.T) {
 		u2 := NewUserService(s, mockAuthServer2.URL, "mock-internal-token")
 
 		reqBody := map[string]any{
-			"tenant_id":    "tenant-id",
+			"tenant_id":    tokenTenant,
 			"tier":         "paid",
-			"requester_id": "mismatch-id", // Mismatch
+			"requester_id": tokenMismatch, // Mismatch
 		}
 		body, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest("POST", "/users/subscription", bytes.NewReader(body))
@@ -168,6 +176,9 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 		_ = s.CreateJob(ctx, testJob)
 
+		tokenMismatchedUser, _ := jwtutil.GenerateToken("mismatched-user", "user", "mismatched-user", "mismatch@example.com")
+		tokenJobOwner, _ := jwtutil.GenerateToken("job-owner-999", "owner", "job-owner-999", "owner@example.com")
+
 		// A. Valid internal token -> 200 OK
 		req := httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999", nil)
 		req.Header.Set("X-Internal-Token", "mock-internal-token")
@@ -178,7 +189,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 
 		// B. Mismatched requester_id -> 403 Forbidden
-		req = httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999&requester_id=mismatched-user", nil)
+		req = httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999&requester_id=" + tokenMismatchedUser, nil)
 		rec = httptest.NewRecorder()
 		u.GetJob(rec, req)
 		if rec.Code != http.StatusForbidden {
@@ -186,7 +197,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 
 		// C. Matching requester_id (Owner) -> 200 OK
-		req = httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999&requester_id=job-owner-999", nil)
+		req = httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999&requester_id=" + tokenJobOwner, nil)
 		rec = httptest.NewRecorder()
 		u.GetJob(rec, req)
 		if rec.Code != http.StatusOK {
