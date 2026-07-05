@@ -62,6 +62,10 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **CompleteJob Authorization Check** | Enforced user/employee role identity and internal X-Internal-Token verification on CompleteJob. | `current` | Verified via user-service unit tests. ✅ |
 | **Notification Auth Enforcement** | Enforced X-Internal-Token authentication on Send and BroadcastJobAlert endpoints in notification-service. | `current` | Verified via notification-service unit tests. ✅ |
 | **GetHistory Channel-Access Check** | Enforced requester_id (JWT token) and channel access (canAccessChannel) validation on GetHistory in chat-service. | `current` | Verified via chat-service unit tests. ✅ |
+| **Employee Toggle Lockout** | Enforced limiter lockout and failure recording on failed owner password check in ToggleEmployee. | `current` | Verified via compilation and logic flow analysis. ✅ |
+| **Token Refresh 7-Day Limit** | Gated token refresh to reject tokens that expired more than 7 days ago. | `current` | Verified via compilation and logic flow analysis. ✅ |
+| **ID and OTP Cryptographic Hardening** | Removed weak fallbacks from generateID and generate4DigitOTP, causing fail-fast logs on failure. | `current` | Verified via compilation. ✅ |
+
 
 
 

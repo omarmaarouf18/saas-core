@@ -489,6 +489,20 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	clientIP := a.getClientIP(r)
+	if locked, remaining := a.limiter.IsLocked(clientIP); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many attempts, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+	if locked, remaining := a.limiter.IsLocked(req.OwnerEmail); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many attempts, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
 	ctx := r.Context()
 
 	// Get Owner
@@ -502,6 +516,8 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 
 	// Verify owner password using bcrypt
 	if err := bcrypt.CompareHashAndPassword([]byte(owner.Password), []byte(req.OwnerPassword)); err != nil {
+		a.limiter.RecordFailure(clientIP)
+		a.limiter.RecordFailure(req.OwnerEmail)
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "invalid owner credentials or password does not match",
 		})
@@ -530,6 +546,10 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 	if req.SetActive {
 		statusStr = "activated"
 	}
+
+	// Reset limits on success
+	a.limiter.Reset(clientIP)
+	a.limiter.Reset(req.OwnerEmail)
 
 	log.Printf("[AUTH] Owner %s toggled employee %s to %s", owner.Email, req.EmployeeEmail, statusStr)
 
@@ -774,6 +794,11 @@ func (a *Auth) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if claims.ExpiresAt != nil && time.Since(claims.ExpiresAt.Time) > 7*24*time.Hour {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "token expired too long ago to refresh"})
+		return
+	}
+
 	ctx := r.Context()
 	user := a.store.GetByID(ctx, claims.UserID)
 	if user == nil {
@@ -812,7 +837,7 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 func generateID() string {
 	b := make([]byte, 8)
 	if _, err := rand.Read(b); err != nil {
-		return fmt.Sprintf("fallback-%d", time.Now().UnixNano())
+		log.Fatalf("generateID: failed to read random bytes: %v", err)
 	}
 	return hex.EncodeToString(b)
 }
@@ -821,7 +846,7 @@ func generateID() string {
 func generate4DigitOTP() string {
 	b := make([]byte, 2)
 	if _, err := rand.Read(b); err != nil {
-		return "1234"
+		log.Fatalf("generate4DigitOTP: failed to read random bytes: %v", err)
 	}
 	// Convert 2 random bytes to a number in [0, 9999].
 	num := (int(b[0])<<8 | int(b[1])) % 10000
