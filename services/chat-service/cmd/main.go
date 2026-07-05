@@ -71,8 +71,13 @@ func main() {
 	hub := chat.NewHub()
 	go hub.Run()
 
+	allowedOrigin := os.Getenv("ALLOWED_ORIGIN")
+	if allowedOrigin == "" {
+		allowedOrigin = "http://localhost:3000"
+	}
+
 	// Create handler group and register routes.
-	chatHandlers := handlers.NewChat(hub, mongoStore, authServiceURL, userServiceURL, os.Getenv("INTERNAL_SERVICE_TOKEN"))
+	chatHandlers := handlers.NewChat(hub, mongoStore, authServiceURL, userServiceURL, os.Getenv("INTERNAL_SERVICE_TOKEN"), allowedOrigin)
 
 	mux := http.NewServeMux()
 

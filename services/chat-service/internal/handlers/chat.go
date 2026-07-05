@@ -29,16 +29,6 @@ const (
 	maxMessageSize = 64 * 1024
 )
 
-// upgrader specifies parameters for upgrading an HTTP connection to WebSocket.
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	// Allow all origins in development; restrict in production.
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
 // wsMessage is the expected JSON structure from WebSocket clients.
 type wsMessage struct {
 	Action  string `json:"action"`            // "subscribe", "unsubscribe", "message"
@@ -56,10 +46,14 @@ type Chat struct {
 	tokenCacheMu         sync.Mutex
 	limiter              *RateLimiter
 	internalServiceToken string
+	allowedOrigin        string
 }
 
 // NewChat creates a new Chat handler group.
-func NewChat(hub *chat.Hub, s *store.MongoDB, authServiceURL string, userServiceURL string, internalServiceToken string) *Chat {
+func NewChat(hub *chat.Hub, s *store.MongoDB, authServiceURL string, userServiceURL string, internalServiceToken string, allowedOrigin string) *Chat {
+	if allowedOrigin == "" {
+		allowedOrigin = "http://localhost:3000"
+	}
 	return &Chat{
 		hub:                  hub,
 		store:                s,
@@ -68,6 +62,7 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, authServiceURL string, userService
 		tokenCache:           make(map[string]time.Time),
 		limiter:              NewRateLimiter(5, 1*time.Minute),
 		internalServiceToken: internalServiceToken,
+		allowedOrigin:        allowedOrigin,
 	}
 }
 
@@ -201,6 +196,13 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Upgrade HTTP → WebSocket.
+	var upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return r.Header.Get("Origin") == c.allowedOrigin
+		},
+	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("[WS] Upgrade failed for user=%s: %v", claims.UserID, err)

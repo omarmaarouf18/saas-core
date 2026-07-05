@@ -52,7 +52,7 @@ func TestCanAccessChannel(t *testing.T) {
 	defer mockUserServer.Close()
 
 	// Instantiate Chat handler group (we can pass nil hub and store as they aren't used in canAccessChannel)
-	chatHandler := NewChat(nil, nil, "", mockUserServer.URL, "mock-internal-token")
+	chatHandler := NewChat(nil, nil, "", mockUserServer.URL, "mock-internal-token", "http://localhost:3000")
 
 	tests := []struct {
 		name       string
@@ -157,7 +157,7 @@ func TestGetHistoryAccessControl(t *testing.T) {
 		_ = mongoStore.Close(context.Background())
 	}()
 
-	chatHandler := NewChat(nil, mongoStore, mockAuthServer.URL, mockUserServer.URL, "mock-internal-token")
+	chatHandler := NewChat(nil, mongoStore, mockAuthServer.URL, mockUserServer.URL, "mock-internal-token", "http://localhost:3000")
 
 	// Pre-seed some cache to bypass auth-service lookup
 	chatHandler.tokenCache["job-owner-id"] = time.Now().Add(60 * time.Second)
