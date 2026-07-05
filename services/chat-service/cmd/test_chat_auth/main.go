@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/project/chat-service/internal/jwtutil"
 )
 
 type wsMessage struct {
@@ -25,8 +26,14 @@ func main() {
 	channel := "job:" + jobID
 
 	// Tokens
-	tokenAuth := "756426a50a62b2dd"      // Authorized owner
-	tokenUnauth := "21fff9461dd11e98"    // Unauthorized user
+	tokenAuth, err := jwtutil.GenerateToken("756426a50a62b2dd", "owner", "756426a50a62b2dd", "owner@example.com")
+	if err != nil {
+		log.Fatalf("Failed to generate auth token: %v", err)
+	}
+	tokenUnauth, err := jwtutil.GenerateToken("21fff9461dd11e98", "user", "21fff9461dd11e98", "unauth@example.com")
+	if err != nil {
+		log.Fatalf("Failed to generate unauth token: %v", err)
+	}
 
 	// 1. Connect Unauthorized Client
 	uUnauth := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/api/v1/chat/ws", RawQuery: "token=" + tokenUnauth}
