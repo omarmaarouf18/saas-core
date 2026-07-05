@@ -21,26 +21,29 @@ import (
 
 // Auth holds dependencies for the authentication handlers.
 type Auth struct {
-	store      *store.MongoDB
-	dispatcher otp.OTPDispatcher
-	isLocal    bool // true when APP_ENV == "local"
-	limiter    *RateLimiter
+	store         *store.MongoDB
+	dispatcher    otp.OTPDispatcher
+	isLocal       bool // true when APP_ENV == "local"
+	limiter       *RateLimiter
+	gatewaySecret string
 }
 
 // NewAuth creates a new Auth handler group.
-//   - s:          MongoDB-backed persistent store
-//   - dispatcher: OTPDispatcher implementation (mock for local, real for prod)
-//   - appEnv:     value of the APP_ENV environment variable
-func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, appEnv string) *Auth {
+//   - s:             MongoDB-backed persistent store
+//   - dispatcher:    OTPDispatcher implementation (mock for local, real for prod)
+//   - appEnv:        value of the APP_ENV environment variable
+//   - gatewaySecret: dynamic trust secret shared with the API gateway
+func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, appEnv string, gatewaySecret string) *Auth {
 	isLocal := strings.EqualFold(appEnv, "local")
 	if isLocal {
 		log.Printf("[AUTH] ⚠ Running in LOCAL mode — OTP codes will be exposed in API responses")
 	}
 	return &Auth{
-		store:      s,
-		dispatcher: dispatcher,
-		isLocal:    isLocal,
-		limiter:    NewRateLimiter(),
+		store:         s,
+		dispatcher:    dispatcher,
+		isLocal:       isLocal,
+		limiter:       NewRateLimiter(),
+		gatewaySecret: gatewaySecret,
 	}
 }
 
@@ -240,7 +243,7 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clientIP := getClientIP(r)
+	clientIP := a.getClientIP(r)
 
 	// Check if IP is locked out
 	if locked, remaining := a.limiter.IsLocked(clientIP); locked {
@@ -391,7 +394,7 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clientIP := getClientIP(r)
+	clientIP := a.getClientIP(r)
 
 	// Check if IP is locked out
 	if locked, remaining := a.limiter.IsLocked(clientIP); locked {
@@ -595,7 +598,7 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Extract Client IP
-	clientIP := getClientIP(r)
+	clientIP := a.getClientIP(r)
 
 	// Append to Audit Log
 	entry := models.AuditEntry{
@@ -780,9 +783,9 @@ func generate4DigitOTP() string {
 }
 
 // getClientIP extracts the user's real IP from the request headers or RemoteAddr.
-func getClientIP(r *http.Request) string {
+func (a *Auth) getClientIP(r *http.Request) string {
 	var ip string
-	if r.Header.Get("X-Gateway-Secret") == "saas-gateway-trust-token-9988" {
+	if r.Header.Get("X-Gateway-Secret") == a.gatewaySecret {
 		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 			parts := strings.Split(xff, ",")
 			ip = strings.TrimSpace(parts[0])

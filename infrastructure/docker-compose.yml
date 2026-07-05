@@ -72,6 +72,7 @@ services:
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
       APP_ENV: ${APP_ENV}
       LOG_LEVEL: ${LOG_LEVEL}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
     depends_on:
       mongo:
         condition: service_healthy
@@ -100,6 +101,7 @@ services:
       USER_SERVICE_URL: ${USER_SERVICE_URL}
       APP_ENV: ${APP_ENV}
       LOG_LEVEL: ${LOG_LEVEL}
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:
       mongo:
         condition: service_healthy
@@ -126,6 +128,8 @@ services:
       REDIS_URI: ${REDIS_URI}
       APP_ENV: ${APP_ENV}
       LOG_LEVEL: ${LOG_LEVEL}
+      JWT_SECRET: ${JWT_SECRET}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
     depends_on:
       mongo:
         condition: service_healthy
@@ -153,6 +157,7 @@ services:
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
       APP_ENV: ${APP_ENV}
       LOG_LEVEL: ${LOG_LEVEL}
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:
       mongo:
         condition: service_healthy
@@ -181,6 +186,7 @@ services:
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
       APP_ENV: ${APP_ENV}
       LOG_LEVEL: ${LOG_LEVEL}
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:
       mongo:
         condition: service_healthy

@@ -43,6 +43,9 @@ func main() {
 	if os.Getenv("JWT_SECRET") == "" {
 		log.Fatal("JWT_SECRET environment variable is required and must not be empty")
 	}
+	if os.Getenv("GATEWAY_SECRET") == "" {
+		log.Fatal("GATEWAY_SECRET environment variable is required and must not be empty")
+	}
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -98,7 +101,7 @@ func main() {
 	}
 
 	// Create handler group and register routes.
-	authHandlers := handlers.NewAuth(mongoStore, dispatcher, appEnv)
+	authHandlers := handlers.NewAuth(mongoStore, dispatcher, appEnv, os.Getenv("GATEWAY_SECRET"))
 
 	mux := http.NewServeMux()
 

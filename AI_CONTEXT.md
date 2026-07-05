@@ -48,10 +48,11 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **WebSocket Message Authorization** | Gated chat message broadcasts by canAccessChannel in WebSocket readPump. | `current` | Verified in `chat-service/internal/handlers/chat.go`. ✅ |
 | **Rating & Comment System** | Rating and comment submissions on completed jobs with average rating queries. | `6edf1b7c825b37cc15b16dbc348026c4b689724b` | Verified in `user-service/internal/handlers/handlers.go`. ✅ |
 | **Cryptographically Signed JWTs** | Replaced raw user ID tokens with signed HS256 JWT tokens containing user ID, role, tenant ID, and email. Added POST /auth/refresh to reissue tokens. Downstream services validate JWT signatures and expiry locally. | `current` | Verified in `auth-service`, `chat-service`, `notification-service`, `user-service`. ✅ |
-| **auth-service XFF Trust Boundary Hardening** | auth-service rate limiter only trusts XFF headers if verified by the X-Gateway-Secret signature injected by the API Gateway. | `current` | Verified in `auth-service` getClientIP. ✅ |
+| **auth-service XFF Trust Boundary Hardening** | auth-service rate limiter only trusts XFF headers if verified by the dynamic GATEWAY_SECRET header injected by the API Gateway. | `current` | Verified in `auth-service` getClientIP. ✅ |
 | **Signup-time Anti-spam OTP** | Gated signup with OTP confirmation. Accounts are created as unconfirmed (is_confirmed = false) and login is rejected until the signup OTP is verified. | `current` | Verified in `auth-service` Signup, Login, and VerifyOTP. ✅ |
 | **Automated Test Coverage** | Added table-driven and integration unit tests covering bcrypt hashing, rate limiter lockout, OTP expiry in auth-service, KYC gating, COD validation, subscription matching in user-service, and websocket channel access control in chat-service. | `current` | Verified via `go test` in all three services. ✅ |
 | **JWT Secret Hardening** | Removed hardcoded JWT secret fallback in all 4 services. Services now require JWT_SECRET env var on startup and fail-fast if it's missing. | `current` | Verified via startup crash test. ✅ |
+| **Gateway Secret Hardening** | Removed hardcoded X-Gateway-Secret. Both api-gateway and auth-service now require the GATEWAY_SECRET env var on startup and fail-fast if it's missing. | `current` | Verified via startup crash test. ✅ |
 
 ### 2. Explicitly Deferred by Decision
 
@@ -101,6 +102,4 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-## Immediate Next Step
-
-* **Immediate Next Step**: Working on backend issue 2: Remove the hardcoded X-Gateway-Secret (api-gateway + auth-service).
+* **Immediate Next Step**: Working on backend issue 3: Fix GET /users/jobs/get?id= — currently has zero access control.

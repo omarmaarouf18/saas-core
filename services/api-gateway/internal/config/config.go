@@ -16,15 +16,22 @@ type ServiceRoute struct {
 
 // Config holds all runtime configuration for the API Gateway.
 type Config struct {
-	Port   string
-	Routes []ServiceRoute
+	Port          string
+	Routes        []ServiceRoute
+	GatewaySecret string
 }
 
 // Load reads configuration from environment variables.
 // Falls back to sensible defaults for local development.
 func Load() (*Config, error) {
+	gatewaySecret := os.Getenv("GATEWAY_SECRET")
+	if gatewaySecret == "" {
+		return nil, fmt.Errorf("config: required env var GATEWAY_SECRET is required and must not be empty")
+	}
+
 	cfg := &Config{
-		Port: envOrDefault("PORT", "8080"),
+		Port:          envOrDefault("PORT", "8080"),
+		GatewaySecret: gatewaySecret,
 	}
 
 	// Each route is defined by: path prefix → env var → default address.

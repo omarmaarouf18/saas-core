@@ -22,7 +22,7 @@ import (
 //   - Backend receives:  /auth/signup
 //
 // This lets each backend service own its own URL namespace cleanly.
-func New(route config.ServiceRoute) (http.Handler, error) {
+func New(route config.ServiceRoute, gatewaySecret string) (http.Handler, error) {
 	target, err := url.Parse(route.Target)
 	if err != nil {
 		return nil, fmt.Errorf("proxy: invalid target URL %q for %s: %w",
@@ -46,7 +46,7 @@ func New(route config.ServiceRoute) (http.Handler, error) {
 			// Preserve the original path in a header for backend observability.
 			req.Header.Set("X-Forwarded-Prefix", route.Prefix)
 			req.Header.Set("X-Forwarded-For", req.RemoteAddr)
-			req.Header.Set("X-Gateway-Secret", "saas-gateway-trust-token-9988")
+			req.Header.Set("X-Gateway-Secret", gatewaySecret)
 		},
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
 			log.Printf("[PROXY ERROR] %s %s → %s: %v",

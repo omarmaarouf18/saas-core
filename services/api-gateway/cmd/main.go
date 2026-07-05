@@ -58,7 +58,7 @@ func main() {
 
 	// ---- Register reverse proxy routes ----
 	for _, route := range cfg.Routes {
-		handler, err := proxy.New(route)
+		handler, err := proxy.New(route, cfg.GatewaySecret)
 		if err != nil {
 			log.Fatalf("Failed to create proxy for %s: %v", route.Prefix, err)
 		}
