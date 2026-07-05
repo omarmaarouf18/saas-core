@@ -61,6 +61,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Gateway Internal Token Stripping** | Edge api-gateway removes any client-supplied `X-Internal-Token` before proxying requests to backends. | `current` | Verified in api-gateway proxy.go. ✅ |
 | **CompleteJob Authorization Check** | Enforced user/employee role identity and internal X-Internal-Token verification on CompleteJob. | `current` | Verified via user-service unit tests. ✅ |
 | **Notification Auth Enforcement** | Enforced X-Internal-Token authentication on Send and BroadcastJobAlert endpoints in notification-service. | `current` | Verified via notification-service unit tests. ✅ |
+| **GetHistory Channel-Access Check** | Enforced requester_id (JWT token) and channel access (canAccessChannel) validation on GetHistory in chat-service. | `current` | Verified via chat-service unit tests. ✅ |
+
 
 
 

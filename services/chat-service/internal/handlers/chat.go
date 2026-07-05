@@ -241,6 +241,39 @@ func (c *Chat) GetHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	requesterToken := r.URL.Query().Get("requester_id")
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("token")
+	}
+	if requesterToken == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "requester_id parameter is required"})
+		return
+	}
+
+	claims, err := jwtutil.ValidateToken(requesterToken)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid or expired token: " + err.Error()})
+		return
+	}
+
+	if !c.verifyToken(claims.UserID) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]string{"error": "user associated with token is not active or verified"})
+		return
+	}
+
+	if !c.canAccessChannel(claims.UserID, channel) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]string{"error": "not authorized for this channel"})
+		return
+	}
+
 	limitStr := r.URL.Query().Get("limit")
 	limit := int64(50)
 	if limitStr != "" {
