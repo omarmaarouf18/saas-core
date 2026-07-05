@@ -612,7 +612,12 @@ func haversineKm(lat1, lon1, lat2, lon2 float64) float64 {
 
 func (u *UserService) checkKYC(ownerID string) (string, error) {
 	url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, ownerID)
-	resp, err := http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("X-Internal-Token", u.internalServiceToken)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -707,9 +712,15 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Verify requester_id resolves to a real user via auth-service
-		url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, req.RequesterID)
-		resp, err := http.Get(url)
+		// Verify requester_id resolves to a real user via auth-service (internal call)
+		authURL := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, req.RequesterID)
+		authReq, err := http.NewRequest("GET", authURL, nil)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "auth service request error: " + err.Error()})
+			return
+		}
+		authReq.Header.Set("X-Internal-Token", u.internalServiceToken)
+		resp, err := http.DefaultClient.Do(authReq)
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "auth service connection error: " + err.Error()})
 			return

@@ -25,7 +25,8 @@ type Auth struct {
 	dispatcher    otp.OTPDispatcher
 	isLocal       bool // true when APP_ENV == "local"
 	limiter       *RateLimiter
-	gatewaySecret string
+	gatewaySecret        string
+	internalServiceToken string
 }
 
 // NewAuth creates a new Auth handler group.
@@ -33,17 +34,19 @@ type Auth struct {
 //   - dispatcher:    OTPDispatcher implementation (mock for local, real for prod)
 //   - appEnv:        value of the APP_ENV environment variable
 //   - gatewaySecret: dynamic trust secret shared with the API gateway
-func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, appEnv string, gatewaySecret string) *Auth {
+//   - internalServiceToken: dynamic trust token for backend microservices
+func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, appEnv string, gatewaySecret string, internalServiceToken string) *Auth {
 	isLocal := strings.EqualFold(appEnv, "local")
 	if isLocal {
 		log.Printf("[AUTH] ⚠ Running in LOCAL mode — OTP codes will be exposed in API responses")
 	}
 	return &Auth{
-		store:         s,
-		dispatcher:    dispatcher,
-		isLocal:       isLocal,
-		limiter:       NewRateLimiter(),
-		gatewaySecret: gatewaySecret,
+		store:                s,
+		dispatcher:           dispatcher,
+		isLocal:              isLocal,
+		limiter:              NewRateLimiter(),
+		gatewaySecret:        gatewaySecret,
+		internalServiceToken: internalServiceToken,
 	}
 }
 
@@ -644,8 +647,11 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	lookupID := id
-	if strings.Count(id, ".") == 2 {
+	var lookupID string
+
+	if r.Header.Get("X-Internal-Token") == a.internalServiceToken {
+		lookupID = id
+	} else {
 		claims, err := jwtutil.ValidateToken(id)
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{

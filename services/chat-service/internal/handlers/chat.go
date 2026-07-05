@@ -93,9 +93,15 @@ func (c *Chat) verifyToken(id string) bool {
 		return true
 	}
 
-	// Verify against auth-service
+	// Verify against auth-service (internal service-to-service call)
 	url := fmt.Sprintf("%s/auth/user?id=%s", c.authServiceURL, id)
-	resp, err := http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Printf("[CHAT] Error building auth-service request: %v", err)
+		return false
+	}
+	req.Header.Set("X-Internal-Token", c.internalServiceToken)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Printf("[CHAT] Error calling auth-service: %v", err)
 		return false

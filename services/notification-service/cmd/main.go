@@ -21,6 +21,9 @@ func main() {
 	if os.Getenv("JWT_SECRET") == "" {
 		log.Fatal("JWT_SECRET environment variable is required and must not be empty")
 	}
+	if os.Getenv("INTERNAL_SERVICE_TOKEN") == "" {
+		log.Fatal("INTERNAL_SERVICE_TOKEN environment variable is required and must not be empty")
+	}
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -38,7 +41,7 @@ func main() {
 	}
 
 	sseHub := hub.NewSSEHub()
-	notifHandlers := handlers.NewNotification(sseHub, authServiceURL, allowedOrigin)
+	notifHandlers := handlers.NewNotification(sseHub, authServiceURL, allowedOrigin, os.Getenv("INTERNAL_SERVICE_TOKEN"))
 
 	mux := http.NewServeMux()
 	notifHandlers.RegisterRoutes(mux)

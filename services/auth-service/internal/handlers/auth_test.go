@@ -113,7 +113,7 @@ func TestOTPExpiryRejection(t *testing.T) {
 // TestGetAuditLogAccessControl verifies that requester_id is required and must match tenant_id
 func TestGetAuditLogAccessControl(t *testing.T) {
 	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
-	a := NewAuth(nil, nil, "local", "mock-gateway-secret")
+	a := NewAuth(nil, nil, "local", "mock-gateway-secret", "mock-internal-token")
 
 	token1, _ := jwtutil.GenerateToken("tenant-1", "owner", "tenant-1", "t1@example.com")
 	token2, _ := jwtutil.GenerateToken("tenant-2", "owner", "tenant-2", "t2@example.com")

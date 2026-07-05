@@ -14,22 +14,24 @@ import (
 
 // Notification holds dependencies for notification handlers.
 type Notification struct {
-	hub            *hub.SSEHub
-	authServiceURL string
-	allowedOrigin  string
-	limiter        *RateLimiter
+	hub                  *hub.SSEHub
+	authServiceURL       string
+	allowedOrigin        string
+	limiter              *RateLimiter
+	internalServiceToken string
 }
 
 // NewNotification creates a new handler group.
-func NewNotification(h *hub.SSEHub, authServiceURL string, allowedOrigin string) *Notification {
+func NewNotification(h *hub.SSEHub, authServiceURL string, allowedOrigin string, internalServiceToken string) *Notification {
 	if allowedOrigin == "" {
 		allowedOrigin = "http://localhost:3000"
 	}
 	return &Notification{
-		hub:            h,
-		authServiceURL: authServiceURL,
-		allowedOrigin:  allowedOrigin,
-		limiter:        NewRateLimiter(5, 1*time.Minute),
+		hub:                  h,
+		authServiceURL:       authServiceURL,
+		allowedOrigin:        allowedOrigin,
+		limiter:              NewRateLimiter(5, 1*time.Minute),
+		internalServiceToken: internalServiceToken,
 	}
 }
 
@@ -123,9 +125,15 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool) {
 		return "", "", false
 	}
 
-	// 2. Secondary trust boundary: verify against auth-service using extracted user ID
-	url := fmt.Sprintf("%s/auth/user?id=%s", n.authServiceURL, claims.UserID)
-	resp, err := http.Get(url)
+	// 2. Secondary trust boundary: verify against auth-service using extracted user ID (internal call)
+	authURL := fmt.Sprintf("%s/auth/user?id=%s", n.authServiceURL, claims.UserID)
+	req, err := http.NewRequest("GET", authURL, nil)
+	if err != nil {
+		log.Printf("[NOTIF] Error building auth-service request: %v", err)
+		return "", "", false
+	}
+	req.Header.Set("X-Internal-Token", n.internalServiceToken)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Printf("[NOTIF] Error calling auth-service: %v", err)
 		return "", "", false
