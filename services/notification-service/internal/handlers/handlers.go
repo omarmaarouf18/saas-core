@@ -192,6 +192,11 @@ type sendRequest struct {
 
 // Send pushes a notification to matching connected clients.
 func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("X-Internal-Token") != n.internalServiceToken {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: internal token required"})
+		return
+	}
+
 	ip := getIP(r)
 	if limited, remaining := n.limiter.CheckAndRecord(ip); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
@@ -250,6 +255,11 @@ type jobAlertRequest struct {
 
 // BroadcastJobAlert sends a New Job Alert to all role pools for a tenant.
 func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("X-Internal-Token") != n.internalServiceToken {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: internal token required"})
+		return
+	}
+
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
 		return

@@ -60,6 +60,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Hardcoded Secrets Audit** | Audited entire codebase for hardcoded secrets. Removed JWT fallbacks, X-Gateway-Secret, and confirmed via repo-wide regex audit that no other secrets exist. | `current` | Verified via repo-wide regex audit. ✅ |
 | **Gateway Internal Token Stripping** | Edge api-gateway removes any client-supplied `X-Internal-Token` before proxying requests to backends. | `current` | Verified in api-gateway proxy.go. ✅ |
 | **CompleteJob Authorization Check** | Enforced user/employee role identity and internal X-Internal-Token verification on CompleteJob. | `current` | Verified via user-service unit tests. ✅ |
+| **Notification Auth Enforcement** | Enforced X-Internal-Token authentication on Send and BroadcastJobAlert endpoints in notification-service. | `current` | Verified via notification-service unit tests. ✅ |
+
 
 
 
