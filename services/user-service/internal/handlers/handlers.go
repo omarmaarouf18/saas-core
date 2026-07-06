@@ -38,6 +38,7 @@ type UserService struct {
 	internalServiceToken string
 	locationThrottleMu   sync.Mutex
 	locationLastUpdate   map[string]time.Time
+	locationInFlight     map[string]bool
 }
 
 // NewUserService creates a new handler group.
@@ -53,6 +54,7 @@ func NewUserService(s *store.MongoDB, authServiceURL string, internalServiceToke
 		limiter:              NewRateLimiter(5, 1*time.Minute),
 		internalServiceToken: internalServiceToken,
 		locationLastUpdate:   make(map[string]time.Time),
+		locationInFlight:     make(map[string]bool),
 	}
 }
 
@@ -1042,6 +1044,15 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 
 	// Per-job minimum interval throttling
 	u.locationThrottleMu.Lock()
+	if u.locationInFlight[job.ID] {
+		u.locationThrottleMu.Unlock()
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error":   "too_many_requests",
+			"message": "Location update is already in progress for this job.",
+		})
+		return
+	}
+
 	lastUpdate, exists := u.locationLastUpdate[job.ID]
 	now := time.Now()
 	if exists && now.Sub(lastUpdate) < MinLocationUpdateInterval {
@@ -1052,11 +1063,15 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 		})
 		return
 	}
-	u.locationLastUpdate[job.ID] = now
+	u.locationInFlight[job.ID] = true
 	u.locationThrottleMu.Unlock()
 
 	// Update in the store
 	if err := u.store.UpdateJobLocation(ctx, req.JobID, req.Latitude, req.Longitude); err != nil {
+		u.locationThrottleMu.Lock()
+		delete(u.locationInFlight, job.ID)
+		u.locationThrottleMu.Unlock()
+
 		log.Printf("[USER] Failed to update location for job %s: %v", req.JobID, err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error":   "internal_error",
@@ -1064,6 +1079,12 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 		})
 		return
 	}
+
+	// Commit the real timestamp and release the reservation
+	u.locationThrottleMu.Lock()
+	u.locationLastUpdate[job.ID] = time.Now()
+	delete(u.locationInFlight, job.ID)
+	u.locationThrottleMu.Unlock()
 
 	// Call chat-service to broadcast
 	go func() {

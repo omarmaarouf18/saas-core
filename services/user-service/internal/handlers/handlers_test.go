@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -545,6 +546,110 @@ func TestUserServiceHandlers(t *testing.T) {
 		// 4. Assert SSRF-safe design: u.chatServiceURL is used, verify it's configured in handlers
 		if u.chatServiceURL == "" {
 			t.Errorf("SSRF validation error: chatServiceURL is empty in handler configuration")
+		}
+	})
+
+	// Test 11: Location Throttle Error Rollback and Race Handling
+	t.Run("UpdateJobLocation Throttle Error Rollback", func(t *testing.T) {
+		// Clean up throttle state first
+		u.locationThrottleMu.Lock()
+		delete(u.locationLastUpdate, "active-job-777")
+		delete(u.locationInFlight, "active-job-777")
+		u.locationThrottleMu.Unlock()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		tokenEmployee, _ := jwtutil.GenerateToken("employee-777", "employee", "owner-777", "employee@example.com")
+
+		reqBody := map[string]any{
+			"job_id":       "active-job-777",
+			"requester_id": tokenEmployee,
+			"latitude":     12.34,
+			"longitude":    56.78,
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+		req = req.WithContext(ctx)
+
+		// Goroutine that polls to detect when the request enters the in-flight state, then cancels the context
+		go func() {
+			for {
+				u.locationThrottleMu.Lock()
+				inFlight := u.locationInFlight["active-job-777"]
+				u.locationThrottleMu.Unlock()
+				if inFlight {
+					cancel()
+					break
+				}
+				time.Sleep(10 * time.Microsecond)
+			}
+		}()
+
+		// 1. Call UpdateJobLocation with the canceling context → expect 500 internal_error (context cancelled)
+		rec := httptest.NewRecorder()
+		u.UpdateJobLocation(rec, req)
+		if rec.Code != http.StatusInternalServerError {
+			t.Errorf("Expected 500 Internal Server Error, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// 2. Immediate retry with a fresh/valid context → expect 200 OK (rollback worked!)
+		req2 := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+		rec2 := httptest.NewRecorder()
+		u.UpdateJobLocation(rec2, req2)
+		if rec2.Code != http.StatusOK {
+			t.Errorf("Expected retry to succeed with 200 OK, got %d. Body: %s", rec2.Code, rec2.Body.String())
+		}
+	})
+
+	t.Run("UpdateJobLocation Throttle Concurrent Race Handling", func(t *testing.T) {
+		// Clean up throttle state first
+		u.locationThrottleMu.Lock()
+		delete(u.locationLastUpdate, "active-job-777")
+		delete(u.locationInFlight, "active-job-777")
+		u.locationThrottleMu.Unlock()
+
+		tokenEmployee, _ := jwtutil.GenerateToken("employee-777", "employee", "owner-777", "employee@example.com")
+
+		reqBody := map[string]any{
+			"job_id":       "active-job-777",
+			"requester_id": tokenEmployee,
+			"latitude":     12.34,
+			"longitude":    56.78,
+		}
+		body, _ := json.Marshal(reqBody)
+
+		var wg sync.WaitGroup
+		var codesMu sync.Mutex
+		var codes []int
+
+		// Launch two concurrent requests for the same job
+		for i := 0; i < 2; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				req := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+				rec := httptest.NewRecorder()
+				u.UpdateJobLocation(rec, req)
+				codesMu.Lock()
+				codes = append(codes, rec.Code)
+				codesMu.Unlock()
+			}()
+		}
+		wg.Wait()
+
+		// Verify that exactly one request succeeded (200) and one was rejected (429)
+		var count200, count429 int
+		for _, code := range codes {
+			if code == http.StatusOK {
+				count200++
+			} else if code == http.StatusTooManyRequests {
+				count429++
+			}
+		}
+
+		if count200 != 1 || count429 != 1 {
+			t.Errorf("Expected exactly one 200 OK and one 429 Too Many Requests, got codes: %v", codes)
 		}
 	})
 }
