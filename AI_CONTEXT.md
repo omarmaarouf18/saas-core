@@ -82,7 +82,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 
 | **Live Location Tracking** | Broadcast real-time employee locations via WebSockets to owner and client. | `current` | Verified via integration tests and E2E simulation. ✅ |
 | **Membership Tier Enforcement** | Gated UpdateJobLocation location tracking endpoint behind PlanPaid check on Job Owner. | `current` | Verified via unit and integration tests. ✅ |
-| **Per-Job Location Throttling** | Throttled consecutive location updates under 3s per Job ID. | `current` | Verified via unit and integration tests. ✅ |
+| **Per-Job Location Throttling** | Throttled consecutive location updates under 3s per Job ID with in-flight reservations and rollback. | `current` | Verified via unit, race, and integration tests. ✅ |
 ### 2. Explicitly Deferred by Decision
 
 * **E-Wallet and Bank Card Payment Flows**
