@@ -54,6 +54,7 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, authServiceURL string, userService
 	if allowedOrigin == "" {
 		allowedOrigin = "http://localhost:3000"
 	}
+	InitCloudWatch()
 	return &Chat{
 		hub:                  hub,
 		store:                s,
@@ -375,6 +376,11 @@ func (c *Chat) readPump(conn *websocket.Conn, client *chat.Client) {
 			if msg.Content != "" {
 				if !c.canAccessChannel(client.ID, msg.Channel) {
 					log.Printf("[CHAT BLOCKED] Client %s attempted to send message to channel %q, but access is unauthorized", client.ID, msg.Channel)
+					clientIP := conn.RemoteAddr().String()
+					if idx := strings.LastIndex(clientIP, ":"); idx != -1 {
+						clientIP = clientIP[:idx]
+					}
+					ShipSecurityEvent(context.Background(), "CHAT_BLOCKED", "chat-service", client.ID, "", fmt.Sprintf("attempted to send message to channel %s", msg.Channel), clientIP)
 					denied, _ := json.Marshal(map[string]string{
 						"type":    "error",
 						"channel": msg.Channel,
