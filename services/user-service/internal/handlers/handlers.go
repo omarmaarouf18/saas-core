@@ -11,6 +11,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -23,15 +24,21 @@ import (
 type UserService struct {
 	store                *store.MongoDB
 	authServiceURL       string
+	chatServiceURL       string
 	limiter              *RateLimiter
 	internalServiceToken string
 }
 
 // NewUserService creates a new handler group.
 func NewUserService(s *store.MongoDB, authServiceURL string, internalServiceToken string) *UserService {
+	chatServiceURL := os.Getenv("CHAT_SERVICE_URL")
+	if chatServiceURL == "" {
+		chatServiceURL = "http://localhost:3001"
+	}
 	return &UserService{
 		store:                s,
 		authServiceURL:       authServiceURL,
+		chatServiceURL:       chatServiceURL,
 		limiter:              NewRateLimiter(5, 1*time.Minute),
 		internalServiceToken: internalServiceToken,
 	}
@@ -59,6 +66,7 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users/subscription", u.Subscription)
 	mux.HandleFunc("/users/jobs/rate", u.RateJob)
 	mux.HandleFunc("/users/ratings", u.GetRatings)
+	mux.HandleFunc("/users/jobs/location/update", u.UpdateJobLocation)
 }
 
 // ---------------------------------------------------------------------------
@@ -158,8 +166,8 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
 	}
-	if req.OwnerID == "" || req.ServiceID == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "owner_id and service_id are required"})
+	if req.OwnerID == "" || req.ServiceID == "" || req.UserID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "owner_id, service_id, and user_id are required"})
 		return
 	}
 
@@ -169,6 +177,13 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.OwnerID = resolvedOwnerID
+
+	resolvedUserID, err := resolveToken(req.UserID)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid user token: " + err.Error()})
+		return
+	}
+	req.UserID = resolvedUserID
 
 	if req.EmployeeID != "" {
 		resolvedEmployeeID, err := resolveToken(req.EmployeeID)
@@ -219,6 +234,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().UTC()
 	job := &models.Job{
 		ID: generateID(), OwnerID: req.OwnerID, EmployeeID: req.EmployeeID,
+		UserID: req.UserID,
 		ServiceID: req.ServiceID, Status: models.JobStatusPending,
 		Location: req.Location, PaymentMethod: req.PaymentMethod,
 		CreatedAt: now, UpdatedAt: now,
@@ -434,8 +450,8 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if resolvedRequester != job.OwnerID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
-		log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to access job %s owned by owner %s and employee %s", resolvedRequester, job.ID, job.OwnerID, job.EmployeeID)
+	if resolvedRequester != job.OwnerID && resolvedRequester != job.UserID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
+		log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to access job %s owned by owner %s, employee %s, user %s", resolvedRequester, job.ID, job.OwnerID, job.EmployeeID, job.UserID)
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to view this job"})
 		return
 	}
@@ -930,3 +946,96 @@ func (u *UserService) GetRatings(w http.ResponseWriter, r *http.Request) {
 		"count":          len(ratings),
 	})
 }
+
+// POST /users/jobs/location/update
+// ---------------------------------------------------------------------------
+
+func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	var req struct {
+		JobID       string  `json:"job_id"`
+		RequesterID string  `json:"requester_id"`
+		Latitude    float64 `json:"latitude"`
+		Longitude   float64 `json:"longitude"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+
+	if req.JobID == "" || req.RequesterID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id and requester_id are required"})
+		return
+	}
+
+	resolvedRequester, err := resolveToken(req.RequesterID)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	if job.EmployeeID == "" || resolvedRequester != job.EmployeeID {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: only the assigned employee can push location updates"})
+		return
+	}
+
+	if job.Status != models.JobStatusActive {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "action blocked: job is not active"})
+		return
+	}
+
+	// Update in the store
+	if err := u.store.UpdateJobLocation(ctx, req.JobID, req.Latitude, req.Longitude); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update location: " + err.Error()})
+		return
+	}
+
+	// Call chat-service to broadcast
+	go func() {
+		payload := map[string]any{
+			"channel":     "job:" + job.ID,
+			"latitude":    req.Latitude,
+			"longitude":   req.Longitude,
+			"employee_id": job.EmployeeID,
+		}
+		bodyBytes, err := json.Marshal(payload)
+		if err != nil {
+			log.Printf("[USER] Location broadcast error (marshal): %v", err)
+			return
+		}
+
+		broadcastURL := fmt.Sprintf("%s/chat/internal/broadcast-location", u.chatServiceURL)
+		broadcastReq, err := http.NewRequest("POST", broadcastURL, bytes.NewReader(bodyBytes))
+		if err != nil {
+			log.Printf("[USER] Location broadcast error (request build): %v", err)
+			return
+		}
+		broadcastReq.Header.Set("Content-Type", "application/json")
+		broadcastReq.Header.Set("X-Internal-Token", u.internalServiceToken)
+
+		resp, err := http.DefaultClient.Do(broadcastReq)
+		if err != nil {
+			log.Printf("[USER] Location broadcast error (call chat-service): %v", err)
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			log.Printf("[USER] Location broadcast failed with status %d", resp.StatusCode)
+		}
+	}()
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "location updated"})
+}
+

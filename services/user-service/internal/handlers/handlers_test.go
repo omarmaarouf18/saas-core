@@ -76,6 +76,7 @@ func TestUserServiceHandlers(t *testing.T) {
 	tokenApprovedOwner, _ := jwtutil.GenerateToken("kyc-approved-owner", "owner", "kyc-approved-owner", "approved@example.com")
 	tokenMismatch, _ := jwtutil.GenerateToken("mismatch-id", "owner", "mismatch-id", "mismatch@example.com")
 	tokenTenant, _ := jwtutil.GenerateToken("tenant-id", "owner", "tenant-id", "tenant@example.com")
+	tokenClientUser, _ := jwtutil.GenerateToken("client-user-123", "user", "client-user-123", "client@example.com")
 
 	// Test 1: KYC gating blocks CreateService for non-approved owners
 	t.Run("CreateService KYC Gating", func(t *testing.T) {
@@ -103,6 +104,7 @@ func TestUserServiceHandlers(t *testing.T) {
 	t.Run("TrackJob KYC Gating", func(t *testing.T) {
 		reqBody := map[string]any{
 			"owner_id":       tokenPendingOwner,
+			"user_id":        tokenClientUser,
 			"service_id":     "some-service-id",
 			"payment_method": "cod",
 		}
@@ -121,6 +123,7 @@ func TestUserServiceHandlers(t *testing.T) {
 	t.Run("TrackJob COD payment_method verification", func(t *testing.T) {
 		reqBody := map[string]any{
 			"owner_id":       tokenApprovedOwner,
+			"user_id":        tokenClientUser,
 			"service_id":     "some-service-id",
 			"payment_method": "wallet", // non-cod payment
 		}
@@ -175,12 +178,14 @@ func TestUserServiceHandlers(t *testing.T) {
 			ID:         "test-job-999",
 			OwnerID:    "job-owner-999",
 			EmployeeID: "job-employee-999",
+			UserID:     "client-user-999",
 			Status:     "pending",
 		}
 		_ = s.CreateJob(ctx, testJob)
 
 		tokenMismatchedUser, _ := jwtutil.GenerateToken("mismatched-user", "user", "mismatched-user", "mismatch@example.com")
 		tokenJobOwner, _ := jwtutil.GenerateToken("job-owner-999", "owner", "job-owner-999", "owner@example.com")
+		tokenJobClient, _ := jwtutil.GenerateToken("client-user-999", "user", "client-user-999", "client@example.com")
 
 		// A. Valid internal token -> 200 OK
 		req := httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999", nil)
@@ -206,6 +211,14 @@ func TestUserServiceHandlers(t *testing.T) {
 		if rec.Code != http.StatusOK {
 			t.Errorf("Expected 200 OK for owner, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
+
+		// D. Matching requester_id (User/Client) -> 200 OK
+		req = httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999&requester_id=" + tokenJobClient, nil)
+		rec = httptest.NewRecorder()
+		u.GetJob(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for client, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
 	})
 
 	// Test 6: CompleteJob Access Control
@@ -215,6 +228,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			ID:            "test-job-888",
 			OwnerID:       "job-owner-888",
 			EmployeeID:    "job-employee-888",
+			UserID:        "client-user-888",
 			ServiceID:     "svc-001",
 			Status:        models.JobStatusActive,
 			PaymentMethod: "cod",
@@ -314,6 +328,84 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 		if !strings.Contains(rec.Body.String(), "amount up to 1000000 required") {
 			t.Errorf("Expected limit error message, got: %s", rec.Body.String())
+		}
+	})
+
+	// Test 8: UpdateJobLocation Gating and Verification
+	t.Run("UpdateJobLocation Gating and Verification", func(t *testing.T) {
+		ctx := context.Background()
+		activeJob := &models.Job{
+			ID:            "active-job-777",
+			OwnerID:       "owner-777",
+			EmployeeID:    "employee-777",
+			UserID:        "client-777",
+			Status:        models.JobStatusActive,
+			PaymentMethod: "cod",
+		}
+		_ = s.CreateJob(ctx, activeJob)
+
+		pendingJob := &models.Job{
+			ID:            "pending-job-777",
+			OwnerID:       "owner-777",
+			EmployeeID:    "employee-777",
+			UserID:        "client-777",
+			Status:        models.JobStatusPending,
+			PaymentMethod: "cod",
+		}
+		_ = s.CreateJob(ctx, pendingJob)
+
+		tokenEmployee, _ := jwtutil.GenerateToken("employee-777", "employee", "owner-777", "employee@example.com")
+		tokenMismatched, _ := jwtutil.GenerateToken("mismatched-user", "user", "mismatched-user", "mismatch@example.com")
+
+		// A. Requester is not the assigned employee -> 403 Forbidden
+		reqBody := map[string]any{
+			"job_id":       "active-job-777",
+			"requester_id": tokenMismatched,
+			"latitude":     12.34,
+			"longitude":    56.78,
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		u.UpdateJobLocation(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for mismatched employee, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// B. Job is not active (pending) -> 403 Forbidden
+		reqBody = map[string]any{
+			"job_id":       "pending-job-777",
+			"requester_id": tokenEmployee,
+			"latitude":     12.34,
+			"longitude":    56.78,
+		}
+		body, _ = json.Marshal(reqBody)
+		req = httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.UpdateJobLocation(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for non-active job status, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// C. Success update -> 200 OK
+		reqBody = map[string]any{
+			"job_id":       "active-job-777",
+			"requester_id": tokenEmployee,
+			"latitude":     12.34,
+			"longitude":    56.78,
+		}
+		body, _ = json.Marshal(reqBody)
+		req = httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.UpdateJobLocation(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// Verify in database
+		updatedJob := s.GetJob(ctx, "active-job-777")
+		if updatedJob == nil || updatedJob.CurrentLocation == nil || updatedJob.CurrentLocation.Latitude != 12.34 {
+			t.Errorf("Location not updated in store: %+v", updatedJob)
 		}
 	})
 }

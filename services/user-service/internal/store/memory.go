@@ -541,3 +541,20 @@ func (s *MongoDB) GetRatingsForUser(ctx context.Context, userID string) ([]*mode
 	}
 	return ratings, nil
 }
+
+// UpdateJobLocation updates the current live location of the employee for a job.
+func (s *MongoDB) UpdateJobLocation(ctx context.Context, id string, lat, lon float64) error {
+	res, err := s.jobs.UpdateOne(ctx, bson.M{"_id": id},
+		bson.M{"$set": bson.M{
+			"current_location": models.Location{Latitude: lat, Longitude: lon},
+			"updated_at":       time.Now().UTC(),
+		}})
+	if err != nil {
+		return fmt.Errorf("store: update job location: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("job %q not found", id)
+	}
+	return nil
+}
+
