@@ -83,8 +83,12 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Live Location Tracking** | Broadcast real-time employee locations via WebSockets to owner and client. | `current` | Verified via integration tests and E2E simulation. ✅ |
 | **Membership Tier Enforcement** | Gated UpdateJobLocation location tracking endpoint behind PlanPaid check on Job Owner. | `current` | Verified via unit and integration tests. ✅ |
 | **Per-Job Location Throttling** | Throttled consecutive location updates under 3s per Job ID with in-flight reservations and rollback. | `current` | Verified via unit, race, and integration tests. ✅ |
+| **CloudWatch Security Log Shipping** | Structured JSON log event to CloudWatch Logs for security-relevant blocked events in auth, user, and chat services. | `current` | Verified via unit, race, and log shipping tests. ✅ |
 ### 2. Explicitly Deferred by Decision
 
+* **CloudWatch Event Rate Limiting/Batching**
+  * **Decision**: Log shipping performs a separate CloudWatch Logs `PutLogEvents` API call per event rather than using client-side batching or queuing.
+  * **Reasoning**: Accepted as a known limitation in the initial rollout. A genuine high-volume abuse burst could hit CloudWatch's per-stream PutLogEvents throttling limit and silently drop events at exactly the moment they matter most. Batching/queuing events client-side is flagged for future implementation.
 * **E-Wallet and Bank Card Payment Flows**
   * **Decision**: Job tracking explicitly blocks payment methods other than `"cod"` at the endpoint controller boundary.
   * **Reasoning**: To bypass processing complex online card holds in the initial platform rollout. Escrow locking and release database methods exist in the code but are deferred from client exposure.
