@@ -80,7 +80,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 
 
 
-
+| **Live Location Tracking** | Broadcast real-time employee locations via WebSockets to owner and client. | `current` | In progress. ⏳ |
 ### 2. Explicitly Deferred by Decision
 
 * **E-Wallet and Bank Card Payment Flows**
