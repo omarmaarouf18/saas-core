@@ -33,6 +33,7 @@ func TestCanAccessChannel(t *testing.T) {
 			json.NewEncoder(w).Encode(map[string]string{
 				"owner_id":    "job-owner-id",
 				"employee_id": "job-employee-id",
+				"user_id":     "job-user-id",
 			})
 			return
 		}
@@ -42,6 +43,7 @@ func TestCanAccessChannel(t *testing.T) {
 			json.NewEncoder(w).Encode(map[string]string{
 				"owner_id":    "job-owner-id",
 				"employee_id": "",
+				"user_id":     "job-user-id",
 			})
 			return
 		}
@@ -69,6 +71,12 @@ func TestCanAccessChannel(t *testing.T) {
 		{
 			name:       "Employee Authorized",
 			userID:     "job-employee-id",
+			channel:    "job:valid-job-123",
+			expectAuth: true,
+		},
+		{
+			name:       "User/Client Authorized",
+			userID:     "job-user-id",
 			channel:    "job:valid-job-123",
 			expectAuth: true,
 		},
@@ -125,6 +133,7 @@ func TestGetHistoryAccessControl(t *testing.T) {
 			json.NewEncoder(w).Encode(map[string]string{
 				"owner_id":    "job-owner-id",
 				"employee_id": "job-employee-id",
+				"user_id":     "job-user-id",
 			})
 			return
 		}

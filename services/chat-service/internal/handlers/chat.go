@@ -73,6 +73,7 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, authServiceURL string, userService
 func (c *Chat) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/chat/ws", c.HandleWebSocket)
 	mux.HandleFunc("/chat/history", c.GetHistory)
+	mux.HandleFunc("/chat/internal/broadcast-location", c.BroadcastLocation)
 }
 
 func (c *Chat) verifyToken(id string) bool {
@@ -149,11 +150,12 @@ func (c *Chat) canAccessChannel(userID, channel string) bool {
 	var job struct {
 		OwnerID    string `json:"owner_id"`
 		EmployeeID string `json:"employee_id"`
+		UserID     string `json:"user_id"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&job); err != nil {
 		return false
 	}
-	return userID == job.OwnerID || (job.EmployeeID != "" && userID == job.EmployeeID)
+	return userID == job.OwnerID || userID == job.UserID || (job.EmployeeID != "" && userID == job.EmployeeID)
 }
 
 // HandleWebSocket upgrades the HTTP connection to a WebSocket protocol.
@@ -451,3 +453,59 @@ func (c *Chat) writePump(conn *websocket.Conn, client *chat.Client) {
 		}
 	}
 }
+
+// POST /chat/internal/broadcast-location
+// ---------------------------------------------------------------------------
+
+func (c *Chat) BroadcastLocation(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]string{"error": "use POST"})
+		return
+	}
+
+	// Validate internal token
+	if r.Header.Get("X-Internal-Token") != c.internalServiceToken {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]string{"error": "access denied: invalid internal token"})
+		return
+	}
+
+	var req struct {
+		Channel    string  `json:"channel"`
+		Latitude   float64 `json:"latitude"`
+		Longitude  float64 `json:"longitude"`
+		EmployeeID string  `json:"employee_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid JSON body: " + err.Error()})
+		return
+	}
+
+	if req.Channel == "" || req.EmployeeID == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "channel and employee_id are required"})
+		return
+	}
+
+	msg := &chat.Message{
+		Channel:    req.Channel,
+		Type:       "location_update",
+		Latitude:   &req.Latitude,
+		Longitude:  &req.Longitude,
+		EmployeeID: req.EmployeeID,
+	}
+
+	c.hub.Broadcast <- msg
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "location broadcasted"})
+}
+
