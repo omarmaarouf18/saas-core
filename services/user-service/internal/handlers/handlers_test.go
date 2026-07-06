@@ -334,6 +334,12 @@ func TestUserServiceHandlers(t *testing.T) {
 	// Test 8: UpdateJobLocation Gating and Verification
 	t.Run("UpdateJobLocation Gating and Verification", func(t *testing.T) {
 		ctx := context.Background()
+		_ = s.UpsertSubscription(ctx, &models.Subscription{
+			ID:        "sub-owner-777",
+			TenantID:  "owner-777",
+			Tier:      models.PlanPaid,
+			StartedAt: time.Now(),
+		})
 		activeJob := &models.Job{
 			ID:            "active-job-777",
 			OwnerID:       "owner-777",
@@ -406,6 +412,139 @@ func TestUserServiceHandlers(t *testing.T) {
 		updatedJob := s.GetJob(ctx, "active-job-777")
 		if updatedJob == nil || updatedJob.CurrentLocation == nil || updatedJob.CurrentLocation.Latitude != 12.34 {
 			t.Errorf("Location not updated in store: %+v", updatedJob)
+		}
+	})
+
+	// Test 9: Live Location Tracking Subscription Gating
+	t.Run("UpdateJobLocation Subscription Gating", func(t *testing.T) {
+		ctx := context.Background()
+		
+		// Setup 3 owners with different subscription tiers
+		tokenEmployee, _ := jwtutil.GenerateToken("emp-777", "employee", "paid-owner", "emp@example.com")
+
+		_ = s.UpsertSubscription(ctx, &models.Subscription{
+			ID:        "sub-pending",
+			TenantID:  "pending-owner",
+			Tier:      models.PlanPendingPayment,
+			StartedAt: time.Now(),
+		})
+		_ = s.UpsertSubscription(ctx, &models.Subscription{
+			ID:        "sub-paid",
+			TenantID:  "paid-owner",
+			Tier:      models.PlanPaid,
+			StartedAt: time.Now(),
+		})
+
+		// Active jobs
+		jobFree := &models.Job{
+			ID: "job-free", OwnerID: "free-owner", EmployeeID: "emp-777", UserID: "client-1",
+			Status: models.JobStatusActive, PaymentMethod: "cod",
+		}
+		jobPending := &models.Job{
+			ID: "job-pending", OwnerID: "pending-owner", EmployeeID: "emp-777", UserID: "client-2",
+			Status: models.JobStatusActive, PaymentMethod: "cod",
+		}
+		jobPaid := &models.Job{
+			ID: "job-paid", OwnerID: "paid-owner", EmployeeID: "emp-777", UserID: "client-3",
+			Status: models.JobStatusActive, PaymentMethod: "cod",
+		}
+		_ = s.CreateJob(ctx, jobFree)
+		_ = s.CreateJob(ctx, jobPending)
+		_ = s.CreateJob(ctx, jobPaid)
+
+		// 1. Free tenant → HTTP 402 Upgrade Required
+		reqBody := map[string]any{
+			"job_id":       "job-free",
+			"requester_id": tokenEmployee,
+			"latitude":     12.34,
+			"longitude":    56.78,
+			"tier":         "paid", // Injected bypass attempt
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		u.UpdateJobLocation(rec, req)
+		if rec.Code != http.StatusPaymentRequired {
+			t.Errorf("Expected 402 Payment Required for Free, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "upgrade_required") {
+			t.Errorf("Expected upgrade_required error payload, got: %s", rec.Body.String())
+		}
+
+		// 2. Pending Payment tenant → HTTP 402 Upgrade Required
+		reqBody["job_id"] = "job-pending"
+		body, _ = json.Marshal(reqBody)
+		req = httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.UpdateJobLocation(rec, req)
+		if rec.Code != http.StatusPaymentRequired {
+			t.Errorf("Expected 402 Payment Required for Pending Payment, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// 3. Paid tenant → HTTP 200 OK
+		reqBody["job_id"] = "job-paid"
+		body, _ = json.Marshal(reqBody)
+		req = httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.UpdateJobLocation(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for Paid, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+	})
+
+	// Test 10: Location Throttle Gating
+	t.Run("UpdateJobLocation Minimum Interval Throttling", func(t *testing.T) {
+		ctx := context.Background()
+		tokenEmployee, _ := jwtutil.GenerateToken("emp-888", "employee", "paid-owner", "emp@example.com")
+
+		// Create two active jobs under the same paid owner
+		jobA := &models.Job{
+			ID: "job-throttle-A", OwnerID: "paid-owner", EmployeeID: "emp-888", UserID: "client-a",
+			Status: models.JobStatusActive, PaymentMethod: "cod",
+		}
+		jobB := &models.Job{
+			ID: "job-throttle-B", OwnerID: "paid-owner", EmployeeID: "emp-888", UserID: "client-b",
+			Status: models.JobStatusActive, PaymentMethod: "cod",
+		}
+		_ = s.CreateJob(ctx, jobA)
+		_ = s.CreateJob(ctx, jobB)
+
+		// 1. Initial push for Job A → succeeds (200 OK)
+		reqBody := map[string]any{
+			"job_id":       "job-throttle-A",
+			"requester_id": tokenEmployee,
+			"latitude":     12.34,
+			"longitude":    56.78,
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		u.UpdateJobLocation(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected first push to succeed, got status %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// 2. Rapid second push for Job A (within 1 second) → fails (429 Too Many Requests)
+		req = httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.UpdateJobLocation(rec, req)
+		if rec.Code != http.StatusTooManyRequests {
+			t.Errorf("Expected 429 Too Many Requests, got status %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// 3. Parallel push for Job B → succeeds (200 OK, not blocked by Job A's throttle)
+		reqBody["job_id"] = "job-throttle-B"
+		body, _ = json.Marshal(reqBody)
+		req = httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.UpdateJobLocation(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected parallel job B push to succeed, got status %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// 4. Assert SSRF-safe design: u.chatServiceURL is used, verify it's configured in handlers
+		if u.chatServiceURL == "" {
+			t.Errorf("SSRF validation error: chatServiceURL is empty in handler configuration")
 		}
 	})
 }

@@ -3,7 +3,9 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
+	"errors"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -13,12 +15,19 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/project/user-service/internal/jwtutil"
 	"github.com/project/user-service/internal/models"
 	"github.com/project/user-service/internal/store"
 )
+
+// ErrUpgradeRequired is returned when a tenant's subscription tier is insufficient for a gated feature.
+var ErrUpgradeRequired = errors.New("upgrade_required")
+
+// MinLocationUpdateInterval defines the minimum wait time between consecutive location updates per job.
+const MinLocationUpdateInterval = 3 * time.Second
 
 // UserService holds dependencies for the user-service handlers.
 type UserService struct {
@@ -27,6 +36,8 @@ type UserService struct {
 	chatServiceURL       string
 	limiter              *RateLimiter
 	internalServiceToken string
+	locationThrottleMu   sync.Mutex
+	locationLastUpdate   map[string]time.Time
 }
 
 // NewUserService creates a new handler group.
@@ -41,6 +52,7 @@ func NewUserService(s *store.MongoDB, authServiceURL string, internalServiceToke
 		chatServiceURL:       chatServiceURL,
 		limiter:              NewRateLimiter(5, 1*time.Minute),
 		internalServiceToken: internalServiceToken,
+		locationLastUpdate:   make(map[string]time.Time),
 	}
 }
 
@@ -689,6 +701,22 @@ func (u *UserService) checkKYC(ownerID string) (string, error) {
 	return user.KYCStatus, nil
 }
 
+// requireTier enforces that a tenant has at least the minimum subscription tier.
+func (u *UserService) requireTier(ctx context.Context, tenantID string, min models.PlanTier) error {
+	sub := u.store.GetSubscription(ctx, tenantID)
+	var currentTier models.PlanTier = models.PlanFree
+	if sub != nil {
+		currentTier = sub.Tier
+	}
+
+	if min == models.PlanPaid {
+		if currentTier != models.PlanPaid {
+			return ErrUpgradeRequired
+		}
+	}
+	return nil
+}
+
 // ---------------------------------------------------------------------------
 // GET /users/subscription?tenant_id=xxx
 // POST /users/subscription
@@ -995,9 +1023,45 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Membership tier gating
+	if err := u.requireTier(ctx, job.OwnerID, models.PlanPaid); err != nil {
+		if errors.Is(err, ErrUpgradeRequired) {
+			writeJSON(w, http.StatusPaymentRequired, map[string]string{
+				"error":   "upgrade_required",
+				"message": "Live location tracking requires a paid subscription.",
+			})
+			return
+		}
+		log.Printf("[USER] Subscription verification failed for owner %s: %v", job.OwnerID, err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error":   "internal_error",
+			"message": "could not verify subscription status",
+		})
+		return
+	}
+
+	// Per-job minimum interval throttling
+	u.locationThrottleMu.Lock()
+	lastUpdate, exists := u.locationLastUpdate[job.ID]
+	now := time.Now()
+	if exists && now.Sub(lastUpdate) < MinLocationUpdateInterval {
+		u.locationThrottleMu.Unlock()
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error":   "too_many_requests",
+			"message": fmt.Sprintf("Too many location updates. Minimum interval is %.0f seconds.", MinLocationUpdateInterval.Seconds()),
+		})
+		return
+	}
+	u.locationLastUpdate[job.ID] = now
+	u.locationThrottleMu.Unlock()
+
 	// Update in the store
 	if err := u.store.UpdateJobLocation(ctx, req.JobID, req.Latitude, req.Longitude); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update location: " + err.Error()})
+		log.Printf("[USER] Failed to update location for job %s: %v", req.JobID, err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error":   "internal_error",
+			"message": "failed to update location",
+		})
 		return
 	}
 
