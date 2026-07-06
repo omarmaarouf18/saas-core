@@ -36,6 +36,7 @@ type Auth struct {
 //   - gatewaySecret: dynamic trust secret shared with the API gateway
 //   - internalServiceToken: dynamic trust token for backend microservices
 func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, appEnv string, gatewaySecret string, internalServiceToken string) *Auth {
+	InitCloudWatch()
 	isLocal := strings.EqualFold(appEnv, "local")
 	if isLocal {
 		log.Printf("[AUTH] ⚠ Running in LOCAL mode — OTP codes will be exposed in API responses")
@@ -527,6 +528,7 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 	// Verify owner is approved KYC
 	if owner.KYCStatus != models.KYCApproved {
 		log.Printf("[KYC BLOCKED] Owner %s (ID: %s) attempted to toggle employee %s, but KYC status is %q", owner.Email, owner.ID, req.EmployeeEmail, owner.KYCStatus)
+		ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "auth-service", owner.ID, owner.ID, fmt.Sprintf("attempted to toggle employee %s, KYC status is %s", req.EmployeeEmail, owner.KYCStatus), getClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: owner KYC approval is pending",
 		})
@@ -622,6 +624,7 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 			ownerStatus = string(owner.KYCStatus)
 		}
 		log.Printf("[KYC BLOCKED] Employee %s (ID: %s, Owner ID: %s) attempted action %q, but owner KYC status is %q", emp.Email, emp.ID, emp.OwnerID, req.Action, ownerStatus)
+		ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "auth-service", emp.ID, emp.OwnerID, fmt.Sprintf("attempted action %s, owner KYC status is %s", req.Action, ownerStatus), getClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: owner KYC approval is pending",
 		})
@@ -740,6 +743,7 @@ func (a *Auth) GetAuditLog(w http.ResponseWriter, r *http.Request) {
 
 	if resolvedRequesterID != tenantID {
 		log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to access audit log for tenant %s", resolvedRequesterID, tenantID)
+		ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "auth-service", resolvedRequesterID, tenantID, "attempted to access audit log", getClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "access denied: you are not authorized to view this tenant's audit log",
 		})
