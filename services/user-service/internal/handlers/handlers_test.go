@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/project/user-service/internal/jwtutil"
 	"github.com/project/user-service/internal/models"
 	"github.com/project/user-service/internal/store"
@@ -650,6 +652,46 @@ func TestUserServiceHandlers(t *testing.T) {
 
 		if count200 != 1 || count429 != 1 {
 			t.Errorf("Expected exactly one 200 OK and one 429 Too Many Requests, got codes: %v", codes)
+		}
+	})
+
+	// Test 13: Live Location Tracking Gated Rejection with Enabled CloudWatch Event Shipping
+	t.Run("UpdateJobLocation Gated Rejection with CloudWatch Shipping", func(t *testing.T) {
+		// Clean up throttle state first
+		u.locationThrottleMu.Lock()
+		delete(u.locationLastUpdate, "job-free")
+		delete(u.locationInFlight, "job-free")
+		u.locationThrottleMu.Unlock()
+
+		// Enable shipping with invalid/unreachable config
+		cwLogGroup = "test-group"
+		cwEnabled = true
+		cwClient = cloudwatchlogs.NewFromConfig(aws.Config{})
+
+		tokenEmployee, _ := jwtutil.GenerateToken("emp-777", "employee", "paid-owner", "emp@example.com")
+
+		reqBody := map[string]any{
+			"job_id":       "job-free", // free owner -> will trigger upgrade_required
+			"requester_id": tokenEmployee,
+			"latitude":     12.34,
+			"longitude":    56.78,
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+
+		start := time.Now()
+		u.UpdateJobLocation(rec, req)
+		duration := time.Since(start)
+
+		// 1. Must return 402 Payment Required
+		if rec.Code != http.StatusPaymentRequired {
+			t.Errorf("Expected 402 Payment Required, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// 2. Must not block (should be near instant)
+		if duration > 100*time.Millisecond {
+			t.Errorf("UpdateJobLocation blocked for %v when log shipping, expected it to return instantly", duration)
 		}
 	})
 }

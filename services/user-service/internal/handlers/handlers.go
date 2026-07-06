@@ -47,6 +47,7 @@ func NewUserService(s *store.MongoDB, authServiceURL string, internalServiceToke
 	if chatServiceURL == "" {
 		chatServiceURL = "http://localhost:3001"
 	}
+	InitCloudWatch()
 	return &UserService{
 		store:                s,
 		authServiceURL:       authServiceURL,
@@ -130,6 +131,7 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 	kycStatus, err := u.checkKYC(req.OwnerID)
 	if err != nil {
 		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.OwnerID, err)
+		ShipSecurityEvent(r.Context(), "KYC_BLOCKED_ERROR", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("failed KYC check: %v", err), getClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: unable to verify owner KYC status",
 		})
@@ -137,6 +139,7 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 	}
 	if kycStatus != "approved" {
 		log.Printf("[KYC BLOCKED] Owner %s attempted to create service, but KYC status is %q", req.OwnerID, kycStatus)
+		ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("attempted to create service, KYC status is %s", kycStatus), getClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: owner KYC approval is pending",
 		})
@@ -219,6 +222,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	kycStatus, err := u.checkKYC(req.OwnerID)
 	if err != nil {
 		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.OwnerID, err)
+		ShipSecurityEvent(r.Context(), "KYC_BLOCKED_ERROR", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("failed KYC check: %v", err), getClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: unable to verify owner KYC status",
 		})
@@ -226,6 +230,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	}
 	if kycStatus != "approved" {
 		log.Printf("[KYC BLOCKED] Owner %s attempted to track job, but KYC status is %q", req.OwnerID, kycStatus)
+		ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("attempted to track job, KYC status is %s", kycStatus), getClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: owner KYC approval is pending",
 		})
@@ -344,6 +349,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 
 		if resolvedRequester != job.OwnerID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
 			log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to complete job %s owned by owner %s and employee %s", resolvedRequester, job.ID, job.OwnerID, job.EmployeeID)
+			ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to complete job %s", job.ID), getClientIP(r))
 			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to complete this job"})
 			return
 		}
@@ -466,6 +472,7 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 
 	if resolvedRequester != job.OwnerID && resolvedRequester != job.UserID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
 		log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to access job %s owned by owner %s, employee %s, user %s", resolvedRequester, job.ID, job.OwnerID, job.EmployeeID, job.UserID)
+		ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to access job %s", job.ID), getClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to view this job"})
 		return
 	}
@@ -563,6 +570,7 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 	kycStatus, err := u.checkKYC(req.TenantID)
 	if err != nil {
 		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.TenantID, err)
+		ShipSecurityEvent(r.Context(), "KYC_BLOCKED_ERROR", "user-service", req.TenantID, req.TenantID, fmt.Sprintf("failed KYC check: %v", err), getClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: unable to verify owner KYC status",
 		})
@@ -570,6 +578,7 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 	}
 	if kycStatus != "approved" {
 		log.Printf("[KYC BLOCKED] Owner %s attempted to deposit to wallet, but KYC status is %q", req.TenantID, kycStatus)
+		ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "user-service", req.TenantID, req.TenantID, fmt.Sprintf("attempted to deposit, KYC status is %s", kycStatus), getClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: owner KYC approval is pending",
 		})
@@ -1028,6 +1037,7 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 	// Membership tier gating
 	if err := u.requireTier(ctx, job.OwnerID, models.PlanPaid); err != nil {
 		if errors.Is(err, ErrUpgradeRequired) {
+			ShipSecurityEvent(ctx, "UPGRADE_REQUIRED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("location update rejected for job %s, paid subscription required", job.ID), getClientIP(r))
 			writeJSON(w, http.StatusPaymentRequired, map[string]string{
 				"error":   "upgrade_required",
 				"message": "Live location tracking requires a paid subscription.",
