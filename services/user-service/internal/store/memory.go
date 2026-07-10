@@ -463,9 +463,9 @@ func (s *MongoDB) DeductCODFee(ctx context.Context, tenantID, jobID string, amou
 
 func seedServices() []models.Service {
 	raw := []struct {
-		id, name, cat   string
-		bp, tbp, tppk   float64
-		lat, lon        float64
+		id, name, cat string
+		bp, tbp, tppk float64
+		lat, lon      float64
 	}{
 		{"svc-001", "Home Cleaning", "Cleaning", 45, 40, 2.5, 30.0444, 31.2357},
 		{"svc-002", "Office Deep Clean", "Cleaning", 120, 100, 5.0, 30.0500, 31.2400},
@@ -557,4 +557,3 @@ func (s *MongoDB) UpdateJobLocation(ctx context.Context, id string, lat, lon flo
 	}
 	return nil
 }
-

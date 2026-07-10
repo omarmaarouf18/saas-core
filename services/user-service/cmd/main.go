@@ -1,15 +1,16 @@
 // User Service — Service discovery, job lifecycle, and financial operations.
 //
 // Endpoints:
-//   GET  /users/services           — List & filter services (spatial index)
-//   POST /users/services           — Create a service
-//   POST /users/jobs/track         — Create job with escrow lock
-//   POST /users/jobs/complete      — Complete job with profit split
-//   GET  /users/wallet             — Get tenant wallet
-//   POST /users/wallet/deposit     — Deposit funds
-//   GET  /users/ledger             — Transaction ledger
-//   GET  /users/platform/config    — Platform fee config
-//   GET  /health                   — Health check
+//
+//	GET  /users/services           — List & filter services (spatial index)
+//	POST /users/services           — Create a service
+//	POST /users/jobs/track         — Create job with escrow lock
+//	POST /users/jobs/complete      — Complete job with profit split
+//	GET  /users/wallet             — Get tenant wallet
+//	POST /users/wallet/deposit     — Deposit funds
+//	GET  /users/ledger             — Transaction ledger
+//	GET  /users/platform/config    — Platform fee config
+//	GET  /health                   — Health check
 package main
 
 import (

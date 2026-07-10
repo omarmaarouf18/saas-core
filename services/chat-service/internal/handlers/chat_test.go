@@ -19,7 +19,7 @@ func TestCanAccessChannel(t *testing.T) {
 	// Spin up a mock User Service to return job details
 	mockUserServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		
+
 		if r.Header.Get("X-Internal-Token") != "mock-internal-token" {
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})

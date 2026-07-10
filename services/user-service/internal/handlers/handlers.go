@@ -5,9 +5,9 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
-	"errors"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -253,7 +253,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().UTC()
 	job := &models.Job{
 		ID: generateID(), OwnerID: req.OwnerID, EmployeeID: req.EmployeeID,
-		UserID: req.UserID,
+		UserID:    req.UserID,
 		ServiceID: req.ServiceID, Status: models.JobStatusPending,
 		Location: req.Location, PaymentMethod: req.PaymentMethod,
 		CreatedAt: now, UpdatedAt: now,
@@ -425,7 +425,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[USER] Job %s completed: total=%.2f fee=%.2f net=%.2f", job.ID, amount, fee, net)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"message": "job completed — profit split executed",
-		"job_id": job.ID, "total_amount": amount,
+		"job_id":  job.ID, "total_amount": amount,
 		"platform_fee": fee, "platform_fee_pct": feePercent,
 		"net_to_tenant": net,
 	})
@@ -1133,4 +1133,3 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "location updated"})
 }
-

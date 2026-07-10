@@ -1,10 +1,11 @@
 // Notification Service — Real-time SSE notifications with role-based broadcasting.
 //
 // Endpoints:
-//   GET  /notifications/stream              — SSE stream (token, tenant_id, role)
-//   POST /notifications/send                — Push notification to connected clients
-//   POST /notifications/broadcast/job-alert — Broadcast job alert to all roles
-//   GET  /health                            — Health check with client stats
+//
+//	GET  /notifications/stream              — SSE stream (token, tenant_id, role)
+//	POST /notifications/send                — Push notification to connected clients
+//	POST /notifications/broadcast/job-alert — Broadcast job alert to all roles
+//	GET  /health                            — Health check with client stats
 package main
 
 import (
@@ -64,8 +65,8 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{
-			"service": "notification-service",
-			"version": "0.2.0",
+			"service":   "notification-service",
+			"version":   "0.2.0",
 			"transport": "SSE",
 		})
 	})

@@ -175,6 +175,7 @@ type CompleteJobRequest struct {
 }
 
 type PlanTier string
+
 const (
 	PlanFree           PlanTier = "free"
 	PlanPaid           PlanTier = "paid"

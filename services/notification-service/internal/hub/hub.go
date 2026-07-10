@@ -26,7 +26,7 @@ type Notification struct {
 	TenantID  string    `json:"tenant_id"` // scope to tenant
 	Title     string    `json:"title"`
 	Body      string    `json:"body"`
-	Roles     []Role    `json:"roles"`     // target roles (empty = broadcast all)
+	Roles     []Role    `json:"roles"` // target roles (empty = broadcast all)
 	Timestamp time.Time `json:"timestamp"`
 }
 

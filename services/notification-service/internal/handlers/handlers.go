@@ -236,8 +236,8 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 	n.hub.Broadcast(notif)
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"message":      "notification dispatched",
-		"notification": notif,
+		"message":        "notification dispatched",
+		"notification":   notif,
 		"active_clients": n.hub.ClientCount(),
 	})
 }
@@ -288,9 +288,9 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 	n.hub.Broadcast(notif)
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"message":        "job alert broadcast sent",
-		"notification":   notif,
-		"active_clients": n.hub.ClientCount(),
+		"message":         "job alert broadcast sent",
+		"notification":    notif,
+		"active_clients":  n.hub.ClientCount(),
 		"clients_by_role": n.hub.ClientsByRole(),
 	})
 }

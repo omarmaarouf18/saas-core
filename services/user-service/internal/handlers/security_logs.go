@@ -18,10 +18,10 @@ import (
 )
 
 var (
-	cwClient     *cloudwatchlogs.Client
-	cwInitOnce   sync.Once
-	cwLogGroup   string
-	cwEnabled    bool
+	cwClient   *cloudwatchlogs.Client
+	cwInitOnce sync.Once
+	cwLogGroup string
+	cwEnabled  bool
 )
 
 // InitCloudWatch initializes the CloudWatch Logs client from environment variables.

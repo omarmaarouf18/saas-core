@@ -1,17 +1,20 @@
 // Chat Service — Real-time messaging via WebSocket.
 //
 // Endpoints (relative to this service):
-//   GET  /chat/ws?token=<id>  — Upgrade to WebSocket, join hub
-//   GET  /health              — Health check
+//
+//	GET  /chat/ws?token=<id>  — Upgrade to WebSocket, join hub
+//	GET  /health              — Health check
 //
 // Via the API Gateway:
-//   GET  /api/v1/chat/ws?token=<id>
+//
+//	GET  /api/v1/chat/ws?token=<id>
 //
 // WebSocket message protocol (JSON):
-//   → { "action": "subscribe",   "channel": "general" }
-//   → { "action": "unsubscribe", "channel": "general" }
-//   → { "action": "message",     "channel": "general", "content": "hello" }
-//   ← { "type": "message", "channel": "general", "sender_id": "...", "content": "hello" }
+//
+//	→ { "action": "subscribe",   "channel": "general" }
+//	→ { "action": "unsubscribe", "channel": "general" }
+//	→ { "action": "message",     "channel": "general", "content": "hello" }
+//	← { "type": "message", "channel": "general", "sender_id": "...", "content": "hello" }
 package main
 
 import (
@@ -89,9 +92,9 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]any{
-			"status":           "ok",
-			"active_clients":   hub.ClientCount(),
-			"active_channels":  hub.ChannelCount(),
+			"status":          "ok",
+			"active_clients":  hub.ClientCount(),
+			"active_channels": hub.ChannelCount(),
 		})
 	})
 

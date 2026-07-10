@@ -21,10 +21,10 @@ import (
 
 // Auth holds dependencies for the authentication handlers.
 type Auth struct {
-	store         *store.MongoDB
-	dispatcher    otp.OTPDispatcher
-	isLocal       bool // true when APP_ENV == "local"
-	limiter       *RateLimiter
+	store                *store.MongoDB
+	dispatcher           otp.OTPDispatcher
+	isLocal              bool // true when APP_ENV == "local"
+	limiter              *RateLimiter
 	gatewaySecret        string
 	internalServiceToken string
 }

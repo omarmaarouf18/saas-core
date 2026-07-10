@@ -1,26 +1,28 @@
 // Auth Service — Multi-role authentication with signup, login, and 2FA.
 //
 // Endpoints (relative to this service):
-//   POST /auth/signup             — Register with role-based handling + OTP
-//   POST /auth/login              — Validate credentials, trigger 2FA OTP
-//   POST /auth/verify-otp         — Complete 2FA flow (AES-256 decrypted)
-//   POST /auth/employee/toggle    — Freeze/activate employee accounts
-//   POST /auth/employee/action    — Simulate employee action (audit log)
-//   GET  /auth/audit-log          — Retrieve audit log
-//   GET  /health                  — Health check
+//
+//	POST /auth/signup             — Register with role-based handling + OTP
+//	POST /auth/login              — Validate credentials, trigger 2FA OTP
+//	POST /auth/verify-otp         — Complete 2FA flow (AES-256 decrypted)
+//	POST /auth/employee/toggle    — Freeze/activate employee accounts
+//	POST /auth/employee/action    — Simulate employee action (audit log)
+//	GET  /auth/audit-log          — Retrieve audit log
+//	GET  /health                  — Health check
 //
 // OTP Flow:
-//   1. Generate 4-digit OTP
-//   2. Encrypt via AES-256-GCM → store ciphertext in MongoDB
-//   3. Dispatch via OTPDispatcher (MockSMS/MockEmail in local mode)
-//   4. When APP_ENV=local, plaintext OTP is exposed as "dev_otp" in response
-//   5. /auth/verify-otp decrypts stored ciphertext and compares
+//  1. Generate 4-digit OTP
+//  2. Encrypt via AES-256-GCM → store ciphertext in MongoDB
+//  3. Dispatch via OTPDispatcher (MockSMS/MockEmail in local mode)
+//  4. When APP_ENV=local, plaintext OTP is exposed as "dev_otp" in response
+//  5. /auth/verify-otp decrypts stored ciphertext and compares
 //
 // Environment Variables:
-//   APP_ENV          — "local" enables dev_otp exposure + mock dispatchers
-//   OTP_AES_KEY      — 32-byte hex key for AES-256-GCM (auto-generated if empty)
-//   MONGO_URI        — MongoDB connection string
-//   MONGO_INITDB_DATABASE — Database name
+//
+//	APP_ENV          — "local" enables dev_otp exposure + mock dispatchers
+//	OTP_AES_KEY      — 32-byte hex key for AES-256-GCM (auto-generated if empty)
+//	MONGO_URI        — MongoDB connection string
+//	MONGO_INITDB_DATABASE — Database name
 package main
 
 import (

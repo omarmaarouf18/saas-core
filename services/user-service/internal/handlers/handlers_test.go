@@ -27,10 +27,10 @@ func TestUserServiceHandlers(t *testing.T) {
 	if mongoURI == "" {
 		mongoURI = "mongodb://localhost:27017"
 	}
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	
+
 	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
 	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
 	if err != nil {
@@ -46,7 +46,7 @@ func TestUserServiceHandlers(t *testing.T) {
 	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		id := r.URL.Query().Get("id")
-		
+
 		if id == "kyc-approved-owner" {
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(map[string]any{
@@ -56,7 +56,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			})
 			return
 		}
-		
+
 		if id == "kyc-pending-owner" {
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(map[string]any{
@@ -66,7 +66,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			})
 			return
 		}
-		
+
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(map[string]string{"error": "user not found"})
 	}))
@@ -152,7 +152,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			json.NewEncoder(w).Encode(map[string]any{"id": "tenant-id"})
 		}))
 		defer mockAuthServer2.Close()
-		
+
 		u2 := NewUserService(s, mockAuthServer2.URL, "mock-internal-token")
 
 		reqBody := map[string]any{
@@ -200,7 +200,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 
 		// B. Mismatched requester_id -> 403 Forbidden
-		req = httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999&requester_id=" + tokenMismatchedUser, nil)
+		req = httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999&requester_id="+tokenMismatchedUser, nil)
 		rec = httptest.NewRecorder()
 		u.GetJob(rec, req)
 		if rec.Code != http.StatusForbidden {
@@ -208,7 +208,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 
 		// C. Matching requester_id (Owner) -> 200 OK
-		req = httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999&requester_id=" + tokenJobOwner, nil)
+		req = httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999&requester_id="+tokenJobOwner, nil)
 		rec = httptest.NewRecorder()
 		u.GetJob(rec, req)
 		if rec.Code != http.StatusOK {
@@ -216,7 +216,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 
 		// D. Matching requester_id (User/Client) -> 200 OK
-		req = httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999&requester_id=" + tokenJobClient, nil)
+		req = httptest.NewRequest("GET", "/users/jobs/get?id=test-job-999&requester_id="+tokenJobClient, nil)
 		rec = httptest.NewRecorder()
 		u.GetJob(rec, req)
 		if rec.Code != http.StatusOK {
@@ -243,7 +243,7 @@ func TestUserServiceHandlers(t *testing.T) {
 
 		// A. Valid internal token -> 200 OK
 		reqBody := map[string]any{
-			"job_id": "test-job-888",
+			"job_id":         "test-job-888",
 			"cash_collected": true,
 		}
 		body, _ := json.Marshal(reqBody)
@@ -260,9 +260,9 @@ func TestUserServiceHandlers(t *testing.T) {
 
 		// B. Mismatched requester_id -> 403 Forbidden
 		reqBody = map[string]any{
-			"job_id": "test-job-888",
+			"job_id":         "test-job-888",
 			"cash_collected": true,
-			"requester_id": tokenMismatchedUser,
+			"requester_id":   tokenMismatchedUser,
 		}
 		body, _ = json.Marshal(reqBody)
 		req = httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
@@ -274,9 +274,9 @@ func TestUserServiceHandlers(t *testing.T) {
 
 		// C. Matching requester_id (Owner) -> 200 OK
 		reqBody = map[string]any{
-			"job_id": "test-job-888",
+			"job_id":         "test-job-888",
 			"cash_collected": true,
-			"requester_id": tokenJobOwner,
+			"requester_id":   tokenJobOwner,
 		}
 		body, _ = json.Marshal(reqBody)
 		req = httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
@@ -301,7 +301,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			})
 		}))
 		defer mockAuthServer3.Close()
-		
+
 		u3 := NewUserService(s, mockAuthServer3.URL, "mock-internal-token")
 
 		// A. Valid deposit limit: 500,000 -> 200 OK
@@ -421,7 +421,7 @@ func TestUserServiceHandlers(t *testing.T) {
 	// Test 9: Live Location Tracking Subscription Gating
 	t.Run("UpdateJobLocation Subscription Gating", func(t *testing.T) {
 		ctx := context.Background()
-		
+
 		// Setup 3 owners with different subscription tiers
 		tokenEmployee, _ := jwtutil.GenerateToken("emp-777", "employee", "paid-owner", "emp@example.com")
 

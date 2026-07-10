@@ -10,32 +10,32 @@ import (
 
 // Message represents a chat message flowing through the hub.
 type Message struct {
-	Channel    string   `json:"channel"`                      // target channel name
-	SenderID   string   `json:"sender_id,omitempty"`          // mocked user identity from token
-	Content    string   `json:"content,omitempty"`            // message body
-	Type       string   `json:"type,omitempty"`               // "message", "join", "leave", "location_update"
-	Latitude   *float64 `json:"latitude,omitempty"`           // live tracking latitude
-	Longitude  *float64 `json:"longitude,omitempty"`          // live tracking longitude
-	EmployeeID string   `json:"employee_id,omitempty"`        // live tracking employee id
+	Channel    string   `json:"channel"`               // target channel name
+	SenderID   string   `json:"sender_id,omitempty"`   // mocked user identity from token
+	Content    string   `json:"content,omitempty"`     // message body
+	Type       string   `json:"type,omitempty"`        // "message", "join", "leave", "location_update"
+	Latitude   *float64 `json:"latitude,omitempty"`    // live tracking latitude
+	Longitude  *float64 `json:"longitude,omitempty"`   // live tracking longitude
+	EmployeeID string   `json:"employee_id,omitempty"` // live tracking employee id
 }
 
 // Client represents a single WebSocket connection registered with the Hub.
 type Client struct {
 	ID       string          // unique connection ID (from token)
 	Channels map[string]bool // channels this client is subscribed to
-	Send     chan []byte      // outbound message buffer
+	Send     chan []byte     // outbound message buffer
 }
 
 // Hub maintains the set of active clients and broadcasts messages
 // to clients subscribed to the target channel.
 type Hub struct {
-	mu         sync.RWMutex
-	clients    map[*Client]bool     // all connected clients
-	channels   map[string]map[*Client]bool // channel → set of clients
+	mu       sync.RWMutex
+	clients  map[*Client]bool            // all connected clients
+	channels map[string]map[*Client]bool // channel → set of clients
 
-	Register   chan *Client   // register requests from connections
-	Unregister chan *Client   // unregister requests from connections
-	Broadcast  chan *Message  // inbound messages to broadcast
+	Register   chan *Client  // register requests from connections
+	Unregister chan *Client  // unregister requests from connections
+	Broadcast  chan *Message // inbound messages to broadcast
 }
 
 // NewHub creates and returns a new Hub instance.
