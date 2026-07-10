@@ -23,45 +23,30 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/project/user-service/internal/config"
 	"github.com/project/user-service/internal/handlers"
+	"github.com/project/user-service/internal/jwtutil"
 	"github.com/project/user-service/internal/store"
 )
 
 func main() {
-	if os.Getenv("JWT_SECRET") == "" {
-		log.Fatal("JWT_SECRET environment variable is required and must not be empty")
-	}
-	if os.Getenv("INTERNAL_SERVICE_TOKEN") == "" {
-		log.Fatal("INTERNAL_SERVICE_TOKEN environment variable is required and must not be empty")
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("[USER] Failed to load configuration: %v", err)
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3003"
-	}
-	mongoURI := os.Getenv("MONGO_URI")
-	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27017/saas_platform"
-	}
-	dbName := os.Getenv("MONGO_INITDB_DATABASE")
-	if dbName == "" {
-		dbName = "saas_platform"
-	}
+	// Initialize JWT utility package.
+	jwtutil.Init(cfg.JWTSecret)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	mongoStore, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	mongoStore, err := store.NewMongoDB(ctx, cfg.MongoURI, cfg.MongoDatabase)
 	if err != nil {
 		log.Fatalf("[USER] Failed to initialize MongoDB store: %v", err)
 	}
 
-	authServiceURL := os.Getenv("AUTH_SERVICE_URL")
-	if authServiceURL == "" {
-		authServiceURL = "http://localhost:3002"
-	}
-
-	userHandlers := handlers.NewUserService(mongoStore, authServiceURL, os.Getenv("INTERNAL_SERVICE_TOKEN"))
+	userHandlers := handlers.NewUserService(mongoStore, cfg)
 	mux := http.NewServeMux()
 	userHandlers.RegisterRoutes(mux)
 
@@ -83,7 +68,7 @@ func main() {
 		})
 	})
 
-	addr := ":" + port
+	addr := ":" + cfg.Port
 	server := &http.Server{Addr: addr, Handler: mux}
 
 	go func() {

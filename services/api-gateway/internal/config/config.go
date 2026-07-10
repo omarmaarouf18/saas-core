@@ -19,6 +19,7 @@ type Config struct {
 	Port          string
 	Routes        []ServiceRoute
 	GatewaySecret string
+	AllowedOrigin string
 }
 
 // Load reads configuration from environment variables.
@@ -32,6 +33,7 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		Port:          envOrDefault("PORT", "8080"),
 		GatewaySecret: gatewaySecret,
+		AllowedOrigin: envOrDefault("ALLOWED_ORIGIN", "http://localhost:3000"),
 	}
 
 	// Each route is defined by: path prefix → env var → default address.

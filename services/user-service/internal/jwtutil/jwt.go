@@ -22,12 +22,24 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func getSecret() []byte {
-	secret := os.Getenv("JWT_SECRET")
+var jwtSecret []byte
+
+func Init(secret string) {
 	if secret == "" {
-		panic("JWT_SECRET environment variable is required and must not be empty")
+		panic("JWT_SECRET is required and must not be empty")
 	}
-	return []byte(secret)
+	jwtSecret = []byte(secret)
+}
+
+func getSecret() []byte {
+	if len(jwtSecret) == 0 {
+		secret := os.Getenv("JWT_SECRET")
+		if secret == "" {
+			panic("JWT_SECRET environment variable is required and must not be empty")
+		}
+		return []byte(secret)
+	}
+	return jwtSecret
 }
 
 func GenerateToken(userID string, role string, tenantID string, email string) (string, error) {

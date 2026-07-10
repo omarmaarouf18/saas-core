@@ -12,37 +12,24 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 
+	"github.com/project/notification-service/internal/config"
 	"github.com/project/notification-service/internal/handlers"
 	"github.com/project/notification-service/internal/hub"
+	"github.com/project/notification-service/internal/jwtutil"
 )
 
 func main() {
-	if os.Getenv("JWT_SECRET") == "" {
-		log.Fatal("JWT_SECRET environment variable is required and must not be empty")
-	}
-	if os.Getenv("INTERNAL_SERVICE_TOKEN") == "" {
-		log.Fatal("INTERNAL_SERVICE_TOKEN environment variable is required and must not be empty")
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("[NOTIF] Failed to load configuration: %v", err)
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3004"
-	}
-
-	authServiceURL := os.Getenv("AUTH_SERVICE_URL")
-	if authServiceURL == "" {
-		authServiceURL = "http://localhost:3002"
-	}
-
-	allowedOrigin := os.Getenv("ALLOWED_ORIGIN")
-	if allowedOrigin == "" {
-		allowedOrigin = "http://localhost:3000"
-	}
+	// Initialize JWT utility package.
+	jwtutil.Init(cfg.JWTSecret)
 
 	sseHub := hub.NewSSEHub()
-	notifHandlers := handlers.NewNotification(sseHub, authServiceURL, allowedOrigin, os.Getenv("INTERNAL_SERVICE_TOKEN"))
+	notifHandlers := handlers.NewNotification(sseHub, cfg)
 
 	mux := http.NewServeMux()
 	notifHandlers.RegisterRoutes(mux)
@@ -71,7 +58,7 @@ func main() {
 		})
 	})
 
-	addr := ":" + port
+	addr := ":" + cfg.Port
 	log.Printf("Notification Service listening on %s (SSE)", addr)
 	log.Printf("Endpoints: GET /notifications/stream, POST /notifications/send, POST /notifications/broadcast/job-alert")
 	if err := http.ListenAndServe(addr, mux); err != nil {

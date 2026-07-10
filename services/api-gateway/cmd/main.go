@@ -69,7 +69,7 @@ func main() {
 	// ---- Wrap with global rate limiting and logging middleware ----
 	limiter := middleware.NewRateLimiter(100, 1*time.Minute)
 	rateLimited := middleware.RateLimit(limiter)(mux)
-	logged := middleware.Logging(rateLimited)
+	logged := middleware.Logging(cfg.AllowedOrigin)(rateLimited)
 
 	// ---- Start server ----
 	addr := ":" + cfg.Port

@@ -35,50 +35,29 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/project/auth-service/internal/config"
 	"github.com/project/auth-service/internal/handlers"
+	"github.com/project/auth-service/internal/jwtutil"
 	"github.com/project/auth-service/internal/otp"
 	"github.com/project/auth-service/internal/otpcrypto"
 	"github.com/project/auth-service/internal/store"
 )
 
 func main() {
-	if os.Getenv("JWT_SECRET") == "" {
-		log.Fatal("JWT_SECRET environment variable is required and must not be empty")
-	}
-	if os.Getenv("GATEWAY_SECRET") == "" {
-		log.Fatal("GATEWAY_SECRET environment variable is required and must not be empty")
-	}
-	if os.Getenv("INTERNAL_SERVICE_TOKEN") == "" {
-		log.Fatal("INTERNAL_SERVICE_TOKEN environment variable is required and must not be empty")
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("[AUTH] Failed to load configuration: %v", err)
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3002"
-	}
-
-	mongoURI := os.Getenv("MONGO_URI")
-	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27017/saas_platform"
-	}
-
-	dbName := os.Getenv("MONGO_INITDB_DATABASE")
-	if dbName == "" {
-		dbName = "saas_platform"
-	}
-
-	appEnv := os.Getenv("APP_ENV")
-	if appEnv == "" {
-		appEnv = "local"
-	}
+	// Initialize JWT utility package.
+	jwtutil.Init(cfg.JWTSecret)
 
 	// Initialize AES-256-GCM cipher for OTP encryption at rest.
-	aesKey := os.Getenv("OTP_AES_KEY")
-	otpCipher, err := otpcrypto.NewCipher(aesKey)
+	otpCipher, err := otpcrypto.NewCipher(cfg.OTPAESKey)
 	if err != nil {
 		log.Fatalf("[AUTH] Failed to initialize OTP cipher: %v", err)
 	}
-	if aesKey == "" {
+	if cfg.OTPAESKey == "" {
 		log.Println("[AUTH] ⚠ OTP_AES_KEY not set — using ephemeral key (OTPs will not survive restarts)")
 	}
 
@@ -86,7 +65,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	mongoStore, err := store.NewMongoDB(ctx, mongoURI, dbName, otpCipher)
+	mongoStore, err := store.NewMongoDB(ctx, cfg.MongoURI, cfg.MongoDatabase, otpCipher)
 	if err != nil {
 		log.Fatalf("[AUTH] Failed to initialize MongoDB store: %v", err)
 	}
@@ -94,7 +73,7 @@ func main() {
 
 	// Select OTP dispatcher based on environment.
 	var dispatcher otp.OTPDispatcher
-	switch appEnv {
+	switch cfg.AppEnv {
 	case "local", "dev", "development":
 		dispatcher = &otp.MockSMSDispatcher{}
 		log.Printf("[AUTH] OTP dispatcher: %s (no external network calls)", dispatcher.Name())
@@ -106,7 +85,7 @@ func main() {
 	}
 
 	// Create handler group and register routes.
-	authHandlers := handlers.NewAuth(mongoStore, dispatcher, appEnv, os.Getenv("GATEWAY_SECRET"), os.Getenv("INTERNAL_SERVICE_TOKEN"))
+	authHandlers := handlers.NewAuth(mongoStore, dispatcher, cfg)
 
 	mux := http.NewServeMux()
 
@@ -122,7 +101,7 @@ func main() {
 			"storage":      "mongodb",
 			"otp_crypto":   "AES-256-GCM",
 			"otp_dispatch": dispatcher.Name(),
-			"app_env":      appEnv,
+			"app_env":      cfg.AppEnv,
 		})
 	})
 
@@ -141,7 +120,7 @@ func main() {
 		})
 	})
 
-	addr := ":" + port
+	addr := ":" + cfg.Port
 	server := &http.Server{Addr: addr, Handler: mux}
 
 	// Graceful shutdown.

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/project/auth-service/internal/config"
 	"github.com/project/auth-service/internal/jwtutil"
 	"github.com/project/auth-service/internal/models"
 	"github.com/project/auth-service/internal/otp"
@@ -32,12 +33,10 @@ type Auth struct {
 // NewAuth creates a new Auth handler group.
 //   - s:             MongoDB-backed persistent store
 //   - dispatcher:    OTPDispatcher implementation (mock for local, real for prod)
-//   - appEnv:        value of the APP_ENV environment variable
-//   - gatewaySecret: dynamic trust secret shared with the API gateway
-//   - internalServiceToken: dynamic trust token for backend microservices
-func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, appEnv string, gatewaySecret string, internalServiceToken string) *Auth {
-	InitCloudWatch()
-	isLocal := strings.EqualFold(appEnv, "local")
+//   - cfg:           central configuration loader struct
+func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config) *Auth {
+	InitCloudWatch(cfg.CloudWatchLogGroup)
+	isLocal := strings.EqualFold(cfg.AppEnv, "local")
 	if isLocal {
 		log.Printf("[AUTH] ⚠ Running in LOCAL mode — OTP codes will be exposed in API responses")
 	}
@@ -46,8 +45,8 @@ func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, appEnv string, gate
 		dispatcher:           dispatcher,
 		isLocal:              isLocal,
 		limiter:              NewRateLimiter(),
-		gatewaySecret:        gatewaySecret,
-		internalServiceToken: internalServiceToken,
+		gatewaySecret:        cfg.GatewaySecret,
+		internalServiceToken: cfg.InternalServiceToken,
 	}
 }
 

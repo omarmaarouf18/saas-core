@@ -8,13 +8,19 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/project/notification-service/internal/config"
 	"github.com/project/notification-service/internal/hub"
 )
 
 func TestNotificationHandlersAuth(t *testing.T) {
 	sseHub := hub.NewSSEHub()
 	internalToken := "secret-internal-token"
-	n := NewNotification(sseHub, "http://localhost:3002", "http://localhost:3000", internalToken)
+	cfg := &config.Config{
+		AuthServiceURL:       "http://localhost:3002",
+		AllowedOrigin:        "http://localhost:3000",
+		InternalServiceToken: internalToken,
+	}
+	n := NewNotification(sseHub, cfg)
 
 	t.Run("Send auth missing", func(t *testing.T) {
 		reqBody := map[string]any{

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -24,13 +23,13 @@ var (
 	cwEnabled  bool
 )
 
-// InitCloudWatch initializes the CloudWatch Logs client from environment variables.
-// It logs a warning if CLOUDWATCH_LOG_GROUP is not configured.
-func InitCloudWatch() {
+// InitCloudWatch initializes the CloudWatch Logs client with the provided log group.
+// It logs a warning if logGroup is not configured.
+func InitCloudWatch(logGroup string) {
 	cwInitOnce.Do(func() {
-		cwLogGroup = os.Getenv("CLOUDWATCH_LOG_GROUP")
+		cwLogGroup = logGroup
 		if cwLogGroup == "" {
-			log.Println("security event shipping disabled — CLOUDWATCH_LOG_GROUP not set")
+			log.Println("security event shipping disabled — CloudWatch log group not set")
 			return
 		}
 
@@ -62,7 +61,7 @@ type SecurityEvent struct {
 // ShipSecurityEvent ships a structured JSON log to CloudWatch.
 // It runs asynchronously in a goroutine and does not block.
 func ShipSecurityEvent(ctx context.Context, eventType, service, actorID, tenantID, detail, clientIP string) {
-	InitCloudWatch()
+	InitCloudWatch("")
 	if !cwEnabled || cwClient == nil {
 		return
 	}

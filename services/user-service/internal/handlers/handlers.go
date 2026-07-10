@@ -13,11 +13,11 @@ import (
 	"log"
 	"math"
 	"net/http"
-	"os"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/project/user-service/internal/config"
 	"github.com/project/user-service/internal/jwtutil"
 	"github.com/project/user-service/internal/models"
 	"github.com/project/user-service/internal/store"
@@ -42,18 +42,18 @@ type UserService struct {
 }
 
 // NewUserService creates a new handler group.
-func NewUserService(s *store.MongoDB, authServiceURL string, internalServiceToken string) *UserService {
-	chatServiceURL := os.Getenv("CHAT_SERVICE_URL")
+func NewUserService(s *store.MongoDB, cfg *config.Config) *UserService {
+	InitCloudWatch(cfg.CloudWatchLogGroup)
+	chatServiceURL := cfg.ChatServiceURL
 	if chatServiceURL == "" {
 		chatServiceURL = "http://localhost:3001"
 	}
-	InitCloudWatch()
 	return &UserService{
 		store:                s,
-		authServiceURL:       authServiceURL,
+		authServiceURL:       cfg.AuthServiceURL,
 		chatServiceURL:       chatServiceURL,
 		limiter:              NewRateLimiter(5, 1*time.Minute),
-		internalServiceToken: internalServiceToken,
+		internalServiceToken: cfg.InternalServiceToken,
 		locationLastUpdate:   make(map[string]time.Time),
 		locationInFlight:     make(map[string]bool),
 	}

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/project/notification-service/internal/config"
 	"github.com/project/notification-service/internal/hub"
 	"github.com/project/notification-service/internal/jwtutil"
 )
@@ -22,16 +23,17 @@ type Notification struct {
 }
 
 // NewNotification creates a new handler group.
-func NewNotification(h *hub.SSEHub, authServiceURL string, allowedOrigin string, internalServiceToken string) *Notification {
+func NewNotification(h *hub.SSEHub, cfg *config.Config) *Notification {
+	allowedOrigin := cfg.AllowedOrigin
 	if allowedOrigin == "" {
 		allowedOrigin = "http://localhost:3000"
 	}
 	return &Notification{
 		hub:                  h,
-		authServiceURL:       authServiceURL,
+		authServiceURL:       cfg.AuthServiceURL,
 		allowedOrigin:        allowedOrigin,
 		limiter:              NewRateLimiter(5, 1*time.Minute),
-		internalServiceToken: internalServiceToken,
+		internalServiceToken: cfg.InternalServiceToken,
 	}
 }
 

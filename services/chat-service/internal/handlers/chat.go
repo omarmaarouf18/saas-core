@@ -14,6 +14,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/project/chat-service/internal/chat"
+	"github.com/project/chat-service/internal/config"
 	"github.com/project/chat-service/internal/jwtutil"
 	"github.com/project/chat-service/internal/store"
 )
@@ -50,19 +51,20 @@ type Chat struct {
 }
 
 // NewChat creates a new Chat handler group.
-func NewChat(hub *chat.Hub, s *store.MongoDB, authServiceURL string, userServiceURL string, internalServiceToken string, allowedOrigin string) *Chat {
+func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config) *Chat {
+	allowedOrigin := cfg.AllowedOrigin
 	if allowedOrigin == "" {
 		allowedOrigin = "http://localhost:3000"
 	}
-	InitCloudWatch()
+	InitCloudWatch(cfg.CloudWatchLogGroup)
 	return &Chat{
 		hub:                  hub,
 		store:                s,
-		authServiceURL:       authServiceURL,
-		userServiceURL:       userServiceURL,
+		authServiceURL:       cfg.AuthServiceURL,
+		userServiceURL:       cfg.UserServiceURL,
 		tokenCache:           make(map[string]time.Time),
 		limiter:              NewRateLimiter(5, 1*time.Minute),
-		internalServiceToken: internalServiceToken,
+		internalServiceToken: cfg.InternalServiceToken,
 		allowedOrigin:        allowedOrigin,
 	}
 }

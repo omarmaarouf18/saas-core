@@ -15,6 +15,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/project/user-service/internal/config"
 	"github.com/project/user-service/internal/jwtutil"
 	"github.com/project/user-service/internal/models"
 	"github.com/project/user-service/internal/store"
@@ -72,7 +73,11 @@ func TestUserServiceHandlers(t *testing.T) {
 	}))
 	defer mockAuthServer.Close()
 
-	u := NewUserService(s, mockAuthServer.URL, "mock-internal-token")
+	cfg := &config.Config{
+		AuthServiceURL:       mockAuthServer.URL,
+		InternalServiceToken: "mock-internal-token",
+	}
+	u := NewUserService(s, cfg)
 
 	// Generate tokens for tests
 	tokenPendingOwner, _ := jwtutil.GenerateToken("kyc-pending-owner", "owner", "kyc-pending-owner", "pending@example.com")
@@ -153,7 +158,11 @@ func TestUserServiceHandlers(t *testing.T) {
 		}))
 		defer mockAuthServer2.Close()
 
-		u2 := NewUserService(s, mockAuthServer2.URL, "mock-internal-token")
+		cfg2 := &config.Config{
+			AuthServiceURL:       mockAuthServer2.URL,
+			InternalServiceToken: "mock-internal-token",
+		}
+		u2 := NewUserService(s, cfg2)
 
 		reqBody := map[string]any{
 			"tenant_id":    tokenTenant,
@@ -302,7 +311,11 @@ func TestUserServiceHandlers(t *testing.T) {
 		}))
 		defer mockAuthServer3.Close()
 
-		u3 := NewUserService(s, mockAuthServer3.URL, "mock-internal-token")
+		cfg3 := &config.Config{
+			AuthServiceURL:       mockAuthServer3.URL,
+			InternalServiceToken: "mock-internal-token",
+		}
+		u3 := NewUserService(s, cfg3)
 
 		// A. Valid deposit limit: 500,000 -> 200 OK
 		reqBody := map[string]any{
