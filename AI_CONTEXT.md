@@ -135,4 +135,4 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Performing codebase cleanup pass (CI gate and centralized config layer).
+* **Immediate Next Step**: Performing codebase cleanup pass (centralized config layer).

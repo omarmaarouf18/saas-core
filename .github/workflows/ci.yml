@@ -1,0 +1,60 @@
+name: CI Gate
+
+on:
+  push:
+    branches: [ main, logic-exploitation ]
+  pull_request:
+    branches: [ main, logic-exploitation ]
+
+jobs:
+  lint-formatting:
+    name: Lint & Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Verify Formatting
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "The following files are not formatted properly:"
+            gofmt -l .
+            exit 1
+          fi
+
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [api-gateway, auth-service, chat-service, notification-service, user-service]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Install dependencies
+        working-directory: services/${{ matrix.service }}
+        run: go mod download
+
+      - name: Build Service
+        working-directory: services/${{ matrix.service }}
+        run: go build ./...
+
+      - name: Vet Service
+        working-directory: services/${{ matrix.service }}
+        run: go vet ./...
+
+      - name: Test Service
+        working-directory: services/${{ matrix.service }}
+        run: go test ./...
