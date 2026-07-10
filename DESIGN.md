@@ -13,7 +13,7 @@ frontend/
 ├── lib/
 │   ├── main.dart                  # App initialization, routing setup, global providers
 │   ├── core/                      # Global constants, theme, networking clients, utilities
-│   │   ├── api_client.dart        # Base HTTP client supporting raw user_id auth injection
+│   │   ├── api_client.dart        # Base HTTP client supporting JWT token auth injection
 │   │   ├── theme.dart             # Material 3 dark/light responsive design system tokens
 │   │   └── constants.dart         # Backend gateway URLs and SSE/WebSocket endpoints
 │   ├── models/                    # Data serialization classes matching Go models
@@ -39,9 +39,9 @@ frontend/
 
 1. **Framework**: Flutter (Dart) targeting cross-platform Web/Mobile.
 2. **State Management**: `provider` (`^6.1.5`) for scoping authentication state, job lifecycle states, real-time chats, and notifications streams.
-3. **HTTP Client**: `http` (`^1.6.0`) with custom request interceptors that inject the `Authorization` header containing the user's ID as the raw authentication token.
-4. **WebSocket Protocol**: `web_socket_channel` (`^2.4.5`) for connecting to the real-time chat gateway (`ws://<gateway>:8080/api/v1/chat/ws`).
-5. **SSE Stream Client**: `flutter_client_sse` (`^1.0.0`) for subscribing to real-time status alerts and job notifications via SSE (`http://<gateway>:8080/api/v1/notifications/stream`).
+3. **HTTP Client**: `http` (`^1.6.0`) with custom request interceptors that inject the `Authorization` header containing the signed JWT token.
+4. **WebSocket Protocol**: `web_socket_channel` (`^2.4.5`) for connecting to the real-time chat gateway (`ws://<gateway>:8080/api/v1/chat/ws?token=<jwt_token>`).
+5. **SSE Stream Client**: `flutter_client_sse` (`^1.0.0`) for subscribing to real-time status alerts and job notifications via SSE (`http://<gateway>:8080/api/v1/notifications/stream?token=<jwt_token>`).
 
 ---
 
@@ -96,10 +96,11 @@ graph TD
 The Flutter client interacts with backend microservices routed through the Gateway (`http://localhost:8080`).
 
 ### 1. Authentication Flow
-- **Signup**: Calls [Signup handler](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go#L70) (`POST /api/v1/auth/signup`). Accepts `email`, `password`, `role`. If `employee`, requires `owner_id` (KYE binding).
-- **Login**: Calls [Login handler](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go#L223) (`POST /api/v1/auth/login`). Returns `dev_otp` in development.
-- **Verify OTP**: Calls [VerifyOTP handler](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go#L351) (`POST /api/v1/auth/verify-otp`). Authenticates the user and fetches user parameters.
-- **Header Structure**: All authenticated service endpoints require `Authorization: Bearer <user_id>` (which uses the Go backend's query param / header lookup mapping).
+- **Signup**: Calls [Signup handler](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go#L70) (`POST /api/v1/auth/signup`). Accepts `email`, `password`, `role`. Gated by signup-time anti-spam OTP; accounts are unconfirmed (`is_confirmed = false`) until the OTP is verified.
+- **Login**: Calls [Login handler](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go#L223) (`POST /api/v1/auth/login`). Initiates authentication, sends/mocks a 4-digit OTP, and returns `dev_otp` in local development mode.
+- **Verify OTP**: Calls [VerifyOTP handler](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go#L351) (`POST /api/v1/auth/verify-otp`). Activates the account and returns a signed HS256 JWT token.
+- **Refresh Token**: Calls [Refresh handler](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go#L766) (`POST /api/v1/auth/refresh`). Reissues a new JWT token, validating that the old one expired no more than 7 days ago.
+- **Header Structure**: All authenticated service endpoints require `Authorization: Bearer <JWT_TOKEN>`. The backend validates the HS256 signature and expiry locally using the shared `JWT_SECRET`.
 
 ### 2. Jobs & Services Flow
 - **Browse**: Calls [ListServices](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L65) (`GET /api/v1/users/services?sort_by=price&near_by=true&lat=30&lon=31`).
@@ -111,8 +112,26 @@ The Flutter client interacts with backend microservices routed through the Gatew
 - **Upgrade**: Calls [Subscription POST](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L588) (`POST /api/v1/users/subscription`) with `tier: "paid"`. Returns `202 Accepted` and transitions to `pending_payment` status. The UI displays "upgrade pending, contact support" status.
 
 ### 4. Real-time Communications Flow
-- **SSE Stream**: Subscribes to [Stream](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/notification-service/internal/handlers/handlers.go#L47) (`GET /api/v1/notifications/stream?token=<user_id>`). Pushes alerts client-side.
-- **Chat WebSockets**: Connects to [HandleWebSocket](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/chat-service/internal/handlers/chat.go#L149) (`ws://localhost:8080/api/v1/chat/ws?token=<user_id>`).
+- **SSE Stream**: Subscribes to [Stream](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/notification-service/internal/handlers/handlers.go#L47) (`GET /api/v1/notifications/stream?token=<jwt_token>`). Pushes alerts client-side.
+- **Chat WebSockets**: Connects to [HandleWebSocket](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/chat-service/internal/handlers/chat.go#L149) (`ws://localhost:8080/api/v1/chat/ws?token=<jwt_token>`).
   1. Sends subscription frame: `{"action":"subscribe", "channel":"job:<job_id>"}`.
-  2. History fetch fallback: calls [GetHistory](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/chat-service/internal/handlers/chat.go#L203) (`GET /api/v1/chat/history?channel=job:<job_id>&limit=50`).
+  2. History fetch fallback: calls [GetHistory](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/chat-service/internal/handlers/chat.go#L203) (`GET /api/v1/chat/history?channel=job:<job_id>&limit=50`), which verifies channel access permissions.
   3. Sends messages: `{"action":"message", "channel":"job:<job_id>", "content":"..."}`.
+
+---
+
+## 5. Security & Rate Limiting
+
+The application implements defense-in-depth across the API Gateway and microservices.
+
+### 1. Rate Limiting & Lockout
+- **Edge Rate Limiting**: The `api-gateway` enforces a sliding window rate limit of 100 requests per minute per client IP. IP addresses are extracted directly from `r.RemoteAddr` (rejecting external `X-Forwarded-For` and `X-Real-IP` at the edge to prevent IP spoofing). Lockout uses exponential backoff starting at 30 seconds, capping at 5 minutes.
+- **Dual-Key Auth Lockout**: The `auth-service` implements dual-key rate limiting (on IP and Email) with exponential backoff starting at 30 seconds and capping at 5 minutes after 5 consecutive failures.
+- **WebSocket Message Limiting**: The `chat-service` WebSocket connection rate limits incoming chat frames to 5 frames per minute per IP to prevent spamming.
+
+### 2. Trust Boundaries & Authentication
+- **Gateway Trust Validation**: The `auth-service` only trusts `X-Forwarded-For` headers from the API Gateway if the Gateway passes a verified, dynamically configured `GATEWAY_SECRET` header.
+- **Internal Service Auth**: Communication between internal services is authenticated using a shared `X-Internal-Token` header containing `INTERNAL_SERVICE_TOKEN` values. Direct external calls using this header are stripped at the `api-gateway`.
+- **Gating Policies**:
+  - **KYC Gating**: Operations like service creation, wallet deposits, and job tracking are restricted to owners whose KYC status is explicitly `"approved"`.
+  - **Tier-Based Gating**: Real-time employee location tracking is gated behind a Paid Subscription tier check (`plan: "paid"`) on the job owner. Location updates are throttled to a minimum 3-second interval per Job ID.

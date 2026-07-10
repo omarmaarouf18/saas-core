@@ -135,4 +135,4 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Backend security/logic work is complete and verified. Awaiting approval of DESIGN.md/IMPLEMENTATION.md to begin Flutter frontend Phase 1.
+* **Immediate Next Step**: Performing codebase cleanup pass (documentation sync, lint/format, CI gate, and centralized config layer).
