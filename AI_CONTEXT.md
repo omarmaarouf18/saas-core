@@ -39,14 +39,14 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | :--- | :--- | :--- | :--- |
 | **Bcrypt Password Hashing** | Replaced plaintext comparison in auth-service with bcrypt password hashing. | `48ece45eb6b0282194c2f7026a7a85c8fbd79917` | Verified in `auth-service/internal/handlers/auth.go`. ✅ |
 | **Dual-Key rate limiting & lockouts** | Enforced lockout limits in `auth-service` on client IP and email with exponential backoff. | `04185514a931e597de3e97da46b6842a691090db` | Verified in `auth-service/internal/handlers/limiter.go`. ✅ |
-| **OTP TTL Expiry & Cleanup** | Added a 5-minute TTL to OTPs and a background database sweep sweeping expired OTPs every minute. | `f3f313b97c034a4118aba1760403bf1a47911df1` | Verified in `auth-service/internal/store/memory.go`. ✅ |
+| **OTP TTL Expiry & Cleanup** | Added a 5-minute TTL to OTPs and a background database sweep sweeping expired OTPs every minute. | `f3f313b97c034a4118aba1760403bf1a47911df1` | Verified in `auth-service/internal/store/mongodb.go`. ✅ |
 | **Owner KYC Status Checks** | Restricts service creation, deposits, and job tracking to owners with approved KYC status. | `49d453c92742deb58bf31e806da7f2a084ea1be2` | Verified in `user-service/internal/handlers/handlers.go`. ✅ |
 | **JSON Injection Fix in WebSocket**| Replaced manual string concatenation in chat broadcast with `json.Marshal`. | `d8e9f762fb9d3dff1e054285ef6e9c0954f35e4a` | Verified in `chat-service/internal/chat/hub.go`. ✅ |
 | **WebSocket Channel Authorization** | Restricts channel subscriptions to job participants (Owner or Employee) by querying user-service. | `54750d0711e56a2afc48508aed44c2515ac39433` | Verified in `chat-service/internal/handlers/chat.go`. ✅ |
 | **SSE Stream Authentication** | Enforces SSE connection token verification by querying auth-service. | `5dd15e27c7cc6f216b15e907e0eb2c1cbb26cde9` | Verified in `notification-service/internal/handlers/handlers.go`. ✅ |
 | **CORS Origins Restriction** | Restricted notification SSE stream CORS from wildcard `*` to configured `ALLOWED_ORIGIN`. | `49752a64c4a641153087c7e95958d37e33f3bc05` | Verified in `notification-service/internal/handlers/handlers.go`. ✅ |
 | **X-Forwarded-For Spoof Hardening**| Edge api-gateway overwrites X-Forwarded-For. Gateway limiter keys off `RemoteAddr` directly. | `aebb580fb7b5a9c7520034e865153fc08681cfb5` | Verified in `api-gateway/internal/middleware/limiter.go` and `proxy.go`. ✅ |
-| **COD Platform Fee Overdraft** | Deducts 15% platform fee directly from Owner e-wallet upon job completion, allowing negative balances. | `6edf1b7c825b37cc15b16dbc348026c4b689724b` | Verified in `user-service/internal/store/memory.go`. ✅ |
+| **COD Platform Fee Overdraft** | Deducts 15% platform fee directly from Owner e-wallet upon job completion, allowing negative balances. | `6edf1b7c825b37cc15b16dbc348026c4b689724b` | Verified in `user-service/internal/store/mongodb.go`. ✅ |
 | **Tenant Subscription Gating** | POST /users/subscription upgrades require requester_id == tenant_id, auth-service check, and maps paid to pending_payment (requires manual activation). | `current` | Verified in `user-service/internal/handlers/handlers.go`. ✅ |
 | **WebSocket Message Authorization** | Gated chat message broadcasts by canAccessChannel in WebSocket readPump. | `current` | Verified in `chat-service/internal/handlers/chat.go`. ✅ |
 | **Rating & Comment System** | Rating and comment submissions on completed jobs with average rating queries. | `6edf1b7c825b37cc15b16dbc348026c4b689724b` | Verified in `user-service/internal/handlers/handlers.go`. ✅ |
@@ -110,7 +110,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 
 Only features verified directly against the running application are marked as verified (✅). The following items are implemented but remain unverified end-to-end or represent accepted security risks:
 
-* **Unverified Escrow Logic**: Escrow locking (`LockEscrow`) and release splits (`ReleaseEscrowWithSplit`) exist in `user-service/internal/store/memory.go`, but since the `/track` endpoint actively blocks any payment method other than `cod`, **this code path has never been executed or verified end-to-end**.
+* **Unverified Escrow Logic**: Escrow locking (`LockEscrow`) and release splits (`ReleaseEscrowWithSplit`) exist in `user-service/internal/store/mongodb.go`, but since the `/track` endpoint actively blocks any payment method other than `cod`, **this code path has never been executed or verified end-to-end**.
 * **Unencrypted Internal Communications**: Traffic between the Gateway and microservices, and between services themselves, is transmitted over plaintext HTTP.
 * **In-Memory Rate Limiting State**: All service-level rate limiters maintain status counts in-memory. If instances restart or scale out, limit counters are reset.
 
