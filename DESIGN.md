@@ -169,3 +169,9 @@ To prevent concurrency issues where two concurrent tickets are assigned to the s
 - **Scoped Identity**: Support agents authenticate using distinct tokens (passed via `?token=` parameter) matched directly against the `support_agents` collection, separate from the customer JWT flow.
 - **Access Scoping**: Channels for complaints use the prefix `ticket:<ticket_id>`. In `canAccessChannel`, a user is authorized *only* if they are the ticket's `customer_id` or the `assigned_agent_id`. This prevents support agents or other customers from accessing tickets they are not assigned/related to, mitigating IDOR threats.
 
+### 4. Out-of-Band Agent Onboarding
+To maintain a minimized attack surface on the running services, onboarding a support agent is deliberately designed as a **standalone out-of-band CLI tool** rather than an HTTP application endpoint.
+- **Zero Running Attack Surface**: Because the `chat-service` only ever reads from the `support_agents` collection (and never needs to create/onboard agents at runtime), there is no code path or endpoint in the running application for registering support agents.
+- **Secure Token Generation**: The tool runs operations locally/administratively, connecting directly to MongoDB. It generates a cryptographically secure token, writes it to the database, and prints it once to stdout.
+
+

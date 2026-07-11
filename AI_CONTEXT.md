@@ -115,6 +115,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Complaint Routing Stage 3, 4, 5: WebSocket & HTTP Wiring** | Wired complaint ticket channel/access checks into chat WebSocket/Hub, added structured security audit logging, and applied Redis rate limiter. | `current` | Verified via compilation. ✅ |
 | **Complaint Routing Stage 6: Concurrency & Access Tests** | Added unit and concurrency tests proving atomic support agent assignment, queueing, and IDOR mitigation for ticket access. | `current` | Verified via test execution. ✅ |
 | **Complaint Routing Stage 7: Documentation** | Documented complaint routing design and atomic assignment decisions in DESIGN.md and AI_CONTEXT.md. | `current` | Verified via review. ✅ |
+| **Support Agent Onboarding CLI Tool** | Created out-of-band CLI tool to onboard support agents, generating secure tokens and preventing running attack surface on chat-service. | `current` | Verified via unit and integration tests. ✅ |
+
 
 ### 2. Explicitly Deferred by Decision
 

@@ -78,3 +78,36 @@ To prevent unverified upgrades and unauthorized access to premium features, tran
    // Expected output includes: "tier": "paid"
    ```
 
+---
+
+## Support Agent Onboarding Process (Ops Runbook)
+
+To minimize the attack surface of the running services, onboarding a support agent is deliberately **not** exposed via any HTTP API endpoint. Instead, agents are created out-of-band using a standalone CLI tool that connects directly to MongoDB.
+
+### Step-by-Step Onboarding Instructions
+
+1. **Locate the CLI Tool**: The tool is located at `services/chat-service/cmd/onboard-agent`.
+2. **Run the Onboarding Command**:
+   Execute the tool with the agent ID as a parameter and point the `MONGO_URI` environment variable to the target MongoDB instance:
+   ```bash
+   MONGO_URI="mongodb://localhost:27017" go run ./services/chat-service/cmd/onboard-agent --id=agent_omar
+   ```
+3. **Confirm Onboarding**:
+   If run interactively, the tool will prompt for confirmation:
+   ```text
+   Are you sure you want to onboard support agent "agent_omar"? (y/N):
+   ```
+   Type `y` or `yes` to proceed. (Use the `--yes` flag to bypass this confirmation in non-interactive pipelines).
+4. **Retrieve the Token**:
+   The tool will generate a cryptographically secure token and output it to stdout exactly once:
+   ```text
+   Successfully onboarded support agent "agent_omar"!
+   ----------------------------------------------------------------------
+   Generated Token: e82d7083abf3e9c402b8a0...
+   ----------------------------------------------------------------------
+   WARNING: This token is displayed ONLY ONCE. Copy it now.
+   ```
+5. **Secure the Token**: Hand this token over to the support agent out-of-band.
+
+> [!WARNING]
+> **Token Retrieval**: The generated token is displayed **only once** upon creation. It cannot be retrieved again from the database (it is a secret). If lost, the agent must be re-created with a new ID.
