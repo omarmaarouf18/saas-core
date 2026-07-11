@@ -94,11 +94,10 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Redis Rate Limiting Stage 3: auth-service** | Migrated the auth-service dual-key (IP + email) rate limiter to use Redis. | `current` | Verified via compilation and test execution. ✅ |
 | **Redis Rate Limiting Stage 4: chat, user & notification services** | Migrated rate limiters in chat, user, and notification services to use Redis-backed wrapper. | `current` | Verified via compilation and test execution. ✅ |
 | **Redis Rate Limiting Stage 5: Failure Mode** | Implemented fail-closed behaviors for Redis runtime unavailability, with audit logging and rate restriction. | `current` | Verified via compilation and code review. ✅ |
+| **Redis Rate Limiting Stage 6: Verification & Concurrency Tests** | Created concurrency and cross-instance rate limit tests, and ran full test suite verification. | `current` | Verified via integration and concurrency tests. ✅ |
+| **Resilience Stage 1: Wrapper Client** | Created shared resilience package implementing retry-with-backoff + jitter and circuit-breaker wrapper around http.Client. | `current` | Verified via compilation. ✅ |
+
 ### 2. Explicitly Deferred by Decision
-
-
-
-
 
 * **CloudWatch Event Rate Limiting/Batching**
   * **Decision**: Log shipping performs a separate CloudWatch Logs `PutLogEvents` API call per event rather than using client-side batching or queuing.
@@ -148,5 +147,5 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Awaiting user request / next phase of development.
+* **Immediate Next Step**: Implement Resilience Stage 2 (Wire into existing internal clients).
 
