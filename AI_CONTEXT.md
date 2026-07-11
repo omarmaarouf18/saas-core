@@ -116,6 +116,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Complaint Routing Stage 6: Concurrency & Access Tests** | Added unit and concurrency tests proving atomic support agent assignment, queueing, and IDOR mitigation for ticket access. | `current` | Verified via test execution. ✅ |
 | **Complaint Routing Stage 7: Documentation** | Documented complaint routing design and atomic assignment decisions in DESIGN.md and AI_CONTEXT.md. | `current` | Verified via review. ✅ |
 | **Support Agent Onboarding CLI Tool** | Created out-of-band CLI tool to onboard support agents, generating secure tokens and preventing running attack surface on chat-service. | `current` | Verified via unit and integration tests. ✅ |
+| **limiter/security_logs Dedup** | Extracted duplicate `limiter.go` and `security_logs.go` implementation from microservices into shared `infra/handlerutil`. | `current` | Verified via test execution. ✅ |
+
 
 
 ### 2. Explicitly Deferred by Decision

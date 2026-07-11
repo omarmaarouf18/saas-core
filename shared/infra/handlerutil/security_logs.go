@@ -1,4 +1,4 @@
-package handlers
+package handlerutil
 
 import (
 	"context"
@@ -17,18 +17,18 @@ import (
 )
 
 var (
-	cwClient   *cloudwatchlogs.Client
-	cwInitOnce sync.Once
-	cwLogGroup string
-	cwEnabled  bool
+	CwClient   *cloudwatchlogs.Client
+	CwInitOnce sync.Once
+	CwLogGroup string
+	CwEnabled  bool
 )
 
 // InitCloudWatch initializes the CloudWatch Logs client with the provided log group.
 // It logs a warning if logGroup is not configured.
 func InitCloudWatch(logGroup string) {
-	cwInitOnce.Do(func() {
-		cwLogGroup = logGroup
-		if cwLogGroup == "" {
+	CwInitOnce.Do(func() {
+		CwLogGroup = logGroup
+		if CwLogGroup == "" {
 			log.Println("security event shipping disabled — CloudWatch log group not set")
 			return
 		}
@@ -42,9 +42,9 @@ func InitCloudWatch(logGroup string) {
 			return
 		}
 
-		cwClient = cloudwatchlogs.NewFromConfig(cfg)
-		cwEnabled = true
-		log.Printf("security event shipping enabled: group=%s", cwLogGroup)
+		CwClient = cloudwatchlogs.NewFromConfig(cfg)
+		CwEnabled = true
+		log.Printf("security event shipping enabled: group=%s", CwLogGroup)
 	})
 }
 
@@ -62,7 +62,7 @@ type SecurityEvent struct {
 // It runs asynchronously in a goroutine and does not block.
 func ShipSecurityEvent(ctx context.Context, eventType, service, actorID, tenantID, detail, clientIP string) {
 	InitCloudWatch("")
-	if !cwEnabled || cwClient == nil {
+	if !CwEnabled || CwClient == nil {
 		return
 	}
 
@@ -89,7 +89,7 @@ func ShipSecurityEvent(ctx context.Context, eventType, service, actorID, tenantI
 		logStream := service
 
 		input := &cloudwatchlogs.PutLogEventsInput{
-			LogGroupName:  aws.String(cwLogGroup),
+			LogGroupName:  aws.String(CwLogGroup),
 			LogStreamName: aws.String(logStream),
 			LogEvents: []types.InputLogEvent{
 				{
@@ -99,17 +99,17 @@ func ShipSecurityEvent(ctx context.Context, eventType, service, actorID, tenantI
 			},
 		}
 
-		_, err = cwClient.PutLogEvents(shipCtx, input)
+		_, err = CwClient.PutLogEvents(shipCtx, input)
 		if err != nil {
 			var nf *types.ResourceNotFoundException
 			if errors.As(err, &nf) {
-				_, errCreate := cwClient.CreateLogStream(shipCtx, &cloudwatchlogs.CreateLogStreamInput{
-					LogGroupName:  aws.String(cwLogGroup),
+				_, errCreate := CwClient.CreateLogStream(shipCtx, &cloudwatchlogs.CreateLogStreamInput{
+					LogGroupName:  aws.String(CwLogGroup),
 					LogStreamName: aws.String(logStream),
 				})
 				var alreadyExists *types.ResourceAlreadyExistsException
 				if errCreate == nil || errors.As(errCreate, &alreadyExists) {
-					_, err = cwClient.PutLogEvents(shipCtx, input)
+					_, err = CwClient.PutLogEvents(shipCtx, input)
 				} else {
 					log.Printf("[SECURITY-SHIP-FAILED] failed to create log stream %s: %v", logStream, errCreate)
 					return
@@ -123,8 +123,8 @@ func ShipSecurityEvent(ctx context.Context, eventType, service, actorID, tenantI
 	}()
 }
 
-// getClientIP extracts client IP address from request.
-func getClientIP(r *http.Request) string {
+// GetClientIP extracts client IP address from request.
+func GetClientIP(r *http.Request) string {
 	if r == nil {
 		return ""
 	}

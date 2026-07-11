@@ -1,4 +1,4 @@
-package handlers
+package handlerutil
 
 import (
 	"context"
@@ -11,9 +11,9 @@ import (
 
 func TestShipSecurityEventNonBlocking(t *testing.T) {
 	// Setup invalid configuration to guarantee SDK calls fail
-	cwLogGroup = "test-group"
-	cwEnabled = true
-	cwClient = cloudwatchlogs.NewFromConfig(aws.Config{})
+	CwLogGroup = "test-group"
+	CwEnabled = true
+	CwClient = cloudwatchlogs.NewFromConfig(aws.Config{})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()

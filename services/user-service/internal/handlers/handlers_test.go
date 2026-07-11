@@ -16,6 +16,7 @@ import (
 	"github.com/alicebob/miniredis/v2"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/user-service/internal/config"
 	"github.com/project/user-service/internal/models"
@@ -687,9 +688,9 @@ func TestUserServiceHandlers(t *testing.T) {
 		u.locationThrottleMu.Unlock()
 
 		// Enable shipping with invalid/unreachable config
-		cwLogGroup = "test-group"
-		cwEnabled = true
-		cwClient = cloudwatchlogs.NewFromConfig(aws.Config{})
+		handlerutil.CwLogGroup = "test-group"
+		handlerutil.CwEnabled = true
+		handlerutil.CwClient = cloudwatchlogs.NewFromConfig(aws.Config{})
 
 		tokenEmployee, _ := jwtutil.GenerateToken("emp-777", "employee", "paid-owner", "emp@example.com")
 

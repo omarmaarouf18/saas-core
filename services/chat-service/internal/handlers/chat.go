@@ -16,6 +16,7 @@ import (
 	"github.com/project/chat-service/internal/chat"
 	"github.com/project/chat-service/internal/config"
 	"github.com/project/chat-service/internal/store"
+	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/shared/infra/ratelimit"
 	"github.com/project/shared/infra/resilience"
@@ -49,7 +50,7 @@ type Chat struct {
 	userServiceURL       string
 	tokenCache           map[string]time.Time
 	tokenCacheMu         sync.Mutex
-	limiter              *RateLimiter
+	limiter              *handlerutil.RateLimiter
 	internalServiceToken string
 	allowedOrigin        string
 	authClient           *resilience.ResilienceClient
@@ -62,7 +63,7 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Cli
 	if allowedOrigin == "" {
 		allowedOrigin = "http://localhost:3000"
 	}
-	InitCloudWatch(cfg.CloudWatchLogGroup)
+	handlerutil.InitCloudWatch(cfg.CloudWatchLogGroup)
 
 	var client *http.Client
 	if cfg.TLSCertPath != "" && cfg.TLSKeyPath != "" && cfg.TLSCAPath != "" {
@@ -86,7 +87,7 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Cli
 		authServiceURL:       cfg.AuthServiceURL,
 		userServiceURL:       cfg.UserServiceURL,
 		tokenCache:           make(map[string]time.Time),
-		limiter:              NewRateLimiter(rl),
+		limiter:              handlerutil.NewRateLimiter(rl),
 		internalServiceToken: cfg.InternalServiceToken,
 		allowedOrigin:        allowedOrigin,
 		authClient:           authClient,
@@ -200,7 +201,7 @@ func (c *Chat) canAccessChannel(userID, channel string) (bool, error) {
 //
 //	GET /chat/ws?token=<user_token>
 func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
-	ip := getIP(r)
+	ip := handlerutil.GetIP(r)
 	if limited, remaining := c.limiter.CheckAndRecord(ip); limited {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusTooManyRequests)
@@ -488,7 +489,7 @@ func (c *Chat) readPump(conn *websocket.Conn, client *chat.Client) {
 					if idx := strings.LastIndex(clientIP, ":"); idx != -1 {
 						clientIP = clientIP[:idx]
 					}
-					ShipSecurityEvent(context.Background(), "CHAT_BLOCKED", "chat-service", client.ID, "", fmt.Sprintf("attempted to send message to channel %s", msg.Channel), clientIP)
+					handlerutil.ShipSecurityEvent(context.Background(), "CHAT_BLOCKED", "chat-service", client.ID, "", fmt.Sprintf("attempted to send message to channel %s", msg.Channel), clientIP)
 					denied, _ := json.Marshal(map[string]string{
 						"type":    "error",
 						"channel": msg.Channel,
@@ -682,11 +683,11 @@ func (c *Chat) HandleCreateTicket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Structured logs
-	ShipSecurityEvent(r.Context(), "TICKET_CREATED", "chat-service", claims.UserID, "", fmt.Sprintf("created ticket %s", ticket.ID), getClientIP(r))
+	handlerutil.ShipSecurityEvent(r.Context(), "TICKET_CREATED", "chat-service", claims.UserID, "", fmt.Sprintf("created ticket %s", ticket.ID), handlerutil.GetClientIP(r))
 	if ticket.AssignedAgentID != "" {
-		ShipSecurityEvent(r.Context(), "TICKET_ASSIGNED", "chat-service", ticket.AssignedAgentID, "", fmt.Sprintf("ticket %s assigned to agent %s", ticket.ID, ticket.AssignedAgentID), getClientIP(r))
+		handlerutil.ShipSecurityEvent(r.Context(), "TICKET_ASSIGNED", "chat-service", ticket.AssignedAgentID, "", fmt.Sprintf("ticket %s assigned to agent %s", ticket.ID, ticket.AssignedAgentID), handlerutil.GetClientIP(r))
 	} else {
-		ShipSecurityEvent(r.Context(), "TICKET_QUEUED", "chat-service", claims.UserID, "", fmt.Sprintf("ticket %s queued - no agents available", ticket.ID), getClientIP(r))
+		handlerutil.ShipSecurityEvent(r.Context(), "TICKET_QUEUED", "chat-service", claims.UserID, "", fmt.Sprintf("ticket %s queued - no agents available", ticket.ID), handlerutil.GetClientIP(r))
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -745,7 +746,7 @@ func (c *Chat) HandleResolveTicket(w http.ResponseWriter, r *http.Request) {
 	// IDOR check: agent can only resolve their assigned ticket
 	if ticket.AssignedAgentID != agent.ID {
 		log.Printf("[SECURITY EVENT] Agent %s attempted unauthorized resolve of ticket %s (assigned to %s)", agent.ID, ticket.ID, ticket.AssignedAgentID)
-		ShipSecurityEvent(r.Context(), "TICKET_RESOLVE_BLOCKED", "chat-service", agent.ID, "", fmt.Sprintf("unauthorized attempt to resolve ticket %s", ticket.ID), getClientIP(r))
+		handlerutil.ShipSecurityEvent(r.Context(), "TICKET_RESOLVE_BLOCKED", "chat-service", agent.ID, "", fmt.Sprintf("unauthorized attempt to resolve ticket %s", ticket.ID), handlerutil.GetClientIP(r))
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
 		json.NewEncoder(w).Encode(map[string]string{"error": "not authorized to resolve this ticket"})
@@ -759,7 +760,7 @@ func (c *Chat) HandleResolveTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ShipSecurityEvent(r.Context(), "TICKET_RESOLVED", "chat-service", agent.ID, "", fmt.Sprintf("ticket %s resolved by agent %s", ticket.ID, agent.ID), getClientIP(r))
+	handlerutil.ShipSecurityEvent(r.Context(), "TICKET_RESOLVED", "chat-service", agent.ID, "", fmt.Sprintf("ticket %s resolved by agent %s", ticket.ID, agent.ID), handlerutil.GetClientIP(r))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

@@ -10,6 +10,7 @@ import (
 
 	"github.com/project/notification-service/internal/config"
 	"github.com/project/notification-service/internal/hub"
+	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/shared/infra/ratelimit"
 	"github.com/project/shared/infra/resilience"
@@ -22,7 +23,7 @@ type Notification struct {
 	hub                  *hub.SSEHub
 	authServiceURL       string
 	allowedOrigin        string
-	limiter              *RateLimiter
+	limiter              *handlerutil.RateLimiter
 	internalServiceToken string
 	resilienceClient     *resilience.ResilienceClient
 }
@@ -53,7 +54,7 @@ func NewNotification(h *hub.SSEHub, cfg *config.Config, rdb *redis.Client) *Noti
 		hub:                  h,
 		authServiceURL:       cfg.AuthServiceURL,
 		allowedOrigin:        allowedOrigin,
-		limiter:              NewRateLimiter(rl),
+		limiter:              handlerutil.NewRateLimiter(rl),
 		internalServiceToken: cfg.InternalServiceToken,
 		resilienceClient:     resClient,
 	}
@@ -227,7 +228,7 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ip := getIP(r)
+	ip := handlerutil.GetIP(r)
 	if limited, remaining := n.limiter.CheckAndRecord(ip); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),

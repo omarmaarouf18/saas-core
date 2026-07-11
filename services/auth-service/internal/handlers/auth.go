@@ -16,6 +16,7 @@ import (
 	"github.com/project/auth-service/internal/models"
 	"github.com/project/auth-service/internal/otp"
 	"github.com/project/auth-service/internal/store"
+	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
@@ -37,7 +38,7 @@ type Auth struct {
 //   - cfg:           central configuration loader struct
 //   - rdb:           Redis client for rate limiting
 func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config, rdb *redis.Client) *Auth {
-	InitCloudWatch(cfg.CloudWatchLogGroup)
+	handlerutil.InitCloudWatch(cfg.CloudWatchLogGroup)
 	isLocal := strings.EqualFold(cfg.AppEnv, "local")
 	if isLocal {
 		log.Printf("[AUTH] ⚠ Running in LOCAL mode — OTP codes will be exposed in API responses")
@@ -529,7 +530,7 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 	// Verify owner is approved KYC
 	if owner.KYCStatus != models.KYCApproved {
 		log.Printf("[KYC BLOCKED] Owner %s (ID: %s) attempted to toggle employee %s, but KYC status is %q", owner.Email, owner.ID, req.EmployeeEmail, owner.KYCStatus)
-		ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "auth-service", owner.ID, owner.ID, fmt.Sprintf("attempted to toggle employee %s, KYC status is %s", req.EmployeeEmail, owner.KYCStatus), getClientIP(r))
+		handlerutil.ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "auth-service", owner.ID, owner.ID, fmt.Sprintf("attempted to toggle employee %s, KYC status is %s", req.EmployeeEmail, owner.KYCStatus), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: owner KYC approval is pending",
 		})
@@ -625,7 +626,7 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 			ownerStatus = string(owner.KYCStatus)
 		}
 		log.Printf("[KYC BLOCKED] Employee %s (ID: %s, Owner ID: %s) attempted action %q, but owner KYC status is %q", emp.Email, emp.ID, emp.OwnerID, req.Action, ownerStatus)
-		ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "auth-service", emp.ID, emp.OwnerID, fmt.Sprintf("attempted action %s, owner KYC status is %s", req.Action, ownerStatus), getClientIP(r))
+		handlerutil.ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "auth-service", emp.ID, emp.OwnerID, fmt.Sprintf("attempted action %s, owner KYC status is %s", req.Action, ownerStatus), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: owner KYC approval is pending",
 		})
@@ -744,7 +745,7 @@ func (a *Auth) GetAuditLog(w http.ResponseWriter, r *http.Request) {
 
 	if resolvedRequesterID != tenantID {
 		log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to access audit log for tenant %s", resolvedRequesterID, tenantID)
-		ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "auth-service", resolvedRequesterID, tenantID, "attempted to access audit log", getClientIP(r))
+		handlerutil.ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "auth-service", resolvedRequesterID, tenantID, "attempted to access audit log", handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "access denied: you are not authorized to view this tenant's audit log",
 		})
