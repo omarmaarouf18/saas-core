@@ -84,6 +84,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Membership Tier Enforcement** | Gated UpdateJobLocation location tracking endpoint behind PlanPaid check on Job Owner. | `current` | Verified via unit and integration tests. ✅ |
 | **Per-Job Location Throttling** | Throttled consecutive location updates under 3s per Job ID with in-flight reservations and rollback. | `current` | Verified via unit, race, and integration tests. ✅ |
 | **CloudWatch Security Log Shipping** | Structured JSON log event to CloudWatch Logs for security-relevant blocked events in auth, user, and chat services. | `current` | Verified via unit, race, and log shipping tests. ✅ |
+| **mTLS Stage 1: Dev CA & Certs** | Created generate-certs.sh script generating Root CA and leaf certificates for local dev. | `current` | Verified via cert creation and gitignore validation. ✅ |
 ### 2. Explicitly Deferred by Decision
 
 * **CloudWatch Event Rate Limiting/Batching**
@@ -113,6 +114,7 @@ Only features verified directly against the running application are marked as ve
 * **Unverified Escrow Logic**: Escrow locking (`LockEscrow`) and release splits (`ReleaseEscrowWithSplit`) exist in `user-service/internal/store/mongodb.go`, but since the `/track` endpoint actively blocks any payment method other than `cod`, **this code path has never been executed or verified end-to-end**.
 * **Unencrypted Internal Communications**: Traffic between the Gateway and microservices, and between services themselves, is transmitted over plaintext HTTP.
 * **In-Memory Rate Limiting State**: All service-level rate limiters maintain status counts in-memory. If instances restart or scale out, limit counters are reset.
+* **Dev-Grade mTLS CA**: The certificates generated for mTLS use a dev-grade local Root CA. For production, a real internal CA (e.g. AWS Private CA, HashiCorp Vault PKI, or cert-manager on Kubernetes) must be integrated.
 
 ---
 
@@ -135,4 +137,5 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Codebase cleanup pass completed successfully. Awaiting approval of DESIGN.md/IMPLEMENTATION.md to begin Flutter frontend Phase 1.
+* **Immediate Next Step**: Implement mTLS Stage 2 (TLS Server configuration per backend service).
+

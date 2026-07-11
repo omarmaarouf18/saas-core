@@ -4,4 +4,9 @@
 .env
 .env.local
 **/tmp/
+docs/local/
 
+# Generated certificates
+infrastructure/certs/*.key
+infrastructure/certs/*.crt
+infrastructure/certs/*.srl
