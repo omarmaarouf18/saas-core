@@ -104,8 +104,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
   * **Decision**: Log shipping performs a separate CloudWatch Logs `PutLogEvents` API call per event rather than using client-side batching or queuing.
   * **Reasoning**: Accepted as a known limitation in the initial rollout. A genuine high-volume abuse burst could hit CloudWatch's per-stream PutLogEvents throttling limit and silently drop events at exactly the moment they matter most. Batching/queuing events client-side is flagged for future implementation.
 * **E-Wallet and Bank Card Payment Flows**
-  * **Decision**: Job tracking explicitly blocks payment methods other than `"cod"` at the endpoint controller boundary.
-  * **Reasoning**: To bypass processing complex online card holds in the initial platform rollout. Escrow locking and release database methods exist in the code but are deferred from client exposure.
+  * **Decision**: Only Cash on Delivery (`cod`) is allowed as a payment method for now; other methods are rejected during tracking/booking.
+  * **Reasoning**: The interface for Stripe or other bank card gateways is placeholder-only; to prevent actual security vulnerabilities or un-auditable fund flows, all payment pathways besides `cod` are explicitly blocked at the endpoint level.
 * **Manual KYC/KYB Approval Process (Ops Runbook)**
   * **Decision**: Know Your Customer (KYC) approval for tenant owners is deliberately not automated or exposed via API endpoints.
   * **Reasoning**: To maintain security and avoid exposing administrative endpoints that could be targeted by attackers. approvals must be handled manually by an operations engineer directly in the database (updating the `kyc_status` field to `"approved"`).
@@ -124,7 +124,6 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 Only features verified directly against the running application are marked as verified (✅). The following items are implemented but remain unverified end-to-end or represent accepted security risks:
 
 * **Unverified Escrow Logic**: Escrow locking (`LockEscrow`) and release splits (`ReleaseEscrowWithSplit`) exist in `user-service/internal/store/mongodb.go`, but since the `/track` endpoint actively blocks any payment method other than `cod`, **this code path has never been executed or verified end-to-end**.
-* **In-Memory Rate Limiting State**: All service-level rate limiters maintain status counts in-memory. If instances restart or scale out, limit counters are reset.
 * **Fail-Closed Rate Limiting on Redis Unavailability**: If the shared Redis instance becomes unavailable at runtime, all rate limiters across all microservices (api-gateway, auth-service, chat-service, notification-service, user-service) will fail-closed. This means incoming traffic is restricted/blocked and authentication attempts are denied with critical security logs (`[SECURITY CRITICAL]`), rather than allowing un-throttled traffic to bypass security boundaries.
 * **Dev-Grade mTLS CA**: The certificates generated for mTLS use a dev-grade local Root CA. For production, a real internal CA (e.g. AWS Private CA, HashiCorp Vault PKI, or cert-manager on Kubernetes) must be integrated.
 
@@ -149,5 +148,5 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Implement Redis Rate Limiting Stage 6 (Concurrency tests & verification).
+* **Immediate Next Step**: Awaiting user request / next phase of development.
 
