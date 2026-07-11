@@ -37,10 +37,10 @@ import (
 
 	"github.com/project/auth-service/internal/config"
 	"github.com/project/auth-service/internal/handlers"
-	"github.com/project/auth-service/internal/jwtutil"
 	"github.com/project/auth-service/internal/otp"
 	"github.com/project/auth-service/internal/otpcrypto"
 	"github.com/project/auth-service/internal/store"
+	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/shared/infra/ratelimit"
 	"github.com/project/shared/infra/tlsutil"
 )

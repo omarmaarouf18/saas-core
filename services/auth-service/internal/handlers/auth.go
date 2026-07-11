@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"github.com/project/auth-service/internal/config"
-	"github.com/project/auth-service/internal/jwtutil"
 	"github.com/project/auth-service/internal/models"
 	"github.com/project/auth-service/internal/otp"
 	"github.com/project/auth-service/internal/store"
+	"github.com/project/shared/infra/jwtutil"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 )

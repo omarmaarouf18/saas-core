@@ -12,8 +12,8 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/project/chat-service/internal/config"
-	"github.com/project/chat-service/internal/jwtutil"
 	"github.com/project/chat-service/internal/store"
+	"github.com/project/shared/infra/jwtutil"
 	"github.com/redis/go-redis/v9"
 )
 

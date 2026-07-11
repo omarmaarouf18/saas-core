@@ -23,12 +23,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/shared/infra/ratelimit"
 	"github.com/project/shared/infra/resilience"
 	"github.com/project/shared/infra/tlsutil"
 	"github.com/project/user-service/internal/config"
 	"github.com/project/user-service/internal/handlers"
-	"github.com/project/user-service/internal/jwtutil"
 	"github.com/project/user-service/internal/store"
 )
 
