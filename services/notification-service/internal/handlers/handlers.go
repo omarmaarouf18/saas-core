@@ -74,14 +74,20 @@ func (n *Notification) RegisterRoutes(mux *http.ServeMux) {
 
 // Stream establishes an SSE connection for real-time notifications.
 func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", n.allowedOrigin)
+
 	if r.Method != http.MethodGet {
-		http.Error(w, `{"error":"use GET"}`, http.StatusMethodNotAllowed)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte(`{"error":"use GET"}`))
 		return
 	}
 
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		http.Error(w, `{"error":"token required"}`, http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error":"token required"}`))
 		return
 	}
 
@@ -103,7 +109,6 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", n.allowedOrigin)
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
