@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -173,5 +174,42 @@ func TestGetAuditLogAccessControl(t *testing.T) {
 	a.GetAuditLog(rec, req)
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("Expected 401 Unauthorized for raw requester_id, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestSimulateEmployeeActionAuth(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	cfg := &config.Config{
+		AppEnv: "local",
+	}
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	a := NewAuth(nil, nil, cfg, rdb)
+
+	// A. Missing auth header -> 401 Unauthorized
+	body := []byte(`{"email":"emp@example.com","action":"test-action"}`)
+	req := httptest.NewRequest("POST", "/auth/employee/action", bytes.NewReader(body))
+	rec := httptest.NewRecorder()
+	a.SimulateEmployeeAction(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for missing auth header, got %d", rec.Code)
+	}
+
+	// B. Valid token for wrong email -> 403 Forbidden
+	token, _ := jwtutil.GenerateToken("emp-1", "employee", "tenant-1", "other@example.com")
+	req = httptest.NewRequest("POST", "/auth/employee/action", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec = httptest.NewRecorder()
+	a.SimulateEmployeeAction(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden for mismatched email, got %d", rec.Code)
 	}
 }

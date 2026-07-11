@@ -599,6 +599,30 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate caller JWT token matches requested employee email
+	authHeader := r.Header.Get("Authorization")
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "missing or invalid authorization header, Bearer token required",
+		})
+		return
+	}
+	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+	claims, err := jwtutil.ValidateToken(tokenStr)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "invalid token: " + err.Error(),
+		})
+		return
+	}
+
+	if claims.Email != req.Email {
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "access denied: token identity does not match requested employee email",
+		})
+		return
+	}
+
 	ctx := r.Context()
 
 	// Fetch employee
