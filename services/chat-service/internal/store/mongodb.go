@@ -71,6 +71,10 @@ func (s *MongoDB) Close(ctx context.Context) error {
 	return s.client.Disconnect(ctx)
 }
 
+func (s *MongoDB) DropDatabase(ctx context.Context) error {
+	return s.db.Drop(ctx)
+}
+
 func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 	// Index on (channel, timestamp)
 	_, err := s.messages.Indexes().CreateOne(ctx, mongo.IndexModel{

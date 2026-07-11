@@ -128,6 +128,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Removed dead SSE Done channel** | Deleted the unused Done channel field from SSEClient and its initialization as client connection disconnects are already handled gracefully by the context and Send channel closure. | `current` | Verified via compilation and test execution. ✅ |
 | **Random Notification IDs** | Switched notification ID generation from UnixNano timestamp to crypto/rand-based 16-byte random hex string to eliminate collision risks. | `current` | Verified via compilation and test execution. ✅ |
 | **auth-service Test Coverage** | Added comprehensive integration tests for Signup, Login, VerifyOTP, ToggleEmployee, SimulateEmployeeAction, GetUser, and Refresh handlers. | `current` | Verified via test execution. ✅ |
+| **chat-service Test Coverage** | Added comprehensive integration tests for HandleWebSocket (failure paths), BroadcastLocation, and HandleCreateTicket handlers. | `current` | Verified via test execution. ✅ |
+
 
 
 

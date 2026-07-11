@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/project/chat-service/internal/chat"
 	"github.com/project/chat-service/internal/config"
 	"github.com/project/chat-service/internal/store"
 	"github.com/project/shared/infra/jwtutil"
@@ -434,5 +436,195 @@ func TestComplaintRoutingAccessControl(t *testing.T) {
 	allowed, _ = chatHandler.canAccessChannel("agent-2", "ticket:"+ticket.ID)
 	if allowed {
 		t.Errorf("expected agent-2 to be unauthorized for a ticket they are not assigned to")
+	}
+}
+
+func setupTestChat(t *testing.T) (*Chat, *store.MongoDB, func()) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	jwtutil.Init("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("saas_chat_test_%d", time.Now().UnixNano())
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping chat-service store integration tests: MongoDB not available at %s (%v)", mongoURI, err)
+		return nil, nil, nil
+	}
+
+	// Mock Auth/User Service
+	mockAuthUserServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/auth/user" {
+			id := r.URL.Query().Get("id")
+			if id == "user-unauthorized" {
+				w.WriteHeader(http.StatusForbidden)
+				json.NewEncoder(w).Encode(map[string]any{"error": "user not found"})
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]any{
+				"id":         id,
+				"role":       "owner",
+				"kyc_status": "approved",
+			})
+			return
+		}
+		if r.URL.Path == "/users/jobs/detail" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]any{
+				"owner_id":    "owner-1",
+				"employee_id": "employee-1",
+				"user_id":     "client-1",
+			})
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+
+	cfg := &config.Config{
+		UserServiceURL:       mockAuthUserServer.URL,
+		AuthServiceURL:       mockAuthUserServer.URL,
+		InternalServiceToken: "mock-internal-token",
+		AllowedOrigin:        "http://localhost:3000",
+	}
+
+	hub := chat.NewHub()
+	go hub.Run()
+
+	c := NewChat(hub, s, cfg, rdb)
+	cleanup := func() {
+		_ = s.DropDatabase(context.Background())
+		_ = s.Close(context.Background())
+		mr.Close()
+		rdb.Close()
+		mockAuthUserServer.Close()
+	}
+	return c, s, cleanup
+}
+
+func TestWebSocketUpgradeFailures(t *testing.T) {
+	c, _, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	// A. Missing token query parameter -> 401 Unauthorized
+	req := httptest.NewRequest("GET", "/chat/ws", nil)
+	rec := httptest.NewRecorder()
+	c.HandleWebSocket(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized, got %d", rec.Code)
+	}
+
+	// B. Invalid token query parameter -> 403 Forbidden
+	req = httptest.NewRequest("GET", "/chat/ws?token=invalid-token", nil)
+	rec = httptest.NewRecorder()
+	c.HandleWebSocket(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden, got %d", rec.Code)
+	}
+}
+
+func TestBroadcastLocation(t *testing.T) {
+	c, _, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	// A. Wrong method -> 405 Method Not Allowed
+	req := httptest.NewRequest("GET", "/chat/internal/broadcast-location", nil)
+	rec := httptest.NewRecorder()
+	c.BroadcastLocation(rec, req)
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Expected 405 Method Not Allowed, got %d", rec.Code)
+	}
+
+	// B. Invalid internal token -> 403 Forbidden
+	body := []byte(`{"channel":"job:1","latitude":12.34,"longitude":56.78,"employee_id":"emp-1"}`)
+	req = httptest.NewRequest("POST", "/chat/internal/broadcast-location", bytes.NewReader(body))
+	req.Header.Set("X-Internal-Token", "wrong-token")
+	rec = httptest.NewRecorder()
+	c.BroadcastLocation(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden, got %d", rec.Code)
+	}
+
+	// C. Valid request -> 200 OK
+	req = httptest.NewRequest("POST", "/chat/internal/broadcast-location", bytes.NewReader(body))
+	req.Header.Set("X-Internal-Token", "mock-internal-token")
+	rec = httptest.NewRecorder()
+	c.BroadcastLocation(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// D. Missing fields -> 400 Bad Request
+	badBody := []byte(`{"channel":"","employee_id":""}`)
+	req = httptest.NewRequest("POST", "/chat/internal/broadcast-location", bytes.NewReader(badBody))
+	req.Header.Set("X-Internal-Token", "mock-internal-token")
+	rec = httptest.NewRecorder()
+	c.BroadcastLocation(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d", rec.Code)
+	}
+}
+
+func TestHandleCreateTicket(t *testing.T) {
+	c, _, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	// A. Wrong method -> 405 Method Not Allowed
+	req := httptest.NewRequest("GET", "/chat/tickets", nil)
+	rec := httptest.NewRecorder()
+	c.HandleCreateTicket(rec, req)
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Expected 405 Method Not Allowed, got %d", rec.Code)
+	}
+
+	// B. Unauthenticated -> 401 Unauthorized
+	body := []byte(`{"title":"complaint","description":"something went wrong"}`)
+	req = httptest.NewRequest("POST", "/chat/tickets", bytes.NewReader(body))
+	rec = httptest.NewRecorder()
+	c.HandleCreateTicket(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized, got %d", rec.Code)
+	}
+
+	// C. Valid Request -> 201 Created
+	token, _ := jwtutil.GenerateToken("user-1", "user", "tenant-1", "user@example.com")
+	req = httptest.NewRequest("POST", "/chat/tickets", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec = httptest.NewRecorder()
+	c.HandleCreateTicket(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Errorf("Expected 201 Created, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// D. Validation failure (malformed JSON) -> 400 Bad Request
+	badBody := []byte(`{"context_id":`)
+	req = httptest.NewRequest("POST", "/chat/tickets", bytes.NewReader(badBody))
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec = httptest.NewRecorder()
+	c.HandleCreateTicket(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d", rec.Code)
 	}
 }
