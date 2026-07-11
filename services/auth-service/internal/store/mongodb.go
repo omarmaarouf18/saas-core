@@ -64,6 +64,17 @@ func (s *MongoDB) Close(ctx context.Context) error {
 	return s.client.Disconnect(ctx)
 }
 
+// DropDatabase drops the associated database (primarily for integration tests).
+func (s *MongoDB) DropDatabase(ctx context.Context) error {
+	return s.db.Drop(ctx)
+}
+
+// UpdateKYCStatus updates a user's KYC status (primarily for integration tests).
+func (s *MongoDB) UpdateKYCStatus(ctx context.Context, userID string, status models.KYCStatus) error {
+	_, err := s.users.UpdateOne(ctx, bson.M{"_id": userID}, bson.M{"$set": bson.M{"kyc_status": status}})
+	return err
+}
+
 // ensureIndexes creates unique and query-optimized indexes on all collections.
 func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 	// Users: unique email index.

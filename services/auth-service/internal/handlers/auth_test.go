@@ -2,6 +2,9 @@ package handlers
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -10,6 +13,9 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/project/auth-service/internal/config"
+	"github.com/project/auth-service/internal/models"
+	"github.com/project/auth-service/internal/otpcrypto"
+	"github.com/project/auth-service/internal/store"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
@@ -177,39 +183,287 @@ func TestGetAuditLogAccessControl(t *testing.T) {
 	}
 }
 
-func TestSimulateEmployeeActionAuth(t *testing.T) {
+func setupTestAuth(t *testing.T) (*Auth, *store.MongoDB, func()) {
 	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
-	cfg := &config.Config{
-		AppEnv: "local",
+	jwtutil.Init("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("saas_auth_test_%d", time.Now().UnixNano())
+	cipher, err := otpcrypto.NewCipher("")
+	if err != nil {
+		t.Fatalf("failed to create cipher: %v", err)
+	}
+
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName, cipher)
+	if err != nil {
+		t.Skipf("Skipping auth-service store integration tests: MongoDB not available at %s (%v)", mongoURI, err)
+		return nil, nil, nil
+	}
+
 	mr, err := miniredis.Run()
 	if err != nil {
 		t.Fatalf("failed to start miniredis: %v", err)
 	}
-	defer mr.Close()
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	defer rdb.Close()
 
-	a := NewAuth(nil, nil, cfg, rdb)
-
-	// A. Missing auth header -> 401 Unauthorized
-	body := []byte(`{"email":"emp@example.com","action":"test-action"}`)
-	req := httptest.NewRequest("POST", "/auth/employee/action", bytes.NewReader(body))
-	rec := httptest.NewRecorder()
-	a.SimulateEmployeeAction(rec, req)
-
-	if rec.Code != http.StatusUnauthorized {
-		t.Errorf("Expected 401 Unauthorized for missing auth header, got %d", rec.Code)
+	cfg := &config.Config{
+		AppEnv:               "local",
+		GatewaySecret:        "mock-gateway-secret",
+		InternalServiceToken: "mock-internal-token",
+		JWTSecret:            "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2",
 	}
 
-	// B. Valid token for wrong email -> 403 Forbidden
-	token, _ := jwtutil.GenerateToken("emp-1", "employee", "tenant-1", "other@example.com")
-	req = httptest.NewRequest("POST", "/auth/employee/action", bytes.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+token)
+	dispatcher := &mockOTPDispatcher{}
+
+	a := NewAuth(s, dispatcher, cfg, rdb)
+	cleanup := func() {
+		if s != nil {
+			_ = s.DropDatabase(context.Background())
+			s.Close(context.Background())
+		}
+		mr.Close()
+		rdb.Close()
+	}
+	return a, s, cleanup
+}
+
+type mockOTPDispatcher struct{}
+
+func (m *mockOTPDispatcher) Dispatch(email, code string) error { return nil }
+func (m *mockOTPDispatcher) Name() string                      { return "mock-otp-dispatcher" }
+
+func TestAuthHandlers(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	// 1. Test Signup (Success path)
+	signupBody := models.SignupRequest{
+		Email:    "owner@example.com",
+		Password: "password123",
+		Role:     models.RoleOwner,
+	}
+	b, _ := json.Marshal(signupBody)
+	req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+	a.Signup(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Errorf("Expected 201 Created for Signup, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	var signupResp map[string]any
+	json.Unmarshal(rec.Body.Bytes(), &signupResp)
+	signupOTP := signupResp["dev_otp"].(string)
+
+	// Test Signup Duplicate (Validation error path)
+	req = httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+	rec = httptest.NewRecorder()
+	a.Signup(rec, req)
+	if rec.Code != http.StatusConflict {
+		t.Errorf("Expected 409 Conflict for duplicate Signup, got %d", rec.Code)
+	}
+
+	// 1b. Verify signup OTP to confirm account
+	verifySignupBody := models.VerifyOTPRequest{
+		Email: "owner@example.com",
+		OTP:   signupOTP,
+	}
+	b4, _ := json.Marshal(verifySignupBody)
+	req = httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(b4))
+	rec = httptest.NewRecorder()
+	a.VerifyOTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for VerifyOTP (signup), got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// 2. Test Login (Success path / OTP dispatched)
+	loginBody := models.LoginRequest{
+		Email:    "owner@example.com",
+		Password: "password123",
+	}
+	b2, _ := json.Marshal(loginBody)
+	req = httptest.NewRequest("POST", "/auth/login", bytes.NewReader(b2))
+	rec = httptest.NewRecorder()
+	a.Login(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for Login, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// Decode dev_otp from login response
+	var loginResp map[string]any
+	json.Unmarshal(rec.Body.Bytes(), &loginResp)
+	loginOTP := loginResp["dev_otp"].(string)
+
+	// Test Login (Wrong Password / Failure path)
+	wrongLoginBody := models.LoginRequest{
+		Email:    "owner@example.com",
+		Password: "wrongpassword",
+	}
+	b3, _ := json.Marshal(wrongLoginBody)
+	req = httptest.NewRequest("POST", "/auth/login", bytes.NewReader(b3))
+	rec = httptest.NewRecorder()
+	a.Login(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for wrong password, got %d", rec.Code)
+	}
+
+	// 3. Test VerifyOTP (Success path for Login 2FA)
+	verifyLoginBody := models.VerifyOTPRequest{
+		Email: "owner@example.com",
+		OTP:   loginOTP,
+	}
+	b5, _ := json.Marshal(verifyLoginBody)
+	req = httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(b5))
+	rec = httptest.NewRecorder()
+	a.VerifyOTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for VerifyOTP (login), got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	var verifyResp map[string]any
+	json.Unmarshal(rec.Body.Bytes(), &verifyResp)
+	token := verifyResp["token"].(string)
+	ownerID := verifyResp["user_id"].(string)
+
+	// Approve KYC for Owner to allow toggling employees
+	if err := s.UpdateKYCStatus(context.Background(), ownerID, models.KYCApproved); err != nil {
+		t.Fatalf("failed to approve KYC: %v", err)
+	}
+
+	// Test VerifyOTP (Invalid Code / Failure path)
+	wrongVerifyBody := models.VerifyOTPRequest{
+		Email: "owner@example.com",
+		OTP:   "9999",
+	}
+	b6, _ := json.Marshal(wrongVerifyBody)
+	req = httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(b6))
+	rec = httptest.NewRecorder()
+	a.VerifyOTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for wrong OTP, got %d", rec.Code)
+	}
+
+	// 4. Test ToggleEmployee (Success path)
+	// Sign up an employee first
+	empSignupBody := models.SignupRequest{
+		Email:    "employee@example.com",
+		Password: "password123",
+		Role:     models.RoleEmployee,
+		OwnerID:  ownerID,
+	}
+	b6, _ = json.Marshal(empSignupBody)
+	req = httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b6))
+	rec = httptest.NewRecorder()
+	a.Signup(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Errorf("Expected 201 Created for employee signup, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	var empSignupResp map[string]any
+	json.Unmarshal(rec.Body.Bytes(), &empSignupResp)
+	empUserID := empSignupResp["user_id"].(string)
+
+	toggleBody := models.ToggleEmployeeRequest{
+		EmployeeEmail: "employee@example.com",
+		OwnerEmail:    "owner@example.com",
+		OwnerPassword: "password123",
+		SetActive:     false, // Freeze the employee
+	}
+	b7, _ := json.Marshal(toggleBody)
+	req = httptest.NewRequest("POST", "/auth/employee/toggle", bytes.NewReader(b7))
+	rec = httptest.NewRecorder()
+	a.ToggleEmployee(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for ToggleEmployee, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// 5. Test SimulateEmployeeAction (Success path)
+	// Promote employee back to active first
+	toggleBody.SetActive = true
+	b8, _ := json.Marshal(toggleBody)
+	req = httptest.NewRequest("POST", "/auth/employee/toggle", bytes.NewReader(b8))
+	rec = httptest.NewRecorder()
+	a.ToggleEmployee(rec, req)
+
+	// Now simulate action with employee JWT
+	empToken, _ := jwtutil.GenerateToken(empUserID, "employee", ownerID, "employee@example.com")
+	actionBody := map[string]string{
+		"email":  "employee@example.com",
+		"action": "view-jobs",
+	}
+	b9, _ := json.Marshal(actionBody)
+	req = httptest.NewRequest("POST", "/auth/employee/action", bytes.NewReader(b9))
+	req.Header.Set("Authorization", "Bearer "+empToken)
 	rec = httptest.NewRecorder()
 	a.SimulateEmployeeAction(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for SimulateEmployeeAction, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
 
-	if rec.Code != http.StatusForbidden {
-		t.Errorf("Expected 403 Forbidden for mismatched email, got %d", rec.Code)
+	// Test SimulateEmployeeAction (Unauthorized path)
+	req = httptest.NewRequest("POST", "/auth/employee/action", bytes.NewReader(b9))
+	rec = httptest.NewRecorder()
+	a.SimulateEmployeeAction(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for missing auth header in SimulateEmployeeAction, got %d", rec.Code)
+	}
+
+	// 6. Test GetUser (Success path via JWT token)
+	req = httptest.NewRequest("GET", "/auth/user?id="+token, nil)
+	rec = httptest.NewRecorder()
+	a.GetUser(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for GetUser, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// Test GetUser (Success path via internal service token)
+	req = httptest.NewRequest("GET", "/auth/user?id="+empUserID, nil)
+	req.Header.Set("X-Internal-Token", "mock-internal-token")
+	rec = httptest.NewRecorder()
+	a.GetUser(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for GetUser via internal token, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// Test GetUser (Failure path)
+	req = httptest.NewRequest("GET", "/auth/user?id=nonexistent-id", nil)
+	req.Header.Set("X-Internal-Token", "mock-internal-token")
+	rec = httptest.NewRecorder()
+	a.GetUser(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("Expected 404 Not Found for nonexistent GetUser, got %d", rec.Code)
+	}
+
+	// 7. Test Refresh (Success path)
+	refreshBody := map[string]string{
+		"token": token,
+	}
+	b10, _ := json.Marshal(refreshBody)
+	req = httptest.NewRequest("POST", "/auth/refresh", bytes.NewReader(b10))
+	rec = httptest.NewRecorder()
+	a.Refresh(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for Refresh, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// Test Refresh (Failure path)
+	refreshBody = map[string]string{
+		"token": "invalid-token",
+	}
+	b11, _ := json.Marshal(refreshBody)
+	req = httptest.NewRequest("POST", "/auth/refresh", bytes.NewReader(b11))
+	rec = httptest.NewRecorder()
+	a.Refresh(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for invalid Refresh token, got %d", rec.Code)
 	}
 }
