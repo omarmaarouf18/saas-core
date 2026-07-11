@@ -111,6 +111,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Gitignore Precision Fix** | Added precise root-level /cmd ignore rule to `.gitignore` to prevent stray binaries from being tracked while keeping sub-level cmd directories tracked. | `current` | Verified using git check-ignore. ✅ |
 | **JWT Util Extraction** | Consolidated duplicate `jwt.go` files across auth, chat, notification, and user services into `shared/infra/jwtutil`. | `current` | Verified via compilation and test execution. ✅ |
 | **Complaint Routing Stage 1: Data Model** | Added database collections, Go model structs, and indexes for support agents and complaint tickets in chat-service store. | `current` | Verified via compilation. ✅ |
+| **Complaint Routing Stage 2: Atomic Agent Assignment** | Implemented atomic support agent assignment using MongoDB FindOneAndUpdate to prevent race conditions on concurrent ticket creation. | `current` | Verified via compilation. ✅ |
 
 ### 2. Explicitly Deferred by Decision
 

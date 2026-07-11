@@ -186,3 +186,102 @@ func (s *MongoDB) GetHistory(ctx context.Context, channel string, limit int64) (
 
 	return res, nil
 }
+
+// AddSupportAgent inserts a new support agent.
+func (s *MongoDB) AddSupportAgent(ctx context.Context, agent *SupportAgent) error {
+	_, err := s.agents.InsertOne(ctx, agent)
+	return err
+}
+
+// GetAgent retrieves an agent by ID.
+func (s *MongoDB) GetAgent(ctx context.Context, agentID string) (*SupportAgent, error) {
+	var agent SupportAgent
+	err := s.agents.FindOne(ctx, bson.M{"_id": agentID}).Decode(&agent)
+	if err != nil {
+		return nil, err
+	}
+	return &agent, nil
+}
+
+// GetAgentByToken retrieves an agent by their unique token.
+func (s *MongoDB) GetAgentByToken(ctx context.Context, token string) (*SupportAgent, error) {
+	var agent SupportAgent
+	err := s.agents.FindOne(ctx, bson.M{"token": token}).Decode(&agent)
+	if err != nil {
+		return nil, err
+	}
+	return &agent, nil
+}
+
+// GetTicket retrieves a ticket by ID.
+func (s *MongoDB) GetTicket(ctx context.Context, ticketID string) (*ComplaintTicket, error) {
+	var ticket ComplaintTicket
+	err := s.tickets.FindOne(ctx, bson.M{"_id": ticketID}).Decode(&ticket)
+	if err != nil {
+		return nil, err
+	}
+	return &ticket, nil
+}
+
+// CreateTicketAndAssign attempts to atomically assign an available support agent to a new ticket.
+// If no agent is available, the ticket is created with "pending" status (queued).
+func (s *MongoDB) CreateTicketAndAssign(ctx context.Context, customerID, contextID string) (*ComplaintTicket, error) {
+	ticket := &ComplaintTicket{
+		ID:         fmt.Sprintf("tkt-%d", time.Now().UnixNano()),
+		CustomerID: customerID,
+		ContextID:  contextID,
+		Status:     "pending",
+		CreatedAt:  time.Now().UTC(),
+	}
+
+	filter := bson.M{"status": "available"}
+	update := bson.M{
+		"$set": bson.M{
+			"status":            "busy",
+			"current_ticket_id": ticket.ID,
+		},
+	}
+	var agent SupportAgent
+	err := s.agents.FindOneAndUpdate(ctx, filter, update, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&agent)
+	if err == nil {
+		ticket.Status = "assigned"
+		ticket.AssignedAgentID = agent.ID
+		ticket.AssignedAt = time.Now().UTC()
+	} else if err != mongo.ErrNoDocuments {
+		return nil, err
+	}
+
+	_, err = s.tickets.InsertOne(ctx, ticket)
+	if err != nil {
+		if ticket.Status == "assigned" {
+			// Rollback agent assignment
+			_, _ = s.agents.UpdateOne(ctx, bson.M{"_id": agent.ID}, bson.M{"$set": bson.M{"status": "available", "current_ticket_id": ""}})
+		}
+		return nil, fmt.Errorf("failed to insert ticket: %w", err)
+	}
+
+	return ticket, nil
+}
+
+// ResolveTicket marks a ticket as resolved and sets the assigned agent to available.
+func (s *MongoDB) ResolveTicket(ctx context.Context, ticketID string) error {
+	var ticket ComplaintTicket
+	err := s.tickets.FindOne(ctx, bson.M{"_id": ticketID}).Decode(&ticket)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.tickets.UpdateOne(ctx, bson.M{"_id": ticketID}, bson.M{"$set": bson.M{"status": "resolved"}})
+	if err != nil {
+		return err
+	}
+
+	if ticket.AssignedAgentID != "" {
+		_, _ = s.agents.UpdateOne(ctx,
+			bson.M{"_id": ticket.AssignedAgentID, "current_ticket_id": ticketID},
+			bson.M{"$set": bson.M{"status": "available", "current_ticket_id": ""}},
+		)
+	}
+
+	return nil
+}
