@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -698,7 +699,7 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var lookupID string
 
-	if r.Header.Get("X-Internal-Token") == a.internalServiceToken {
+	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(a.internalServiceToken)) == 1 {
 		lookupID = id
 	} else {
 		claims, err := jwtutil.ValidateToken(id)

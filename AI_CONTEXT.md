@@ -122,6 +122,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **SimulateEmployeeAction Authorization** | Enforced JWT authentication on simulate employee action endpoint, validating that the token matches the requested employee email. | `current` | Verified via unit test. ✅ |
 | **Mask plain text tokens in logs** | Replaced raw JWT / session tokens with authenticated IDs (userID / tenantID) in stdout logs to prevent credential leakage. | `current` | Verified via grep checks. ✅ |
 | **Gateway Info & Health Leak Fix** | Stripped routes/topology leakage from public / endpoint and reduced public /health endpoint to basic status, moving detailed metrics to authenticated /health/internal. | `current` | Verified via compilation and route checks. ✅ |
+| **Constant-time internal token compare** | Replaced standard string comparison operators with subtle.ConstantTimeCompare in all X-Internal-Token verification checks to mitigate timing attacks. | `current` | Verified via test execution. ✅ |
+
 
 
 

@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -581,7 +582,8 @@ func (c *Chat) BroadcastLocation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate internal token
-	if r.Header.Get("X-Internal-Token") != c.internalServiceToken {
+	gotToken := r.Header.Get("X-Internal-Token")
+	if subtle.ConstantTimeCompare([]byte(gotToken), []byte(c.internalServiceToken)) != 1 {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
 		json.NewEncoder(w).Encode(map[string]string{"error": "access denied: invalid internal token"})

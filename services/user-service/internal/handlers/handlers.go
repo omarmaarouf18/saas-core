@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -378,7 +379,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Authorization check
-	isInternal := r.Header.Get("X-Internal-Token") == u.internalServiceToken
+	isInternal := subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
 	if !isInternal {
 		requesterToken := r.URL.Query().Get("requester_id")
 		if requesterToken == "" {
@@ -500,7 +501,7 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 1. Internal trusted token check
-	if r.Header.Get("X-Internal-Token") == u.internalServiceToken {
+	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1 {
 		writeJSON(w, http.StatusOK, job)
 		return
 	}

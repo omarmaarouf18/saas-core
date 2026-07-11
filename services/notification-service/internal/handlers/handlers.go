@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -223,7 +224,13 @@ type sendRequest struct {
 
 // Send pushes a notification to matching connected clients.
 func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("X-Internal-Token") != n.internalServiceToken {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	gotToken := r.Header.Get("X-Internal-Token")
+	if subtle.ConstantTimeCompare([]byte(gotToken), []byte(n.internalServiceToken)) != 1 {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: internal token required"})
 		return
 	}
@@ -233,11 +240,6 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})
-		return
-	}
-
-	if r.Method != http.MethodPost {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
 		return
 	}
 
@@ -286,13 +288,14 @@ type jobAlertRequest struct {
 
 // BroadcastJobAlert sends a New Job Alert to all role pools for a tenant.
 func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("X-Internal-Token") != n.internalServiceToken {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: internal token required"})
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
 		return
 	}
 
-	if r.Method != http.MethodPost {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+	gotToken := r.Header.Get("X-Internal-Token")
+	if subtle.ConstantTimeCompare([]byte(gotToken), []byte(n.internalServiceToken)) != 1 {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: internal token required"})
 		return
 	}
 
