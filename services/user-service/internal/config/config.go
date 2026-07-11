@@ -91,4 +91,3 @@ func Load() (*Config, error) {
 		RedisURI:             redisURI,
 	}, nil
 }
-

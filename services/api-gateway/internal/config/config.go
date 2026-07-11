@@ -64,8 +64,6 @@ func Load() (*Config, error) {
 		RedisURI:      redisURI,
 	}
 
-
-
 	// Each route is defined by: path prefix → env var → default address.
 	routeDefs := []struct {
 		prefix     string

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/project/auth-service/internal/ratelimit"
+	"github.com/redis/go-redis/v9"
 )
 
 type RateLimiter struct {
@@ -51,4 +51,3 @@ func (rl *RateLimiter) Reset(key string) {
 	}
 	rl.getLimiter(key).Reset(key)
 }
-

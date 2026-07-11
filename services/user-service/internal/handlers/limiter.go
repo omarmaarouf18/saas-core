@@ -49,4 +49,3 @@ func getIP(r *http.Request) string {
 	}
 	return ip
 }
-

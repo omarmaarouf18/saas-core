@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/project/notification-service/internal/config"
 	"github.com/project/notification-service/internal/hub"
-	"github.com/alicebob/miniredis/v2"
 	"github.com/redis/go-redis/v9"
 )
 

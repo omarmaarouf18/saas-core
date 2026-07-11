@@ -68,7 +68,7 @@ func TestResilienceClient_CircuitBreakerTripAndRecover(t *testing.T) {
 	// Modify breaker settings for quick cooldown in test
 	client.breaker = gobreaker.NewCircuitBreaker[*http.Response](gobreaker.Settings{
 		Name:        "test-breaker-trip",
-		MaxRequests: 1, // 1 success in half-open will close it
+		MaxRequests: 1,                     // 1 success in half-open will close it
 		Timeout:     50 * time.Millisecond, // 50ms cooldown in open state
 		ReadyToTrip: func(counts gobreaker.Counts) bool {
 			return counts.ConsecutiveFailures >= 3 // trip after 3 consecutive failures
@@ -119,7 +119,7 @@ func TestResilienceClient_AuthorizationFailClosed(t *testing.T) {
 			return true
 		},
 	})
-	
+
 	// Execute first request to trip it
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)

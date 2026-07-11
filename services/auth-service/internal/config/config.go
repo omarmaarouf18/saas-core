@@ -62,7 +62,6 @@ func Load() (*Config, error) {
 		port = "3002"
 	}
 
-
 	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
 		mongoURI = "mongodb://localhost:27017"
@@ -94,4 +93,3 @@ func Load() (*Config, error) {
 		RedisURI:             redisURI,
 	}, nil
 }
-

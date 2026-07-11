@@ -21,7 +21,6 @@ func (rl *RateLimiter) CheckAndRecord(key string) (bool, time.Duration) {
 	return rl.rl.CheckAndRecord(key)
 }
 
-
 // getIP extracts the client IP from r.RemoteAddr only.
 // At the gateway edge there is no trusted upstream proxy, so
 // X-Forwarded-For and X-Real-IP are fully client-controlled and

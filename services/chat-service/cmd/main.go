@@ -28,8 +28,8 @@ import (
 	"github.com/project/chat-service/internal/config"
 	"github.com/project/chat-service/internal/handlers"
 	"github.com/project/chat-service/internal/jwtutil"
-	"github.com/project/chat-service/internal/resilience"
 	"github.com/project/chat-service/internal/ratelimit"
+	"github.com/project/chat-service/internal/resilience"
 	"github.com/project/chat-service/internal/store"
 	"github.com/project/chat-service/internal/tlsutil"
 )
@@ -115,4 +115,3 @@ func main() {
 		log.Fatalf("Server error: %v", err)
 	}
 }
-

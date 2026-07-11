@@ -91,7 +91,6 @@ func main() {
 		log.Printf("Route registered: %s → %s (env: %s)", route.Prefix, route.Target, route.EnvKey)
 	}
 
-
 	// ---- Wrap with global rate limiting and logging middleware ----
 	rl := ratelimit.NewRateLimiter(redisClient, 100, 1*time.Minute, "gateway")
 	limiter := middleware.NewRateLimiter(rl)
@@ -106,4 +105,3 @@ func main() {
 		log.Fatalf("Server error: %v", err)
 	}
 }
-
