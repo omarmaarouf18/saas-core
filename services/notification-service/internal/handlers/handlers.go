@@ -125,14 +125,14 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "event: connected\ndata: {\"client_id\":%q,\"role\":%q}\n\n", token, role)
 	flusher.Flush()
 
-	log.Printf("[NOTIF] SSE stream opened: token=%s tenant=%s role=%s", token, tenantID, role)
+	log.Printf("[NOTIF] SSE stream opened: tenant_id=%s role=%s", tenantID, role)
 
 	// Stream loop.
 	ctx := r.Context()
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("[NOTIF] SSE stream closed (client disconnect): %s", token)
+			log.Printf("[NOTIF] SSE stream closed (client disconnect) tenant_id=%s", tenantID)
 			return
 		case msg, ok := <-client.Send:
 			if !ok {

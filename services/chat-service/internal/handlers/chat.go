@@ -276,7 +276,7 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	// Register with the hub.
 	c.hub.Register <- client
 
-	log.Printf("[WS] Connection established: token=%s remote=%s", token, conn.RemoteAddr())
+	log.Printf("[WS] Connection established: user_id=%s remote=%s", userID, conn.RemoteAddr())
 
 	// Launch read/write pumps in separate goroutines.
 	go c.writePump(conn, client)
