@@ -93,6 +93,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Redis Rate Limiting Stage 2: api-gateway** | Migrated the api-gateway edge rate limiter to use the Redis-backed wrapper. | `current` | Verified via compilation. ✅ |
 | **Redis Rate Limiting Stage 3: auth-service** | Migrated the auth-service dual-key (IP + email) rate limiter to use Redis. | `current` | Verified via compilation and test execution. ✅ |
 | **Redis Rate Limiting Stage 4: chat, user & notification services** | Migrated rate limiters in chat, user, and notification services to use Redis-backed wrapper. | `current` | Verified via compilation and test execution. ✅ |
+| **Redis Rate Limiting Stage 5: Failure Mode** | Implemented fail-closed behaviors for Redis runtime unavailability, with audit logging and rate restriction. | `current` | Verified via compilation and code review. ✅ |
 ### 2. Explicitly Deferred by Decision
 
 
@@ -114,7 +115,6 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 
 ### 3. Not Started Yet
 
-* **Unused Redis Cache Infrastructure**: A Redis service is running in Docker Compose and environment variables are passed to all containers, but no microservice codebase file currently imports a Redis client driver or utilizes caching/pub-sub.
 * **Real Email/SMS Integration**: No Twilio, SendGrid, or SMTP dispatchers are set up.
 
 ---
@@ -125,6 +125,7 @@ Only features verified directly against the running application are marked as ve
 
 * **Unverified Escrow Logic**: Escrow locking (`LockEscrow`) and release splits (`ReleaseEscrowWithSplit`) exist in `user-service/internal/store/mongodb.go`, but since the `/track` endpoint actively blocks any payment method other than `cod`, **this code path has never been executed or verified end-to-end**.
 * **In-Memory Rate Limiting State**: All service-level rate limiters maintain status counts in-memory. If instances restart or scale out, limit counters are reset.
+* **Fail-Closed Rate Limiting on Redis Unavailability**: If the shared Redis instance becomes unavailable at runtime, all rate limiters across all microservices (api-gateway, auth-service, chat-service, notification-service, user-service) will fail-closed. This means incoming traffic is restricted/blocked and authentication attempts are denied with critical security logs (`[SECURITY CRITICAL]`), rather than allowing un-throttled traffic to bypass security boundaries.
 * **Dev-Grade mTLS CA**: The certificates generated for mTLS use a dev-grade local Root CA. For production, a real internal CA (e.g. AWS Private CA, HashiCorp Vault PKI, or cert-manager on Kubernetes) must be integrated.
 
 ---
@@ -148,5 +149,5 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Implement Redis Rate Limiting Stage 5 (Failure mode implementation & documentation).
+* **Immediate Next Step**: Implement Redis Rate Limiting Stage 6 (Concurrency tests & verification).
 
