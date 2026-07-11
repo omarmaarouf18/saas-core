@@ -131,6 +131,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **chat-service Test Coverage** | Added comprehensive integration tests for HandleWebSocket (failure paths), BroadcastLocation, and HandleCreateTicket handlers. | `current` | Verified via test execution. ✅ |
 | **notification-service Test Coverage** | Added comprehensive integration tests for SSE Stream and verifyAndResolve handlers. | `current` | Verified via test execution. ✅ |
 | **user-service Test Coverage** | Added comprehensive integration tests for ListServices, GetWallet, GetLedger, GetPlatformConfig, and GetRatings handlers. | `current` | Verified via test execution. ✅ |
+| **Application Map** | Created a comprehensive reference document (docs/APPLICATION_MAP.md) detailing ports, databases, actor lifecycles, and connection flows. | `current` | Verified via document generation. ✅ |
+
 
 
 
