@@ -1,6 +1,8 @@
 package jwtutil
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -79,4 +81,13 @@ func ValidateToken(tokenStr string) (*Claims, error) {
 	}
 
 	return claims, nil
+}
+
+// GenerateSecureToken generates a cryptographically secure 32-byte hex token.
+func GenerateSecureToken() (string, error) {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
 }

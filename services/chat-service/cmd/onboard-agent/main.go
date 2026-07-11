@@ -6,8 +6,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
@@ -17,17 +15,9 @@ import (
 	"time"
 
 	"github.com/project/chat-service/internal/store"
+	"github.com/project/shared/infra/jwtutil"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
-
-// generateSecureToken generates a cryptographically secure random token of sufficient length.
-func generateSecureToken() (string, error) {
-	bytes := make([]byte, 32)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(bytes), nil
-}
 
 func main() {
 	var agentID string
@@ -83,7 +73,7 @@ func main() {
 	}
 
 	// Generate cryptographically secure token
-	token, err := generateSecureToken()
+	token, err := jwtutil.GenerateSecureToken()
 	if err != nil {
 		log.Fatalf("Error: Failed to generate secure token: %v", err)
 	}

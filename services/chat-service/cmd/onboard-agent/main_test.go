@@ -9,22 +9,23 @@ import (
 	"time"
 
 	"github.com/project/chat-service/internal/store"
+	"github.com/project/shared/infra/jwtutil"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 func TestGenerateSecureToken(t *testing.T) {
-	token1, err := generateSecureToken()
+	token1, err := jwtutil.GenerateSecureToken()
 	if err != nil {
 		t.Fatalf("failed to generate token: %v", err)
 	}
 
-	token2, err := generateSecureToken()
+	token2, err := jwtutil.GenerateSecureToken()
 	if err != nil {
 		t.Fatalf("failed to generate token: %v", err)
 	}
 
 	if token1 == token2 {
-		t.Errorf("generateSecureToken generated duplicate tokens: %s", token1)
+		t.Errorf("GenerateSecureToken generated duplicate tokens: %s", token1)
 	}
 
 	// 32 random bytes in hex should produce exactly 64 characters

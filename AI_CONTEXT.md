@@ -135,6 +135,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **KYB/KYE Data Model** | Extended auth-service User model to support IDFrontDoc, IDBackDoc, SelfieDoc, BusinessProofDoc, and review metadata. | `current` | Verified via compilation. ✅ |
 | **KYB/KYE Local Storage** | Created local-disk storage implementation (securing document files on disk and generating short-lived signed token URLs). | `current` | Verified via compilation. ✅ |
 | **KYB/KYE Uploads & Reviews** | Implemented file validation, multipart uploads, pending submissions list, review gating, signed document views, and audit logging. | `current` | Verified via integration tests. ✅ |
+| **Consolidated Token Helper** | Pulled duplicate cryptographically secure token generation into shared/infra/jwtutil. | `current` | Verified via test execution. ✅ |
+
 
 
 
