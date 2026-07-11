@@ -14,6 +14,7 @@ type Config struct {
 	TLSCertPath          string
 	TLSKeyPath           string
 	TLSCAPath            string
+	RedisURI             string
 }
 
 func Load() (*Config, error) {
@@ -42,6 +43,11 @@ func Load() (*Config, error) {
 		return nil, errors.New("config: required env var TLS_CA_PATH is empty")
 	}
 
+	redisURI := os.Getenv("REDIS_URI")
+	if redisURI == "" {
+		return nil, errors.New("config: required env var REDIS_URI is empty")
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "3004"
@@ -66,6 +72,7 @@ func Load() (*Config, error) {
 		TLSCertPath:          tlsCertPath,
 		TLSKeyPath:           tlsKeyPath,
 		TLSCAPath:            tlsCAPath,
+		RedisURI:             redisURI,
 	}, nil
 }
 

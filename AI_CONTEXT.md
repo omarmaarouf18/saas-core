@@ -89,6 +89,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **mTLS Stage 3: TLS Client Config** | Updated internal HTTP clients in api-gateway, chat, notification, and user services to use custom TLS client configuration with hostname verification and local root CA trust. | `current` | Verified via compilation and test execution. ✅ |
 | **mTLS Stage 4: Docker & Env Wiring** | Configured docker-compose.yml to mount local certs and keys, updated service URLs to HTTPS, and updated env templates. | `current` | Verified via configuration review. ✅ |
 | **mTLS Stage 5: Verification** | Created and ran an integration test (mtls_integration_test.go) verifying handshake rejection of missing/untrusted client certs and success of trusted ones. | `current` | Verified via integration tests. ✅ |
+| **Redis Rate Limiting Stage 1: Wrapper & Config** | Created shared ratelimit package wrapping Redis client with atomic Lua scripts, and updated all 5 config packages to load REDIS_URI. | `current` | Verified via compilation and unit tests. ✅ |
 ### 2. Explicitly Deferred by Decision
 
 
@@ -144,5 +145,5 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Awaiting user request / next phase of development.
+* **Immediate Next Step**: Implement Redis Rate Limiting Stage 2 (api-gateway rate limiter migration).
 

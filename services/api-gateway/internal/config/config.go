@@ -23,6 +23,7 @@ type Config struct {
 	TLSCertPath   string
 	TLSKeyPath    string
 	TLSCAPath     string
+	RedisURI      string
 }
 
 // Load reads configuration from environment variables.
@@ -48,6 +49,11 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("config: required env var TLS_CA_PATH is empty")
 	}
 
+	redisURI := os.Getenv("REDIS_URI")
+	if redisURI == "" {
+		return nil, fmt.Errorf("config: required env var REDIS_URI is empty")
+	}
+
 	cfg := &Config{
 		Port:          envOrDefault("PORT", "8080"),
 		GatewaySecret: gatewaySecret,
@@ -55,7 +61,9 @@ func Load() (*Config, error) {
 		TLSCertPath:   tlsCertPath,
 		TLSKeyPath:    tlsKeyPath,
 		TLSCAPath:     tlsCAPath,
+		RedisURI:      redisURI,
 	}
+
 
 
 	// Each route is defined by: path prefix → env var → default address.
