@@ -27,6 +27,7 @@ import (
 	"github.com/project/user-service/internal/handlers"
 	"github.com/project/user-service/internal/jwtutil"
 	"github.com/project/user-service/internal/ratelimit"
+	"github.com/project/user-service/internal/resilience"
 	"github.com/project/user-service/internal/store"
 	"github.com/project/user-service/internal/tlsutil"
 )
@@ -67,7 +68,11 @@ func main() {
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok", "storage": "mongodb"})
+		json.NewEncoder(w).Encode(map[string]any{
+			"status":       "ok",
+			"storage":      "mongodb",
+			"dependencies": resilience.GetBreakerStats(),
+		})
 	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

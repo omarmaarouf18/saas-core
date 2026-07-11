@@ -97,6 +97,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Redis Rate Limiting Stage 6: Verification & Concurrency Tests** | Created concurrency and cross-instance rate limit tests, and ran full test suite verification. | `current` | Verified via integration and concurrency tests. ✅ |
 | **Resilience Stage 1: Wrapper Client** | Created shared resilience package implementing retry-with-backoff + jitter and circuit-breaker wrapper around http.Client. | `current` | Verified via compilation. ✅ |
 | **Resilience Stage 2 & 3: Wiring & Fail-Closed Errors** | Wired separate circuit breaker and retry instances into internal HTTP clients and proxies, returning 503 Service Unavailable and failing closed on timeouts. | `current` | Verified via compilation and test execution. ✅ |
+| **Resilience Stage 4: Observability & Health Integration** | Configured structured logs for circuit breaker transitions and exposed dependency breaker status on /health endpoints. | `current` | Verified via compilation and test execution. ✅ |
 
 ### 2. Explicitly Deferred by Decision
 
@@ -148,5 +149,5 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Implement Resilience Stage 4 (Observability: health dependency check).
+* **Immediate Next Step**: Implement Resilience Stage 5 (Resilience tests & verification).
 

@@ -18,6 +18,7 @@ import (
 	"github.com/project/notification-service/internal/hub"
 	"github.com/project/notification-service/internal/jwtutil"
 	"github.com/project/notification-service/internal/ratelimit"
+	"github.com/project/notification-service/internal/resilience"
 	"github.com/project/notification-service/internal/tlsutil"
 )
 
@@ -55,6 +56,7 @@ func main() {
 			"status":          "ok",
 			"active_clients":  sseHub.ClientCount(),
 			"clients_by_role": sseHub.ClientsByRole(),
+			"dependencies":    resilience.GetBreakerStats(),
 		})
 	})
 

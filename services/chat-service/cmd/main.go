@@ -28,6 +28,7 @@ import (
 	"github.com/project/chat-service/internal/config"
 	"github.com/project/chat-service/internal/handlers"
 	"github.com/project/chat-service/internal/jwtutil"
+	"github.com/project/chat-service/internal/resilience"
 	"github.com/project/chat-service/internal/ratelimit"
 	"github.com/project/chat-service/internal/store"
 	"github.com/project/chat-service/internal/tlsutil"
@@ -83,6 +84,7 @@ func main() {
 			"status":          "ok",
 			"active_clients":  hub.ClientCount(),
 			"active_channels": hub.ChannelCount(),
+			"dependencies":    resilience.GetBreakerStats(),
 		})
 	})
 

@@ -51,7 +51,10 @@ func main() {
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, `{"status": "ok"}`)
+		json.NewEncoder(w).Encode(map[string]any{
+			"status":       "ok",
+			"dependencies": resilience.GetBreakerStats(),
+		})
 	})
 
 	// ---- Service info endpoint ----
