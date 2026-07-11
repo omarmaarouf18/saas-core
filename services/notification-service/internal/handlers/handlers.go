@@ -121,7 +121,6 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 		TenantID: tenantID,
 		Role:     role,
 		Send:     make(chan []byte, 64),
-		Done:     make(chan struct{}),
 	}
 
 	n.hub.Register(client)

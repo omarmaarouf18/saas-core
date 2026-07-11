@@ -36,7 +36,6 @@ type SSEClient struct {
 	TenantID string
 	Role     Role
 	Send     chan []byte
-	Done     chan struct{}
 }
 
 // SSEHub manages SSE client pools organized by role and tenant.

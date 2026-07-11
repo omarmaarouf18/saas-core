@@ -125,6 +125,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Constant-time internal token compare** | Replaced standard string comparison operators with subtle.ConstantTimeCompare in all X-Internal-Token verification checks to mitigate timing attacks. | `current` | Verified via test execution. ✅ |
 | **CORS headers on SSE stream errors** | Moved Access-Control-Allow-Origin header injection to the top of SSE Stream handler so that connection error responses are readable by browser JS. | `current` | Verified via compilation and test execution. ✅ |
 | **shared/infra in CI Matrix** | Added shared/infra to .github/workflows/ci.yml test matrix using path-based working directories to ensure shared module changes are tested on every PR/push. | `current` | Verified via workflow configuration. ✅ |
+| **Removed dead SSE Done channel** | Deleted the unused Done channel field from SSEClient and its initialization as client connection disconnects are already handled gracefully by the context and Send channel closure. | `current` | Verified via compilation and test execution. ✅ |
+
 
 
 
