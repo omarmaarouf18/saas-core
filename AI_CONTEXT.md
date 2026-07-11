@@ -100,6 +100,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Resilience Stage 4: Observability & Health Integration** | Configured structured logs for circuit breaker transitions and exposed dependency breaker status on /health endpoints. | `current` | Verified via compilation and test execution. ✅ |
 | **Resilience Stage 5: Resilience Tests & Verification** | Created unit and integration tests verifying retry limit capping, circuit breaker trip/recovery transitions, and fail-closed security properties. | `current` | Verified via integration tests. ✅ |
 | **Prevent Duplicate Ratings** | Added compound unique index on ratings for (job_id, rated_by) and returned 409 Conflict when duplicate rating is submitted (identified during schema review). | `current` | Verified via integration tests. ✅ |
+| **CI Integration (MongoDB & Redis)** | Configured MongoDB and Redis service containers in GitHub Actions to enable full, non-skipped execution of microservice integration tests. | `current` | Verified via workflow configuration. ✅ |
 
 ### 2. Explicitly Deferred by Decision
 
