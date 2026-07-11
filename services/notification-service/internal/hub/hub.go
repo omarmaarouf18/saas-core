@@ -3,6 +3,8 @@
 package hub
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -75,7 +77,12 @@ func (h *SSEHub) Broadcast(n Notification) {
 		n.Timestamp = time.Now().UTC()
 	}
 	if n.ID == "" {
-		n.ID = fmt.Sprintf("notif-%d", time.Now().UnixNano())
+		bytes := make([]byte, 16)
+		if _, err := rand.Read(bytes); err == nil {
+			n.ID = fmt.Sprintf("notif-%s", hex.EncodeToString(bytes))
+		} else {
+			n.ID = fmt.Sprintf("notif-%d", time.Now().UnixNano())
+		}
 	}
 
 	data, err := json.Marshal(n)
