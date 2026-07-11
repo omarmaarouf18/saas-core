@@ -717,4 +717,61 @@ func TestUserServiceHandlers(t *testing.T) {
 			t.Errorf("UpdateJobLocation blocked for %v when log shipping, expected it to return instantly", duration)
 		}
 	})
+
+	// Test 14: Prevent Duplicate Ratings
+	t.Run("Prevent Duplicate Ratings", func(t *testing.T) {
+		// Seed a completed job
+		jobID := "rate-job-123"
+		testJob := &models.Job{
+			ID:         jobID,
+			OwnerID:    "rate-owner-123",
+			EmployeeID: "rate-employee-123",
+			Status:     models.JobStatusCompleted,
+		}
+		_ = s.CreateJob(ctx, testJob)
+
+		// Create mock tokens for owner and employee
+		tokenOwner, _ := jwtutil.GenerateToken("rate-owner-123", "owner", "rate-owner-123", "owner@example.com")
+		tokenEmployee, _ := jwtutil.GenerateToken("rate-employee-123", "employee", "rate-employee-123", "emp@example.com")
+
+		// First rating: Owner rating Employee -> Should succeed (201 Created)
+		req1Body := map[string]any{
+			"job_id":     jobID,
+			"rated_by":   tokenOwner,
+			"rated_user": tokenEmployee,
+			"stars":      5,
+			"comment":    "Great job!",
+		}
+		body1, _ := json.Marshal(req1Body)
+		req1 := httptest.NewRequest("POST", "/users/jobs/rate", bytes.NewReader(body1))
+		rec1 := httptest.NewRecorder()
+		u.RateJob(rec1, req1)
+		if rec1.Code != http.StatusCreated {
+			t.Errorf("Expected 201 Created for first rating, got %d. Body: %s", rec1.Code, rec1.Body.String())
+		}
+
+		// Second rating: Owner rating Employee again -> Should fail with 409 Conflict
+		req2 := httptest.NewRequest("POST", "/users/jobs/rate", bytes.NewReader(body1))
+		rec2 := httptest.NewRecorder()
+		u.RateJob(rec2, req2)
+		if rec2.Code != http.StatusConflict {
+			t.Errorf("Expected 409 Conflict for duplicate rating, got %d. Body: %s", rec2.Code, rec2.Body.String())
+		}
+
+		// Third rating: Employee rating Owner -> Should succeed (201 Created) since rated_by is different
+		req3Body := map[string]any{
+			"job_id":     jobID,
+			"rated_by":   tokenEmployee,
+			"rated_user": tokenOwner,
+			"stars":      4,
+			"comment":    "Good client.",
+		}
+		body3, _ := json.Marshal(req3Body)
+		req3 := httptest.NewRequest("POST", "/users/jobs/rate", bytes.NewReader(body3))
+		rec3 := httptest.NewRecorder()
+		u.RateJob(rec3, req3)
+		if rec3.Code != http.StatusCreated {
+			t.Errorf("Expected 201 Created for employee rating owner, got %d. Body: %s", rec3.Code, rec3.Body.String())
+		}
+	})
 }

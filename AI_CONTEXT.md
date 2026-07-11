@@ -99,6 +99,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Resilience Stage 2 & 3: Wiring & Fail-Closed Errors** | Wired separate circuit breaker and retry instances into internal HTTP clients and proxies, returning 503 Service Unavailable and failing closed on timeouts. | `current` | Verified via compilation and test execution. ✅ |
 | **Resilience Stage 4: Observability & Health Integration** | Configured structured logs for circuit breaker transitions and exposed dependency breaker status on /health endpoints. | `current` | Verified via compilation and test execution. ✅ |
 | **Resilience Stage 5: Resilience Tests & Verification** | Created unit and integration tests verifying retry limit capping, circuit breaker trip/recovery transitions, and fail-closed security properties. | `current` | Verified via integration tests. ✅ |
+| **Prevent Duplicate Ratings** | Added compound unique index on ratings for (job_id, rated_by) and returned 409 Conflict when duplicate rating is submitted (identified during schema review). | `current` | Verified via integration tests. ✅ |
 
 ### 2. Explicitly Deferred by Decision
 
@@ -114,6 +115,9 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 * **Mock OTP SMS/Email Dispatcher**
   * **Decision**: SMS dispatching is stubbed using a mock that logs OTPs to stdout. In local environment (`APP_ENV=local`), OTPs are exposed directly in response payloads as `dev_otp`.
   * **Reasoning**: Speeds up development and avoids dependencies on external paid SMS gateways during local testing.
+* **Rating Edits / Updates**
+  * **Decision**: Editing or updating an existing rating is deliberately not allowed. The endpoint blocks duplicate ratings, and no PATCH/update rating endpoint is provided.
+  * **Reasoning**: To prevent data manipulation. Allowing users to modify ratings later is flagged as a potential future feature with its own authorization checks.
 
 ### 3. Not Started Yet
 

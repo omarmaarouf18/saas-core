@@ -14,6 +14,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/project/user-service/internal/store"
 	"github.com/project/user-service/internal/tlsutil"
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var ErrServiceUnavailable = errors.New("service_unavailable")
@@ -985,6 +987,13 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := u.store.CreateRating(ctx, rating); err != nil {
+		if mongo.IsDuplicateKeyError(err) || strings.Contains(err.Error(), "11000") || strings.Contains(err.Error(), "duplicate key") {
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error":   "conflict",
+				"message": "you have already rated this job",
+			})
+			return
+		}
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}

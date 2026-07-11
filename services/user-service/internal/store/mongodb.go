@@ -108,6 +108,12 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 	}); err != nil {
 		return fmt.Errorf("ratings rated_user index: %w", err)
 	}
+	if _, err := s.ratings.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: "job_id", Value: 1}, {Key: "rated_by", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	}); err != nil {
+		return fmt.Errorf("ratings compound unique index: %w", err)
+	}
 	log.Println("[USER-STORE] All indexes ensured")
 	return nil
 }
