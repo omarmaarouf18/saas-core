@@ -3,6 +3,7 @@ module github.com/project/chat-service
 go 1.24
 
 require (
+	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/aws/aws-sdk-go-v2 v1.42.1
 	github.com/aws/aws-sdk-go-v2/config v1.32.27
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.78.2
@@ -33,6 +34,7 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect

@@ -20,8 +20,10 @@ import (
 	"github.com/project/user-service/internal/config"
 	"github.com/project/user-service/internal/jwtutil"
 	"github.com/project/user-service/internal/models"
+	"github.com/project/user-service/internal/ratelimit"
 	"github.com/project/user-service/internal/store"
 	"github.com/project/user-service/internal/tlsutil"
+	"github.com/redis/go-redis/v9"
 )
 
 // ErrUpgradeRequired is returned when a tenant's subscription tier is insufficient for a gated feature.
@@ -43,9 +45,10 @@ type UserService struct {
 	httpClient           *http.Client
 }
 
-// NewUserService creates a new handler group.
-func NewUserService(s *store.MongoDB, cfg *config.Config) *UserService {
+// NewUserService creates a new UserService handler group.
+func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *UserService {
 	InitCloudWatch(cfg.CloudWatchLogGroup)
+
 	chatServiceURL := cfg.ChatServiceURL
 	if chatServiceURL == "" {
 		chatServiceURL = "http://localhost:3001"
@@ -62,11 +65,13 @@ func NewUserService(s *store.MongoDB, cfg *config.Config) *UserService {
 		client = http.DefaultClient
 	}
 
+	rl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Minute, "user")
+
 	return &UserService{
 		store:                s,
 		authServiceURL:       cfg.AuthServiceURL,
 		chatServiceURL:       chatServiceURL,
-		limiter:              NewRateLimiter(5, 1*time.Minute),
+		limiter:              NewRateLimiter(rl),
 		internalServiceToken: cfg.InternalServiceToken,
 		locationLastUpdate:   make(map[string]time.Time),
 		locationInFlight:     make(map[string]bool),

@@ -28,6 +28,7 @@ import (
 	"github.com/project/chat-service/internal/config"
 	"github.com/project/chat-service/internal/handlers"
 	"github.com/project/chat-service/internal/jwtutil"
+	"github.com/project/chat-service/internal/ratelimit"
 	"github.com/project/chat-service/internal/store"
 	"github.com/project/chat-service/internal/tlsutil"
 )
@@ -60,8 +61,14 @@ func main() {
 	hub := chat.NewHub()
 	go hub.Run()
 
+	// Connect to Redis.
+	redisClient, err := ratelimit.NewRedisClient(cfg.RedisURI)
+	if err != nil {
+		log.Fatalf("[CHAT] Failed to connect to Redis: %v", err)
+	}
+
 	// Create handler group and register routes.
-	chatHandlers := handlers.NewChat(hub, mongoStore, cfg)
+	chatHandlers := handlers.NewChat(hub, mongoStore, cfg, redisClient)
 
 	mux := http.NewServeMux()
 

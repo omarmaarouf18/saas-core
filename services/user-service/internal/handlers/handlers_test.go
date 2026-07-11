@@ -19,6 +19,8 @@ import (
 	"github.com/project/user-service/internal/jwtutil"
 	"github.com/project/user-service/internal/models"
 	"github.com/project/user-service/internal/store"
+	"github.com/alicebob/miniredis/v2"
+	"github.com/redis/go-redis/v9"
 )
 
 func TestUserServiceHandlers(t *testing.T) {
@@ -42,6 +44,14 @@ func TestUserServiceHandlers(t *testing.T) {
 		_ = s.DropDatabase(context.Background())
 		s.Close(context.Background())
 	}()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
 
 	// Start a mock Auth Service
 	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +87,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		AuthServiceURL:       mockAuthServer.URL,
 		InternalServiceToken: "mock-internal-token",
 	}
-	u := NewUserService(s, cfg)
+	u := NewUserService(s, cfg, rdb)
 
 	// Generate tokens for tests
 	tokenPendingOwner, _ := jwtutil.GenerateToken("kyc-pending-owner", "owner", "kyc-pending-owner", "pending@example.com")
@@ -162,7 +172,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			AuthServiceURL:       mockAuthServer2.URL,
 			InternalServiceToken: "mock-internal-token",
 		}
-		u2 := NewUserService(s, cfg2)
+		u2 := NewUserService(s, cfg2, rdb)
 
 		reqBody := map[string]any{
 			"tenant_id":    tokenTenant,
@@ -315,7 +325,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			AuthServiceURL:       mockAuthServer3.URL,
 			InternalServiceToken: "mock-internal-token",
 		}
-		u3 := NewUserService(s, cfg3)
+		u3 := NewUserService(s, cfg3, rdb)
 
 		// A. Valid deposit limit: 500,000 -> 200 OK
 		reqBody := map[string]any{

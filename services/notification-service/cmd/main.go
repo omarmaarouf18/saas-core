@@ -17,6 +17,7 @@ import (
 	"github.com/project/notification-service/internal/handlers"
 	"github.com/project/notification-service/internal/hub"
 	"github.com/project/notification-service/internal/jwtutil"
+	"github.com/project/notification-service/internal/ratelimit"
 	"github.com/project/notification-service/internal/tlsutil"
 )
 
@@ -35,8 +36,14 @@ func main() {
 		log.Fatalf("[NOTIF] Failed to load TLS configuration: %v", err)
 	}
 
+	// Connect to Redis.
+	redisClient, err := ratelimit.NewRedisClient(cfg.RedisURI)
+	if err != nil {
+		log.Fatalf("[NOTIF] Failed to connect to Redis: %v", err)
+	}
+
 	sseHub := hub.NewSSEHub()
-	notifHandlers := handlers.NewNotification(sseHub, cfg)
+	notifHandlers := handlers.NewNotification(sseHub, cfg, redisClient)
 
 	mux := http.NewServeMux()
 	notifHandlers.RegisterRoutes(mux)

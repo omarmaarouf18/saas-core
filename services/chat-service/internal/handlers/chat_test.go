@@ -13,6 +13,8 @@ import (
 	"github.com/project/chat-service/internal/config"
 	"github.com/project/chat-service/internal/jwtutil"
 	"github.com/project/chat-service/internal/store"
+	"github.com/alicebob/miniredis/v2"
+	"github.com/redis/go-redis/v9"
 )
 
 func TestCanAccessChannel(t *testing.T) {
@@ -60,7 +62,15 @@ func TestCanAccessChannel(t *testing.T) {
 		InternalServiceToken: "mock-internal-token",
 		AllowedOrigin:        "http://localhost:3000",
 	}
-	chatHandler := NewChat(nil, nil, cfg)
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	chatHandler := NewChat(nil, nil, cfg, rdb)
 
 	tests := []struct {
 		name       string
@@ -178,7 +188,15 @@ func TestGetHistoryAccessControl(t *testing.T) {
 		InternalServiceToken: "mock-internal-token",
 		AllowedOrigin:        "http://localhost:3000",
 	}
-	chatHandler := NewChat(nil, mongoStore, cfg2)
+	mr2, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr2.Close()
+	rdb2 := redis.NewClient(&redis.Options{Addr: mr2.Addr()})
+	defer rdb2.Close()
+
+	chatHandler := NewChat(nil, mongoStore, cfg2, rdb2)
 
 	// Pre-seed some cache to bypass auth-service lookup
 	chatHandler.tokenCache["job-owner-id"] = time.Now().Add(60 * time.Second)

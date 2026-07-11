@@ -10,6 +10,8 @@ import (
 
 	"github.com/project/notification-service/internal/config"
 	"github.com/project/notification-service/internal/hub"
+	"github.com/alicebob/miniredis/v2"
+	"github.com/redis/go-redis/v9"
 )
 
 func TestNotificationHandlersAuth(t *testing.T) {
@@ -20,7 +22,15 @@ func TestNotificationHandlersAuth(t *testing.T) {
 		AllowedOrigin:        "http://localhost:3000",
 		InternalServiceToken: internalToken,
 	}
-	n := NewNotification(sseHub, cfg)
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	n := NewNotification(sseHub, cfg, rdb)
 
 	t.Run("Send auth missing", func(t *testing.T) {
 		reqBody := map[string]any{

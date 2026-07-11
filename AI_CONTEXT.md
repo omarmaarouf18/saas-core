@@ -92,6 +92,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Redis Rate Limiting Stage 1: Wrapper & Config** | Created shared ratelimit package wrapping Redis client with atomic Lua scripts, and updated all 5 config packages to load REDIS_URI. | `current` | Verified via compilation and unit tests. ✅ |
 | **Redis Rate Limiting Stage 2: api-gateway** | Migrated the api-gateway edge rate limiter to use the Redis-backed wrapper. | `current` | Verified via compilation. ✅ |
 | **Redis Rate Limiting Stage 3: auth-service** | Migrated the auth-service dual-key (IP + email) rate limiter to use Redis. | `current` | Verified via compilation and test execution. ✅ |
+| **Redis Rate Limiting Stage 4: chat, user & notification services** | Migrated rate limiters in chat, user, and notification services to use Redis-backed wrapper. | `current` | Verified via compilation and test execution. ✅ |
 ### 2. Explicitly Deferred by Decision
 
 
@@ -147,5 +148,5 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Implement Redis Rate Limiting Stage 4 (chat-service WS frame rate limiter migration).
+* **Immediate Next Step**: Implement Redis Rate Limiting Stage 5 (Failure mode implementation & documentation).
 

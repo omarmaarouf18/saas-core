@@ -11,7 +11,9 @@ import (
 	"github.com/project/notification-service/internal/config"
 	"github.com/project/notification-service/internal/hub"
 	"github.com/project/notification-service/internal/jwtutil"
+	"github.com/project/notification-service/internal/ratelimit"
 	"github.com/project/notification-service/internal/tlsutil"
+	"github.com/redis/go-redis/v9"
 )
 
 // Notification holds dependencies for notification handlers.
@@ -25,7 +27,7 @@ type Notification struct {
 }
 
 // NewNotification creates a new handler group.
-func NewNotification(h *hub.SSEHub, cfg *config.Config) *Notification {
+func NewNotification(h *hub.SSEHub, cfg *config.Config, rdb *redis.Client) *Notification {
 	allowedOrigin := cfg.AllowedOrigin
 	if allowedOrigin == "" {
 		allowedOrigin = "http://localhost:3000"
@@ -42,11 +44,13 @@ func NewNotification(h *hub.SSEHub, cfg *config.Config) *Notification {
 		client = http.DefaultClient
 	}
 
+	rl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Minute, "notification")
+
 	return &Notification{
 		hub:                  h,
 		authServiceURL:       cfg.AuthServiceURL,
 		allowedOrigin:        allowedOrigin,
-		limiter:              NewRateLimiter(5, 1*time.Minute),
+		limiter:              NewRateLimiter(rl),
 		internalServiceToken: cfg.InternalServiceToken,
 		httpClient:           client,
 	}

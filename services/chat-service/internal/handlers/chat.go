@@ -16,8 +16,10 @@ import (
 	"github.com/project/chat-service/internal/chat"
 	"github.com/project/chat-service/internal/config"
 	"github.com/project/chat-service/internal/jwtutil"
+	"github.com/project/chat-service/internal/ratelimit"
 	"github.com/project/chat-service/internal/store"
 	"github.com/project/chat-service/internal/tlsutil"
+	"github.com/redis/go-redis/v9"
 )
 
 const (
@@ -53,7 +55,7 @@ type Chat struct {
 }
 
 // NewChat creates a new Chat handler group.
-func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config) *Chat {
+func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Chat {
 	allowedOrigin := cfg.AllowedOrigin
 	if allowedOrigin == "" {
 		allowedOrigin = "http://localhost:3000"
@@ -71,13 +73,15 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config) *Chat {
 		client = http.DefaultClient
 	}
 
+	rl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Minute, "chat")
+
 	return &Chat{
 		hub:                  hub,
 		store:                s,
 		authServiceURL:       cfg.AuthServiceURL,
 		userServiceURL:       cfg.UserServiceURL,
 		tokenCache:           make(map[string]time.Time),
-		limiter:              NewRateLimiter(5, 1*time.Minute),
+		limiter:              NewRateLimiter(rl),
 		internalServiceToken: cfg.InternalServiceToken,
 		allowedOrigin:        allowedOrigin,
 		httpClient:           client,

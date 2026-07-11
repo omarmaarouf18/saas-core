@@ -26,6 +26,7 @@ import (
 	"github.com/project/user-service/internal/config"
 	"github.com/project/user-service/internal/handlers"
 	"github.com/project/user-service/internal/jwtutil"
+	"github.com/project/user-service/internal/ratelimit"
 	"github.com/project/user-service/internal/store"
 	"github.com/project/user-service/internal/tlsutil"
 )
@@ -53,7 +54,13 @@ func main() {
 		log.Fatalf("[USER] Failed to initialize MongoDB store: %v", err)
 	}
 
-	userHandlers := handlers.NewUserService(mongoStore, cfg)
+	// Connect to Redis.
+	redisClient, err := ratelimit.NewRedisClient(cfg.RedisURI)
+	if err != nil {
+		log.Fatalf("[USER] Failed to connect to Redis: %v", err)
+	}
+
+	userHandlers := handlers.NewUserService(mongoStore, cfg, redisClient)
 	mux := http.NewServeMux()
 	userHandlers.RegisterRoutes(mux)
 
