@@ -130,6 +130,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **auth-service Test Coverage** | Added comprehensive integration tests for Signup, Login, VerifyOTP, ToggleEmployee, SimulateEmployeeAction, GetUser, and Refresh handlers. | `current` | Verified via test execution. ✅ |
 | **chat-service Test Coverage** | Added comprehensive integration tests for HandleWebSocket (failure paths), BroadcastLocation, and HandleCreateTicket handlers. | `current` | Verified via test execution. ✅ |
 | **notification-service Test Coverage** | Added comprehensive integration tests for SSE Stream and verifyAndResolve handlers. | `current` | Verified via test execution. ✅ |
+| **user-service Test Coverage** | Added comprehensive integration tests for ListServices, GetWallet, GetLedger, GetPlatformConfig, and GetRatings handlers. | `current` | Verified via test execution. ✅ |
+
 
 
 

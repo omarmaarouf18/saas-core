@@ -775,4 +775,115 @@ func TestUserServiceHandlers(t *testing.T) {
 			t.Errorf("Expected 201 Created for employee rating owner, got %d. Body: %s", rec3.Code, rec3.Body.String())
 		}
 	})
+
+	// Test: ListServices
+	t.Run("ListServices", func(t *testing.T) {
+		// Happy path (public endpoint, no token required)
+		req := httptest.NewRequest("GET", "/users/services", nil)
+		rec := httptest.NewRecorder()
+		u.ListServices(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for ListServices, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+	})
+
+	// Test: GetWallet
+	t.Run("GetWallet", func(t *testing.T) {
+		// Happy path
+		req := httptest.NewRequest("GET", "/users/wallet?tenant_id="+tokenApprovedOwner, nil)
+		rec := httptest.NewRecorder()
+		u.GetWallet(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for GetWallet, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// Missing tenant_id -> 400 Bad Request
+		req = httptest.NewRequest("GET", "/users/wallet", nil)
+		rec = httptest.NewRecorder()
+		u.GetWallet(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for missing tenant_id, got %d", rec.Code)
+		}
+
+		// Invalid token -> 401 Unauthorized
+		req = httptest.NewRequest("GET", "/users/wallet?tenant_id=invalid-token", nil)
+		rec = httptest.NewRecorder()
+		u.GetWallet(rec, req)
+		if rec.Code != http.StatusUnauthorized {
+			t.Errorf("Expected 401 Unauthorized for invalid token, got %d", rec.Code)
+		}
+	})
+
+	// Test: GetLedger
+	t.Run("GetLedger", func(t *testing.T) {
+		// Happy path
+		req := httptest.NewRequest("GET", "/users/ledger?tenant_id="+tokenApprovedOwner, nil)
+		rec := httptest.NewRecorder()
+		u.GetLedger(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for GetLedger, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// Missing tenant_id -> 400 Bad Request
+		req = httptest.NewRequest("GET", "/users/ledger", nil)
+		rec = httptest.NewRecorder()
+		u.GetLedger(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for missing tenant_id, got %d", rec.Code)
+		}
+
+		// Invalid token -> 401 Unauthorized
+		req = httptest.NewRequest("GET", "/users/ledger?tenant_id=invalid-token", nil)
+		rec = httptest.NewRecorder()
+		u.GetLedger(rec, req)
+		if rec.Code != http.StatusUnauthorized {
+			t.Errorf("Expected 401 Unauthorized for invalid token, got %d", rec.Code)
+		}
+	})
+
+	// Test: GetPlatformConfig
+	t.Run("GetPlatformConfig", func(t *testing.T) {
+		// Happy path (public endpoint, no token required)
+		req := httptest.NewRequest("GET", "/users/platform-config", nil)
+		rec := httptest.NewRecorder()
+		u.GetPlatformConfig(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for GetPlatformConfig, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// Wrong Method -> 405 Method Not Allowed
+		req = httptest.NewRequest("POST", "/users/platform-config", nil)
+		rec = httptest.NewRecorder()
+		u.GetPlatformConfig(rec, req)
+		if rec.Code != http.StatusMethodNotAllowed {
+			t.Errorf("Expected 405 Method Not Allowed, got %d", rec.Code)
+		}
+	})
+
+	// Test: GetRatings
+	t.Run("GetRatings", func(t *testing.T) {
+		// Happy path (user_id parameter holds the token)
+		req := httptest.NewRequest("GET", "/users/ratings?user_id="+tokenApprovedOwner, nil)
+		rec := httptest.NewRecorder()
+		u.GetRatings(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for GetRatings, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// Validation failure (missing user_id)
+		req = httptest.NewRequest("GET", "/users/ratings", nil)
+		rec = httptest.NewRecorder()
+		u.GetRatings(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for missing user_id in GetRatings, got %d", rec.Code)
+		}
+
+		// Invalid token -> 401 Unauthorized
+		req = httptest.NewRequest("GET", "/users/ratings?user_id=invalid-token", nil)
+		rec = httptest.NewRecorder()
+		u.GetRatings(rec, req)
+		if rec.Code != http.StatusUnauthorized {
+			t.Errorf("Expected 401 Unauthorized for invalid token, got %d", rec.Code)
+		}
+	})
 }
