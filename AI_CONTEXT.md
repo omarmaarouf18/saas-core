@@ -87,7 +87,9 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **mTLS Stage 1: Dev CA & Certs** | Created generate-certs.sh script generating Root CA and leaf certificates for local dev. | `current` | Verified via cert creation and gitignore validation. ✅ |
 | **mTLS Stage 2: TLS Server Config** | Configured auth, chat, notification, and user services to serve HTTPS with client cert verification (tls.RequireAndVerifyClientCert). | `current` | Verified via compilation and test execution. ✅ |
 | **mTLS Stage 3: TLS Client Config** | Updated internal HTTP clients in api-gateway, chat, notification, and user services to use custom TLS client configuration with hostname verification and local root CA trust. | `current` | Verified via compilation and test execution. ✅ |
+| **mTLS Stage 4: Docker & Env Wiring** | Configured docker-compose.yml to mount local certs and keys, updated service URLs to HTTPS, and updated env templates. | `current` | Verified via configuration review. ✅ |
 ### 2. Explicitly Deferred by Decision
+
 
 
 
@@ -141,4 +143,4 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Implement mTLS Stage 4 (docker-compose configuration and environment variables wiring).
+* **Immediate Next Step**: Implement mTLS Stage 5 (Verification).

@@ -61,6 +61,9 @@ services:
       - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
     volumes:
       - ../services/api-gateway:/app
+      - ./certs/ca.crt:/app/certs/ca.crt:ro
+      - ./certs/api-gateway.crt:/app/certs/api-gateway.crt:ro
+      - ./certs/api-gateway.key:/app/certs/api-gateway.key:ro
     environment:
       PORT: ${API_GATEWAY_PORT}
       MONGO_URI: ${MONGO_URI}
@@ -73,6 +76,9 @@ services:
       APP_ENV: ${APP_ENV}
       LOG_LEVEL: ${LOG_LEVEL}
       GATEWAY_SECRET: ${GATEWAY_SECRET}
+      TLS_CERT_PATH: /app/certs/api-gateway.crt
+      TLS_KEY_PATH: /app/certs/api-gateway.key
+      TLS_CA_PATH: /app/certs/ca.crt
     depends_on:
       mongo:
         condition: service_healthy
@@ -92,6 +98,9 @@ services:
       - "${CHAT_SERVICE_PORT}"
     volumes:
       - ../services/chat-service:/app
+      - ./certs/ca.crt:/app/certs/ca.crt:ro
+      - ./certs/chat-service.crt:/app/certs/chat-service.crt:ro
+      - ./certs/chat-service.key:/app/certs/chat-service.key:ro
     environment:
       PORT: ${CHAT_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
@@ -105,6 +114,9 @@ services:
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
       AWS_REGION: ${AWS_REGION}
       CLOUDWATCH_LOG_GROUP: ${CLOUDWATCH_LOG_GROUP}
+      TLS_CERT_PATH: /app/certs/chat-service.crt
+      TLS_KEY_PATH: /app/certs/chat-service.key
+      TLS_CA_PATH: /app/certs/ca.crt
     depends_on:
       mongo:
         condition: service_healthy
@@ -124,6 +136,9 @@ services:
       - "${AUTH_SERVICE_PORT}"
     volumes:
       - ../services/auth-service:/app
+      - ./certs/ca.crt:/app/certs/ca.crt:ro
+      - ./certs/auth-service.crt:/app/certs/auth-service.crt:ro
+      - ./certs/auth-service.key:/app/certs/auth-service.key:ro
     environment:
       PORT: ${AUTH_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
@@ -137,6 +152,9 @@ services:
       OTP_AES_KEY: ${OTP_AES_KEY}
       AWS_REGION: ${AWS_REGION}
       CLOUDWATCH_LOG_GROUP: ${CLOUDWATCH_LOG_GROUP}
+      TLS_CERT_PATH: /app/certs/auth-service.crt
+      TLS_KEY_PATH: /app/certs/auth-service.key
+      TLS_CA_PATH: /app/certs/ca.crt
     depends_on:
       mongo:
         condition: service_healthy
@@ -156,6 +174,9 @@ services:
       - "${USER_SERVICE_PORT}"
     volumes:
       - ../services/user-service:/app
+      - ./certs/ca.crt:/app/certs/ca.crt:ro
+      - ./certs/user-service.crt:/app/certs/user-service.crt:ro
+      - ./certs/user-service.key:/app/certs/user-service.key:ro
     environment:
       PORT: ${USER_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
@@ -169,6 +190,9 @@ services:
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
       AWS_REGION: ${AWS_REGION}
       CLOUDWATCH_LOG_GROUP: ${CLOUDWATCH_LOG_GROUP}
+      TLS_CERT_PATH: /app/certs/user-service.crt
+      TLS_KEY_PATH: /app/certs/user-service.key
+      TLS_CA_PATH: /app/certs/ca.crt
     depends_on:
       mongo:
         condition: service_healthy
@@ -188,6 +212,9 @@ services:
       - "${NOTIFICATION_SERVICE_PORT}"
     volumes:
       - ../services/notification-service:/app
+      - ./certs/ca.crt:/app/certs/ca.crt:ro
+      - ./certs/notification-service.crt:/app/certs/notification-service.crt:ro
+      - ./certs/notification-service.key:/app/certs/notification-service.key:ro
     environment:
       PORT: ${NOTIFICATION_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
@@ -199,6 +226,9 @@ services:
       LOG_LEVEL: ${LOG_LEVEL}
       JWT_SECRET: ${JWT_SECRET}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      TLS_CERT_PATH: /app/certs/notification-service.crt
+      TLS_KEY_PATH: /app/certs/notification-service.key
+      TLS_CA_PATH: /app/certs/ca.crt
     depends_on:
       mongo:
         condition: service_healthy
@@ -206,6 +236,7 @@ services:
         condition: service_healthy
     networks:
       - saas-net
+
 
 # ---------------------------------------------------------------------------
 # Persistent Volumes
