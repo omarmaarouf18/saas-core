@@ -17,6 +17,7 @@ import (
 	"github.com/project/chat-service/internal/config"
 	"github.com/project/chat-service/internal/jwtutil"
 	"github.com/project/chat-service/internal/store"
+	"github.com/project/chat-service/internal/tlsutil"
 )
 
 const (
@@ -48,6 +49,7 @@ type Chat struct {
 	limiter              *RateLimiter
 	internalServiceToken string
 	allowedOrigin        string
+	httpClient           *http.Client
 }
 
 // NewChat creates a new Chat handler group.
@@ -57,6 +59,18 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config) *Chat {
 		allowedOrigin = "http://localhost:3000"
 	}
 	InitCloudWatch(cfg.CloudWatchLogGroup)
+
+	var client *http.Client
+	if cfg.TLSCertPath != "" && cfg.TLSKeyPath != "" && cfg.TLSCAPath != "" {
+		var err error
+		client, err = tlsutil.NewClient(cfg.TLSCertPath, cfg.TLSKeyPath, cfg.TLSCAPath)
+		if err != nil {
+			log.Fatalf("[CHAT] Failed to initialize TLS http client: %v", err)
+		}
+	} else {
+		client = http.DefaultClient
+	}
+
 	return &Chat{
 		hub:                  hub,
 		store:                s,
@@ -66,6 +80,7 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config) *Chat {
 		limiter:              NewRateLimiter(5, 1*time.Minute),
 		internalServiceToken: cfg.InternalServiceToken,
 		allowedOrigin:        allowedOrigin,
+		httpClient:           client,
 	}
 }
 
@@ -100,7 +115,7 @@ func (c *Chat) verifyToken(id string) bool {
 		return false
 	}
 	req.Header.Set("X-Internal-Token", c.internalServiceToken)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		log.Printf("[CHAT] Error calling auth-service: %v", err)
 		return false
@@ -141,7 +156,7 @@ func (c *Chat) canAccessChannel(userID, channel string) bool {
 	}
 	req.Header.Set("X-Internal-Token", c.internalServiceToken)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		if resp != nil {
 			resp.Body.Close()

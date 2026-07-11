@@ -11,6 +11,7 @@ import (
 	"github.com/project/notification-service/internal/config"
 	"github.com/project/notification-service/internal/hub"
 	"github.com/project/notification-service/internal/jwtutil"
+	"github.com/project/notification-service/internal/tlsutil"
 )
 
 // Notification holds dependencies for notification handlers.
@@ -20,6 +21,7 @@ type Notification struct {
 	allowedOrigin        string
 	limiter              *RateLimiter
 	internalServiceToken string
+	httpClient           *http.Client
 }
 
 // NewNotification creates a new handler group.
@@ -28,12 +30,25 @@ func NewNotification(h *hub.SSEHub, cfg *config.Config) *Notification {
 	if allowedOrigin == "" {
 		allowedOrigin = "http://localhost:3000"
 	}
+
+	var client *http.Client
+	if cfg.TLSCertPath != "" && cfg.TLSKeyPath != "" && cfg.TLSCAPath != "" {
+		var err error
+		client, err = tlsutil.NewClient(cfg.TLSCertPath, cfg.TLSKeyPath, cfg.TLSCAPath)
+		if err != nil {
+			log.Fatalf("[NOTIF] Failed to initialize TLS http client: %v", err)
+		}
+	} else {
+		client = http.DefaultClient
+	}
+
 	return &Notification{
 		hub:                  h,
 		authServiceURL:       cfg.AuthServiceURL,
 		allowedOrigin:        allowedOrigin,
 		limiter:              NewRateLimiter(5, 1*time.Minute),
 		internalServiceToken: cfg.InternalServiceToken,
+		httpClient:           client,
 	}
 }
 
@@ -135,7 +150,7 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool) {
 		return "", "", false
 	}
 	req.Header.Set("X-Internal-Token", n.internalServiceToken)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := n.httpClient.Do(req)
 	if err != nil {
 		log.Printf("[NOTIF] Error calling auth-service: %v", err)
 		return "", "", false

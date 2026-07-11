@@ -22,7 +22,7 @@ import (
 //   - Backend receives:  /auth/signup
 //
 // This lets each backend service own its own URL namespace cleanly.
-func New(route config.ServiceRoute, gatewaySecret string) (http.Handler, error) {
+func New(route config.ServiceRoute, gatewaySecret string, transport http.RoundTripper) (http.Handler, error) {
 	target, err := url.Parse(route.Target)
 	if err != nil {
 		return nil, fmt.Errorf("proxy: invalid target URL %q for %s: %w",
@@ -30,6 +30,7 @@ func New(route config.ServiceRoute, gatewaySecret string) (http.Handler, error) 
 	}
 
 	proxy := &httputil.ReverseProxy{
+		Transport: transport,
 		Director: func(req *http.Request) {
 			req.Header.Del("X-Internal-Token")
 			req.URL.Scheme = target.Scheme

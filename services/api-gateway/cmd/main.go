@@ -14,6 +14,7 @@ import (
 	"github.com/project/gateway/internal/config"
 	"github.com/project/gateway/internal/middleware"
 	"github.com/project/gateway/internal/proxy"
+	"github.com/project/gateway/internal/tlsutil"
 )
 
 func main() {
@@ -21,6 +22,19 @@ func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	var clientTransport http.RoundTripper
+	if cfg.TLSCertPath != "" && cfg.TLSKeyPath != "" && cfg.TLSCAPath != "" {
+		tlsConfig, err := tlsutil.LoadClientTLSConfig(cfg.TLSCertPath, cfg.TLSKeyPath, cfg.TLSCAPath)
+		if err != nil {
+			log.Fatalf("Failed to load gateway client TLS config: %v", err)
+		}
+		clientTransport = &http.Transport{
+			TLSClientConfig: tlsConfig,
+		}
+	} else {
+		clientTransport = http.DefaultTransport
 	}
 
 	mux := http.NewServeMux()
@@ -58,13 +72,14 @@ func main() {
 
 	// ---- Register reverse proxy routes ----
 	for _, route := range cfg.Routes {
-		handler, err := proxy.New(route, cfg.GatewaySecret)
+		handler, err := proxy.New(route, cfg.GatewaySecret, clientTransport)
 		if err != nil {
 			log.Fatalf("Failed to create proxy for %s: %v", route.Prefix, err)
 		}
 		mux.Handle(route.Prefix, handler)
 		log.Printf("Route registered: %s → %s (env: %s)", route.Prefix, route.Target, route.EnvKey)
 	}
+
 
 	// ---- Wrap with global rate limiting and logging middleware ----
 	limiter := middleware.NewRateLimiter(100, 1*time.Minute)

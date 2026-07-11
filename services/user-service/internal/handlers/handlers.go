@@ -21,6 +21,7 @@ import (
 	"github.com/project/user-service/internal/jwtutil"
 	"github.com/project/user-service/internal/models"
 	"github.com/project/user-service/internal/store"
+	"github.com/project/user-service/internal/tlsutil"
 )
 
 // ErrUpgradeRequired is returned when a tenant's subscription tier is insufficient for a gated feature.
@@ -39,6 +40,7 @@ type UserService struct {
 	locationThrottleMu   sync.Mutex
 	locationLastUpdate   map[string]time.Time
 	locationInFlight     map[string]bool
+	httpClient           *http.Client
 }
 
 // NewUserService creates a new handler group.
@@ -48,6 +50,18 @@ func NewUserService(s *store.MongoDB, cfg *config.Config) *UserService {
 	if chatServiceURL == "" {
 		chatServiceURL = "http://localhost:3001"
 	}
+
+	var client *http.Client
+	if cfg.TLSCertPath != "" && cfg.TLSKeyPath != "" && cfg.TLSCAPath != "" {
+		var err error
+		client, err = tlsutil.NewClient(cfg.TLSCertPath, cfg.TLSKeyPath, cfg.TLSCAPath)
+		if err != nil {
+			log.Fatalf("[USER] Failed to initialize TLS http client: %v", err)
+		}
+	} else {
+		client = http.DefaultClient
+	}
+
 	return &UserService{
 		store:                s,
 		authServiceURL:       cfg.AuthServiceURL,
@@ -56,6 +70,7 @@ func NewUserService(s *store.MongoDB, cfg *config.Config) *UserService {
 		internalServiceToken: cfg.InternalServiceToken,
 		locationLastUpdate:   make(map[string]time.Time),
 		locationInFlight:     make(map[string]bool),
+		httpClient:           client,
 	}
 }
 
@@ -684,7 +699,7 @@ func (u *UserService) checkKYC(ownerID string) (string, error) {
 		return "", err
 	}
 	req.Header.Set("X-Internal-Token", u.internalServiceToken)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := u.httpClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -803,7 +818,7 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		authReq.Header.Set("X-Internal-Token", u.internalServiceToken)
-		resp, err := http.DefaultClient.Do(authReq)
+		resp, err := u.httpClient.Do(authReq)
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "auth service connection error: " + err.Error()})
 			return
@@ -1119,7 +1134,7 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 		broadcastReq.Header.Set("Content-Type", "application/json")
 		broadcastReq.Header.Set("X-Internal-Token", u.internalServiceToken)
 
-		resp, err := http.DefaultClient.Do(broadcastReq)
+		resp, err := u.httpClient.Do(broadcastReq)
 		if err != nil {
 			log.Printf("[USER] Location broadcast error (call chat-service): %v", err)
 			return
