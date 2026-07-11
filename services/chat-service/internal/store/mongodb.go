@@ -13,10 +13,29 @@ import (
 	"github.com/project/chat-service/internal/chat"
 )
 
+type SupportAgent struct {
+	ID              string `bson:"_id" json:"agent_id"`
+	Status          string `bson:"status" json:"status"` // "available", "busy", "offline"
+	Token           string `bson:"token" json:"token"`
+	CurrentTicketID string `bson:"current_ticket_id,omitempty" json:"current_ticket_id,omitempty"`
+}
+
+type ComplaintTicket struct {
+	ID              string    `bson:"_id" json:"ticket_id"`
+	CustomerID      string    `bson:"customer_id" json:"customer_id"`
+	ContextID       string    `bson:"context_id" json:"context_id"` // job_id or owner_id/employee_id context
+	Status          string    `bson:"status" json:"status"`         // "pending", "assigned", "resolved", "closed"
+	AssignedAgentID string    `bson:"assigned_agent_id" json:"assigned_agent_id"`
+	CreatedAt       time.Time `bson:"created_at" json:"created_at"`
+	AssignedAt      time.Time `bson:"assigned_at,omitempty" json:"assigned_at,omitempty"`
+}
+
 type MongoDB struct {
 	client   *mongo.Client
 	db       *mongo.Database
 	messages *mongo.Collection
+	tickets  *mongo.Collection
+	agents   *mongo.Collection
 }
 
 func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
@@ -36,6 +55,8 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 		client:   client,
 		db:       db,
 		messages: db.Collection("chat_messages"),
+		tickets:  db.Collection("complaint_tickets"),
+		agents:   db.Collection("support_agents"),
 	}
 
 	if err := s.ensureIndexes(ctx); err != nil {
@@ -61,6 +82,48 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("chat_messages channel-timestamp index: %w", err)
 	}
+
+	// Index on support_agents.status
+	_, err = s.agents.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "status", Value: 1},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("support_agents status index: %w", err)
+	}
+
+	// Unique index on support_agents.token
+	_, err = s.agents.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "token", Value: 1},
+		},
+		Options: options.Index().SetUnique(true),
+	})
+	if err != nil {
+		return fmt.Errorf("support_agents token index: %w", err)
+	}
+
+	// Index on complaint_tickets.customer_id
+	_, err = s.tickets.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "customer_id", Value: 1},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("complaint_tickets customer_id index: %w", err)
+	}
+
+	// Index on complaint_tickets.assigned_agent_id
+	_, err = s.tickets.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "assigned_agent_id", Value: 1},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("complaint_tickets assigned_agent_id index: %w", err)
+	}
+
 	return nil
 }
 

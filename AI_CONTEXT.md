@@ -110,6 +110,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **CI Integration (MongoDB & Redis)** | Configured MongoDB and Redis service containers in GitHub Actions to enable full, non-skipped execution of microservice integration tests. | `current` | Verified via workflow configuration. ✅ |
 | **Gitignore Precision Fix** | Added precise root-level /cmd ignore rule to `.gitignore` to prevent stray binaries from being tracked while keeping sub-level cmd directories tracked. | `current` | Verified using git check-ignore. ✅ |
 | **JWT Util Extraction** | Consolidated duplicate `jwt.go` files across auth, chat, notification, and user services into `shared/infra/jwtutil`. | `current` | Verified via compilation and test execution. ✅ |
+| **Complaint Routing Stage 1: Data Model** | Added database collections, Go model structs, and indexes for support agents and complaint tickets in chat-service store. | `current` | Verified via compilation. ✅ |
 
 ### 2. Explicitly Deferred by Decision
 
