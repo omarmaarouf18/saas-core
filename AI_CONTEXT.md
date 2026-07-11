@@ -129,6 +129,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Random Notification IDs** | Switched notification ID generation from UnixNano timestamp to crypto/rand-based 16-byte random hex string to eliminate collision risks. | `current` | Verified via compilation and test execution. ✅ |
 | **auth-service Test Coverage** | Added comprehensive integration tests for Signup, Login, VerifyOTP, ToggleEmployee, SimulateEmployeeAction, GetUser, and Refresh handlers. | `current` | Verified via test execution. ✅ |
 | **chat-service Test Coverage** | Added comprehensive integration tests for HandleWebSocket (failure paths), BroadcastLocation, and HandleCreateTicket handlers. | `current` | Verified via test execution. ✅ |
+| **notification-service Test Coverage** | Added comprehensive integration tests for SSE Stream and verifyAndResolve handlers. | `current` | Verified via test execution. ✅ |
+
 
 
 
