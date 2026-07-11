@@ -40,6 +40,7 @@ import (
 	"github.com/project/auth-service/internal/jwtutil"
 	"github.com/project/auth-service/internal/otp"
 	"github.com/project/auth-service/internal/otpcrypto"
+	"github.com/project/auth-service/internal/ratelimit"
 	"github.com/project/auth-service/internal/store"
 	"github.com/project/auth-service/internal/tlsutil"
 )
@@ -91,8 +92,14 @@ func main() {
 		log.Printf("[AUTH] ⚠ No production OTP dispatcher configured — using %s", dispatcher.Name())
 	}
 
+	// Connect to Redis for rate limiting.
+	redisClient, err := ratelimit.NewRedisClient(cfg.RedisURI)
+	if err != nil {
+		log.Fatalf("[AUTH] Failed to connect to Redis: %v", err)
+	}
+
 	// Create handler group and register routes.
-	authHandlers := handlers.NewAuth(mongoStore, dispatcher, cfg)
+	authHandlers := handlers.NewAuth(mongoStore, dispatcher, cfg, redisClient)
 
 	mux := http.NewServeMux()
 

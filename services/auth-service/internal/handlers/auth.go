@@ -17,6 +17,7 @@ import (
 	"github.com/project/auth-service/internal/models"
 	"github.com/project/auth-service/internal/otp"
 	"github.com/project/auth-service/internal/store"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -34,7 +35,8 @@ type Auth struct {
 //   - s:             MongoDB-backed persistent store
 //   - dispatcher:    OTPDispatcher implementation (mock for local, real for prod)
 //   - cfg:           central configuration loader struct
-func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config) *Auth {
+//   - rdb:           Redis client for rate limiting
+func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config, rdb *redis.Client) *Auth {
 	InitCloudWatch(cfg.CloudWatchLogGroup)
 	isLocal := strings.EqualFold(cfg.AppEnv, "local")
 	if isLocal {
@@ -44,7 +46,7 @@ func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config)
 		store:                s,
 		dispatcher:           dispatcher,
 		isLocal:              isLocal,
-		limiter:              NewRateLimiter(),
+		limiter:              NewRateLimiter(rdb),
 		gatewaySecret:        cfg.GatewaySecret,
 		internalServiceToken: cfg.InternalServiceToken,
 	}

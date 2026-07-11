@@ -9,6 +9,8 @@ import (
 
 	"github.com/project/auth-service/internal/config"
 	"github.com/project/auth-service/internal/jwtutil"
+	"github.com/alicebob/miniredis/v2"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -35,7 +37,15 @@ func TestBcryptHashVerify(t *testing.T) {
 
 // TestRateLimiterLockout checks rate limit lockout counting and backoff
 func TestRateLimiterLockout(t *testing.T) {
-	rl := NewRateLimiter()
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	rl := NewRateLimiter(rdb)
 	key := "test-client-ip"
 
 	// Initial state: not locked
@@ -119,7 +129,15 @@ func TestGetAuditLogAccessControl(t *testing.T) {
 		GatewaySecret:        "mock-gateway-secret",
 		InternalServiceToken: "mock-internal-token",
 	}
-	a := NewAuth(nil, nil, cfg)
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	a := NewAuth(nil, nil, cfg, rdb)
 
 	token1, _ := jwtutil.GenerateToken("tenant-1", "owner", "tenant-1", "t1@example.com")
 	token2, _ := jwtutil.GenerateToken("tenant-2", "owner", "tenant-2", "t2@example.com")

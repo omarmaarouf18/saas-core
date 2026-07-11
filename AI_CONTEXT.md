@@ -91,6 +91,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **mTLS Stage 5: Verification** | Created and ran an integration test (mtls_integration_test.go) verifying handshake rejection of missing/untrusted client certs and success of trusted ones. | `current` | Verified via integration tests. ✅ |
 | **Redis Rate Limiting Stage 1: Wrapper & Config** | Created shared ratelimit package wrapping Redis client with atomic Lua scripts, and updated all 5 config packages to load REDIS_URI. | `current` | Verified via compilation and unit tests. ✅ |
 | **Redis Rate Limiting Stage 2: api-gateway** | Migrated the api-gateway edge rate limiter to use the Redis-backed wrapper. | `current` | Verified via compilation. ✅ |
+| **Redis Rate Limiting Stage 3: auth-service** | Migrated the auth-service dual-key (IP + email) rate limiter to use Redis. | `current` | Verified via compilation and test execution. ✅ |
 ### 2. Explicitly Deferred by Decision
 
 
@@ -146,5 +147,5 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Implement Redis Rate Limiting Stage 3 (auth-service rate limiter migration).
+* **Immediate Next Step**: Implement Redis Rate Limiting Stage 4 (chat-service WS frame rate limiter migration).
 
