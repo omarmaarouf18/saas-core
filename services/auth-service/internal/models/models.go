@@ -103,3 +103,10 @@ type AuditEntry struct {
 	Timestamp  time.Time `json:"timestamp"   bson:"timestamp"`
 	ClientIP   string    `json:"client_ip"   bson:"client_ip"`
 }
+
+// Reviewer represents an onboarding reviewer identity.
+type Reviewer struct {
+	ID    string `json:"id"    bson:"_id"`
+	Token string `json:"token" bson:"token"`
+	Name  string `json:"name"  bson:"name"`
+}

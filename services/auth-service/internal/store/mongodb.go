@@ -19,11 +19,12 @@ import (
 // MongoDB is a persistent store backed by MongoDB for user registration states
 // and the employee action audit log.
 type MongoDB struct {
-	client   *mongo.Client
-	db       *mongo.Database
-	users    *mongo.Collection
-	auditLog *mongo.Collection
-	cipher   *otpcrypto.Cipher // AES-256-GCM for OTP encryption at rest
+	client    *mongo.Client
+	db        *mongo.Database
+	users     *mongo.Collection
+	auditLog  *mongo.Collection
+	reviewers *mongo.Collection
+	cipher    *otpcrypto.Cipher // AES-256-GCM for OTP encryption at rest
 }
 
 // NewMongoDB connects to the given MongoDB URI, creates the database and
@@ -44,11 +45,12 @@ func NewMongoDB(ctx context.Context, uri, dbName string, otpCipher *otpcrypto.Ci
 
 	db := client.Database(dbName)
 	s := &MongoDB{
-		client:   client,
-		db:       db,
-		users:    db.Collection("users"),
-		auditLog: db.Collection("audit_log"),
-		cipher:   otpCipher,
+		client:    client,
+		db:        db,
+		users:     db.Collection("users"),
+		auditLog:  db.Collection("audit_log"),
+		reviewers: db.Collection("reviewers"),
+		cipher:    otpCipher,
 	}
 
 	if err := s.ensureIndexes(ctx); err != nil {
@@ -158,6 +160,15 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 	})
 	if err != nil {
 		return fmt.Errorf("audit_log timestamp index: %w", err)
+	}
+
+	// Reviewers: unique token index
+	_, err = s.reviewers.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: "token", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	})
+	if err != nil {
+		return fmt.Errorf("reviewers token index: %w", err)
 	}
 
 	log.Println("[AUTH-STORE] All indexes ensured")
@@ -394,4 +405,36 @@ func (s *MongoDB) AuditCount(ctx context.Context) int {
 		return 0
 	}
 	return int(count)
+}
+
+// AddReviewer saves a new reviewer to the reviewers collection.
+func (s *MongoDB) AddReviewer(ctx context.Context, rev *models.Reviewer) error {
+	_, err := s.reviewers.InsertOne(ctx, rev)
+	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			return fmt.Errorf("reviewer with ID or token already exists: %w", err)
+		}
+		return err
+	}
+	return nil
+}
+
+// GetReviewerByID fetches a reviewer by ID.
+func (s *MongoDB) GetReviewerByID(ctx context.Context, id string) (*models.Reviewer, error) {
+	var rev models.Reviewer
+	err := s.reviewers.FindOne(ctx, bson.M{"_id": id}).Decode(&rev)
+	if err != nil {
+		return nil, err
+	}
+	return &rev, nil
+}
+
+// GetReviewerByToken fetches a reviewer by their unique token.
+func (s *MongoDB) GetReviewerByToken(ctx context.Context, token string) (*models.Reviewer, error) {
+	var rev models.Reviewer
+	err := s.reviewers.FindOne(ctx, bson.M{"token": token}).Decode(&rev)
+	if err != nil {
+		return nil, err
+	}
+	return &rev, nil
 }
