@@ -88,7 +88,9 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **mTLS Stage 2: TLS Server Config** | Configured auth, chat, notification, and user services to serve HTTPS with client cert verification (tls.RequireAndVerifyClientCert). | `current` | Verified via compilation and test execution. ✅ |
 | **mTLS Stage 3: TLS Client Config** | Updated internal HTTP clients in api-gateway, chat, notification, and user services to use custom TLS client configuration with hostname verification and local root CA trust. | `current` | Verified via compilation and test execution. ✅ |
 | **mTLS Stage 4: Docker & Env Wiring** | Configured docker-compose.yml to mount local certs and keys, updated service URLs to HTTPS, and updated env templates. | `current` | Verified via configuration review. ✅ |
+| **mTLS Stage 5: Verification** | Created and ran an integration test (mtls_integration_test.go) verifying handshake rejection of missing/untrusted client certs and success of trusted ones. | `current` | Verified via integration tests. ✅ |
 ### 2. Explicitly Deferred by Decision
+
 
 
 
@@ -118,7 +120,6 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 Only features verified directly against the running application are marked as verified (✅). The following items are implemented but remain unverified end-to-end or represent accepted security risks:
 
 * **Unverified Escrow Logic**: Escrow locking (`LockEscrow`) and release splits (`ReleaseEscrowWithSplit`) exist in `user-service/internal/store/mongodb.go`, but since the `/track` endpoint actively blocks any payment method other than `cod`, **this code path has never been executed or verified end-to-end**.
-* **Unencrypted Internal Communications**: Traffic between the Gateway and microservices, and between services themselves, is transmitted over plaintext HTTP.
 * **In-Memory Rate Limiting State**: All service-level rate limiters maintain status counts in-memory. If instances restart or scale out, limit counters are reset.
 * **Dev-Grade mTLS CA**: The certificates generated for mTLS use a dev-grade local Root CA. For production, a real internal CA (e.g. AWS Private CA, HashiCorp Vault PKI, or cert-manager on Kubernetes) must be integrated.
 
@@ -143,4 +144,5 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Implement mTLS Stage 5 (Verification).
+* **Immediate Next Step**: Awaiting user request / next phase of development.
+
