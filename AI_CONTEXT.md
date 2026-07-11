@@ -175,5 +175,5 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Awaiting user request / next phase of development.
+* **Immediate Next Step**: Awaiting user confirmation to resolve security and correctness findings from the repository-wide audit.
 
