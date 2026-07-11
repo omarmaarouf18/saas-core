@@ -5,6 +5,7 @@
 package main
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -51,6 +52,22 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]any{
+			"status": "ok",
+		})
+	})
+
+	// ---- Internal Health check endpoint ----
+	mux.HandleFunc("/health/internal", func(w http.ResponseWriter, r *http.Request) {
+		gotToken := r.Header.Get("X-Internal-Token")
+		if subtle.ConstantTimeCompare([]byte(gotToken), []byte(cfg.InternalServiceToken)) != 1 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(map[string]string{"error": "access denied: invalid internal token"})
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
 			"status":       "ok",
 			"dependencies": resilience.GetBreakerStats(),
 		})
@@ -69,13 +86,6 @@ func main() {
 		info := map[string]any{
 			"service": "api-gateway",
 			"version": "0.1.0",
-			"routes":  make([]map[string]string, 0, len(cfg.Routes)),
-		}
-		for _, route := range cfg.Routes {
-			info["routes"] = append(info["routes"].([]map[string]string), map[string]string{
-				"prefix": route.Prefix,
-				"target": route.Target,
-			})
 		}
 		json.NewEncoder(w).Encode(info)
 	})

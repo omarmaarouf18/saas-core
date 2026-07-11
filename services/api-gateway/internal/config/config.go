@@ -16,16 +16,17 @@ type ServiceRoute struct {
 
 // Config holds all runtime configuration for the API Gateway.
 type Config struct {
-	Port                string
-	Routes              []ServiceRoute
-	GatewaySecret       string
-	AllowedOrigin       string
-	TLSCertPath         string
-	TLSKeyPath          string
-	TLSCAPath           string
-	ExternalTLSCertPath string
-	ExternalTLSKeyPath  string
-	RedisURI            string
+	Port                 string
+	Routes               []ServiceRoute
+	GatewaySecret        string
+	AllowedOrigin        string
+	TLSCertPath          string
+	TLSKeyPath           string
+	TLSCAPath            string
+	ExternalTLSCertPath  string
+	ExternalTLSKeyPath   string
+	InternalServiceToken string
+	RedisURI             string
 }
 
 // Load reads configuration from environment variables.
@@ -34,6 +35,11 @@ func Load() (*Config, error) {
 	gatewaySecret := os.Getenv("GATEWAY_SECRET")
 	if gatewaySecret == "" {
 		return nil, fmt.Errorf("config: required env var GATEWAY_SECRET is required and must not be empty")
+	}
+
+	internalServiceToken := os.Getenv("INTERNAL_SERVICE_TOKEN")
+	if internalServiceToken == "" {
+		return nil, fmt.Errorf("config: required env var INTERNAL_SERVICE_TOKEN is required and must not be empty")
 	}
 
 	tlsCertPath := os.Getenv("TLS_CERT_PATH")
@@ -67,15 +73,16 @@ func Load() (*Config, error) {
 	}
 
 	cfg := &Config{
-		Port:                envOrDefault("PORT", "8080"),
-		GatewaySecret:       gatewaySecret,
-		AllowedOrigin:       envOrDefault("ALLOWED_ORIGIN", "http://localhost:3000"),
-		TLSCertPath:         tlsCertPath,
-		TLSKeyPath:          tlsKeyPath,
-		TLSCAPath:           tlsCAPath,
-		ExternalTLSCertPath: externalTLSCertPath,
-		ExternalTLSKeyPath:  externalTLSKeyPath,
-		RedisURI:            redisURI,
+		Port:                 envOrDefault("PORT", "8080"),
+		GatewaySecret:        gatewaySecret,
+		AllowedOrigin:        envOrDefault("ALLOWED_ORIGIN", "http://localhost:3000"),
+		TLSCertPath:          tlsCertPath,
+		TLSKeyPath:           tlsKeyPath,
+		TLSCAPath:            tlsCAPath,
+		ExternalTLSCertPath:  externalTLSCertPath,
+		ExternalTLSKeyPath:   externalTLSKeyPath,
+		InternalServiceToken: internalServiceToken,
+		RedisURI:             redisURI,
 	}
 
 	// Each route is defined by: path prefix → env var → default address.

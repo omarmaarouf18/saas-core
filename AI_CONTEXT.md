@@ -121,6 +121,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **External HTTPS Listener on api-gateway** | Migrated the gateway's external port to listen on HTTPS with separate EXTERNAL_TLS credentials, keeping public and internal mTLS domains distinct. | `current` | Verified via compilation and configuration. ✅ |
 | **SimulateEmployeeAction Authorization** | Enforced JWT authentication on simulate employee action endpoint, validating that the token matches the requested employee email. | `current` | Verified via unit test. ✅ |
 | **Mask plain text tokens in logs** | Replaced raw JWT / session tokens with authenticated IDs (userID / tenantID) in stdout logs to prevent credential leakage. | `current` | Verified via grep checks. ✅ |
+| **Gateway Info & Health Leak Fix** | Stripped routes/topology leakage from public / endpoint and reduced public /health endpoint to basic status, moving detailed metrics to authenticated /health/internal. | `current` | Verified via compilation and route checks. ✅ |
+
 
 
 

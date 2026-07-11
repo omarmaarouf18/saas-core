@@ -83,6 +83,7 @@ services:
       TLS_CA_PATH: /app/certs/ca.crt
       EXTERNAL_TLS_CERT_PATH: /app/certs/api-gateway-external.crt
       EXTERNAL_TLS_KEY_PATH: /app/certs/api-gateway-external.key
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
     depends_on:
       mongo:
         condition: service_healthy
