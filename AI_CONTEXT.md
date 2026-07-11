@@ -132,6 +132,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **notification-service Test Coverage** | Added comprehensive integration tests for SSE Stream and verifyAndResolve handlers. | `current` | Verified via test execution. ✅ |
 | **user-service Test Coverage** | Added comprehensive integration tests for ListServices, GetWallet, GetLedger, GetPlatformConfig, and GetRatings handlers. | `current` | Verified via test execution. ✅ |
 | **Application Map** | Created a comprehensive reference document (docs/APPLICATION_MAP.md) detailing ports, databases, actor lifecycles, and connection flows. | `current` | Verified via document generation. ✅ |
+| **KYB/KYE Data Model** | Extended auth-service User model to support IDFrontDoc, IDBackDoc, SelfieDoc, BusinessProofDoc, and review metadata. | `current` | Verified via compilation. ✅ |
+
 
 
 
