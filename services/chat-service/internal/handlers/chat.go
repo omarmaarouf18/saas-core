@@ -16,10 +16,10 @@ import (
 	"github.com/project/chat-service/internal/chat"
 	"github.com/project/chat-service/internal/config"
 	"github.com/project/chat-service/internal/jwtutil"
-	"github.com/project/chat-service/internal/ratelimit"
-	"github.com/project/chat-service/internal/resilience"
 	"github.com/project/chat-service/internal/store"
-	"github.com/project/chat-service/internal/tlsutil"
+	"github.com/project/shared/infra/ratelimit"
+	"github.com/project/shared/infra/resilience"
+	"github.com/project/shared/infra/tlsutil"
 	"github.com/redis/go-redis/v9"
 )
 

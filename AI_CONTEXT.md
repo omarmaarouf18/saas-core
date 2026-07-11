@@ -26,6 +26,12 @@ The platform uses a microservices architecture coordinated via a reverse-proxy A
 | **chat-service** | `3001` | Real-time WebSocket hub for messaging, segregated per job. | MongoDB, `github.com/gorilla/websocket` |
 | **notification-service** | `3004` | Real-time client alerts via Server-Sent Events (SSE). | Go Standard Library |
 | **user-service** | `3003` | Services directory (using spatial indexes), job tracking, e-wallets, ledger, and subscriptions. | MongoDB (with `2dsphere` index) |
+| **shared/infra** | `N/A` | Compile-time shared library module for cross-cutting infrastructure packages. | `github.com/redis/go-redis/v9`, `github.com/sony/gobreaker/v2` |
+
+* **Shared Infrastructure Module (`shared/infra`)**: Created to eliminate duplicate copy-pasted codebase files (saving ~2,150 duplicate lines of code) without compromising microservice independence. It acts purely as a compile-time dependency, similar to third-party modules (no shared runtime processes, databases, or in-memory state). It contains:
+  * `shared/infra/resilience`: HTTP client wrapper for retries, exponential backoff, jitter, and circuit breaking.
+  * `shared/infra/ratelimit`: Redis-backed sliding window and login-lockout rate limiting.
+  * `shared/infra/tlsutil`: TLS config loaders for mutual TLS (mTLS) server and client setup.
 
 ---
 

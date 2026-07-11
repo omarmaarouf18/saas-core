@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/project/gateway/internal/ratelimit"
+	"github.com/project/shared/infra/ratelimit"
 )
 
 type RateLimiter struct {

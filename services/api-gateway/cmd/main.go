@@ -13,9 +13,9 @@ import (
 	"github.com/project/gateway/internal/config"
 	"github.com/project/gateway/internal/middleware"
 	"github.com/project/gateway/internal/proxy"
-	"github.com/project/gateway/internal/ratelimit"
-	"github.com/project/gateway/internal/resilience"
-	"github.com/project/gateway/internal/tlsutil"
+	"github.com/project/shared/infra/ratelimit"
+	"github.com/project/shared/infra/resilience"
+	"github.com/project/shared/infra/tlsutil"
 )
 
 func main() {

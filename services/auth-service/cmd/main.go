@@ -40,9 +40,9 @@ import (
 	"github.com/project/auth-service/internal/jwtutil"
 	"github.com/project/auth-service/internal/otp"
 	"github.com/project/auth-service/internal/otpcrypto"
-	"github.com/project/auth-service/internal/ratelimit"
 	"github.com/project/auth-service/internal/store"
-	"github.com/project/auth-service/internal/tlsutil"
+	"github.com/project/shared/infra/ratelimit"
+	"github.com/project/shared/infra/tlsutil"
 )
 
 func main() {

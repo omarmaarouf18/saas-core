@@ -12,6 +12,7 @@ require (
 	github.com/redis/go-redis/v9 v9.21.0
 	github.com/sony/gobreaker/v2 v2.4.0
 	go.mongodb.org/mongo-driver/v2 v2.2.1
+	github.com/project/shared/infra v0.0.0
 )
 
 require (
@@ -41,3 +42,5 @@ require (
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 )
+
+replace github.com/project/shared/infra => ../../shared/infra

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/project/auth-service/internal/ratelimit"
+	"github.com/project/shared/infra/ratelimit"
 	"github.com/redis/go-redis/v9"
 )
 

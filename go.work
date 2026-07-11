@@ -6,4 +6,5 @@ use (
 	./services/chat-service
 	./services/notification-service
 	./services/user-service
+	./shared/infra
 )
