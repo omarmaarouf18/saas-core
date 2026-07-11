@@ -52,7 +52,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [api-gateway, auth-service, chat-service, notification-service, user-service]
+        service:
+          - { path: services/api-gateway, name: api-gateway }
+          - { path: services/auth-service, name: auth-service }
+          - { path: services/chat-service, name: chat-service }
+          - { path: services/notification-service, name: notification-service }
+          - { path: services/user-service, name: user-service }
+          - { path: shared/infra, name: shared-infra }
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -63,19 +69,19 @@ jobs:
           go-version: '1.24'
 
       - name: Install dependencies
-        working-directory: services/${{ matrix.service }}
+        working-directory: ${{ matrix.service.path }}
         run: go mod download
 
       - name: Build Service
-        working-directory: services/${{ matrix.service }}
+        working-directory: ${{ matrix.service.path }}
         run: go build ./...
 
       - name: Vet Service
-        working-directory: services/${{ matrix.service }}
+        working-directory: ${{ matrix.service.path }}
         run: go vet ./...
 
       - name: Test Service
-        working-directory: services/${{ matrix.service }}
+        working-directory: ${{ matrix.service.path }}
         env:
           MONGO_URI: mongodb://localhost:27017
           REDIS_URI: redis://localhost:6379
