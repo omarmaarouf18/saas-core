@@ -14,6 +14,7 @@ import (
 	"github.com/project/gateway/internal/config"
 	"github.com/project/gateway/internal/middleware"
 	"github.com/project/gateway/internal/proxy"
+	"github.com/project/gateway/internal/ratelimit"
 	"github.com/project/gateway/internal/tlsutil"
 )
 
@@ -22,6 +23,12 @@ func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	// ---- Initialize Redis rate limiter client ----
+	redisClient, err := ratelimit.NewRedisClient(cfg.RedisURI)
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
 
 	var clientTransport http.RoundTripper
@@ -82,7 +89,8 @@ func main() {
 
 
 	// ---- Wrap with global rate limiting and logging middleware ----
-	limiter := middleware.NewRateLimiter(100, 1*time.Minute)
+	rl := ratelimit.NewRateLimiter(redisClient, 100, 1*time.Minute, "gateway")
+	limiter := middleware.NewRateLimiter(rl)
 	rateLimited := middleware.RateLimit(limiter)(mux)
 	logged := middleware.Logging(cfg.AllowedOrigin)(rateLimited)
 
@@ -94,3 +102,4 @@ func main() {
 		log.Fatalf("Server error: %v", err)
 	}
 }
+
