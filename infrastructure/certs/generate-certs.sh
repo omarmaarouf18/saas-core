@@ -36,6 +36,11 @@ EOF
   rm -f "${service}.csr" "${service}.ext"
 done
 
+# Generate a separate self-signed certificate for external/public gateway traffic
+# to keep the trust domains separate.
+echo "Generating public/external gateway certificate..."
+openssl req -x509 -newkey rsa:2048 -nodes -keyout api-gateway-external.key -out api-gateway-external.crt -days 3650 -subj "/CN=localhost" -addext "subjectAltName = DNS:localhost, IP:127.0.0.1"
+
 # Set permissions
 chmod 600 *.key
 chmod 644 *.crt

@@ -16,14 +16,16 @@ type ServiceRoute struct {
 
 // Config holds all runtime configuration for the API Gateway.
 type Config struct {
-	Port          string
-	Routes        []ServiceRoute
-	GatewaySecret string
-	AllowedOrigin string
-	TLSCertPath   string
-	TLSKeyPath    string
-	TLSCAPath     string
-	RedisURI      string
+	Port                string
+	Routes              []ServiceRoute
+	GatewaySecret       string
+	AllowedOrigin       string
+	TLSCertPath         string
+	TLSKeyPath          string
+	TLSCAPath           string
+	ExternalTLSCertPath string
+	ExternalTLSKeyPath  string
+	RedisURI            string
 }
 
 // Load reads configuration from environment variables.
@@ -49,19 +51,31 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("config: required env var TLS_CA_PATH is empty")
 	}
 
+	externalTLSCertPath := os.Getenv("EXTERNAL_TLS_CERT_PATH")
+	if externalTLSCertPath == "" {
+		return nil, fmt.Errorf("config: required env var EXTERNAL_TLS_CERT_PATH is empty")
+	}
+
+	externalTLSKeyPath := os.Getenv("EXTERNAL_TLS_KEY_PATH")
+	if externalTLSKeyPath == "" {
+		return nil, fmt.Errorf("config: required env var EXTERNAL_TLS_KEY_PATH is empty")
+	}
+
 	redisURI := os.Getenv("REDIS_URI")
 	if redisURI == "" {
 		return nil, fmt.Errorf("config: required env var REDIS_URI is empty")
 	}
 
 	cfg := &Config{
-		Port:          envOrDefault("PORT", "8080"),
-		GatewaySecret: gatewaySecret,
-		AllowedOrigin: envOrDefault("ALLOWED_ORIGIN", "http://localhost:3000"),
-		TLSCertPath:   tlsCertPath,
-		TLSKeyPath:    tlsKeyPath,
-		TLSCAPath:     tlsCAPath,
-		RedisURI:      redisURI,
+		Port:                envOrDefault("PORT", "8080"),
+		GatewaySecret:       gatewaySecret,
+		AllowedOrigin:       envOrDefault("ALLOWED_ORIGIN", "http://localhost:3000"),
+		TLSCertPath:         tlsCertPath,
+		TLSKeyPath:          tlsKeyPath,
+		TLSCAPath:           tlsCAPath,
+		ExternalTLSCertPath: externalTLSCertPath,
+		ExternalTLSKeyPath:  externalTLSKeyPath,
+		RedisURI:            redisURI,
 	}
 
 	// Each route is defined by: path prefix → env var → default address.

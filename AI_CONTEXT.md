@@ -118,6 +118,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Support Agent Onboarding CLI Tool** | Created out-of-band CLI tool to onboard support agents, generating secure tokens and preventing running attack surface on chat-service. | `current` | Verified via unit and integration tests. ✅ |
 | **limiter/security_logs Dedup** | Extracted duplicate `limiter.go` and `security_logs.go` implementation from microservices into shared `infra/handlerutil`. | `current` | Verified via test execution. ✅ |
 | **api-gateway Test Coverage** | Added comprehensive unit/integration test coverage proving route matching, rate limiting, and security header stripping/injection in api-gateway. | `current` | Verified via test execution. ✅ |
+| **External HTTPS Listener on api-gateway** | Migrated the gateway's external port to listen on HTTPS with separate EXTERNAL_TLS credentials, keeping public and internal mTLS domains distinct. | `current` | Verified via compilation and configuration. ✅ |
+
 
 
 
