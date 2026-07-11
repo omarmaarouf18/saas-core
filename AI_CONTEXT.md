@@ -85,7 +85,9 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Per-Job Location Throttling** | Throttled consecutive location updates under 3s per Job ID with in-flight reservations and rollback. | `current` | Verified via unit, race, and integration tests. ✅ |
 | **CloudWatch Security Log Shipping** | Structured JSON log event to CloudWatch Logs for security-relevant blocked events in auth, user, and chat services. | `current` | Verified via unit, race, and log shipping tests. ✅ |
 | **mTLS Stage 1: Dev CA & Certs** | Created generate-certs.sh script generating Root CA and leaf certificates for local dev. | `current` | Verified via cert creation and gitignore validation. ✅ |
+| **mTLS Stage 2: TLS Server Config** | Configured auth, chat, notification, and user services to serve HTTPS with client cert verification (tls.RequireAndVerifyClientCert). | `current` | Verified via compilation and test execution. ✅ |
 ### 2. Explicitly Deferred by Decision
+
 
 * **CloudWatch Event Rate Limiting/Batching**
   * **Decision**: Log shipping performs a separate CloudWatch Logs `PutLogEvents` API call per event rather than using client-side batching or queuing.
@@ -137,5 +139,4 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Implement mTLS Stage 2 (TLS Server configuration per backend service).
-
+* **Immediate Next Step**: Implement mTLS Stage 3 (TLS Client configuration for all outgoing service-to-service calls).

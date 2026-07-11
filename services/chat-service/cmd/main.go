@@ -29,6 +29,7 @@ import (
 	"github.com/project/chat-service/internal/handlers"
 	"github.com/project/chat-service/internal/jwtutil"
 	"github.com/project/chat-service/internal/store"
+	"github.com/project/chat-service/internal/tlsutil"
 )
 
 func main() {
@@ -39,6 +40,12 @@ func main() {
 
 	// Initialize JWT utility package.
 	jwtutil.Init(cfg.JWTSecret)
+
+	// Initialize TLS configuration to fail fast if missing/unreadable.
+	tlsConfig, err := tlsutil.LoadServerTLSConfig(cfg.TLSCertPath, cfg.TLSKeyPath, cfg.TLSCAPath)
+	if err != nil {
+		log.Fatalf("[CHAT] Failed to load TLS configuration: %v", err)
+	}
 
 	// Connect to MongoDB.
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -87,9 +94,16 @@ func main() {
 	})
 
 	addr := ":" + cfg.Port
-	log.Printf("Chat Service listening on %s", addr)
+	server := &http.Server{
+		Addr:      addr,
+		Handler:   mux,
+		TLSConfig: tlsConfig,
+	}
+
+	log.Printf("Chat Service listening on %s (HTTPS)", addr)
 	log.Printf("WebSocket endpoint: GET /chat/ws?token=<user_token>")
-	if err := http.ListenAndServe(addr, mux); err != nil {
+	if err := server.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}
 }
+

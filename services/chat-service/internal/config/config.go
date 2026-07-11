@@ -15,6 +15,9 @@ type Config struct {
 	UserServiceURL       string
 	AllowedOrigin        string
 	CloudWatchLogGroup   string
+	TLSCertPath          string
+	TLSKeyPath           string
+	TLSCAPath            string
 }
 
 func Load() (*Config, error) {
@@ -26,6 +29,21 @@ func Load() (*Config, error) {
 	internalServiceToken := os.Getenv("INTERNAL_SERVICE_TOKEN")
 	if internalServiceToken == "" {
 		return nil, errors.New("config: required env var INTERNAL_SERVICE_TOKEN is empty")
+	}
+
+	tlsCertPath := os.Getenv("TLS_CERT_PATH")
+	if tlsCertPath == "" {
+		return nil, errors.New("config: required env var TLS_CERT_PATH is empty")
+	}
+
+	tlsKeyPath := os.Getenv("TLS_KEY_PATH")
+	if tlsKeyPath == "" {
+		return nil, errors.New("config: required env var TLS_KEY_PATH is empty")
+	}
+
+	tlsCAPath := os.Getenv("TLS_CA_PATH")
+	if tlsCAPath == "" {
+		return nil, errors.New("config: required env var TLS_CA_PATH is empty")
 	}
 
 	port := os.Getenv("PORT")
@@ -68,5 +86,9 @@ func Load() (*Config, error) {
 		UserServiceURL:       userServiceURL,
 		AllowedOrigin:        allowedOrigin,
 		CloudWatchLogGroup:   os.Getenv("CLOUDWATCH_LOG_GROUP"),
+		TLSCertPath:          tlsCertPath,
+		TLSKeyPath:           tlsKeyPath,
+		TLSCAPath:            tlsCAPath,
 	}, nil
 }
+

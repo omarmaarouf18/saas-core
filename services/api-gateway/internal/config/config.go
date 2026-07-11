@@ -20,6 +20,9 @@ type Config struct {
 	Routes        []ServiceRoute
 	GatewaySecret string
 	AllowedOrigin string
+	TLSCertPath   string
+	TLSKeyPath    string
+	TLSCAPath     string
 }
 
 // Load reads configuration from environment variables.
@@ -30,11 +33,30 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("config: required env var GATEWAY_SECRET is required and must not be empty")
 	}
 
+	tlsCertPath := os.Getenv("TLS_CERT_PATH")
+	if tlsCertPath == "" {
+		return nil, fmt.Errorf("config: required env var TLS_CERT_PATH is empty")
+	}
+
+	tlsKeyPath := os.Getenv("TLS_KEY_PATH")
+	if tlsKeyPath == "" {
+		return nil, fmt.Errorf("config: required env var TLS_KEY_PATH is empty")
+	}
+
+	tlsCAPath := os.Getenv("TLS_CA_PATH")
+	if tlsCAPath == "" {
+		return nil, fmt.Errorf("config: required env var TLS_CA_PATH is empty")
+	}
+
 	cfg := &Config{
 		Port:          envOrDefault("PORT", "8080"),
 		GatewaySecret: gatewaySecret,
 		AllowedOrigin: envOrDefault("ALLOWED_ORIGIN", "http://localhost:3000"),
+		TLSCertPath:   tlsCertPath,
+		TLSKeyPath:    tlsKeyPath,
+		TLSCAPath:     tlsCAPath,
 	}
+
 
 	// Each route is defined by: path prefix → env var → default address.
 	routeDefs := []struct {

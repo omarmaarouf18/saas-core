@@ -41,6 +41,7 @@ import (
 	"github.com/project/auth-service/internal/otp"
 	"github.com/project/auth-service/internal/otpcrypto"
 	"github.com/project/auth-service/internal/store"
+	"github.com/project/auth-service/internal/tlsutil"
 )
 
 func main() {
@@ -51,6 +52,12 @@ func main() {
 
 	// Initialize JWT utility package.
 	jwtutil.Init(cfg.JWTSecret)
+
+	// Initialize TLS configuration to fail fast if missing/unreadable.
+	tlsConfig, err := tlsutil.LoadServerTLSConfig(cfg.TLSCertPath, cfg.TLSKeyPath, cfg.TLSCAPath)
+	if err != nil {
+		log.Fatalf("[AUTH] Failed to load TLS configuration: %v", err)
+	}
 
 	// Initialize AES-256-GCM cipher for OTP encryption at rest.
 	otpCipher, err := otpcrypto.NewCipher(cfg.OTPAESKey)
@@ -121,7 +128,11 @@ func main() {
 	})
 
 	addr := ":" + cfg.Port
-	server := &http.Server{Addr: addr, Handler: mux}
+	server := &http.Server{
+		Addr:      addr,
+		Handler:   mux,
+		TLSConfig: tlsConfig,
+	}
 
 	// Graceful shutdown.
 	go func() {
@@ -137,9 +148,10 @@ func main() {
 		mongoStore.Close(shutdownCtx)
 	}()
 
-	log.Printf("Auth Service listening on %s (MongoDB + AES-256-GCM + %s)", addr, dispatcher.Name())
+	log.Printf("Auth Service listening on %s (HTTPS + MongoDB + AES-256-GCM + %s)", addr, dispatcher.Name())
 	log.Printf("Endpoints: POST /auth/signup, POST /auth/login, POST /auth/verify-otp")
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := server.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}
+
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/project/notification-service/internal/handlers"
 	"github.com/project/notification-service/internal/hub"
 	"github.com/project/notification-service/internal/jwtutil"
+	"github.com/project/notification-service/internal/tlsutil"
 )
 
 func main() {
@@ -27,6 +28,12 @@ func main() {
 
 	// Initialize JWT utility package.
 	jwtutil.Init(cfg.JWTSecret)
+
+	// Initialize TLS configuration to fail fast if missing/unreadable.
+	tlsConfig, err := tlsutil.LoadServerTLSConfig(cfg.TLSCertPath, cfg.TLSKeyPath, cfg.TLSCAPath)
+	if err != nil {
+		log.Fatalf("[NOTIF] Failed to load TLS configuration: %v", err)
+	}
 
 	sseHub := hub.NewSSEHub()
 	notifHandlers := handlers.NewNotification(sseHub, cfg)
@@ -59,9 +66,16 @@ func main() {
 	})
 
 	addr := ":" + cfg.Port
-	log.Printf("Notification Service listening on %s (SSE)", addr)
+	server := &http.Server{
+		Addr:      addr,
+		Handler:   mux,
+		TLSConfig: tlsConfig,
+	}
+
+	log.Printf("Notification Service listening on %s (HTTPS/SSE)", addr)
 	log.Printf("Endpoints: GET /notifications/stream, POST /notifications/send, POST /notifications/broadcast/job-alert")
-	if err := http.ListenAndServe(addr, mux); err != nil {
+	if err := server.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}
 }
+

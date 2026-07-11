@@ -27,6 +27,7 @@ import (
 	"github.com/project/user-service/internal/handlers"
 	"github.com/project/user-service/internal/jwtutil"
 	"github.com/project/user-service/internal/store"
+	"github.com/project/user-service/internal/tlsutil"
 )
 
 func main() {
@@ -37,6 +38,12 @@ func main() {
 
 	// Initialize JWT utility package.
 	jwtutil.Init(cfg.JWTSecret)
+
+	// Initialize TLS configuration to fail fast if missing/unreadable.
+	tlsConfig, err := tlsutil.LoadServerTLSConfig(cfg.TLSCertPath, cfg.TLSKeyPath, cfg.TLSCAPath)
+	if err != nil {
+		log.Fatalf("[USER] Failed to load TLS configuration: %v", err)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -69,7 +76,11 @@ func main() {
 	})
 
 	addr := ":" + cfg.Port
-	server := &http.Server{Addr: addr, Handler: mux}
+	server := &http.Server{
+		Addr:      addr,
+		Handler:   mux,
+		TLSConfig: tlsConfig,
+	}
 
 	go func() {
 		sigCh := make(chan os.Signal, 1)
@@ -82,8 +93,9 @@ func main() {
 		mongoStore.Close(shutdownCtx)
 	}()
 
-	log.Printf("User Service listening on %s (MongoDB-backed)", addr)
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	log.Printf("User Service listening on %s (HTTPS, MongoDB-backed)", addr)
+	if err := server.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}
 }
+
