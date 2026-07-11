@@ -1,6 +1,7 @@
 .build/
 *.exe
 *.bin
+/cmd
 .env
 .env.local
 **/tmp/
