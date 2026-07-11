@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -244,5 +245,194 @@ func TestGetHistoryAccessControl(t *testing.T) {
 	chatHandler.GetHistory(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestComplaintRoutingConcurrency(t *testing.T) {
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("chat_platform_test_%d", time.Now().UnixNano())
+	mongoStore, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping concurrency tests: MongoDB not available: %v", err)
+		return
+	}
+	defer func() {
+		_ = mongoStore.Close(context.Background())
+	}()
+
+	// 1. Seed 5 available agents
+	numAgents := 5
+	for i := 0; i < numAgents; i++ {
+		agent := &store.SupportAgent{
+			ID:     fmt.Sprintf("agent-%d", i),
+			Status: "available",
+			Token:  fmt.Sprintf("agent-token-%d", i),
+		}
+		if err := mongoStore.AddSupportAgent(ctx, agent); err != nil {
+			t.Fatalf("failed to seed agent: %v", err)
+		}
+	}
+
+	// 2. Concurrently create 20 tickets
+	numTickets := 20
+	var wg sync.WaitGroup
+	resultsChan := make(chan *store.ComplaintTicket, numTickets)
+
+	for i := 0; i < numTickets; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			ticket, err := mongoStore.CreateTicketAndAssign(context.Background(), fmt.Sprintf("customer-%d", idx), "context-xyz")
+			if err != nil {
+				t.Errorf("failed to create ticket: %v", err)
+				return
+			}
+			resultsChan <- ticket
+		}(i)
+	}
+
+	wg.Wait()
+	close(resultsChan)
+
+	assignedCount := 0
+	pendingCount := 0
+	assignedAgents := make(map[string]bool)
+
+	for ticket := range resultsChan {
+		if ticket.Status == "assigned" {
+			assignedCount++
+			if ticket.AssignedAgentID == "" {
+				t.Errorf("ticket status is assigned but AssignedAgentID is empty")
+			}
+			if assignedAgents[ticket.AssignedAgentID] {
+				t.Errorf("agent %s was assigned to multiple tickets concurrently!", ticket.AssignedAgentID)
+			}
+			assignedAgents[ticket.AssignedAgentID] = true
+		} else if ticket.Status == "pending" {
+			pendingCount++
+			if ticket.AssignedAgentID != "" {
+				t.Errorf("ticket status is pending but has AssignedAgentID %s", ticket.AssignedAgentID)
+			}
+		} else {
+			t.Errorf("unexpected ticket status: %s", ticket.Status)
+		}
+	}
+
+	// Since we seeded exactly 5 available agents, exactly 5 tickets should be assigned, and the rest 15 queued/pending.
+	if assignedCount != numAgents {
+		t.Errorf("expected exactly %d assigned tickets, got %d", numAgents, assignedCount)
+	}
+	expectedPending := numTickets - numAgents
+	if pendingCount != expectedPending {
+		t.Errorf("expected exactly %d pending tickets, got %d", expectedPending, pendingCount)
+	}
+}
+
+func TestComplaintRoutingNoAgentsAvailable(t *testing.T) {
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("chat_platform_test_%d", time.Now().UnixNano())
+	mongoStore, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping tests: MongoDB not available: %v", err)
+		return
+	}
+	defer func() {
+		_ = mongoStore.Close(context.Background())
+	}()
+
+	// Try to create a ticket with 0 agents seeded
+	ticket, err := mongoStore.CreateTicketAndAssign(ctx, "customer-1", "job-123")
+	if err != nil {
+		t.Fatalf("failed to create ticket: %v", err)
+	}
+
+	if ticket.Status != "pending" {
+		t.Errorf("expected ticket status to be 'pending', got %s", ticket.Status)
+	}
+	if ticket.AssignedAgentID != "" {
+		t.Errorf("expected assigned agent to be empty, got %s", ticket.AssignedAgentID)
+	}
+}
+
+func TestComplaintRoutingAccessControl(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("chat_platform_test_%d", time.Now().UnixNano())
+	mongoStore, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping tests: MongoDB not available: %v", err)
+		return
+	}
+	defer func() {
+		_ = mongoStore.Close(context.Background())
+	}()
+
+	// 1. Seed two agents
+	agent1 := &store.SupportAgent{ID: "agent-1", Status: "available", Token: "agent-token-1"}
+	agent2 := &store.SupportAgent{ID: "agent-2", Status: "available", Token: "agent-token-2"}
+	_ = mongoStore.AddSupportAgent(ctx, agent1)
+	_ = mongoStore.AddSupportAgent(ctx, agent2)
+
+	// 2. Create ticket for customer-1, will be atomically assigned to agent-1
+	ticket, err := mongoStore.CreateTicketAndAssign(ctx, "customer-1", "job-123")
+	if err != nil {
+		t.Fatalf("failed to create ticket: %v", err)
+	}
+
+	cfg := &config.Config{
+		InternalServiceToken: "mock-internal-token",
+		AllowedOrigin:        "http://localhost:3000",
+	}
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	chatHandler := NewChat(nil, mongoStore, cfg, rdb)
+
+	// 3. Verify access control checks (IDOR mitigation)
+	// A. Customer-1 (owner of ticket) -> Authorized
+	allowed, _ := chatHandler.canAccessChannel("customer-1", "ticket:"+ticket.ID)
+	if !allowed {
+		t.Errorf("expected customer-1 to be authorized for their ticket")
+	}
+
+	// B. Customer-2 (not owner) -> Unauthorized
+	allowed, _ = chatHandler.canAccessChannel("customer-2", "ticket:"+ticket.ID)
+	if allowed {
+		t.Errorf("expected customer-2 to be unauthorized for another customer's ticket")
+	}
+
+	// C. Agent-1 (assigned agent) -> Authorized
+	allowed, _ = chatHandler.canAccessChannel("agent-1", "ticket:"+ticket.ID)
+	if !allowed {
+		t.Errorf("expected assigned agent-1 to be authorized for the ticket")
+	}
+
+	// D. Agent-2 (different agent) -> Unauthorized
+	allowed, _ = chatHandler.canAccessChannel("agent-2", "ticket:"+ticket.ID)
+	if allowed {
+		t.Errorf("expected agent-2 to be unauthorized for a ticket they are not assigned to")
 	}
 }

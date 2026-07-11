@@ -113,6 +113,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Complaint Routing Stage 1: Data Model** | Added database collections, Go model structs, and indexes for support agents and complaint tickets in chat-service store. | `current` | Verified via compilation. ✅ |
 | **Complaint Routing Stage 2: Atomic Agent Assignment** | Implemented atomic support agent assignment using MongoDB FindOneAndUpdate to prevent race conditions on concurrent ticket creation. | `current` | Verified via compilation. ✅ |
 | **Complaint Routing Stage 3, 4, 5: WebSocket & HTTP Wiring** | Wired complaint ticket channel/access checks into chat WebSocket/Hub, added structured security audit logging, and applied Redis rate limiter. | `current` | Verified via compilation. ✅ |
+| **Complaint Routing Stage 6: Concurrency & Access Tests** | Added unit and concurrency tests proving atomic support agent assignment, queueing, and IDOR mitigation for ticket access. | `current` | Verified via test execution. ✅ |
 
 ### 2. Explicitly Deferred by Decision
 
