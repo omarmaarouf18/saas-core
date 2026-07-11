@@ -15,6 +15,7 @@ import (
 	"github.com/project/gateway/internal/middleware"
 	"github.com/project/gateway/internal/proxy"
 	"github.com/project/gateway/internal/ratelimit"
+	"github.com/project/gateway/internal/resilience"
 	"github.com/project/gateway/internal/tlsutil"
 )
 
@@ -79,7 +80,8 @@ func main() {
 
 	// ---- Register reverse proxy routes ----
 	for _, route := range cfg.Routes {
-		handler, err := proxy.New(route, cfg.GatewaySecret, clientTransport)
+		resilientTransport := resilience.NewRoundTripper(clientTransport, route.Prefix, 2, 5*time.Second)
+		handler, err := proxy.New(route, cfg.GatewaySecret, resilientTransport)
 		if err != nil {
 			log.Fatalf("Failed to create proxy for %s: %v", route.Prefix, err)
 		}

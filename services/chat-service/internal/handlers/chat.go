@@ -17,6 +17,7 @@ import (
 	"github.com/project/chat-service/internal/config"
 	"github.com/project/chat-service/internal/jwtutil"
 	"github.com/project/chat-service/internal/ratelimit"
+	"github.com/project/chat-service/internal/resilience"
 	"github.com/project/chat-service/internal/store"
 	"github.com/project/chat-service/internal/tlsutil"
 	"github.com/redis/go-redis/v9"
@@ -51,7 +52,8 @@ type Chat struct {
 	limiter              *RateLimiter
 	internalServiceToken string
 	allowedOrigin        string
-	httpClient           *http.Client
+	authClient           *resilience.ResilienceClient
+	userClient           *resilience.ResilienceClient
 }
 
 // NewChat creates a new Chat handler group.
@@ -75,6 +77,9 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Cli
 
 	rl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Minute, "chat")
 
+	authClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
+	userClient := resilience.NewClient(client, "user-service", 2, 5*time.Second)
+
 	return &Chat{
 		hub:                  hub,
 		store:                s,
@@ -84,7 +89,8 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Cli
 		limiter:              NewRateLimiter(rl),
 		internalServiceToken: cfg.InternalServiceToken,
 		allowedOrigin:        allowedOrigin,
-		httpClient:           client,
+		authClient:           authClient,
+		userClient:           userClient,
 	}
 }
 
@@ -98,9 +104,9 @@ func (c *Chat) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/chat/internal/broadcast-location", c.BroadcastLocation)
 }
 
-func (c *Chat) verifyToken(id string) bool {
+func (c *Chat) verifyToken(id string) (bool, error) {
 	if id == "" {
-		return false
+		return false, nil
 	}
 
 	c.tokenCacheMu.Lock()
@@ -108,7 +114,7 @@ func (c *Chat) verifyToken(id string) bool {
 	c.tokenCacheMu.Unlock()
 
 	if found && time.Now().Before(expiry) {
-		return true
+		return true, nil
 	}
 
 	// Verify against auth-service (internal service-to-service call)
@@ -116,13 +122,13 @@ func (c *Chat) verifyToken(id string) bool {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("[CHAT] Error building auth-service request: %v", err)
-		return false
+		return false, err
 	}
 	req.Header.Set("X-Internal-Token", c.internalServiceToken)
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.authClient.Do(req)
 	if err != nil {
 		log.Printf("[CHAT] Error calling auth-service: %v", err)
-		return false
+		return false, err
 	}
 	defer resp.Body.Close()
 
@@ -134,40 +140,41 @@ func (c *Chat) verifyToken(id string) bool {
 			c.tokenCacheMu.Lock()
 			c.tokenCache[id] = time.Now().Add(60 * time.Second)
 			c.tokenCacheMu.Unlock()
-			return true
+			return true, nil
 		}
 	}
 
-	return false
+	return false, nil
 }
 
-func (c *Chat) canAccessChannel(userID, channel string) bool {
+func (c *Chat) canAccessChannel(userID, channel string) (bool, error) {
 	// Non-job channels: still block everything by default. If there are
 	// legitimate non-job channels in use elsewhere in the app, they must
 	// be explicitly named/allowlisted here — do not default-allow.
 	if !strings.HasPrefix(channel, "job:") {
-		return false
+		return false, nil
 	}
 	jobID := strings.TrimPrefix(channel, "job:")
 	if jobID == "" {
-		return false
+		return false, nil
 	}
 
 	url := fmt.Sprintf("%s/users/jobs/get?id=%s", c.userServiceURL, jobID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return false
+		return false, err
 	}
 	req.Header.Set("X-Internal-Token", c.internalServiceToken)
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		if resp != nil {
-			resp.Body.Close()
-		}
-		return false
+	resp, err := c.userClient.Do(req)
+	if err != nil {
+		return false, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false, fmt.Errorf("unexpected status code from user-service: %d", resp.StatusCode)
+	}
 
 	var job struct {
 		OwnerID    string `json:"owner_id"`
@@ -175,9 +182,9 @@ func (c *Chat) canAccessChannel(userID, channel string) bool {
 		UserID     string `json:"user_id"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&job); err != nil {
-		return false
+		return false, err
 	}
-	return userID == job.OwnerID || userID == job.UserID || (job.EmployeeID != "" && userID == job.EmployeeID)
+	return userID == job.OwnerID || userID == job.UserID || (job.EmployeeID != "" && userID == job.EmployeeID), nil
 }
 
 // HandleWebSocket upgrades the HTTP connection to a WebSocket protocol.
@@ -212,7 +219,17 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Secondary trust boundary: verify against auth-service (using user ID)
-	if !c.verifyToken(claims.UserID) {
+	active, err := c.verifyToken(claims.UserID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error":   "service_unavailable",
+			"message": "Authentication service is temporarily unavailable. Please try again later.",
+		})
+		return
+	}
+	if !active {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
 		json.NewEncoder(w).Encode(map[string]string{"error": "user associated with token is not active or verified"})
@@ -286,14 +303,34 @@ func (c *Chat) GetHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !c.verifyToken(claims.UserID) {
+	active, err := c.verifyToken(claims.UserID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error":   "service_unavailable",
+			"message": "Authentication service is temporarily unavailable. Please try again later.",
+		})
+		return
+	}
+	if !active {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
 		json.NewEncoder(w).Encode(map[string]string{"error": "user associated with token is not active or verified"})
 		return
 	}
 
-	if !c.canAccessChannel(claims.UserID, channel) {
+	allowed, err := c.canAccessChannel(claims.UserID, channel)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error":   "service_unavailable",
+			"message": "User service is temporarily unavailable. Please try again later.",
+		})
+		return
+	}
+	if !allowed {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
 		json.NewEncoder(w).Encode(map[string]string{"error": "not authorized for this channel"})
@@ -355,7 +392,21 @@ func (c *Chat) readPump(conn *websocket.Conn, client *chat.Client) {
 		switch msg.Action {
 		case "subscribe":
 			if msg.Channel != "" {
-				if !c.canAccessChannel(client.ID, msg.Channel) {
+				allowed, err := c.canAccessChannel(client.ID, msg.Channel)
+				if err != nil {
+					denied, _ := json.Marshal(map[string]string{
+						"type":    "error",
+						"channel": msg.Channel,
+						"error":   "service_unavailable",
+						"message": "User service is temporarily unavailable. Please try again later.",
+					})
+					select {
+					case client.Send <- denied:
+					default:
+					}
+					continue
+				}
+				if !allowed {
 					denied, _ := json.Marshal(map[string]string{
 						"type":    "error",
 						"channel": msg.Channel,
@@ -395,7 +446,21 @@ func (c *Chat) readPump(conn *websocket.Conn, client *chat.Client) {
 
 		case "message":
 			if msg.Content != "" {
-				if !c.canAccessChannel(client.ID, msg.Channel) {
+				allowed, err := c.canAccessChannel(client.ID, msg.Channel)
+				if err != nil {
+					denied, _ := json.Marshal(map[string]string{
+						"type":    "error",
+						"channel": msg.Channel,
+						"error":   "service_unavailable",
+						"message": "User service is temporarily unavailable. Please try again later.",
+					})
+					select {
+					case client.Send <- denied:
+					default:
+					}
+					continue
+				}
+				if !allowed {
 					log.Printf("[CHAT BLOCKED] Client %s attempted to send message to channel %q, but access is unauthorized", client.ID, msg.Channel)
 					clientIP := conn.RemoteAddr().String()
 					if idx := strings.LastIndex(clientIP, ":"); idx != -1 {

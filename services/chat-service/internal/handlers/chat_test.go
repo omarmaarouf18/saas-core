@@ -130,7 +130,7 @@ func TestCanAccessChannel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			allowed := chatHandler.canAccessChannel(tt.userID, tt.channel)
+			allowed, _ := chatHandler.canAccessChannel(tt.userID, tt.channel)
 			if allowed != tt.expectAuth {
 				t.Errorf("canAccessChannel(%q, %q) = %v; want %v", tt.userID, tt.channel, allowed, tt.expectAuth)
 			}

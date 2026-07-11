@@ -42,12 +42,22 @@ func GetBreakerStats() []BreakerStats {
 		stats = append(stats, BreakerStats{
 			Name:           name,
 			State:          cb.State().String(),
-			Failures:       counts.Failures,
+			Failures:       counts.TotalFailures,
 			ConsecFailures: counts.ConsecutiveFailures,
-			Successes:      counts.Successes,
+			Successes:      counts.TotalSuccesses,
 		})
 	}
 	return stats
+}
+
+func backoffWithJitter(attempt int, initialBackoff, maxBackoff time.Duration) time.Duration {
+	temp := float64(initialBackoff) * math.Pow(2, float64(attempt))
+	if temp > float64(maxBackoff) {
+		temp = float64(maxBackoff)
+	}
+	// Jitter: 50% to 150% of the backoff value
+	jitter := 0.5 + rand.Float64()
+	return time.Duration(temp * jitter)
 }
 
 type ResilienceClient struct {
@@ -86,16 +96,6 @@ func NewClient(client *http.Client, serviceName string, maxRetries int, attemptT
 	}
 }
 
-func backoffWithJitter(attempt int, initialBackoff, maxBackoff time.Duration) time.Duration {
-	temp := float64(initialBackoff) * math.Pow(2, float64(attempt))
-	if temp > float64(maxBackoff) {
-		temp = float64(maxBackoff)
-	}
-	// Jitter: 50% to 150% of the backoff value
-	jitter := 0.5 + rand.Float64()
-	return time.Duration(temp * jitter)
-}
-
 func (rc *ResilienceClient) Do(req *http.Request) (*http.Response, error) {
 	isIdempotent := req.Method == http.MethodGet || req.Method == http.MethodHead
 	maxAttempts := 1
@@ -130,6 +130,99 @@ func (rc *ResilienceClient) Do(req *http.Request) (*http.Response, error) {
 
 			reqClone = reqClone.WithContext(timeoutCtx)
 			resp, err := rc.client.Do(reqClone)
+			if err != nil {
+				return nil, err
+			}
+
+			if resp.StatusCode >= 500 {
+				return resp, fmt.Errorf("HTTP status %d", resp.StatusCode)
+			}
+
+			return resp, nil
+		})
+
+		if lastErr != nil {
+			if lastErr == gobreaker.ErrOpenState || lastErr == gobreaker.ErrTooManyRequests {
+				break
+			}
+			continue
+		}
+
+		return lastResp, nil
+	}
+
+	return lastResp, lastErr
+}
+
+type ResilienceRoundTripper struct {
+	underlying     http.RoundTripper
+	breaker        *gobreaker.CircuitBreaker[*http.Response]
+	maxRetries     int
+	initialBackoff time.Duration
+	maxBackoff     time.Duration
+	attemptTimeout time.Duration
+}
+
+func NewRoundTripper(underlying http.RoundTripper, serviceName string, maxRetries int, attemptTimeout time.Duration) *ResilienceRoundTripper {
+	cbSettings := gobreaker.Settings{
+		Name:        serviceName,
+		MaxRequests: 3,
+		Interval:    10 * time.Second,
+		Timeout:     15 * time.Second,
+		ReadyToTrip: func(counts gobreaker.Counts) bool {
+			return counts.ConsecutiveFailures >= 5
+		},
+		OnStateChange: func(name string, from, to gobreaker.State) {
+			log.Printf("[SECURITY EVENT / DOWNSTREAM DEGRADED] Circuit breaker %s transitioned from %s to %s", name, from.String(), to.String())
+		},
+	}
+
+	cb := gobreaker.NewCircuitBreaker[*http.Response](cbSettings)
+	RegisterBreaker(serviceName, cb)
+
+	return &ResilienceRoundTripper{
+		underlying:     underlying,
+		breaker:        cb,
+		maxRetries:     maxRetries,
+		initialBackoff: 100 * time.Millisecond,
+		maxBackoff:     1 * time.Second,
+		attemptTimeout: attemptTimeout,
+	}
+}
+
+func (rt *ResilienceRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	isIdempotent := req.Method == http.MethodGet || req.Method == http.MethodHead
+	maxAttempts := 1
+	if isIdempotent {
+		maxAttempts = rt.maxRetries + 1
+	}
+
+	var lastResp *http.Response
+	var lastErr error
+
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		if attempt > 0 {
+			backoff := backoffWithJitter(attempt-1, rt.initialBackoff, rt.maxBackoff)
+			select {
+			case <-req.Context().Done():
+				return nil, req.Context().Err()
+			case <-time.After(backoff):
+			}
+		}
+
+		lastResp, lastErr = rt.breaker.Execute(func() (*http.Response, error) {
+			var reqClone *http.Request
+			if attempt > 0 {
+				reqClone = req.Clone(req.Context())
+			} else {
+				reqClone = req
+			}
+
+			timeoutCtx, cancel := context.WithTimeout(reqClone.Context(), rt.attemptTimeout)
+			defer cancel()
+
+			reqClone = reqClone.WithContext(timeoutCtx)
+			resp, err := rt.underlying.RoundTrip(reqClone)
 			if err != nil {
 				return nil, err
 			}

@@ -21,10 +21,13 @@ import (
 	"github.com/project/user-service/internal/jwtutil"
 	"github.com/project/user-service/internal/models"
 	"github.com/project/user-service/internal/ratelimit"
+	"github.com/project/user-service/internal/resilience"
 	"github.com/project/user-service/internal/store"
 	"github.com/project/user-service/internal/tlsutil"
 	"github.com/redis/go-redis/v9"
 )
+
+var ErrServiceUnavailable = errors.New("service_unavailable")
 
 // ErrUpgradeRequired is returned when a tenant's subscription tier is insufficient for a gated feature.
 var ErrUpgradeRequired = errors.New("upgrade_required")
@@ -42,6 +45,8 @@ type UserService struct {
 	locationThrottleMu   sync.Mutex
 	locationLastUpdate   map[string]time.Time
 	locationInFlight     map[string]bool
+	authClient           *resilience.ResilienceClient
+	chatClient           *resilience.ResilienceClient
 	httpClient           *http.Client
 }
 
@@ -67,6 +72,9 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 
 	rl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Minute, "user")
 
+	authClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
+	chatClient := resilience.NewClient(client, "chat-service", 2, 5*time.Second)
+
 	return &UserService{
 		store:                s,
 		authServiceURL:       cfg.AuthServiceURL,
@@ -75,7 +83,8 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		internalServiceToken: cfg.InternalServiceToken,
 		locationLastUpdate:   make(map[string]time.Time),
 		locationInFlight:     make(map[string]bool),
-		httpClient:           client,
+		authClient:           authClient,
+		chatClient:           chatClient,
 	}
 }
 
@@ -151,6 +160,13 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 	kycStatus, err := u.checkKYC(req.OwnerID)
 	if err != nil {
 		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.OwnerID, err)
+		if errors.Is(err, ErrServiceUnavailable) {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
+				"error":   "service_unavailable",
+				"message": "Authentication service is temporarily unavailable. Please try again later.",
+			})
+			return
+		}
 		ShipSecurityEvent(r.Context(), "KYC_BLOCKED_ERROR", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("failed KYC check: %v", err), getClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: unable to verify owner KYC status",
@@ -242,6 +258,13 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	kycStatus, err := u.checkKYC(req.OwnerID)
 	if err != nil {
 		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.OwnerID, err)
+		if errors.Is(err, ErrServiceUnavailable) {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
+				"error":   "service_unavailable",
+				"message": "Authentication service is temporarily unavailable. Please try again later.",
+			})
+			return
+		}
 		ShipSecurityEvent(r.Context(), "KYC_BLOCKED_ERROR", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("failed KYC check: %v", err), getClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: unable to verify owner KYC status",
@@ -590,6 +613,13 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 	kycStatus, err := u.checkKYC(req.TenantID)
 	if err != nil {
 		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.TenantID, err)
+		if errors.Is(err, ErrServiceUnavailable) {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
+				"error":   "service_unavailable",
+				"message": "Authentication service is temporarily unavailable. Please try again later.",
+			})
+			return
+		}
 		ShipSecurityEvent(r.Context(), "KYC_BLOCKED_ERROR", "user-service", req.TenantID, req.TenantID, fmt.Sprintf("failed KYC check: %v", err), getClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: unable to verify owner KYC status",
@@ -704,9 +734,9 @@ func (u *UserService) checkKYC(ownerID string) (string, error) {
 		return "", err
 	}
 	req.Header.Set("X-Internal-Token", u.internalServiceToken)
-	resp, err := u.httpClient.Do(req)
+	resp, err := u.authClient.Do(req)
 	if err != nil {
-		return "", err
+		return "", ErrServiceUnavailable
 	}
 	defer resp.Body.Close()
 
@@ -714,7 +744,7 @@ func (u *UserService) checkKYC(ownerID string) (string, error) {
 		return "", fmt.Errorf("owner not found")
 	}
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected auth service status: %d", resp.StatusCode)
+		return "", ErrServiceUnavailable
 	}
 
 	var user struct {
@@ -823,9 +853,12 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		authReq.Header.Set("X-Internal-Token", u.internalServiceToken)
-		resp, err := u.httpClient.Do(authReq)
+		resp, err := u.authClient.Do(authReq)
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "auth service connection error: " + err.Error()})
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
+				"error":   "service_unavailable",
+				"message": "Authentication service is temporarily unavailable. Please try again later.",
+			})
 			return
 		}
 		defer resp.Body.Close()
@@ -1139,7 +1172,7 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 		broadcastReq.Header.Set("Content-Type", "application/json")
 		broadcastReq.Header.Set("X-Internal-Token", u.internalServiceToken)
 
-		resp, err := u.httpClient.Do(broadcastReq)
+		resp, err := u.chatClient.Do(broadcastReq)
 		if err != nil {
 			log.Printf("[USER] Location broadcast error (call chat-service): %v", err)
 			return

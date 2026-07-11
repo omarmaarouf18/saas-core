@@ -12,6 +12,7 @@ import (
 	"github.com/project/notification-service/internal/hub"
 	"github.com/project/notification-service/internal/jwtutil"
 	"github.com/project/notification-service/internal/ratelimit"
+	"github.com/project/notification-service/internal/resilience"
 	"github.com/project/notification-service/internal/tlsutil"
 	"github.com/redis/go-redis/v9"
 )
@@ -23,7 +24,7 @@ type Notification struct {
 	allowedOrigin        string
 	limiter              *RateLimiter
 	internalServiceToken string
-	httpClient           *http.Client
+	resilienceClient     *resilience.ResilienceClient
 }
 
 // NewNotification creates a new handler group.
@@ -46,13 +47,15 @@ func NewNotification(h *hub.SSEHub, cfg *config.Config, rdb *redis.Client) *Noti
 
 	rl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Minute, "notification")
 
+	resClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
+
 	return &Notification{
 		hub:                  h,
 		authServiceURL:       cfg.AuthServiceURL,
 		allowedOrigin:        allowedOrigin,
 		limiter:              NewRateLimiter(rl),
 		internalServiceToken: cfg.InternalServiceToken,
-		httpClient:           client,
+		resilienceClient:     resClient,
 	}
 }
 
@@ -80,7 +83,13 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tenantID, role, ok := n.verifyAndResolve(token)
+	tenantID, role, ok, err := n.verifyAndResolve(token)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Write([]byte(`{"error": "service_unavailable", "message": "Authentication service is temporarily unavailable. Please try again later."}`))
+		return
+	}
 	if !ok {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
@@ -134,16 +143,16 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool) {
+func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool, error) {
 	if token == "" {
-		return "", "", false
+		return "", "", false, nil
 	}
 
 	// 1. Primary trust boundary: Validate JWT token signature and expiry locally
 	claims, err := jwtutil.ValidateToken(token)
 	if err != nil {
 		log.Printf("[NOTIF] JWT validation failed: %v", err)
-		return "", "", false
+		return "", "", false, nil
 	}
 
 	// 2. Secondary trust boundary: verify against auth-service using extracted user ID (internal call)
@@ -151,19 +160,19 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool) {
 	req, err := http.NewRequest("GET", authURL, nil)
 	if err != nil {
 		log.Printf("[NOTIF] Error building auth-service request: %v", err)
-		return "", "", false
+		return "", "", false, err
 	}
 	req.Header.Set("X-Internal-Token", n.internalServiceToken)
-	resp, err := n.httpClient.Do(req)
+	resp, err := n.resilienceClient.Do(req)
 	if err != nil {
 		log.Printf("[NOTIF] Error calling auth-service: %v", err)
-		return "", "", false
+		return "", "", false, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("[NOTIF] Auth service returned status %d for user ID %s", resp.StatusCode, claims.UserID)
-		return "", "", false
+		return "", "", false, nil
 	}
 
 	var user struct {
@@ -175,12 +184,12 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool) {
 
 	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
 		log.Printf("[NOTIF] Failed to decode user from auth-service: %v", err)
-		return "", "", false
+		return "", "", false, err
 	}
 
 	if !user.IsActive {
 		log.Printf("[NOTIF] User %s is not active", user.ID)
-		return "", "", false
+		return "", "", false, nil
 	}
 
 	var r hub.Role
@@ -195,7 +204,7 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool) {
 		r = hub.RoleClient
 	}
 
-	return user.TenantID, r, true
+	return user.TenantID, r, true, nil
 }
 
 // ---------------------------------------------------------------------------
