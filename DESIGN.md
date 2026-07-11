@@ -135,3 +135,37 @@ The application implements defense-in-depth across the API Gateway and microserv
 - **Gating Policies**:
   - **KYC Gating**: Operations like service creation, wallet deposits, and job tracking are restricted to owners whose KYC status is explicitly `"approved"`.
   - **Tier-Based Gating**: Real-time employee location tracking is gated behind a Paid Subscription tier check (`plan: "paid"`) on the job owner. Location updates are throttled to a minimum 3-second interval per Job ID.
+
+---
+
+## 6. Customer Service Outbound Chat Routing
+
+This feature introduces a customer-service complaint channel reusing the existing `chat-service` WebSocket/channel infrastructure. It routes requests to available customer-service support agents instead of a specific employee, without adding a 4th role to the core authentication matrix.
+
+### 1. Database Model & Collections
+- **`complaint_tickets`**: Tracks individual complaints.
+  - `ticket_id` (string/`_id`): Unique ID (`tkt-<unixnano>`).
+  - `customer_id` (string): Customer who filed the complaint.
+  - `context_id` (string): The job/context identifier associated with the complaint.
+  - `status` (string): `"pending"` (queued), `"assigned"`, `"resolved"`, or `"closed"`.
+  - `assigned_agent_id` (string): The ID of the assigned support agent.
+  - `created_at` / `assigned_at` (timestamps).
+- **`support_agents`**: Tracks support agent states and tokens.
+  - `agent_id` (string/`_id`): The unique support agent identifier.
+  - `status` (string): `"available"`, `"busy"`, or `"offline"`.
+  - `token` (string): Scoped agent-specific credential for authentication (verified in the database).
+  - `current_ticket_id` (string): The ticket ID currently assigned to the agent.
+
+### 2. Atomic Agent Assignment Design
+To prevent concurrency issues where two concurrent tickets are assigned to the same agent, the assignment is executed in a **single atomic database operation** using MongoDB's `FindOneAndUpdate`:
+- It searches for an agent with `status: "available"`.
+- It atomically sets their `status` to `"busy"` and associates the `current_ticket_id`.
+- If no agent is found (`mongo.ErrNoDocuments`), the ticket remains in `"pending"` (queued) status.
+
+> [!IMPORTANT]
+> **Timeout-Based Mitigations Rejected**: Timing-based solutions (such as a 2-second timeout between tickets) were explicitly rejected as insufficient because they do not protect against deliberate race-condition attacks. The single atomic database update guarantees mutual exclusion by design.
+
+### 3. Authentication & Scoping (IDOR Protection)
+- **Scoped Identity**: Support agents authenticate using distinct tokens (passed via `?token=` parameter) matched directly against the `support_agents` collection, separate from the customer JWT flow.
+- **Access Scoping**: Channels for complaints use the prefix `ticket:<ticket_id>`. In `canAccessChannel`, a user is authorized *only* if they are the ticket's `customer_id` or the `assigned_agent_id`. This prevents support agents or other customers from accessing tickets they are not assigned/related to, mitigating IDOR threats.
+
