@@ -8,18 +8,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/project/auth-service/internal/config"
 	"github.com/project/auth-service/internal/models"
 	"github.com/project/auth-service/internal/otp"
+	"github.com/project/auth-service/internal/storage"
 	"github.com/project/auth-service/internal/store"
 	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -31,6 +35,7 @@ type Auth struct {
 	limiter              *RateLimiter
 	gatewaySecret        string
 	internalServiceToken string
+	storage              *storage.LocalStorage
 }
 
 // NewAuth creates a new Auth handler group.
@@ -38,7 +43,8 @@ type Auth struct {
 //   - dispatcher:    OTPDispatcher implementation (mock for local, real for prod)
 //   - cfg:           central configuration loader struct
 //   - rdb:           Redis client for rate limiting
-func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config, rdb *redis.Client) *Auth {
+//   - storage:       local storage engine for documents
+func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config, rdb *redis.Client, storage *storage.LocalStorage) *Auth {
 	handlerutil.InitCloudWatch(cfg.CloudWatchLogGroup)
 	isLocal := strings.EqualFold(cfg.AppEnv, "local")
 	if isLocal {
@@ -51,6 +57,7 @@ func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config,
 		limiter:              NewRateLimiter(rdb),
 		gatewaySecret:        cfg.GatewaySecret,
 		internalServiceToken: cfg.InternalServiceToken,
+		storage:              storage,
 	}
 }
 
@@ -66,6 +73,11 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/employee/action", a.SimulateEmployeeAction)
 	mux.HandleFunc("/auth/audit-log", a.GetAuditLog)
 	mux.HandleFunc("/auth/user", a.GetUser)
+	mux.HandleFunc("/auth/kyb/upload", a.UploadKYB)
+	mux.HandleFunc("/auth/kye/upload", a.UploadKYE)
+	mux.HandleFunc("/auth/kyb-kye/pending", a.GetPendingKYBKYESubmissions)
+	mux.HandleFunc("/auth/kyb-kye/review", a.ReviewKYBKYESubmissions)
+	mux.HandleFunc("/auth/documents/view", a.ViewDocument)
 }
 
 // ---------------------------------------------------------------------------
@@ -720,14 +732,21 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]any{
+	resp := map[string]any{
 		"id":         user.ID,
 		"email":      user.Email,
 		"role":       user.Role,
 		"tenant_id":  user.TenantID,
 		"kyc_status": user.KYCStatus,
 		"is_active":  user.IsActive,
-	})
+	}
+	if user.Role == models.RoleEmployee {
+		resp["kye_status"] = user.KYEStatus
+	}
+	if user.RejectionReason != "" {
+		resp["rejection_reason"] = user.RejectionReason
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // ---------------------------------------------------------------------------
@@ -913,4 +932,401 @@ func (a *Auth) getClientIP(r *http.Request) string {
 		}
 	}
 	return ip
+}
+
+func (a *Auth) authenticateUser(r *http.Request) (*jwtutil.Claims, error) {
+	authHeader := r.Header.Get("Authorization")
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		return nil, fmt.Errorf("missing or invalid authorization header, Bearer token required")
+	}
+	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+	return jwtutil.ValidateToken(tokenStr)
+}
+
+// POST /auth/kyb/upload?type=id_front|id_back|selfie|business_proof
+func (a *Auth) UploadKYB(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	claims, err := a.authenticateUser(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		return
+	}
+
+	ctx := r.Context()
+	user := a.store.GetByID(ctx, claims.UserID)
+	if user == nil || user.Role != models.RoleOwner {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: owner role required"})
+		return
+	}
+
+	docType := r.URL.Query().Get("type")
+	if docType != "id_front" && docType != "id_back" && docType != "selfie" && docType != "business_proof" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid doc type"})
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "file too large (max 10MB) or invalid multipart"})
+		return
+	}
+
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "file parameter is required"})
+		return
+	}
+	defer file.Close()
+
+	buf := make([]byte, 512)
+	n, _ := file.Read(buf)
+	contentType := http.DetectContentType(buf[:n])
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	ext := ""
+	switch contentType {
+	case "image/jpeg":
+		ext = "jpg"
+	case "image/png":
+		ext = "png"
+	case "application/pdf":
+		if docType == "business_proof" {
+			ext = "pdf"
+		}
+	}
+
+	if ext == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unsupported file format"})
+		return
+	}
+
+	key := fmt.Sprintf("kyb/%s/%s.%s", user.ID, docType, ext)
+	if err := a.storage.Upload(ctx, key, file, contentType); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	update := bson.M{}
+	switch docType {
+	case "id_front":
+		update["$set"] = bson.M{"id_front_doc": key}
+	case "id_back":
+		update["$set"] = bson.M{"id_back_doc": key}
+	case "selfie":
+		update["$set"] = bson.M{"selfie_doc": key}
+	case "business_proof":
+		update["$set"] = bson.M{"business_proof_doc": key}
+	}
+
+	if err := a.store.UpdateUser(ctx, user.ID, update); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	updated := a.store.GetByID(ctx, user.ID)
+	if updated.IDFrontDoc != "" && updated.IDBackDoc != "" && updated.SelfieDoc != "" && updated.BusinessProofDoc != "" {
+		if err := a.store.UpdateUser(ctx, user.ID, bson.M{"$set": bson.M{"kyc_status": models.KYCPendingApproval, "reviewer_id": "", "rejection_reason": ""}}); err != nil {
+			log.Printf("[KYB] failed to update status to pending: %v", err)
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "uploaded", "key": key})
+}
+
+// POST /auth/kye/upload?type=id_front|id_back|selfie
+func (a *Auth) UploadKYE(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	claims, err := a.authenticateUser(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		return
+	}
+
+	ctx := r.Context()
+	user := a.store.GetByID(ctx, claims.UserID)
+	if user == nil || user.Role != models.RoleEmployee {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: employee role required"})
+		return
+	}
+
+	docType := r.URL.Query().Get("type")
+	if docType != "id_front" && docType != "id_back" && docType != "selfie" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid doc type"})
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "file too large (max 10MB) or invalid multipart"})
+		return
+	}
+
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "file parameter is required"})
+		return
+	}
+	defer file.Close()
+
+	buf := make([]byte, 512)
+	n, _ := file.Read(buf)
+	contentType := http.DetectContentType(buf[:n])
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	ext := ""
+	switch contentType {
+	case "image/jpeg":
+		ext = "jpg"
+	case "image/png":
+		ext = "png"
+	}
+
+	if ext == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unsupported file format"})
+		return
+	}
+
+	key := fmt.Sprintf("kye/%s/%s.%s", user.ID, docType, ext)
+	if err := a.storage.Upload(ctx, key, file, contentType); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	update := bson.M{}
+	switch docType {
+	case "id_front":
+		update["$set"] = bson.M{"id_front_doc": key}
+	case "id_back":
+		update["$set"] = bson.M{"id_back_doc": key}
+	case "selfie":
+		update["$set"] = bson.M{"selfie_doc": key}
+	}
+
+	if err := a.store.UpdateUser(ctx, user.ID, update); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	updated := a.store.GetByID(ctx, user.ID)
+	if updated.IDFrontDoc != "" && updated.IDBackDoc != "" && updated.SelfieDoc != "" {
+		if err := a.store.UpdateUser(ctx, user.ID, bson.M{"$set": bson.M{"kye_status": models.KYCPendingApproval, "reviewer_id": "", "rejection_reason": ""}}); err != nil {
+			log.Printf("[KYE] failed to update status to pending: %v", err)
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "uploaded", "key": key})
+}
+
+// GET /auth/kyb-kye/pending
+func (a *Auth) GetPendingKYBKYESubmissions(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
+		return
+	}
+
+	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(a.internalServiceToken)) != 1 {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	ctx := r.Context()
+	users, err := a.store.GetPendingKYBKYE(ctx)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	type Submission struct {
+		UserID           string           `json:"user_id"`
+		Email            string           `json:"email"`
+		Role             models.Role      `json:"role"`
+		KYCStatus        models.KYCStatus `json:"kyc_status,omitempty"`
+		KYEStatus        models.KYCStatus `json:"kye_status,omitempty"`
+		IDFrontURL       string           `json:"id_front_url,omitempty"`
+		IDBackURL        string           `json:"id_back_url,omitempty"`
+		SelfieURL        string           `json:"selfie_url,omitempty"`
+		BusinessProofURL string           `json:"business_proof_url,omitempty"`
+	}
+
+	results := make([]Submission, 0, len(users))
+	for _, u := range users {
+		sub := Submission{
+			UserID:    u.ID,
+			Email:     u.Email,
+			Role:      u.Role,
+			KYCStatus: u.KYCStatus,
+			KYEStatus: u.KYEStatus,
+		}
+
+		if u.IDFrontDoc != "" {
+			sub.IDFrontURL, _ = a.storage.GetSignedURL(ctx, u.IDFrontDoc, 15*time.Minute)
+			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", "internal_reviewer", u.ID, fmt.Sprintf("generated signed url for IDFrontDoc key: %s", u.IDFrontDoc), handlerutil.GetClientIP(r))
+		}
+		if u.IDBackDoc != "" {
+			sub.IDBackURL, _ = a.storage.GetSignedURL(ctx, u.IDBackDoc, 15*time.Minute)
+			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", "internal_reviewer", u.ID, fmt.Sprintf("generated signed url for IDBackDoc key: %s", u.IDBackDoc), handlerutil.GetClientIP(r))
+		}
+		if u.SelfieDoc != "" {
+			sub.SelfieURL, _ = a.storage.GetSignedURL(ctx, u.SelfieDoc, 15*time.Minute)
+			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", "internal_reviewer", u.ID, fmt.Sprintf("generated signed url for SelfieDoc key: %s", u.SelfieDoc), handlerutil.GetClientIP(r))
+		}
+		if u.BusinessProofDoc != "" {
+			sub.BusinessProofURL, _ = a.storage.GetSignedURL(ctx, u.BusinessProofDoc, 15*time.Minute)
+			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", "internal_reviewer", u.ID, fmt.Sprintf("generated signed url for BusinessProofDoc key: %s", u.BusinessProofDoc), handlerutil.GetClientIP(r))
+		}
+
+		results = append(results, sub)
+	}
+
+	handlerutil.ShipSecurityEvent(ctx, "KYC_PENDING_LISTED", "auth-service", "internal_reviewer", "", "retrieved list of pending KYB/KYE applications", handlerutil.GetClientIP(r))
+
+	writeJSON(w, http.StatusOK, results)
+}
+
+// POST /auth/kyb-kye/review
+func (a *Auth) ReviewKYBKYESubmissions(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(a.internalServiceToken)) != 1 {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	var req struct {
+		UserID string `json:"user_id"`
+		Action string `json:"action"` // "approve" or "reject"
+		Reason string `json:"reason,omitempty"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON"})
+		return
+	}
+
+	if req.UserID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "user_id is required"})
+		return
+	}
+
+	if req.Action != "approve" && req.Action != "reject" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "action must be approve or reject"})
+		return
+	}
+
+	ctx := r.Context()
+	targetUser := a.store.GetByID(ctx, req.UserID)
+	if targetUser == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "user not found"})
+		return
+	}
+
+	isOwner := targetUser.Role == models.RoleOwner
+	isEmployee := targetUser.Role == models.RoleEmployee
+
+	if isOwner {
+		if targetUser.KYCStatus != models.KYCPendingApproval {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": "no pending KYB application for this owner"})
+			return
+		}
+	} else if isEmployee {
+		if targetUser.KYEStatus != models.KYCPendingApproval {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": "no pending KYE application for this employee"})
+			return
+		}
+	} else {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "specified user role cannot undergo KYB/KYE review"})
+		return
+	}
+
+	var finalStatus models.KYCStatus
+	if req.Action == "approve" {
+		finalStatus = models.KYCApproved
+	} else {
+		finalStatus = models.KYCRejected
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"reviewer_id":      "internal_reviewer",
+			"reviewed_at":      time.Now().UTC(),
+			"rejection_reason": req.Reason,
+		},
+	}
+
+	if isOwner {
+		update["$set"].(bson.M)["kyc_status"] = finalStatus
+	} else {
+		update["$set"].(bson.M)["kye_status"] = finalStatus
+	}
+
+	if err := a.store.UpdateUser(ctx, targetUser.ID, update); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	handlerutil.ShipSecurityEvent(ctx, "KYC_REVIEWED", "auth-service", "internal_reviewer", req.UserID, fmt.Sprintf("action: %s, reason: %s", req.Action, req.Reason), handlerutil.GetClientIP(r))
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "reviewed", "action": req.Action})
+}
+
+// GET /auth/documents/view?token=xxx
+func (a *Auth) ViewDocument(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
+		return
+	}
+
+	tokenStr := r.URL.Query().Get("token")
+	if tokenStr == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "token is required"})
+		return
+	}
+
+	key, err := a.storage.ValidateSignedURLToken(tokenStr)
+	if err != nil {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "invalid or expired token"})
+		return
+	}
+
+	handlerutil.ShipSecurityEvent(r.Context(), "DOCUMENT_VIEWED", "auth-service", "system", "", fmt.Sprintf("accessed document key: %s", key), handlerutil.GetClientIP(r))
+
+	file, err := a.storage.OpenFile(key)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "document not found"})
+		return
+	}
+	defer file.Close()
+
+	ext := filepath.Ext(key)
+	contentType := "application/octet-stream"
+	switch ext {
+	case ".jpg", ".jpeg":
+		contentType = "image/jpeg"
+	case ".png":
+		contentType = "image/png"
+	case ".pdf":
+		contentType = "application/pdf"
+	}
+
+	w.Header().Set("Content-Type", contentType)
+	if _, err := io.Copy(w, file); err != nil {
+		log.Printf("[VIEW] failed to stream document %s: %v", key, err)
+	}
 }

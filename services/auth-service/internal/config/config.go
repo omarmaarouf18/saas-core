@@ -18,6 +18,8 @@ type Config struct {
 	TLSCertPath          string
 	TLSKeyPath           string
 	TLSCAPath            string
+	StorageBaseDir       string
+	StorageBaseURL       string
 	RedisURI             string
 }
 
@@ -77,6 +79,16 @@ func Load() (*Config, error) {
 		appEnv = "local"
 	}
 
+	storageBaseDir := os.Getenv("STORAGE_BASE_DIR")
+	if storageBaseDir == "" {
+		storageBaseDir = "./data/documents"
+	}
+
+	storageBaseURL := os.Getenv("STORAGE_BASE_URL")
+	if storageBaseURL == "" {
+		storageBaseURL = "/api/v1"
+	}
+
 	return &Config{
 		Port:                 port,
 		MongoURI:             mongoURI,
@@ -91,5 +103,7 @@ func Load() (*Config, error) {
 		TLSKeyPath:           tlsKeyPath,
 		TLSCAPath:            tlsCAPath,
 		RedisURI:             redisURI,
+		StorageBaseDir:       storageBaseDir,
+		StorageBaseURL:       storageBaseURL,
 	}, nil
 }

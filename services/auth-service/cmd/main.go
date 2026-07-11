@@ -39,6 +39,7 @@ import (
 	"github.com/project/auth-service/internal/handlers"
 	"github.com/project/auth-service/internal/otp"
 	"github.com/project/auth-service/internal/otpcrypto"
+	"github.com/project/auth-service/internal/storage"
 	"github.com/project/auth-service/internal/store"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/shared/infra/ratelimit"
@@ -98,8 +99,14 @@ func main() {
 		log.Fatalf("[AUTH] Failed to connect to Redis: %v", err)
 	}
 
+	// Initialize local document storage for KYB/KYE
+	docStorage, err := storage.NewLocalStorage(cfg.StorageBaseDir, cfg.StorageBaseURL, cfg.JWTSecret)
+	if err != nil {
+		log.Fatalf("[AUTH] Failed to initialize storage: %v", err)
+	}
+
 	// Create handler group and register routes.
-	authHandlers := handlers.NewAuth(mongoStore, dispatcher, cfg, redisClient)
+	authHandlers := handlers.NewAuth(mongoStore, dispatcher, cfg, redisClient, docStorage)
 
 	mux := http.NewServeMux()
 

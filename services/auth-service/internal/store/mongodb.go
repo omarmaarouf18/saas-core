@@ -75,6 +75,31 @@ func (s *MongoDB) UpdateKYCStatus(ctx context.Context, userID string, status mod
 	return err
 }
 
+// UpdateUser applies an update query directly to the user record.
+func (s *MongoDB) UpdateUser(ctx context.Context, userID string, update bson.M) error {
+	_, err := s.users.UpdateOne(ctx, bson.M{"_id": userID}, update)
+	return err
+}
+
+// GetPendingKYBKYE returns all users with pending KYB or KYE approval status.
+func (s *MongoDB) GetPendingKYBKYE(ctx context.Context) ([]*models.User, error) {
+	filter := bson.M{
+		"$or": []bson.M{
+			{"kyc_status": models.KYCPendingApproval},
+			{"kye_status": models.KYCPendingApproval},
+		},
+	}
+	cursor, err := s.users.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	var results []*models.User
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
 // ensureIndexes creates unique and query-optimized indexes on all collections.
 func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 	// Users: unique email index.

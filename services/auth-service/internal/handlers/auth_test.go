@@ -5,9 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/project/auth-service/internal/config"
 	"github.com/project/auth-service/internal/models"
 	"github.com/project/auth-service/internal/otpcrypto"
+	"github.com/project/auth-service/internal/storage"
 	"github.com/project/auth-service/internal/store"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/redis/go-redis/v9"
@@ -144,7 +147,9 @@ func TestGetAuditLogAccessControl(t *testing.T) {
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	defer rdb.Close()
 
-	a := NewAuth(nil, nil, cfg, rdb)
+	tempDir := t.TempDir()
+	storeLoc, _ := storage.NewLocalStorage(tempDir, "/api/v1", os.Getenv("JWT_SECRET"))
+	a := NewAuth(nil, nil, cfg, rdb, storeLoc)
 
 	token1, _ := jwtutil.GenerateToken("tenant-1", "owner", "tenant-1", "t1@example.com")
 	token2, _ := jwtutil.GenerateToken("tenant-2", "owner", "tenant-2", "t2@example.com")
@@ -222,7 +227,9 @@ func setupTestAuth(t *testing.T) (*Auth, *store.MongoDB, func()) {
 
 	dispatcher := &mockOTPDispatcher{}
 
-	a := NewAuth(s, dispatcher, cfg, rdb)
+	tempDir := t.TempDir()
+	storeLoc, _ := storage.NewLocalStorage(tempDir, "/api/v1", cfg.JWTSecret)
+	a := NewAuth(s, dispatcher, cfg, rdb, storeLoc)
 	cleanup := func() {
 		if s != nil {
 			_ = s.DropDatabase(context.Background())
@@ -465,5 +472,267 @@ func TestAuthHandlers(t *testing.T) {
 	a.Refresh(rec, req)
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("Expected 401 Unauthorized for invalid Refresh token, got %d", rec.Code)
+	}
+}
+
+func createMultipartRequest(method, url, filename, contentType string, content []byte) (*http.Request, error) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("file", filename)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := part.Write(content); err != nil {
+		return nil, err
+	}
+	if err := writer.Close(); err != nil {
+		return nil, err
+	}
+	req := httptest.NewRequest(method, url, body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	return req, nil
+}
+
+func TestKYBKYEUploadAndReview(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+
+	// 1. Create owner and employee
+	owner := &models.User{
+		ID:          "owner-user",
+		Email:       "owner@example.com",
+		Password:    "password",
+		Role:        models.RoleOwner,
+		IsActive:    true,
+		IsConfirmed: true,
+	}
+	s.CreateUser(ctx, owner)
+
+	employee := &models.User{
+		ID:          "employee-user",
+		Email:       "employee@example.com",
+		Password:    "password",
+		Role:        models.RoleEmployee,
+		IsActive:    true,
+		IsConfirmed: true,
+		OwnerID:     "owner-user",
+	}
+	s.CreateUser(ctx, employee)
+
+	ownerToken, _ := jwtutil.GenerateToken(owner.ID, string(owner.Role), owner.ID, owner.Email)
+	employeeToken, _ := jwtutil.GenerateToken(employee.ID, string(employee.Role), owner.ID, employee.Email)
+
+	// 2. Test KYB upload authentication
+	// Try uploading unsupported format
+	req, _ := createMultipartRequest("POST", "/auth/kyb/upload?type=id_front", "test.txt", "text/plain", []byte("hello world"))
+	req.Header.Set("Authorization", "Bearer "+ownerToken)
+	rec := httptest.NewRecorder()
+	a.UploadKYB(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request for text file, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// Upload valid PNG for ID front
+	pngData := []byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82")
+	req, _ = createMultipartRequest("POST", "/auth/kyb/upload?type=id_front", "id_front.png", "image/png", pngData)
+	req.Header.Set("Authorization", "Bearer "+ownerToken)
+	rec = httptest.NewRecorder()
+	a.UploadKYB(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// Status should still be KYCNone since not all 4 are uploaded
+	u := s.GetByID(ctx, owner.ID)
+	if u.KYCStatus != models.KYCNone {
+		t.Errorf("Expected KYCStatus to be empty, got %s", u.KYCStatus)
+	}
+
+	// Upload ID back, selfie, and business proof (PDF)
+	req, _ = createMultipartRequest("POST", "/auth/kyb/upload?type=id_back", "id_back.png", "image/png", pngData)
+	req.Header.Set("Authorization", "Bearer "+ownerToken)
+	rec = httptest.NewRecorder()
+	a.UploadKYB(rec, req)
+
+	req, _ = createMultipartRequest("POST", "/auth/kyb/upload?type=selfie", "selfie.png", "image/png", pngData)
+	req.Header.Set("Authorization", "Bearer "+ownerToken)
+	rec = httptest.NewRecorder()
+	a.UploadKYB(rec, req)
+
+	pdfData := []byte("%PDF-1.4 test pdf content")
+	req, _ = createMultipartRequest("POST", "/auth/kyb/upload?type=business_proof", "proof.pdf", "application/pdf", pdfData)
+	req.Header.Set("Authorization", "Bearer "+ownerToken)
+	rec = httptest.NewRecorder()
+	a.UploadKYB(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for PDF business proof, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// Now status should be KYCPendingApproval
+	u = s.GetByID(ctx, owner.ID)
+	if u.KYCStatus != models.KYCPendingApproval {
+		t.Errorf("Expected KYCStatus to be pending, got %s", u.KYCStatus)
+	}
+
+	// 3. Test reviewer pending submissions listing
+	// Calling without X-Internal-Token -> 401
+	req = httptest.NewRequest("GET", "/auth/kyb-kye/pending", nil)
+	rec = httptest.NewRecorder()
+	a.GetPendingKYBKYESubmissions(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for pending list, got %d", rec.Code)
+	}
+
+	// Calling with X-Internal-Token -> 200
+	req = httptest.NewRequest("GET", "/auth/kyb-kye/pending", nil)
+	req.Header.Set("X-Internal-Token", a.internalServiceToken)
+	rec = httptest.NewRecorder()
+	a.GetPendingKYBKYESubmissions(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d", rec.Code)
+	}
+
+	var pendingList []struct {
+		UserID     string `json:"user_id"`
+		IDFrontURL string `json:"id_front_url"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&pendingList); err != nil {
+		t.Fatalf("Failed to decode pending list: %v", err)
+	}
+	if len(pendingList) != 1 || pendingList[0].UserID != owner.ID {
+		t.Errorf("Expected pending list to contain owner, got: %+v", pendingList)
+	}
+
+	// 4. Test document viewing
+	docURL := pendingList[0].IDFrontURL
+	uToken := docURL[strings.Index(docURL, "?token=")+7:]
+
+	// View with valid token -> 200
+	viewReq := httptest.NewRequest("GET", "/auth/documents/view?token="+uToken, nil)
+	viewRec := httptest.NewRecorder()
+	a.ViewDocument(viewRec, viewReq)
+	if viewRec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for document view, got %d", viewRec.Code)
+	}
+
+	// View with invalid token -> 403
+	viewReq = httptest.NewRequest("GET", "/auth/documents/view?token=invalid", nil)
+	viewRec = httptest.NewRecorder()
+	a.ViewDocument(viewRec, viewReq)
+	if viewRec.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden for invalid document view token, got %d", viewRec.Code)
+	}
+
+	// 5. Test Reviewing Submissions
+	// Rejecting owner without X-Internal-Token -> 401
+	reviewReqBody := map[string]string{
+		"user_id": owner.ID,
+		"action":  "reject",
+		"reason":  "blurry ID photo",
+	}
+	bReview, _ := json.Marshal(reviewReqBody)
+	req = httptest.NewRequest("POST", "/auth/kyb-kye/review", bytes.NewReader(bReview))
+	rec = httptest.NewRecorder()
+	a.ReviewKYBKYESubmissions(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for review, got %d", rec.Code)
+	}
+
+	// Rejecting owner with X-Internal-Token -> 200
+	req = httptest.NewRequest("POST", "/auth/kyb-kye/review", bytes.NewReader(bReview))
+	req.Header.Set("X-Internal-Token", a.internalServiceToken)
+	rec = httptest.NewRecorder()
+	a.ReviewKYBKYESubmissions(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for review action, got %d", rec.Code)
+	}
+
+	// Verify status is KYCRejected in DB
+	u = s.GetByID(ctx, owner.ID)
+	if u.KYCStatus != models.KYCRejected || u.RejectionReason != "blurry ID photo" {
+		t.Errorf("Expected KYCStatus to be rejected with reason, got status: %s, reason: %s", u.KYCStatus, u.RejectionReason)
+	}
+
+	// Check that owner can view their own rejection status and reason via GetUser
+	req = httptest.NewRequest("GET", "/auth/user?id="+ownerToken, nil)
+	rec = httptest.NewRecorder()
+	a.GetUser(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for GetUser, got %d", rec.Code)
+	}
+	var userDetails map[string]any
+	json.NewDecoder(rec.Body).Decode(&userDetails)
+	if userDetails["kyc_status"] != string(models.KYCRejected) || userDetails["rejection_reason"] != "blurry ID photo" {
+		t.Errorf("Owner GetUser response missing rejection details: %+v", userDetails)
+	}
+
+	// Move owner back to pending by uploading id_front again
+	req, _ = createMultipartRequest("POST", "/auth/kyb/upload?type=id_front", "id_front.png", "image/png", pngData)
+	req.Header.Set("Authorization", "Bearer "+ownerToken)
+	rec = httptest.NewRecorder()
+	a.UploadKYB(rec, req)
+
+	// Approve owner
+	reviewReqBody["action"] = "approve"
+	reviewReqBody["reason"] = ""
+	bReviewApproved, _ := json.Marshal(reviewReqBody)
+	req = httptest.NewRequest("POST", "/auth/kyb-kye/review", bytes.NewReader(bReviewApproved))
+	req.Header.Set("X-Internal-Token", a.internalServiceToken)
+	rec = httptest.NewRecorder()
+	a.ReviewKYBKYESubmissions(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for approve, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	u = s.GetByID(ctx, owner.ID)
+	if u.KYCStatus != models.KYCApproved {
+		t.Errorf("Expected KYCStatus to be approved, got %s", u.KYCStatus)
+	}
+
+	// 6. Test Employee KYE Flow
+	// Upload 3 docs for employee
+	req, _ = createMultipartRequest("POST", "/auth/kye/upload?type=id_front", "id_front.png", "image/png", pngData)
+	req.Header.Set("Authorization", "Bearer "+employeeToken)
+	rec = httptest.NewRecorder()
+	a.UploadKYE(rec, req)
+
+	req, _ = createMultipartRequest("POST", "/auth/kye/upload?type=id_back", "id_back.png", "image/png", pngData)
+	req.Header.Set("Authorization", "Bearer "+employeeToken)
+	rec = httptest.NewRecorder()
+	a.UploadKYE(rec, req)
+
+	req, _ = createMultipartRequest("POST", "/auth/kye/upload?type=selfie", "selfie.png", "image/png", pngData)
+	req.Header.Set("Authorization", "Bearer "+employeeToken)
+	rec = httptest.NewRecorder()
+	a.UploadKYE(rec, req)
+
+	// Employee status should now be pending
+	emp := s.GetByID(ctx, employee.ID)
+	if emp.KYEStatus != models.KYCPendingApproval {
+		t.Errorf("Expected KYEStatus to be pending, got %s", emp.KYEStatus)
+	}
+
+	// Approve employee
+	employeeReviewBody := map[string]string{
+		"user_id": employee.ID,
+		"action":  "approve",
+	}
+	bEmpReview, _ := json.Marshal(employeeReviewBody)
+	req = httptest.NewRequest("POST", "/auth/kyb-kye/review", bytes.NewReader(bEmpReview))
+	req.Header.Set("X-Internal-Token", a.internalServiceToken)
+	rec = httptest.NewRecorder()
+	a.ReviewKYBKYESubmissions(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for employee approve, got %d", rec.Code)
+	}
+
+	emp = s.GetByID(ctx, employee.ID)
+	if emp.KYEStatus != models.KYCApproved {
+		t.Errorf("Expected KYEStatus to be approved, got %s", emp.KYEStatus)
 	}
 }

@@ -134,6 +134,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Application Map** | Created a comprehensive reference document (docs/APPLICATION_MAP.md) detailing ports, databases, actor lifecycles, and connection flows. | `current` | Verified via document generation. ✅ |
 | **KYB/KYE Data Model** | Extended auth-service User model to support IDFrontDoc, IDBackDoc, SelfieDoc, BusinessProofDoc, and review metadata. | `current` | Verified via compilation. ✅ |
 | **KYB/KYE Local Storage** | Created local-disk storage implementation (securing document files on disk and generating short-lived signed token URLs). | `current` | Verified via compilation. ✅ |
+| **KYB/KYE Uploads & Reviews** | Implemented file validation, multipart uploads, pending submissions list, review gating, signed document views, and audit logging. | `current` | Verified via integration tests. ✅ |
+
 
 
 
@@ -171,6 +173,13 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 * **Rating Edits / Updates**
   * **Decision**: Editing or updating an existing rating is deliberately not allowed. The endpoint blocks duplicate ratings, and no PATCH/update rating endpoint is provided.
   * **Reasoning**: To prevent data manipulation. Allowing users to modify ratings later is flagged as a potential future feature with its own authorization checks.
+* **KYB/KYE Object Storage Provider**
+  * **Decision**: Local-disk storage is implemented for local development (storing files securely and generating short-lived view tokens).
+  * **Reasoning**: To prevent picking a cloud provider/credentials arbitrarily without user input. A future pass will wire a real S3/compatible provider behind the `storage.Storage` interface.
+* **Structured National ID Text Search**
+  * **Decision**: Storing national ID numbers as structured, searchable, or encrypted text to match/prevent duplicate accounts is not implemented.
+  * **Reasoning**: The ID number lives inside the uploaded document images. Extracting or indexing structured text is flagged for future fraud prevention passes.
+
 
 ### 3. Not Started Yet
 
@@ -207,6 +216,6 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: All Polish Pass items, audit security findings, and test coverage gaps are fully completed and verified. Awaiting next user instructions.
+* **Immediate Next Step**: KYB/KYE simplified document flow implemented and fully tested. Awaiting next user instructions.
 
 
