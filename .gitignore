@@ -11,3 +11,14 @@ docs/local/
 infrastructure/certs/*.key
 infrastructure/certs/*.crt
 infrastructure/certs/*.srl
+
+# Flutter Client Ignores
+/frontend/.dart_tool/
+/frontend/.flutter-plugins-dependencies
+/frontend/.pub-cache/
+/frontend/.pub/
+/frontend/build/
+/frontend/android/app/debug/
+/frontend/android/app/profile/
+/frontend/android/app/release/
+
