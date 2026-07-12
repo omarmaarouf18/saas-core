@@ -42,128 +42,13 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 
 ### 1. Done & Verified
 
-| Feature | Implementation Detail | Commit SHA | Verification |
-| :--- | :--- | :--- | :--- |
-| **Bcrypt Password Hashing** | Replaced plaintext comparison in auth-service with bcrypt password hashing. | `48ece45eb6b0282194c2f7026a7a85c8fbd79917` | Verified in `auth-service/internal/handlers/auth.go`. ✅ |
-| **Dual-Key rate limiting & lockouts** | Enforced lockout limits in `auth-service` on client IP and email with exponential backoff. | `04185514a931e597de3e97da46b6842a691090db` | Verified in `auth-service/internal/handlers/limiter.go`. ✅ |
-| **OTP TTL Expiry & Cleanup** | Added a 5-minute TTL to OTPs and a background database sweep sweeping expired OTPs every minute. | `f3f313b97c034a4118aba1760403bf1a47911df1` | Verified in `auth-service/internal/store/mongodb.go`. ✅ |
-| **Owner KYC Status Checks** | Restricts service creation, deposits, and job tracking to owners with approved KYC status. | `49d453c92742deb58bf31e806da7f2a084ea1be2` | Verified in `user-service/internal/handlers/handlers.go`. ✅ |
-| **JSON Injection Fix in WebSocket**| Replaced manual string concatenation in chat broadcast with `json.Marshal`. | `d8e9f762fb9d3dff1e054285ef6e9c0954f35e4a` | Verified in `chat-service/internal/chat/hub.go`. ✅ |
-| **WebSocket Channel Authorization** | Restricts channel subscriptions to job participants (Owner or Employee) by querying user-service. | `54750d0711e56a2afc48508aed44c2515ac39433` | Verified in `chat-service/internal/handlers/chat.go`. ✅ |
-| **SSE Stream Authentication** | Enforces SSE connection token verification by querying auth-service. | `5dd15e27c7cc6f216b15e907e0eb2c1cbb26cde9` | Verified in `notification-service/internal/handlers/handlers.go`. ✅ |
-| **CORS Origins Restriction** | Restricted notification SSE stream CORS from wildcard `*` to configured `ALLOWED_ORIGIN`. | `49752a64c4a641153087c7e95958d37e33f3bc05` | Verified in `notification-service/internal/handlers/handlers.go`. ✅ |
-| **X-Forwarded-For Spoof Hardening**| Edge api-gateway overwrites X-Forwarded-For. Gateway limiter keys off `RemoteAddr` directly. | `aebb580fb7b5a9c7520034e865153fc08681cfb5` | Verified in `api-gateway/internal/middleware/limiter.go` and `proxy.go`. ✅ |
-| **COD Platform Fee Overdraft** | Deducts 15% platform fee directly from Owner e-wallet upon job completion, allowing negative balances. | `6edf1b7c825b37cc15b16dbc348026c4b689724b` | Verified in `user-service/internal/store/mongodb.go`. ✅ |
-| **Tenant Subscription Gating** | POST /users/subscription upgrades require requester_id == tenant_id, auth-service check, and maps paid to pending_payment (requires manual activation). | `current` | Verified in `user-service/internal/handlers/handlers.go`. ✅ |
-| **WebSocket Message Authorization** | Gated chat message broadcasts by canAccessChannel in WebSocket readPump. | `current` | Verified in `chat-service/internal/handlers/chat.go`. ✅ |
-| **Rating & Comment System** | Rating and comment submissions on completed jobs with average rating queries. | `6edf1b7c825b37cc15b16dbc348026c4b689724b` | Verified in `user-service/internal/handlers/handlers.go`. ✅ |
-| **Cryptographically Signed JWTs** | Replaced raw user ID tokens with signed HS256 JWT tokens containing user ID, role, tenant ID, and email. Added POST /auth/refresh to reissue tokens. Downstream services validate JWT signatures and expiry locally. | `current` | Verified in `auth-service`, `chat-service`, `notification-service`, `user-service`. ✅ |
-| **auth-service XFF Trust Boundary Hardening** | auth-service rate limiter only trusts XFF headers if verified by the dynamic GATEWAY_SECRET header injected by the API Gateway. | `current` | Verified in `auth-service` getClientIP. ✅ |
-| **Signup-time Anti-spam OTP** | Gated signup with OTP confirmation. Accounts are created as unconfirmed (is_confirmed = false) and login is rejected until the signup OTP is verified. | `current` | Verified in `auth-service` Signup, Login, and VerifyOTP. ✅ |
-| **Automated Test Coverage** | Added table-driven and integration unit tests covering bcrypt hashing, rate limiter lockout, OTP expiry in auth-service, KYC gating, COD validation, subscription matching in user-service, and websocket channel access control in chat-service. | `current` | Verified via `go test` in all three services. All 3 suites pass successfully (16 total integration/unit test cases, 0 skipped). ✅ |
-| **JWT Secret Hardening** | Removed hardcoded JWT secret fallback in all 4 services. Services now require JWT_SECRET env var on startup and fail-fast if it's missing. | `current` | Verified via startup crash test. ✅ |
-| **Gateway Secret Hardening** | Removed hardcoded X-Gateway-Secret. Both api-gateway and auth-service now require the GATEWAY_SECRET env var on startup and fail-fast if it's missing. | `current` | Verified via startup crash test. ✅ |
-| **Job Endpoint Access Control** | Secured GET /users/jobs/get?id= by strictly restricting access to matching owners/employees (validated via JWT) or trusted internal clients via X-Internal-Token header. Closed resolveToken() unverified bypass. | `current` | Verified via user-service integration test and cURL validation. ✅ |
-| **Employee Toggle Authentication** | Fixed POST /auth/employee/toggle security gap by requiring the owner's password and verifying it with bcrypt before freezing or activating employees. | `current` | Verified via auth-service compilation. ✅ |
-| **Audit Log Access Control** | Secured GET /auth/audit-log by strictly requiring requester_id query param and restricting access to matching tenant owner (validated via JWT). Closed unverified bypass. | `current` | Verified via auth-service unit test and cURL validation. ✅ |
-| **GetUser Endpoint Access Control** | Secured GET /auth/user by requiring `X-Internal-Token` for internal service-to-service calls (chat/notification/user-service) and valid signed JWT for external callers. Removed raw-ID passthrough. Updated all 4 internal callers to inject `X-Internal-Token` header. Added `INTERNAL_SERVICE_TOKEN` fail-fast to notification-service. | `current` | Verified via compilation and existing test suites (all pass). ✅ |
-| **Hardcoded Secrets Audit** | Audited entire codebase for hardcoded secrets. Removed JWT fallbacks, X-Gateway-Secret, and confirmed via repo-wide regex audit that no other secrets exist. | `current` | Verified via repo-wide regex audit. ✅ |
-| **Gateway Internal Token Stripping** | Edge api-gateway removes any client-supplied `X-Internal-Token` before proxying requests to backends. | `current` | Verified in api-gateway proxy.go. ✅ |
-| **CompleteJob Authorization Check** | Enforced user/employee role identity and internal X-Internal-Token verification on CompleteJob. | `current` | Verified via user-service unit tests. ✅ |
-| **Notification Auth Enforcement** | Enforced X-Internal-Token authentication on Send and BroadcastJobAlert endpoints in notification-service. | `current` | Verified via notification-service unit tests. ✅ |
-| **GetHistory Channel-Access Check** | Enforced requester_id (JWT token) and channel access (canAccessChannel) validation on GetHistory in chat-service. | `current` | Verified via chat-service unit tests. ✅ |
-| **Employee Toggle Lockout** | Enforced limiter lockout and failure recording on failed owner password check in ToggleEmployee. | `current` | Verified via compilation and logic flow analysis. ✅ |
-| **Token Refresh 7-Day Limit** | Gated token refresh to reject tokens that expired more than 7 days ago. | `current` | Verified via compilation and logic flow analysis. ✅ |
-| **ID and OTP Cryptographic Hardening** | Removed weak fallbacks from generateID and generate4DigitOTP, causing fail-fast logs on failure. | `current` | Verified via compilation. ✅ |
-| **WebSocket Origin Verification** | Restricted WebSocket connection origins to match configured ALLOWED_ORIGIN in chat-service. | `current` | Verified via compilation and test suites. ✅ |
-| **WalletDeposit Upper Limit** | Enforced a maximum limit of 1,000,000 on WalletDeposit amounts in user-service. | `current` | Verified via user-service unit tests. ✅ |
-| **Host Ports Stripping** | Removed host port exposures for internal services in docker-compose.yml, replacing with expose. | `current` | Verified docker-compose.yml configuration. ✅ |
-| **OTP AES Key Configuration** | Added OTP_AES_KEY variable to docker-compose.yml, .env.example, and .env.local. | `current` | Verified environment configurations. ✅ |
-| **Job Cancellation & Escrow Refund** | Added job status cancelled, CancelJob handler, validation checks, and automatic escrow refund to owner. | `current` | Verified via user-service integration tests. ✅ |
-| **Graceful Employee Deactivation** | Gated new job assignment in TrackJob behind employee IsActive lookup. Allowed deactivated employees to complete existing in-progress jobs. | `current` | Verified via auth-service and user-service integration tests. ✅ |
+The detailed project history is distributed across categorized changelog files. Please consult the specific category files for complete details (including file/line references, commit SHAs, and verification details):
 
-
-
-
-
-
-
-
-
-
-| **Live Location Tracking** | Broadcast real-time employee locations via WebSockets to owner and client. | `current` | Verified via integration tests and E2E simulation. ✅ |
-| **Membership Tier Enforcement** | Gated UpdateJobLocation location tracking endpoint behind PlanPaid check on Job Owner. | `current` | Verified via unit and integration tests. ✅ |
-| **Per-Job Location Throttling** | Throttled consecutive location updates under 3s per Job ID with in-flight reservations and rollback. | `current` | Verified via unit, race, and integration tests. ✅ |
-| **CloudWatch Security Log Shipping** | Structured JSON log event to CloudWatch Logs for security-relevant blocked events in auth, user, and chat services. | `current` | Verified via unit, race, and log shipping tests. ✅ |
-| **mTLS Stage 1: Dev CA & Certs** | Created generate-certs.sh script generating Root CA and leaf certificates for local dev. | `current` | Verified via cert creation and gitignore validation. ✅ |
-| **mTLS Stage 2: TLS Server Config** | Configured auth, chat, notification, and user services to serve HTTPS with client cert verification (tls.RequireAndVerifyClientCert). | `current` | Verified via compilation and test execution. ✅ |
-| **mTLS Stage 3: TLS Client Config** | Updated internal HTTP clients in api-gateway, chat, notification, and user services to use custom TLS client configuration with hostname verification and local root CA trust. | `current` | Verified via compilation and test execution. ✅ |
-| **mTLS Stage 4: Docker & Env Wiring** | Configured docker-compose.yml to mount local certs and keys, updated service URLs to HTTPS, and updated env templates. | `current` | Verified via configuration review. ✅ |
-| **mTLS Stage 5: Verification** | Created and ran an integration test (mtls_integration_test.go) verifying handshake rejection of missing/untrusted client certs and success of trusted ones. | `current` | Verified via integration tests. ✅ |
-| **Redis Rate Limiting Stage 1: Wrapper & Config** | Created shared ratelimit package wrapping Redis client with atomic Lua scripts, and updated all 5 config packages to load REDIS_URI. | `current` | Verified via compilation and unit tests. ✅ |
-| **Redis Rate Limiting Stage 2: api-gateway** | Migrated the api-gateway edge rate limiter to use the Redis-backed wrapper. | `current` | Verified via compilation. ✅ |
-| **Redis Rate Limiting Stage 3: auth-service** | Migrated the auth-service dual-key (IP + email) rate limiter to use Redis. | `current` | Verified via compilation and test execution. ✅ |
-| **Redis Rate Limiting Stage 4: chat, user & notification services** | Migrated rate limiters in chat, user, and notification services to use Redis-backed wrapper. | `current` | Verified via compilation and test execution. ✅ |
-| **Redis Rate Limiting Stage 5: Failure Mode** | Implemented fail-closed behaviors for Redis runtime unavailability, with audit logging and rate restriction. | `current` | Verified via compilation and code review. ✅ |
-| **Redis Rate Limiting Stage 6: Verification & Concurrency Tests** | Created concurrency and cross-instance rate limit tests, and ran full test suite verification. | `current` | Verified via integration and concurrency tests. ✅ |
-| **Resilience Stage 1: Wrapper Client** | Created shared resilience package implementing retry-with-backoff + jitter and circuit-breaker wrapper around http.Client. | `current` | Verified via compilation. ✅ |
-| **Resilience Stage 2 & 3: Wiring & Fail-Closed Errors** | Wired separate circuit breaker and retry instances into internal HTTP clients and proxies, returning 503 Service Unavailable and failing closed on timeouts. | `current` | Verified via compilation and test execution. ✅ |
-| **Resilience Stage 4: Observability & Health Integration** | Configured structured logs for circuit breaker transitions and exposed dependency breaker status on /health endpoints. | `current` | Verified via compilation and test execution. ✅ |
-| **Resilience Stage 5: Resilience Tests & Verification** | Created unit and integration tests verifying retry limit capping, circuit breaker trip/recovery transitions, and fail-closed security properties. | `current` | Verified via integration tests. ✅ |
-| **Prevent Duplicate Ratings** | Added compound unique index on ratings for (job_id, rated_by) and returned 409 Conflict when duplicate rating is submitted (identified during schema review). | `current` | Verified via integration tests. ✅ |
-| **CI Integration (MongoDB & Redis)** | Configured MongoDB and Redis service containers in GitHub Actions to enable full, non-skipped execution of microservice integration tests. | `current` | Verified via workflow configuration. ✅ |
-| **Gitignore Precision Fix** | Added precise root-level /cmd ignore rule to `.gitignore` to prevent stray binaries from being tracked while keeping sub-level cmd directories tracked. | `current` | Verified using git check-ignore. ✅ |
-| **JWT Util Extraction** | Consolidated duplicate `jwt.go` files across auth, chat, notification, and user services into `shared/infra/jwtutil`. | `current` | Verified via compilation and test execution. ✅ |
-| **Complaint Routing Stage 1: Data Model** | Added database collections, Go model structs, and indexes for support agents and complaint tickets in chat-service store. | `current` | Verified via compilation. ✅ |
-| **Complaint Routing Stage 2: Atomic Agent Assignment** | Implemented atomic support agent assignment using MongoDB FindOneAndUpdate to prevent race conditions on concurrent ticket creation. | `current` | Verified via compilation. ✅ |
-| **Complaint Routing Stage 3, 4, 5: WebSocket & HTTP Wiring** | Wired complaint ticket channel/access checks into chat WebSocket/Hub, added structured security audit logging, and applied Redis rate limiter. | `current` | Verified via compilation. ✅ |
-| **Complaint Routing Stage 6: Concurrency & Access Tests** | Added unit and concurrency tests proving atomic support agent assignment, queueing, and IDOR mitigation for ticket access. | `current` | Verified via test execution. ✅ |
-| **Complaint Routing Stage 7: Documentation** | Documented complaint routing design and atomic assignment decisions in DESIGN.md and AI_CONTEXT.md. | `current` | Verified via review. ✅ |
-| **Support Agent Onboarding CLI Tool** | Created out-of-band CLI tool to onboard support agents, generating secure tokens and preventing running attack surface on chat-service. | `current` | Verified via unit and integration tests. ✅ |
-| **limiter/security_logs Dedup** | Extracted duplicate `limiter.go` and `security_logs.go` implementation from microservices into shared `infra/handlerutil`. | `current` | Verified via test execution. ✅ |
-| **api-gateway Test Coverage** | Added comprehensive unit/integration test coverage proving route matching, rate limiting, and security header stripping/injection in api-gateway. | `current` | Verified via test execution. ✅ |
-| **External HTTPS Listener on api-gateway** | Migrated the gateway's external port to listen on HTTPS with separate EXTERNAL_TLS credentials, keeping public and internal mTLS domains distinct. | `current` | Verified via compilation and configuration. ✅ |
-| **SimulateEmployeeAction Authorization** | Enforced JWT authentication on simulate employee action endpoint, validating that the token matches the requested employee email. | `current` | Verified via unit test. ✅ |
-| **Mask plain text tokens in logs** | Replaced raw JWT / session tokens with authenticated IDs (userID / tenantID) in stdout logs to prevent credential leakage. | `current` | Verified via grep checks. ✅ |
-| **Gateway Info & Health Leak Fix** | Stripped routes/topology leakage from public / endpoint and reduced public /health endpoint to basic status, moving detailed metrics to authenticated /health/internal. | `current` | Verified via compilation and route checks. ✅ |
-| **Constant-time internal token compare** | Replaced standard string comparison operators with subtle.ConstantTimeCompare in all X-Internal-Token verification checks to mitigate timing attacks. | `current` | Verified via test execution. ✅ |
-| **CORS headers on SSE stream errors** | Moved Access-Control-Allow-Origin header injection to the top of SSE Stream handler so that connection error responses are readable by browser JS. | `current` | Verified via compilation and test execution. ✅ |
-| **shared/infra in CI Matrix** | Added shared/infra to .github/workflows/ci.yml test matrix using path-based working directories to ensure shared module changes are tested on every PR/push. | `current` | Verified via workflow configuration. ✅ |
-| **Removed dead SSE Done channel** | Deleted the unused Done channel field from SSEClient and its initialization as client connection disconnects are already handled gracefully by the context and Send channel closure. | `current` | Verified via compilation and test execution. ✅ |
-| **Random Notification IDs** | Switched notification ID generation from UnixNano timestamp to crypto/rand-based 16-byte random hex string to eliminate collision risks. | `current` | Verified via compilation and test execution. ✅ |
-| **auth-service Test Coverage** | Added comprehensive integration tests for Signup, Login, VerifyOTP, ToggleEmployee, SimulateEmployeeAction, GetUser, and Refresh handlers. | `current` | Verified via test execution. ✅ |
-| **chat-service Test Coverage** | Added comprehensive integration tests for HandleWebSocket (failure paths), BroadcastLocation, and HandleCreateTicket handlers. | `current` | Verified via test execution. ✅ |
-| **notification-service Test Coverage** | Added comprehensive integration tests for SSE Stream and verifyAndResolve handlers. | `current` | Verified via test execution. ✅ |
-| **user-service Test Coverage** | Added comprehensive integration tests for ListServices, GetWallet, GetLedger, GetPlatformConfig, and GetRatings handlers. | `current` | Verified via test execution. ✅ |
-| **Application Map** | Created a comprehensive reference document (docs/APPLICATION_MAP.md) detailing ports, databases, actor lifecycles, and connection flows. | `current` | Verified via document generation. ✅ |
-| **KYB/KYE Data Model** | Extended auth-service User model to support IDFrontDoc, IDBackDoc, SelfieDoc, BusinessProofDoc, and review metadata. | `current` | Verified via compilation. ✅ |
-| **KYB/KYE Local Storage** | Created local-disk storage implementation (securing document files on disk and generating short-lived signed token URLs). | `current` | Verified via compilation. ✅ |
-| **KYB/KYE Uploads & Reviews** | Implemented file validation, multipart uploads, pending submissions list, review gating, signed document views, and audit logging. | `current` | Verified via integration tests. ✅ |
-| **Consolidated Token Helper** | Pulled duplicate cryptographically secure token generation into shared/infra/jwtutil. | `current` | Verified via test execution. ✅ |
-| **Reviewers Collection** | Added reviewers collection, unique token indexing, and query/insert methods in auth-service store. | `current` | Verified via compilation. ✅ |
-| **Reviewer Identity Gap Fix** | Added reviewer token auth to pending, review, and view doc endpoints, populated ReviewerID on review, and logged reviewer ID in security logs. | `current` | Verified via auth-service integration tests. ✅ |
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+*   [Security Fixes](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/changelog/security-fixes.md) — 45 vulnerabilities found and fixed (e.g. mTLS, JWT signatures, timing attacks, IDOR checks, atomic agent assignment).
+*   [New Features](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/changelog/new-features.md) — 20 net-new capabilities (e.g. support ticketing, KYB uploads, location tracking, Redis rate limiters).
+*   [Infrastructure & Tooling](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/changelog/infrastructure.md) — 15 tooling, CI, module refactoring, and onboarding CLI tools.
+*   [Bug Fixes](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/changelog/bug-fixes.md) — 6 corrections to existing non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs).
+*   [Documentation](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/changelog/documentation.md) — 2 documentation-only updates (e.g. Application Map).
 
 ### 2. Explicitly Deferred by Decision
 

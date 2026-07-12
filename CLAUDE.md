@@ -5,6 +5,8 @@ It has the current project state, what's done, what's deferred, what's
 still open, and the immediate next task. Update it in the same commit as
 any change you make — do not leave it stale.
 
+Detailed history lives in [docs/changelog/](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/changelog/), split by category — consult the relevant category file when investigating something specific, don't read all of them by default.
+
 ## Auto-commit policy
 After completing any change, immediately git add, commit with a specific
 message, and push to origin/logic-exploitation. Do not batch multiple
