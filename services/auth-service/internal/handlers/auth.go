@@ -1138,7 +1138,8 @@ func (a *Auth) GetPendingKYBKYESubmissions(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(a.internalServiceToken)) != 1 {
+	reviewer, err := a.authenticateReviewer(r)
+	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}
@@ -1174,25 +1175,25 @@ func (a *Auth) GetPendingKYBKYESubmissions(w http.ResponseWriter, r *http.Reques
 
 		if u.IDFrontDoc != "" {
 			sub.IDFrontURL, _ = a.storage.GetSignedURL(ctx, u.IDFrontDoc, 15*time.Minute)
-			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", "internal_reviewer", u.ID, fmt.Sprintf("generated signed url for IDFrontDoc key: %s", u.IDFrontDoc), handlerutil.GetClientIP(r))
+			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("generated signed url for IDFrontDoc key: %s", u.IDFrontDoc), handlerutil.GetClientIP(r))
 		}
 		if u.IDBackDoc != "" {
 			sub.IDBackURL, _ = a.storage.GetSignedURL(ctx, u.IDBackDoc, 15*time.Minute)
-			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", "internal_reviewer", u.ID, fmt.Sprintf("generated signed url for IDBackDoc key: %s", u.IDBackDoc), handlerutil.GetClientIP(r))
+			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("generated signed url for IDBackDoc key: %s", u.IDBackDoc), handlerutil.GetClientIP(r))
 		}
 		if u.SelfieDoc != "" {
 			sub.SelfieURL, _ = a.storage.GetSignedURL(ctx, u.SelfieDoc, 15*time.Minute)
-			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", "internal_reviewer", u.ID, fmt.Sprintf("generated signed url for SelfieDoc key: %s", u.SelfieDoc), handlerutil.GetClientIP(r))
+			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("generated signed url for SelfieDoc key: %s", u.SelfieDoc), handlerutil.GetClientIP(r))
 		}
 		if u.BusinessProofDoc != "" {
 			sub.BusinessProofURL, _ = a.storage.GetSignedURL(ctx, u.BusinessProofDoc, 15*time.Minute)
-			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", "internal_reviewer", u.ID, fmt.Sprintf("generated signed url for BusinessProofDoc key: %s", u.BusinessProofDoc), handlerutil.GetClientIP(r))
+			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("generated signed url for BusinessProofDoc key: %s", u.BusinessProofDoc), handlerutil.GetClientIP(r))
 		}
 
 		results = append(results, sub)
 	}
 
-	handlerutil.ShipSecurityEvent(ctx, "KYC_PENDING_LISTED", "auth-service", "internal_reviewer", "", "retrieved list of pending KYB/KYE applications", handlerutil.GetClientIP(r))
+	handlerutil.ShipSecurityEvent(ctx, "KYC_PENDING_LISTED", "auth-service", reviewer.ID, "", "retrieved list of pending KYB/KYE applications", handlerutil.GetClientIP(r))
 
 	writeJSON(w, http.StatusOK, results)
 }
@@ -1204,7 +1205,8 @@ func (a *Auth) ReviewKYBKYESubmissions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(a.internalServiceToken)) != 1 {
+	reviewer, err := a.authenticateReviewer(r)
+	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}
@@ -1264,7 +1266,7 @@ func (a *Auth) ReviewKYBKYESubmissions(w http.ResponseWriter, r *http.Request) {
 
 	update := bson.M{
 		"$set": bson.M{
-			"reviewer_id":      "internal_reviewer",
+			"reviewer_id":      reviewer.ID,
 			"reviewed_at":      time.Now().UTC(),
 			"rejection_reason": req.Reason,
 		},
@@ -1281,7 +1283,7 @@ func (a *Auth) ReviewKYBKYESubmissions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handlerutil.ShipSecurityEvent(ctx, "KYC_REVIEWED", "auth-service", "internal_reviewer", req.UserID, fmt.Sprintf("action: %s, reason: %s", req.Action, req.Reason), handlerutil.GetClientIP(r))
+	handlerutil.ShipSecurityEvent(ctx, "KYC_REVIEWED", "auth-service", reviewer.ID, req.UserID, fmt.Sprintf("action: %s, reason: %s", req.Action, req.Reason), handlerutil.GetClientIP(r))
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "reviewed", "action": req.Action})
 }
@@ -1290,6 +1292,12 @@ func (a *Auth) ReviewKYBKYESubmissions(w http.ResponseWriter, r *http.Request) {
 func (a *Auth) ViewDocument(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
+		return
+	}
+
+	reviewer, err := a.authenticateReviewer(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}
 
@@ -1305,7 +1313,7 @@ func (a *Auth) ViewDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handlerutil.ShipSecurityEvent(r.Context(), "DOCUMENT_VIEWED", "auth-service", "system", "", fmt.Sprintf("accessed document key: %s", key), handlerutil.GetClientIP(r))
+	handlerutil.ShipSecurityEvent(r.Context(), "DOCUMENT_VIEWED", "auth-service", reviewer.ID, "", fmt.Sprintf("accessed document key: %s", key), handlerutil.GetClientIP(r))
 
 	file, err := a.storage.OpenFile(key)
 	if err != nil {
@@ -1329,4 +1337,44 @@ func (a *Auth) ViewDocument(w http.ResponseWriter, r *http.Request) {
 	if _, err := io.Copy(w, file); err != nil {
 		log.Printf("[VIEW] failed to stream document %s: %v", key, err)
 	}
+}
+
+// authenticateReviewer verifies the reviewer's credentials.
+// It checks both the X-Internal-Token and the X-Reviewer-Token headers / query params.
+// Defaulting to requiring both as the safer option (internal network context + reviewer token).
+func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
+	// FLAGGED: Operationally, KYB/KYE reviews could be performed by internal staff via an internal network
+	// or remote staff over HTTPS. As it is unclear whether remote access is required without the internal token,
+	// we default to the safer option of requiring BOTH the X-Internal-Token (internal network context)
+	// and the reviewer token (X-Reviewer-Token).
+
+	// 1. Verify X-Internal-Token
+	internalToken := r.Header.Get("X-Internal-Token")
+	if internalToken == "" {
+		internalToken = r.URL.Query().Get("internal_token")
+	}
+	if subtle.ConstantTimeCompare([]byte(internalToken), []byte(a.internalServiceToken)) != 1 {
+		return nil, errors.New("unauthorized internal token")
+	}
+
+	// 2. Verify Reviewer Token
+	reviewerToken := r.Header.Get("X-Reviewer-Token")
+	if reviewerToken == "" {
+		reviewerToken = r.URL.Query().Get("reviewer_token")
+	}
+	if reviewerToken == "" {
+		return nil, errors.New("missing reviewer token")
+	}
+
+	ctx := r.Context()
+	rev, err := a.store.GetReviewerByToken(ctx, reviewerToken)
+	if err != nil {
+		return nil, errors.New("invalid reviewer token")
+	}
+
+	if subtle.ConstantTimeCompare([]byte(rev.Token), []byte(reviewerToken)) != 1 {
+		return nil, errors.New("invalid reviewer token")
+	}
+
+	return rev, nil
 }

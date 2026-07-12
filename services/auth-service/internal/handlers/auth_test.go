@@ -579,6 +579,16 @@ func TestKYBKYEUploadAndReview(t *testing.T) {
 		t.Errorf("Expected KYCStatus to be pending, got %s", u.KYCStatus)
 	}
 
+	// Onboard a test reviewer
+	reviewer := &models.Reviewer{
+		ID:    "reviewer_test_123",
+		Name:  "Test Reviewer",
+		Token: "test-reviewer-token-abc",
+	}
+	if err := s.AddReviewer(ctx, reviewer); err != nil {
+		t.Fatalf("failed to add test reviewer: %v", err)
+	}
+
 	// 3. Test reviewer pending submissions listing
 	// Calling without X-Internal-Token -> 401
 	req = httptest.NewRequest("GET", "/auth/kyb-kye/pending", nil)
@@ -588,9 +598,19 @@ func TestKYBKYEUploadAndReview(t *testing.T) {
 		t.Errorf("Expected 401 Unauthorized for pending list, got %d", rec.Code)
 	}
 
-	// Calling with X-Internal-Token -> 200
+	// Calling with X-Internal-Token but without X-Reviewer-Token -> 401
 	req = httptest.NewRequest("GET", "/auth/kyb-kye/pending", nil)
 	req.Header.Set("X-Internal-Token", a.internalServiceToken)
+	rec = httptest.NewRecorder()
+	a.GetPendingKYBKYESubmissions(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for pending list without reviewer token, got %d", rec.Code)
+	}
+
+	// Calling with both X-Internal-Token and X-Reviewer-Token -> 200
+	req = httptest.NewRequest("GET", "/auth/kyb-kye/pending", nil)
+	req.Header.Set("X-Internal-Token", a.internalServiceToken)
+	req.Header.Set("X-Reviewer-Token", reviewer.Token)
 	rec = httptest.NewRecorder()
 	a.GetPendingKYBKYESubmissions(rec, req)
 	if rec.Code != http.StatusOK {
@@ -612,9 +632,19 @@ func TestKYBKYEUploadAndReview(t *testing.T) {
 	docURL := pendingList[0].IDFrontURL
 	uToken := docURL[strings.Index(docURL, "?token=")+7:]
 
-	// View with valid token -> 200
+	// View without tokens -> 401
 	viewReq := httptest.NewRequest("GET", "/auth/documents/view?token="+uToken, nil)
 	viewRec := httptest.NewRecorder()
+	a.ViewDocument(viewRec, viewReq)
+	if viewRec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for document view without tokens, got %d", viewRec.Code)
+	}
+
+	// View with valid tokens -> 200
+	viewReq = httptest.NewRequest("GET", "/auth/documents/view?token="+uToken, nil)
+	viewReq.Header.Set("X-Internal-Token", a.internalServiceToken)
+	viewReq.Header.Set("X-Reviewer-Token", reviewer.Token)
+	viewRec = httptest.NewRecorder()
 	a.ViewDocument(viewRec, viewReq)
 	if viewRec.Code != http.StatusOK {
 		t.Errorf("Expected 200 OK for document view, got %d", viewRec.Code)
@@ -622,6 +652,8 @@ func TestKYBKYEUploadAndReview(t *testing.T) {
 
 	// View with invalid token -> 403
 	viewReq = httptest.NewRequest("GET", "/auth/documents/view?token=invalid", nil)
+	viewReq.Header.Set("X-Internal-Token", a.internalServiceToken)
+	viewReq.Header.Set("X-Reviewer-Token", reviewer.Token)
 	viewRec = httptest.NewRecorder()
 	a.ViewDocument(viewRec, viewReq)
 	if viewRec.Code != http.StatusForbidden {
@@ -629,7 +661,7 @@ func TestKYBKYEUploadAndReview(t *testing.T) {
 	}
 
 	// 5. Test Reviewing Submissions
-	// Rejecting owner without X-Internal-Token -> 401
+	// Rejecting owner without tokens -> 401
 	reviewReqBody := map[string]string{
 		"user_id": owner.ID,
 		"action":  "reject",
@@ -643,19 +675,32 @@ func TestKYBKYEUploadAndReview(t *testing.T) {
 		t.Errorf("Expected 401 Unauthorized for review, got %d", rec.Code)
 	}
 
-	// Rejecting owner with X-Internal-Token -> 200
+	// Rejecting owner with only X-Internal-Token -> 401
 	req = httptest.NewRequest("POST", "/auth/kyb-kye/review", bytes.NewReader(bReview))
 	req.Header.Set("X-Internal-Token", a.internalServiceToken)
 	rec = httptest.NewRecorder()
 	a.ReviewKYBKYESubmissions(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Errorf("Expected 200 OK for review action, got %d", rec.Code)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for review without reviewer token, got %d", rec.Code)
 	}
 
-	// Verify status is KYCRejected in DB
+	// Rejecting owner with both X-Internal-Token and X-Reviewer-Token -> 200
+	req = httptest.NewRequest("POST", "/auth/kyb-kye/review", bytes.NewReader(bReview))
+	req.Header.Set("X-Internal-Token", a.internalServiceToken)
+	req.Header.Set("X-Reviewer-Token", reviewer.Token)
+	rec = httptest.NewRecorder()
+	a.ReviewKYBKYESubmissions(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for review action, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// Verify status is KYCRejected in DB and reviewer_id is recorded
 	u = s.GetByID(ctx, owner.ID)
 	if u.KYCStatus != models.KYCRejected || u.RejectionReason != "blurry ID photo" {
 		t.Errorf("Expected KYCStatus to be rejected with reason, got status: %s, reason: %s", u.KYCStatus, u.RejectionReason)
+	}
+	if u.ReviewerID != reviewer.ID {
+		t.Errorf("Expected ReviewerID to be %s, got %s", reviewer.ID, u.ReviewerID)
 	}
 
 	// Check that owner can view their own rejection status and reason via GetUser
@@ -683,6 +728,7 @@ func TestKYBKYEUploadAndReview(t *testing.T) {
 	bReviewApproved, _ := json.Marshal(reviewReqBody)
 	req = httptest.NewRequest("POST", "/auth/kyb-kye/review", bytes.NewReader(bReviewApproved))
 	req.Header.Set("X-Internal-Token", a.internalServiceToken)
+	req.Header.Set("X-Reviewer-Token", reviewer.Token)
 	rec = httptest.NewRecorder()
 	a.ReviewKYBKYESubmissions(rec, req)
 	if rec.Code != http.StatusOK {
@@ -692,6 +738,9 @@ func TestKYBKYEUploadAndReview(t *testing.T) {
 	u = s.GetByID(ctx, owner.ID)
 	if u.KYCStatus != models.KYCApproved {
 		t.Errorf("Expected KYCStatus to be approved, got %s", u.KYCStatus)
+	}
+	if u.ReviewerID != reviewer.ID {
+		t.Errorf("Expected ReviewerID to be %s, got %s", reviewer.ID, u.ReviewerID)
 	}
 
 	// 6. Test Employee KYE Flow
@@ -725,6 +774,7 @@ func TestKYBKYEUploadAndReview(t *testing.T) {
 	bEmpReview, _ := json.Marshal(employeeReviewBody)
 	req = httptest.NewRequest("POST", "/auth/kyb-kye/review", bytes.NewReader(bEmpReview))
 	req.Header.Set("X-Internal-Token", a.internalServiceToken)
+	req.Header.Set("X-Reviewer-Token", reviewer.Token)
 	rec = httptest.NewRecorder()
 	a.ReviewKYBKYESubmissions(rec, req)
 	if rec.Code != http.StatusOK {
@@ -734,5 +784,8 @@ func TestKYBKYEUploadAndReview(t *testing.T) {
 	emp = s.GetByID(ctx, employee.ID)
 	if emp.KYEStatus != models.KYCApproved {
 		t.Errorf("Expected KYEStatus to be approved, got %s", emp.KYEStatus)
+	}
+	if emp.ReviewerID != reviewer.ID {
+		t.Errorf("Expected ReviewerID to be %s, got %s", reviewer.ID, emp.ReviewerID)
 	}
 }

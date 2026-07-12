@@ -137,6 +137,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **KYB/KYE Uploads & Reviews** | Implemented file validation, multipart uploads, pending submissions list, review gating, signed document views, and audit logging. | `current` | Verified via integration tests. ✅ |
 | **Consolidated Token Helper** | Pulled duplicate cryptographically secure token generation into shared/infra/jwtutil. | `current` | Verified via test execution. ✅ |
 | **Reviewers Collection** | Added reviewers collection, unique token indexing, and query/insert methods in auth-service store. | `current` | Verified via compilation. ✅ |
+| **Reviewer Identity Gap Fix** | Added reviewer token auth to pending, review, and view doc endpoints, populated ReviewerID on review, and logged reviewer ID in security logs. | `current` | Verified via auth-service integration tests. ✅ |
 
 
 
@@ -220,6 +221,6 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: KYB/KYE simplified document flow implemented and fully tested. Awaiting next user instructions.
+* **Immediate Next Step**: KYB/KYE reviewer identity gap fixed and integration tests updated. Awaiting next user instructions.
 
 
