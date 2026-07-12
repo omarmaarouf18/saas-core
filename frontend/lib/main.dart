@@ -1,0 +1,57 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'core/api_client.dart';
+import 'providers/auth_provider.dart';
+import 'screens/login_screen.dart';
+import 'screens/home_screen.dart';
+
+class DevHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
+        // Bypass certificate verification ONLY in local debug/development mode.
+        return kDebugMode && (host == 'localhost' || host == '127.0.0.1' || host == '10.0.2.2');
+      };
+  }
+}
+
+void main() {
+  // Wire HTTP certificate overrides in debug mode for self-signed certificates.
+  if (kDebugMode) {
+    HttpOverrides.global = DevHttpOverrides();
+  }
+  
+  final apiClient = ApiClient();
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider(apiClient)),
+      ],
+      child: const MyApp(),
+    ),
+  );
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+    
+    return MaterialApp(
+      title: 'SaaS Core Client',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        useMaterial3: true,
+      ),
+      debugShowCheckedModeBanner: false,
+      home: auth.isAuthenticated ? const HomeScreen() : const LoginScreen(),
+    );
+  }
+}
