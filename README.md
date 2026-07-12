@@ -152,11 +152,18 @@ To minimize the attack surface of the running services, onboarding a KYB/KYE rev
 
 The following documentation resources map the SaaS Core Platform architecture and guidelines:
 
+### Core & Backend
 *   **[AI_CONTEXT.md](AI_CONTEXT.md)** — The primary source of truth detailing the current project state, implementation roadmap, and immediate next steps.
 *   **[CLAUDE.md](CLAUDE.md)** — Core development policies and guides, including this project's auto-commit policy.
 *   **[DESIGN.md](DESIGN.md)** — High-level system design, data schema models, and microservice communication patterns.
 *   **[IMPLEMENTATION.md](IMPLEMENTATION.md)** — Tech stack specifications, checklists, and manual verification procedures.
 *   **[docs/APPLICATION_MAP.md](docs/APPLICATION_MAP.md)** — Detailed API endpoints, inter-service HTTP routes, and user/system interaction flowcharts.
 *   **[docs/changelog/README.md](docs/changelog/README.md)** — Index of categorized changelogs (Security Fixes, New Features, Infrastructure, Bug Fixes, and Documentation updates).
+
+### Frontend (Flutter Client)
+*   **[frontend/README.md](frontend/README.md)** — Practical developer-facing setup, run instructions, and target platform build scripts.
+*   **[docs/frontend/STATUS.md](docs/frontend/STATUS.md)** — Current frontend phase completion progress and verified client capabilities.
+*   **[docs/frontend/ARCHITECTURE.md](docs/frontend/ARCHITECTURE.md)** — Technical design specifications of the client, state managers, directory layouts, and socket subscribers.
+
 
 

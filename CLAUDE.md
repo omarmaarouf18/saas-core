@@ -7,6 +7,9 @@ any change you make — do not leave it stale.
 
 Detailed history lives in [docs/changelog/](docs/changelog/), split by category — consult the relevant category file when investigating something specific, don't read all of them by default.
 
+For frontend-related work, you must also consult [docs/frontend/STATUS.md](docs/frontend/STATUS.md) (the frontend state tracker) and [frontend/README.md](frontend/README.md) (developer setup guide) before starting the task.
+
+
 ## Auto-commit policy
 After completing any change, immediately git add, commit with a specific
 message, and push to origin/logic-exploitation. Do not batch multiple
