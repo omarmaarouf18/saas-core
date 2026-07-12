@@ -1179,7 +1179,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			t.Errorf("Expected 200 OK for active employee completing job, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 
-		// 2. Reject case: Deactivated employee completing job
+		// 2. Success case: Deactivated employee completing job (allowed under graceful deactivation)
 		jobDeactEmp := &models.Job{
 			ID:            "job-deact-emp",
 			OwnerID:       "kyc-approved-owner",
@@ -1201,76 +1201,45 @@ func TestUserServiceHandlers(t *testing.T) {
 		req = httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
 		rec = httptest.NewRecorder()
 		u.CompleteJob(rec, req)
-		if rec.Code != http.StatusForbidden {
-			t.Errorf("Expected 403 Forbidden for deactivated employee completing job, got %d. Body: %s", rec.Code, rec.Body.String())
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for deactivated employee completing job, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 	})
 
-	// Test: RevertJobsByEmployee Endpoint
-	t.Run("RevertJobsByEmployee Endpoint", func(t *testing.T) {
+	// Test: TrackJob Deactivated Employee Gating
+	t.Run("TrackJob Deactivated Employee Gating", func(t *testing.T) {
 		ctx := context.Background()
+		tokenOwner, _ := jwtutil.GenerateToken("kyc-approved-owner", "owner", "kyc-approved-owner", "owner@example.com")
+		tokenDeactEmp, _ := jwtutil.GenerateToken("deactivated-employee", "employee", "kyc-approved-owner", "deactivated@example.com")
+		tokenUser, _ := jwtutil.GenerateToken("client-user-123", "user", "client-user-123", "client@example.com")
 
-		// 1. Unauthenticated request (no token)
+		// TrackJob request with deactivated employee
 		reqBody := map[string]any{
-			"employee_id": "test-emp-999",
+			"owner_id":       tokenOwner,
+			"service_id":     "svc-deact-999",
+			"user_id":        tokenUser,
+			"employee_id":    tokenDeactEmp,
+			"payment_method": "cod",
 		}
 		body, _ := json.Marshal(reqBody)
-		req := httptest.NewRequest("POST", "/users/jobs/revert-by-employee", bytes.NewReader(body))
+		rdb.FlushAll(ctx)
+		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
 		rec := httptest.NewRecorder()
-		u.RevertJobsByEmployee(rec, req)
-		if rec.Code != http.StatusForbidden {
-			t.Errorf("Expected 403 Forbidden for unauthenticated revert call, got %d", rec.Code)
+		u.TrackJob(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for assigning deactivated employee in TrackJob, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 
-		// 2. Successful revert (with internal token)
-		// Seed an active job
-		activeJob := &models.Job{
-			ID:            "job-to-revert-1",
-			OwnerID:       "kyc-approved-owner",
-			UserID:        "customer-123",
-			EmployeeID:    "test-emp-999",
-			ServiceID:     "svc-deact-999",
-			Status:        models.JobStatusActive,
-			PaymentMethod: "cod",
-		}
-		_ = s.CreateJob(ctx, activeJob)
-
-		// Seed a non-active job that should NOT be reverted (e.g., completed)
-		completedJob := &models.Job{
-			ID:            "job-to-revert-2",
-			OwnerID:       "kyc-approved-owner",
-			UserID:        "customer-123",
-			EmployeeID:    "test-emp-999",
-			ServiceID:     "svc-deact-999",
-			Status:        models.JobStatusCompleted,
-			PaymentMethod: "cod",
-		}
-		_ = s.CreateJob(ctx, completedJob)
-
-		req = httptest.NewRequest("POST", "/users/jobs/revert-by-employee", bytes.NewReader(body))
-		req.Header.Set("X-Internal-Token", "mock-internal-token")
+		// TrackJob request with active employee
+		tokenActiveEmp, _ := jwtutil.GenerateToken("active-employee", "employee", "kyc-approved-owner", "active@example.com")
+		reqBody["employee_id"] = tokenActiveEmp
+		body, _ = json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req = httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
 		rec = httptest.NewRecorder()
-		u.RevertJobsByEmployee(rec, req)
-		if rec.Code != http.StatusOK {
-			t.Errorf("Expected 200 OK for authenticated revert call, got %d. Body: %s", rec.Code, rec.Body.String())
-		}
-
-		// Verify first job is reverted
-		j1 := s.GetJob(ctx, "job-to-revert-1")
-		if j1 == nil {
-			t.Fatalf("Failed to retrieve job 1")
-		}
-		if j1.Status != models.JobStatusPending || j1.EmployeeID != "" {
-			t.Errorf("Expected job 1 to be reverted to pending/unassigned, got status=%s, employee_id=%s", j1.Status, j1.EmployeeID)
-		}
-
-		// Verify completed job remains completed
-		j2 := s.GetJob(ctx, "job-to-revert-2")
-		if j2 == nil {
-			t.Fatalf("Failed to retrieve job 2")
-		}
-		if j2.Status != models.JobStatusCompleted || j2.EmployeeID != "test-emp-999" {
-			t.Errorf("Expected job 2 to remain completed/assigned, got status=%s, employee_id=%s", j2.Status, j2.EmployeeID)
+		u.TrackJob(rec, req)
+		if rec.Code != http.StatusCreated {
+			t.Errorf("Expected 201 Created for assigning active employee in TrackJob, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 	})
 }

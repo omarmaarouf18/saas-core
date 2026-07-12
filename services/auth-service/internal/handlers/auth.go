@@ -2,7 +2,6 @@
 package handlers
 
 import (
-	"bytes"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/hex"
@@ -587,37 +586,6 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 			"error": err.Error(),
 		})
 		return
-	}
-
-	if !req.SetActive {
-		// Revert active jobs for employee via internal user-service endpoint
-		url := fmt.Sprintf("%s/users/jobs/revert-by-employee", a.userServiceURL)
-		reqData := map[string]string{
-			"employee_id": emp.ID,
-		}
-		body, _ := json.Marshal(reqData)
-
-		// Create the HTTP request
-		httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
-		if err != nil {
-			log.Printf("[AUTH CRITICAL] Failed to create HTTP request to revert jobs for deactivated employee %s: %v. MANUAL FOLLOW-UP REQUIRED.", emp.ID, err)
-		} else {
-			httpReq.Header.Set("X-Internal-Token", a.internalServiceToken)
-			httpReq.Header.Set("Content-Type", "application/json")
-
-			resp, err := a.userServiceClient.Do(httpReq)
-			if err != nil {
-				log.Printf("[AUTH CRITICAL] HTTP call to revert jobs for deactivated employee %s failed (network error/circuit breaker): %v. MANUAL FOLLOW-UP REQUIRED.", emp.ID, err)
-			} else {
-				defer resp.Body.Close()
-				if resp.StatusCode != http.StatusOK {
-					respBytes, _ := io.ReadAll(resp.Body)
-					log.Printf("[AUTH CRITICAL] HTTP call to revert jobs for deactivated employee %s returned status %d (body: %s). MANUAL FOLLOW-UP REQUIRED.", emp.ID, resp.StatusCode, string(respBytes))
-				} else {
-					log.Printf("[AUTH] Successfully requested user-service to revert active jobs for employee %s", emp.ID)
-				}
-			}
-		}
 	}
 
 	statusStr := "frozen"

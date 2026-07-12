@@ -109,7 +109,6 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users/jobs/get", u.GetJob)
 	mux.HandleFunc("/users/jobs/complete", u.CompleteJob)
 	mux.HandleFunc("/users/jobs/cancel", u.CancelJob)
-	mux.HandleFunc("/users/jobs/revert-by-employee", u.RevertJobsByEmployee)
 	mux.HandleFunc("/users/wallet", u.GetWallet)
 	mux.HandleFunc("/users/wallet/deposit", u.WalletDeposit)
 	mux.HandleFunc("/users/ledger", u.GetLedger)
@@ -252,6 +251,21 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		req.EmployeeID = resolvedEmployeeID
+
+		// Verify assigned employee is active
+		active, err := u.isEmployeeActive(req.EmployeeID)
+		if err != nil {
+			if errors.Is(err, ErrServiceUnavailable) {
+				writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "auth service unavailable"})
+				return
+			}
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "employee not found or status lookup failed"})
+			return
+		}
+		if !active {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "employee is not active and cannot be assigned new jobs"})
+			return
+		}
 	}
 
 	if req.PaymentMethod != "cod" {
@@ -403,26 +417,6 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to complete job %s owned by owner %s and employee %s", resolvedRequester, job.ID, job.OwnerID, job.EmployeeID)
 			handlerutil.ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to complete job %s", job.ID), handlerutil.GetClientIP(r))
 			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to complete this job"})
-			return
-		}
-	}
-
-	if job.EmployeeID != "" {
-		active, err := u.isEmployeeActive(job.EmployeeID)
-		if err != nil {
-			if err == ErrServiceUnavailable {
-				writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "auth service unavailable"})
-				return
-			}
-			log.Printf("[TENANT SCOPE BLOCKED] Lookup failed for employee %s of job %s: %v", job.EmployeeID, job.ID, err)
-			handlerutil.ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to complete job %s but employee %s lookup failed: %v", job.ID, job.EmployeeID, err), handlerutil.GetClientIP(r))
-			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: employee status lookup failed"})
-			return
-		}
-		if !active {
-			log.Printf("[TENANT SCOPE BLOCKED] Attempt to complete job %s with deactivated employee %s", job.ID, job.EmployeeID)
-			handlerutil.ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to complete job %s with deactivated employee %s", job.ID, job.EmployeeID), handlerutil.GetClientIP(r))
-			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: assigned employee is deactivated"})
 			return
 		}
 	}
@@ -1391,46 +1385,5 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 		"message": "job cancelled successfully",
 		"job_id":  job.ID,
 		"status":  models.JobStatusCancelled,
-	})
-}
-
-// POST /users/jobs/revert-by-employee
-func (u *UserService) RevertJobsByEmployee(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
-		return
-	}
-
-	isInternal := subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
-	if !isInternal {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: internal-only endpoint"})
-		return
-	}
-
-	var req struct {
-		EmployeeID string `json:"employee_id"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body: " + err.Error()})
-		return
-	}
-	if req.EmployeeID == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "employee_id is required"})
-		return
-	}
-
-	ctx := r.Context()
-	err := u.store.RevertActiveJobsForEmployee(ctx, req.EmployeeID)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-		return
-	}
-
-	// ShipSecurityEvent originates from user-service now
-	handlerutil.ShipSecurityEvent(ctx, "EMPLOYEE_JOBS_REVERTED", "user-service", "internal_service", "", fmt.Sprintf("reverted active jobs for employee %s", req.EmployeeID), handlerutil.GetClientIP(r))
-
-	writeJSON(w, http.StatusOK, map[string]string{
-		"message":     "active jobs successfully reverted to pending/unassigned",
-		"employee_id": req.EmployeeID,
 	})
 }
