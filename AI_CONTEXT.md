@@ -169,9 +169,9 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 * **E-Wallet and Bank Card Payment Flows**
   * **Decision**: Only Cash on Delivery (`cod`) is allowed as a payment method for now; other methods are rejected during tracking/booking.
   * **Reasoning**: The interface for Stripe or other bank card gateways is placeholder-only; to prevent actual security vulnerabilities or un-auditable fund flows, all payment pathways besides `cod` are explicitly blocked at the endpoint level.
-* **Manual KYC/KYB Approval Process (Ops Runbook)**
-  * **Decision**: Know Your Customer (KYC) approval for tenant owners is deliberately not automated or exposed via API endpoints.
-  * **Reasoning**: To maintain security and avoid exposing administrative endpoints that could be targeted by attackers. approvals must be handled manually by an operations engineer directly in the database (updating the `kyc_status` field to `"approved"`).
+* **Manual KYC Approval Process (Ops Runbook)**
+  * **Decision**: Initial KYC status approval for tenant owners is deliberately not automated or exposed via API endpoints and must be handled manually directly in the database.
+  * **Reasoning**: To maintain security and avoid exposing administrative endpoints that could be targeted by attackers. In contrast, KYB/KYE document reviews are performed via the `/auth/kyb-kye/review` endpoint, which is secured by individual reviewer credentials and internal network token validations.
 * **Mock OTP SMS/Email Dispatcher**
   * **Decision**: SMS dispatching is stubbed using a mock that logs OTPs to stdout. In local environment (`APP_ENV=local`), OTPs are exposed directly in response payloads as `dev_otp`.
   * **Reasoning**: Speeds up development and avoids dependencies on external paid SMS gateways during local testing.
