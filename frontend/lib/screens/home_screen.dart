@@ -76,7 +76,7 @@ class HomeScreen extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black85,
+                      color: Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -167,7 +167,7 @@ class HomeScreen extends StatelessWidget {
             value,
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: valueColor ?? Colors.black85,
+              color: valueColor ?? Colors.black87,
               fontSize: 15,
             ),
           ),

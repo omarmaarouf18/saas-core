@@ -29,9 +29,18 @@ This directory contains the Flutter frontend application for the SaaS Core Platf
 
 ## Platform Building
 To build production bundles, ensure your local environment contains the required platform-specific toolchains:
-*   **Android**: Compile the APK using `flutter build apk`. Requires `ANDROID_HOME` pointing to a local Android SDK installation with complete build-tools and platform dependencies.
+*   **Android**: Compile the APK using `flutter build apk` (or `flutter build apk --debug` for development). Requires:
+    *   **JDK Version**: Java 17 JDK (e.g. Eclipse Temurin 17). Newer versions (like Java 25/26) can trigger compatibility issues during NDK linking.
+    *   **Android SDK**: `ANDROID_HOME` environment variable configured. Recommended setup:
+        *   Android SDK Command-line Tools: `14742923`
+        *   Build-tools version: `34.0.0`
+        *   Platform SDK version: `android-36` (required by Flutter Gradle Plugin defaults)
+        *   NDK version: `28.2.13676358` (automatically resolved)
+        *   CMake version: `3.22.1` (automatically resolved)
+    *   *Note*: The SDK path must not contain space characters, as it will break Gradle task compilation.
 *   **iOS**: Compile the IPA using `flutter build ipa` (or `flutter build ios --no-codesign` for simulator targets). Requires a macOS environment with Xcode and CocoaPods configured.
 *   **Web**: Compile a web production bundle using `flutter build web`.
+
 
 
 ## Development Security Overrides

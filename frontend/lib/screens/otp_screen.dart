@@ -65,7 +65,7 @@ class _OtpScreenState extends State<OtpScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black85),
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -91,7 +91,7 @@ class _OtpScreenState extends State<OtpScreen> {
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black85,
+                      color: Colors.black87,
                     ),
                     textAlign: TextAlign.center,
                   ),
