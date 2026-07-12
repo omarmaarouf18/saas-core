@@ -7,8 +7,11 @@
 
 ## Phase Progress (Per IMPLEMENTATION.md Sequence)
 
-*   **Phase 1: Project Setup & Shared Auth Flow** — **[100% COMPLETE & VERIFIED]**
-    *   *Implemented*: Secure token storage, `ApiClient` HTTP methods with local SSL overrides, and screens for Login, Signup, 2FA OTP, and the Dashboard owner KYC-pending warning banner.
+*   **Phase 1: Project Setup & Shared Auth Flow** — **[PARTIALLY COMPLETE]**
+    *   *Auth Flow Logic*: **[VERIFIED]** contract-matching works against the live docker-compose backend for signup, 2FA OTP, direct employee login, and KYC dashboard warning banners.
+    *   *Platform Builds*: **[UNVERIFIED]** local scaffolding is generated (`android/`, `ios/`, etc.) but build outputs could not be compiled on this host:
+        *   *Android*: No Android SDK found (missing `ANDROID_HOME` or `~/Android/Sdk`).
+        *   *iOS*: macOS/Xcode toolchain unavailable (build execution requires a Mac environment).
 *   **Phase 2: Owner Core Functionality** — **[NOT STARTED]**
     *   *Planned*: Dashboard grids, wallet balance metrics, employee list management, toggling, and services creation.
 *   **Phase 3: Employee Dashboard & Audit Simulator** — **[NOT STARTED]**

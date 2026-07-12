@@ -14,7 +14,7 @@ This directory contains the Flutter frontend application for the SaaS Core Platf
     flutter pub get
     ```
 2.  **Run the application**:
-    To run the app against the local backend stack under Docker Compose:
+    Ensure you have an active emulator, device, or browser connected (check available devices via `flutter devices`), then run:
     ```bash
     flutter run
     ```
@@ -28,10 +28,11 @@ This directory contains the Flutter frontend application for the SaaS Core Platf
     ```
 
 ## Platform Building
-To build production bundles for specific targets:
-*   **Android**: `flutter build apk`
-*   **iOS**: `flutter build ipa`
-*   **Web**: `flutter build web`
+To build production bundles, ensure your local environment contains the required platform-specific toolchains:
+*   **Android**: Compile the APK using `flutter build apk`. Requires `ANDROID_HOME` pointing to a local Android SDK installation with complete build-tools and platform dependencies.
+*   **iOS**: Compile the IPA using `flutter build ipa` (or `flutter build ios --no-codesign` for simulator targets). Requires a macOS environment with Xcode and CocoaPods configured.
+*   **Web**: Compile a web production bundle using `flutter build web`.
+
 
 ## Development Security Overrides
 To support local development against self-signed HTTPS certificates, the application overrides Flutter's default HTTP trust validation in debug mode:
