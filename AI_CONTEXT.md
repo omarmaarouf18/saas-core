@@ -225,6 +225,7 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Graceful Employee Deactivation fully implemented and verified via integration tests. Revised deactivation behavior based on product decisions: blocked new job assignment in `TrackJob` for deactivated employees while allowing them to complete currently assigned in-progress jobs. Removed previous completion-blocking and job-reversion code entirely. Awaiting next user instructions.
+* **Immediate Next Step**: Completed manual end-to-end testing of the full microservices stack under Docker Compose (Stages 1 to 5). Verified mTLS handshakes, KYC/KYB flow, agent onboarding and atomic ticket assignment, real-time WebSocket chat, and graceful employee deactivation rules. A E2E testing report has been written to the app data directory. Awaiting next user instructions.
+
 
 
