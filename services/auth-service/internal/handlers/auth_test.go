@@ -21,6 +21,7 @@ import (
 	"github.com/project/auth-service/internal/store"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -379,6 +380,18 @@ func TestAuthHandlers(t *testing.T) {
 	json.Unmarshal(rec.Body.Bytes(), &empSignupResp)
 	empUserID := empSignupResp["user_id"].(string)
 
+	// Seed an active job for the employee to test deactivation reversion
+	ctx := context.Background()
+	jobsColl := s.DatabaseForTesting().Collection("jobs")
+	activeJob := bson.M{
+		"_id":         "deact-job-123",
+		"employee_id": empUserID,
+		"status":      "active",
+	}
+	if _, err := jobsColl.InsertOne(ctx, activeJob); err != nil {
+		t.Fatalf("Failed to seed active job: %v", err)
+	}
+
 	toggleBody := models.ToggleEmployeeRequest{
 		EmployeeEmail: "employee@example.com",
 		OwnerEmail:    "owner@example.com",
@@ -391,6 +404,18 @@ func TestAuthHandlers(t *testing.T) {
 	a.ToggleEmployee(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected 200 OK for ToggleEmployee, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// Verify that the job was reverted
+	var updatedJob struct {
+		EmployeeID string `bson:"employee_id"`
+		Status     string `bson:"status"`
+	}
+	if err := jobsColl.FindOne(ctx, bson.M{"_id": "deact-job-123"}).Decode(&updatedJob); err != nil {
+		t.Fatalf("Failed to find updated job: %v", err)
+	}
+	if updatedJob.Status != "pending" || updatedJob.EmployeeID != "" {
+		t.Errorf("Expected job to be reverted to pending/unassigned, got status=%s, employee_id=%s", updatedJob.Status, updatedJob.EmployeeID)
 	}
 
 	// 5. Test SimulateEmployeeAction (Success path)

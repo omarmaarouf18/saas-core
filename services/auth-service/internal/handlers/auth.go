@@ -550,6 +550,15 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get Employee to resolve ID
+	emp := a.store.GetByEmail(ctx, req.EmployeeEmail)
+	if emp == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error": fmt.Sprintf("employee %q not found", req.EmployeeEmail),
+		})
+		return
+	}
+
 	// Toggle Active Status
 	err := a.store.ToggleEmployeeActive(ctx, req.EmployeeEmail, owner.ID, req.SetActive)
 	if err != nil {
@@ -557,6 +566,13 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 			"error": err.Error(),
 		})
 		return
+	}
+
+	if !req.SetActive {
+		// Revert active jobs for employee
+		if err := a.store.RevertActiveJobsForEmployee(ctx, emp.ID); err != nil {
+			log.Printf("[AUTH] Failed to revert active jobs for employee %s: %v", emp.ID, err)
+		}
 	}
 
 	statusStr := "frozen"

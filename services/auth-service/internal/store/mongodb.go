@@ -71,6 +71,11 @@ func (s *MongoDB) DropDatabase(ctx context.Context) error {
 	return s.db.Drop(ctx)
 }
 
+// DatabaseForTesting returns the internal database instance for test setup.
+func (s *MongoDB) DatabaseForTesting() *mongo.Database {
+	return s.db
+}
+
 // UpdateKYCStatus updates a user's KYC status (primarily for integration tests).
 func (s *MongoDB) UpdateKYCStatus(ctx context.Context, userID string, status models.KYCStatus) error {
 	_, err := s.users.UpdateOne(ctx, bson.M{"_id": userID}, bson.M{"$set": bson.M{"kyc_status": status}})
@@ -350,6 +355,26 @@ func (s *MongoDB) ToggleEmployeeActive(ctx context.Context, employeeEmail, owner
 			return fmt.Errorf("user %q is not an employee", employeeEmail)
 		}
 		return fmt.Errorf("owner mismatch: employee %q does not belong to owner %q", employeeEmail, ownerID)
+	}
+	return nil
+}
+
+// RevertActiveJobsForEmployee finds all active jobs assigned to an employee and reverts them to pending/unassigned.
+func (s *MongoDB) RevertActiveJobsForEmployee(ctx context.Context, employeeID string) error {
+	coll := s.db.Collection("jobs")
+	filter := bson.M{
+		"employee_id": employeeID,
+		"status":      "active",
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"status":      "pending",
+			"employee_id": "",
+		},
+	}
+	_, err := coll.UpdateMany(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("store: revert active jobs: %w", err)
 	}
 	return nil
 }

@@ -380,6 +380,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Authorization check
+	resolvedRequester := "internal_service"
 	isInternal := subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
 	if !isInternal {
 		requesterToken := r.URL.Query().Get("requester_id")
@@ -390,7 +391,8 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester_id parameter is required"})
 			return
 		}
-		resolvedRequester, err := resolveToken(requesterToken)
+		var err error
+		resolvedRequester, err = resolveToken(requesterToken)
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 			return
@@ -400,6 +402,26 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to complete job %s owned by owner %s and employee %s", resolvedRequester, job.ID, job.OwnerID, job.EmployeeID)
 			handlerutil.ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to complete job %s", job.ID), handlerutil.GetClientIP(r))
 			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to complete this job"})
+			return
+		}
+	}
+
+	if job.EmployeeID != "" {
+		active, err := u.isEmployeeActive(job.EmployeeID)
+		if err != nil {
+			if err == ErrServiceUnavailable {
+				writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "auth service unavailable"})
+				return
+			}
+			log.Printf("[TENANT SCOPE BLOCKED] Lookup failed for employee %s of job %s: %v", job.EmployeeID, job.ID, err)
+			handlerutil.ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to complete job %s but employee %s lookup failed: %v", job.ID, job.EmployeeID, err), handlerutil.GetClientIP(r))
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: employee status lookup failed"})
+			return
+		}
+		if !active {
+			log.Printf("[TENANT SCOPE BLOCKED] Attempt to complete job %s with deactivated employee %s", job.ID, job.EmployeeID)
+			handlerutil.ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to complete job %s with deactivated employee %s", job.ID, job.EmployeeID), handlerutil.GetClientIP(r))
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: assigned employee is deactivated"})
 			return
 		}
 	}
@@ -774,6 +796,37 @@ func (u *UserService) checkKYC(ownerID string) (string, error) {
 	}
 
 	return user.KYCStatus, nil
+}
+
+func (u *UserService) isEmployeeActive(employeeID string) (bool, error) {
+	url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, employeeID)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return false, err
+	}
+	req.Header.Set("X-Internal-Token", u.internalServiceToken)
+	resp, err := u.authClient.Do(req)
+	if err != nil {
+		return false, ErrServiceUnavailable
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return false, fmt.Errorf("employee not found")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return false, ErrServiceUnavailable
+	}
+
+	var user struct {
+		Role     string `json:"role"`
+		IsActive bool   `json:"is_active"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return false, err
+	}
+
+	return user.IsActive, nil
 }
 
 // requireTier enforces that a tenant has at least the minimum subscription tier.

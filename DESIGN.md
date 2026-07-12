@@ -136,6 +136,7 @@ The application implements defense-in-depth across the API Gateway and microserv
 - **Gating Policies**:
   - **KYC Gating**: Operations like service creation, wallet deposits, and job tracking are restricted to owners whose KYC status is explicitly `"approved"`.
   - **Tier-Based Gating**: Real-time employee location tracking is gated behind a Paid Subscription tier check (`plan: "paid"`) on the job owner. Location updates are throttled to a minimum 3-second interval per Job ID.
+  - **Deactivated Employee Gating**: Completing a job verifies that the assigned employee's status is `is_active = true` by querying auth-service. Deactivated employees attempting to complete a job are rejected with `403 Forbidden` and logged via `TENANT_SCOPE_BLOCKED` security event. Additionally, deactivating an employee (via `/auth/employee/toggle`) automatically reverts all their active jobs back to `"pending"` (unassigned) status.
 
 ---
 

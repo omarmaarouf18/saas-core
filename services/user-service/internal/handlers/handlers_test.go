@@ -65,6 +65,7 @@ func TestUserServiceHandlers(t *testing.T) {
 				"id":         "kyc-approved-owner",
 				"role":       "owner",
 				"kyc_status": "approved",
+				"is_active":  true,
 			})
 			return
 		}
@@ -75,6 +76,18 @@ func TestUserServiceHandlers(t *testing.T) {
 				"id":         "kyc-pending-owner",
 				"role":       "owner",
 				"kyc_status": "pending_super_admin_approval",
+				"is_active":  true,
+			})
+			return
+		}
+
+		if strings.Contains(id, "employee") {
+			isActive := !strings.Contains(id, "deactivated")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]any{
+				"id":        id,
+				"role":      "employee",
+				"is_active": isActive,
 			})
 			return
 		}
@@ -1116,6 +1129,80 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 		if wRefunded.WithdrawableBalance != wBefore.WithdrawableBalance {
 			t.Errorf("Expected withdrawable balance to return to %.2f, got %.2f", wBefore.WithdrawableBalance, wRefunded.WithdrawableBalance)
+		}
+	})
+
+	// Test: CompleteJob Deactivated Employee Check
+	t.Run("CompleteJob Deactivated Employee", func(t *testing.T) {
+		ctx := context.Background()
+
+		// Setup tokens
+		tokenActiveEmp, _ := jwtutil.GenerateToken("active-employee", "employee", "kyc-approved-owner", "active@example.com")
+		tokenDeactEmp, _ := jwtutil.GenerateToken("deactivated-employee", "employee", "kyc-approved-owner", "deactivated@example.com")
+
+		// Create a service
+		testSvc := &models.Service{
+			ID:               "svc-deact-999",
+			TenantID:         "kyc-approved-owner",
+			Name:             "Deact Svc",
+			Category:         "transport",
+			TenantBasePrice:  10.0,
+			TenantPricePerKM: 1.0,
+			Latitude:         30.0,
+			Longitude:        30.0,
+		}
+		s.CreateService(ctx, testSvc)
+
+		// 1. Success case: Active employee completing job
+		jobActiveEmp := &models.Job{
+			ID:            "job-active-emp",
+			OwnerID:       "kyc-approved-owner",
+			UserID:        "customer-123",
+			EmployeeID:    "active-employee",
+			ServiceID:     "svc-deact-999",
+			Status:        models.JobStatusActive,
+			PaymentMethod: "cod",
+		}
+		_ = s.CreateJob(ctx, jobActiveEmp)
+
+		reqBody := map[string]any{
+			"job_id":         "job-active-emp",
+			"requester_id":   tokenActiveEmp,
+			"cash_collected": true,
+		}
+		body, _ := json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req := httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		u.CompleteJob(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for active employee completing job, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// 2. Reject case: Deactivated employee completing job
+		jobDeactEmp := &models.Job{
+			ID:            "job-deact-emp",
+			OwnerID:       "kyc-approved-owner",
+			UserID:        "customer-123",
+			EmployeeID:    "deactivated-employee",
+			ServiceID:     "svc-deact-999",
+			Status:        models.JobStatusActive,
+			PaymentMethod: "cod",
+		}
+		_ = s.CreateJob(ctx, jobDeactEmp)
+
+		reqBody = map[string]any{
+			"job_id":         "job-deact-emp",
+			"requester_id":   tokenDeactEmp,
+			"cash_collected": true,
+		}
+		body, _ = json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req = httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.CompleteJob(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for deactivated employee completing job, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 	})
 }
