@@ -1,4 +1,4 @@
-# SaaS Prototype Platform
+# SaaS Core Platform
 
 ## Manual KYC Approval Process (Ops Runbook)
 
@@ -145,4 +145,18 @@ To minimize the attack surface of the running services, onboarding a KYB/KYE rev
 
 > [!WARNING]
 > **Token Retrieval**: The generated token is displayed **only once** upon creation. It cannot be retrieved again from the database (it is a secret). If lost, the reviewer must be re-created with a new ID.
+
+---
+
+## Documentation Index
+
+The following documentation resources map the SaaS Core Platform architecture and guidelines:
+
+*   **[AI_CONTEXT.md](AI_CONTEXT.md)** — The primary source of truth detailing the current project state, implementation roadmap, and immediate next steps.
+*   **[CLAUDE.md](CLAUDE.md)** — Core development policies and guides, including this project's auto-commit policy.
+*   **[DESIGN.md](DESIGN.md)** — High-level system design, data schema models, and microservice communication patterns.
+*   **[IMPLEMENTATION.md](IMPLEMENTATION.md)** — Tech stack specifications, checklists, and manual verification procedures.
+*   **[docs/APPLICATION_MAP.md](docs/APPLICATION_MAP.md)** — Detailed API endpoints, inter-service HTTP routes, and user/system interaction flowcharts.
+*   **[docs/changelog/README.md](docs/changelog/README.md)** — Index of categorized changelogs (Security Fixes, New Features, Infrastructure, Bug Fixes, and Documentation updates).
+
 

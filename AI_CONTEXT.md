@@ -44,11 +44,11 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 
 The detailed project history is distributed across categorized changelog files. Please consult the specific category files for complete details (including file/line references, commit SHAs, and verification details):
 
-*   [Security Fixes](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/changelog/security-fixes.md) — 45 vulnerabilities found and fixed (e.g. mTLS, JWT signatures, timing attacks, IDOR checks, atomic agent assignment).
-*   [New Features](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/changelog/new-features.md) — 20 net-new capabilities (e.g. support ticketing, KYB uploads, location tracking, Redis rate limiters).
-*   [Infrastructure & Tooling](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/changelog/infrastructure.md) — 15 tooling, CI, module refactoring, and onboarding CLI tools.
-*   [Bug Fixes](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/changelog/bug-fixes.md) — 6 corrections to existing non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs).
-*   [Documentation](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/changelog/documentation.md) — 2 documentation-only updates (e.g. Application Map).
+*   [Security Fixes](docs/changelog/security-fixes.md) — 45 vulnerabilities found and fixed (e.g. mTLS, JWT signatures, timing attacks, IDOR checks, atomic agent assignment).
+*   [New Features](docs/changelog/new-features.md) — 20 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters).
+*   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 15 tooling, CI, module refactoring, and onboarding CLI tools.
+*   [Bug Fixes](docs/changelog/bug-fixes.md) — 6 corrections to existing non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs).
+*   [Documentation](docs/changelog/documentation.md) — 2 documentation-only updates (e.g. Application Map).
 
 ### 2. Explicitly Deferred by Decision
 

@@ -1,7 +1,7 @@
 # SaaS Core — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`f304cc8`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`6bd8514`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -88,7 +88,7 @@ The platform is comprised of **5 microservices** and **1 compile-time shared pac
 * **Core Responsibility**: Real-time communication server. Hosts WebSockets for active chat channels (segregated per job/ticket), manages location broadcasts, and coordinates support agent ticket assignments.
 * **Database & Collections**: MongoDB (`chat_db`):
   * `chat_messages`: Stores message history for channels.
-  * `complaint_tickets`: Stores support ticket states and assigned agents.
+  * `complaint_tickets`: Stores complaint ticket states and assigned agents.
   * `support_agents`: Stores onboarded support agents and active session tokens.
 * **Security & TLS Policy**: Serves mTLS HTTPS API routes and upgrades client WebSocket connections.
 * **Inbound HTTP calls**:
@@ -154,13 +154,17 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`POST /auth/employee/toggle`** | `auth-service` | Owner JWT (KYC Approved) | Activates/deactivates employee account. | Reads `users` (owner/employee), updates `users`. |
 | **`POST /auth/employee/action`** | `auth-service` | Target Employee JWT | Records a simulated worker activity. | Writes `audit_logs` collection. |
 | **`GET /auth/audit-log`** | `auth-service` | Tenant Owner JWT | Fetches tenant security audit logs. | Reads `audit_logs` collection. |
+| **`POST /auth/kyb/upload`** | `auth-service` | Owner JWT | Uploads KYB verification files (ID front/back, selfie, business proof). | Writes uploaded documents to local storage. Updates `users` collection. |
+| **`GET /auth/kyb-kye/pending`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Fetches pending KYB verification submissions. | Reads `users` and `reviewers` collections. |
+| **`POST /auth/kyb-kye/review`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Approves or rejects KYB submissions. | Updates `users` status. Writes `audit_logs` and `reviewers`. |
+| **`GET /auth/kyb/view`** | `auth-service` | Reviewer Token | Generates a signed view URL to stream uploaded document files. | Streams file content. |
 | **`GET /auth/user`** | `auth-service` | `X-Internal-Token` OR User JWT | Resolves user profile and role details. | Reads `users` collection. |
 | **`GET /health`** | `chat-service` | Public (Internal) | Service health status. | None. |
 | **`GET /`** | `chat-service` | Public (Internal) | Service status and runtime info. | None. |
 | **`GET /chat/ws`** | `chat-service` | User JWT OR Agent Token | WebSocket connection upgrade path. | Reads `support_agents` (for agent tokens). Downstream: calls `auth-service/auth/user`. |
 | **`GET /chat/history`** | `chat-service` | Channel Member JWT | Retrieves channel chat history. | Reads `chat_messages` collection. Downstream: calls `user-service/users/jobs/get`. |
 | **`POST /chat/internal/broadcast-location`** | `chat-service` | `X-Internal-Token` | Broadcasts driver location event. | None. |
-| **`POST /chat/tickets`** | `chat-service` | User JWT | Submits support ticket & assigns agent. | Reads/writes `complaint_tickets` and `support_agents` (atomic). |
+| **`POST /chat/tickets`** | `chat-service` | User JWT | Submits complaint ticket & assigns agent. | Reads/writes `complaint_tickets` and `support_agents` (atomic). |
 | **`POST /chat/tickets/resolve`** | `chat-service` | Support Agent Token | Resolves ticket & releases agent status. | Updates `complaint_tickets` and `support_agents`. |
 | **`GET /health`** | `notification-service` | Public (Internal) | Returns SSE hub client active stats. | Reads SSE Hub client statistics. |
 | **`GET /`** | `notification-service` | Public (Internal) | Service details and status. | None. |
@@ -174,6 +178,7 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`POST /users/jobs/track`** | `user-service` | Owner JWT (KYC Approved) | Books job, broadcasts alert. | Downstream: calls `auth-service/auth/user`. Writes `jobs`. |
 | **`GET /users/jobs/get`** | `user-service` | `X-Internal-Token` OR User JWT | Resolves detailed job configuration. | Reads `jobs` collection. |
 | **`POST /users/jobs/complete`** | `user-service` | Owner or Employee JWT | Completes active job, processes fees. | Updates `jobs`, writes `wallets`, writes `ledger`. |
+| **`POST /users/jobs/cancel`** | `user-service` | Owner JWT (KYC Approved) | Cancels an active job and processes escrow refunds. | Updates `jobs` collection. Updates `wallets` and `ledger` collections. |
 | **`GET /users/wallet`** | `user-service` | Owner JWT | Fetches active balance details. | Reads `wallets` collection. |
 | **`POST /users/wallet/deposit`** | `user-service` | Owner JWT | Loads funds up to maximum limits. | Updates `wallets` collection. |
 | **`GET /users/ledger`** | `user-service` | Owner JWT | Lists financial ledger records. | Reads `ledger` collection. |
@@ -188,6 +193,10 @@ All HTTP endpoints registered across the services are listed below, cross-refere
   * **Caller Permissions**: Standard Linux CLI execution with MongoDB credentials. Not exposed as an HTTP endpoint.
   * **Core Functionality**: Safe onboarding of support agents. Validates uniqueness, generates secure 32-byte hex credentials, and writes the record to the `support_agents` database.
   * **Read/Write**: Writes `support_agents` collection.
+* **`onboard-reviewer` CLI** (`services/auth-service/cmd/onboard-reviewer/main.go`):
+  * **Caller Permissions**: Standard Linux CLI execution with MongoDB credentials. Not exposed as an HTTP endpoint.
+  * **Core Functionality**: Safe onboarding of super-admin KYB/KYE document reviewers. Validates uniqueness, generates secure 32-byte hex credentials, and writes the record to the `reviewers` database.
+  * **Read/Write**: Writes `reviewers` collection.
 
 ---
 
