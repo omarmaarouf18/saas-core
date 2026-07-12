@@ -79,6 +79,8 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **WalletDeposit Upper Limit** | Enforced a maximum limit of 1,000,000 on WalletDeposit amounts in user-service. | `current` | Verified via user-service unit tests. ✅ |
 | **Host Ports Stripping** | Removed host port exposures for internal services in docker-compose.yml, replacing with expose. | `current` | Verified docker-compose.yml configuration. ✅ |
 | **OTP AES Key Configuration** | Added OTP_AES_KEY variable to docker-compose.yml, .env.example, and .env.local. | `current` | Verified environment configurations. ✅ |
+| **Job Cancellation & Escrow Refund** | Added job status cancelled, CancelJob handler, validation checks, and automatic escrow refund to owner. | `current` | Verified via user-service integration tests. ✅ |
+
 
 
 
@@ -196,7 +198,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 
 Only features verified directly against the running application are marked as verified (✅). The following items are implemented but remain unverified end-to-end or represent accepted security risks:
 
-* **Unverified Escrow Logic**: Escrow locking (`LockEscrow`) and release splits (`ReleaseEscrowWithSplit`) exist in `user-service/internal/store/mongodb.go`, but since the `/track` endpoint actively blocks any payment method other than `cod`, **this code path has never been executed or verified end-to-end**.
+* **Unverified Escrow Logic (COD-only bypass)**: Escrow release splits (`ReleaseEscrowWithSplit`) exist in `user-service/internal/store/mongodb.go`, but since the `/track` endpoint actively blocks any payment method other than `cod`, this COD-only restriction is still in place for tracking. Escrow locking and refund logic have been verified via integration testing of Job Cancellation.
 * **Fail-Closed Rate Limiting on Redis Unavailability**: If the shared Redis instance becomes unavailable at runtime, all rate limiters across all microservices (api-gateway, auth-service, chat-service, notification-service, user-service) will fail-closed. This means incoming traffic is restricted/blocked and authentication attempts are denied with critical security logs (`[SECURITY CRITICAL]`), rather than allowing un-throttled traffic to bypass security boundaries.
 * **Dev-Grade mTLS CA**: The certificates generated for mTLS use a dev-grade local Root CA. For production, a real internal CA (e.g. AWS Private CA, HashiCorp Vault PKI, or cert-manager on Kubernetes) must be integrated.
 
@@ -221,6 +223,6 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: KYB/KYE reviewer identity gap fixed and integration tests updated. Awaiting next user instructions.
+* **Immediate Next Step**: Part 1 (Job Cancellation) implemented and verified. Next step: Implement Part 2 (Block Deactivated Employees from Completing Jobs and ToggleEmployee Job Reversion).
 
 

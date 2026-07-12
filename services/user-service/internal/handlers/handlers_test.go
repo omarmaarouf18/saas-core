@@ -886,4 +886,236 @@ func TestUserServiceHandlers(t *testing.T) {
 			t.Errorf("Expected 401 Unauthorized for invalid token, got %d", rec.Code)
 		}
 	})
+
+	// Test: Job Cancellation
+	t.Run("Job Cancellation", func(t *testing.T) {
+		ctx := context.Background()
+		rdb.FlushAll(ctx)
+
+		// Setup owners, employees, customers tokens
+		tokenOwner, _ := jwtutil.GenerateToken("kyc-approved-owner", "owner", "kyc-approved-owner", "owner@example.com")
+		tokenCustomer, _ := jwtutil.GenerateToken("canceller-customer", "user", "canceller-customer", "customer@example.com")
+
+		// 1. Pending Job Cancellation by Owner -> Success
+		jobPending1 := &models.Job{
+			ID:            "job-pending-1",
+			OwnerID:       "kyc-approved-owner",
+			UserID:        "canceller-customer",
+			Status:        models.JobStatusPending,
+			PaymentMethod: "cod",
+		}
+		_ = s.CreateJob(ctx, jobPending1)
+
+		reqBody := map[string]any{
+			"job_id":       "job-pending-1",
+			"requester_id": tokenOwner,
+			"reason":       "Owner cancel pending",
+		}
+		body, _ := json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req := httptest.NewRequest("POST", "/users/jobs/cancel", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		u.CancelJob(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for owner cancelling pending job, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		// Verify in DB
+		updatedJob := s.GetJob(ctx, "job-pending-1")
+		if updatedJob.Status != models.JobStatusCancelled || updatedJob.CancellationReason != "Owner cancel pending" {
+			t.Errorf("Expected job status cancelled with reason, got: %s (reason: %s)", updatedJob.Status, updatedJob.CancellationReason)
+		}
+
+		// 2. Pending Job Cancellation by Customer -> Success
+		jobPending2 := &models.Job{
+			ID:            "job-pending-2",
+			OwnerID:       "kyc-approved-owner",
+			UserID:        "canceller-customer",
+			Status:        models.JobStatusPending,
+			PaymentMethod: "cod",
+		}
+		_ = s.CreateJob(ctx, jobPending2)
+
+		reqBody = map[string]any{
+			"job_id":       "job-pending-2",
+			"requester_id": tokenCustomer,
+			"reason":       "Customer cancel pending",
+		}
+		body, _ = json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req = httptest.NewRequest("POST", "/users/jobs/cancel", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.CancelJob(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for customer cancelling pending job, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		updatedJob = s.GetJob(ctx, "job-pending-2")
+		if updatedJob.Status != models.JobStatusCancelled {
+			t.Errorf("Expected job status cancelled, got: %s", updatedJob.Status)
+		}
+
+		// 3. Active Job Cancellation by Customer -> Forbidden (403)
+		jobActive1 := &models.Job{
+			ID:            "job-active-1",
+			OwnerID:       "kyc-approved-owner",
+			UserID:        "canceller-customer",
+			Status:        models.JobStatusActive,
+			PaymentMethod: "cod",
+		}
+		_ = s.CreateJob(ctx, jobActive1)
+
+		reqBody = map[string]any{
+			"job_id":       "job-active-1",
+			"requester_id": tokenCustomer,
+			"reason":       "Customer tries to cancel active job",
+		}
+		body, _ = json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req = httptest.NewRequest("POST", "/users/jobs/cancel", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.CancelJob(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for customer cancelling active job, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// 4. Active Job Cancellation by Owner -> Success
+		reqBody = map[string]any{
+			"job_id":       "job-active-1",
+			"requester_id": tokenOwner,
+			"reason":       "Owner cancels active job",
+		}
+		body, _ = json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req = httptest.NewRequest("POST", "/users/jobs/cancel", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.CancelJob(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for owner cancelling active job, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		updatedJob = s.GetJob(ctx, "job-active-1")
+		if updatedJob.Status != models.JobStatusCancelled {
+			t.Errorf("Expected job status cancelled, got: %s", updatedJob.Status)
+		}
+
+		// 5. Completed Job Cancellation -> Rejected with 409 Conflict
+		jobCompleted1 := &models.Job{
+			ID:            "job-completed-1",
+			OwnerID:       "kyc-approved-owner",
+			UserID:        "canceller-customer",
+			Status:        models.JobStatusCompleted,
+			PaymentMethod: "cod",
+		}
+		_ = s.CreateJob(ctx, jobCompleted1)
+
+		reqBody = map[string]any{
+			"job_id":       "job-completed-1",
+			"requester_id": tokenOwner,
+			"reason":       "Try to cancel completed job",
+		}
+		body, _ = json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req = httptest.NewRequest("POST", "/users/jobs/cancel", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.CancelJob(rec, req)
+		if rec.Code != http.StatusConflict {
+			t.Errorf("Expected 409 Conflict for cancelled completed job, got %d", rec.Code)
+		}
+
+		// 6. Already Cancelled Job Cancellation -> Rejected with 409 Conflict
+		reqBody = map[string]any{
+			"job_id":       "job-pending-1", // already cancelled in step 1
+			"requester_id": tokenOwner,
+			"reason":       "Try to cancel already cancelled job",
+		}
+		body, _ = json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req = httptest.NewRequest("POST", "/users/jobs/cancel", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.CancelJob(rec, req)
+		if rec.Code != http.StatusConflict {
+			t.Errorf("Expected 409 Conflict for already cancelled job, got %d", rec.Code)
+		}
+
+		// 7. Complete Cancelled Job -> Rejected with 409 Conflict
+		reqCompleteBody := map[string]any{
+			"job_id":         "job-pending-1",
+			"requester_id":   tokenOwner,
+			"cash_collected": true,
+		}
+		body, _ = json.Marshal(reqCompleteBody)
+		rdb.FlushAll(ctx)
+		req = httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.CompleteJob(rec, req)
+		if rec.Code != http.StatusConflict {
+			t.Errorf("Expected 409 Conflict when completing a cancelled job, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// 8. Test Escrow Refund on Cancellation for Non-COD Job
+		// Setup wallet deposit for non-COD refund testing
+		_ = s.Deposit(ctx, "kyc-approved-owner", 500.0)
+
+		// Create a test service
+		testSvc := &models.Service{
+			ID:               "svc-canceller-999",
+			TenantID:         "kyc-approved-owner",
+			Name:             "Canceller Service",
+			Category:         "transport",
+			TenantBasePrice:  10.0,
+			TenantPricePerKM: 1.0,
+			Latitude:         30.0,
+			Longitude:        30.0,
+		}
+		s.CreateService(ctx, testSvc)
+
+		wBefore, _ := s.GetOrCreateWallet(ctx, "kyc-approved-owner")
+
+		jobNonCOD := &models.Job{
+			ID:            "job-non-cod-1",
+			OwnerID:       "kyc-approved-owner",
+			UserID:        "canceller-customer",
+			ServiceID:     "svc-canceller-999",
+			Status:        models.JobStatusActive,
+			PaymentMethod: "wallet", // non-cod
+			Location:      models.Location{Latitude: 30.0, Longitude: 30.0},
+		}
+		_ = s.CreateJob(ctx, jobNonCOD)
+
+		// Calculate escrow amount (dist = 0, base price = 10.0)
+		escrowAmount := 10.0
+		// Lock the escrow manually
+		err := s.LockEscrow(ctx, "kyc-approved-owner", "job-non-cod-1", escrowAmount)
+		if err != nil {
+			t.Fatalf("Failed to lock escrow: %v", err)
+		}
+
+		// Verify escrow locked
+		wLocked, _ := s.GetOrCreateWallet(ctx, "kyc-approved-owner")
+		if wLocked.EscrowBalance != escrowAmount {
+			t.Errorf("Expected escrow balance to be %.2f, got %.2f", escrowAmount, wLocked.EscrowBalance)
+		}
+
+		// Cancel the non-COD job via endpoint
+		reqBody = map[string]any{
+			"job_id":       "job-non-cod-1",
+			"requester_id": tokenOwner,
+			"reason":       "Cancel non-COD job to test refund",
+		}
+		body, _ = json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req = httptest.NewRequest("POST", "/users/jobs/cancel", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.CancelJob(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for cancelling non-COD job, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// Verify escrow refunded
+		wRefunded, _ := s.GetOrCreateWallet(ctx, "kyc-approved-owner")
+		if wRefunded.EscrowBalance != 0.0 {
+			t.Errorf("Expected escrow balance to be 0 after refund, got %.2f", wRefunded.EscrowBalance)
+		}
+		if wRefunded.WithdrawableBalance != wBefore.WithdrawableBalance {
+			t.Errorf("Expected withdrawable balance to return to %.2f, got %.2f", wBefore.WithdrawableBalance, wRefunded.WithdrawableBalance)
+		}
+	})
 }

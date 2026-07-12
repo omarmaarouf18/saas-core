@@ -563,3 +563,50 @@ func (s *MongoDB) UpdateJobLocation(ctx context.Context, id string, lat, lon flo
 	}
 	return nil
 }
+
+// CancelJob updates a job's status to cancelled and stores the reason.
+func (s *MongoDB) CancelJob(ctx context.Context, id string, reason string) error {
+	res, err := s.jobs.UpdateOne(ctx, bson.M{"_id": id},
+		bson.M{"$set": bson.M{
+			"status":              models.JobStatusCancelled,
+			"cancellation_reason": reason,
+			"updated_at":          time.Now().UTC(),
+		}})
+	if err != nil {
+		return fmt.Errorf("store: cancel job: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("job %q not found", id)
+	}
+	return nil
+}
+
+// RefundEscrow returns locked escrow back to WithdrawableBalance.
+func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amount float64) error {
+	w, err := s.GetOrCreateWallet(ctx, tenantID)
+	if err != nil {
+		return err
+	}
+	if w.EscrowBalance < amount {
+		return fmt.Errorf("insufficient escrow balance to refund: have %.2f, need %.2f", w.EscrowBalance, amount)
+	}
+	res, err := s.wallets.UpdateOne(ctx,
+		bson.M{"tenant_id": tenantID, "escrow_balance": bson.M{"$gte": amount}},
+		bson.M{
+			"$inc": bson.M{"escrow_balance": -amount, "withdrawable_balance": amount},
+			"$set": bson.M{"updated_at": time.Now().UTC()},
+		})
+	if err != nil {
+		return err
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("escrow refund failed: insufficient escrow balance")
+	}
+	_, err = s.ledger.InsertOne(ctx, models.TransactionLedger{
+		ID: fmt.Sprintf("tx-%d-refund", time.Now().UnixNano()), TenantID: tenantID, JobID: jobID,
+		Type: models.TxEscrowRelease, Amount: amount,
+		BalanceBefore: w.WithdrawableBalance, BalanceAfter: w.WithdrawableBalance + amount,
+		Description: fmt.Sprintf("escrow refund for cancelled job %s", jobID), Timestamp: time.Now().UTC(),
+	})
+	return err
+}

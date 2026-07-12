@@ -59,12 +59,13 @@ const (
 	JobStatusPending   JobStatus = "pending"
 	JobStatusActive    JobStatus = "active"
 	JobStatusCompleted JobStatus = "completed"
+	JobStatusCancelled JobStatus = "cancelled"
 )
 
 // ValidJobStatus returns true if the given status is a known value.
 func ValidJobStatus(s JobStatus) bool {
 	switch s {
-	case JobStatusPending, JobStatusActive, JobStatusCompleted:
+	case JobStatusPending, JobStatusActive, JobStatusCompleted, JobStatusCancelled:
 		return true
 	}
 	return false
@@ -78,17 +79,18 @@ type Location struct {
 
 // Job represents a trackable unit of work linking an owner, employee, and service.
 type Job struct {
-	ID              string    `json:"id"                            bson:"_id"`
-	OwnerID         string    `json:"owner_id"                      bson:"owner_id"`
-	EmployeeID      string    `json:"employee_id,omitempty"         bson:"employee_id,omitempty"`
-	UserID          string    `json:"user_id"                       bson:"user_id"`
-	ServiceID       string    `json:"service_id"                    bson:"service_id"`
-	Status          JobStatus `json:"status"                        bson:"status"`
-	Location        Location  `json:"location"                      bson:"location"`
-	CurrentLocation *Location `json:"current_location,omitempty"   bson:"current_location,omitempty"`
-	PaymentMethod   string    `json:"payment_method"                bson:"payment_method"`
-	CreatedAt       time.Time `json:"created_at"                    bson:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"                    bson:"updated_at"`
+	ID                 string    `json:"id"                            bson:"_id"`
+	OwnerID            string    `json:"owner_id"                      bson:"owner_id"`
+	EmployeeID         string    `json:"employee_id,omitempty"         bson:"employee_id,omitempty"`
+	UserID             string    `json:"user_id"                       bson:"user_id"`
+	ServiceID          string    `json:"service_id"                    bson:"service_id"`
+	Status             JobStatus `json:"status"                        bson:"status"`
+	Location           Location  `json:"location"                      bson:"location"`
+	CurrentLocation    *Location `json:"current_location,omitempty"   bson:"current_location,omitempty"`
+	PaymentMethod      string    `json:"payment_method"                bson:"payment_method"`
+	CancellationReason string    `json:"cancellation_reason,omitempty" bson:"cancellation_reason,omitempty"`
+	CreatedAt          time.Time `json:"created_at"                    bson:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"                    bson:"updated_at"`
 }
 
 // ---------------------------------------------------------------------------

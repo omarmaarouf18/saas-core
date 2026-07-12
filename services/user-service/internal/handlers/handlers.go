@@ -108,6 +108,7 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users/jobs/track", u.TrackJob)
 	mux.HandleFunc("/users/jobs/get", u.GetJob)
 	mux.HandleFunc("/users/jobs/complete", u.CompleteJob)
+	mux.HandleFunc("/users/jobs/cancel", u.CancelJob)
 	mux.HandleFunc("/users/wallet", u.GetWallet)
 	mux.HandleFunc("/users/wallet/deposit", u.WalletDeposit)
 	mux.HandleFunc("/users/ledger", u.GetLedger)
@@ -405,6 +406,14 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 
 	if job.Status == models.JobStatusCompleted {
 		writeJSON(w, http.StatusConflict, map[string]string{"error": "job already completed"})
+		return
+	}
+	if job.Status == models.JobStatusCancelled {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "job already cancelled"})
+		return
+	}
+	if job.Status != models.JobStatusActive {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "job must be active to be completed"})
 		return
 	}
 
@@ -1197,4 +1206,136 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 	}()
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "location updated"})
+}
+
+// POST /users/jobs/cancel
+func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
+	ip := handlerutil.GetIP(r)
+	if limited, remaining := u.limiter.CheckAndRecord(ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	var req struct {
+		JobID       string `json:"job_id"`
+		RequesterID string `json:"requester_id"`
+		Reason      string `json:"reason"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+
+	if req.JobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		return
+	}
+
+	if strings.TrimSpace(req.Reason) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason is required"})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	// Resolve requester
+	var requesterToken string
+	isInternal := subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
+	if isInternal {
+		// For internal calls, use the requester_id passed in JSON
+		requesterToken = req.RequesterID
+	} else {
+		// For external/client calls, resolve from token or query param
+		requesterToken = r.URL.Query().Get("requester_id")
+		if requesterToken == "" {
+			requesterToken = req.RequesterID
+		}
+	}
+
+	if requesterToken == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester_id parameter is required"})
+		return
+	}
+
+	resolvedRequester, err := resolveToken(requesterToken)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
+	// Check if requester is authorized (must be owner or customer/user of the job)
+	isOwner := resolvedRequester == job.OwnerID
+	isCustomer := resolvedRequester == job.UserID
+
+	if !isOwner && !isCustomer {
+		log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to cancel job %s owned by owner %s and user %s", resolvedRequester, job.ID, job.OwnerID, job.UserID)
+		handlerutil.ShipSecurityEvent(ctx, "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to cancel job %s", job.ID), handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to cancel this job"})
+		return
+	}
+
+	// State-specific cancellation rules
+	switch job.Status {
+	case models.JobStatusCompleted:
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "job already completed"})
+		return
+	case models.JobStatusCancelled:
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "job already cancelled"})
+		return
+	case models.JobStatusActive:
+		// Active jobs can only be cancelled by the owner
+		if !isOwner {
+			// FLAGGED: Customers cannot directly cancel active/in-progress jobs. This prevents them from cancelling
+			// out from under an employee who is already working. They must go through a complaint ticket.
+			writeJSON(w, http.StatusForbidden, map[string]string{
+				"error": "customer-initiated cancellation of active jobs is not allowed. Please open a complaint ticket.",
+			})
+			return
+		}
+	case models.JobStatusPending:
+		// Both owner and customer can cancel pending jobs.
+	}
+
+	// Refund escrow if not COD (since escrow was locked during TrackJob)
+	if job.PaymentMethod != "cod" {
+		svc := u.store.GetServiceByID(ctx, job.ServiceID)
+		if svc == nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "service not found for job"})
+			return
+		}
+		dist := haversineKm(job.Location.Latitude, job.Location.Longitude, svc.Latitude, svc.Longitude)
+		amount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
+
+		if err := u.store.RefundEscrow(ctx, job.OwnerID, job.ID, amount); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to refund escrow: " + err.Error()})
+			return
+		}
+	}
+
+	// Perform cancellation in DB
+	if err := u.store.CancelJob(ctx, job.ID, req.Reason); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to cancel job: " + err.Error()})
+		return
+	}
+
+	// Audit-log job cancellation
+	handlerutil.ShipSecurityEvent(ctx, "JOB_CANCELLED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("cancelled job %s, reason: %s", job.ID, req.Reason), handlerutil.GetClientIP(r))
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"message": "job cancelled successfully",
+		"job_id":  job.ID,
+		"status":  models.JobStatusCancelled,
+	})
 }
