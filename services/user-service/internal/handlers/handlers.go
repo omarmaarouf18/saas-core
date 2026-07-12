@@ -109,6 +109,7 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users/jobs/get", u.GetJob)
 	mux.HandleFunc("/users/jobs/complete", u.CompleteJob)
 	mux.HandleFunc("/users/jobs/cancel", u.CancelJob)
+	mux.HandleFunc("/users/jobs/revert-by-employee", u.RevertJobsByEmployee)
 	mux.HandleFunc("/users/wallet", u.GetWallet)
 	mux.HandleFunc("/users/wallet/deposit", u.WalletDeposit)
 	mux.HandleFunc("/users/ledger", u.GetLedger)
@@ -1390,5 +1391,46 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 		"message": "job cancelled successfully",
 		"job_id":  job.ID,
 		"status":  models.JobStatusCancelled,
+	})
+}
+
+// POST /users/jobs/revert-by-employee
+func (u *UserService) RevertJobsByEmployee(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	isInternal := subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
+	if !isInternal {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: internal-only endpoint"})
+		return
+	}
+
+	var req struct {
+		EmployeeID string `json:"employee_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body: " + err.Error()})
+		return
+	}
+	if req.EmployeeID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "employee_id is required"})
+		return
+	}
+
+	ctx := r.Context()
+	err := u.store.RevertActiveJobsForEmployee(ctx, req.EmployeeID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	// ShipSecurityEvent originates from user-service now
+	handlerutil.ShipSecurityEvent(ctx, "EMPLOYEE_JOBS_REVERTED", "user-service", "internal_service", "", fmt.Sprintf("reverted active jobs for employee %s", req.EmployeeID), handlerutil.GetClientIP(r))
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"message":     "active jobs successfully reverted to pending/unassigned",
+		"employee_id": req.EmployeeID,
 	})
 }

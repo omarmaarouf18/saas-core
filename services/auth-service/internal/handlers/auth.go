@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/hex"
@@ -22,6 +23,8 @@ import (
 	"github.com/project/auth-service/internal/store"
 	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/jwtutil"
+	"github.com/project/shared/infra/resilience"
+	"github.com/project/shared/infra/tlsutil"
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"golang.org/x/crypto/bcrypt"
@@ -36,6 +39,8 @@ type Auth struct {
 	gatewaySecret        string
 	internalServiceToken string
 	storage              *storage.LocalStorage
+	userServiceClient    *resilience.ResilienceClient
+	userServiceURL       string
 }
 
 // NewAuth creates a new Auth handler group.
@@ -50,6 +55,20 @@ func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config,
 	if isLocal {
 		log.Printf("[AUTH] ⚠ Running in LOCAL mode — OTP codes will be exposed in API responses")
 	}
+
+	var client *http.Client
+	if cfg.TLSCertPath != "" && cfg.TLSKeyPath != "" && cfg.TLSCAPath != "" {
+		var err error
+		client, err = tlsutil.NewClient(cfg.TLSCertPath, cfg.TLSKeyPath, cfg.TLSCAPath)
+		if err != nil {
+			log.Fatalf("[AUTH] Failed to initialize TLS http client: %v", err)
+		}
+	} else {
+		client = http.DefaultClient
+	}
+
+	userServiceClient := resilience.NewClient(client, "user-service", 2, 5*time.Second)
+
 	return &Auth{
 		store:                s,
 		dispatcher:           dispatcher,
@@ -58,6 +77,8 @@ func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config,
 		gatewaySecret:        cfg.GatewaySecret,
 		internalServiceToken: cfg.InternalServiceToken,
 		storage:              storage,
+		userServiceClient:    userServiceClient,
+		userServiceURL:       cfg.UserServiceURL,
 	}
 }
 
@@ -569,9 +590,33 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !req.SetActive {
-		// Revert active jobs for employee
-		if err := a.store.RevertActiveJobsForEmployee(ctx, emp.ID); err != nil {
-			log.Printf("[AUTH] Failed to revert active jobs for employee %s: %v", emp.ID, err)
+		// Revert active jobs for employee via internal user-service endpoint
+		url := fmt.Sprintf("%s/users/jobs/revert-by-employee", a.userServiceURL)
+		reqData := map[string]string{
+			"employee_id": emp.ID,
+		}
+		body, _ := json.Marshal(reqData)
+
+		// Create the HTTP request
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+		if err != nil {
+			log.Printf("[AUTH CRITICAL] Failed to create HTTP request to revert jobs for deactivated employee %s: %v. MANUAL FOLLOW-UP REQUIRED.", emp.ID, err)
+		} else {
+			httpReq.Header.Set("X-Internal-Token", a.internalServiceToken)
+			httpReq.Header.Set("Content-Type", "application/json")
+
+			resp, err := a.userServiceClient.Do(httpReq)
+			if err != nil {
+				log.Printf("[AUTH CRITICAL] HTTP call to revert jobs for deactivated employee %s failed (network error/circuit breaker): %v. MANUAL FOLLOW-UP REQUIRED.", emp.ID, err)
+			} else {
+				defer resp.Body.Close()
+				if resp.StatusCode != http.StatusOK {
+					respBytes, _ := io.ReadAll(resp.Body)
+					log.Printf("[AUTH CRITICAL] HTTP call to revert jobs for deactivated employee %s returned status %d (body: %s). MANUAL FOLLOW-UP REQUIRED.", emp.ID, resp.StatusCode, string(respBytes))
+				} else {
+					log.Printf("[AUTH] Successfully requested user-service to revert active jobs for employee %s", emp.ID)
+				}
+			}
 		}
 	}
 

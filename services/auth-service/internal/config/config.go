@@ -21,6 +21,7 @@ type Config struct {
 	StorageBaseDir       string
 	StorageBaseURL       string
 	RedisURI             string
+	UserServiceURL       string
 }
 
 func Load() (*Config, error) {
@@ -89,6 +90,11 @@ func Load() (*Config, error) {
 		storageBaseURL = "/api/v1"
 	}
 
+	userServiceURL := os.Getenv("USER_SERVICE_URL")
+	if userServiceURL == "" {
+		userServiceURL = "https://user-service:3003"
+	}
+
 	return &Config{
 		Port:                 port,
 		MongoURI:             mongoURI,
@@ -105,5 +111,6 @@ func Load() (*Config, error) {
 		RedisURI:             redisURI,
 		StorageBaseDir:       storageBaseDir,
 		StorageBaseURL:       storageBaseURL,
+		UserServiceURL:       userServiceURL,
 	}, nil
 }

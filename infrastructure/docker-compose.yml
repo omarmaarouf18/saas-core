@@ -160,6 +160,7 @@ services:
       TLS_CERT_PATH: /app/certs/auth-service.crt
       TLS_KEY_PATH: /app/certs/auth-service.key
       TLS_CA_PATH: /app/certs/ca.crt
+      USER_SERVICE_URL: ${USER_SERVICE_URL}
     depends_on:
       mongo:
         condition: service_healthy

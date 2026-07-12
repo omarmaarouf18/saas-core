@@ -80,7 +80,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 | **Host Ports Stripping** | Removed host port exposures for internal services in docker-compose.yml, replacing with expose. | `current` | Verified docker-compose.yml configuration. ✅ |
 | **OTP AES Key Configuration** | Added OTP_AES_KEY variable to docker-compose.yml, .env.example, and .env.local. | `current` | Verified environment configurations. ✅ |
 | **Job Cancellation & Escrow Refund** | Added job status cancelled, CancelJob handler, validation checks, and automatic escrow refund to owner. | `current` | Verified via user-service integration tests. ✅ |
-| **Block Deactivated Employees & Job Reversion** | Checked employee IsActive on CompleteJob, shipping TENANT_SCOPE_BLOCKED event. Reverted active jobs to pending on deactivation. | `current` | Verified via auth-service and user-service integration tests. ✅ |
+| **Block Deactivated Employees & Job Reversion** | Checked employee IsActive on CompleteJob, shipping TENANT_SCOPE_BLOCKED event. Reverted active jobs via internal API (decoupling DB) on deactivation. | `current` | Verified via auth-service and user-service integration tests. ✅ |
 
 
 
@@ -225,6 +225,6 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Both Job Cancellation (Part 1) and Block Deactivated Employees & Job Reversion (Part 2) are fully implemented and verified via integration tests. Awaiting next user instructions.
+* **Immediate Next Step**: Both Job Cancellation (Part 1) and Block Deactivated Employees & Job Reversion (Part 2) are fully implemented and verified via integration tests. Corrected a database coupling violation where `auth-service` was directly updating the `jobs` collection in MongoDB. Direct cross-service database access is disallowed in this codebase to prevent shared-database coupling, ensure domain logic boundaries are respected, and allow services to migrate or modify their schemas independently without breaking other services. Awaiting next user instructions.
 
 

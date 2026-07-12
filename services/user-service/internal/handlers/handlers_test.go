@@ -1205,4 +1205,72 @@ func TestUserServiceHandlers(t *testing.T) {
 			t.Errorf("Expected 403 Forbidden for deactivated employee completing job, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 	})
+
+	// Test: RevertJobsByEmployee Endpoint
+	t.Run("RevertJobsByEmployee Endpoint", func(t *testing.T) {
+		ctx := context.Background()
+
+		// 1. Unauthenticated request (no token)
+		reqBody := map[string]any{
+			"employee_id": "test-emp-999",
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/users/jobs/revert-by-employee", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		u.RevertJobsByEmployee(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for unauthenticated revert call, got %d", rec.Code)
+		}
+
+		// 2. Successful revert (with internal token)
+		// Seed an active job
+		activeJob := &models.Job{
+			ID:            "job-to-revert-1",
+			OwnerID:       "kyc-approved-owner",
+			UserID:        "customer-123",
+			EmployeeID:    "test-emp-999",
+			ServiceID:     "svc-deact-999",
+			Status:        models.JobStatusActive,
+			PaymentMethod: "cod",
+		}
+		_ = s.CreateJob(ctx, activeJob)
+
+		// Seed a non-active job that should NOT be reverted (e.g., completed)
+		completedJob := &models.Job{
+			ID:            "job-to-revert-2",
+			OwnerID:       "kyc-approved-owner",
+			UserID:        "customer-123",
+			EmployeeID:    "test-emp-999",
+			ServiceID:     "svc-deact-999",
+			Status:        models.JobStatusCompleted,
+			PaymentMethod: "cod",
+		}
+		_ = s.CreateJob(ctx, completedJob)
+
+		req = httptest.NewRequest("POST", "/users/jobs/revert-by-employee", bytes.NewReader(body))
+		req.Header.Set("X-Internal-Token", "mock-internal-token")
+		rec = httptest.NewRecorder()
+		u.RevertJobsByEmployee(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for authenticated revert call, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// Verify first job is reverted
+		j1 := s.GetJob(ctx, "job-to-revert-1")
+		if j1 == nil {
+			t.Fatalf("Failed to retrieve job 1")
+		}
+		if j1.Status != models.JobStatusPending || j1.EmployeeID != "" {
+			t.Errorf("Expected job 1 to be reverted to pending/unassigned, got status=%s, employee_id=%s", j1.Status, j1.EmployeeID)
+		}
+
+		// Verify completed job remains completed
+		j2 := s.GetJob(ctx, "job-to-revert-2")
+		if j2 == nil {
+			t.Fatalf("Failed to retrieve job 2")
+		}
+		if j2.Status != models.JobStatusCompleted || j2.EmployeeID != "test-emp-999" {
+			t.Errorf("Expected job 2 to remain completed/assigned, got status=%s, employee_id=%s", j2.Status, j2.EmployeeID)
+		}
+	})
 }

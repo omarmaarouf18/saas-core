@@ -359,26 +359,6 @@ func (s *MongoDB) ToggleEmployeeActive(ctx context.Context, employeeEmail, owner
 	return nil
 }
 
-// RevertActiveJobsForEmployee finds all active jobs assigned to an employee and reverts them to pending/unassigned.
-func (s *MongoDB) RevertActiveJobsForEmployee(ctx context.Context, employeeID string) error {
-	coll := s.db.Collection("jobs")
-	filter := bson.M{
-		"employee_id": employeeID,
-		"status":      "active",
-	}
-	update := bson.M{
-		"$set": bson.M{
-			"status":      "pending",
-			"employee_id": "",
-		},
-	}
-	_, err := coll.UpdateMany(ctx, filter, update)
-	if err != nil {
-		return fmt.Errorf("store: revert active jobs: %w", err)
-	}
-	return nil
-}
-
 // ---------------------------------------------------------------------------
 // Audit Log (Action Server)
 // ---------------------------------------------------------------------------

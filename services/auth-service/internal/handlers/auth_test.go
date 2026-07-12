@@ -21,7 +21,6 @@ import (
 	"github.com/project/auth-service/internal/store"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/redis/go-redis/v9"
-	"go.mongodb.org/mongo-driver/v2/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -219,11 +218,39 @@ func setupTestAuth(t *testing.T) (*Auth, *store.MongoDB, func()) {
 	}
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 
+	mockUserServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/users/jobs/revert-by-employee" {
+			if r.Header.Get("X-Internal-Token") != "mock-internal-token" {
+				w.WriteHeader(http.StatusForbidden)
+				json.NewEncoder(w).Encode(map[string]string{"error": "forbidden"})
+				return
+			}
+			var reqData struct {
+				EmployeeID string `json:"employee_id"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&reqData)
+			if reqData.EmployeeID == "fail-me" {
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{"error": "mock error"})
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{
+				"message":     "active jobs successfully reverted",
+				"employee_id": reqData.EmployeeID,
+			})
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+
 	cfg := &config.Config{
 		AppEnv:               "local",
 		GatewaySecret:        "mock-gateway-secret",
 		InternalServiceToken: "mock-internal-token",
 		JWTSecret:            "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2",
+		UserServiceURL:       mockUserServer.URL,
 	}
 
 	dispatcher := &mockOTPDispatcher{}
@@ -238,6 +265,7 @@ func setupTestAuth(t *testing.T) (*Auth, *store.MongoDB, func()) {
 		}
 		mr.Close()
 		rdb.Close()
+		mockUserServer.Close()
 	}
 	return a, s, cleanup
 }
@@ -380,23 +408,13 @@ func TestAuthHandlers(t *testing.T) {
 	json.Unmarshal(rec.Body.Bytes(), &empSignupResp)
 	empUserID := empSignupResp["user_id"].(string)
 
-	// Seed an active job for the employee to test deactivation reversion
 	ctx := context.Background()
-	jobsColl := s.DatabaseForTesting().Collection("jobs")
-	activeJob := bson.M{
-		"_id":         "deact-job-123",
-		"employee_id": empUserID,
-		"status":      "active",
-	}
-	if _, err := jobsColl.InsertOne(ctx, activeJob); err != nil {
-		t.Fatalf("Failed to seed active job: %v", err)
-	}
 
 	toggleBody := models.ToggleEmployeeRequest{
 		EmployeeEmail: "employee@example.com",
 		OwnerEmail:    "owner@example.com",
 		OwnerPassword: "password123",
-		SetActive:     false, // Freeze the employee
+		SetActive:     false, // Freeze the employee (triggers mock user-service call)
 	}
 	b7, _ := json.Marshal(toggleBody)
 	req = httptest.NewRequest("POST", "/auth/employee/toggle", bytes.NewReader(b7))
@@ -406,16 +424,32 @@ func TestAuthHandlers(t *testing.T) {
 		t.Errorf("Expected 200 OK for ToggleEmployee, got %d. Body: %s", rec.Code, rec.Body.String())
 	}
 
-	// Verify that the job was reverted
-	var updatedJob struct {
-		EmployeeID string `bson:"employee_id"`
-		Status     string `bson:"status"`
+	// Verify that deactivation succeeds (retains status OK) even if user-service call fails
+	failEmp := &models.User{
+		ID:       "fail-me",
+		Email:    "fail-me@example.com",
+		Password: "password123",
+		Role:     models.RoleEmployee,
+		OwnerID:  ownerID,
+		IsActive: true,
 	}
-	if err := jobsColl.FindOne(ctx, bson.M{"_id": "deact-job-123"}).Decode(&updatedJob); err != nil {
-		t.Fatalf("Failed to find updated job: %v", err)
+	_, err := s.DatabaseForTesting().Collection("users").InsertOne(ctx, failEmp)
+	if err != nil {
+		t.Fatalf("Failed to insert fail-me employee: %v", err)
 	}
-	if updatedJob.Status != "pending" || updatedJob.EmployeeID != "" {
-		t.Errorf("Expected job to be reverted to pending/unassigned, got status=%s, employee_id=%s", updatedJob.Status, updatedJob.EmployeeID)
+
+	toggleFailBody := models.ToggleEmployeeRequest{
+		EmployeeEmail: "fail-me@example.com",
+		OwnerEmail:    "owner@example.com",
+		OwnerPassword: "password123",
+		SetActive:     false, // Freeze the employee (will return 500 error from mock)
+	}
+	bFail, _ := json.Marshal(toggleFailBody)
+	req = httptest.NewRequest("POST", "/auth/employee/toggle", bytes.NewReader(bFail))
+	rec = httptest.NewRecorder()
+	a.ToggleEmployee(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for ToggleEmployee deactivation even when user-service call fails, got %d. Body: %s", rec.Code, rec.Body.String())
 	}
 
 	// 5. Test SimulateEmployeeAction (Success path)

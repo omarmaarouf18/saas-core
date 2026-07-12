@@ -250,6 +250,25 @@ func (s *MongoDB) UpdateJobStatus(ctx context.Context, id string, status models.
 	return nil
 }
 
+// RevertActiveJobsForEmployee finds all active jobs assigned to an employee and reverts them to pending/unassigned.
+func (s *MongoDB) RevertActiveJobsForEmployee(ctx context.Context, employeeID string) error {
+	filter := bson.M{
+		"employee_id": employeeID,
+		"status":      models.JobStatusActive,
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"status":      models.JobStatusPending,
+			"employee_id": "",
+		},
+	}
+	_, err := s.jobs.UpdateMany(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("store: revert active jobs: %w", err)
+	}
+	return nil
+}
+
 func (s *MongoDB) GetServiceByID(ctx context.Context, id string) *models.Service {
 	var svc models.Service
 	if err := s.services.FindOne(ctx, bson.M{"_id": id}).Decode(&svc); err != nil {
