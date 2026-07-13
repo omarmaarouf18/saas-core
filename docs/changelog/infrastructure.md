@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **Infrastructure &
 
 ---
 
+## KYC Approval CLI Tool
+
+- **Implementation Detail**: Created out-of-band CLI tool to approve or reject owner KYC documents, verifying user role/state and prompting for confirmation before writing.
+- **Commit SHA**: ``current``
+- **Verification**: Verified via unit and integration tests. ✅
+
 ## Automated Test Coverage
 
 - **Implementation Detail**: Added table-driven and integration unit tests covering bcrypt hashing, rate limiter lockout, OTP expiry in auth-service, KYC gating, COD validation, subscription matching in user-service, and websocket channel access control in chat-service.

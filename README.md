@@ -2,19 +2,32 @@
 
 ## Manual KYC Approval Process (Ops Runbook)
 
-To maintain security and avoid exposing administrative endpoints that could be targeted by attackers, Know Your Customer (KYC) approval for tenant owners is deliberately **not** automated or exposed via in-app API endpoints. Instead, approvals must be handled manually by an operations engineer directly in the database.
+To maintain security and avoid exposing administrative endpoints that could be targeted by attackers, Know Your Customer (KYC) approval for tenant owners is deliberately **not** automated or exposed via in-app API endpoints.
 
-### MongoDB Configuration Details
+### Method 1: Using the Ops CLI Tool (Recommended)
+We provide a safe, validated CLI tool to manage owner KYC documents. The tool looks up the user by email, verifies that their role is owner, checks that their current KYC status is exactly `pending_super_admin_approval`, and prompts for confirmation before applying changes.
+
+```bash
+# To approve an owner's KYC status:
+MONGO_URI=mongodb://localhost:27017 go run ./services/auth-service/cmd/approve-kyc --email=owner@example.com --action=approve
+
+# To reject an owner's KYC status:
+MONGO_URI=mongodb://localhost:27017 go run ./services/auth-service/cmd/approve-kyc --email=owner@example.com --action=reject --reason="Documents are blurry"
+
+# Scripted/Non-interactive bypass (using --yes flag):
+MONGO_URI=mongodb://localhost:27017 go run ./services/auth-service/cmd/approve-kyc --email=owner@example.com --action=approve --yes
+```
+
+### Method 2: Manual Database Updates (Fallback)
+If the CLI tool is unavailable, approvals can be handled manually by an operations engineer directly in the database.
+
 * **Database**: `saas_platform`
 * **Collection**: `users`
 * **KYC Status Field**: `kyc_status`
 * **Approved Value**: `"approved"`
 * **Pending Value**: `"pending_super_admin_approval"`
 
----
-
-### Step-by-Step Approval Instructions
-
+#### Step-by-Step Approval Instructions
 1. **Access the MongoDB database instance** (e.g., via `mongosh` or your database admin tool).
 2. **Switch to the platform database**:
    ```javascript
