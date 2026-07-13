@@ -16,3 +16,10 @@ This file tracks historical entries for the primary category: **Documentation Ch
 - **Commit SHA**: ``current``
 - **Verification**: Verified via document generation. ✅
 
+## Document Client-Submitted Coordinates Pricing Risk
+
+- **Implementation Detail**: Documented the risk associated with client-submitted coordinates for distance-based pricing and escrow calculations in AI_CONTEXT.md.
+- **Commit SHA**: ``current``
+- **Verification**: Verified via review of AI_CONTEXT.md. ✅
+
+
