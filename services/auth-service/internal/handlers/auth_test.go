@@ -360,7 +360,8 @@ func TestAuthHandlers(t *testing.T) {
 	}
 
 	// 4. Test ToggleEmployee (Success path)
-	// Sign up an employee first
+	// Regression tests for owner-authenticated employee signup:
+	// (a) employee signup with no token -> rejected (401)
 	empSignupBody := models.SignupRequest{
 		Email:    "employee@example.com",
 		Password: "password123",
@@ -371,8 +372,38 @@ func TestAuthHandlers(t *testing.T) {
 	req = httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b6))
 	rec = httptest.NewRecorder()
 	a.Signup(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for employee signup without token, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// (b) employee signup with a token belonging to a different user than owner_id -> rejected (403)
+	diffUserToken, _ := jwtutil.GenerateToken("different-owner-id", string(models.RoleOwner), "different-owner-id", "diff@example.com")
+	req = httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b6))
+	req.Header.Set("Authorization", "Bearer "+diffUserToken)
+	rec = httptest.NewRecorder()
+	a.Signup(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden for employee signup with mismatched owner token, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// (b2) employee signup with a non-owner token -> rejected (403)
+	nonOwnerToken, _ := jwtutil.GenerateToken(ownerID, string(models.RoleUser), ownerID, "user@example.com")
+	req = httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b6))
+	req.Header.Set("Authorization", "Bearer "+nonOwnerToken)
+	rec = httptest.NewRecorder()
+	a.Signup(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden for employee signup with non-owner token, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// (c) employee signup with a valid owner-matching token -> succeeds (201)
+	validOwnerToken, _ := jwtutil.GenerateToken(ownerID, string(models.RoleOwner), ownerID, "owner@example.com")
+	req = httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b6))
+	req.Header.Set("Authorization", "Bearer "+validOwnerToken)
+	rec = httptest.NewRecorder()
+	a.Signup(rec, req)
 	if rec.Code != http.StatusCreated {
-		t.Errorf("Expected 201 Created for employee signup, got %d. Body: %s", rec.Code, rec.Body.String())
+		t.Errorf("Expected 201 Created for employee signup with valid owner token, got %d. Body: %s", rec.Code, rec.Body.String())
 	}
 
 	var empSignupResp map[string]any

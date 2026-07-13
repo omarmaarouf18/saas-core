@@ -34,7 +34,7 @@ services:
     container_name: saas-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
@@ -66,6 +66,7 @@ services:
       - ./certs/api-gateway.key:/app/certs/api-gateway.key:ro
       - ./certs/api-gateway-external.crt:/app/certs/api-gateway-external.crt:ro
       - ./certs/api-gateway-external.key:/app/certs/api-gateway-external.key:ro
+      - ../shared/infra:/shared/infra:ro
     environment:
       PORT: ${API_GATEWAY_PORT}
       MONGO_URI: ${MONGO_URI}
@@ -106,6 +107,7 @@ services:
       - ./certs/ca.crt:/app/certs/ca.crt:ro
       - ./certs/chat-service.crt:/app/certs/chat-service.crt:ro
       - ./certs/chat-service.key:/app/certs/chat-service.key:ro
+      - ../shared/infra:/shared/infra:ro
     environment:
       PORT: ${CHAT_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
@@ -144,6 +146,7 @@ services:
       - ./certs/ca.crt:/app/certs/ca.crt:ro
       - ./certs/auth-service.crt:/app/certs/auth-service.crt:ro
       - ./certs/auth-service.key:/app/certs/auth-service.key:ro
+      - ../shared/infra:/shared/infra:ro
     environment:
       PORT: ${AUTH_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
@@ -183,6 +186,7 @@ services:
       - ./certs/ca.crt:/app/certs/ca.crt:ro
       - ./certs/user-service.crt:/app/certs/user-service.crt:ro
       - ./certs/user-service.key:/app/certs/user-service.key:ro
+      - ../shared/infra:/shared/infra:ro
     environment:
       PORT: ${USER_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
@@ -221,6 +225,7 @@ services:
       - ./certs/ca.crt:/app/certs/ca.crt:ro
       - ./certs/notification-service.crt:/app/certs/notification-service.crt:ro
       - ./certs/notification-service.key:/app/certs/notification-service.key:ro
+      - ../shared/infra:/shared/infra:ro
     environment:
       PORT: ${NOTIFICATION_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}

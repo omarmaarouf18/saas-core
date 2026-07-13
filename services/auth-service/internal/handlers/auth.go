@@ -146,28 +146,77 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
+	clientIP := a.getClientIP(r)
+
 	// KYE Enforce OwnerID binding for employees
 	if req.Role == models.RoleEmployee {
+		// Rate limiting check on client IP
+		if locked, remaining := a.limiter.IsLocked(clientIP); locked {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error": fmt.Sprintf("too many failed attempts from this IP. Please try again in %.0f seconds.", remaining.Seconds()),
+			})
+			return
+		}
+
 		if req.OwnerID == "" {
+			a.limiter.RecordFailure(clientIP)
+			handlerutil.ShipSecurityEvent(ctx, "UNAUTHORIZED_EMPLOYEE_PROVISION_BLOCKED", "auth-service", "unauthenticated", "", fmt.Sprintf("attempted to provision employee %s: missing owner_id", req.Email), handlerutil.GetClientIP(r))
 			writeJSON(w, http.StatusBadRequest, map[string]string{
 				"error": "owner_id binding is required for employees to satisfy KYE",
 			})
 			return
 		}
+
+		// Require proof that the caller is the owner identified by owner_id.
+		claims, err := a.authenticateUser(r)
+		if err != nil {
+			a.limiter.RecordFailure(clientIP)
+			handlerutil.ShipSecurityEvent(ctx, "UNAUTHORIZED_EMPLOYEE_PROVISION_BLOCKED", "auth-service", "unauthenticated", req.OwnerID, fmt.Sprintf("attempted to provision employee %s: authentication failed: %s", req.Email, err.Error()), handlerutil.GetClientIP(r))
+			writeJSON(w, http.StatusUnauthorized, map[string]string{
+				"error": "missing or invalid authorization header, Bearer token required: " + err.Error(),
+			})
+			return
+		}
+
+		if claims.UserID != req.OwnerID {
+			a.limiter.RecordFailure(clientIP)
+			handlerutil.ShipSecurityEvent(ctx, "UNAUTHORIZED_EMPLOYEE_PROVISION_BLOCKED", "auth-service", claims.UserID, req.OwnerID, fmt.Sprintf("attempted to provision employee %s: token user ID %s does not match requested owner ID %s", req.Email, claims.UserID, req.OwnerID), handlerutil.GetClientIP(r))
+			writeJSON(w, http.StatusForbidden, map[string]string{
+				"error": "access denied: caller is not the owner specified by owner_id",
+			})
+			return
+		}
+
+		if claims.Role != string(models.RoleOwner) {
+			a.limiter.RecordFailure(clientIP)
+			handlerutil.ShipSecurityEvent(ctx, "UNAUTHORIZED_EMPLOYEE_PROVISION_BLOCKED", "auth-service", claims.UserID, req.OwnerID, fmt.Sprintf("attempted to provision employee %s: token role %s is not owner", req.Email, claims.Role), handlerutil.GetClientIP(r))
+			writeJSON(w, http.StatusForbidden, map[string]string{
+				"error": "access denied: owner role required to provision employees",
+			})
+			return
+		}
+
 		// Verify owner exists and has RoleOwner
 		owner := a.store.GetByID(ctx, req.OwnerID)
 		if owner == nil {
+			a.limiter.RecordFailure(clientIP)
+			handlerutil.ShipSecurityEvent(ctx, "UNAUTHORIZED_EMPLOYEE_PROVISION_BLOCKED", "auth-service", claims.UserID, req.OwnerID, fmt.Sprintf("attempted to provision employee %s: specified owner %s does not exist", req.Email, req.OwnerID), handlerutil.GetClientIP(r))
 			writeJSON(w, http.StatusBadRequest, map[string]string{
 				"error": fmt.Sprintf("specified owner_id %q does not exist", req.OwnerID),
 			})
 			return
 		}
 		if owner.Role != models.RoleOwner {
+			a.limiter.RecordFailure(clientIP)
+			handlerutil.ShipSecurityEvent(ctx, "UNAUTHORIZED_EMPLOYEE_PROVISION_BLOCKED", "auth-service", claims.UserID, req.OwnerID, fmt.Sprintf("attempted to provision employee %s: specified user %s has role %s, not owner", req.Email, req.OwnerID, owner.Role), handlerutil.GetClientIP(r))
 			writeJSON(w, http.StatusBadRequest, map[string]string{
 				"error": fmt.Sprintf("user %q is not an owner tenant", req.OwnerID),
 			})
 			return
 		}
+
+		// Reset limiter upon successful checks/provisioning start
+		a.limiter.Reset(clientIP)
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)

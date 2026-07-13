@@ -243,6 +243,7 @@
 
     <script>
         const BASE_URL = "http://localhost:8000";
+        let globalToken = "";
 
         // Intercept API Calls
         async function req(method, path, bodyObj) {
@@ -257,6 +258,9 @@
                 method: method,
                 headers: { 'Content-Type': 'application/json' }
             };
+            if (globalToken) {
+                options.headers['Authorization'] = 'Bearer ' + globalToken;
+            }
             if (bodyObj) options.body = reqBodyStr;
 
             try {
@@ -264,7 +268,13 @@
                 const status = res.status;
                 const text = await res.text();
                 let parsed = text;
-                try { parsed = JSON.stringify(JSON.parse(text), null, 2); } catch(e) {}
+                try {
+                    const data = JSON.parse(text);
+                    if (data && data.token) {
+                        globalToken = data.token;
+                    }
+                    parsed = JSON.stringify(data, null, 2);
+                } catch(e) {}
                 
                 let resClass = status >= 400 ? 'res-err' : 'res-ok';
                 let resLog = `<div class="${resClass}"><span class="timestamp">[${ts}]</span> [RES] HTTP ${status}\n${parsed}</div>`;

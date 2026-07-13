@@ -286,4 +286,11 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``current``
 - **Verification**: Verified via unit tests. ✅
 
+## Owner-Authenticated Employee Provisioning
+
+- **Implementation Detail**: Enforced owner authentication on the employee signup endpoint (`POST /auth/signup` when `role=employee`), requiring a valid JWT matching the requested `owner_id` with role `owner`. Added rate limiting and audit logging via `UNAUTHORIZED_EMPLOYEE_PROVISION_BLOCKED` security events. Documented in [ADR-0001](../adr/0001-owner-authenticated-employee-provisioning.md).
+- **Commit SHA**: ``current``
+- **Verification**: Verified via auth-service integration tests. ✅
+
+
 

@@ -34,6 +34,8 @@ The platform uses a microservices architecture coordinated via a reverse-proxy A
   * `shared/infra/tlsutil`: TLS config loaders for mutual TLS (mTLS) server and client setup.
   * `shared/infra/jwtutil`: Cryptographically signed JSON Web Token (JWT) generation and validation helpers.
 
+* **Security Decisions & Architecture Records**: Refer to [docs/adr/README.md](docs/adr/README.md) as the source of truth for security-boundary decisions going forward. Numbered ADR files detail exact context, implementation decisions, and consequences. Future contributors must document significant design and security changes as ADRs.
+
 ---
 
 ## Feature Status
@@ -44,7 +46,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 
 The detailed project history is distributed across categorized changelog files. Please consult the specific category files for complete details (including file/line references, commit SHAs, and verification details):
 
-*   [Security Fixes](docs/changelog/security-fixes.md) — 45 vulnerabilities found and fixed (e.g. mTLS, JWT signatures, timing attacks, IDOR checks, atomic agent assignment).
+*   [Security Fixes](docs/changelog/security-fixes.md) — 46 vulnerabilities found and fixed (including Owner-Authenticated Employee Provisioning, see [ADR-0001](docs/adr/0001-owner-authenticated-employee-provisioning.md)).
 *   [New Features](docs/changelog/new-features.md) — 20 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters).
 *   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 16 tooling, CI, module refactoring, and onboarding CLI tools.
 *   [Bug Fixes](docs/changelog/bug-fixes.md) — 6 corrections to existing non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs).
