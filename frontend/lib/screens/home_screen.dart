@@ -26,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     if (auth.user?.role == 'owner') {
       await Provider.of<OwnerProvider>(context, listen: false)
-          .fetchDashboardData(auth.user!.id);
+          .fetchDashboardData(auth.token!);
     }
   }
 

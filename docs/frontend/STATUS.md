@@ -13,7 +13,7 @@
         *   *Android*: **[VERIFIED]** successfully compiled debug APK using local Adoptium JDK 17 and Android SDK platforms-36/build-tools-34. Output location: `frontend/build/app/outputs/flutter-apk/app-debug.apk` (Size: 153,369,344 bytes).
         *   *iOS*: **[UNVERIFIED]** macOS/Xcode toolchain unavailable (build execution requires a Mac environment).
 *   **Phase 2: Owner Core Functionality** — **[IN PROGRESS]**
-    *   *Dashboard Layout*: **[VERIFIED]** Owner dashboard metrics grid displays wallet balance (via GetWallet) and subscription status (via Subscription) with active jobs placeholder layout.
+    *   *Dashboard Layout*: **[VERIFIED]** Owner dashboard metrics grid displays wallet balance (via GetWallet) and subscription status (via Subscription) with active jobs placeholder layout. Confirmed working end-to-end against live docker-compose backend using real signed owner JWT token resolve logic.
     *   *Wallet Management*: **[NOT STARTED]** Visual balance representation, transaction history, and deposit dialog.
     *   *Employee Management*: **[NOT STARTED]** Registration, toggling (freeze/activate), and audit logs.
     *   *Service Directory Configuration*: **[NOT STARTED]** KYC-gated service creation form.

@@ -24,7 +24,7 @@ class OwnerProvider extends ChangeNotifier {
     try {
       // 1. Fetch Wallet Balance
       final walletRes = await apiClient.get('/users/wallet', queryParams: {'tenant_id': tenantId});
-      _walletBalance = (walletRes['balance'] as num?)?.toDouble() ?? 0.0;
+      _walletBalance = (walletRes['total_balance'] as num?)?.toDouble() ?? 0.0;
 
       // 2. Fetch Subscription status
       final subRes = await apiClient.get('/users/subscription', queryParams: {'tenant_id': tenantId});

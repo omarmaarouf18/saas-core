@@ -322,6 +322,7 @@ func TestUserServiceHandlers(t *testing.T) {
 
 	// Test 7: WalletDeposit Max Amount Gating
 	t.Run("WalletDeposit Max Amount Gating", func(t *testing.T) {
+		rdb.FlushAll(context.Background())
 		// Mock auth lookup to return 200 OK for tenant ID with approved KYC status
 		mockAuthServer3 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -356,6 +357,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 
 		// B. Exceeded deposit limit: 2,000,000 -> 400 Bad Request
+		rdb.FlushAll(context.Background())
 		reqBody = map[string]any{
 			"tenant_id": tokenTenant,
 			"amount":    2000000.0,
@@ -372,6 +374,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 
 		// C. Non-local environment: AppEnv=production -> 400 Bad Request
+		rdb.FlushAll(context.Background())
 		cfgProd := &config.Config{
 			AppEnv:               "production",
 			AuthServiceURL:       mockAuthServer3.URL,
@@ -394,6 +397,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 
 		// D. Unset/Empty environment: AppEnv="" -> 400 Bad Request
+		rdb.FlushAll(context.Background())
 		cfgUnset := &config.Config{
 			AppEnv:               "",
 			AuthServiceURL:       mockAuthServer3.URL,
