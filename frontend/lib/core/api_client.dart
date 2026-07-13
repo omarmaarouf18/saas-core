@@ -14,18 +14,29 @@ class ApiClientException implements Exception {
   String toString() => "ApiClientException: $message (status: $statusCode)";
 }
 
+bool bypassBadCertificate(X509Certificate cert, String host, int port) {
+  // Strictly gate self-signed trust to local development / debug builds
+  return kDebugMode &&
+      (host == 'localhost' ||
+       host == '127.0.0.1' ||
+       host == '10.0.2.2' ||
+       host == '10.0.3.2');
+}
+
 class ApiClient {
   final String baseUrl;
   late final http.Client _client;
   String? _jwtToken;
 
-  ApiClient({this.baseUrl = 'https://localhost:8080/api/v1'}) {
+  ApiClient({
+    this.baseUrl = const String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'https://localhost:8080/api/v1',
+    ),
+  }) {
     // Setup security overrides for local developer self-signed certificates.
     final httpClient = HttpClient();
-    httpClient.badCertificateCallback = (X509Certificate cert, String host, int port) {
-      // Strictly gate self-signed trust to local development / debug builds
-      return kDebugMode && (host == 'localhost' || host == '127.0.0.1' || host == '10.0.2.2');
-    };
+    httpClient.badCertificateCallback = bypassBadCertificate;
     _client = io_client.IOClient(httpClient);
   }
 

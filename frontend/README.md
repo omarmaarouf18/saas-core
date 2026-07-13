@@ -18,14 +18,26 @@ This directory contains the Flutter frontend application for the SaaS Core Platf
     ```bash
     flutter run
     ```
-3.  **Targeting Different Backend URLs**:
-    The client points to the API gateway URL. By default, it targets:
-    `https://localhost:8080/api/v1`
-    To change the target server URL (e.g. for staging or Android emulator loopbacks), customize the `baseUrl` parameter passed to `ApiClient` inside `lib/main.dart`:
-    ```dart
-    // Example targeting Android emulator loopback:
-    final apiClient = ApiClient(baseUrl: 'https://10.0.2.2:8080/api/v1');
-    ```
+## Targeting Different Backend URLs
+The client points to the API gateway URL. By default, it targets:
+`https://localhost:8080/api/v1`
+
+### Method 1: Using compile-time environment definitions (Recommended)
+You can customize the base URL at run/build time using the `--dart-define` flag:
+```bash
+# Android Studio AVD (Default Android emulator loopback)
+flutter run --dart-define=API_BASE_URL=https://10.0.2.2:8080/api/v1
+
+# Genymotion emulator loopback
+flutter run --dart-define=API_BASE_URL=https://10.0.3.2:8080/api/v1
+```
+
+### Method 2: Customizing construction argument
+Alternatively, customize the `baseUrl` parameter passed to `ApiClient` inside `lib/main.dart` or during initialization:
+```dart
+// Example targeting Genymotion loopback:
+final apiClient = ApiClient(baseUrl: 'https://10.0.3.2:8080/api/v1');
+```
 
 ## Platform Building
 To build production bundles, ensure your local environment contains the required platform-specific toolchains:

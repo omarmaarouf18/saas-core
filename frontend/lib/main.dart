@@ -12,10 +12,7 @@ class DevHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
-        // Bypass certificate verification ONLY in local debug/development mode.
-        return kDebugMode && (host == 'localhost' || host == '127.0.0.1' || host == '10.0.2.2');
-      };
+      ..badCertificateCallback = bypassBadCertificate;
   }
 }
 
