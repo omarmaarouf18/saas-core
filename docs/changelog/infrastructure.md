@@ -7,7 +7,7 @@ This file tracks historical entries for the primary category: **Infrastructure &
 ## KYC Approval CLI Tool
 
 - **Implementation Detail**: Created out-of-band CLI tool to approve or reject owner KYC documents, verifying user role/state and prompting for confirmation before writing.
-- **Commit SHA**: ``current``
+- **Commit SHA**: `fcfe636`
 - **Verification**: Verified via unit and integration tests. ✅
 
 ## Automated Test Coverage
