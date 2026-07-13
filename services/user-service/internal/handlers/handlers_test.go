@@ -369,6 +369,23 @@ func TestUserServiceHandlers(t *testing.T) {
 		if !strings.Contains(rec.Body.String(), "amount up to 1000000 required") {
 			t.Errorf("Expected limit error message, got: %s", rec.Body.String())
 		}
+
+		// C. Non-local environment: APP_ENV=production -> 400 Bad Request
+		t.Setenv("APP_ENV", "production")
+		reqBody = map[string]any{
+			"tenant_id": tokenTenant,
+			"amount":    500.0,
+		}
+		body, _ = json.Marshal(reqBody)
+		req = httptest.NewRequest("POST", "/users/wallet/deposit", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u3.WalletDeposit(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for production env deposit, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "payment gateway not yet integrated") {
+			t.Errorf("Expected gateway integration error message, got: %s", rec.Body.String())
+		}
 	})
 
 	// Test 8: UpdateJobLocation Gating and Verification

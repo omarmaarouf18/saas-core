@@ -14,6 +14,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -597,6 +598,14 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	appEnv := os.Getenv("APP_ENV")
+	if appEnv != "local" && appEnv != "test" && appEnv != "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "payment gateway not yet integrated",
+		})
 		return
 	}
 

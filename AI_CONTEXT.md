@@ -56,8 +56,8 @@ The detailed project history is distributed across categorized changelog files. 
   * **Decision**: Log shipping performs a separate CloudWatch Logs `PutLogEvents` API call per event rather than using client-side batching or queuing.
   * **Reasoning**: Accepted as a known limitation in the initial rollout. A genuine high-volume abuse burst could hit CloudWatch's per-stream PutLogEvents throttling limit and silently drop events at exactly the moment they matter most. Batching/queuing events client-side is flagged for future implementation.
 * **E-Wallet and Bank Card Payment Flows**
-  * **Decision**: Only Cash on Delivery (`cod`) is allowed as a payment method for now; other methods are rejected during tracking/booking.
-  * **Reasoning**: The interface for Stripe or other bank card gateways is placeholder-only; to prevent actual security vulnerabilities or un-auditable fund flows, all payment pathways besides `cod` are explicitly blocked at the endpoint level.
+  * **Decision**: Only Cash on Delivery (`cod`) is allowed as a payment method for now; other methods are rejected during tracking/booking. Similarly, the public `/users/wallet/deposit` endpoint is gated to reject deposits in non-local/non-test environments with a "payment gateway not yet integrated" error.
+  * **Reasoning**: The interface for Stripe or other bank card gateways is placeholder-only; to prevent actual security vulnerabilities or un-auditable fund flows, all payment pathways besides `cod` (for tracking/booking) and all real environment wallet deposits are explicitly blocked at the endpoint level.
 * **Manual KYC Approval Process (Ops Runbook)**
   * **Decision**: Initial KYC status approval for tenant owners is deliberately not automated or exposed via API endpoints and must be handled manually directly in the database.
   * **Reasoning**: To maintain security and avoid exposing administrative endpoints that could be targeted by attackers. In contrast, KYB/KYE document reviews are performed via the `/auth/kyb-kye/review` endpoint, which is secured by individual reviewer credentials and internal network token validations.

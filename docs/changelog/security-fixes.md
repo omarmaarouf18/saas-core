@@ -279,3 +279,10 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Implementation Detail**: Restricted logging of plaintext OTP code values during signup and login 2FA in `services/auth-service/internal/handlers/auth.go#L229` and `services/auth-service/internal/handlers/auth.go#L371` to local environments only (`isLocal == true`).
 - **Commit SHA**: ``current``
 - **Verification**: Verified via auth-service integration/unit tests. ✅
+
+## Gated Wallet Deposit Endpoint
+
+- **Implementation Detail**: Added an environment gate to `services/user-service/internal/handlers/handlers.go#L603` to reject wallet deposit requests in non-local/non-test environments, preventing unverified fund creation.
+- **Commit SHA**: ``current``
+- **Verification**: Verified via unit tests. ✅
+
