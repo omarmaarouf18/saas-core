@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -59,10 +60,10 @@ func TestUserServiceHandlers(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		id := r.URL.Query().Get("id")
 
-		if id == "kyc-approved-owner" {
+		if strings.HasPrefix(id, "kyc-approved-owner") {
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(map[string]any{
-				"id":         "kyc-approved-owner",
+				"id":         id,
 				"role":       "owner",
 				"kyc_status": "approved",
 				"is_active":  true,
@@ -1290,6 +1291,8 @@ func TestUserServiceHandlers(t *testing.T) {
 
 	// Test: Escrow Integrity and Speed Validation
 	t.Run("Escrow Integrity and Speed Validation", func(t *testing.T) {
+		u.appEnv = "test"
+		defer func() { u.appEnv = "" }()
 		ctx := context.Background()
 		tokenEmp, _ := jwtutil.GenerateToken("active-employee", "employee", "kyc-approved-owner-integrity", "employee@example.com")
 
@@ -1446,4 +1449,406 @@ func TestUserServiceHandlers(t *testing.T) {
 			t.Errorf("Expected error to be 'implausible_speed', got %v", locResp["error"])
 		}
 	})
+
+	// Test: Zero-Value Escrow and TrackJob Rollback
+	t.Run("Zero-Value Escrow and TrackJob Rollback", func(t *testing.T) {
+		u.appEnv = "test"
+		defer func() { u.appEnv = "" }()
+		ctx := context.Background()
+		tokenEmp, _ := jwtutil.GenerateToken("active-employee", "employee", "kyc-approved-owner-zeroval", "employee@example.com")
+		tokenOwner, _ := jwtutil.GenerateToken("kyc-approved-owner-zeroval", "owner", "kyc-approved-owner-zeroval", "owner@example.com")
+
+		// 1. Setup service
+		testSvc := &models.Service{
+			ID:               "svc-zeroval-999",
+			TenantID:         "kyc-approved-owner-zeroval",
+			Name:             "Zeroval Svc",
+			Category:         "transport",
+			TenantBasePrice:  10.0,
+			TenantPricePerKM: 10.0,
+			Latitude:         30.0,
+			Longitude:        30.0,
+		}
+		s.CreateService(ctx, testSvc)
+
+		// 2. Setup wallet for owner
+		_ = s.Deposit(ctx, "kyc-approved-owner-zeroval", 100.0)
+
+		// (a) Test: CompleteJob/CancelJob with LockedEscrowAmount == 0 fails closed
+		jobZero := &models.Job{
+			ID:                 "job-zeroval-zero",
+			OwnerID:            "kyc-approved-owner-zeroval",
+			UserID:             "customer-123",
+			EmployeeID:         "active-employee",
+			ServiceID:          "svc-zeroval-999",
+			Status:             models.JobStatusActive,
+			PaymentMethod:      "wallet",
+			LockedEscrowAmount: 0.0, // Explicitly zero
+			Location: models.Location{
+				Latitude:  30.1,
+				Longitude: 30.1,
+			},
+			CreatedAt: time.Now().Add(-1 * time.Hour),
+		}
+		_ = s.CreateJob(ctx, jobZero)
+		_ = s.LockEscrow(ctx, "kyc-approved-owner-zeroval", "job-zeroval-zero", 50.0) // lock some wallet escrow but job record has 0
+
+		// Attempt CompleteJob
+		reqBody := map[string]any{
+			"job_id":       "job-zeroval-zero",
+			"requester_id": tokenEmp,
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		u.CompleteJob(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for zero LockedEscrowAmount CompleteJob, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		var resp map[string]any
+		_ = json.Unmarshal(rec.Body.Bytes(), &resp)
+		if resp["error"] != "escrow_amount_unrecorded" {
+			t.Errorf("Expected error 'escrow_amount_unrecorded', got %v", resp["error"])
+		}
+
+		// Attempt CancelJob
+		cancelReqBody := map[string]any{
+			"job_id":       "job-zeroval-zero",
+			"requester_id": tokenOwner,
+			"reason":       "testing zero value",
+		}
+		cancelBody, _ := json.Marshal(cancelReqBody)
+		cancelReq := httptest.NewRequest("POST", "/users/jobs/cancel", bytes.NewReader(cancelBody))
+		cancelRec := httptest.NewRecorder()
+		u.CancelJob(cancelRec, cancelReq)
+
+		if cancelRec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for zero LockedEscrowAmount CancelJob, got %d. Body: %s", cancelRec.Code, cancelRec.Body.String())
+		}
+		var cancelResp map[string]any
+		_ = json.Unmarshal(cancelRec.Body.Bytes(), &cancelResp)
+		if cancelResp["error"] != "escrow_amount_unrecorded" {
+			t.Errorf("Expected error 'escrow_amount_unrecorded', got %v", cancelResp["error"])
+		}
+
+		// (b) Test: TrackJob fails cleanly and rolls back wallet/deletes job if UpdateJobLockedEscrow fails
+		mockCtx := &contextMock{
+			Context: context.Background(),
+		}
+
+		// Deposit funds for the track job
+		_ = s.Deposit(ctx, "kyc-approved-owner-zeroval", 500.0)
+
+		tokenUser, _ := jwtutil.GenerateToken("customer-123", "user", "kyc-approved-owner-zeroval", "customer@example.com")
+		trackReqBody := map[string]any{
+			"owner_id":       tokenOwner,
+			"service_id":     "svc-zeroval-999",
+			"user_id":        tokenUser,
+			"employee_id":    tokenEmp,
+			"payment_method": "wallet",
+			"location": models.Location{
+				Latitude:  30.1,
+				Longitude: 30.1,
+			},
+		}
+		trackBody, _ := json.Marshal(trackReqBody)
+		trackReq := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(trackBody))
+		trackReq = trackReq.WithContext(mockCtx)
+		trackRec := httptest.NewRecorder()
+
+		u.TrackJob(trackRec, trackReq)
+
+		if trackRec.Code != http.StatusInternalServerError {
+			t.Errorf("Expected 500 Internal Server Error when DB update fails, got %d. Body: %s", trackRec.Code, trackRec.Body.String())
+		}
+
+		// Verify wallet escrow balance was rolled back (should go back to 50.0 from jobZero)
+		finalWallet, _ := s.GetOrCreateWallet(ctx, "kyc-approved-owner-zeroval")
+		if finalWallet.EscrowBalance != 50.0 {
+			t.Errorf("Expected wallet escrow balance to roll back to 50.0, got %.2f", finalWallet.EscrowBalance)
+		}
+
+		// Verify job record was deleted
+		count, err := s.CountJobsByOwner(ctx, "kyc-approved-owner-zeroval")
+		if err != nil {
+			t.Errorf("failed to count jobs: %v", err)
+		}
+		if count != 1 {
+			t.Errorf("Expected only 1 job to exist in DB for owner, got %d", count)
+		}
+
+		retrievedJob := s.GetJob(ctx, "job-zeroval-zero")
+		if retrievedJob == nil || retrievedJob.ID != "job-zeroval-zero" {
+			t.Error("Expected job-zeroval-zero to exist in DB")
+		}
+	})
+
+	// Test: Concurrency Race-Condition Verification
+	t.Run("Concurrency Race-Condition Verification", func(t *testing.T) {
+		u.appEnv = "test"
+		defer func() { u.appEnv = "" }()
+		ctx := context.Background()
+		tokenEmp, _ := jwtutil.GenerateToken("active-employee", "employee", "kyc-approved-owner-concurrency", "employee@example.com")
+		tokenOwner, _ := jwtutil.GenerateToken("kyc-approved-owner-concurrency", "owner", "kyc-approved-owner-concurrency", "owner@example.com")
+
+		// 1. Setup service
+		testSvc := &models.Service{
+			ID:               "svc-concurrency-999",
+			TenantID:         "kyc-approved-owner-concurrency",
+			Name:             "Concurrency Svc",
+			Category:         "transport",
+			TenantBasePrice:  10.0,
+			TenantPricePerKM: 10.0,
+			Latitude:         30.0,
+			Longitude:        30.0,
+		}
+		s.CreateService(ctx, testSvc)
+
+		// 2. Setup wallet for owner
+		_ = s.Deposit(ctx, "kyc-approved-owner-concurrency", 500.0)
+
+		// (a) Test: Concurrent CompleteJob vs CancelJob
+		job := &models.Job{
+			ID:                 "job-concurrency-AB",
+			OwnerID:            "kyc-approved-owner-concurrency",
+			UserID:             "customer-123",
+			EmployeeID:         "active-employee",
+			ServiceID:          "svc-concurrency-999",
+			Status:             models.JobStatusActive,
+			PaymentMethod:      "wallet",
+			LockedEscrowAmount: 100.0,
+			Location: models.Location{
+				Latitude:  30.1, // dist approx 15.6 km -> cost approx 166.0 (capped at 100.0)
+				Longitude: 30.1,
+			},
+			CreatedAt: time.Now().Add(-1 * time.Hour),
+		}
+		_ = s.CreateJob(ctx, job)
+		_ = s.LockEscrow(ctx, "kyc-approved-owner-concurrency", "job-concurrency-AB", 100.0)
+
+		var wg sync.WaitGroup
+		wg.Add(2)
+
+		recComplete := httptest.NewRecorder()
+		recCancel := httptest.NewRecorder()
+
+		reqCompleteBody := map[string]any{
+			"job_id":       "job-concurrency-AB",
+			"requester_id": tokenEmp,
+		}
+		compBody, _ := json.Marshal(reqCompleteBody)
+		reqComplete := httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(compBody))
+
+		reqCancelBody := map[string]any{
+			"job_id":       "job-concurrency-AB",
+			"requester_id": tokenOwner,
+			"reason":       "cancel concurrent test",
+		}
+		cancelBody, _ := json.Marshal(reqCancelBody)
+		reqCancel := httptest.NewRequest("POST", "/users/jobs/cancel", bytes.NewReader(cancelBody))
+
+		go func() {
+			defer wg.Done()
+			u.CompleteJob(recComplete, reqComplete)
+		}()
+
+		go func() {
+			defer wg.Done()
+			u.CancelJob(recCancel, reqCancel)
+		}()
+
+		wg.Wait()
+
+		// Verify: Exactly one succeeded (200), and the other got a conflict/error
+		successCount := 0
+		failCount := 0
+		if recComplete.Code == http.StatusOK {
+			successCount++
+		} else {
+			failCount++
+		}
+		if recCancel.Code == http.StatusOK {
+			successCount++
+		} else {
+			failCount++
+		}
+
+		if successCount != 1 || failCount != 1 {
+			t.Errorf("Complete vs Cancel: Expected exactly 1 success and 1 failure, got success=%d, fail=%d. Complete code: %d, Cancel code: %d", successCount, failCount, recComplete.Code, recCancel.Code)
+		}
+
+		// Verify the wallet/ledger has either released escrow or refunded escrow, but not both.
+		wallet, _ := s.GetOrCreateWallet(ctx, "kyc-approved-owner-concurrency")
+		if wallet.EscrowBalance != 0.0 {
+			t.Errorf("Expected wallet escrow balance to be 0, got %.2f", wallet.EscrowBalance)
+		}
+		// Complete won: total=485 (500 - 15 fee). Cancel won: total=500.
+		if wallet.TotalBalance != 485.0 && wallet.TotalBalance != 500.0 {
+			t.Errorf("Expected wallet total balance to be either 485.0 (complete won) or 500.0 (cancel won), got %.2f", wallet.TotalBalance)
+		}
+
+		// (b) Test: Concurrent CompleteJob vs CompleteJob
+		jobC := &models.Job{
+			ID:                 "job-concurrency-CC",
+			OwnerID:            "kyc-approved-owner-concurrency",
+			UserID:             "customer-123",
+			EmployeeID:         "active-employee",
+			ServiceID:          "svc-concurrency-999",
+			Status:             models.JobStatusActive,
+			PaymentMethod:      "wallet",
+			LockedEscrowAmount: 100.0,
+			Location: models.Location{
+				Latitude:  30.1,
+				Longitude: 30.1,
+			},
+			CreatedAt: time.Now().Add(-1 * time.Hour),
+		}
+		_ = s.CreateJob(ctx, jobC)
+		// Deposit and Lock Escrow
+		_ = s.Deposit(ctx, "kyc-approved-owner-concurrency", 100.0)
+		_ = s.LockEscrow(ctx, "kyc-approved-owner-concurrency", "job-concurrency-CC", 100.0)
+
+		wg.Add(2)
+		recComp1 := httptest.NewRecorder()
+		recComp2 := httptest.NewRecorder()
+
+		reqCompBodyC := map[string]any{
+			"job_id":       "job-concurrency-CC",
+			"requester_id": tokenEmp,
+		}
+		compBodyC, _ := json.Marshal(reqCompBodyC)
+		reqComp1 := httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(compBodyC))
+		reqComp2 := httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(compBodyC))
+
+		go func() {
+			defer wg.Done()
+			u.CompleteJob(recComp1, reqComp1)
+		}()
+
+		go func() {
+			defer wg.Done()
+			u.CompleteJob(recComp2, reqComp2)
+		}()
+
+		wg.Wait()
+
+		successCount = 0
+		failCount = 0
+		if recComp1.Code == http.StatusOK {
+			successCount++
+		} else {
+			failCount++
+		}
+		if recComp2.Code == http.StatusOK {
+			successCount++
+		} else {
+			failCount++
+		}
+
+		if successCount != 1 || failCount != 1 {
+			t.Errorf("Complete vs Complete: Expected exactly 1 success and 1 failure, got success=%d, fail=%d. Comp1 code: %d, Comp2 code: %d", successCount, failCount, recComp1.Code, recComp2.Code)
+		}
+
+		// (c) Test: Concurrent CancelJob vs CancelJob
+		jobX := &models.Job{
+			ID:                 "job-concurrency-XX",
+			OwnerID:            "kyc-approved-owner-concurrency",
+			UserID:             "customer-123",
+			EmployeeID:         "active-employee",
+			ServiceID:          "svc-concurrency-999",
+			Status:             models.JobStatusActive,
+			PaymentMethod:      "wallet",
+			LockedEscrowAmount: 100.0,
+			Location: models.Location{
+				Latitude:  30.1,
+				Longitude: 30.1,
+			},
+			CreatedAt: time.Now().Add(-1 * time.Hour),
+		}
+		_ = s.CreateJob(ctx, jobX)
+		// Deposit and Lock Escrow
+		_ = s.Deposit(ctx, "kyc-approved-owner-concurrency", 100.0)
+		_ = s.LockEscrow(ctx, "kyc-approved-owner-concurrency", "job-concurrency-XX", 100.0)
+
+		wg.Add(2)
+		recCancel1 := httptest.NewRecorder()
+		recCancel2 := httptest.NewRecorder()
+
+		reqCancelBodyX := map[string]any{
+			"job_id":       "job-concurrency-XX",
+			"requester_id": tokenOwner,
+			"reason":       "cancel concurrent test",
+		}
+		cancelBodyX, _ := json.Marshal(reqCancelBodyX)
+		reqCancel1 := httptest.NewRequest("POST", "/users/jobs/cancel", bytes.NewReader(cancelBodyX))
+		reqCancel2 := httptest.NewRequest("POST", "/users/jobs/cancel", bytes.NewReader(cancelBodyX))
+
+		go func() {
+			defer wg.Done()
+			u.CancelJob(recCancel1, reqCancel1)
+		}()
+
+		go func() {
+			defer wg.Done()
+			u.CancelJob(recCancel2, reqCancel2)
+		}()
+
+		wg.Wait()
+
+		successCount = 0
+		failCount = 0
+		if recCancel1.Code == http.StatusOK {
+			successCount++
+		} else {
+			failCount++
+		}
+		if recCancel2.Code == http.StatusOK {
+			successCount++
+		} else {
+			failCount++
+		}
+
+		if successCount != 1 || failCount != 1 {
+			t.Errorf("Cancel vs Cancel: Expected exactly 1 success and 1 failure, got success=%d, fail=%d. Cancel1 code: %d, Cancel2 code: %d", successCount, failCount, recCancel1.Code, recCancel2.Code)
+		}
+	})
+}
+
+type contextMock struct {
+	context.Context
+}
+
+func (c *contextMock) Done() <-chan struct{} {
+	var pcs [10]uintptr
+	n := runtime.Callers(2, pcs[:])
+	frames := runtime.CallersFrames(pcs[:n])
+	for {
+		frame, more := frames.Next()
+		if strings.Contains(frame.Function, "UpdateJobLockedEscrow") {
+			ch := make(chan struct{})
+			close(ch)
+			return ch
+		}
+		if !more {
+			break
+		}
+	}
+	return c.Context.Done()
+}
+
+func (c *contextMock) Err() error {
+	var pcs [10]uintptr
+	n := runtime.Callers(2, pcs[:])
+	frames := runtime.CallersFrames(pcs[:n])
+	for {
+		frame, more := frames.Next()
+		if strings.Contains(frame.Function, "UpdateJobLockedEscrow") {
+			return context.Canceled
+		}
+		if !more {
+			break
+		}
+	}
+	return c.Context.Err()
 }

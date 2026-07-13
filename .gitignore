@@ -22,3 +22,11 @@ infrastructure/certs/*.srl
 /frontend/android/app/profile/
 /frontend/android/app/release/
 
+# Service certificates and keys
+services/*/certs/
+
+# Uploaded documents
+services/*/data/documents/
+
+# Temp/debug files
+dummy.png

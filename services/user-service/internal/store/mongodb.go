@@ -716,3 +716,39 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 	}
 	return err
 }
+
+func (s *MongoDB) RollbackEscrow(ctx context.Context, tenantID string, amount float64) error {
+	w, err := s.GetOrCreateWallet(ctx, tenantID)
+	if err != nil {
+		return err
+	}
+	res, err := s.wallets.UpdateOne(ctx,
+		bson.M{"tenant_id": tenantID, "escrow_balance": bson.M{"$gte": amount}},
+		bson.M{
+			"$inc": bson.M{"escrow_balance": -amount, "withdrawable_balance": amount},
+			"$set": bson.M{"updated_at": time.Now().UTC()},
+		})
+	if err != nil {
+		return err
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("escrow rollback failed: insufficient escrow balance")
+	}
+	_, err = s.ledger.InsertOne(ctx, models.TransactionLedger{
+		ID: fmt.Sprintf("tx-%d-rollback", time.Now().UnixNano()), TenantID: tenantID,
+		Type: models.TxEscrowRelease, Amount: amount,
+		BalanceBefore: w.WithdrawableBalance, BalanceAfter: w.WithdrawableBalance + amount,
+		Description: "escrow lock rollback due to persistence failure", Timestamp: time.Now().UTC(),
+	})
+	return err
+}
+
+func (s *MongoDB) DeleteJob(ctx context.Context, id string) error {
+	_, err := s.jobs.DeleteOne(ctx, bson.M{"_id": id})
+	return err
+}
+
+func (s *MongoDB) CountJobsByOwner(ctx context.Context, ownerID string) (int, error) {
+	count, err := s.jobs.CountDocuments(ctx, bson.M{"owner_id": ownerID})
+	return int(count), err
+}

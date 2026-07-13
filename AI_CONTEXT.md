@@ -87,7 +87,7 @@ The detailed project history is distributed across categorized changelog files. 
 
 Only features verified directly against the running application are marked as verified (✅). The following items are implemented but remain unverified end-to-end or represent accepted security risks:
 
-* **Verified Escrow Logic (Isolated per Job)**: Escrow locking, release splits (`ReleaseEscrowWithSplit`), and refunds (`RefundEscrow`) are verified end-to-end via integration tests. Escrow balances are isolated per job record in the database layer.
+* **Verified Escrow Logic (Isolated per Job & Concurrency Hardened)**: Escrow locking, release splits, and refunds are verified end-to-end via integration tests. Escrow balances are isolated per job record in the database. Furthermore, rollback/deletion on TrackJob database persistence failures and fail-closed behavior on unrecorded/zero-value escrow amounts are verified. Concurrency tests simulating simultaneous complete/cancel, double-complete, and double-cancel on the same job confirm that exactly one request succeeds, verifying that race conditions are closed.
 * **Fail-Closed Rate Limiting on Redis Unavailability**: If the shared Redis instance becomes unavailable at runtime, all rate limiters across all microservices (api-gateway, auth-service, chat-service, notification-service, user-service) will fail-closed. This means incoming traffic is restricted/blocked and authentication attempts are denied with critical security logs (`[SECURITY CRITICAL]`), rather than allowing un-throttled traffic to bypass security boundaries.
 * **Dev-Grade mTLS CA**: The certificates generated for mTLS use a dev-grade local Root CA. For production, a real internal CA (e.g. AWS Private CA, HashiCorp Vault PKI, or cert-manager on Kubernetes) must be integrated.
 * **Client-Submitted Booking Coordinates for Pricing**: Distance-based pricing/escrow calculations rely on coordinates submitted by the client at job booking time. Recomputed amounts on CompleteJob and CancelJob use only the initial booking coordinates (`job.Location`). In addition, live location broadcasts from employees are gated by a speed plausibility check (rejecting jumps implying >150.0 km/h) to prevent GPS spoofing.
@@ -115,7 +115,7 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Completed Phase 2 security vulnerability fixes (Unauthenticated Employee Signup, and Escrow Recalculation/Location spoofing fixes). Next step: continue Phase 2 owner core functionalities.
+* **Immediate Next Step**: Completed Phase 2 security vulnerability fixes and testing (including zero-value escrow fail-closed, TrackJob rollback, concurrency race-condition validation, and certs/documents cleanup). Next step: continue Phase 2 owner core functionalities.
 
 
 
