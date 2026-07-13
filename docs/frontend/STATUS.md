@@ -12,8 +12,11 @@
     *   *Platform Builds*:
         *   *Android*: **[VERIFIED]** successfully compiled debug APK using local Adoptium JDK 17 and Android SDK platforms-36/build-tools-34. Output location: `frontend/build/app/outputs/flutter-apk/app-debug.apk` (Size: 153,369,344 bytes).
         *   *iOS*: **[UNVERIFIED]** macOS/Xcode toolchain unavailable (build execution requires a Mac environment).
-*   **Phase 2: Owner Core Functionality** — **[NOT STARTED]**
-    *   *Planned*: Dashboard grids, wallet balance metrics, employee list management, toggling, and services creation.
+*   **Phase 2: Owner Core Functionality** — **[IN PROGRESS]**
+    *   *Dashboard Layout*: **[VERIFIED]** Owner dashboard metrics grid displays wallet balance (via GetWallet) and subscription status (via Subscription) with active jobs placeholder layout.
+    *   *Wallet Management*: **[NOT STARTED]** Visual balance representation, transaction history, and deposit dialog.
+    *   *Employee Management*: **[NOT STARTED]** Registration, toggling (freeze/activate), and audit logs.
+    *   *Service Directory Configuration*: **[NOT STARTED]** KYC-gated service creation form.
 *   **Phase 3: Employee Dashboard & Audit Simulator** — **[NOT STARTED]**
     *   *Planned*: Assigned jobs list, action simulation, and worker audit logs.
 *   **Phase 4: Customer Directory & Job Booking Flow** — **[NOT STARTED]**

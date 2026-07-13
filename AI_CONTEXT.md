@@ -89,6 +89,8 @@ Only features verified directly against the running application are marked as ve
 * **Fail-Closed Rate Limiting on Redis Unavailability**: If the shared Redis instance becomes unavailable at runtime, all rate limiters across all microservices (api-gateway, auth-service, chat-service, notification-service, user-service) will fail-closed. This means incoming traffic is restricted/blocked and authentication attempts are denied with critical security logs (`[SECURITY CRITICAL]`), rather than allowing un-throttled traffic to bypass security boundaries.
 * **Dev-Grade mTLS CA**: The certificates generated for mTLS use a dev-grade local Root CA. For production, a real internal CA (e.g. AWS Private CA, HashiCorp Vault PKI, or cert-manager on Kubernetes) must be integrated.
 * **Client-Submitted Coordinates for Pricing/Escrow**: Distance-based pricing/escrow calculation relies entirely on coordinates submitted by the client at job creation with no server-side validation. `TrackJob`, `CompleteJob`, and `CancelJob` in `services/user-service/internal/handlers/handlers.go` call `haversineKm` against `job.Location`/`req.Location` without cross-checking against independent vehicle telematics or maps API data. This affects both COD platform fee deduction and non-COD escrow amount calculations.
+* **Missing Job Listing Endpoint**: There is currently no endpoint in `user-service` to list jobs (either active or historical) for owners, employees, or customers. This is noted as a product gap, and the owner dashboard will only display static/empty placeholders for the active jobs list.
+* **Missing Employee Listing Endpoint**: There is currently no endpoint in `auth-service` to retrieve the list of registered employees for a tenant owner.
 
 ---
 

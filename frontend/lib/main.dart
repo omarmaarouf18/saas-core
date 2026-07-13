@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'core/api_client.dart';
 import 'providers/auth_provider.dart';
+import 'providers/owner_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -28,6 +29,7 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider(apiClient)),
+        ChangeNotifierProvider(create: (_) => OwnerProvider(apiClient)),
       ],
       child: const MyApp(),
     ),
