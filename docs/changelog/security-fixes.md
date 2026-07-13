@@ -274,3 +274,8 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``current``
 - **Verification**: Verified via auth-service integration tests. ✅
 
+## Mask Plaintext OTP Codes in logs
+
+- **Implementation Detail**: Restricted logging of plaintext OTP code values during signup and login 2FA in `services/auth-service/internal/handlers/auth.go#L229` and `services/auth-service/internal/handlers/auth.go#L371` to local environments only (`isLocal == true`).
+- **Commit SHA**: ``current``
+- **Verification**: Verified via auth-service integration/unit tests. ✅

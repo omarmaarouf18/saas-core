@@ -63,7 +63,7 @@ The detailed project history is distributed across categorized changelog files. 
   * **Reasoning**: To maintain security and avoid exposing administrative endpoints that could be targeted by attackers. In contrast, KYB/KYE document reviews are performed via the `/auth/kyb-kye/review` endpoint, which is secured by individual reviewer credentials and internal network token validations.
 * **Mock OTP SMS/Email Dispatcher**
   * **Decision**: SMS dispatching is stubbed using a mock that logs OTPs to stdout. In local environment (`APP_ENV=local`), OTPs are exposed directly in response payloads as `dev_otp`.
-  * **Reasoning**: Speeds up development and avoids dependencies on external paid SMS gateways during local testing.
+  * **Reasoning**: Speeds up development and avoids dependencies on external paid SMS gateways during local testing. Currently, no real SMS/Email dispatcher is wired for non-local/production environments; all environments fall back to `MockSMSDispatcher` which prints OTPs to stdout.
 * **Rating Edits / Updates**
   * **Decision**: Editing or updating an existing rating is deliberately not allowed. The endpoint blocks duplicate ratings, and no PATCH/update rating endpoint is provided.
   * **Reasoning**: To prevent data manipulation. Allowing users to modify ratings later is flagged as a potential future feature with its own authorization checks.

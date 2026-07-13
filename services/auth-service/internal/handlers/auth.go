@@ -226,8 +226,13 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 			log.Printf("[AUTH] OTP dispatch error via %s: %v", a.dispatcher.Name(), err)
 		}
 
-		log.Printf("[AUTH] OTP generated for signup: email=%s code=%s dispatcher=%s",
-			user.Email, otpCode, a.dispatcher.Name())
+		if a.isLocal {
+			log.Printf("[AUTH] OTP generated for signup: email=%s code=%s dispatcher=%s",
+				user.Email, otpCode, a.dispatcher.Name())
+		} else {
+			log.Printf("[AUTH] OTP generated for signup: email=%s dispatcher=%s",
+				user.Email, a.dispatcher.Name())
+		}
 
 		resp := map[string]any{
 			"status":  "success",
@@ -368,8 +373,13 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 			log.Printf("[AUTH] OTP dispatch error via %s: %v", a.dispatcher.Name(), err)
 		}
 
-		log.Printf("[AUTH] 2FA triggered: email=%s role=%s code=%s dispatcher=%s",
-			user.Email, user.Role, otpCode, a.dispatcher.Name())
+		if a.isLocal {
+			log.Printf("[AUTH] 2FA triggered: email=%s role=%s code=%s dispatcher=%s",
+				user.Email, user.Role, otpCode, a.dispatcher.Name())
+		} else {
+			log.Printf("[AUTH] 2FA triggered: email=%s role=%s dispatcher=%s",
+				user.Email, user.Role, a.dispatcher.Name())
+		}
 
 		resp := map[string]any{
 			"status":  "success",
