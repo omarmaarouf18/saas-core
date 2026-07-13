@@ -298,5 +298,11 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``logic-exploitation``
 - **Verification**: Verified via user-service integration and concurrency tests. ✅
 
+## TrackJob Non-COD Payment APP_ENV Gate
+
+- **Implementation Detail**: Restricts `TrackJob` to accept non-COD payment methods (such as `wallet` or bank cards) ONLY when `APP_ENV` is explicitly set to `"local"` or `"test"`. All other environments (including production and unset/empty configurations) continue to reject non-COD payments at the endpoint level to prevent un-auditable fund flows. This exception allows end-to-end integration and concurrency testing of the escrow paths.
+- **Commit SHA**: ``logic-exploitation``
+- **Verification**: Verified via user-service integration test suite (checking both rejection in production-like configs and bypass success in test config). ✅
+
 
 

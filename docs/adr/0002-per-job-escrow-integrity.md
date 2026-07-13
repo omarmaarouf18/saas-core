@@ -22,10 +22,12 @@ Specifically:
 6. **Standalone MongoDB Fallback**: Implemented a graceful fallback to sequential atomic updates if multi-document transactions fail due to the database running as a standalone server without replica sets (common in local development).
 7. **Capped Settlement Ceiling**: Enforced a ceiling on `CompleteJob` and `CancelJob` recalculations. If the recomputed price exceeds `job.LockedEscrowAmount`, we cap the release/refund at the locked amount and log/audit-event `ESCROW_LIMIT_EXCEEDED`.
 8. **Speed Plausibility Check**: Rejected `UpdateJobLocation` requests that imply a speed exceeding `150.0` km/h since the last update (or job creation as a fallback).
+9. **Test-Enablement Exception for Non-COD Payments**: Allowed non-COD payment methods (such as `wallet`) to bypass the `TrackJob` hard-reject check ONLY when `APP_ENV` is explicitly set to `local` or `test`. This allows verification of the per-job escrow isolation, locking, and release pathways via unit/integration tests; in all production deployments, any non-COD payment method continues to be blocked at the edge.
 
 ## Consequences
 - **Security Posture**: Closes the escrow depletion vulnerability. Spoofed employee coordinates are rejected if they imply implausible speeds, and even if they are accepted, they are not used for price recalculation.
 - **Escrow Integrity**: The escrow pool for a tenant is isolated per-job. Unrelated jobs under the same tenant are fully isolated; one job's completion cannot draw down the escrow reserved for another.
+- **Testability**: Enabling non-COD payments dynamically in `local`/`test` environments allows full end-to-end integration and concurrency testing of the escrow management and profit-splitting algorithms, while maintaining a strict `cod`-only security boundary in production.
 - **Race Condition Verification**: Restricted escrow drawdown to `UpdateOne` calls that filter on status transitions and deduct from the specific job's `locked_escrow_amount`. Concurrency testing (firing concurrent complete/cancel requests, complete/complete, and cancel/cancel) confirmed that the atomic state transition pattern successfully closes the race-condition: exactly one request succeeds, returning a conflict/forbidden status for concurrent calls, while the wallet and ledger record exactly one payout/refund.
 - **Developer Experience**: Standalone MongoDB fallback allows tests and local developer setups to run seamlessly without needing replica set configurations.
 
