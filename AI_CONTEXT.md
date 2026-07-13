@@ -113,7 +113,7 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Completed Sub-tasks 1 & 2 (Dashboard & Wallet Management) of Phase 2 (Owner Core Functionality). Next step: Sub-task 3 (Employee Management).
+* **Immediate Next Step**: Completed Sub-tasks 1, 2, & 3 (Dashboard, Wallet, and Employee Management) of Phase 2 (Owner Core Functionality). Next step: Sub-task 4 (Service Directory Configuration).
 
 
 

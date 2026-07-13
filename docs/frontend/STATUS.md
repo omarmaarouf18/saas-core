@@ -15,7 +15,7 @@
 *   **Phase 2: Owner Core Functionality** — **[IN PROGRESS]**
     *   *Dashboard Layout*: **[VERIFIED]** Owner dashboard metrics grid displays wallet balance (via GetWallet) and subscription status (via Subscription) with active jobs placeholder layout. Confirmed working end-to-end against live docker-compose backend using real signed owner JWT token resolve logic.
     *   *Wallet Management*: **[VERIFIED]** Balance display (total, withdrawable, escrow), reverse-chronological transaction ledger, and deposit dialog with inline error notice for production environment gating. Verified end-to-end against live backend with local/production environment check.
-    *   *Employee Management*: **[NOT STARTED]** Registration, toggling (freeze/activate), and audit logs.
+    *   *Employee Management*: **[VERIFIED]** Worker registration, worker freeze/activate status toggling (with owner password re-auth), and tenant audit log retrieval (using paired RAW ID + JWT token). Tested end-to-end against live backend including worker action simulation and audit trail verification.
     *   *Service Directory Configuration*: **[NOT STARTED]** KYC-gated service creation form.
 *   **Phase 3: Employee Dashboard & Audit Simulator** — **[NOT STARTED]**
     *   *Planned*: Assigned jobs list, action simulation, and worker audit logs.

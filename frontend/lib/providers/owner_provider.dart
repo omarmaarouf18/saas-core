@@ -70,6 +70,99 @@ class OwnerProvider extends ChangeNotifier {
     }
   }
 
+  List<dynamic> _auditLogEntries = [];
+  List<dynamic> get auditLogEntries => _auditLogEntries;
+
+  // ---------------------------------------------------------------------------
+  // API Call: Register Employee
+  // Convention: Uses RAW owner ID (ownerId) in 'owner_id' JSON body parameter.
+  // Why: /auth/signup validates the owner's existence via direct GetByID lookup.
+  // ---------------------------------------------------------------------------
+  Future<Map<String, dynamic>> registerEmployee({
+    required String email,
+    required String password,
+    required String ownerId,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post('/auth/signup', {
+        'email': email,
+        'password': password,
+        'role': 'employee',
+        'owner_id': ownerId, // RAW ID convention
+      });
+      return res;
+    } catch (e) {
+      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // API Call: Toggle Employee Status (Freeze/Activate)
+  // Convention: Uses owner email and owner password (re-auth) in JSON body.
+  // Why: /auth/employee/toggle re-verifies the owner password via bcrypt.
+  // ---------------------------------------------------------------------------
+  Future<Map<String, dynamic>> toggleEmployee({
+    required String employeeEmail,
+    required String ownerEmail,
+    required String ownerPassword,
+    required bool setActive,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post('/auth/employee/toggle', {
+        'employee_email': employeeEmail,
+        'owner_email': ownerEmail,
+        'owner_password': ownerPassword, // Password re-auth convention
+        'set_active': setActive,
+      });
+      return res;
+    } catch (e) {
+      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // API Call: Fetch Tenant Audit Log
+  // Convention: Paired query parameters: tenant_id (RAW ID) and requester_id (JWT).
+  // Why: auth-service verifies the requester identity (JWT) matches tenant_id.
+  // ---------------------------------------------------------------------------
+  Future<void> fetchAuditLog({
+    required String tenantId,
+    required String requesterToken,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.get('/auth/audit-log', queryParams: {
+        'tenant_id': tenantId, // RAW ID convention
+        'requester_id': requesterToken, // JWT token convention
+      });
+      _auditLogEntries = res['entries'] as List<dynamic>? ?? [];
+    } catch (e) {
+      _error = e.toString().replaceFirst("ApiClientException: ", "");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();
