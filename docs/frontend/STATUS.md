@@ -14,7 +14,7 @@
         *   *iOS*: **[UNVERIFIED]** macOS/Xcode toolchain unavailable (build execution requires a Mac environment).
 *   **Phase 2: Owner Core Functionality** — **[IN PROGRESS]**
     *   *Dashboard Layout*: **[VERIFIED]** Owner dashboard metrics grid displays wallet balance (via GetWallet) and subscription status (via Subscription) with active jobs placeholder layout. Confirmed working end-to-end against live docker-compose backend using real signed owner JWT token resolve logic.
-    *   *Wallet Management*: **[NOT STARTED]** Visual balance representation, transaction history, and deposit dialog.
+    *   *Wallet Management*: **[VERIFIED]** Balance display (total, withdrawable, escrow), reverse-chronological transaction ledger, and deposit dialog with inline error notice for production environment gating. Verified end-to-end against live backend with local/production environment check.
     *   *Employee Management*: **[NOT STARTED]** Registration, toggling (freeze/activate), and audit logs.
     *   *Service Directory Configuration*: **[NOT STARTED]** KYC-gated service creation form.
 *   **Phase 3: Employee Dashboard & Audit Simulator** — **[NOT STARTED]**

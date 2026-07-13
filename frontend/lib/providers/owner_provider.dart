@@ -5,12 +5,18 @@ class OwnerProvider extends ChangeNotifier {
   final ApiClient apiClient;
 
   double _walletBalance = 0.0;
+  double _escrowBalance = 0.0;
+  double _withdrawableBalance = 0.0;
   String _subscriptionTier = 'free';
+  List<dynamic> _ledgerEntries = [];
   bool _isLoading = false;
   String? _error;
 
   double get walletBalance => _walletBalance;
+  double get escrowBalance => _escrowBalance;
+  double get withdrawableBalance => _withdrawableBalance;
   String get subscriptionTier => _subscriptionTier;
+  List<dynamic> get ledgerEntries => _ledgerEntries;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -25,12 +31,39 @@ class OwnerProvider extends ChangeNotifier {
       // 1. Fetch Wallet Balance
       final walletRes = await apiClient.get('/users/wallet', queryParams: {'tenant_id': tenantId});
       _walletBalance = (walletRes['total_balance'] as num?)?.toDouble() ?? 0.0;
+      _escrowBalance = (walletRes['escrow_balance'] as num?)?.toDouble() ?? 0.0;
+      _withdrawableBalance = (walletRes['withdrawable_balance'] as num?)?.toDouble() ?? 0.0;
 
       // 2. Fetch Subscription status
       final subRes = await apiClient.get('/users/subscription', queryParams: {'tenant_id': tenantId});
       _subscriptionTier = subRes['tier'] ?? 'free';
+
+      // 3. Fetch Ledger entries
+      final ledgerRes = await apiClient.get('/users/ledger', queryParams: {'tenant_id': tenantId});
+      _ledgerEntries = ledgerRes['entries'] as List<dynamic>? ?? [];
     } catch (e) {
       _error = e.toString().replaceFirst("ApiClientException: ", "");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> deposit(String token, double amount) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await apiClient.post('/users/wallet/deposit', {
+        'tenant_id': token,
+        'amount': amount,
+      });
+      // Re-fetch wallet and ledger data on success
+      await fetchDashboardData(token);
+    } catch (e) {
+      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();

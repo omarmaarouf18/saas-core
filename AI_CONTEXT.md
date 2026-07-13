@@ -113,7 +113,7 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Completed Phase 1 (Project Setup & Shared Auth Flow) of the Flutter frontend application and added support for Genymotion emulators and --dart-define configuration overrides for API_BASE_URL. Next step: Phase 2 (Owner Core Functionality).
+* **Immediate Next Step**: Completed Sub-tasks 1 & 2 (Dashboard & Wallet Management) of Phase 2 (Owner Core Functionality). Next step: Sub-task 3 (Employee Management).
 
 
 

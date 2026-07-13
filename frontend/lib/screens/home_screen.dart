@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
 import 'login_screen.dart';
+import 'wallet_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -173,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
               index: _currentIndex,
               children: [
                 _buildDashboardTab(context, user),
-                const Center(child: Text("Wallet Screen Placeholder (Sub-task 2)")),
+                const WalletScreen(),
                 const Center(child: Text("Employee Screen Placeholder (Sub-task 3)")),
                 const Center(child: Text("Service Screen Placeholder (Sub-task 4)")),
               ],
