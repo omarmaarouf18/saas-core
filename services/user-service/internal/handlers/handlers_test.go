@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"math"
 	"net/http/httptest"
 	"os"
 	"strings"
@@ -1284,6 +1285,77 @@ func TestUserServiceHandlers(t *testing.T) {
 		u.TrackJob(rec, req)
 		if rec.Code != http.StatusCreated {
 			t.Errorf("Expected 201 Created for assigning active employee in TrackJob, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+	})
+
+	// Test: CompleteJob Pricing Sourced From GPS
+	t.Run("CompleteJob Pricing Sourced From GPS", func(t *testing.T) {
+		ctx := context.Background()
+		tokenEmp, _ := jwtutil.GenerateToken("active-employee", "employee", "kyc-approved-owner", "employee@example.com")
+
+		// Create service
+		testSvc := &models.Service{
+			ID:               "svc-gps-999",
+			TenantID:         "kyc-approved-owner",
+			Name:             "GPS Svc",
+			Category:         "transport",
+			TenantBasePrice:  10.0,
+			TenantPricePerKM: 2.0,
+			Latitude:         30.0,
+			Longitude:        30.0,
+		}
+		s.CreateService(ctx, testSvc)
+
+		// Create job with initial destination (30.1, 30.1)
+		job := &models.Job{
+			ID:            "job-gps-test",
+			OwnerID:       "kyc-approved-owner",
+			UserID:        "customer-123",
+			EmployeeID:    "active-employee",
+			ServiceID:     "svc-gps-999",
+			Status:        models.JobStatusActive,
+			PaymentMethod: "cod",
+			Location: models.Location{
+				Latitude:  30.1,
+				Longitude: 30.1,
+			},
+		}
+		_ = s.CreateJob(ctx, job)
+
+		// Simulate live GPS updates: update CurrentLocation to (30.2, 30.2)
+		_ = s.UpdateJobLocation(ctx, "job-gps-test", 30.2, 30.2)
+
+		reqBody := map[string]any{
+			"job_id":         "job-gps-test",
+			"requester_id":   tokenEmp,
+			"cash_collected": true,
+		}
+		body, _ := json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req := httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		u.CompleteJob(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		var resp map[string]any
+		_ = json.Unmarshal(rec.Body.Bytes(), &resp)
+
+		// Expected distance from (30.0, 30.0) to (30.2, 30.2)
+		expectedDist := haversineKm(30.2, 30.2, 30.0, 30.0)
+		expectedAmount := math.Round((10.0+(expectedDist*2.0))*100) / 100
+
+		actualAmount, ok := resp["total_amount"].(float64)
+		if !ok {
+			t.Fatalf("total_amount is missing or not a float64: %v", resp)
+		}
+
+		// Initial distance (30.0, 30.0) to (30.1, 30.1) would be approx 15.68 km (cost approx 41.36)
+		// GPS distance (30.0, 30.0) to (30.2, 30.2) is approx 30.93 km (cost approx 71.86)
+		if math.Abs(actualAmount-expectedAmount) > 0.01 {
+			t.Errorf("Expected total_amount calculated using GPS location (expected %.2f), got %.2f", expectedAmount, actualAmount)
 		}
 	})
 }

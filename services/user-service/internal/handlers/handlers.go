@@ -442,7 +442,13 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "service not found for job"})
 		return
 	}
-	dist := haversineKm(job.Location.Latitude, job.Location.Longitude, svc.Latitude, svc.Longitude)
+	destLat := job.Location.Latitude
+	destLon := job.Location.Longitude
+	if job.CurrentLocation != nil {
+		destLat = job.CurrentLocation.Latitude
+		destLon = job.CurrentLocation.Longitude
+	}
+	dist := haversineKm(destLat, destLon, svc.Latitude, svc.Longitude)
 	amount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
 
 	// Handle COD payment method
@@ -1372,7 +1378,13 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "service not found for job"})
 			return
 		}
-		dist := haversineKm(job.Location.Latitude, job.Location.Longitude, svc.Latitude, svc.Longitude)
+		destLat := job.Location.Latitude
+		destLon := job.Location.Longitude
+		if job.CurrentLocation != nil {
+			destLat = job.CurrentLocation.Latitude
+			destLon = job.CurrentLocation.Longitude
+		}
+		dist := haversineKm(destLat, destLon, svc.Latitude, svc.Longitude)
 		amount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
 
 		if err := u.store.RefundEscrow(ctx, job.OwnerID, job.ID, amount); err != nil {
