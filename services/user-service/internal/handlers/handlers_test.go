@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"math"
 	"net/http/httptest"
 	"os"
 	"strings"
@@ -1128,13 +1127,14 @@ func TestUserServiceHandlers(t *testing.T) {
 		wBefore, _ := s.GetOrCreateWallet(ctx, "kyc-approved-owner")
 
 		jobNonCOD := &models.Job{
-			ID:            "job-non-cod-1",
-			OwnerID:       "kyc-approved-owner",
-			UserID:        "canceller-customer",
-			ServiceID:     "svc-canceller-999",
-			Status:        models.JobStatusActive,
-			PaymentMethod: "wallet", // non-cod
-			Location:      models.Location{Latitude: 30.0, Longitude: 30.0},
+			ID:                 "job-non-cod-1",
+			OwnerID:            "kyc-approved-owner",
+			UserID:             "canceller-customer",
+			ServiceID:          "svc-canceller-999",
+			Status:             models.JobStatusActive,
+			PaymentMethod:      "wallet", // non-cod
+			LockedEscrowAmount: 10.0,
+			Location:           models.Location{Latitude: 30.0, Longitude: 30.0},
 		}
 		_ = s.CreateJob(ctx, jobNonCOD)
 
@@ -1288,74 +1288,162 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 	})
 
-	// Test: CompleteJob Pricing Sourced From GPS
-	t.Run("CompleteJob Pricing Sourced From GPS", func(t *testing.T) {
+	// Test: Escrow Integrity and Speed Validation
+	t.Run("Escrow Integrity and Speed Validation", func(t *testing.T) {
 		ctx := context.Background()
-		tokenEmp, _ := jwtutil.GenerateToken("active-employee", "employee", "kyc-approved-owner", "employee@example.com")
+		tokenEmp, _ := jwtutil.GenerateToken("active-employee", "employee", "kyc-approved-owner-integrity", "employee@example.com")
 
-		// Create service
+		// 1. Setup service
 		testSvc := &models.Service{
-			ID:               "svc-gps-999",
-			TenantID:         "kyc-approved-owner",
-			Name:             "GPS Svc",
+			ID:               "svc-escrow-integrity-999",
+			TenantID:         "kyc-approved-owner-integrity",
+			Name:             "Integrity Svc",
 			Category:         "transport",
 			TenantBasePrice:  10.0,
-			TenantPricePerKM: 2.0,
+			TenantPricePerKM: 10.0,
 			Latitude:         30.0,
 			Longitude:        30.0,
 		}
 		s.CreateService(ctx, testSvc)
 
-		// Create job with initial destination (30.1, 30.1)
-		job := &models.Job{
-			ID:            "job-gps-test",
-			OwnerID:       "kyc-approved-owner",
-			UserID:        "customer-123",
-			EmployeeID:    "active-employee",
-			ServiceID:     "svc-gps-999",
-			Status:        models.JobStatusActive,
-			PaymentMethod: "cod",
+		// 2. Setup subscription and wallet for owner using public store APIs
+		_ = s.UpsertSubscription(ctx, &models.Subscription{
+			ID:        "sub-integrity-owner",
+			TenantID:  "kyc-approved-owner-integrity",
+			Tier:      models.PlanPaid,
+			StartedAt: time.Now(),
+		})
+		_ = s.Deposit(ctx, "kyc-approved-owner-integrity", 150.0)
+		_ = s.LockEscrow(ctx, "kyc-approved-owner-integrity", "job-integrity-A", 100.0)
+		_ = s.LockEscrow(ctx, "kyc-approved-owner-integrity", "job-integrity-B", 50.0)
+
+		// 3. Setup two jobs for the same owner
+		jobA := &models.Job{
+			ID:                 "job-integrity-A",
+			OwnerID:            "kyc-approved-owner-integrity",
+			UserID:             "customer-123",
+			EmployeeID:         "active-employee",
+			ServiceID:          "svc-escrow-integrity-999",
+			Status:             models.JobStatusActive,
+			PaymentMethod:      "wallet",
+			LockedEscrowAmount: 100.0,
 			Location: models.Location{
-				Latitude:  30.1,
+				Latitude:  30.1, // dist approx 15.6 km -> cost approx 166.0
 				Longitude: 30.1,
 			},
+			CreatedAt: time.Now().Add(-1 * time.Hour),
 		}
-		_ = s.CreateJob(ctx, job)
 
-		// Simulate live GPS updates: update CurrentLocation to (30.2, 30.2)
-		_ = s.UpdateJobLocation(ctx, "job-gps-test", 30.2, 30.2)
+		jobB := &models.Job{
+			ID:                 "job-integrity-B",
+			OwnerID:            "kyc-approved-owner-integrity",
+			UserID:             "customer-123",
+			EmployeeID:         "active-employee",
+			ServiceID:          "svc-escrow-integrity-999",
+			Status:             models.JobStatusActive,
+			PaymentMethod:      "wallet",
+			LockedEscrowAmount: 50.0,
+			Location: models.Location{
+				Latitude:  31.0, // dist approx 150 km -> cost approx 1510.0
+				Longitude: 31.0,
+			},
+			CreatedAt: time.Now().Add(-1 * time.Hour),
+		}
 
+		_ = s.CreateJob(ctx, jobA)
+		_ = s.CreateJob(ctx, jobB)
+
+		// (a) Regression Test: CompleteJob capped at LockedEscrowAmount
 		reqBody := map[string]any{
-			"job_id":         "job-gps-test",
-			"requester_id":   tokenEmp,
-			"cash_collected": true,
+			"job_id":       "job-integrity-B",
+			"requester_id": tokenEmp,
 		}
 		body, _ := json.Marshal(reqBody)
-		rdb.FlushAll(ctx)
 		req := httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
 		rec := httptest.NewRecorder()
 		u.CompleteJob(rec, req)
 
 		if rec.Code != http.StatusOK {
-			t.Fatalf("Expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+			t.Fatalf("Expected 200 OK for capped CompleteJob, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 
 		var resp map[string]any
 		_ = json.Unmarshal(rec.Body.Bytes(), &resp)
-
-		// Expected distance from (30.0, 30.0) to (30.2, 30.2)
-		expectedDist := haversineKm(30.2, 30.2, 30.0, 30.0)
-		expectedAmount := math.Round((10.0+(expectedDist*2.0))*100) / 100
-
-		actualAmount, ok := resp["total_amount"].(float64)
-		if !ok {
-			t.Fatalf("total_amount is missing or not a float64: %v", resp)
+		totalAmt, _ := resp["total_amount"].(float64)
+		if totalAmt != 50.0 {
+			t.Errorf("Expected completion payout to be capped at Job B's LockedEscrowAmount (50.0), got %.2f", totalAmt)
 		}
 
-		// Initial distance (30.0, 30.0) to (30.1, 30.1) would be approx 15.68 km (cost approx 41.36)
-		// GPS distance (30.0, 30.0) to (30.2, 30.2) is approx 30.93 km (cost approx 71.86)
-		if math.Abs(actualAmount-expectedAmount) > 0.01 {
-			t.Errorf("Expected total_amount calculated using GPS location (expected %.2f), got %.2f", expectedAmount, actualAmount)
+		// Verify jobB is completed and has locked escrow zeroed/decremented in DB
+		updatedJobB := s.GetJob(ctx, "job-integrity-B")
+		if updatedJobB.Status != models.JobStatusCompleted {
+			t.Errorf("Expected job B status to be Completed, got %s", updatedJobB.Status)
+		}
+		if updatedJobB.LockedEscrowAmount != 0.0 {
+			t.Errorf("Expected job B locked escrow amount to be 0.0 after completion, got %.2f", updatedJobB.LockedEscrowAmount)
+		}
+
+		// (b) Regression Test: Job A's locked escrow was not drawn down by Job B
+		updatedJobA := s.GetJob(ctx, "job-integrity-A")
+		if updatedJobA.LockedEscrowAmount != 100.0 {
+			t.Errorf("Expected job A locked escrow to remain 100.0, got %.2f", updatedJobA.LockedEscrowAmount)
+		}
+
+		wallet, _ := s.GetOrCreateWallet(ctx, "kyc-approved-owner-integrity")
+		// Payout for Job B was 50.0. platform fee = 15% of 50.0 = 7.5. net = 42.5.
+		// Wallet escrow should go from 150.0 to 100.0 (still locking job A's 100.0 escrow).
+		if wallet.EscrowBalance != 100.0 {
+			t.Errorf("Expected wallet escrow balance to be exactly 100.0, got %.2f", wallet.EscrowBalance)
+		}
+
+		// Direct call to ReleaseEscrowWithSplit for Job B again (or for more than locked) should fail
+		err := s.ReleaseEscrowWithSplit(ctx, "kyc-approved-owner-integrity", "job-integrity-B", 10.0)
+		if err == nil {
+			t.Error("Expected ReleaseEscrowWithSplit to fail for already completed/fully-released job")
+		}
+
+		// (c) Regression Test: UpdateJobLocation rejects implausible-speed jump
+		jobC := &models.Job{
+			ID:                 "job-integrity-C",
+			OwnerID:            "kyc-approved-owner-integrity",
+			UserID:             "customer-123",
+			EmployeeID:         "active-employee",
+			ServiceID:          "svc-escrow-integrity-999",
+			Status:             models.JobStatusActive,
+			PaymentMethod:      "wallet",
+			LockedEscrowAmount: 50.0,
+			Location: models.Location{
+				Latitude:  30.0,
+				Longitude: 30.0,
+			},
+			CreatedAt: time.Now().Add(-1 * time.Hour),
+		}
+		_ = s.CreateJob(ctx, jobC)
+
+		// Set last update time to 1 hour ago
+		u.locationThrottleMu.Lock()
+		u.locationLastUpdate[jobC.ID] = time.Now().Add(-1 * time.Hour)
+		u.locationThrottleMu.Unlock()
+
+		// Attempt to update location 500 km away (implausible speed for 1 hour)
+		locReqBody := map[string]any{
+			"job_id":       "job-integrity-C",
+			"requester_id": tokenEmp,
+			"latitude":     35.0, // approx 500+ km away
+			"longitude":    30.0,
+		}
+		locBody, _ := json.Marshal(locReqBody)
+		locReq := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(locBody))
+		locRec := httptest.NewRecorder()
+		u.UpdateJobLocation(locRec, locReq)
+
+		if locRec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for implausible speed, got %d. Body: %s", locRec.Code, locRec.Body.String())
+		}
+		var locResp map[string]any
+		_ = json.Unmarshal(locRec.Body.Bytes(), &locResp)
+		if locResp["error"] != "implausible_speed" {
+			t.Errorf("Expected error to be 'implausible_speed', got %v", locResp["error"])
 		}
 	})
 }

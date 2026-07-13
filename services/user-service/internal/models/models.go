@@ -89,6 +89,7 @@ type Job struct {
 	CurrentLocation    *Location `json:"current_location,omitempty"   bson:"current_location,omitempty"`
 	PaymentMethod      string    `json:"payment_method"                bson:"payment_method"`
 	CancellationReason string    `json:"cancellation_reason,omitempty" bson:"cancellation_reason,omitempty"`
+	LockedEscrowAmount float64   `json:"locked_escrow_amount,omitempty" bson:"locked_escrow_amount,omitempty"`
 	CreatedAt          time.Time `json:"created_at"                    bson:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"                    bson:"updated_at"`
 }

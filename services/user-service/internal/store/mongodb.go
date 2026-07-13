@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -250,6 +251,18 @@ func (s *MongoDB) UpdateJobStatus(ctx context.Context, id string, status models.
 	return nil
 }
 
+func (s *MongoDB) UpdateJobLockedEscrow(ctx context.Context, id string, amount float64) error {
+	res, err := s.jobs.UpdateOne(ctx, bson.M{"_id": id},
+		bson.M{"$set": bson.M{"locked_escrow_amount": amount, "updated_at": time.Now().UTC()}})
+	if err != nil {
+		return fmt.Errorf("store: update job locked escrow: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("job %q not found", id)
+	}
+	return nil
+}
+
 func (s *MongoDB) GetServiceByID(ctx context.Context, id string) *models.Service {
 	var svc models.Service
 	if err := s.services.FindOne(ctx, bson.M{"_id": id}).Decode(&svc); err != nil {
@@ -351,45 +364,92 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 	now := time.Now().UTC()
 	tsBase := now.UnixNano()
 
-	// Atomic: deduct escrow, credit withdrawable with net amount.
-	res, err := s.wallets.UpdateOne(ctx,
-		bson.M{"tenant_id": tenantID, "escrow_balance": bson.M{"$gte": amount}},
-		bson.M{
-			"$inc": bson.M{"escrow_balance": -amount, "total_balance": -feeAmount, "withdrawable_balance": netAmount},
-			"$set": bson.M{"updated_at": now},
-		})
-	if err != nil {
+	runTx := func(sc context.Context) error {
+		// Atomic check and deduct against that job's own locked amount by updating the job document.
+		// status must be JobStatusActive and locked_escrow_amount >= amount.
+		resJob, err := s.jobs.UpdateOne(sc,
+			bson.M{
+				"_id":                  jobID,
+				"status":               models.JobStatusActive,
+				"locked_escrow_amount": bson.M{"$gte": amount},
+			},
+			bson.M{
+				"$inc": bson.M{"locked_escrow_amount": -amount},
+				"$set": bson.M{"status": models.JobStatusCompleted, "updated_at": now},
+			})
+		if err != nil {
+			return fmt.Errorf("failed to update job escrow/status: %w", err)
+		}
+		if resJob.MatchedCount == 0 {
+			return fmt.Errorf("escrow release failed: job %s is not active or has insufficient locked escrow", jobID)
+		}
+
+		// Atomic: deduct escrow, credit withdrawable with net amount.
+		res, err := s.wallets.UpdateOne(sc,
+			bson.M{"tenant_id": tenantID, "escrow_balance": bson.M{"$gte": amount}},
+			bson.M{
+				"$inc": bson.M{"escrow_balance": -amount, "total_balance": -feeAmount, "withdrawable_balance": netAmount},
+				"$set": bson.M{"updated_at": now},
+			})
+		if err != nil {
+			return err
+		}
+		if res.MatchedCount == 0 {
+			return fmt.Errorf("escrow release failed: insufficient escrow balance")
+		}
+
+		// Credit platform wallet with fee.
+		_, err = s.wallets.UpdateOne(sc, bson.M{"tenant_id": "platform"},
+			bson.M{
+				"$inc": bson.M{"total_balance": feeAmount, "withdrawable_balance": feeAmount},
+				"$set": bson.M{"updated_at": now},
+			})
+		if err != nil {
+			return err
+		}
+
+		// Ledger entries.
+		entries := []interface{}{
+			models.TransactionLedger{
+				ID: fmt.Sprintf("tx-%d-release", tsBase), TenantID: tenantID, JobID: jobID,
+				Type: models.TxEscrowRelease, Amount: amount, Description: "escrow released", Timestamp: now,
+			},
+			models.TransactionLedger{
+				ID: fmt.Sprintf("tx-%d-fee", tsBase), TenantID: tenantID, JobID: jobID,
+				Type: models.TxPlatformFee, Amount: feeAmount,
+				Description: fmt.Sprintf("platform fee %.1f%%", cfg.PlatformFeePercentage), Timestamp: now,
+			},
+			models.TransactionLedger{
+				ID: fmt.Sprintf("tx-%d-payout", tsBase), TenantID: tenantID, JobID: jobID,
+				Type: models.TxPayout, Amount: netAmount, Description: "net payout to tenant", Timestamp: now,
+			},
+		}
+		_, err = s.ledger.InsertMany(sc, entries)
 		return err
 	}
-	if res.MatchedCount == 0 {
-		return fmt.Errorf("escrow release failed: insufficient escrow balance")
-	}
 
-	// Credit platform wallet with fee.
-	s.wallets.UpdateOne(ctx, bson.M{"tenant_id": "platform"},
-		bson.M{
-			"$inc": bson.M{"total_balance": feeAmount, "withdrawable_balance": feeAmount},
-			"$set": bson.M{"updated_at": now},
-		})
-
-	// Ledger entries.
-	entries := []interface{}{
-		models.TransactionLedger{
-			ID: fmt.Sprintf("tx-%d-release", tsBase), TenantID: tenantID, JobID: jobID,
-			Type: models.TxEscrowRelease, Amount: amount, Description: "escrow released", Timestamp: now,
-		},
-		models.TransactionLedger{
-			ID: fmt.Sprintf("tx-%d-fee", tsBase), TenantID: tenantID, JobID: jobID,
-			Type: models.TxPlatformFee, Amount: feeAmount,
-			Description: fmt.Sprintf("platform fee %.1f%%", cfg.PlatformFeePercentage), Timestamp: now,
-		},
-		models.TransactionLedger{
-			ID: fmt.Sprintf("tx-%d-payout", tsBase), TenantID: tenantID, JobID: jobID,
-			Type: models.TxPayout, Amount: netAmount, Description: "net payout to tenant", Timestamp: now,
-		},
+	session, err := s.client.StartSession()
+	if err != nil {
+		return runTx(ctx)
 	}
-	s.ledger.InsertMany(ctx, entries)
-	return nil
+	defer session.EndSession(ctx)
+
+	err = mongo.WithSession(ctx, session, func(sc context.Context) error {
+		if err := session.StartTransaction(); err != nil {
+			return err
+		}
+		if err := runTx(sc); err != nil {
+			session.AbortTransaction(sc)
+			return err
+		}
+		return session.CommitTransaction(sc)
+	})
+
+	if err != nil && (strings.Contains(err.Error(), "Transaction numbers") || strings.Contains(err.Error(), "replica set")) {
+		log.Printf("[USER-STORE] Standalone MongoDB detected. Falling back to sequential execution for ReleaseEscrowWithSplit.")
+		return runTx(ctx)
+	}
+	return err
 }
 
 func (s *MongoDB) GetLedger(ctx context.Context, tenantID string) []models.TransactionLedger {
@@ -590,23 +650,69 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 	if w.EscrowBalance < amount {
 		return fmt.Errorf("insufficient escrow balance to refund: have %.2f, need %.2f", w.EscrowBalance, amount)
 	}
-	res, err := s.wallets.UpdateOne(ctx,
-		bson.M{"tenant_id": tenantID, "escrow_balance": bson.M{"$gte": amount}},
-		bson.M{
-			"$inc": bson.M{"escrow_balance": -amount, "withdrawable_balance": amount},
-			"$set": bson.M{"updated_at": time.Now().UTC()},
+
+	runTx := func(sc context.Context) error {
+		// Atomic check and deduct against that job's own locked amount by updating the job document.
+		// status must be Active or Pending, and locked_escrow_amount >= amount.
+		resJob, err := s.jobs.UpdateOne(sc,
+			bson.M{
+				"_id":                  jobID,
+				"status":               bson.M{"$in": []models.JobStatus{models.JobStatusActive, models.JobStatusPending}},
+				"locked_escrow_amount": bson.M{"$gte": amount},
+			},
+			bson.M{
+				"$inc": bson.M{"locked_escrow_amount": -amount},
+				"$set": bson.M{"status": models.JobStatusCancelled, "updated_at": time.Now().UTC()},
+			})
+		if err != nil {
+			return fmt.Errorf("failed to update job escrow/status: %w", err)
+		}
+		if resJob.MatchedCount == 0 {
+			return fmt.Errorf("escrow refund failed: job %s is not active/pending or has insufficient locked escrow", jobID)
+		}
+
+		res, err := s.wallets.UpdateOne(sc,
+			bson.M{"tenant_id": tenantID, "escrow_balance": bson.M{"$gte": amount}},
+			bson.M{
+				"$inc": bson.M{"escrow_balance": -amount, "withdrawable_balance": amount},
+				"$set": bson.M{"updated_at": time.Now().UTC()},
+			})
+		if err != nil {
+			return err
+		}
+		if res.MatchedCount == 0 {
+			return fmt.Errorf("escrow refund failed: insufficient escrow balance")
+		}
+
+		_, err = s.ledger.InsertOne(sc, models.TransactionLedger{
+			ID: fmt.Sprintf("tx-%d-refund", time.Now().UnixNano()), TenantID: tenantID, JobID: jobID,
+			Type: models.TxEscrowRelease, Amount: amount,
+			BalanceBefore: w.WithdrawableBalance, BalanceAfter: w.WithdrawableBalance + amount,
+			Description: fmt.Sprintf("escrow refund for cancelled job %s", jobID), Timestamp: time.Now().UTC(),
 		})
-	if err != nil {
 		return err
 	}
-	if res.MatchedCount == 0 {
-		return fmt.Errorf("escrow refund failed: insufficient escrow balance")
+
+	session, err := s.client.StartSession()
+	if err != nil {
+		return runTx(ctx)
 	}
-	_, err = s.ledger.InsertOne(ctx, models.TransactionLedger{
-		ID: fmt.Sprintf("tx-%d-refund", time.Now().UnixNano()), TenantID: tenantID, JobID: jobID,
-		Type: models.TxEscrowRelease, Amount: amount,
-		BalanceBefore: w.WithdrawableBalance, BalanceAfter: w.WithdrawableBalance + amount,
-		Description: fmt.Sprintf("escrow refund for cancelled job %s", jobID), Timestamp: time.Now().UTC(),
+	defer session.EndSession(ctx)
+
+	err = mongo.WithSession(ctx, session, func(sc context.Context) error {
+		if err := session.StartTransaction(); err != nil {
+			return err
+		}
+		if err := runTx(sc); err != nil {
+			session.AbortTransaction(sc)
+			return err
+		}
+		return session.CommitTransaction(sc)
 	})
+
+	if err != nil && (strings.Contains(err.Error(), "Transaction numbers") || strings.Contains(err.Error(), "replica set")) {
+		log.Printf("[USER-STORE] Standalone MongoDB detected. Falling back to sequential execution for RefundEscrow.")
+		return runTx(ctx)
+	}
 	return err
 }

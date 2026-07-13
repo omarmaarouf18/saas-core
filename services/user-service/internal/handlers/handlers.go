@@ -39,6 +39,9 @@ var ErrUpgradeRequired = errors.New("upgrade_required")
 // MinLocationUpdateInterval defines the minimum wait time between consecutive location updates per job.
 const MinLocationUpdateInterval = 3 * time.Second
 
+// MaxReasonableSpeedKmh defines the maximum plausible speed for location updates in km/h.
+const MaxReasonableSpeedKmh = 150.0
+
 // UserService holds dependencies for the user-service handlers.
 type UserService struct {
 	store                *store.MongoDB
@@ -359,6 +362,12 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[USER] Job %s created with escrow %.2f locked", job.ID, escrowAmount)
 
+	// Persist the locked escrow amount on the job record
+	if err := u.store.UpdateJobLockedEscrow(ctx, job.ID, escrowAmount); err != nil {
+		log.Printf("[ERROR] failed to persist locked escrow amount for job %s: %v", job.ID, err)
+	}
+	job.LockedEscrowAmount = escrowAmount
+
 	// Progress to active.
 	u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive)
 	job.Status = models.JobStatusActive
@@ -442,13 +451,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "service not found for job"})
 		return
 	}
-	destLat := job.Location.Latitude
-	destLon := job.Location.Longitude
-	if job.CurrentLocation != nil {
-		destLat = job.CurrentLocation.Latitude
-		destLon = job.CurrentLocation.Longitude
-	}
-	dist := haversineKm(destLat, destLon, svc.Latitude, svc.Longitude)
+	dist := haversineKm(job.Location.Latitude, job.Location.Longitude, svc.Latitude, svc.Longitude)
 	amount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
 
 	// Handle COD payment method
@@ -486,6 +489,13 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			"platform_fee_pct": feePercent,
 		})
 		return
+	}
+
+	// Cap the release amount at LockedEscrowAmount to prevent drawing down other jobs' escrow
+	if amount > job.LockedEscrowAmount {
+		log.Printf("[SECURITY WARNING] Recomputed completion amount %.2f exceeds locked escrow amount %.2f for job %s. Capping to locked amount.", amount, job.LockedEscrowAmount, job.ID)
+		handlerutil.ShipSecurityEvent(ctx, "ESCROW_LIMIT_EXCEEDED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("CompleteJob amount %.2f exceeds locked escrow %.2f, capped", amount, job.LockedEscrowAmount), handlerutil.GetClientIP(r))
+		amount = job.LockedEscrowAmount
 	}
 
 	// Release escrow with profit splitting (Non-COD flow)
@@ -1213,6 +1223,40 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 	u.locationInFlight[job.ID] = true
 	u.locationThrottleMu.Unlock()
 
+	// Speed/plausibility check
+	prevLat := job.Location.Latitude
+	prevLon := job.Location.Longitude
+	if job.CurrentLocation != nil {
+		prevLat = job.CurrentLocation.Latitude
+		prevLon = job.CurrentLocation.Longitude
+	}
+
+	dist := haversineKm(req.Latitude, req.Longitude, prevLat, prevLon)
+	var lastTime time.Time
+	if exists {
+		lastTime = lastUpdate
+	} else {
+		lastTime = job.CreatedAt
+	}
+	timeDiff := now.Sub(lastTime)
+	hours := timeDiff.Hours()
+	if hours > 0 {
+		speed := dist / hours
+		if speed > MaxReasonableSpeedKmh {
+			u.locationThrottleMu.Lock()
+			delete(u.locationInFlight, job.ID)
+			u.locationThrottleMu.Unlock()
+
+			log.Printf("[SECURITY WARNING] Implausible speed detected for job %s: %.2f km/h", job.ID, speed)
+			handlerutil.ShipSecurityEvent(ctx, "IMPLAUSIBLE_SPEED_DETECTED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("location update rejected for job %s: speed %.2f km/h exceeds limit", job.ID, speed), handlerutil.GetClientIP(r))
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error":   "implausible_speed",
+				"message": "Location update rejected: implausible speed detected.",
+			})
+			return
+		}
+	}
+
 	// Update in the store
 	if err := u.store.UpdateJobLocation(ctx, req.JobID, req.Latitude, req.Longitude); err != nil {
 		u.locationThrottleMu.Lock()
@@ -1378,14 +1422,15 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "service not found for job"})
 			return
 		}
-		destLat := job.Location.Latitude
-		destLon := job.Location.Longitude
-		if job.CurrentLocation != nil {
-			destLat = job.CurrentLocation.Latitude
-			destLon = job.CurrentLocation.Longitude
-		}
-		dist := haversineKm(destLat, destLon, svc.Latitude, svc.Longitude)
+		dist := haversineKm(job.Location.Latitude, job.Location.Longitude, svc.Latitude, svc.Longitude)
 		amount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
+
+		// Cap the refund amount at LockedEscrowAmount to prevent drawing down other jobs' escrow
+		if amount > job.LockedEscrowAmount {
+			log.Printf("[SECURITY WARNING] Recomputed refund amount %.2f exceeds locked escrow amount %.2f for job %s. Capping to locked amount.", amount, job.LockedEscrowAmount, job.ID)
+			handlerutil.ShipSecurityEvent(ctx, "ESCROW_LIMIT_EXCEEDED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("CancelJob refund %.2f exceeds locked escrow %.2f, capped", amount, job.LockedEscrowAmount), handlerutil.GetClientIP(r))
+			amount = job.LockedEscrowAmount
+		}
 
 		if err := u.store.RefundEscrow(ctx, job.OwnerID, job.ID, amount); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to refund escrow: " + err.Error()})

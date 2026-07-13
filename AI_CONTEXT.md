@@ -87,10 +87,10 @@ The detailed project history is distributed across categorized changelog files. 
 
 Only features verified directly against the running application are marked as verified (✅). The following items are implemented but remain unverified end-to-end or represent accepted security risks:
 
-* **Unverified Escrow Logic (COD-only bypass)**: Escrow release splits (`ReleaseEscrowWithSplit`) exist in `user-service/internal/store/mongodb.go`, but since the `/track` endpoint actively blocks any payment method other than `cod`, this COD-only restriction is still in place for tracking. Escrow locking and refund logic have been verified via integration testing of Job Cancellation.
+* **Verified Escrow Logic (Isolated per Job)**: Escrow locking, release splits (`ReleaseEscrowWithSplit`), and refunds (`RefundEscrow`) are verified end-to-end via integration tests. Escrow balances are isolated per job record in the database layer.
 * **Fail-Closed Rate Limiting on Redis Unavailability**: If the shared Redis instance becomes unavailable at runtime, all rate limiters across all microservices (api-gateway, auth-service, chat-service, notification-service, user-service) will fail-closed. This means incoming traffic is restricted/blocked and authentication attempts are denied with critical security logs (`[SECURITY CRITICAL]`), rather than allowing un-throttled traffic to bypass security boundaries.
 * **Dev-Grade mTLS CA**: The certificates generated for mTLS use a dev-grade local Root CA. For production, a real internal CA (e.g. AWS Private CA, HashiCorp Vault PKI, or cert-manager on Kubernetes) must be integrated.
-* **Client-Submitted Coordinates for Pricing/Escrow (Partially Mitigated)**: Sourced final destination coordinate automatically from the live GPS feed (`job.CurrentLocation`) rather than relying purely on client-typed coordinates at job creation in `CompleteJob` and `CancelJob`. However, this is only a partial mitigation; the GPS feed itself (via `POST /users/jobs/location/update`) is still client-reported and not cross-checked against independent vehicle telematics or maps provider APIs. Therefore, the risk of GPS spoofing remains open.
+* **Client-Submitted Booking Coordinates for Pricing**: Distance-based pricing/escrow calculations rely on coordinates submitted by the client at job booking time. Recomputed amounts on CompleteJob and CancelJob use only the initial booking coordinates (`job.Location`). In addition, live location broadcasts from employees are gated by a speed plausibility check (rejecting jumps implying >150.0 km/h) to prevent GPS spoofing.
 * **Missing Job Listing Endpoint**: There is currently no endpoint in `user-service` to list jobs (either active or historical) for owners, employees, or customers. This is noted as a product gap, and the owner dashboard will only display static/empty placeholders for the active jobs list.
 * **Missing Employee Listing Endpoint**: There is currently no endpoint in `auth-service` to retrieve the list of registered employees for a tenant owner.
 
@@ -115,7 +115,7 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Completed Sub-tasks 1, 2, & 3 (Dashboard, Wallet, and Employee Management) of Phase 2 (Owner Core Functionality). Next step: Sub-task 4 (Service Directory Configuration).
+* **Immediate Next Step**: Completed Phase 2 security vulnerability fixes (Unauthenticated Employee Signup, and Escrow Recalculation/Location spoofing fixes). Next step: continue Phase 2 owner core functionalities.
 
 
 

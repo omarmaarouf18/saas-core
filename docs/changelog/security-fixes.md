@@ -292,5 +292,11 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``current``
 - **Verification**: Verified via auth-service integration tests. ✅
 
+## Per-Job Escrow Isolation & Location Validation
+
+- **Implementation Detail**: Reverted unsafe GPS coordinates in price recalculations, persisted LockedEscrowAmount at booking, isolated escrow deductions per-job in the MongoDB store with standalone fallbacks, capped settlement releases/refunds at the locked ceiling (emitting `ESCROW_LIMIT_EXCEEDED` security events), and enforced speed plausibility checking on location broadcasts (150.0 km/h ceiling). Documented in [ADR-0002](../adr/0002-per-job-escrow-integrity.md).
+- **Commit SHA**: ``current``
+- **Verification**: Verified via user-service integration tests. ✅
+
 
 
