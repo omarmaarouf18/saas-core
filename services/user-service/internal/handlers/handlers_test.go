@@ -336,6 +336,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		defer mockAuthServer3.Close()
 
 		cfg3 := &config.Config{
+			AppEnv:               "test",
 			AuthServiceURL:       mockAuthServer3.URL,
 			InternalServiceToken: "mock-internal-token",
 		}
@@ -370,8 +371,13 @@ func TestUserServiceHandlers(t *testing.T) {
 			t.Errorf("Expected limit error message, got: %s", rec.Body.String())
 		}
 
-		// C. Non-local environment: APP_ENV=production -> 400 Bad Request
-		t.Setenv("APP_ENV", "production")
+		// C. Non-local environment: AppEnv=production -> 400 Bad Request
+		cfgProd := &config.Config{
+			AppEnv:               "production",
+			AuthServiceURL:       mockAuthServer3.URL,
+			InternalServiceToken: "mock-internal-token",
+		}
+		uProd := NewUserService(s, cfgProd, rdb)
 		reqBody = map[string]any{
 			"tenant_id": tokenTenant,
 			"amount":    500.0,
@@ -379,9 +385,26 @@ func TestUserServiceHandlers(t *testing.T) {
 		body, _ = json.Marshal(reqBody)
 		req = httptest.NewRequest("POST", "/users/wallet/deposit", bytes.NewReader(body))
 		rec = httptest.NewRecorder()
-		u3.WalletDeposit(rec, req)
+		uProd.WalletDeposit(rec, req)
 		if rec.Code != http.StatusBadRequest {
 			t.Errorf("Expected 400 Bad Request for production env deposit, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "payment gateway not yet integrated") {
+			t.Errorf("Expected gateway integration error message, got: %s", rec.Body.String())
+		}
+
+		// D. Unset/Empty environment: AppEnv="" -> 400 Bad Request
+		cfgUnset := &config.Config{
+			AppEnv:               "",
+			AuthServiceURL:       mockAuthServer3.URL,
+			InternalServiceToken: "mock-internal-token",
+		}
+		uUnset := NewUserService(s, cfgUnset, rdb)
+		req = httptest.NewRequest("POST", "/users/wallet/deposit", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		uUnset.WalletDeposit(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for unset env deposit, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 		if !strings.Contains(rec.Body.String(), "payment gateway not yet integrated") {
 			t.Errorf("Expected gateway integration error message, got: %s", rec.Body.String())

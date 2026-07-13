@@ -14,7 +14,6 @@ import (
 	"log"
 	"math"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -53,6 +52,7 @@ type UserService struct {
 	authClient           *resilience.ResilienceClient
 	chatClient           *resilience.ResilienceClient
 	httpClient           *http.Client
+	appEnv               string
 }
 
 // NewUserService creates a new UserService handler group.
@@ -91,6 +91,7 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		authClient:           authClient,
 		chatClient:           chatClient,
 		httpClient:           client,
+		appEnv:               cfg.AppEnv,
 	}
 }
 
@@ -601,8 +602,7 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	appEnv := os.Getenv("APP_ENV")
-	if appEnv != "local" && appEnv != "test" && appEnv != "" {
+	if u.appEnv != "local" && u.appEnv != "test" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "payment gateway not yet integrated",
 		})

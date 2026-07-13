@@ -282,7 +282,8 @@ This file tracks historical entries for the primary category: **Security Fixes C
 
 ## Gated Wallet Deposit Endpoint
 
-- **Implementation Detail**: Added an environment gate to `services/user-service/internal/handlers/handlers.go#L603` to reject wallet deposit requests in non-local/non-test environments, preventing unverified fund creation.
+- **Implementation Detail**: Gated the public `/users/wallet/deposit` endpoint behind a strict environment allow-list (`"local"` and `"test"` only). Refactored user-service configuration to read `APP_ENV` from config rather than inline, and added verification tests for both production and unset/empty environment configurations to ensure unverified deposits are securely blocked.
 - **Commit SHA**: ``current``
 - **Verification**: Verified via unit tests. ✅
+
 

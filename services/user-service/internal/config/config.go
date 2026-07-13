@@ -6,6 +6,7 @@ import (
 )
 
 type Config struct {
+	AppEnv               string
 	Port                 string
 	MongoURI             string
 	MongoDatabase        string
@@ -77,6 +78,7 @@ func Load() (*Config, error) {
 	}
 
 	return &Config{
+		AppEnv:               os.Getenv("APP_ENV"),
 		Port:                 port,
 		MongoURI:             mongoURI,
 		MongoDatabase:        dbName,
