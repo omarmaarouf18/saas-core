@@ -974,3 +974,97 @@ func TestSignupRollbackOnOTPFailure(t *testing.T) {
 		t.Errorf("User record was not deleted/rolled back after SetOTP failure!")
 	}
 }
+
+type mockStorageWithFailure struct {
+	storage.Storage
+	failKey string
+}
+
+func (m *mockStorageWithFailure) GetSignedURL(ctx context.Context, key string, expires time.Duration) (string, error) {
+	if key == m.failKey {
+		return "", fmt.Errorf("simulated signed URL generation error")
+	}
+	return m.Storage.GetSignedURL(ctx, key, expires)
+}
+
+func TestGetPendingKYBKYESubmissions_StorageError(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	user := &models.User{
+		ID:               "user_kyb_test_999",
+		Email:            "kyb_error_test@example.com",
+		Role:             models.RoleOwner,
+		KYCStatus:        models.KYCPendingApproval,
+		IDFrontDoc:       "id_front_999.png",
+		IDBackDoc:        "id_back_999.png",
+		SelfieDoc:        "selfie_999.png",
+		BusinessProofDoc: "business_proof_999.pdf",
+		IsConfirmed:      true,
+		IsActive:         true,
+	}
+	if err := s.CreateUser(ctx, user); err != nil {
+		t.Fatalf("failed to create test user: %v", err)
+	}
+
+	reviewer := &models.Reviewer{
+		ID:    "reviewer_err_999",
+		Name:  "Test Reviewer Error",
+		Token: "reviewer-token-err-999",
+	}
+	if err := s.AddReviewer(ctx, reviewer); err != nil {
+		t.Fatalf("failed to add test reviewer: %v", err)
+	}
+
+	// Intercept and wrap storage to fail for id_back key
+	a.storage = &mockStorageWithFailure{
+		Storage: a.storage,
+		failKey: "id_back_999.png",
+	}
+
+	req := httptest.NewRequest("GET", "/auth/kyb-kye/pending", nil)
+	req.Header.Set("X-Internal-Token", a.internalServiceToken)
+	req.Header.Set("X-Reviewer-Token", reviewer.Token)
+	rec := httptest.NewRecorder()
+
+	a.GetPendingKYBKYESubmissions(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	var pendingList []struct {
+		UserID           string   `json:"user_id"`
+		IDFrontURL       string   `json:"id_front_url"`
+		IDBackURL        string   `json:"id_back_url"`
+		SelfieURL        string   `json:"selfie_url"`
+		BusinessProofURL string   `json:"business_proof_url"`
+		DocumentErrors   []string `json:"document_errors"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&pendingList); err != nil {
+		t.Fatalf("Failed to decode pending list: %v", err)
+	}
+
+	found := false
+	for _, sub := range pendingList {
+		if sub.UserID == user.ID {
+			found = true
+			if sub.IDFrontURL == "" || sub.SelfieURL == "" || sub.BusinessProofURL == "" {
+				t.Errorf("Expected URLs for id_front, selfie, business_proof to be populated, got: front=%q, selfie=%q, proof=%q", sub.IDFrontURL, sub.SelfieURL, sub.BusinessProofURL)
+			}
+			if sub.IDBackURL != "" {
+				t.Errorf("Expected id_back URL to be empty on failure, got %q", sub.IDBackURL)
+			}
+			if len(sub.DocumentErrors) != 1 || !strings.Contains(sub.DocumentErrors[0], "Failed to load id_back") {
+				t.Errorf("Expected 1 document error for id_back, got: %v", sub.DocumentErrors)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("Did not find test user %s in pending list", user.ID)
+	}
+}

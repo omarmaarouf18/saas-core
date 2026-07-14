@@ -37,7 +37,7 @@ type Auth struct {
 	limiter              *RateLimiter
 	gatewaySecret        string
 	internalServiceToken string
-	storage              *storage.LocalStorage
+	storage              storage.Storage
 	userServiceClient    *resilience.ResilienceClient
 	userServiceURL       string
 }
@@ -48,7 +48,8 @@ type Auth struct {
 //   - cfg:           central configuration loader struct
 //   - rdb:           Redis client for rate limiting
 //   - storage:       local storage engine for documents
-func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config, rdb *redis.Client, storage *storage.LocalStorage) *Auth {
+//   - storage:       local storage engine for documents
+func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config, rdb *redis.Client, storage storage.Storage) *Auth {
 	handlerutil.InitCloudWatch(cfg.CloudWatchLogGroup)
 	isLocal := strings.EqualFold(cfg.AppEnv, "local")
 	if isLocal {
@@ -1253,6 +1254,7 @@ func (a *Auth) GetPendingKYBKYESubmissions(w http.ResponseWriter, r *http.Reques
 		IDBackURL        string           `json:"id_back_url,omitempty"`
 		SelfieURL        string           `json:"selfie_url,omitempty"`
 		BusinessProofURL string           `json:"business_proof_url,omitempty"`
+		DocumentErrors   []string         `json:"document_errors,omitempty"`
 	}
 
 	results := make([]Submission, 0, len(users))
@@ -1266,20 +1268,44 @@ func (a *Auth) GetPendingKYBKYESubmissions(w http.ResponseWriter, r *http.Reques
 		}
 
 		if u.IDFrontDoc != "" {
-			sub.IDFrontURL, _ = a.storage.GetSignedURL(ctx, u.IDFrontDoc, 15*time.Minute)
-			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("generated signed url for IDFrontDoc key: %s", u.IDFrontDoc), handlerutil.GetClientIP(r))
+			url, err := a.storage.GetSignedURL(ctx, u.IDFrontDoc, 15*time.Minute)
+			if err != nil {
+				log.Printf("[AUTH] Failed to generate signed URL for id_front doc (user %s): %v", u.ID, err)
+				sub.DocumentErrors = append(sub.DocumentErrors, fmt.Sprintf("Failed to load id_front: %v", err))
+			} else {
+				sub.IDFrontURL = url
+				handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("generated signed url for IDFrontDoc key: %s", u.IDFrontDoc), handlerutil.GetClientIP(r))
+			}
 		}
 		if u.IDBackDoc != "" {
-			sub.IDBackURL, _ = a.storage.GetSignedURL(ctx, u.IDBackDoc, 15*time.Minute)
-			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("generated signed url for IDBackDoc key: %s", u.IDBackDoc), handlerutil.GetClientIP(r))
+			url, err := a.storage.GetSignedURL(ctx, u.IDBackDoc, 15*time.Minute)
+			if err != nil {
+				log.Printf("[AUTH] Failed to generate signed URL for id_back doc (user %s): %v", u.ID, err)
+				sub.DocumentErrors = append(sub.DocumentErrors, fmt.Sprintf("Failed to load id_back: %v", err))
+			} else {
+				sub.IDBackURL = url
+				handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("generated signed url for IDBackDoc key: %s", u.IDBackDoc), handlerutil.GetClientIP(r))
+			}
 		}
 		if u.SelfieDoc != "" {
-			sub.SelfieURL, _ = a.storage.GetSignedURL(ctx, u.SelfieDoc, 15*time.Minute)
-			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("generated signed url for SelfieDoc key: %s", u.SelfieDoc), handlerutil.GetClientIP(r))
+			url, err := a.storage.GetSignedURL(ctx, u.SelfieDoc, 15*time.Minute)
+			if err != nil {
+				log.Printf("[AUTH] Failed to generate signed URL for selfie doc (user %s): %v", u.ID, err)
+				sub.DocumentErrors = append(sub.DocumentErrors, fmt.Sprintf("Failed to load selfie: %v", err))
+			} else {
+				sub.SelfieURL = url
+				handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("generated signed url for SelfieDoc key: %s", u.SelfieDoc), handlerutil.GetClientIP(r))
+			}
 		}
 		if u.BusinessProofDoc != "" {
-			sub.BusinessProofURL, _ = a.storage.GetSignedURL(ctx, u.BusinessProofDoc, 15*time.Minute)
-			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("generated signed url for BusinessProofDoc key: %s", u.BusinessProofDoc), handlerutil.GetClientIP(r))
+			url, err := a.storage.GetSignedURL(ctx, u.BusinessProofDoc, 15*time.Minute)
+			if err != nil {
+				log.Printf("[AUTH] Failed to generate signed URL for business_proof doc (user %s): %v", u.ID, err)
+				sub.DocumentErrors = append(sub.DocumentErrors, fmt.Sprintf("Failed to load business_proof: %v", err))
+			} else {
+				sub.BusinessProofURL = url
+				handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("generated signed url for BusinessProofDoc key: %s", u.BusinessProofDoc), handlerutil.GetClientIP(r))
+			}
 		}
 
 		results = append(results, sub)

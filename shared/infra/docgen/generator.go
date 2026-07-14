@@ -211,7 +211,7 @@ var KnownEndpoints = map[string]struct {
 	},
 	"POST /users/jobs/track": {
 		Permissions: "Owner JWT (KYC Approved)",
-		Function:    "Books job, broadcasts alert.",
+		Function:    "Books job with coordinate validation, broadcasts alert.",
 		Targets:     "Downstream: calls `auth-service/auth/user`. Writes `jobs`.",
 	},
 	"GET /users/jobs/get": {
@@ -266,7 +266,7 @@ var KnownEndpoints = map[string]struct {
 	},
 	"POST /users/jobs/location/update": {
 		Permissions: "Employee JWT",
-		Function:    "Updates driver coordinates.",
+		Function:    "Updates driver coordinates (validates coordinate bounds and speed).",
 		Targets:     "Reads `jobs`, updates `jobs`. Downstream: calls `chat-service/chat/internal/broadcast-location`.",
 	},
 }

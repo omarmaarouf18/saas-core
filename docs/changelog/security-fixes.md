@@ -322,6 +322,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``2c914b98d29631938e543bb770046666180a84b8``
 - **Verification**: Verified via user-service integration test suite (`TrackJob Employee Assignment Gating`). ✅
 
+## Geographic Coordinate Bounds Validation
+
+- **Implementation Detail**: Enforced strict geographic coordinate bounds validation (latitude: -90 to 90, longitude: -180 to 180) in `TrackJob` and `UpdateJobLocation` inside `user-service`. Validates inputs at the handler level, rejecting invalid requests with 400 Bad Request (`invalid_coordinates`). For `UpdateJobLocation`, it generates a `[SECURITY WARNING]` and ships a security event `INVALID_COORDINATES_DETECTED` prior to checking other constraints.
+- **Commit SHA**: ``38da350f2f56e9b643e11a0b7e3f6eb10c91d0c0``
+- **Verification**: Verified via user-service integration test suite (`TestUserServiceHandlers/Geographic_Coordinate_Bounds_Validation`). ✅
+
 
 
 

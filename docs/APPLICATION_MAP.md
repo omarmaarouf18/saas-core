@@ -1,7 +1,7 @@
 # SaaS Core — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`ff86eeb`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`38da350`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -170,9 +170,9 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`POST /users/jobs/cancel`** | `user-service` | Owner JWT (KYC Approved) | Cancels an active job and processes escrow refunds. | Updates `jobs` collection. Updates `wallets` and `ledger` collections. |
 | **`POST /users/jobs/complete`** | `user-service` | Owner or Employee JWT | Completes active job, processes fees. | Updates `jobs`, writes `wallets`, writes `ledger`. |
 | **`GET /users/jobs/get`** | `user-service` | `X-Internal-Token` OR User JWT | Resolves detailed job configuration. | Reads `jobs` collection. |
-| **`POST /users/jobs/location/update`** | `user-service` | Employee JWT | Updates driver coordinates. | Reads `jobs`, updates `jobs`. Downstream: calls `chat-service/chat/internal/broadcast-location`. |
+| **`POST /users/jobs/location/update`** | `user-service` | Employee JWT | Updates driver coordinates (validates coordinate bounds and speed). | Reads `jobs`, updates `jobs`. Downstream: calls `chat-service/chat/internal/broadcast-location`. |
 | **`POST /users/jobs/rate`** | `user-service` | Owner or Employee JWT | Submits a double-blind rating. | Writes `ratings`, updates `jobs`. |
-| **`POST /users/jobs/track`** | `user-service` | Owner JWT (KYC Approved) | Books job, broadcasts alert. | Downstream: calls `auth-service/auth/user`. Writes `jobs`. |
+| **`POST /users/jobs/track`** | `user-service` | Owner JWT (KYC Approved) | Books job with coordinate validation, broadcasts alert. | Downstream: calls `auth-service/auth/user`. Writes `jobs`. |
 | **`GET /users/ledger`** | `user-service` | Owner JWT | Lists financial ledger records. | Reads `ledger` collection. |
 | **`GET /users/platform/config`** | `user-service` | Public | Fetches global fees configuration. | Reads `platform_config` collection. |
 | **`GET /users/ratings`** | `user-service` | User JWT | Returns ratings count and average. | Reads `ratings` collection. |

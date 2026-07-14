@@ -235,6 +235,14 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !isValidCoordinate(req.Location.Latitude, req.Location.Longitude) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_coordinates",
+			"message": "Latitude must be between -90 and 90, and Longitude must be between -180 and 180",
+		})
+		return
+	}
+
 	resolvedOwnerID, err := resolveToken(req.OwnerID)
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
@@ -1193,6 +1201,21 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if !isValidCoordinate(req.Latitude, req.Longitude) {
+		log.Printf("[SECURITY WARNING] Invalid coordinates detected for job %s: lat=%.6f, lon=%.6f", req.JobID, req.Latitude, req.Longitude)
+		ctx := r.Context()
+		var ownerID string
+		if job := u.store.GetJob(ctx, req.JobID); job != nil {
+			ownerID = job.OwnerID
+		}
+		handlerutil.ShipSecurityEvent(ctx, "INVALID_COORDINATES_DETECTED", "user-service", resolvedRequester, ownerID, fmt.Sprintf("location update rejected for job %s: coordinates out of range (lat=%.6f, lon=%.6f)", req.JobID, req.Latitude, req.Longitude), handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_coordinates",
+			"message": "Latitude must be between -90 and 90, and Longitude must be between -180 and 180",
+		})
+		return
+	}
+
 	ctx := r.Context()
 	job := u.store.GetJob(ctx, req.JobID)
 	if job == nil {
@@ -1491,4 +1514,8 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 		"job_id":  job.ID,
 		"status":  models.JobStatusCancelled,
 	})
+}
+
+func isValidCoordinate(lat, lon float64) bool {
+	return lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180
 }

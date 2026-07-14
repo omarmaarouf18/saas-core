@@ -1975,6 +1975,146 @@ func TestUserServiceHandlers(t *testing.T) {
 			t.Errorf("Expected exactly 1 ledger entry for job-concurrency-COD, got %d", codLedgerCount)
 		}
 	})
+
+	// Test: Geographic Coordinate Bounds Validation
+	t.Run("Geographic Coordinate Bounds Validation", func(t *testing.T) {
+		u.appEnv = "test"
+		defer func() { u.appEnv = "" }()
+
+		// Setup a mock service, subscription, and job for UpdateJobLocation
+		ctx := context.Background()
+		testSvc := &models.Service{
+			ID:               "svc-coords-validation",
+			TenantID:         "kyc-approved-owner",
+			Name:             "Coords Validation Svc",
+			Category:         "transport",
+			TenantBasePrice:  10.0,
+			TenantPricePerKM: 10.0,
+			Latitude:         0.0,
+			Longitude:        0.0,
+		}
+		s.CreateService(ctx, testSvc)
+
+		_ = s.UpsertSubscription(ctx, &models.Subscription{
+			ID:        "sub-coords-validation",
+			TenantID:  "kyc-approved-owner",
+			Tier:      models.PlanPaid,
+			StartedAt: time.Now(),
+		})
+
+		activeJob := &models.Job{
+			ID:                 "job-coords-validation",
+			OwnerID:            "kyc-approved-owner",
+			UserID:             "client-user-123",
+			EmployeeID:         "active-employee",
+			ServiceID:          "svc-coords-validation",
+			Status:             models.JobStatusActive,
+			PaymentMethod:      "cod",
+			Location:           models.Location{Latitude: 0.0, Longitude: 0.0},
+			CreatedAt:          time.Now().Add(-1 * time.Hour),
+		}
+		s.CreateJob(ctx, activeJob)
+
+		tokenEmp, _ := jwtutil.GenerateToken("active-employee", "employee", "kyc-approved-owner", "employee@example.com")
+
+		// 1. TrackJob Coordinate Checks
+		trackJobCases := []struct {
+			name           string
+			lat, lon       float64
+			expectedStatus int
+			expectedError  string
+		}{
+			{"Valid coords pass", 45.0, 90.0, http.StatusCreated, ""},
+			{"Boundary lat max", 90.0, 180.0, http.StatusCreated, ""},
+			{"Boundary lat min", -90.0, -180.0, http.StatusCreated, ""},
+			{"Lat too high", 90.1, 0.0, http.StatusBadRequest, "invalid_coordinates"},
+			{"Lat too low", -90.1, 0.0, http.StatusBadRequest, "invalid_coordinates"},
+			{"Lon too high", 0.0, 180.1, http.StatusBadRequest, "invalid_coordinates"},
+			{"Lon too low", 0.0, -180.1, http.StatusBadRequest, "invalid_coordinates"},
+		}
+
+		for i, tc := range trackJobCases {
+			t.Run("TrackJob - "+tc.name, func(t *testing.T) {
+				reqBody := map[string]any{
+					"owner_id":       tokenApprovedOwner,
+					"user_id":        tokenClientUser,
+					"service_id":     "svc-coords-validation",
+					"payment_method": "cod",
+					"location": map[string]float64{
+						"latitude":  tc.lat,
+						"longitude": tc.lon,
+					},
+				}
+				body, _ := json.Marshal(reqBody)
+				req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+				req.Header.Set("X-Real-IP", fmt.Sprintf("192.168.2.%d", i+1))
+				rec := httptest.NewRecorder()
+
+				u.TrackJob(rec, req)
+
+				if rec.Code != tc.expectedStatus {
+					t.Errorf("expected status %d, got %d. Body: %s", tc.expectedStatus, rec.Code, rec.Body.String())
+				}
+
+				if tc.expectedError != "" {
+					var resp map[string]string
+					json.Unmarshal(rec.Body.Bytes(), &resp)
+					if resp["error"] != tc.expectedError {
+						t.Errorf("expected error %q, got %q", tc.expectedError, resp["error"])
+					}
+				}
+			})
+		}
+
+		// 2. UpdateJobLocation Coordinate Checks
+		updateLocCases := []struct {
+			name           string
+			lat, lon       float64
+			expectedStatus int
+			expectedError  string
+		}{
+			{"Valid coords pass", 0.1, 0.1, http.StatusOK, ""}, // near prev location to avoid speed trigger
+			{"Lat too high", 90.1, 0.0, http.StatusBadRequest, "invalid_coordinates"},
+			{"Lat too low", -90.1, 0.0, http.StatusBadRequest, "invalid_coordinates"},
+			{"Lon too high", 0.0, 180.1, http.StatusBadRequest, "invalid_coordinates"},
+			{"Lon too low", 0.0, -180.1, http.StatusBadRequest, "invalid_coordinates"},
+		}
+
+		for i, tc := range updateLocCases {
+			t.Run("UpdateLoc - "+tc.name, func(t *testing.T) {
+				// Clear location throttle and inflight state for each run
+				u.locationThrottleMu.Lock()
+				delete(u.locationInFlight, "job-coords-validation")
+				delete(u.locationLastUpdate, "job-coords-validation")
+				u.locationThrottleMu.Unlock()
+
+				reqBody := map[string]any{
+					"job_id":       "job-coords-validation",
+					"requester_id": tokenEmp,
+					"latitude":    tc.lat,
+					"longitude":   tc.lon,
+				}
+				body, _ := json.Marshal(reqBody)
+				req := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+				req.Header.Set("X-Real-IP", fmt.Sprintf("192.168.3.%d", i+1))
+				rec := httptest.NewRecorder()
+
+				u.UpdateJobLocation(rec, req)
+
+				if rec.Code != tc.expectedStatus {
+					t.Errorf("expected status %d, got %d. Body: %s", tc.expectedStatus, rec.Code, rec.Body.String())
+				}
+
+				if tc.expectedError != "" {
+					var resp map[string]string
+					json.Unmarshal(rec.Body.Bytes(), &resp)
+					if resp["error"] != tc.expectedError {
+						t.Errorf("expected error %q, got %q", tc.expectedError, resp["error"])
+					}
+				}
+			})
+		}
+	})
 }
 
 type contextMock struct {

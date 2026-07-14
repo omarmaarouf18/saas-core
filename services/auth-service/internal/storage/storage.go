@@ -15,6 +15,8 @@ import (
 type Storage interface {
 	Upload(ctx context.Context, key string, reader io.Reader, contentType string) error
 	GetSignedURL(ctx context.Context, key string, expires time.Duration) (string, error)
+	ValidateSignedURLToken(tokenStr string) (string, error)
+	OpenFile(key string) (io.ReadCloser, error)
 }
 
 // LocalStorage implements Storage using local disk for development.
