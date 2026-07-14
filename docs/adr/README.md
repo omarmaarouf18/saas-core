@@ -30,3 +30,5 @@ When adding a new ADR, use the following template:
 ## Record Index
 
 *   [ADR-0001: Owner-Authenticated Employee Provisioning](0001-owner-authenticated-employee-provisioning.md)
+*   [ADR-0002: Per-Job Escrow Integrity and Location Validation](0002-per-job-escrow-integrity.md)
+*   [ADR-0003: Employee Assignment Tenant Binding Check](0003-employee-assignment-tenant-binding-check.md)

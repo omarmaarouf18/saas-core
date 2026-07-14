@@ -316,5 +316,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``logic-exploitation``
 - **Verification**: Verified via otpcrypto unit tests (`TestNewCipher_Validation`). ✅
 
+## Employee Job Assignment Tenant Isolation Gating
+
+- **Implementation Detail**: Gated job assignment in `TrackJob` to verify that the assigned employee actually belongs to the calling owner's tenant and has an active employee role. Refactored user-service's internal `isEmployeeActive` helper to `verifyEmployeeAssignment` to query auth-service and validate both `role == "employee"`, matching `tenant_id`, and `is_active == true` before allowing assignment. Documented in [ADR-0003](../adr/0003-employee-assignment-tenant-binding-check.md).
+- **Commit SHA**: ``2c914b9``
+- **Verification**: Verified via user-service integration test suite (`TrackJob Employee Assignment Gating`). ✅
+
+
 
 
