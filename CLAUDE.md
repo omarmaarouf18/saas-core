@@ -20,3 +20,8 @@ Commit SHA in changelog files must be the real, full git hash of the commit
 being documented, captured via `git rev-parse HEAD` immediately after
 committing — never a placeholder.
 
+docs/APPLICATION_MAP.md must be updated in the same commit whenever a change
+adds, removes, renames, or changes the auth/permission requirements of an HTTP
+endpoint, or changes an inter-service call path. The "as of Git commit" note at
+the top must be refreshed to the new commit's short SHA in that same commit.
+
