@@ -15,6 +15,23 @@ The `saas-core` platform is a multi-tenant SaaS application providing a marketpl
 
 ---
 
+## Documentation System
+
+To prevent documentation drift, the repository enforces structural and automated checks that must pass CI before any PR or merge:
+
+1. **Auto-Generated Content**: 
+   * **Endpoint Mapping**: The HTTP endpoint table in [docs/APPLICATION_MAP.md](docs/APPLICATION_MAP.md) is auto-generated from `RegisterRoutes` AST declarations across Go services. Edits inside the `<!-- GENERATED:ENDPOINTS:START -->` and `<!-- GENERATED:ENDPOINTS:END -->` markers will be overwritten and must never be edited by hand.
+   * **Regenerating**: Run `make docs` to regenerate the endpoint table and refresh the Git commit short SHA note.
+2. **Structurally-Checked Content**:
+   * **File Indexing**: Every `.dart` file under `frontend/lib/` (screens, providers, models) must be mentioned in [docs/frontend/STATUS.md](docs/frontend/STATUS.md).
+   * **Dependency Version Constraints**: Any package dependency constraints mentioned in [DESIGN.md](DESIGN.md) (e.g. `flutter_client_sse`) must match `frontend/pubspec.yaml` exactly.
+3. **Manual Content (Enforced via Commit policy)**:
+   * **Changelogs, ADRs, & Runbooks**: Additions to `docs/changelog/` (with valid 40-character hex commit SHAs), ADRs under `docs/adr/`, and README guidelines remain manual but must be updated in the same commit.
+4. **Verifying Locally**:
+   * Run `make docs-check` to execute the complete freshness and drift-catching verification suite locally.
+
+---
+
 ## Architecture Table
 
 The platform uses a microservices architecture coordinated via a reverse-proxy API Gateway.
@@ -50,7 +67,7 @@ The detailed project history is distributed across categorized changelog files. 
 *   [New Features](docs/changelog/new-features.md) — 20 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters).
 *   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 16 tooling, CI, module refactoring, and onboarding CLI tools.
 *   [Bug Fixes](docs/changelog/bug-fixes.md) — 8 corrections to existing non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic, signup rollback on OTP set failure).
-*   [Documentation](docs/changelog/documentation.md) — 3 documentation-only updates (e.g. Application Map, Audit Correction).
+*   [Documentation](docs/changelog/documentation.md) — 4 documentation-only updates (e.g. Application Map, Audit Correction, Auto-Doc System).
 
 ### 2. Explicitly Deferred by Decision
 

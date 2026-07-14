@@ -9,6 +9,9 @@ Detailed history lives in [docs/changelog/](docs/changelog/), split by category 
 
 For frontend-related work, you must also consult [docs/frontend/STATUS.md](docs/frontend/STATUS.md) (the frontend state tracker) and [frontend/README.md](frontend/README.md) (developer setup guide) before starting the task.
 
+To prevent documentation drift, any other agent-specific instruction files created in the future (e.g., CODEX.md, .cursorrules, etc.) must be created as short pointer files stating "Follow CLAUDE.md verbatim", never as copies.
+
+
 
 ## Auto-commit policy
 After completing any change, immediately git add, commit with a specific

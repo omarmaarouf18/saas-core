@@ -35,3 +35,19 @@
 *   **2FA OTP Verification**: Validates 4-digit code and securely stores signed JWT session details.
 *   **Employee Direct Authentication**: Logs in directly bypassing 2FA.
 *   **Dashboard KYC Banner**: Renders alert banner to Owners when `kyc_status` is `pending_super_admin_approval`.
+
+## File Tracking Index
+
+The following Dart implementation files are currently active in the codebase and tracked by the structural drift check:
+* **Models**:
+  * `user_profile.dart`
+* **Providers**:
+  * `auth_provider.dart`
+  * `owner_provider.dart`
+* **Screens**:
+  * `employee_screen.dart`
+  * `home_screen.dart`
+  * `login_screen.dart`
+  * `otp_screen.dart`
+  * `signup_screen.dart`
+  * `wallet_screen.dart`

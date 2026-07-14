@@ -28,5 +28,12 @@ This file tracks historical entries for the primary category: **Documentation Ch
 - **Commit SHA**: ``cdda86c126caf0603b899c016478129ef7e7f0ff``
 - **Verification**: Verified via visual review and shared/infra validation test suite. ✅
 
+## Self-Enforcing Auto-Documentation System
+
+- **Implementation Detail**: Built a Go-based AST parser and code generator to automatically maintain the HTTP endpoint table in `APPLICATION_MAP.md` based on `RegisterRoutes` handlers. Added automated structural checks verifying that all Dart frontend files are listed in `STATUS.md` and dependency version quotes in `DESIGN.md` match `pubspec.yaml`. Configured Makefile targets (`make docs` and `make docs-check`) and wired them into the shared unit test suite.
+- **Commit SHA**: ``632b429dcdb79d7cf2eca17dfe128780a71bb6bc``
+- **Verification**: Verified via test suite (`TestDocgenFreshness`, `TestDocgenDriftCatching`, `TestDartFilesMentionedInStatus`, and `TestPubspecDependenciesInDesignDoc`). ✅
+
+
 
 

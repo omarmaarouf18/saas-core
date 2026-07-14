@@ -1,7 +1,7 @@
 # SaaS Core — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`0f48639`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`dc7ae0d`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -140,54 +140,48 @@ The platform is comprised of **5 microservices** and **1 compile-time shared pac
 
 All HTTP endpoints registered across the services are listed below, cross-referenced with their actual routing definitions.
 
+<!-- GENERATED:ENDPOINTS:START -->
 | Method + Path | Owning Service | Caller Permissions | Core Functionality | Read / Write Target & Downstream Actions |
 | :--- | :--- | :--- | :--- | :--- |
+| **`GET /`** | `api-gateway` | Public | Root index. | None. |
 | **`GET /health`** | `api-gateway` | Public | Public gateway health status. | None. |
 | **`GET /health/internal`** | `api-gateway` | `X-Internal-Token` | Returns circuit breaker metrics. | Reads breaker memory. |
-| **`GET /`** | `api-gateway` | Public | Root index. | None. |
-| **`GET /health`** | `auth-service` | Public (Internal) | Public service health status. | None. |
-| **`GET /`** | `auth-service` | Public (Internal) | Service version and status. | None. |
-| **`POST /auth/signup`** | `auth-service` | Public (via Gateway) | Registers a new tenant or user. | Writes `users` collection. Logs OTP code. |
-| **`POST /auth/login`** | `auth-service` | Public (via Gateway) | Logs in user, dispatches 2FA OTP. | Reads/writes `users` collection (OTP/attempts). Writes `audit_logs`. |
-| **`POST /auth/verify-otp`** | `auth-service` | Public (via Gateway) | Validates 2FA OTP, issues JWT. | Reads/writes `users` collection. Writes `audit_logs`. |
-| **`POST /auth/refresh`** | `auth-service` | Public (via Gateway) | Refreshes active JWT sessions. | None. |
-| **`POST /auth/employee/toggle`** | `auth-service` | Owner JWT (KYC Approved) | Activates/deactivates employee account. | Reads `users` (owner/employee), updates `users`. |
-| **`POST /auth/employee/action`** | `auth-service` | Target Employee JWT | Records a simulated worker activity. | Writes `audit_logs` collection. |
 | **`GET /auth/audit-log`** | `auth-service` | Tenant Owner JWT | Fetches tenant security audit logs. | Reads `audit_logs` collection. |
-| **`POST /auth/kyb/upload`** | `auth-service` | Owner JWT | Uploads KYB verification files (ID front/back, selfie, business proof). | Writes uploaded documents to local storage. Updates `users` collection. |
-| **`POST /auth/kye/upload`** | `auth-service` | Employee JWT | Uploads KYE verification files (ID front/back, selfie). | Writes uploaded documents to local storage. Updates `users` collection. |
+| **`GET /auth/documents/view`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Validates signed URL token and streams/serves the uploaded document file. | Streams file content. |
+| **`POST /auth/employee/action`** | `auth-service` | Target Employee JWT | Records a simulated worker activity. | Writes `audit_logs` collection. |
+| **`POST /auth/employee/toggle`** | `auth-service` | Owner JWT (KYC Approved) | Activates/deactivates employee account. | Reads `users` (owner/employee), updates `users`. |
 | **`GET /auth/kyb-kye/pending`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Fetches pending KYB verification submissions. | Reads `users` and `reviewers` collections. |
 | **`POST /auth/kyb-kye/review`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Approves or rejects KYB submissions. | Updates `users` status. Writes `audit_logs` and `reviewers`. |
-| **`GET /auth/documents/view`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Validates signed URL token and streams/serves the uploaded document file. | Streams file content. |
+| **`POST /auth/kyb/upload`** | `auth-service` | Owner JWT | Uploads KYB verification files (ID front/back, selfie, business proof). | Writes uploaded documents to local storage. Updates `users` collection. |
+| **`POST /auth/kye/upload`** | `auth-service` | Employee JWT | Uploads KYE verification files (ID front/back, selfie). | Writes uploaded documents to local storage. Updates `users` collection. |
+| **`POST /auth/login`** | `auth-service` | Public (via Gateway) | Logs in user, dispatches 2FA OTP. | Reads/writes `users` collection (OTP/attempts). Writes `audit_logs`. |
+| **`POST /auth/refresh`** | `auth-service` | Public (via Gateway) | Refreshes active JWT sessions. | None. |
+| **`POST /auth/signup`** | `auth-service` | Public (via Gateway) | Registers a new tenant or user. | Writes `users` collection. Logs OTP code. |
 | **`GET /auth/user`** | `auth-service` | `X-Internal-Token` OR User JWT | Resolves user profile and role details. | Reads `users` collection. |
-| **`GET /health`** | `chat-service` | Public (Internal) | Service health status. | None. |
-| **`GET /`** | `chat-service` | Public (Internal) | Service status and runtime info. | None. |
-| **`GET /chat/ws`** | `chat-service` | User JWT OR Agent Token | WebSocket connection upgrade path. | Reads `support_agents` (for agent tokens). Downstream: calls `auth-service/auth/user`. |
+| **`POST /auth/verify-otp`** | `auth-service` | Public (via Gateway) | Validates 2FA OTP, issues JWT. | Reads/writes `users` collection. Writes `audit_logs`. |
 | **`GET /chat/history`** | `chat-service` | Channel Member JWT | Retrieves channel chat history. | Reads `chat_messages` collection. Downstream: calls `user-service/users/jobs/get`. |
 | **`POST /chat/internal/broadcast-location`** | `chat-service` | `X-Internal-Token` | Broadcasts driver location event. | None. |
 | **`POST /chat/tickets`** | `chat-service` | User JWT | Submits complaint ticket & assigns agent. | Reads/writes `complaint_tickets` and `support_agents` (atomic). |
 | **`POST /chat/tickets/resolve`** | `chat-service` | Support Agent Token | Resolves ticket & releases agent status. | Updates `complaint_tickets` and `support_agents`. |
-| **`GET /health`** | `notification-service` | Public (Internal) | Returns SSE hub client active stats. | Reads SSE Hub client statistics. |
-| **`GET /`** | `notification-service` | Public (Internal) | Service details and status. | None. |
-| **`GET /notifications/stream`** | `notification-service` | User JWT | Opens SSE channel for alerts. | Downstream: calls `auth-service/auth/user`. |
-| **`POST /notifications/send`** | `notification-service` | `X-Internal-Token` | Sends a targeted popup alert. | Dispatches message to SSE client. |
+| **`GET /chat/ws`** | `chat-service` | User JWT OR Agent Token | WebSocket connection upgrade path. | Reads `support_agents` (for agent tokens). Downstream: calls `auth-service/auth/user`. |
 | **`POST /notifications/broadcast/job-alert`** | `notification-service` | `X-Internal-Token` | Broadcasts job alert to employees. | Dispatches message to SSE clients. |
-| **`GET /health`** | `user-service` | Public (Internal) | Service health status. | None. |
-| **`GET /`** | `user-service` | Public (Internal) | Service status and details. | None. |
-| **`GET /users/services`** | `user-service` | Public | Spatial search on services directory. | Reads `services` collection. |
-| **`POST /users/services`** | `user-service` | Owner JWT (KYC Approved) | Inserts service listing. | Downstream: calls `auth-service/auth/user`. Writes `services` collection. |
-| **`POST /users/jobs/track`** | `user-service` | Owner JWT (KYC Approved) | Books job, broadcasts alert. | Downstream: calls `auth-service/auth/user`. Writes `jobs`. |
-| **`GET /users/jobs/get`** | `user-service` | `X-Internal-Token` OR User JWT | Resolves detailed job configuration. | Reads `jobs` collection. |
-| **`POST /users/jobs/complete`** | `user-service` | Owner or Employee JWT | Completes active job, processes fees. | Updates `jobs`, writes `wallets`, writes `ledger`. |
+| **`POST /notifications/send`** | `notification-service` | `X-Internal-Token` | Sends a targeted popup alert. | Dispatches message to SSE client. |
+| **`GET /notifications/stream`** | `notification-service` | User JWT | Opens SSE channel for alerts. | Downstream: calls `auth-service/auth/user`. |
 | **`POST /users/jobs/cancel`** | `user-service` | Owner JWT (KYC Approved) | Cancels an active job and processes escrow refunds. | Updates `jobs` collection. Updates `wallets` and `ledger` collections. |
-| **`GET /users/wallet`** | `user-service` | Owner JWT | Fetches active balance details. | Reads `wallets` collection. |
-| **`POST /users/wallet/deposit`** | `user-service` | Owner JWT | Loads funds up to maximum limits. | Updates `wallets` collection. |
+| **`POST /users/jobs/complete`** | `user-service` | Owner or Employee JWT | Completes active job, processes fees. | Updates `jobs`, writes `wallets`, writes `ledger`. |
+| **`GET /users/jobs/get`** | `user-service` | `X-Internal-Token` OR User JWT | Resolves detailed job configuration. | Reads `jobs` collection. |
+| **`POST /users/jobs/location/update`** | `user-service` | Employee JWT | Updates driver coordinates. | Reads `jobs`, updates `jobs`. Downstream: calls `chat-service/chat/internal/broadcast-location`. |
+| **`POST /users/jobs/rate`** | `user-service` | Owner or Employee JWT | Submits a double-blind rating. | Writes `ratings`, updates `jobs`. |
+| **`POST /users/jobs/track`** | `user-service` | Owner JWT (KYC Approved) | Books job, broadcasts alert. | Downstream: calls `auth-service/auth/user`. Writes `jobs`. |
 | **`GET /users/ledger`** | `user-service` | Owner JWT | Lists financial ledger records. | Reads `ledger` collection. |
 | **`GET /users/platform/config`** | `user-service` | Public | Fetches global fees configuration. | Reads `platform_config` collection. |
-| **`POST /users/subscription`** | `user-service` | Owner JWT (KYC Approved) | Subscribes/renews SaaS tier. | Updates `subscriptions`, writes `wallets`, writes `ledger`. |
-| **`POST /users/jobs/rate`** | `user-service` | Owner or Employee JWT | Submits a double-blind rating. | Writes `ratings`, updates `jobs`. |
 | **`GET /users/ratings`** | `user-service` | User JWT | Returns ratings count and average. | Reads `ratings` collection. |
-| **`POST /users/jobs/location/update`** | `user-service` | Employee JWT | Updates driver coordinates. | Reads `jobs`, updates `jobs`. Downstream: calls `chat-service/chat/internal/broadcast-location`. |
+| **`GET /users/services`** | `user-service` | Public | Spatial search on services directory. | Reads `services` collection. |
+| **`POST /users/services`** | `user-service` | Owner JWT (KYC Approved) | Inserts service listing. | Downstream: calls `auth-service/auth/user`. Writes `services` collection. |
+| **`POST /users/subscription`** | `user-service` | Owner JWT (KYC Approved) | Subscribes/renews SaaS tier. | Updates `subscriptions`, writes `wallets`, writes `ledger`. |
+| **`GET /users/wallet`** | `user-service` | Owner JWT | Fetches active balance details. | Reads `wallets` collection. |
+| **`POST /users/wallet/deposit`** | `user-service` | Owner JWT | Loads funds up to maximum limits. | Updates `wallets` collection. |
+<!-- GENERATED:ENDPOINTS:END -->
 
 ### Standalone Operations (CLI Tool)
 * **`onboard-agent` CLI** (`services/chat-service/cmd/onboard-agent/main.go`):
