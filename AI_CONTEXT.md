@@ -112,6 +112,7 @@ This file is a persistent document tracking the real state of the repository.
 > **Every code change must update `AI_CONTEXT.md` in the SAME commit.**
 > Any pull request or commit that changes application behavior, adds endpoints, modifies security boundaries, or changes the tech stack but does not update `AI_CONTEXT.md` is considered incomplete. 
 > Keep the feature status and unverified claims list strictly in sync with actual code implementations.
+> **Commit SHA must be the real, full git hash of the commit being documented, captured via `git rev-parse HEAD` immediately after committing — never a placeholder.**
 
 ---
 

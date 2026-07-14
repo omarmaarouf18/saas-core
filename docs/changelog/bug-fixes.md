@@ -7,48 +7,48 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 ## WalletDeposit Upper Limit
 
 - **Implementation Detail**: Enforced a maximum limit of 1,000,000 on WalletDeposit amounts in user-service.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``a1e965f76f3b2e436b1f76d3c13d0d390e6529f1``
 - **Verification**: Verified via user-service unit tests. ✅
 
 ## Graceful Employee Deactivation
 
 - **Implementation Detail**: Gated new job assignment in TrackJob behind employee IsActive lookup. Allowed deactivated employees to complete existing in-progress jobs.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``ebe5f62e41459ede18a1a9a4644d9e99cb5574cd``
 - **Verification**: Verified via auth-service and user-service integration tests. ✅
 
 ## Per-Job Location Throttling
 
 - **Implementation Detail**: Throttled consecutive location updates under 3s per Job ID with in-flight reservations and rollback.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``8ba1b34dd5fbb068f43bd94ce29692620ce8877e``
 - **Verification**: Verified via unit, race, and integration tests. ✅
 
 ## CORS headers on SSE stream errors
 
 - **Implementation Detail**: Moved Access-Control-Allow-Origin header injection to the top of SSE Stream handler so that connection error responses are readable by browser JS.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``bb80f2bcc6dde695861c6547db6152662b7e1e0a``
 - **Verification**: Verified via compilation and test execution. ✅
 
 ## Removed dead SSE Done channel
 
 - **Implementation Detail**: Deleted the unused Done channel field from SSEClient and its initialization as client connection disconnects are already handled gracefully by the context and Send channel closure.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``0d9caf82127392992ac60677ad1f0ca60760d7c6``
 - **Verification**: Verified via compilation and test execution. ✅
 
 ## Random Notification IDs
 
 - **Implementation Detail**: Switched notification ID generation from UnixNano timestamp to crypto/rand-based 16-byte random hex string to eliminate collision risks.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``8cab6c2fe22909455ebed3f351706a0d0d8f6967``
 - **Verification**: Verified via compilation and test execution. ✅
 
 ## Token Refresh Panic on Expired Token
 
 - **Implementation Detail**: Updated `ValidateToken` in `jwtutil` to return the parsed claims even when `ErrExpiredToken` is encountered. This prevents nil-pointer panics in `/auth/refresh` when accessing `claims.ExpiresAt` on expired tokens.
-- **Commit SHA**: ``logic-exploitation``
+- **Commit SHA**: ``5ac1d9e3173d94f91bb2c8d6217795a1c7775e62``
 - **Verification**: Verified via auth-service unit tests (`TestTokenRefresh`) and jwtutil unit tests (`TestValidateToken_Expired`). ✅
 
 ## Signup Rollback on OTP Set Failure
 
 - **Implementation Detail**: Updated `Signup` in `auth-service` to delete/rollback the newly created user record in MongoDB if generating/saving the OTP code via `SetOTP` fails. This prevents leaving an orphaned user record in a stuck `is_confirmed = false` state.
-- **Commit SHA**: ``logic-exploitation``
+- **Commit SHA**: ``5a17284748a87a5b24467d4397183e7b8b5768f7``
 - **Verification**: Verified via auth-service unit tests (`TestSignupRollbackOnOTPFailure`). ✅
 

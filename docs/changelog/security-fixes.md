@@ -61,265 +61,265 @@ This file tracks historical entries for the primary category: **Security Fixes C
 ## Tenant Subscription Gating
 
 - **Implementation Detail**: POST /users/subscription upgrades require requester_id == tenant_id, auth-service check, and maps paid to pending_payment (requires manual activation).
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``1660178fa2bf2aa37535de5597ce92594ff8f61b``
 - **Verification**: Verified in `user-service/internal/handlers/handlers.go`. ✅
 
 ## WebSocket Message Authorization
 
 - **Implementation Detail**: Gated chat message broadcasts by canAccessChannel in WebSocket readPump.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``1660178fa2bf2aa37535de5597ce92594ff8f61b``
 - **Verification**: Verified in `chat-service/internal/handlers/chat.go`. ✅
 
 ## Cryptographically Signed JWTs
 
 - **Implementation Detail**: Replaced raw user ID tokens with signed HS256 JWT tokens containing user ID, role, tenant ID, and email. Added POST /auth/refresh to reissue tokens. Downstream services validate JWT signatures and expiry locally.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``4094f5a5746611d4103fb58943f851fad108f74d``
 - **Verification**: Verified in `auth-service`, `chat-service`, `notification-service`, `user-service`. ✅
 
 ## auth-service XFF Trust Boundary Hardening
 
 - **Implementation Detail**: auth-service rate limiter only trusts XFF headers if verified by the dynamic GATEWAY_SECRET header injected by the API Gateway.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``d2638b2bda8d6e25bc1d5013c91511814f55a6f4``
 - **Verification**: Verified in `auth-service` getClientIP. ✅
 
 ## Signup-time Anti-spam OTP
 
 - **Implementation Detail**: Gated signup with OTP confirmation. Accounts are created as unconfirmed (is_confirmed = false) and login is rejected until the signup OTP is verified.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``eecd7e9114107c88b9005be1c4870fba2331e3df``
 - **Verification**: Verified in `auth-service` Signup, Login, and VerifyOTP. ✅
 
 ## JWT Secret Hardening
 
 - **Implementation Detail**: Removed hardcoded JWT secret fallback in all 4 services. Services now require JWT_SECRET env var on startup and fail-fast if it's missing.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``b4bb3e57aa776386040fa635aaf3990c405e6dff``
 - **Verification**: Verified via startup crash test. ✅
 
 ## Gateway Secret Hardening
 
 - **Implementation Detail**: Removed hardcoded X-Gateway-Secret. Both api-gateway and auth-service now require the GATEWAY_SECRET env var on startup and fail-fast if it's missing.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``85ee9eaf8114096aef85eb77fd2d84291218a908``
 - **Verification**: Verified via startup crash test. ✅
 
 ## Job Endpoint Access Control
 
 - **Implementation Detail**: Secured GET /users/jobs/get?id= by strictly restricting access to matching owners/employees (validated via JWT) or trusted internal clients via X-Internal-Token header. Closed resolveToken() unverified bypass.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``5c728683518528cfa3197b0f6a4175fb12fe2e1a``
 - **Verification**: Verified via user-service integration test and cURL validation. ✅
 
 ## Employee Toggle Authentication
 
 - **Implementation Detail**: Fixed POST /auth/employee/toggle security gap by requiring the owner's password and verifying it with bcrypt before freezing or activating employees.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``d43021c052600158902c3a2ac2190d8b94888833``
 - **Verification**: Verified via auth-service compilation. ✅
 
 ## Audit Log Access Control
 
 - **Implementation Detail**: Secured GET /auth/audit-log by strictly requiring requester_id query param and restricting access to matching tenant owner (validated via JWT). Closed unverified bypass.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``58436e3032a0e8ff78034036e723f64846d242d9``
 - **Verification**: Verified via auth-service unit test and cURL validation. ✅
 
 ## GetUser Endpoint Access Control
 
 - **Implementation Detail**: Secured GET /auth/user by requiring `X-Internal-Token` for internal service-to-service calls (chat/notification/user-service) and valid signed JWT for external callers. Removed raw-ID passthrough. Updated all 4 internal callers to inject `X-Internal-Token` header. Added `INTERNAL_SERVICE_TOKEN` fail-fast to notification-service.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``b6d4f47b649614e491a8b6aa62e5c2abfb4a770e``
 - **Verification**: Verified via compilation and existing test suites (all pass). ✅
 
 ## Hardcoded Secrets Audit
 
 - **Implementation Detail**: Audited entire codebase for hardcoded secrets. Removed JWT fallbacks, X-Gateway-Secret, and confirmed via repo-wide regex audit that no other secrets exist.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``fbdbb314d685f5bb6946b53351bc36d302dfce54``
 - **Verification**: Verified via repo-wide regex audit. ✅
 
 ## Gateway Internal Token Stripping
 
 - **Implementation Detail**: Edge api-gateway removes any client-supplied `X-Internal-Token` before proxying requests to backends.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``b1fa777a6291679b651690157cacd676229b1a1b``
 - **Verification**: Verified in api-gateway proxy.go. ✅
 
 ## CompleteJob Authorization Check
 
 - **Implementation Detail**: Enforced user/employee role identity and internal X-Internal-Token verification on CompleteJob.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``3b394868e87932633dc4a87233a4883b0f35b377``
 - **Verification**: Verified via user-service unit tests. ✅
 
 ## Notification Auth Enforcement
 
 - **Implementation Detail**: Enforced X-Internal-Token authentication on Send and BroadcastJobAlert endpoints in notification-service.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``298f92ad476983313f665111c07d0dd70689af06``
 - **Verification**: Verified via notification-service unit tests. ✅
 
 ## GetHistory Channel-Access Check
 
 - **Implementation Detail**: Enforced requester_id (JWT token) and channel access (canAccessChannel) validation on GetHistory in chat-service.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``9ffd4eec768ba1903ea1339780ab2038bc0ed8d5``
 - **Verification**: Verified via chat-service unit tests. ✅
 
 ## Employee Toggle Lockout
 
 - **Implementation Detail**: Enforced limiter lockout and failure recording on failed owner password check in ToggleEmployee.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``ebe5f62e41459ede18a1a9a4644d9e99cb5574cd``
 - **Verification**: Verified via compilation and logic flow analysis. ✅
 
 ## Token Refresh 7-Day Limit
 
 - **Implementation Detail**: Gated token refresh to reject tokens that expired more than 7 days ago.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``ebe5f62e41459ede18a1a9a4644d9e99cb5574cd``
 - **Verification**: Verified via compilation and logic flow analysis. ✅
 
 ## ID and OTP Cryptographic Hardening
 
 - **Implementation Detail**: Removed weak fallbacks from generateID and generate4DigitOTP, causing fail-fast logs on failure.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``ebe5f62e41459ede18a1a9a4644d9e99cb5574cd``
 - **Verification**: Verified via compilation. ✅
 
 ## WebSocket Origin Verification
 
 - **Implementation Detail**: Restricted WebSocket connection origins to match configured ALLOWED_ORIGIN in chat-service.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``a55af8d29f7860a9bf8629d8448855f616f393cb``
 - **Verification**: Verified via compilation and test suites. ✅
 
 ## Membership Tier Enforcement
 
 - **Implementation Detail**: Gated UpdateJobLocation location tracking endpoint behind PlanPaid check on Job Owner.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``bff88aabb27c72887ccb2976adc95e97e9b37e75``
 - **Verification**: Verified via unit and integration tests. ✅
 
 ## CloudWatch Security Log Shipping
 
 - **Implementation Detail**: Structured JSON log event to CloudWatch Logs for security-relevant blocked events in auth, user, and chat services.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``cc903dd325c89423f15d820f3a801f2dcfb734cf``
 - **Verification**: Verified via unit, race, and log shipping tests. ✅
 
 ## mTLS Stage 1: Dev CA & Certs
 
 - **Implementation Detail**: Created generate-certs.sh script generating Root CA and leaf certificates for local dev.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``bbab3a657d00cea1309b2a17a5a01e0a01d8f88b``
 - **Verification**: Verified via cert creation and gitignore validation. ✅
 
 ## mTLS Stage 2: TLS Server Config
 
 - **Implementation Detail**: Configured auth, chat, notification, and user services to serve HTTPS with client cert verification (tls.RequireAndVerifyClientCert).
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``28a31dcd94db5d0c5ade855c5f8949f00daa97cd``
 - **Verification**: Verified via compilation and test execution. ✅
 
 ## mTLS Stage 3: TLS Client Config
 
 - **Implementation Detail**: Updated internal HTTP clients in api-gateway, chat, notification, and user services to use custom TLS client configuration with hostname verification and local root CA trust.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``45fffa12de3c33fa7e668540c0136d6a205ea521``
 - **Verification**: Verified via compilation and test execution. ✅
 
 ## mTLS Stage 4: Docker & Env Wiring
 
 - **Implementation Detail**: Configured docker-compose.yml to mount local certs and keys, updated service URLs to HTTPS, and updated env templates.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``dff2df441e5fc3c7e6ffaeadae2a69bac48ea919``
 - **Verification**: Verified via configuration review. ✅
 
 ## mTLS Stage 5: Verification
 
 - **Implementation Detail**: Created and ran an integration test (mtls_integration_test.go) verifying handshake rejection of missing/untrusted client certs and success of trusted ones.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``558749397dd8c4ea956a4ef7c1cd95126cc372eb``
 - **Verification**: Verified via integration tests. ✅
 
 ## Redis Rate Limiting Stage 5: Failure Mode
 
 - **Implementation Detail**: Implemented fail-closed behaviors for Redis runtime unavailability, with audit logging and rate restriction.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``2914dc8fb9c6c34c4edc644ce7ff2031fc5b5b54``
 - **Verification**: Verified via compilation and code review. ✅
 
 ## Prevent Duplicate Ratings
 
 - **Implementation Detail**: Added compound unique index on ratings for (job_id, rated_by) and returned 409 Conflict when duplicate rating is submitted (identified during schema review).
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``c0564c0fbd217a1d8de9501335bef4ec796a7e31``
 - **Verification**: Verified via integration tests. ✅
 
 ## Complaint Routing Stage 2: Atomic Agent Assignment
 
 - **Implementation Detail**: Implemented atomic support agent assignment using MongoDB FindOneAndUpdate to prevent race conditions on concurrent ticket creation.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``1f46ed23763eca30135f43afdd0f52589174ec0f``
 - **Verification**: Verified via compilation. ✅
 
 ## External HTTPS Listener on api-gateway
 
 - **Implementation Detail**: Migrated the gateway's external port to listen on HTTPS with separate EXTERNAL_TLS credentials, keeping public and internal mTLS domains distinct.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``da7960a66651c5005761807cd8096da40d5ff6eb``
 - **Verification**: Verified via compilation and configuration. ✅
 
 ## SimulateEmployeeAction Authorization
 
 - **Implementation Detail**: Enforced JWT authentication on simulate employee action endpoint, validating that the token matches the requested employee email.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``0a2cdb45d6ec0fef649f55b716ac7b5a89089a73``
 - **Verification**: Verified via unit test. ✅
 
 ## Mask plain text tokens in logs
 
 - **Implementation Detail**: Replaced raw JWT / session tokens with authenticated IDs (userID / tenantID) in stdout logs to prevent credential leakage.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``6c5675bcdd79b002cea675500671078e92810aa6``
 - **Verification**: Verified via grep checks. ✅
 
 ## Gateway Info & Health Leak Fix
 
 - **Implementation Detail**: Stripped routes/topology leakage from public / endpoint and reduced public /health endpoint to basic status, moving detailed metrics to authenticated /health/internal.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``3fd832aa4d661279626bc6a521b9b3b7b1d21d8e``
 - **Verification**: Verified via compilation and route checks. ✅
 
 ## Constant-time internal token compare
 
 - **Implementation Detail**: Replaced standard string comparison operators with subtle.ConstantTimeCompare in all X-Internal-Token verification checks to mitigate timing attacks.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``6698e3b29a27c0a7c2411fce02e9fa0fded9479c``
 - **Verification**: Verified via test execution. ✅
 
 ## Reviewer Identity Gap Fix
 
 - **Implementation Detail**: Added reviewer token auth to pending, review, and view doc endpoints, populated ReviewerID on review, and logged reviewer ID in security logs.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``98533e7ae7b300f302d75d512b770128757a1582``
 - **Verification**: Verified via auth-service integration tests. ✅
 
 ## Mask Plaintext OTP Codes in logs
 
 - **Implementation Detail**: Restricted logging of plaintext OTP code values during signup and login 2FA in `services/auth-service/internal/handlers/auth.go#L229` and `services/auth-service/internal/handlers/auth.go#L371` to local environments only (`isLocal == true`).
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``9d7fa3bde676d280cd89cdd10106a75b51d81b37``
 - **Verification**: Verified via auth-service integration/unit tests. ✅
 
 ## Gated Wallet Deposit Endpoint
 
 - **Implementation Detail**: Gated the public `/users/wallet/deposit` endpoint behind a strict environment allow-list (`"local"` and `"test"` only). Refactored user-service configuration to read `APP_ENV` from config rather than inline, and added verification tests for both production and unset/empty environment configurations to ensure unverified deposits are securely blocked.
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``2fc19e412253afda248acab62720bdaa2bbe9da4``
 - **Verification**: Verified via unit tests. ✅
 
 ## Owner-Authenticated Employee Provisioning
 
 - **Implementation Detail**: Enforced owner authentication on the employee signup endpoint (`POST /auth/signup` when `role=employee`), requiring a valid JWT matching the requested `owner_id` with role `owner`. Added rate limiting and audit logging via `UNAUTHORIZED_EMPLOYEE_PROVISION_BLOCKED` security events. Documented in [ADR-0001](../adr/0001-owner-authenticated-employee-provisioning.md).
-- **Commit SHA**: ``current``
+- **Commit SHA**: ``a6eef07e86b8ed57ad9d5e0fcdcb70f9fd832fe5``
 - **Verification**: Verified via auth-service integration tests. ✅
 
 ## Per-Job Escrow Isolation, Zero-Value Fail-Closed & Concurrency Hardening
 
 - **Implementation Detail**: Reverted unsafe GPS coordinates in price recalculations; persisted LockedEscrowAmount at booking; implemented atomic per-job escrow isolation in MongoDB with sequential dev fallbacks; capped payouts/refunds at the locked ceiling; added dynamic context-cancellation rollback and record deletion on TrackJob persistence failures; failed-closed with `escrow_amount_unrecorded` error if LockedEscrowAmount is zero; verified race-condition closure (CompleteJob vs CancelJob concurrency) through multi-goroutine tests. Documented in [ADR-0002](../adr/0002-per-job-escrow-integrity.md).
-- **Commit SHA**: ``logic-exploitation``
+- **Commit SHA**: ``c78590dbcac14cfd11397ebe8dc47ac540c8a9ed``
 - **Verification**: Verified via user-service integration and concurrency tests. ✅
 
 ## TrackJob Non-COD Payment APP_ENV Gate
 
 - **Implementation Detail**: Restricts `TrackJob` to accept non-COD payment methods (such as `wallet` or bank cards) ONLY when `APP_ENV` is explicitly set to `"local"` or `"test"`. All other environments (including production and unset/empty configurations) continue to reject non-COD payments at the endpoint level to prevent un-auditable fund flows. This exception allows end-to-end integration and concurrency testing of the escrow paths.
-- **Commit SHA**: ``logic-exploitation``
+- **Commit SHA**: ``ac569b962fe12c61e471744c6cfaf536b5b7ce36``
 - **Verification**: Verified via user-service integration test suite (checking both rejection in production-like configs and bypass success in test config). ✅
 
 ## COD Completion Concurrency Hardening
 
 - **Implementation Detail**: Hardened the Cash on Delivery (COD) job completion path to be atomic by updating the job document status from `active` to `completed` inside `DeductCODFee`'s transaction (using conditional `UpdateOne`). If the job status is already updated, subsequent concurrent completion attempts will fail to match the query and are rejected with a 409 Conflict. This prevents double platform fee deductions and duplicate ledger entries.
-- **Commit SHA**: ``logic-exploitation``
+- **Commit SHA**: ``2c914b98d29631938e543bb770046666180a84b8``
 - **Verification**: Verified via user-service concurrency tests. ✅
 
 ## OTP AES Key Fail-Closed Hardening
 
 - **Implementation Detail**: Hardened `otpcrypto.NewCipher` to accept the current environment (`AppEnv`). In non-local and non-test environments, it now strictly requires `OTP_AES_KEY` to be set, to be a valid hex string, and to be exactly 32 bytes (after hex decoding), failing startup immediately with a panic/fatal log on any invalid key configuration rather than using the insecure ephemeral fallback or silent padding.
-- **Commit SHA**: ``logic-exploitation``
+- **Commit SHA**: ``a2e1cffeda51294619c3d58426e77d498c3900ce``
 - **Verification**: Verified via otpcrypto unit tests (`TestNewCipher_Validation`). ✅
 
 ## Employee Job Assignment Tenant Isolation Gating
 
 - **Implementation Detail**: Gated job assignment in `TrackJob` to verify that the assigned employee actually belongs to the calling owner's tenant and has an active employee role. Refactored user-service's internal `isEmployeeActive` helper to `verifyEmployeeAssignment` to query auth-service and validate both `role == "employee"`, matching `tenant_id`, and `is_active == true` before allowing assignment. Documented in [ADR-0003](../adr/0003-employee-assignment-tenant-binding-check.md).
-- **Commit SHA**: ``2c914b9``
+- **Commit SHA**: ``2c914b98d29631938e543bb770046666180a84b8``
 - **Verification**: Verified via user-service integration test suite (`TrackJob Employee Assignment Gating`). ✅
 
 

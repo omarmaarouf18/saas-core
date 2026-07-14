@@ -15,3 +15,8 @@ After completing any change, immediately git add, commit with a specific
 message, and push to origin/logic-exploitation. Do not batch multiple
 unrelated changes into one commit, and do not wait until a whole task is
 finished if it has multiple independent sub-changes.
+
+Commit SHA in changelog files must be the real, full git hash of the commit
+being documented, captured via `git rev-parse HEAD` immediately after
+committing — never a placeholder.
+
