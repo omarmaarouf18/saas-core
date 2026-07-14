@@ -265,7 +265,9 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 		// Encrypt and store in MongoDB (AES-256-GCM).
 		if err := a.store.SetOTP(ctx, user.Email, otpCode); err != nil {
 			log.Printf("[AUTH] OTP generation failed: deleting created user %s (%s) to avoid orphaned state. Error: %v", user.ID, user.Email, err)
-			_ = a.store.DeleteUser(ctx, user.ID)
+			if delErr := a.store.DeleteUser(ctx, user.ID); delErr != nil {
+				log.Printf("[AUTH CRITICAL] failed to rollback orphaned user %s after OTP failure: %v", user.ID, delErr)
+			}
 			writeJSON(w, http.StatusInternalServerError, map[string]string{
 				"error": "failed to set OTP: " + err.Error(),
 			})
