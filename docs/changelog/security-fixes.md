@@ -310,5 +310,11 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``logic-exploitation``
 - **Verification**: Verified via user-service concurrency tests. ✅
 
+## OTP AES Key Fail-Closed Hardening
+
+- **Implementation Detail**: Hardened `otpcrypto.NewCipher` to accept the current environment (`AppEnv`). In non-local and non-test environments, it now strictly requires `OTP_AES_KEY` to be set, to be a valid hex string, and to be exactly 32 bytes (after hex decoding), failing startup immediately with a panic/fatal log on any invalid key configuration rather than using the insecure ephemeral fallback or silent padding.
+- **Commit SHA**: ``logic-exploitation``
+- **Verification**: Verified via otpcrypto unit tests (`TestNewCipher_Validation`). ✅
+
 
 

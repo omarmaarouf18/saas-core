@@ -202,7 +202,7 @@ func setupTestAuth(t *testing.T) (*Auth, *store.MongoDB, func()) {
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_auth_test_%d", time.Now().UnixNano())
-	cipher, err := otpcrypto.NewCipher("")
+	cipher, err := otpcrypto.NewCipher("", "local")
 	if err != nil {
 		t.Fatalf("failed to create cipher: %v", err)
 	}

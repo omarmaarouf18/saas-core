@@ -17,24 +17,36 @@ type Cipher struct {
 }
 
 // NewCipher creates a new AES-256-GCM cipher from a 32-byte hex-encoded key.
-// If the key is shorter than 32 bytes, it is zero-padded.
-// If the key is empty, a random 32-byte key is generated (ephemeral, local-only).
-func NewCipher(hexKey string) (*Cipher, error) {
+// If the key is shorter than 32 bytes, it is zero-padded (local/test only).
+// If the key is empty, a random 32-byte key is generated (ephemeral, local/test only).
+func NewCipher(hexKey string, appEnv string) (*Cipher, error) {
 	var keyBytes []byte
+	var err error
+
+	isLocalOrTest := appEnv == "local" || appEnv == "test"
 
 	if hexKey == "" {
+		if !isLocalOrTest {
+			return nil, fmt.Errorf("otpcrypto: OTP_AES_KEY is required in environment: %s", appEnv)
+		}
 		// Generate an ephemeral key for local development.
 		keyBytes = make([]byte, 32)
 		if _, err := rand.Read(keyBytes); err != nil {
 			return nil, fmt.Errorf("otpcrypto: failed to generate random key: %w", err)
 		}
 	} else {
-		var err error
 		keyBytes, err = hex.DecodeString(hexKey)
 		if err != nil {
+			if !isLocalOrTest {
+				return nil, fmt.Errorf("otpcrypto: OTP_AES_KEY must be a valid hex string: %w", err)
+			}
 			// If not valid hex, use raw bytes padded/truncated to 32.
 			keyBytes = make([]byte, 32)
 			copy(keyBytes, []byte(hexKey))
+		} else if len(keyBytes) != 32 {
+			if !isLocalOrTest {
+				return nil, fmt.Errorf("otpcrypto: OTP_AES_KEY must be exactly 32 bytes (64 hex characters), got %d bytes", len(keyBytes))
+			}
 		}
 	}
 

@@ -62,7 +62,7 @@ func main() {
 	}
 
 	// Initialize AES-256-GCM cipher for OTP encryption at rest.
-	otpCipher, err := otpcrypto.NewCipher(cfg.OTPAESKey)
+	otpCipher, err := otpcrypto.NewCipher(cfg.OTPAESKey, cfg.AppEnv)
 	if err != nil {
 		log.Fatalf("[AUTH] Failed to initialize OTP cipher: %v", err)
 	}
