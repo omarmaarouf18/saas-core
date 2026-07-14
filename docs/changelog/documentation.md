@@ -22,4 +22,11 @@ This file tracks historical entries for the primary category: **Documentation Ch
 - **Commit SHA**: ``c7189a85c31edfafd5fd6b8fdf993584f7e01197``
 - **Verification**: Verified via review of AI_CONTEXT.md. ✅
 
+## Documentation Audit Correction
+
+- **Implementation Detail**: Fixed six mismatches between documentation and implementation (corrected `/auth/documents/view` path and added missing `/auth/kye/upload` in `APPLICATION_MAP.md`, updated location update throttle constant in map, added target architecture disclaimer and corrected `flutter_client_sse` version in `DESIGN.md`, and consolidated `GEMINI.md` to point to `CLAUDE.md` to prevent drift).
+- **Commit SHA**: ``cdda86c126caf0603b899c016478129ef7e7f0ff``
+- **Verification**: Verified via visual review and shared/infra validation test suite. ✅
+
+
 

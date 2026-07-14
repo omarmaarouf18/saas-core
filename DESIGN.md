@@ -2,6 +2,10 @@
 
 This document outlines the architectural and user interface design for the Flutter frontend client of the `saas-core` marketplace services platform. The frontend coordinates with the Go microservices backend exposed via the API Gateway.
 
+> [!NOTE]
+> **Planned vs. Current Architecture**: The directory structure and provider file tree detailed in Section 1 (such as `screens/shared/`, `screens/owner/`, `screens/employee/`, `screens/user/`, and `chat_provider.dart` / `sse_provider.dart`) represent the **target/planned architecture** for the production launch.
+> The actual current frontend implementation consists of a flat screens directory (containing `employee_screen.dart`, `home_screen.dart`, `login_screen.dart`, `otp_screen.dart`, `signup_screen.dart`, and `wallet_screen.dart`) and is documented in [docs/frontend/STATUS.md](docs/frontend/STATUS.md). Please consult it for the current state of development.
+
 ---
 
 ## 1. Core Architecture
@@ -41,7 +45,7 @@ frontend/
 2. **State Management**: `provider` (`^6.1.5`) for scoping authentication state, job lifecycle states, real-time chats, and notifications streams.
 3. **HTTP Client**: `http` (`^1.6.0`) with custom request interceptors that inject the `Authorization` header containing the signed JWT token.
 4. **WebSocket Protocol**: `web_socket_channel` (`^2.4.5`) for connecting to the real-time chat gateway (`ws://<gateway>:8080/api/v1/chat/ws?token=<jwt_token>`).
-5. **SSE Stream Client**: `flutter_client_sse` (`^1.0.0`) for subscribing to real-time status alerts and job notifications via SSE (`http://<gateway>:8080/api/v1/notifications/stream?token=<jwt_token>`).
+5. **SSE Stream Client**: `flutter_client_sse` (`^2.0.3`) for subscribing to real-time status alerts and job notifications via SSE (`http://<gateway>:8080/api/v1/notifications/stream?token=<jwt_token>`).
 
 ---
 

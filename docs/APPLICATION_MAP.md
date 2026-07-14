@@ -1,7 +1,7 @@
 # SaaS Core — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`6bd8514`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`0f48639`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -155,9 +155,10 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`POST /auth/employee/action`** | `auth-service` | Target Employee JWT | Records a simulated worker activity. | Writes `audit_logs` collection. |
 | **`GET /auth/audit-log`** | `auth-service` | Tenant Owner JWT | Fetches tenant security audit logs. | Reads `audit_logs` collection. |
 | **`POST /auth/kyb/upload`** | `auth-service` | Owner JWT | Uploads KYB verification files (ID front/back, selfie, business proof). | Writes uploaded documents to local storage. Updates `users` collection. |
+| **`POST /auth/kye/upload`** | `auth-service` | Employee JWT | Uploads KYE verification files (ID front/back, selfie). | Writes uploaded documents to local storage. Updates `users` collection. |
 | **`GET /auth/kyb-kye/pending`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Fetches pending KYB verification submissions. | Reads `users` and `reviewers` collections. |
 | **`POST /auth/kyb-kye/review`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Approves or rejects KYB submissions. | Updates `users` status. Writes `audit_logs` and `reviewers`. |
-| **`GET /auth/kyb/view`** | `auth-service` | Reviewer Token | Generates a signed view URL to stream uploaded document files. | Streams file content. |
+| **`GET /auth/documents/view`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Validates signed URL token and streams/serves the uploaded document file. | Streams file content. |
 | **`GET /auth/user`** | `auth-service` | `X-Internal-Token` OR User JWT | Resolves user profile and role details. | Reads `users` collection. |
 | **`GET /health`** | `chat-service` | Public (Internal) | Service health status. | None. |
 | **`GET /`** | `chat-service` | Public (Internal) | Service status and runtime info. | None. |
@@ -224,7 +225,7 @@ Below are the step-by-step transaction lifecycles for each user role on the plat
    * *Alerting*: It broadcasts a job alert to nearby employees (this triggers a `notification-service` endpoint in the design, but is currently stubbed/logged in code).
 2. **Job Assignment**: Job is assigned to an active employee.
 3. **Location Updates (Driver tracking)**: While driving, the Employee client triggers `POST /users/jobs/location/update` with their Employee JWT.
-   * *Validation*: `user-service` verifies the Owner's subscription tier is active and enforces a **10-second throttling minimum** between requests.
+   * *Validation*: `user-service` verifies the Owner's subscription tier is active and enforces a **3-second throttling minimum** between requests.
    * *Action*: Coordinates are saved to MongoDB and broadcasted via `POST /chat/internal/broadcast-location` (mTLS) to the `chat-service` WebSocket hub.
 4. **Job Completion**: The Owner or Employee triggers `POST /users/jobs/complete` confirming cash collection.
    * *Deduction*: The system computes the platform fee (e.g. 15%) from the final price and deducts it from the Owner's e-wallet (allowing a negative balance). Writes `ledger` and `wallets` documents.
