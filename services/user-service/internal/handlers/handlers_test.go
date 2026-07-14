@@ -67,6 +67,7 @@ func TestUserServiceHandlers(t *testing.T) {
 				"role":       "owner",
 				"kyc_status": "approved",
 				"is_active":  true,
+				"tenant_id":  id,
 			})
 			return
 		}
@@ -78,17 +79,37 @@ func TestUserServiceHandlers(t *testing.T) {
 				"role":       "owner",
 				"kyc_status": "pending_super_admin_approval",
 				"is_active":  true,
+				"tenant_id":  "kyc-pending-owner",
 			})
 			return
 		}
 
 		if strings.Contains(id, "employee") {
 			isActive := !strings.Contains(id, "deactivated")
+			tenantID := "kyc-approved-owner"
+			if strings.Contains(id, "-under-") {
+				parts := strings.Split(id, "-under-")
+				if len(parts) > 1 {
+					tenantID = parts[1]
+				}
+			}
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(map[string]any{
 				"id":        id,
 				"role":      "employee",
 				"is_active": isActive,
+				"tenant_id": tenantID,
+			})
+			return
+		}
+
+		if strings.Contains(id, "user") {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]any{
+				"id":        id,
+				"role":      "user",
+				"is_active": true,
+				"tenant_id": "client-user-123",
 			})
 			return
 		}
@@ -1252,14 +1273,27 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 	})
 
-	// Test: TrackJob Deactivated Employee Gating
-	t.Run("TrackJob Deactivated Employee Gating", func(t *testing.T) {
+	// Test: TrackJob Employee Assignment Gating
+	t.Run("TrackJob Employee Assignment Gating", func(t *testing.T) {
 		ctx := context.Background()
 		tokenOwner, _ := jwtutil.GenerateToken("kyc-approved-owner", "owner", "kyc-approved-owner", "owner@example.com")
 		tokenDeactEmp, _ := jwtutil.GenerateToken("deactivated-employee", "employee", "kyc-approved-owner", "deactivated@example.com")
 		tokenUser, _ := jwtutil.GenerateToken("client-user-123", "user", "client-user-123", "client@example.com")
 
-		// TrackJob request with deactivated employee
+		// Create a mock service to allow TrackJob to pass initial checks
+		testSvc := &models.Service{
+			ID:               "svc-deact-999",
+			TenantID:         "kyc-approved-owner",
+			Name:             "Deact Svc",
+			Category:         "transport",
+			TenantBasePrice:  10.0,
+			TenantPricePerKM: 10.0,
+			Latitude:         30.0,
+			Longitude:        30.0,
+		}
+		s.CreateService(ctx, testSvc)
+
+		// 1. TrackJob request with deactivated employee -> rejected
 		reqBody := map[string]any{
 			"owner_id":       tokenOwner,
 			"service_id":     "svc-deact-999",
@@ -1275,9 +1309,47 @@ func TestUserServiceHandlers(t *testing.T) {
 		if rec.Code != http.StatusBadRequest {
 			t.Errorf("Expected 400 Bad Request for assigning deactivated employee in TrackJob, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
+		if !strings.Contains(rec.Body.String(), "employee is not active") {
+			t.Errorf("Expected error about employee not active, got: %s", rec.Body.String())
+		}
 
-		// TrackJob request with active employee
-		tokenActiveEmp, _ := jwtutil.GenerateToken("active-employee", "employee", "kyc-approved-owner", "active@example.com")
+		// 2. Assigning another owner's account as employee_id -> rejected
+		tokenOtherOwner, _ := jwtutil.GenerateToken("kyc-approved-owner-other", "owner", "kyc-approved-owner-other", "other@example.com")
+		reqBody["employee_id"] = tokenOtherOwner
+		body, _ = json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req = httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.TrackJob(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for assigning owner as employee, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// 3. Assigning a "user" role account as employee_id -> rejected
+		reqBody["employee_id"] = tokenUser
+		body, _ = json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req = httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.TrackJob(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for assigning plain user as employee, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// 4. Assigning an employee belonging to a DIFFERENT owner -> rejected
+		tokenDiffOwnerEmp, _ := jwtutil.GenerateToken("employee-under-kyc-approved-owner-other", "employee", "kyc-approved-owner-other", "diffowneremp@example.com")
+		reqBody["employee_id"] = tokenDiffOwnerEmp
+		body, _ = json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req = httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.TrackJob(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for assigning employee of different owner, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// 5. Assigning a valid, active employee belonging to the correct owner -> succeeds
+		tokenActiveEmp, _ := jwtutil.GenerateToken("active-employee-under-kyc-approved-owner", "employee", "kyc-approved-owner", "active@example.com")
 		reqBody["employee_id"] = tokenActiveEmp
 		body, _ = json.Marshal(reqBody)
 		rdb.FlushAll(ctx)
@@ -1455,7 +1527,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		u.appEnv = "test"
 		defer func() { u.appEnv = "" }()
 		ctx := context.Background()
-		tokenEmp, _ := jwtutil.GenerateToken("active-employee", "employee", "kyc-approved-owner-zeroval", "employee@example.com")
+		tokenEmp, _ := jwtutil.GenerateToken("active-employee-under-kyc-approved-owner-zeroval", "employee", "kyc-approved-owner-zeroval", "employee@example.com")
 		tokenOwner, _ := jwtutil.GenerateToken("kyc-approved-owner-zeroval", "owner", "kyc-approved-owner-zeroval", "owner@example.com")
 
 		// 1. Setup service
@@ -1479,7 +1551,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			ID:                 "job-zeroval-zero",
 			OwnerID:            "kyc-approved-owner-zeroval",
 			UserID:             "customer-123",
-			EmployeeID:         "active-employee",
+			EmployeeID:         "active-employee-under-kyc-approved-owner-zeroval",
 			ServiceID:          "svc-zeroval-999",
 			Status:             models.JobStatusActive,
 			PaymentMethod:      "wallet",
@@ -1811,6 +1883,96 @@ func TestUserServiceHandlers(t *testing.T) {
 
 		if successCount != 1 || failCount != 1 {
 			t.Errorf("Cancel vs Cancel: Expected exactly 1 success and 1 failure, got success=%d, fail=%d. Cancel1 code: %d, Cancel2 code: %d", successCount, failCount, recCancel1.Code, recCancel2.Code)
+		}
+
+		// (d) Test: Concurrent COD CompleteJob vs CompleteJob (COD path)
+		jobCOD := &models.Job{
+			ID:                 "job-concurrency-COD",
+			OwnerID:            "kyc-approved-owner-concurrency",
+			UserID:             "customer-123",
+			EmployeeID:         "active-employee",
+			ServiceID:          "svc-concurrency-999",
+			Status:             models.JobStatusActive,
+			PaymentMethod:      "cod",
+			LockedEscrowAmount: 0.0,
+			Location: models.Location{
+				Latitude:  30.1,
+				Longitude: 30.1,
+			},
+			CreatedAt: time.Now().Add(-1 * time.Hour),
+		}
+		_ = s.CreateJob(ctx, jobCOD)
+
+		// Record initial platform and owner wallet balances
+		wBefore, _ := s.GetOrCreateWallet(ctx, "kyc-approved-owner-concurrency")
+		wPlatBefore, _ := s.GetOrCreateWallet(ctx, "platform")
+
+		wg.Add(2)
+		recCompCOD1 := httptest.NewRecorder()
+		recCompCOD2 := httptest.NewRecorder()
+
+		reqCompCODBody := map[string]any{
+			"job_id":         "job-concurrency-COD",
+			"requester_id":   tokenEmp,
+			"cash_collected": true,
+		}
+		compCODBody, _ := json.Marshal(reqCompCODBody)
+		reqCompCOD1 := httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(compCODBody))
+		reqCompCOD2 := httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(compCODBody))
+
+		go func() {
+			defer wg.Done()
+			u.CompleteJob(recCompCOD1, reqCompCOD1)
+		}()
+
+		go func() {
+			defer wg.Done()
+			u.CompleteJob(recCompCOD2, reqCompCOD2)
+		}()
+
+		wg.Wait()
+
+		successCount = 0
+		failCount = 0
+		if recCompCOD1.Code == http.StatusOK {
+			successCount++
+		} else {
+			failCount++
+		}
+		if recCompCOD2.Code == http.StatusOK {
+			successCount++
+		} else {
+			failCount++
+		}
+
+		if successCount != 1 || failCount != 1 {
+			t.Errorf("COD Complete vs Complete: Expected exactly 1 success and 1 failure, got success=%d, fail=%d. Comp1 code: %d, Comp2 code: %d", successCount, failCount, recCompCOD1.Code, recCompCOD2.Code)
+		}
+
+		// Verify exactly one fee deduction on the owner wallet, and one fee credit to platform wallet
+		wAfter, _ := s.GetOrCreateWallet(ctx, "kyc-approved-owner-concurrency")
+		wPlatAfter, _ := s.GetOrCreateWallet(ctx, "platform")
+
+		expectedFeeDeduction := wBefore.TotalBalance - wAfter.TotalBalance
+		if expectedFeeDeduction <= 0.0 {
+			t.Errorf("Expected positive fee deduction from owner's wallet, got balance difference: %.2f -> %.2f", wBefore.TotalBalance, wAfter.TotalBalance)
+		}
+
+		platFeeCredit := wPlatAfter.TotalBalance - wPlatBefore.TotalBalance
+		if platFeeCredit <= 0.0 {
+			t.Errorf("Expected positive platform fee credit, got balance difference: %.2f -> %.2f", wPlatBefore.TotalBalance, wPlatAfter.TotalBalance)
+		}
+
+		// Verify that exactly one ledger entry exists for this job in the ledger
+		entries := s.GetLedger(ctx, "kyc-approved-owner-concurrency")
+		codLedgerCount := 0
+		for _, entry := range entries {
+			if entry.JobID == "job-concurrency-COD" {
+				codLedgerCount++
+			}
+		}
+		if codLedgerCount != 1 {
+			t.Errorf("Expected exactly 1 ledger entry for job-concurrency-COD, got %d", codLedgerCount)
 		}
 	})
 }

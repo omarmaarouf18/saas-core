@@ -257,8 +257,8 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		}
 		req.EmployeeID = resolvedEmployeeID
 
-		// Verify assigned employee is active
-		active, err := u.isEmployeeActive(req.EmployeeID)
+		// Verify assigned employee is active, has employee role, and belongs to this owner's tenant
+		ok, err := u.verifyEmployeeAssignment(req.EmployeeID, req.OwnerID)
 		if err != nil {
 			if errors.Is(err, ErrServiceUnavailable) {
 				writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "auth service unavailable"})
@@ -267,8 +267,8 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "employee not found or status lookup failed"})
 			return
 		}
-		if !active {
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "employee is not active and cannot be assigned new jobs"})
+		if !ok {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "employee is not active, not an employee, or does not belong to this owner's tenant"})
 			return
 		}
 	}
@@ -476,11 +476,14 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 
 		// Deduct platform fee directly from owner's wallet (allows negative balance)
 		if err := u.store.DeductCODFee(ctx, job.OwnerID, job.ID, amount); err != nil {
+			if strings.Contains(err.Error(), "not active") {
+				writeJSON(w, http.StatusConflict, map[string]string{"error": "job already completed or not active: " + err.Error()})
+				return
+			}
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to deduct platform fee: " + err.Error()})
 			return
 		}
 
-		u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusCompleted)
 		job.Status = models.JobStatusCompleted
 		job.UpdatedAt = time.Now().UTC()
 
@@ -839,7 +842,7 @@ func (u *UserService) checkKYC(ownerID string) (string, error) {
 	return user.KYCStatus, nil
 }
 
-func (u *UserService) isEmployeeActive(employeeID string) (bool, error) {
+func (u *UserService) verifyEmployeeAssignment(employeeID, ownerID string) (bool, error) {
 	url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, employeeID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -861,13 +864,18 @@ func (u *UserService) isEmployeeActive(employeeID string) (bool, error) {
 
 	var user struct {
 		Role     string `json:"role"`
+		TenantID string `json:"tenant_id"`
 		IsActive bool   `json:"is_active"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
 		return false, err
 	}
 
-	return user.IsActive, nil
+	if user.Role != "employee" || user.TenantID != ownerID || !user.IsActive {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 // requireTier enforces that a tenant has at least the minimum subscription tier.

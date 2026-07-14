@@ -304,5 +304,11 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``logic-exploitation``
 - **Verification**: Verified via user-service integration test suite (checking both rejection in production-like configs and bypass success in test config). ✅
 
+## COD Completion Concurrency Hardening
+
+- **Implementation Detail**: Hardened the Cash on Delivery (COD) job completion path to be atomic by updating the job document status from `active` to `completed` inside `DeductCODFee`'s transaction (using conditional `UpdateOne`). If the job status is already updated, subsequent concurrent completion attempts will fail to match the query and are rejected with a 409 Conflict. This prevents double platform fee deductions and duplicate ledger entries.
+- **Commit SHA**: ``logic-exploitation``
+- **Verification**: Verified via user-service concurrency tests. ✅
+
 
 

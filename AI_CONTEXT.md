@@ -46,7 +46,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 
 The detailed project history is distributed across categorized changelog files. Please consult the specific category files for complete details (including file/line references, commit SHAs, and verification details):
 
-*   [Security Fixes](docs/changelog/security-fixes.md) — 46 vulnerabilities found and fixed (including Owner-Authenticated Employee Provisioning, see [ADR-0001](docs/adr/0001-owner-authenticated-employee-provisioning.md)).
+*   [Security Fixes](docs/changelog/security-fixes.md) — 47 vulnerabilities found and fixed (including Owner-Authenticated Employee Provisioning, see [ADR-0001](docs/adr/0001-owner-authenticated-employee-provisioning.md)).
 *   [New Features](docs/changelog/new-features.md) — 20 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters).
 *   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 16 tooling, CI, module refactoring, and onboarding CLI tools.
 *   [Bug Fixes](docs/changelog/bug-fixes.md) — 7 corrections to existing non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic).

@@ -481,45 +481,93 @@ func (s *MongoDB) DeductCODFee(ctx context.Context, tenantID, jobID string, amou
 
 	feeAmount := math.Round(amount*cfg.PlatformFeePercentage) / 100
 	now := time.Now().UTC()
+	tsBase := now.UnixNano()
 
-	// Get or create wallet to find balance before
-	w, err := s.GetOrCreateWallet(ctx, tenantID)
-	if err != nil {
+	runTx := func(sc context.Context) error {
+		// Atomic check and transition of job status from active to completed.
+		resJob, err := s.jobs.UpdateOne(sc,
+			bson.M{
+				"_id":    jobID,
+				"status": models.JobStatusActive,
+			},
+			bson.M{
+				"$set": bson.M{"status": models.JobStatusCompleted, "updated_at": now},
+			})
+		if err != nil {
+			return fmt.Errorf("failed to update job status: %w", err)
+		}
+		if resJob.MatchedCount == 0 {
+			return fmt.Errorf("COD fee deduction failed: job %s is not active", jobID)
+		}
+
+		// Get or create wallet to find balance before
+		w, err := s.GetOrCreateWallet(sc, tenantID)
+		if err != nil {
+			return err
+		}
+
+		// Deduct fee from total_balance and withdrawable_balance (allowing it to go negative)
+		resWallet, err := s.wallets.UpdateOne(sc,
+			bson.M{"tenant_id": tenantID},
+			bson.M{
+				"$inc": bson.M{"total_balance": -feeAmount, "withdrawable_balance": -feeAmount},
+				"$set": bson.M{"updated_at": now},
+			},
+		)
+		if err != nil {
+			return err
+		}
+		if resWallet.MatchedCount == 0 {
+			return fmt.Errorf("wallet not found for tenant: %s", tenantID)
+		}
+
+		// Credit platform wallet with fee
+		_, err = s.wallets.UpdateOne(sc, bson.M{"tenant_id": "platform"},
+			bson.M{
+				"$inc": bson.M{"total_balance": feeAmount, "withdrawable_balance": feeAmount},
+				"$set": bson.M{"updated_at": now},
+			},
+		)
+		if err != nil {
+			return err
+		}
+
+		// Record ledger entry
+		_, err = s.ledger.InsertOne(sc, models.TransactionLedger{
+			ID:            fmt.Sprintf("tx-%d-fee", tsBase),
+			TenantID:      tenantID,
+			JobID:         jobID,
+			Type:          models.TxPlatformFee,
+			Amount:        feeAmount,
+			BalanceBefore: w.WithdrawableBalance,
+			BalanceAfter:  w.WithdrawableBalance - feeAmount,
+			Description:   fmt.Sprintf("platform fee %.1f%% (COD cash collected)", cfg.PlatformFeePercentage),
+			Timestamp:     now,
+		})
 		return err
 	}
 
-	// Deduct fee from total_balance and withdrawable_balance (allowing it to go negative)
-	_, err = s.wallets.UpdateOne(ctx,
-		bson.M{"tenant_id": tenantID},
-		bson.M{
-			"$inc": bson.M{"total_balance": -feeAmount, "withdrawable_balance": -feeAmount},
-			"$set": bson.M{"updated_at": now},
-		},
-	)
+	session, err := s.client.StartSession()
 	if err != nil {
-		return err
+		return runTx(ctx)
 	}
+	defer session.EndSession(ctx)
 
-	// Credit platform wallet with fee
-	s.wallets.UpdateOne(ctx, bson.M{"tenant_id": "platform"},
-		bson.M{
-			"$inc": bson.M{"total_balance": feeAmount, "withdrawable_balance": feeAmount},
-			"$set": bson.M{"updated_at": now},
-		},
-	)
-
-	// Record ledger entry
-	_, err = s.ledger.InsertOne(ctx, models.TransactionLedger{
-		ID:            fmt.Sprintf("tx-%d-fee", now.UnixNano()),
-		TenantID:      tenantID,
-		JobID:         jobID,
-		Type:          models.TxPlatformFee,
-		Amount:        feeAmount,
-		BalanceBefore: w.WithdrawableBalance,
-		BalanceAfter:  w.WithdrawableBalance - feeAmount,
-		Description:   fmt.Sprintf("platform fee %.1f%% (COD cash collected)", cfg.PlatformFeePercentage),
-		Timestamp:     now,
+	err = mongo.WithSession(ctx, session, func(sc context.Context) error {
+		if err := session.StartTransaction(); err != nil {
+			return err
+		}
+		if err := runTx(sc); err != nil {
+			session.AbortTransaction(sc)
+			return err
+		}
+		return session.CommitTransaction(sc)
 	})
+
+	if err != nil && (strings.Contains(err.Error(), "Transaction numbers") || strings.Contains(err.Error(), "replica set")) {
+		log.Printf("[USER-STORE] Standalone MongoDB detected. Falling back to sequential execution for DeductCODFee.")
+		return runTx(ctx)
+	}
 	return err
 }
 
