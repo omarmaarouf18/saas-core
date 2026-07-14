@@ -509,7 +509,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[SECURITY WARNING] LockedEscrowAmount is 0 for non-COD job %s during CompleteJob. Payout aborted.", job.ID)
 		handlerutil.ShipSecurityEvent(ctx, "ESCROW_UNRECORDED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("CompleteJob aborted: LockedEscrowAmount is 0 for non-COD job %s", job.ID), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "escrow_amount_unrecorded",
+			"error":   "escrow_amount_unrecorded",
 			"message": "This job has no recorded locked escrow amount. Payout aborted for security.",
 		})
 		return
@@ -1458,7 +1458,7 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 			log.Printf("[SECURITY WARNING] LockedEscrowAmount is 0 for non-COD job %s during CancelJob. Refund aborted.", job.ID)
 			handlerutil.ShipSecurityEvent(ctx, "ESCROW_UNRECORDED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("CancelJob aborted: LockedEscrowAmount is 0 for non-COD job %s", job.ID), handlerutil.GetClientIP(r))
 			writeJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "escrow_amount_unrecorded",
+				"error":   "escrow_amount_unrecorded",
 				"message": "This job has no recorded locked escrow amount. Refund aborted for security.",
 			})
 			return

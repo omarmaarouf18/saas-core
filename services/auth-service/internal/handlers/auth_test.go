@@ -974,5 +974,3 @@ func TestSignupRollbackOnOTPFailure(t *testing.T) {
 		t.Errorf("User record was not deleted/rolled back after SetOTP failure!")
 	}
 }
-
-
