@@ -70,6 +70,11 @@ func ValidateToken(tokenStr string) (*Claims, error) {
 
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
+			if token != nil {
+				if claims, ok := token.Claims.(*Claims); ok {
+					return claims, ErrExpiredToken
+				}
+			}
 			return nil, ErrExpiredToken
 		}
 		return nil, err

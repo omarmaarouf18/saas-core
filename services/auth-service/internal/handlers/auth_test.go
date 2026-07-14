@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/project/auth-service/internal/config"
 	"github.com/project/auth-service/internal/models"
 	"github.com/project/auth-service/internal/otpcrypto"
@@ -820,3 +821,82 @@ func TestKYBKYEUploadAndReview(t *testing.T) {
 		t.Errorf("Expected ReviewerID to be %s, got %s", reviewer.ID, emp.ReviewerID)
 	}
 }
+
+func TestTokenRefresh(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+
+	// 1. Create a confirmed and active user in store
+	testUser := &models.User{
+		ID:          "user_refresh_123",
+		Email:       "refresh123@example.com",
+		Password:    "$2a$10$abcdefghijklmnopqrstuv", // Bcrypt format placeholder
+		Role:        models.RoleOwner,
+		TenantID:    "tenant_refresh_123",
+		IsConfirmed: true,
+		IsActive:    true,
+	}
+	if err := s.CreateUser(ctx, testUser); err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	// Helper to generate custom-expired token
+	generateCustomExpiredToken := func(duration time.Duration) string {
+		claims := jwtutil.Claims{
+			UserID:   testUser.ID,
+			Role:     string(testUser.Role),
+			TenantID: testUser.TenantID,
+			Email:    testUser.Email,
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
+				IssuedAt:  jwt.NewNumericDate(time.Now().Add(duration - 24*time.Hour)),
+				NotBefore: jwt.NewNumericDate(time.Now().Add(duration - 24*time.Hour)),
+			},
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		secret := []byte("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+		tokenStr, err := token.SignedString(secret)
+		if err != nil {
+			t.Fatalf("failed to sign token: %v", err)
+		}
+		return tokenStr
+	}
+
+	// Case A: Token expired 1 hour ago -> Should return 200 OK and a fresh token
+	expired1hToken := generateCustomExpiredToken(-1 * time.Hour)
+	reqBodyA := map[string]string{"token": expired1hToken}
+	bA, _ := json.Marshal(reqBodyA)
+	req := httptest.NewRequest("POST", "/auth/refresh", bytes.NewReader(bA))
+	rec := httptest.NewRecorder()
+	a.Refresh(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for token expired 1 hour ago, got %d. Body: %s", rec.Code, rec.Body.String())
+	} else {
+		var resp map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+			t.Errorf("failed to parse refresh response: %v", err)
+		}
+		if resp["status"] != "success" || resp["token"] == "" {
+			t.Errorf("invalid refresh response body: %v", resp)
+		}
+	}
+
+	// Case B: Token expired 8 days ago (> 7 days) -> Should return 401 Unauthorized
+	expired8dToken := generateCustomExpiredToken(-8 * 24 * time.Hour)
+	reqBodyB := map[string]string{"token": expired8dToken}
+	bB, _ := json.Marshal(reqBodyB)
+	req = httptest.NewRequest("POST", "/auth/refresh", bytes.NewReader(bB))
+	rec = httptest.NewRecorder()
+	a.Refresh(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for token expired > 7 days, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+}
+

@@ -40,3 +40,8 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Commit SHA**: ``current``
 - **Verification**: Verified via compilation and test execution. ✅
 
+## Token Refresh Panic on Expired Token
+
+- **Implementation Detail**: Updated `ValidateToken` in `jwtutil` to return the parsed claims even when `ErrExpiredToken` is encountered. This prevents nil-pointer panics in `/auth/refresh` when accessing `claims.ExpiresAt` on expired tokens.
+- **Commit SHA**: ``logic-exploitation``
+- **Verification**: Verified via auth-service unit tests (`TestTokenRefresh`) and jwtutil unit tests (`TestValidateToken_Expired`). ✅
