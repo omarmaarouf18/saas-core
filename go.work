@@ -7,4 +7,5 @@ use (
 	./services/notification-service
 	./services/user-service
 	./shared/infra
+	./tools/docgen
 )
