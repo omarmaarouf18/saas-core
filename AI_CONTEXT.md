@@ -49,11 +49,12 @@ The detailed project history is distributed across categorized changelog files. 
 *   [Security Fixes](docs/changelog/security-fixes.md) — 48 vulnerabilities found and fixed (including Owner-Authenticated Employee Provisioning, see [ADR-0001](docs/adr/0001-owner-authenticated-employee-provisioning.md)).
 *   [New Features](docs/changelog/new-features.md) — 20 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters).
 *   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 16 tooling, CI, module refactoring, and onboarding CLI tools.
-*   [Bug Fixes](docs/changelog/bug-fixes.md) — 7 corrections to existing non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic).
+*   [Bug Fixes](docs/changelog/bug-fixes.md) — 8 corrections to existing non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic, signup rollback on OTP set failure).
 *   [Documentation](docs/changelog/documentation.md) — 2 documentation-only updates (e.g. Application Map).
 
 ### 2. Explicitly Deferred by Decision
 
+* **Signup OTP Set Failure Rollback**: To prevent orphaned and stuck unconfirmed user records when OTP creation (`SetOTP`) fails after user insertion, we choose to wrap the signup flow with a rollback operation that deletes the newly created user record from MongoDB, allowing the client to safely retry the signup.
 * **CloudWatch Event Rate Limiting/Batching**
   * **Decision**: Log shipping performs a separate CloudWatch Logs `PutLogEvents` API call per event rather than using client-side batching or queuing.
   * **Reasoning**: Accepted as a known limitation in the initial rollout. A genuine high-volume abuse burst could hit CloudWatch's per-stream PutLogEvents throttling limit and silently drop events at exactly the moment they matter most. Batching/queuing events client-side is flagged for future implementation.

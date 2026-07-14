@@ -197,6 +197,15 @@ func (s *MongoDB) CreateUser(ctx context.Context, user *models.User) error {
 	return nil
 }
 
+// DeleteUser deletes a user by ID.
+func (s *MongoDB) DeleteUser(ctx context.Context, id string) error {
+	_, err := s.users.DeleteOne(ctx, bson.M{"_id": id})
+	if err != nil {
+		return fmt.Errorf("store: delete user: %w", err)
+	}
+	return nil
+}
+
 // GetByEmail retrieves a user by email. Returns nil if not found.
 func (s *MongoDB) GetByEmail(ctx context.Context, email string) *models.User {
 	var user models.User

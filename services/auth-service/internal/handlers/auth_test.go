@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -899,4 +900,79 @@ func TestTokenRefresh(t *testing.T) {
 		t.Errorf("Expected 401 Unauthorized for token expired > 7 days, got %d. Body: %s", rec.Code, rec.Body.String())
 	}
 }
+
+type otpFailContext struct {
+	context.Context
+}
+
+func (c *otpFailContext) Done() <-chan struct{} {
+	var pcs [10]uintptr
+	n := runtime.Callers(2, pcs[:])
+	frames := runtime.CallersFrames(pcs[:n])
+	for {
+		frame, more := frames.Next()
+		if strings.Contains(frame.Function, "SetOTP") {
+			ch := make(chan struct{})
+			close(ch)
+			return ch
+		}
+		if !more {
+			break
+		}
+	}
+	return c.Context.Done()
+}
+
+func (c *otpFailContext) Err() error {
+	var pcs [10]uintptr
+	n := runtime.Callers(2, pcs[:])
+	frames := runtime.CallersFrames(pcs[:n])
+	for {
+		frame, more := frames.Next()
+		if strings.Contains(frame.Function, "SetOTP") {
+			return context.Canceled
+		}
+		if !more {
+			break
+		}
+	}
+	return c.Context.Err()
+}
+
+func TestSignupRollbackOnOTPFailure(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	// 1. Prepare signup request
+	signupBody := models.SignupRequest{
+		Email:    "rollback_test@example.com",
+		Password: "password123",
+		Role:     models.RoleOwner,
+	}
+	b, _ := json.Marshal(signupBody)
+
+	// Wrap request context with otpFailContext to simulate SetOTP failure
+	req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+	customCtx := &otpFailContext{Context: req.Context()}
+	req = req.WithContext(customCtx)
+
+	rec := httptest.NewRecorder()
+	a.Signup(rec, req)
+
+	// Verify that the response is 500 Internal Server Error (since SetOTP failed)
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("Expected 500 Internal Server Error for failed SetOTP, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// Verify that the user record was NOT created or was rolled back (does not exist in DB)
+	ctx := context.Background()
+	user := s.GetByEmail(ctx, "rollback_test@example.com")
+	if user != nil {
+		t.Errorf("User record was not deleted/rolled back after SetOTP failure!")
+	}
+}
+
 

@@ -45,3 +45,10 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Implementation Detail**: Updated `ValidateToken` in `jwtutil` to return the parsed claims even when `ErrExpiredToken` is encountered. This prevents nil-pointer panics in `/auth/refresh` when accessing `claims.ExpiresAt` on expired tokens.
 - **Commit SHA**: ``logic-exploitation``
 - **Verification**: Verified via auth-service unit tests (`TestTokenRefresh`) and jwtutil unit tests (`TestValidateToken_Expired`). ✅
+
+## Signup Rollback on OTP Set Failure
+
+- **Implementation Detail**: Updated `Signup` in `auth-service` to delete/rollback the newly created user record in MongoDB if generating/saving the OTP code via `SetOTP` fails. This prevents leaving an orphaned user record in a stuck `is_confirmed = false` state.
+- **Commit SHA**: ``logic-exploitation``
+- **Verification**: Verified via auth-service unit tests (`TestSignupRollbackOnOTPFailure`). ✅
+
