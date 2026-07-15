@@ -262,7 +262,7 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 
 	// For owner/user roles, generate and dispatch OTP on signup.
 	if req.Role == models.RoleOwner || req.Role == models.RoleUser {
-		otpCode := generate4DigitOTP()
+		otpCode := generate6DigitOTP()
 
 		// Encrypt and store in MongoDB (AES-256-GCM).
 		if err := a.store.SetOTP(ctx, user.Email, otpCode); err != nil {
@@ -412,8 +412,8 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	// Role-based 2FA decision.
 	switch user.Role {
 	case models.RoleOwner, models.RoleUser:
-		// Generate a 4-digit OTP.
-		otpCode := generate4DigitOTP()
+		// Generate a 6-digit OTP.
+		otpCode := generate6DigitOTP()
 
 		// Encrypt and store in MongoDB (AES-256-GCM).
 		if err := a.store.SetOTP(ctx, user.Email, otpCode); err != nil {
@@ -986,15 +986,15 @@ func generateID() string {
 	return hex.EncodeToString(b)
 }
 
-// generate4DigitOTP returns a cryptographically random 4-digit numeric OTP.
-func generate4DigitOTP() string {
-	b := make([]byte, 2)
+// generate6DigitOTP returns a cryptographically random 6-digit numeric OTP.
+func generate6DigitOTP() string {
+	b := make([]byte, 4)
 	if _, err := rand.Read(b); err != nil {
-		log.Fatalf("generate4DigitOTP: failed to read random bytes: %v", err)
+		log.Fatalf("generate6DigitOTP: failed to read random bytes: %v", err)
 	}
-	// Convert 2 random bytes to a number in [0, 9999].
-	num := (int(b[0])<<8 | int(b[1])) % 10000
-	return fmt.Sprintf("%04d", num)
+	// Convert 4 random bytes to a number in [0, 999999].
+	num := (uint32(b[0])<<24 | uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3])) % 1000000
+	return fmt.Sprintf("%06d", num)
 }
 
 // getClientIP extracts the user's real IP from the request headers or RemoteAddr.

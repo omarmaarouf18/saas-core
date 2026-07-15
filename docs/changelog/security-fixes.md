@@ -346,6 +346,13 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``9cf6d00a6a991a84046a428a8954bbbe328d11aa``
 - **Verification**: Verified via auth-service integration tests. ✅
 
+## 6-Digit OTP Entropy Hardening
+
+- **Implementation Detail**: Increased OTP code length from 4 digits to 6 digits by updating `generate4DigitOTP` to `generate6DigitOTP` (generating a cryptographically random number in the `[0, 999999]` range and formatting with `%06d`), significantly increasing the keyspace.
+- **Commit SHA**: ``b7e90c7a1ccac1023ff6bdb9418377fa8f88972e``
+- **Verification**: Verified via auth-service integration tests. ✅
+
+
 
 
 
