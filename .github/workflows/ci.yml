@@ -87,3 +87,43 @@ jobs:
           REDIS_URI: redis://localhost:6379
           MONGO_INITDB_DATABASE: saas_platform_test
         run: go test ./...
+
+      - name: Run govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          work-dir: ${{ matrix.service.path }}
+
+      - name: Run gosec
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          gosec ./...
+        working-directory: ${{ matrix.service.path }}
+
+  flutter-test:
+    name: Flutter Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: flutter pub get
+
+      - name: Verify Formatting
+        working-directory: frontend
+        run: flutter format --set-exit-if-changed lib/
+
+      - name: Flutter Analyze
+        working-directory: frontend
+        run: flutter analyze
+
+      - name: Flutter Test
+        working-directory: frontend
+        run: flutter test
+
