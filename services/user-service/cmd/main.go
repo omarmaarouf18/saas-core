@@ -60,6 +60,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("[USER] Failed to connect to Redis: %v", err)
 	}
+	jwtutil.SetRedisClient(redisClient)
 
 	userHandlers := handlers.NewUserService(mongoStore, cfg, redisClient)
 	mux := http.NewServeMux()

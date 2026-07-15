@@ -99,6 +99,7 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/kyb-kye/pending", a.GetPendingKYBKYESubmissions)
 	mux.HandleFunc("/auth/kyb-kye/review", a.ReviewKYBKYESubmissions)
 	mux.HandleFunc("/auth/documents/view", a.ViewDocument)
+	mux.HandleFunc("/auth/logout", a.Logout)
 }
 
 // ---------------------------------------------------------------------------
@@ -1495,4 +1496,27 @@ func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 	}
 
 	return rev, nil
+}
+
+// POST /auth/logout
+func (a *Auth) Logout(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	authHeader := r.Header.Get("Authorization")
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing or invalid authorization header, Bearer token required"})
+		return
+	}
+	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+
+	err := jwtutil.RevokeToken(tokenStr)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "logout failed: " + err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "successfully logged out"})
 }

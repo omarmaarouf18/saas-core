@@ -1068,3 +1068,76 @@ func TestGetPendingKYBKYESubmissions_StorageError(t *testing.T) {
 		t.Errorf("Did not find test user %s in pending list", user.ID)
 	}
 }
+
+func TestLogout_Denylist(t *testing.T) {
+	jwtutil.Init("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	jwtutil.SetRedisClient(rdb)
+	defer jwtutil.SetRedisClient(nil)
+
+	// 1. Generate two tokens
+	token1, err := jwtutil.GenerateToken("user1", "employee", "tenant1", "user1@example.com")
+	if err != nil {
+		t.Fatalf("failed to generate token 1: %v", err)
+	}
+	token2, err := jwtutil.GenerateToken("user2", "employee", "tenant1", "user2@example.com")
+	if err != nil {
+		t.Fatalf("failed to generate token 2: %v", err)
+	}
+
+	// Verify both are valid initially
+	claims1, err := jwtutil.ValidateToken(token1)
+	if err != nil {
+		t.Fatalf("failed to validate token 1: %v", err)
+	}
+	claims2, err := jwtutil.ValidateToken(token2)
+	if err != nil {
+		t.Fatalf("failed to validate token 2: %v", err)
+	}
+	if claims1.RegisteredClaims.ID == "" || claims2.RegisteredClaims.ID == "" {
+		t.Errorf("expected non-empty JTI/ID in tokens")
+	}
+
+	// 2. Revoke/Logout token 1
+	cfg := &config.Config{
+		AppEnv:               "local",
+		GatewaySecret:        "mock-gateway-secret",
+		InternalServiceToken: "mock-internal-token",
+		JWTSecret:            "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2",
+	}
+	tempDir := t.TempDir()
+	storeLoc, _ := storage.NewLocalStorage(tempDir, "/api/v1", cfg.JWTSecret)
+	a := NewAuth(nil, nil, cfg, rdb, storeLoc)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/auth/logout", nil)
+	req.Header.Set("Authorization", "Bearer "+token1)
+	a.Logout(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200 on logout, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// 3. Verify token 1 is now rejected
+	_, err = jwtutil.ValidateToken(token1)
+	if err == nil {
+		t.Errorf("expected token 1 to be rejected after logout, but it was accepted")
+	} else if !strings.Contains(err.Error(), "revoked") {
+		t.Errorf("expected revocation error, got %v", err)
+	}
+
+	// 4. Verify token 2 is still valid
+	_, err = jwtutil.ValidateToken(token2)
+	if err != nil {
+		t.Errorf("expected token 2 to remain valid, but got error: %v", err)
+	}
+}

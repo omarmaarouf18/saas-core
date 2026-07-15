@@ -67,6 +67,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("[CHAT] Failed to connect to Redis: %v", err)
 	}
+	jwtutil.SetRedisClient(redisClient)
 
 	// Create handler group and register routes.
 	chatHandlers := handlers.NewChat(hub, mongoStore, cfg, redisClient)

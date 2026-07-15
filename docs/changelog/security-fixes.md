@@ -334,6 +334,13 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``314146703a9f6892405ad173b563452011bfaf3d``
 - **Verification**: Verified via `services/auth-service/internal/config/config_test.go` and `services/user-service` suite. ✅
 
+## Redis-Backed JWT Revocation Denylist & Logout Endpoint
+
+- **Implementation Detail**: Added a cryptographically secure random UUID `ID` (`jti`) to all issued JWT claims. Integrated a Redis-backed denylist in `jwtutil.ValidateToken` that checks the JTI and fails-closed (rejects authentication and logs `[SECURITY CRITICAL]` security alerts) if Redis is unreachable. Added `jwtutil.RevokeToken` which sets the JTI in Redis with a TTL covering the remaining validity plus the 7-day refresh window to prevent session refresh abuse. Exposed `POST /auth/logout` endpoint in `auth-service` to revoke the caller's JWT.
+- **Commit SHA**: ``0cb65e20771106e833cdf8dfadd5b41cbdf41c98``
+- **Verification**: Verified via `services/auth-service/internal/handlers/auth_test.go` (`TestLogout_Denylist`). ✅
+
+
 
 
 

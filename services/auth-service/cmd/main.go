@@ -98,6 +98,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("[AUTH] Failed to connect to Redis: %v", err)
 	}
+	jwtutil.SetRedisClient(redisClient)
 
 	// Initialize local document storage for KYB/KYE
 	docStorage, err := storage.NewLocalStorage(cfg.StorageBaseDir, cfg.StorageBaseURL, cfg.JWTSecret)

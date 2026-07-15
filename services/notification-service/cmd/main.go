@@ -42,6 +42,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("[NOTIF] Failed to connect to Redis: %v", err)
 	}
+	jwtutil.SetRedisClient(redisClient)
 
 	sseHub := hub.NewSSEHub()
 	notifHandlers := handlers.NewNotification(sseHub, cfg, redisClient)

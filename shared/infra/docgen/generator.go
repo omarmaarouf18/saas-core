@@ -78,6 +78,11 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Refreshes active JWT sessions.",
 		Targets:     "None.",
 	},
+	"POST /auth/logout": {
+		Permissions: "Bearer JWT",
+		Function:    "Logs out user, revokes JWT session.",
+		Targets:     "Writes token JTI to Redis denylist.",
+	},
 	"POST /auth/employee/toggle": {
 		Permissions: "Owner JWT (KYC Approved)",
 		Function:    "Activates/deactivates employee account.",
