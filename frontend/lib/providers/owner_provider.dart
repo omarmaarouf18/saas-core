@@ -163,6 +163,65 @@ class OwnerProvider extends ChangeNotifier {
     }
   }
 
+  List<dynamic> _services = [];
+  List<dynamic> get services => _services;
+
+  // ---------------------------------------------------------------------------
+  // API Call: Fetch All Services
+  // ---------------------------------------------------------------------------
+  Future<void> fetchServices() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.get('/users/services');
+      _services = res['services'] as List<dynamic>? ?? [];
+    } catch (e) {
+      _error = e.toString().replaceFirst("ApiClientException: ", "");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // API Call: Create Service (KYC Gated on backend)
+  // ---------------------------------------------------------------------------
+  Future<Map<String, dynamic>> createService({
+    required String name,
+    required String category,
+    required double tenantBasePrice,
+    required double tenantPricePerKM,
+    required double latitude,
+    required double longitude,
+    required String ownerId,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post('/users/services', {
+        'owner_id': ownerId,
+        'name': name,
+        'category': category,
+        'tenant_base_price': tenantBasePrice,
+        'tenant_price_per_km': tenantPricePerKM,
+        'latitude': latitude,
+        'longitude': longitude,
+      });
+      await fetchServices();
+      return res;
+    } catch (e) {
+      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();
