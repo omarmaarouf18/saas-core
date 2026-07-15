@@ -340,6 +340,13 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``0cb65e20771106e833cdf8dfadd5b41cbdf41c98``
 - **Verification**: Verified via `services/auth-service/internal/handlers/auth_test.go` (`TestLogout_Denylist`). ✅
 
+## Constant-Time Comparison in VerifyOTP
+
+- **Implementation Detail**: Replaced direct string comparison of the decrypted OTP code with `subtle.ConstantTimeCompare` in `services/auth-service/internal/store/mongodb.go` to prevent timing side-channel attacks on OTP validation.
+- **Commit SHA**: ``9cf6d00a6a991a84046a428a8954bbbe328d11aa``
+- **Verification**: Verified via auth-service integration tests. ✅
+
+
 
 
 

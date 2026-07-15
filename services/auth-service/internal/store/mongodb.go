@@ -4,6 +4,7 @@ package store
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"log"
 	"time"
@@ -281,7 +282,7 @@ func (s *MongoDB) VerifyOTP(ctx context.Context, email, otp string) error {
 	if err != nil {
 		return fmt.Errorf("store: OTP decryption failed: %w", err)
 	}
-	if decrypted != otp {
+	if subtle.ConstantTimeCompare([]byte(decrypted), []byte(otp)) != 1 {
 		return fmt.Errorf("invalid OTP")
 	}
 
