@@ -78,6 +78,7 @@ We will proceed in the following order:
 
 1.  **Marketplace Directory**:
     *   Map and list views querying services near a custom latitude/longitude coordinate.
+    *   Provides exactly 3 service categories (Delivery, Ride, Shipping — "Ride" is the UI label for the backend's `transport` category).
     *   Sort and filter selectors (by base price, category) calling [ListServices](services/user-service/internal/handlers/handlers.go#L126).
 
 2.  **Booking Workflow (COD Only)**:

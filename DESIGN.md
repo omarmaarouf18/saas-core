@@ -51,13 +51,15 @@ frontend/
 
 ## 2. Visual Design & Theme System
 
-To deliver a premium, modern experience, the app will feature a curated, high-contrast visual system aligned with Material 3.
+To deliver a premium, modern experience, the app features a curated, high-contrast visual system aligned with Material 3 for the "Quick Delivery" (qd) brand identity.
 
-*   **Primary Palette**: Deep Indigo (`#3F51B5`) and Electric Violet (`#7C4DFF`).
-*   **Backgrounds (Dark Mode)**: Pure Charcoal Black (`#121212`) and Sleek Slate (`#1E1E2C`) with glassmorphism card overlays.
-*   **Alert Status**: Success Emerald (`#00E676`), Danger Coral (`#FF1744`), Warning Amber (`#FFC400`).
-*   **Typography**: Google Font "Outfit" or "Inter" as the default font family for dynamic, clean header presentation.
+*   **Primary Palette**: Deep Navy (`#0D1321`) as the primary dark/brand color, Amber Gold (`#FFC107`) as the primary accent/action color.
+*   **Neutral Palette**: Light Gray (`#E5E7EB`) for backgrounds/dividers, White (`#FFFFFF`) for cards/surfaces.
+*   **Typography**: Poppins (Bold / SemiBold / Regular / Medium weights) as the app-wide font family (replacing older placeholders like "Outfit" or "Inter").
+*   **Logo/App Icon**: The "qd" wordmark with motion/speed lines preceding the letters, on a rounded-square dark navy background for the app icon.
+*   **Alert Status**: Success Emerald (`#00E676`), Danger Coral (`#FF1744`), and Warning Orange (`#FF7A00`) — chosen to remain visually distinct and avoid clashing with the Amber Gold (`#FFC107`) brand accent.
 *   **Micro-Animations**: Custom page transitions, hero elements on services/jobs, and fade/slide alert indicators using standard Flutter animation components (`AnimatedSwitcher`, `SlideTransition`).
+
 
 ---
 
