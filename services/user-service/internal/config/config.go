@@ -77,8 +77,13 @@ func Load() (*Config, error) {
 		chatServiceURL = "http://localhost:3001"
 	}
 
+	appEnv := os.Getenv("APP_ENV")
+	if appEnv == "" {
+		appEnv = "production"
+	}
+
 	return &Config{
-		AppEnv:               os.Getenv("APP_ENV"),
+		AppEnv:               appEnv,
 		Port:                 port,
 		MongoURI:             mongoURI,
 		MongoDatabase:        dbName,

@@ -77,7 +77,7 @@ func Load() (*Config, error) {
 
 	appEnv := os.Getenv("APP_ENV")
 	if appEnv == "" {
-		appEnv = "local"
+		appEnv = "production"
 	}
 
 	storageBaseDir := os.Getenv("STORAGE_BASE_DIR")

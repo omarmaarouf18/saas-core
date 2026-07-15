@@ -328,6 +328,13 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``38da350f2f56e9b643e11a0b7e3f6eb10c91d0c0``
 - **Verification**: Verified via user-service integration test suite (`TestUserServiceHandlers/Geographic_Coordinate_Bounds_Validation`). ✅
 
+## Default APP_ENV Fail-Open Default Hardening
+
+- **Implementation Detail**: Changed default `APP_ENV` fallback value from `local` to `production` when unset in `auth-service` and `user-service`. This ensures the application runs in the most restrictive mode (disabling dev OTP leak, enforcing mTLS, restricting payment methods, etc.) unless `APP_ENV` is explicitly set to `local` or `test`.
+- **Commit SHA**: ``314146703a9f6892405ad173b563452011bfaf3d``
+- **Verification**: Verified via `services/auth-service/internal/config/config_test.go` and `services/user-service` suite. ✅
+
+
 
 
 
