@@ -248,6 +248,37 @@ func TestGetHistoryAccessControl(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
 	}
+
+	// F. Limit Clamping Verification
+	// Let's populate 505 messages in the test database for the authorized channel
+	for i := 0; i < 505; i++ {
+		msg := &chat.Message{
+			Channel:  "job:valid-job-123",
+			SenderID: "job-owner-id",
+			Content:  fmt.Sprintf("message %d", i),
+			Type:     "text",
+		}
+		if err := mongoStore.PersistMessage(context.Background(), msg); err != nil {
+			t.Fatalf("failed to insert test message: %v", err)
+		}
+	}
+
+	// Request with limit=600. It should be clamped to 500.
+	req = httptest.NewRequest("GET", "/chat/history?channel=job:valid-job-123&requester_id="+tokenOwner+"&limit=600", nil)
+	rec = httptest.NewRecorder()
+	chatHandler.GetHistory(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	var clampedHistory []chat.Message
+	if err := json.NewDecoder(rec.Body).Decode(&clampedHistory); err != nil {
+		t.Fatalf("failed to decode history response: %v", err)
+	}
+
+	if len(clampedHistory) != 500 {
+		t.Errorf("Expected history to be clamped to 500, but got %d messages", len(clampedHistory))
+	}
 }
 
 func TestComplaintRoutingConcurrency(t *testing.T) {

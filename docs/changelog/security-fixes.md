@@ -352,6 +352,13 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``b7e90c7a1ccac1023ff6bdb9418377fa8f88972e``
 - **Verification**: Verified via auth-service integration tests. ✅
 
+## Chat History Query Limit Hardening
+
+- **Implementation Detail**: Enforced a hard upper bound of 500 on the `limit` query parameter for the `/chat/history` endpoint in `services/chat-service/internal/handlers/chat.go` to prevent potential Denial of Service (DoS) and out-of-memory issues from requesting unboundedly large history sets.
+- **Commit SHA**: ``fd66be6c331ef7c776d68838ea218fd45c15bd0b``
+- **Verification**: Verified via chat-service integration tests (`TestGetHistoryAccessControl/Limit_Clamping_Verification`). ✅
+
+
 
 
 

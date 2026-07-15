@@ -364,7 +364,11 @@ func (c *Chat) GetHistory(w http.ResponseWriter, r *http.Request) {
 	limitStr := r.URL.Query().Get("limit")
 	limit := int64(50)
 	if limitStr != "" {
+		const maxHistoryLimit = 500
 		if l, err := strconv.ParseInt(limitStr, 10, 64); err == nil && l > 0 {
+			if l > maxHistoryLimit {
+				l = maxHistoryLimit
+			}
 			limit = l
 		}
 	}
