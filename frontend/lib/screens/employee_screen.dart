@@ -78,9 +78,9 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
           child: SafeArea(
             child: TabBar(
               controller: _tabController,
-              labelColor: Colors.indigo,
+              labelColor: Theme.of(context).colorScheme.primary,
               unselectedLabelColor: Colors.grey,
-              indicatorColor: Colors.indigo,
+              indicatorColor: Theme.of(context).colorScheme.primary,
               tabs: const [
                 Tab(icon: Icon(Icons.people_outline), text: "Manage Workers"),
                 Tab(icon: Icon(Icons.receipt_long_outlined), text: "Audit Trail"),
@@ -118,9 +118,9 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Register New Employee",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
                     ),
                     const Divider(height: 24),
                     TextFormField(
@@ -207,8 +207,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                               )
                             : const Text("Register Worker"),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.indigo,
-                          foregroundColor: Colors.white,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
@@ -231,9 +231,9 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Freeze / Activate Worker Account",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
                     ),
                     const Divider(height: 24),
                     TextFormField(
@@ -419,7 +419,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                           children: [
                             Text(
                               action.toString().toUpperCase(),
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo, fontSize: 14),
+                              style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 14),
                             ),
                             Text(
                               dateStr,

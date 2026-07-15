@@ -47,8 +47,8 @@ class _WalletScreenState extends State<WalletScreen> {
                           icon: const Icon(Icons.add_card_rounded),
                           label: const Text("Deposit Funds"),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.indigo,
-                            foregroundColor: Colors.white,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -67,7 +67,7 @@ class _WalletScreenState extends State<WalletScreen> {
                             title: "Total Balance",
                             value: ownerProvider.walletBalance,
                             icon: Icons.account_balance_rounded,
-                            color: Colors.indigo,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ],
@@ -235,7 +235,7 @@ class _WalletScreenState extends State<WalletScreen> {
         break;
       case 'escrow_release':
         icon = Icons.lock_open_rounded;
-        color = Colors.blue;
+        color = Theme.of(context).colorScheme.primary;
         break;
       case 'refund':
         icon = Icons.replay_rounded;
@@ -297,14 +297,14 @@ class _WalletScreenState extends State<WalletScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.indigo.shade50,
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             "Job: ${jobId.substring(0, jobId.length > 8 ? 8 : jobId.length)}",
                             style: TextStyle(
                               fontSize: 10,
-                              color: Colors.indigo.shade700,
+                              color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -470,8 +470,8 @@ class _WalletScreenState extends State<WalletScreen> {
                           }
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.indigo,
-                    foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   ),
                   child: isSubmitting
                       ? const SizedBox(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'core/api_client.dart';
+import 'core/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/owner_provider.dart';
 import 'screens/login_screen.dart';
@@ -45,10 +46,7 @@ class MyApp extends StatelessWidget {
     
     return MaterialApp(
       title: 'Quick Delivery',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        useMaterial3: true,
-      ),
+      theme: quickDeliveryTheme,
       debugShowCheckedModeBanner: false,
       home: auth.isAuthenticated ? const HomeScreen() : const LoginScreen(),
     );

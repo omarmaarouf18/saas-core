@@ -9,6 +9,7 @@
 
 *   **Phase 1: Project Setup & Shared Auth Flow** — **[100% COMPLETE & VERIFIED]**
     *   *Auth Flow Logic*: **[VERIFIED]** contract-matching works against the live docker-compose backend for signup, 2FA OTP, direct employee login, and KYC dashboard warning banners.
+    *   *Branding & Re-Theming*: **[VERIFIED]** Re-skinned the entire application layout (login, signup, OTP, home/dashboard, wallet, employee management, service directory) to use the Quick Delivery brand kit (Deep Navy, Amber Gold, Light Gray, White, Poppins typography). Removed all hardcoded Material indigo/blue values and routed styling through `ThemeData` and `theme.dart`.
     *   *Platform Builds*:
         *   *Android*: **[VERIFIED]** successfully compiled debug APK using local Adoptium JDK 17 and Android SDK platforms-36/build-tools-34. Output location: `frontend/build/app/outputs/flutter-apk/app-debug.apk` (Size: 153,369,344 bytes).
         *   *iOS*: **[UNVERIFIED]** macOS/Xcode toolchain unavailable (build execution requires a Mac environment).
@@ -41,6 +42,8 @@
 The following Dart implementation files are currently active in the codebase and tracked by the structural drift check:
 * **Models**:
   * `user_profile.dart`
+* **Theme**:
+  * `theme.dart`
 * **Providers**:
   * `auth_provider.dart`
   * `owner_provider.dart`

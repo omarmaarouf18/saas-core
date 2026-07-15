@@ -41,7 +41,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Configure Services"),
-        backgroundColor: Colors.indigo,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
       ),
       body: RefreshIndicator(
@@ -113,8 +113,8 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                           ),
                                           Chip(
                                             label: Text(categoryLabel),
-                                            backgroundColor: Colors.indigo.shade50,
-                                            labelStyle: const TextStyle(color: Colors.indigo),
+                                            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                            labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
                                           ),
                                         ],
                                       ),
@@ -150,8 +150,8 @@ class _ServiceScreenState extends State<ServiceScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: isKycApproved ? () => _showCreateServiceDialog(context, user.id) : null,
-        backgroundColor: isKycApproved ? Colors.indigo : Colors.grey,
-        foregroundColor: Colors.white,
+        backgroundColor: isKycApproved ? Theme.of(context).colorScheme.secondary : Colors.grey,
+        foregroundColor: isKycApproved ? Theme.of(context).colorScheme.onSecondary : Colors.white,
         tooltip: isKycApproved ? "Add Service" : "KYC Pending",
         child: const Icon(Icons.add),
       ),

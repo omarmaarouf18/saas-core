@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return Scaffold(
         backgroundColor: Colors.grey.shade100,
         appBar: AppBar(
-          backgroundColor: Colors.indigo,
+          backgroundColor: Theme.of(context).colorScheme.primary,
           title: const Text("Quick Delivery Dashboard"),
           foregroundColor: Colors.white,
           actions: [
@@ -100,12 +100,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         "Profile Information",
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.indigo,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       const Divider(height: 24),
@@ -124,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        backgroundColor: Colors.indigo,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         title: const Text("Quick Delivery Owner Dashboard"),
         foregroundColor: Colors.white,
         actions: [
@@ -186,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        selectedItemColor: Colors.indigo,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
@@ -265,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? "..."
                       : "${ownerProvider.walletBalance.toStringAsFixed(2)} Credits",
                   icon: Icons.account_balance_wallet_outlined,
-                  color: Colors.indigo,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 _buildMetricCard(
                   title: "Subscription Tier",
