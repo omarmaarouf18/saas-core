@@ -1,4 +1,4 @@
-# Frontend Implementation Plan: saas-core Marketplace
+# Frontend Implementation Plan: Quick Delivery Marketplace
 
 This document details the step-by-step implementation plan for the Flutter frontend client. To ensure stability and ease of integration, features are built sequentially.
 

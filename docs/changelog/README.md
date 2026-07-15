@@ -1,6 +1,6 @@
 # Changelog History Index
 
-This directory contains categorized, detailed changelogs tracking the history and development of the SaaS Core Platform:
+This directory contains categorized, detailed changelogs tracking the history and development of the Quick Delivery platform:
 
 *   [Security Fixes](security-fixes.md) — 45 entries detailing vulnerabilities, mTLS configuration, timing attacks, access controls (IDOR), and audit logging.
 *   [New Features](new-features.md) — 20 entries documenting complaint ticketing, KYB document uploads/reviews, location tracking, and resilience wrapping.

@@ -17,7 +17,7 @@ void main() {
     );
 
     // Verify that the login screen elements render correctly.
-    expect(find.text('SaaS Core Platform'), findsOneWidget);
+    expect(find.text('Quick Delivery'), findsOneWidget);
     expect(find.text('Log in to manage your services'), findsOneWidget);
   });
 }

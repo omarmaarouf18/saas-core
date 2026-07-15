@@ -1,6 +1,6 @@
-# SaaS Core Client — Flutter Frontend
+# Quick Delivery Client — Flutter Frontend
 
-This directory contains the Flutter frontend application for the SaaS Core Platform.
+This directory contains the Flutter frontend application for the Quick Delivery platform.
 
 ## Prerequisites
 *   **Flutter SDK**: `>=3.0.0 <4.0.0`

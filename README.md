@@ -1,4 +1,4 @@
-# SaaS Core Platform
+# Quick Delivery
 
 ## Manual KYC Approval Process (Ops Runbook)
 
@@ -163,7 +163,7 @@ To minimize the attack surface of the running services, onboarding a KYB/KYE rev
 
 ## Documentation Index
 
-The following documentation resources map the SaaS Core Platform architecture and guidelines:
+The following documentation resources map the Quick Delivery platform architecture and guidelines:
 
 ### Core & Backend
 *   **[AI_CONTEXT.md](AI_CONTEXT.md)** — The primary source of truth detailing the current project state, implementation roadmap, and immediate next steps.

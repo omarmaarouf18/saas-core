@@ -1,6 +1,6 @@
-# Frontend Design Document: saas-core Marketplace
+# Frontend Design Document: Quick Delivery Marketplace
 
-This document outlines the architectural and user interface design for the Flutter frontend client of the `saas-core` marketplace services platform. The frontend coordinates with the Go microservices backend exposed via the API Gateway.
+This document outlines the architectural and user interface design for the Flutter frontend client of the Quick Delivery marketplace services platform. The frontend coordinates with the Go microservices backend exposed via the API Gateway.
 
 > [!NOTE]
 > **Planned vs. Current Architecture**: The directory structure and provider file tree detailed in Section 1 (such as `screens/shared/`, `screens/owner/`, `screens/employee/`, `screens/user/`, and `chat_provider.dart` / `sse_provider.dart`) represent the **target/planned architecture** for the production launch.

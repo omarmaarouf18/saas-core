@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADRs)
 
-This directory contains Architectural Decision Records (ADRs) for the `saas-core` platform. Every significant architectural, design, or security-boundary decision must be documented here in a numbered, markdown format (`NNNN-short-title.md`).
+This directory contains Architectural Decision Records (ADRs) for the Quick Delivery platform. (Note: The codebase is internally referred to as `saas-core`.) Every significant architectural, design, or security-boundary decision must be documented here in a numbered, markdown format (`NNNN-short-title.md`).
 
 ## ADR Process and Template
 

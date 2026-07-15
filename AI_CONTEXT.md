@@ -1,15 +1,15 @@
-# AI Context: saas-core
+# AI Context: Quick Delivery
 
 > [!IMPORTANT]
 > **Branch Workflow**: `main` = stable/deployable, kept in sync only via reviewed merges from `logic-exploitation`. All active development happens on `logic-exploitation`. Never commit directly to `main`.
 
-This file serves as a persistent, model-agnostic, single source of truth for the technical stack, architecture, feature status, security logs, and current gaps of the `saas-core` platform. Any agent or developer modifying this repository must update this document in the same commit.
+This file serves as a persistent, model-agnostic, single source of truth for the technical stack, architecture, feature status, security logs, and current gaps of the Quick Delivery platform. Any agent or developer modifying this repository must update this document in the same commit. (Note: The repository and codebase are internally named saas-core for historical reasons.)
 
 ---
 
 ## Project Summary
 
-The `saas-core` platform is a multi-tenant SaaS application providing a marketplace services directory, real-time messaging, and job tracking. 
+The Quick Delivery platform is a multi-tenant SaaS application providing a marketplace services directory, real-time messaging, and job tracking. 
 
 * **Tech Stack Deviation Note**: The codebase is implemented as **Go microservices** running on a containerized environment (Docker Compose) and backing onto MongoDB. This deviates from an original planning diagram that specified a Node.js and Socket.io stack. The microservices architecture and real-time messaging functionality were preserved, but migrated to Go for type safety and performance.
 

@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
     final auth = Provider.of<AuthProvider>(context);
     
     return MaterialApp(
-      title: 'SaaS Core Client',
+      title: 'Quick Delivery',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,

@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.grey.shade100,
         appBar: AppBar(
           backgroundColor: Colors.indigo,
-          title: const Text("SaaS Core Dashboard"),
+          title: const Text("Quick Delivery Dashboard"),
           foregroundColor: Colors.white,
           actions: [
             IconButton(
@@ -124,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         backgroundColor: Colors.indigo,
-        title: const Text("SaaS Core Owner Dashboard"),
+        title: const Text("Quick Delivery Owner Dashboard"),
         foregroundColor: Colors.white,
         actions: [
           IconButton(
