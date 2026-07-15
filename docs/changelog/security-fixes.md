@@ -358,6 +358,13 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``fd66be6c331ef7c776d68838ea218fd45c15bd0b``
 - **Verification**: Verified via chat-service integration tests (`TestGetHistoryAccessControl/Limit_Clamping_Verification`). ✅
 
+## Query-Param Tokens Accepted Tradeoff
+
+- **Implementation Detail**: Documented transporting authentication tokens via query parameters for browser APIs that do not support custom headers (WebSockets, SSE, and ViewDocument short-lived URLs) as an accepted design tradeoff. Verified that the `api-gateway` access logs and error logs natively redact them by logging only the URL Path (`r.URL.Path`) rather than full request URLs.
+- **Commit SHA**: ``11c7c8ab02dcb9cd8d11cdbdd54409a521474cbc``
+- **Verification**: Verified by auditing `services/api-gateway/internal/middleware/logging.go` and `services/api-gateway/internal/proxy/proxy.go`. ✅
+
+
 
 
 
