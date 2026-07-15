@@ -331,49 +331,49 @@ This file tracks historical entries for the primary category: **Security Fixes C
 ## Default APP_ENV Fail-Open Default Hardening
 
 - **Implementation Detail**: Changed default `APP_ENV` fallback value from `local` to `production` when unset in `auth-service` and `user-service`. This ensures the application runs in the most restrictive mode (disabling dev OTP leak, enforcing mTLS, restricting payment methods, etc.) unless `APP_ENV` is explicitly set to `local` or `test`.
-- **Commit SHA**: ``314146703a9f6892405ad173b563452011bfaf3d``
+- **Commit SHA**: ``ba29c790c0eff5ecb758ff333b3c87d11d396d63``
 - **Verification**: Verified via `services/auth-service/internal/config/config_test.go` and `services/user-service` suite. ✅
 
 ## Redis-Backed JWT Revocation Denylist & Logout Endpoint
 
 - **Implementation Detail**: Added a cryptographically secure random UUID `ID` (`jti`) to all issued JWT claims. Integrated a Redis-backed denylist in `jwtutil.ValidateToken` that checks the JTI and fails-closed (rejects authentication and logs `[SECURITY CRITICAL]` security alerts) if Redis is unreachable. Added `jwtutil.RevokeToken` which sets the JTI in Redis with a TTL covering the remaining validity plus the 7-day refresh window to prevent session refresh abuse. Exposed `POST /auth/logout` endpoint in `auth-service` to revoke the caller's JWT.
-- **Commit SHA**: ``0cb65e20771106e833cdf8dfadd5b41cbdf41c98``
+- **Commit SHA**: ``9a534b461e9993cf27fc261a6723b6bc5aca866c``
 - **Verification**: Verified via `services/auth-service/internal/handlers/auth_test.go` (`TestLogout_Denylist`). ✅
 
 ## Constant-Time Comparison in VerifyOTP
 
 - **Implementation Detail**: Replaced direct string comparison of the decrypted OTP code with `subtle.ConstantTimeCompare` in `services/auth-service/internal/store/mongodb.go` to prevent timing side-channel attacks on OTP validation.
-- **Commit SHA**: ``9cf6d00a6a991a84046a428a8954bbbe328d11aa``
+- **Commit SHA**: ``b798510b7350d1c0296cd753ab7094ab941b7610``
 - **Verification**: Verified via auth-service integration tests. ✅
 
 ## 6-Digit OTP Entropy Hardening
 
 - **Implementation Detail**: Increased OTP code length from 4 digits to 6 digits by updating `generate4DigitOTP` to `generate6DigitOTP` (generating a cryptographically random number in the `[0, 999999]` range and formatting with `%06d`), significantly increasing the keyspace.
-- **Commit SHA**: ``b7e90c7a1ccac1023ff6bdb9418377fa8f88972e``
+- **Commit SHA**: ``6aa28cd9be19478fb813876c181896d678762335``
 - **Verification**: Verified via auth-service integration tests. ✅
 
 ## Chat History Query Limit Hardening
 
 - **Implementation Detail**: Enforced a hard upper bound of 500 on the `limit` query parameter for the `/chat/history` endpoint in `services/chat-service/internal/handlers/chat.go` to prevent potential Denial of Service (DoS) and out-of-memory issues from requesting unboundedly large history sets.
-- **Commit SHA**: ``fd66be6c331ef7c776d68838ea218fd45c15bd0b``
+- **Commit SHA**: ``ec1d3278365f6e0d0e9fc53397198d2af91f3fbf``
 - **Verification**: Verified via chat-service integration tests (`TestGetHistoryAccessControl/Limit_Clamping_Verification`). ✅
 
 ## Query-Param Tokens Accepted Tradeoff
 
 - **Implementation Detail**: Documented transporting authentication tokens via query parameters for browser APIs that do not support custom headers (WebSockets, SSE, and ViewDocument short-lived URLs) as an accepted design tradeoff. Verified that the `api-gateway` access logs and error logs natively redact them by logging only the URL Path (`r.URL.Path`) rather than full request URLs.
-- **Commit SHA**: ``11c7c8ab02dcb9cd8d11cdbdd54409a521474cbc``
+- **Commit SHA**: ``2fcee8d14ed5aee74fe8441401ee496ce9720fcd``
 - **Verification**: Verified by auditing `services/api-gateway/internal/middleware/logging.go` and `services/api-gateway/internal/proxy/proxy.go`. ✅
 
 ## Employee Toggle active enumeration hardening
 
 - **Implementation Detail**: Collapsed specific owner-mismatch, non-employee, and not-found error returns inside the HTTP handler of `ToggleEmployee` into a generic `"employee not found or not authorized for this owner"` client-facing error message to prevent valid email enumeration by malicious owners, while retaining detailed backend logs.
-- **Commit SHA**: ``daf451f3d7e65f23d4d1aef16c98b8f12b329521``
+- **Commit SHA**: ``0cd553d42f60ce8d03ed9f79651445602cfe981f``
 - **Verification**: Verified via auth-service integration tests. ✅
 
 ## CI Pipeline Security Hardening & Flutter Validation
 
 - **Implementation Detail**: Hardened the GitHub Actions CI pipeline by adding `govulncheck` vulnerability scanning and `gosec` static security analysis to the Go services build matrix, and integrated a Flutter job that runs `flutter analyze` and `flutter test` on the frontend workspace.
-- **Commit SHA**: ``5649db52110a076e801a0cb55ab4493329fd3cf6``
+- **Commit SHA**: ``db5accacce8ece19091f83a54f5b43555e3ec6d8``
 - **Verification**: Verified via pipeline configuration validation and syntax checking. ✅
 
 
