@@ -364,6 +364,13 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``11c7c8ab02dcb9cd8d11cdbdd54409a521474cbc``
 - **Verification**: Verified by auditing `services/api-gateway/internal/middleware/logging.go` and `services/api-gateway/internal/proxy/proxy.go`. ✅
 
+## Employee Toggle active enumeration hardening
+
+- **Implementation Detail**: Collapsed specific owner-mismatch, non-employee, and not-found error returns inside the HTTP handler of `ToggleEmployee` into a generic `"employee not found or not authorized for this owner"` client-facing error message to prevent valid email enumeration by malicious owners, while retaining detailed backend logs.
+- **Commit SHA**: ``daf451f3d7e65f23d4d1aef16c98b8f12b329521``
+- **Verification**: Verified via auth-service integration tests. ✅
+
+
 
 
 

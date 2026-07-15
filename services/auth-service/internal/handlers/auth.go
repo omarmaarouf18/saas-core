@@ -638,8 +638,9 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 	// Get Employee to resolve ID
 	emp := a.store.GetByEmail(ctx, req.EmployeeEmail)
 	if emp == nil {
+		log.Printf("[AUTH ERROR] ToggleEmployee failed: employee %q not found", req.EmployeeEmail)
 		writeJSON(w, http.StatusNotFound, map[string]string{
-			"error": fmt.Sprintf("employee %q not found", req.EmployeeEmail),
+			"error": "employee not found or not authorized for this owner",
 		})
 		return
 	}
@@ -647,8 +648,9 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 	// Toggle Active Status
 	err := a.store.ToggleEmployeeActive(ctx, req.EmployeeEmail, owner.ID, req.SetActive)
 	if err != nil {
+		log.Printf("[AUTH ERROR] ToggleEmployeeActive failed: %v", err)
 		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": err.Error(),
+			"error": "employee not found or not authorized for this owner",
 		})
 		return
 	}
