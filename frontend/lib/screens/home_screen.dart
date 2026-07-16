@@ -7,6 +7,8 @@ import 'wallet_screen.dart';
 import 'employee_screen.dart';
 import 'service_screen.dart';
 
+import 'employee_jobs_screen.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -46,6 +48,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final isKycPending = isOwner && user.kycStatus == "pending_super_admin_approval";
 
     if (!isOwner) {
+      if (user.role == 'employee') {
+        return const EmployeeJobsScreen();
+      }
       // Non-owner basic dashboard
       return Scaffold(
         backgroundColor: Colors.grey.shade100,

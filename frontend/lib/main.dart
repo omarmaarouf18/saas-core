@@ -7,6 +7,7 @@ import 'core/api_client.dart';
 import 'core/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/owner_provider.dart';
+import 'providers/employee_jobs_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -31,6 +32,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => OwnerProvider(apiClient)),
+        ChangeNotifierProvider(create: (_) => EmployeeJobsProvider(apiClient)),
       ],
       child: const MyApp(),
     ),

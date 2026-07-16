@@ -55,7 +55,7 @@ class ApiClient {
     return headers;
   }
 
-  Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) async {
+  Future<dynamic> post(String path, Map<String, dynamic> body) async {
     try {
       final response = await _client.post(
         Uri.parse('$baseUrl$path'),
@@ -69,7 +69,7 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> get(String path, {Map<String, String>? queryParams}) async {
+  Future<dynamic> get(String path, {Map<String, String>? queryParams}) async {
     try {
       var uri = Uri.parse('$baseUrl$path');
       if (queryParams != null) {
@@ -86,11 +86,11 @@ class ApiClient {
     }
   }
 
-  Map<String, dynamic> _handleResponse(http.Response response) {
-    Map<String, dynamic> body = {};
+  dynamic _handleResponse(http.Response response) {
+    dynamic body;
     try {
       if (response.body.isNotEmpty) {
-        body = jsonDecode(response.body) as Map<String, dynamic>;
+        body = jsonDecode(response.body);
       }
     } catch (_) {
       // Body not decodable
@@ -99,8 +99,11 @@ class ApiClient {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return body;
     } else {
-      final errorMsg = body['error'] ?? body['message'] ?? 'Request failed';
-      throw ApiClientException(errorMsg, statusCode: response.statusCode);
+      String? errorMsg;
+      if (body is Map) {
+        errorMsg = body['error'] ?? body['message'];
+      }
+      throw ApiClientException(errorMsg ?? 'Request failed', statusCode: response.statusCode);
     }
   }
 }

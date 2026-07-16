@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import 'employee_jobs_screen.dart';
 
 class EmployeeScreen extends StatefulWidget {
   const EmployeeScreen({super.key});
@@ -69,6 +70,11 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+    if (auth.user?.role == 'employee') {
+      return const EmployeeJobsScreen();
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: PreferredSize(
