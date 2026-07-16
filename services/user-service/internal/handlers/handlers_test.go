@@ -2149,6 +2149,102 @@ func TestUserServiceHandlers(t *testing.T) {
 			})
 		}
 	})
+
+	// Test: TrackJob Security - Owner ID server-side resolution and spoofing prevention
+	t.Run("TrackJob Security - Owner ID server-side resolution", func(t *testing.T) {
+		// Create a mock service belonging to "kyc-approved-owner"
+		svcID := "secure-service-123"
+		mockSvc := &models.Service{
+			ID:               svcID,
+			TenantID:         "kyc-approved-owner",
+			Name:             "Secure Ride Service",
+			Category:         "transport",
+			TenantBasePrice:  10.0,
+			TenantPricePerKM: 2.0,
+			Latitude:         30.0,
+			Longitude:        31.0,
+		}
+		s.CreateService(context.Background(), mockSvc)
+
+		// Let's verify: a customer booking a job with service_id resolves owner ID server-side.
+		// (a) Customer books WITHOUT supplying owner_id in request body
+		reqBody := map[string]any{
+			"user_id":        tokenClientUser,
+			"service_id":     svcID,
+			"payment_method": "cod",
+			"location": map[string]any{
+				"latitude":  30.0,
+				"longitude": 31.0,
+			},
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", "192.168.99.1")
+		rec := httptest.NewRecorder()
+
+		u.TrackJob(rec, req)
+
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("Expected 201 Created for customer booking, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		var resp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &resp)
+		jobData, ok := resp["job"].(map[string]any)
+		if !ok {
+			t.Fatalf("Response does not contain job data")
+		}
+
+		// Verify resolved owner_id matches service TenantID ("kyc-approved-owner")
+		if jobData["owner_id"] != "kyc-approved-owner" {
+			t.Errorf("Expected owner_id to be resolved to 'kyc-approved-owner', got %v", jobData["owner_id"])
+		}
+
+		// (b) Customer books with an arbitrary/spoofed owner_id (raw ID format) -> rejected
+		reqBodySpoofRaw := map[string]any{
+			"owner_id":       "kyc-approved-owner", // raw ID bypass attempt
+			"user_id":        tokenClientUser,
+			"service_id":     svcID,
+			"payment_method": "cod",
+			"location": map[string]any{
+				"latitude":  30.0,
+				"longitude": 31.0,
+			},
+		}
+		bodySpoofRaw, _ := json.Marshal(reqBodySpoofRaw)
+		reqSpoofRaw := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(bodySpoofRaw))
+		reqSpoofRaw.Header.Set("X-Real-IP", "192.168.99.2")
+		recSpoofRaw := httptest.NewRecorder()
+
+		u.TrackJob(recSpoofRaw, reqSpoofRaw)
+
+		if recSpoofRaw.Code != http.StatusUnauthorized {
+			t.Errorf("Expected 401 Unauthorized for raw owner_id bypass attempt, got %d. Body: %s", recSpoofRaw.Code, recSpoofRaw.Body.String())
+		}
+
+		// (c) Customer books with a mismatched owner token -> rejected
+		tokenOtherOwner, _ := jwtutil.GenerateToken("other-owner", "owner", "other-owner", "other@example.com")
+		reqBodySpoofToken := map[string]any{
+			"owner_id":       tokenOtherOwner, // valid token but for a different owner!
+			"user_id":        tokenClientUser,
+			"service_id":     svcID,
+			"payment_method": "cod",
+			"location": map[string]any{
+				"latitude":  30.0,
+				"longitude": 31.0,
+			},
+		}
+		bodySpoofToken, _ := json.Marshal(reqBodySpoofToken)
+		reqSpoofToken := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(bodySpoofToken))
+		reqSpoofToken.Header.Set("X-Real-IP", "192.168.99.3")
+		recSpoofToken := httptest.NewRecorder()
+
+		u.TrackJob(recSpoofToken, reqSpoofToken)
+
+		if recSpoofToken.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for mismatched owner token spoofing, got %d. Body: %s", recSpoofToken.Code, recSpoofToken.Body.String())
+		}
+	})
 }
 
 type contextMock struct {

@@ -230,8 +230,8 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
 	}
-	if req.OwnerID == "" || req.ServiceID == "" || req.UserID == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "owner_id, service_id, and user_id are required"})
+	if req.ServiceID == "" || req.UserID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service_id and user_id are required"})
 		return
 	}
 
@@ -243,13 +243,20 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resolvedOwnerID, err := resolveToken(req.OwnerID)
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
-		return
+	// 1. Resolve owner token if provided
+	var resolvedOwnerID string
+	var hasOwnerToken bool
+	if req.OwnerID != "" {
+		var err error
+		resolvedOwnerID, err = resolveToken(req.OwnerID)
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
+			return
+		}
+		hasOwnerToken = true
 	}
-	req.OwnerID = resolvedOwnerID
 
+	// 2. Verify customer user token
 	resolvedUserID, err := resolveToken(req.UserID)
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid user token: " + err.Error()})
@@ -266,7 +273,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		req.EmployeeID = resolvedEmployeeID
 
 		// Verify assigned employee is active, has employee role, and belongs to this owner's tenant
-		ok, err := u.verifyEmployeeAssignment(req.EmployeeID, req.OwnerID)
+		ok, err := u.verifyEmployeeAssignment(req.EmployeeID, resolvedOwnerID)
 		if err != nil {
 			if errors.Is(err, ErrServiceUnavailable) {
 				writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "auth service unavailable"})
@@ -288,7 +295,21 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify owner exists and has approved KYC
+	ctx := r.Context()
+	var svc *models.Service
+
+	// 3. Securely look up the service from database if owner token was not provided
+	if !hasOwnerToken {
+		svc = u.store.GetServiceByID(ctx, req.ServiceID)
+		if svc == nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service not found"})
+			return
+		}
+		resolvedOwnerID = svc.TenantID
+	}
+	req.OwnerID = resolvedOwnerID
+
+	// 4. Verify owner exists and has approved KYC
 	kycStatus, err := u.checkKYC(req.OwnerID)
 	if err != nil {
 		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.OwnerID, err)
@@ -299,7 +320,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-		handlerutil.ShipSecurityEvent(r.Context(), "KYC_BLOCKED_ERROR", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("failed KYC check: %v", err), handlerutil.GetClientIP(r))
+		handlerutil.ShipSecurityEvent(ctx, "KYC_BLOCKED_ERROR", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("failed KYC check: %v", err), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: unable to verify owner KYC status",
 		})
@@ -307,19 +328,25 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	}
 	if kycStatus != "approved" {
 		log.Printf("[KYC BLOCKED] Owner %s attempted to track job, but KYC status is %q", req.OwnerID, kycStatus)
-		handlerutil.ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("attempted to track job, KYC status is %s", kycStatus), handlerutil.GetClientIP(r))
+		handlerutil.ShipSecurityEvent(ctx, "KYC_BLOCKED", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("attempted to track job, KYC status is %s", kycStatus), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: owner KYC approval is pending",
 		})
 		return
 	}
 
-	ctx := r.Context()
-
-	// Look up service to calculate escrow amount.
-	svc := u.store.GetServiceByID(ctx, req.ServiceID)
+	// 5. Look up service if not already loaded (when owner token was provided)
 	if svc == nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service not found"})
+		svc = u.store.GetServiceByID(ctx, req.ServiceID)
+		if svc == nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service not found"})
+			return
+		}
+	}
+
+	// 6. Security cross-check: the verified owner must own the service being booked
+	if hasOwnerToken && resolvedOwnerID != svc.TenantID {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "action blocked: owner ID does not match service tenant"})
 		return
 	}
 
