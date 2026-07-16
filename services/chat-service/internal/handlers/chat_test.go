@@ -8,11 +8,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/gorilla/websocket"
 	"github.com/project/chat-service/internal/chat"
 	"github.com/project/chat-service/internal/config"
 	"github.com/project/chat-service/internal/store"
@@ -507,7 +509,7 @@ func setupTestChat(t *testing.T) (*Chat, *store.MongoDB, func()) {
 			})
 			return
 		}
-		if r.URL.Path == "/users/jobs/detail" {
+		if r.URL.Path == "/users/jobs/detail" || r.URL.Path == "/users/jobs/get" {
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(map[string]any{
 				"owner_id":    "owner-1",
@@ -657,5 +659,160 @@ func TestHandleCreateTicket(t *testing.T) {
 	c.HandleCreateTicket(rec, req)
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("Expected 400 Bad Request, got %d", rec.Code)
+	}
+}
+
+func TestChatWebSocketCommunication(t *testing.T) {
+	c, _, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	// 1. Create test server mapping the WS route
+	mux := http.NewServeMux()
+	mux.HandleFunc("/chat/ws", c.HandleWebSocket)
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// WebSocket URL mapping
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/chat/ws"
+
+	// 2. Generate tokens
+	tokenCustomer, _ := jwtutil.GenerateToken("client-1", "user", "", "customer@test.com")
+	tokenEmployee, _ := jwtutil.GenerateToken("employee-1", "employee", "tenant-1", "employee@test.com")
+	tokenOther, _ := jwtutil.GenerateToken("other-user", "user", "", "other@test.com")
+
+	// 3. Connect Customer client
+	dialer := websocket.Dialer{}
+	header := http.Header{}
+	header.Set("Origin", "http://localhost:3000")
+
+	custConn, _, err := dialer.Dial(wsURL+"?token="+tokenCustomer, header)
+	if err != nil {
+		t.Fatalf("Failed to dial customer ws: %v", err)
+	}
+	defer custConn.Close()
+
+	// Subscribe customer to job:123
+	err = custConn.WriteJSON(map[string]string{
+		"action":  "subscribe",
+		"channel": "job:123",
+	})
+	if err != nil {
+		t.Fatalf("Customer failed to subscribe: %v", err)
+	}
+
+	// Read customer subscription confirmation
+	var confirm map[string]string
+	err = custConn.ReadJSON(&confirm)
+	if err != nil {
+		t.Fatalf("Failed to read subscription confirmation: %v", err)
+	}
+	if confirm["type"] != "subscribed" || confirm["channel"] != "job:123" {
+		t.Errorf("Unexpected subscription confirmation: %v", confirm)
+	}
+
+	// 4. Connect Employee client
+	empConn, _, err := dialer.Dial(wsURL+"?token="+tokenEmployee, header)
+	if err != nil {
+		t.Fatalf("Failed to dial employee ws: %v", err)
+	}
+	defer empConn.Close()
+
+	// Subscribe employee to job:123
+	err = empConn.WriteJSON(map[string]string{
+		"action":  "subscribe",
+		"channel": "job:123",
+	})
+	if err != nil {
+		t.Fatalf("Employee failed to subscribe: %v", err)
+	}
+
+	// Read employee subscription confirmation
+	err = empConn.ReadJSON(&confirm)
+	if err != nil {
+		t.Fatalf("Failed to read subscription confirmation: %v", err)
+	}
+
+	// 5. Employee sends a message to job:123
+	err = empConn.WriteJSON(map[string]string{
+		"action":  "message",
+		"channel": "job:123",
+		"content": "Hello customer",
+	})
+	if err != nil {
+		t.Fatalf("Employee failed to send message: %v", err)
+	}
+
+	// 6. Both Customer and Employee receive Employee's message
+	var msgCust map[string]any
+	err = custConn.ReadJSON(&msgCust)
+	if err != nil {
+		t.Fatalf("Customer failed to read message: %v", err)
+	}
+	if msgCust["content"] != "Hello customer" || msgCust["sender_id"] != "employee-1" {
+		t.Errorf("Unexpected message received by customer: %v", msgCust)
+	}
+
+	var msgEmp map[string]any
+	err = empConn.ReadJSON(&msgEmp)
+	if err != nil {
+		t.Fatalf("Employee failed to read own message: %v", err)
+	}
+	if msgEmp["content"] != "Hello customer" || msgEmp["sender_id"] != "employee-1" {
+		t.Errorf("Unexpected message received by employee: %v", msgEmp)
+	}
+
+	// 7. Customer sends message back
+	err = custConn.WriteJSON(map[string]string{
+		"action":  "message",
+		"channel": "job:123",
+		"content": "Hello employee",
+	})
+	if err != nil {
+		t.Fatalf("Customer failed to send message: %v", err)
+	}
+
+	// 8. Both Customer and Employee receive Customer's message
+	err = custConn.ReadJSON(&msgCust)
+	if err != nil {
+		t.Fatalf("Customer failed to read own message: %v", err)
+	}
+	if msgCust["content"] != "Hello employee" || msgCust["sender_id"] != "client-1" {
+		t.Errorf("Unexpected message received by customer: %v", msgCust)
+	}
+
+	err = empConn.ReadJSON(&msgEmp)
+	if err != nil {
+		t.Fatalf("Employee failed to read message: %v", err)
+	}
+	if msgEmp["content"] != "Hello employee" || msgEmp["sender_id"] != "client-1" {
+		t.Errorf("Unexpected message received by employee: %v", msgEmp)
+	}
+
+	// 9. Negative case: Connect other unauthorized user and attempt to subscribe to job:123
+	otherConn, _, err := dialer.Dial(wsURL+"?token="+tokenOther, header)
+	if err != nil {
+		t.Fatalf("Failed to dial other ws: %v", err)
+	}
+	defer otherConn.Close()
+
+	err = otherConn.WriteJSON(map[string]string{
+		"action":  "subscribe",
+		"channel": "job:123",
+	})
+	if err != nil {
+		t.Fatalf("Other user failed to subscribe: %v", err)
+	}
+
+	// Read other user rejection response
+	var rejection map[string]string
+	err = otherConn.ReadJSON(&rejection)
+	if err != nil {
+		t.Fatalf("Failed to read rejection response: %v", err)
+	}
+	if rejection["type"] != "error" || rejection["error"] != "not authorized for this channel" {
+		t.Errorf("Expected authorization error, got: %v", rejection)
 	}
 }

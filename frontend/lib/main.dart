@@ -9,6 +9,7 @@ import 'providers/auth_provider.dart';
 import 'providers/owner_provider.dart';
 import 'providers/employee_jobs_provider.dart';
 import 'providers/marketplace_provider.dart';
+import 'providers/chat_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -35,6 +36,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => OwnerProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => EmployeeJobsProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => MarketplaceProvider(apiClient)),
+        ChangeNotifierProvider(create: (_) => ChatProvider(apiClient)),
       ],
       child: const MyApp(),
     ),
