@@ -8,6 +8,7 @@ import 'employee_screen.dart';
 import 'service_screen.dart';
 
 import 'employee_jobs_screen.dart';
+import 'customer_marketplace_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -50,6 +51,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!isOwner) {
       if (user.role == 'employee') {
         return const EmployeeJobsScreen();
+      }
+      if (user.role == 'user') {
+        return const CustomerMarketplaceScreen();
       }
       // Non-owner basic dashboard
       return Scaffold(
