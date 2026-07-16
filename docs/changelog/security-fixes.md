@@ -376,6 +376,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``db5accacce8ece19091f83a54f5b43555e3ec6d8``
 - **Verification**: Verified via pipeline configuration validation and syntax checking. ✅
 
+## TrackJob Owner ID Spoofing & Regression Hardening
+
+- **Implementation Detail**: Reverted the unsafe `owner_id` raw-ID fallback in `TrackJob` that allowed unverified raw hex string inputs. To address the customer-initiated booking flow where customers do not have access to the owner's JWT token, the handler now securely loads the service record from the database by its `service_id` and resolves the target `owner_id` server-side via `svc.TenantID`. If the client explicitly provides an `owner_id` (e.g. in owner-initiated flows), the backend strictly validates that it is a cryptographically verified JWT token and cross-checks that the resolved ID matches the service's `TenantID`, rejecting mismatch attempts with `403 Forbidden` and malformed values with `401 Unauthorized`. This prevents tenant bypass/IDOR and preserves existing owner-initiated flows.
+- **Commit SHA**: ``651f9c025ce5244a364f6988293517c9951bfd46``
+- **Verification**: Verified via `services/user-service/internal/handlers/handlers_test.go` (`TestUserServiceHandlers/TrackJob_Security_-_Owner_ID_server-side_resolution`). ✅
+
 
 
 

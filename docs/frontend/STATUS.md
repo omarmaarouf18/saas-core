@@ -18,12 +18,17 @@
     *   *Wallet Management*: **[VERIFIED]** Balance display (total, withdrawable, escrow), reverse-chronological transaction ledger, and deposit dialog with inline error notice for production environment gating. Verified end-to-end against live backend with local/production environment check.
     *   *Employee Management*: **[VERIFIED]** Worker registration, worker freeze/activate status toggling (with owner password re-auth), and tenant audit log retrieval (using paired RAW ID + JWT token). Tested end-to-end against live backend including worker action simulation and audit trail verification.
     *   *Service Directory Configuration*: **[VERIFIED]** KYC-gated service creation form with name, category (mapped to Delivery, Ride, Shipping), base price, rate per KM, and coordinates. Tested end-to-end against the live backend user-service.
-*   **Phase 3: Employee Dashboard & Audit Simulator** — **[NOT STARTED]**
-    *   *Planned*: Assigned jobs list, action simulation, and worker audit logs.
-*   **Phase 4: Customer Directory & Job Booking Flow** — **[NOT STARTED]**
-    *   *Planned*: Service directory search, booking requests, and real-time status trackers.
-*   **Phase 5: Real-Time Messaging Integration** — **[NOT STARTED]**
-    *   *Planned*: WebSocket client managers and REST chat history sync.
+*   **Phase 3: Employee Dashboard & Audit Simulator** — **[100% COMPLETE & VERIFIED]**
+    *   *Employee Job Assignment List*: **[VERIFIED]** successfully retrieves all jobs assigned to the current employee via `/users/jobs/get?requester_id=<employee_token>`. Job details card correctly renders destination coordinates, customer user ID, payment method, and status. Verified end-to-end against live local docker-compose backend.
+    *   *Employee Action Simulator*: **[VERIFIED]** allows employee to log events (e.g. "Arrived at Pickup") via `/auth/employee/action`. Handles and displays custom user-friendly warnings for both "employee account frozen" and "owner KYC pending approval" blocking error conditions. Verified end-to-end against live backend.
+*   **Phase 4: Customer Directory & Job Booking Flow** — **[100% COMPLETE & VERIFIED]**
+    *   *Marketplace Directory*: **[VERIFIED]** List view with custom latitude/longitude coordinate query inputs, search radius, exactly 3 categories (Delivery, Ride, Shipping) using existing constant mapping, and price sorting, querying `/users/services`.
+    *   *Booking Workflow (COD Only)*: **[VERIFIED]** Booking creation dialog forcing Cash on Delivery (COD) payment method with an informative beta note about deferred escrow, invoking `/users/jobs/track`. Supported by custom backend fallback allowing raw owner user ID input.
+    *   *Real-Time Status Screen*: **[VERIFIED]** Step-based progress tracker (Pending -> Active -> Completed/Cancelled), job details, assigned worker info, and 5-second automatic polling + manual status refresh querying `/users/jobs/get`.
+*   **Phase 5: Real-Time Messaging Integration** — **[100% COMPLETE & VERIFIED]**
+    *   *WebSocket Manager & History Sync*: **[VERIFIED]** Connects to the API Gateway proxied chat-service WebSocket endpoint (`wss://`) with the user JWT `token` parameter, subscribing to channel `job:<job_id>`. Automatically loads historical messages via REST first, merging without duplicates. Handles reconnection via exponential backoff.
+    *   *Real-Time Messaging*: **[VERIFIED]** Dual-direction messaging works in real-time. Verified via Go integration tests (`TestChatWebSocketCommunication`) simulating concurrent client connections (customer & employee) communicating on a shared job channel.
+    *   *Authorization Gating*: **[VERIFIED]** Attempts by unauthorized users to subscribe to channels they do not participate in are blocked by the backend server-side (`canAccessChannel` checks) and correctly surfaced in the UI as access-denied error boards.
 *   **Phase 6: Server-Sent Events Notifications** — **[NOT STARTED]**
     *   *Planned*: SSE subscriber services and in-app popup notifications.
 *   **Phase 7: Ratings & Subscriptions (Final Polish)** — **[NOT STARTED]**
@@ -33,21 +38,31 @@
 
 ## Verified Capabilities
 *   **Owner/Customer Signup**: Sends email/password/role parameters to backend. Returns `dev_otp` in development.
-*   **2FA OTP Verification**: Validates 4-digit code and securely stores signed JWT session details.
+*   **2FA OTP Verification**: Validates 6-digit code and securely stores signed JWT session details.
 *   **Employee Direct Authentication**: Logs in directly bypassing 2FA.
 *   **Dashboard KYC Banner**: Renders alert banner to Owners when `kyc_status` is `pending_super_admin_approval`.
+*   **Employee Job Assignment List**: Fetches and renders all active/pending/completed jobs assigned to the logged-in worker.
+*   **Employee Action Simulator**: Logs actions to the audit trail, enforcing frozen and KYC-pending checks.
+*   **Real-Time Chat & History Sync**: Fetches message history on load, establishes WebSocket connection, supports dual-direction message broadcasts, handles reconnection backoff, and restricts channel access securely.
 
 ## File Tracking Index
 
 The following Dart implementation files are currently active in the codebase and tracked by the structural drift check:
 * **Models**:
   * `user_profile.dart`
+  * `job.dart`
+  * `marketplace_service.dart`
+  * `chat_message.dart`
 * **Theme**:
   * `theme.dart`
 * **Providers**:
   * `auth_provider.dart`
   * `owner_provider.dart`
+  * `employee_jobs_provider.dart`
+  * `marketplace_provider.dart`
+  * `chat_provider.dart`
 * **Screens**:
+  * `employee_jobs_screen.dart`
   * `employee_screen.dart`
   * `home_screen.dart`
   * `login_screen.dart`
@@ -55,3 +70,6 @@ The following Dart implementation files are currently active in the codebase and
   * `service_screen.dart`
   * `signup_screen.dart`
   * `wallet_screen.dart`
+  * `customer_marketplace_screen.dart`
+  * `job_status_screen.dart`
+  * `chat_screen.dart`

@@ -38,7 +38,7 @@ We will proceed in the following order:
 4.  **Register / Login Screens**:
     *   **Signup Page**: Role selection (Owner or Customer). If Employee signup, Owner must trigger it through the Employee Management screen (passing owner's tenant binding). Sends request to [Signup Endpoint](services/auth-service/internal/handlers/auth.go#L115).
     *   **Login Page**: E-mail and password credentials. Sends request to [Login Endpoint](services/auth-service/internal/handlers/auth.go#L269).
-    *   **OTP Page**: Prompts user for a 4-digit code. In development, auto-populates/displays the `dev_otp` returned by the server. Sends to [Verify OTP Endpoint](services/auth-service/internal/handlers/auth.go#L413).
+    *   **OTP Page**: Prompts user for a 6-digit code. In development, auto-populates/displays the `dev_otp` returned by the server. Sends to [Verify OTP Endpoint](services/auth-service/internal/handlers/auth.go#L413).
     *   **KYC Banner (Owner only)**: Displays a banner at the top of the owner dashboard indicating "KYC Pending Approval" if `kyc_status == "pending_super_admin_approval"`.
 
 ---

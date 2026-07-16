@@ -58,3 +58,9 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Commit SHA**: ``38da350f2f56e9b643e11a0b7e3f6eb10c91d0c0``
 - **Verification**: Verified via auth-service integration tests (`TestGetPendingKYBKYESubmissions_StorageError`). ✅
 
+
+## Unconfirmed User OTP Verification Deadlock & Resend Path
+
+- **Implementation Detail**: Added a new `POST /auth/resend-otp` endpoint to `auth-service` allowing unconfirmed users to request a fresh OTP. This breaks the deadlock where an unconfirmed account could not log in, sign up again, or trigger a new code. The endpoint validates parameters, enforces IP and email rate limiting via the existing rate limiter, prevents identity/state leakage by returning a generic success message if the account doesn't exist or is already confirmed, and updates the OTP and expiration in MongoDB. Updated the Flutter frontend's `OtpScreen` to include a "Resend Code" button that invokes this endpoint, dynamically handles the response, and displays the new dev OTP code in development environments.
+- **Commit SHA**: ``119f4f1d2b38527ecb13280574334506b3456a83``
+- **Verification**: Verified via auth-service unit tests (`TestOTPResendFlow`). ✅

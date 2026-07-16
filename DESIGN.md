@@ -103,7 +103,7 @@ The Flutter client interacts with backend microservices routed through the Gatew
 
 ### 1. Authentication Flow
 - **Signup**: Calls [Signup handler](services/auth-service/internal/handlers/auth.go#L115) (`POST /api/v1/auth/signup`). Accepts `email`, `password`, `role`. Gated by signup-time anti-spam OTP; accounts are unconfirmed (`is_confirmed = false`) until the OTP is verified.
-- **Login**: Calls [Login handler](services/auth-service/internal/handlers/auth.go#L269) (`POST /api/v1/auth/login`). Initiates authentication, sends/mocks a 4-digit OTP, and returns `dev_otp` in local development mode.
+- **Login**: Calls [Login handler](services/auth-service/internal/handlers/auth.go#L269) (`POST /api/v1/auth/login`). Initiates authentication, sends/mocks a 6-digit OTP, and returns `dev_otp` in local development mode.
 - **Verify OTP**: Calls [VerifyOTP handler](services/auth-service/internal/handlers/auth.go#L413) (`POST /api/v1/auth/verify-otp`). Activates the account and returns a signed HS256 JWT token.
 - **Refresh Token**: Calls [Refresh handler](services/auth-service/internal/handlers/auth.go#L842) (`POST /api/v1/auth/refresh`). Reissues a new JWT token, validating that the old one expired no more than 7 days ago.
 - **Header Structure**: All authenticated service endpoints require `Authorization: Bearer <JWT_TOKEN>`. The backend validates the HS256 signature and expiry locally using the shared `JWT_SECRET`.
