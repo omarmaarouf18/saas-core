@@ -88,6 +88,7 @@ func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config,
 func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/signup", a.Signup)
 	mux.HandleFunc("/auth/login", a.Login)
+	mux.HandleFunc("/auth/resend-otp", a.ResendOTP)
 	mux.HandleFunc("/auth/verify-otp", a.VerifyOTP)
 	mux.HandleFunc("/auth/refresh", a.Refresh)
 	mux.HandleFunc("/auth/employee/toggle", a.ToggleEmployee)
@@ -111,7 +112,7 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 // Accepts: { "email", "password", "role", "owner_id"? }
 // Roles:   "owner", "user", "employee"
 //
-// For "owner" and "user" roles, a 4-digit OTP is generated, encrypted
+// For "owner" and "user" roles, a 6-digit OTP is generated, encrypted
 // via AES-256-GCM, stored in MongoDB, and dispatched to the user.
 // When APP_ENV=local, the plaintext OTP is appended as "dev_otp" in the response.
 func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
@@ -322,7 +323,7 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 //
 // Behavior:
 //   - Enforces IsActive status check for employees (frozen accounts blocked)
-//   - "owner" / "user": generates a 4-digit OTP, encrypts via AES-256,
+//   - "owner" / "user": generates a 6-digit OTP, encrypts via AES-256,
 //     stores in MongoDB, dispatches via OTPDispatcher.
 //     When APP_ENV=local, appends "dev_otp" to the JSON response.
 //   - "employee": bypasses 2FA, returns authenticated immediately
@@ -1522,3 +1523,109 @@ func (a *Auth) Logout(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, map[string]string{"message": "successfully logged out"})
 }
+
+// ResendOTPRequest represents the payload for resending an OTP.
+type ResendOTPRequest struct {
+	Email string `json:"email"`
+}
+
+// ResendOTP handles resending a fresh OTP for unconfirmed accounts.
+func (a *Auth) ResendOTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "method not allowed, use POST",
+		})
+		return
+	}
+
+	var req ResendOTPRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid JSON body: " + err.Error(),
+		})
+		return
+	}
+
+	if req.Email == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "email is required",
+		})
+		return
+	}
+
+	clientIP := a.getClientIP(r)
+
+	// Check if IP is locked out
+	if locked, remaining := a.limiter.IsLocked(clientIP); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many attempts from this IP. Please try again in %.0f seconds.", remaining.Seconds()),
+		})
+		return
+	}
+
+	// Check if Email is locked out
+	if locked, remaining := a.limiter.IsLocked(req.Email); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many attempts for this email. Please try again in %.0f seconds.", remaining.Seconds()),
+		})
+		return
+	}
+
+	ctx := r.Context()
+	user := a.store.GetByEmail(ctx, req.Email)
+
+	// Generic success response to avoid identity leakage
+	genericResponse := map[string]any{
+		"status":  "success",
+		"message": "OTP dispatched",
+	}
+
+	if user == nil {
+		a.limiter.RecordFailure(clientIP)
+		a.limiter.RecordFailure(req.Email)
+		writeJSON(w, http.StatusOK, genericResponse)
+		return
+	}
+
+	if user.IsConfirmed {
+		// Already confirmed, just return generic success without generating a new OTP
+		writeJSON(w, http.StatusOK, genericResponse)
+		return
+	}
+
+	// Generate a 6-digit OTP.
+	otpCode := generate6DigitOTP()
+
+	// Encrypt and store in MongoDB (AES-256-GCM).
+	if err := a.store.SetOTP(ctx, user.Email, otpCode); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to set OTP: " + err.Error(),
+		})
+		return
+	}
+
+	// Dispatch via the configured dispatcher (mock logs to stdout).
+	if err := a.dispatcher.Dispatch(user.Email, otpCode); err != nil {
+		log.Printf("[AUTH] OTP resend dispatch error via %s: %v", a.dispatcher.Name(), err)
+	}
+
+	if a.isLocal {
+		log.Printf("[AUTH] OTP generated for resend: email=%s code=%s dispatcher=%s",
+			user.Email, otpCode, a.dispatcher.Name())
+	} else {
+		log.Printf("[AUTH] OTP generated for resend: email=%s dispatcher=%s",
+			user.Email, a.dispatcher.Name())
+	}
+
+	// For local development, append dev_otp to the generic response
+	if a.isLocal {
+		genericResponse["dev_otp"] = otpCode
+	}
+
+	// Record request in rate limiter
+	a.limiter.RecordFailure(clientIP)
+	a.limiter.RecordFailure(user.Email)
+
+	writeJSON(w, http.StatusOK, genericResponse)
+}
+

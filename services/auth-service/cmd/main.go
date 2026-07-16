@@ -11,7 +11,7 @@
 //	GET  /health                  — Health check
 //
 // OTP Flow:
-//  1. Generate 4-digit OTP
+//  1. Generate 6-digit OTP
 //  2. Encrypt via AES-256-GCM → store ciphertext in MongoDB
 //  3. Dispatch via OTPDispatcher (MockSMS/MockEmail in local mode)
 //  4. When APP_ENV=local, plaintext OTP is exposed as "dev_otp" in response
@@ -164,7 +164,7 @@ func main() {
 	}()
 
 	log.Printf("Auth Service listening on %s (HTTPS + MongoDB + AES-256-GCM + %s)", addr, dispatcher.Name())
-	log.Printf("Endpoints: POST /auth/signup, POST /auth/login, POST /auth/verify-otp")
+	log.Printf("Endpoints: POST /auth/signup, POST /auth/login, POST /auth/verify-otp, POST /auth/resend-otp")
 	if err := server.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}

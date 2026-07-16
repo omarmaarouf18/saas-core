@@ -137,6 +137,25 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<String?> resendOtp(String email) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post('/auth/resend-otp', {
+        'email': email,
+      });
+      return res['dev_otp'] as String?;
+    } catch (e) {
+      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> _handleAuthSuccess(
       String token, String id, String email, String role, String? kycStatus) async {
     _token = token;

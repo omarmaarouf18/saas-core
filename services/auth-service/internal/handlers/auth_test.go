@@ -1141,3 +1141,99 @@ func TestLogout_Denylist(t *testing.T) {
 		t.Errorf("expected token 2 to remain valid, but got error: %v", err)
 	}
 }
+
+func TestOTPResendFlow(t *testing.T) {
+	a, _, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	// 1. Signup a new user
+	signupBody := models.SignupRequest{
+		Email:    "resend_flow_test@example.com",
+		Password: "password123",
+		Role:     models.RoleUser,
+	}
+	b, _ := json.Marshal(signupBody)
+	req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+	a.Signup(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201 Created on signup, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	var signupResp map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &signupResp); err != nil {
+		t.Fatalf("failed to unmarshal signup response: %v", err)
+	}
+
+	oldOtp := signupResp["dev_otp"].(string)
+
+	// 2. Try verifying a wrong OTP -> fails (401)
+	verifyBodyWrong := models.VerifyOTPRequest{
+		Email: "resend_flow_test@example.com",
+		OTP:   "000000",
+	}
+	bWrong, _ := json.Marshal(verifyBodyWrong)
+	reqWrong := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(bWrong))
+	recWrong := httptest.NewRecorder()
+	a.VerifyOTP(recWrong, reqWrong)
+
+	if recWrong.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 Unauthorized for wrong OTP, got %d", recWrong.Code)
+	}
+
+	// 3. Call resend-otp -> returns fresh OTP
+	resendBody := ResendOTPRequest{
+		Email: "resend_flow_test@example.com",
+	}
+	bResend, _ := json.Marshal(resendBody)
+	reqResend := httptest.NewRequest("POST", "/auth/resend-otp", bytes.NewReader(bResend))
+	recResend := httptest.NewRecorder()
+	a.ResendOTP(recResend, reqResend)
+
+	if recResend.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for resend-otp, got %d. Body: %s", recResend.Code, recResend.Body.String())
+	}
+
+	var resendResp map[string]any
+	if err := json.Unmarshal(recResend.Body.Bytes(), &resendResp); err != nil {
+		t.Fatalf("failed to unmarshal resend response: %v", err)
+	}
+
+	newOtp := resendResp["dev_otp"].(string)
+	if newOtp == oldOtp {
+		t.Errorf("expected new OTP to be different from old OTP, but both are %s", oldOtp)
+	}
+
+	// 4. Try verifying old OTP -> fails (401) because it was replaced/invalidated
+	verifyBodyOld := models.VerifyOTPRequest{
+		Email: "resend_flow_test@example.com",
+		OTP:   oldOtp,
+	}
+	bOld, _ := json.Marshal(verifyBodyOld)
+	reqOld := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(bOld))
+	recOld := httptest.NewRecorder()
+	a.VerifyOTP(recOld, reqOld)
+
+	if recOld.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 Unauthorized for old OTP after resend, got %d. Body: %s", recOld.Code, recOld.Body.String())
+	}
+
+	// 5. Verify new OTP -> succeeds (200)
+	verifyBodyNew := models.VerifyOTPRequest{
+		Email: "resend_flow_test@example.com",
+		OTP:   newOtp,
+	}
+	bNew, _ := json.Marshal(verifyBodyNew)
+	reqNew := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(bNew))
+	recNew := httptest.NewRecorder()
+	a.VerifyOTP(recNew, reqNew)
+
+	if recNew.Code != http.StatusOK {
+		t.Errorf("expected 200 OK for verification with new OTP, got %d. Body: %s", recNew.Code, recNew.Body.String())
+	}
+}
+

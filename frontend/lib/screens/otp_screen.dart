@@ -16,13 +16,15 @@ class OtpScreen extends StatefulWidget {
 class _OtpScreenState extends State<OtpScreen> {
   final _formKey = GlobalKey<FormState>();
   final _otpController = TextEditingController();
+  String? _currentDevOtp;
 
   @override
   void initState() {
     super.initState();
+    _currentDevOtp = widget.devOtp;
     // Auto-populate dev OTP in local development mode
-    if (widget.devOtp != null) {
-      _otpController.text = widget.devOtp!;
+    if (_currentDevOtp != null) {
+      _otpController.text = _currentDevOtp!;
     }
   }
 
@@ -32,6 +34,35 @@ class _OtpScreenState extends State<OtpScreen> {
     super.dispose();
   }
 
+  Future<void> _resendCode() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final newDevOtp = await auth.resendOtp(widget.email);
+    
+    if (!mounted) return;
+
+    if (auth.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.error!),
+          backgroundColor: Colors.red.shade800,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("A new OTP code has been sent successfully."),
+          backgroundColor: Colors.green,
+        ),
+      );
+      setState(() {
+        _currentDevOtp = newDevOtp;
+        if (newDevOtp != null) {
+          _otpController.text = newDevOtp;
+        }
+      });
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     
@@ -39,6 +70,8 @@ class _OtpScreenState extends State<OtpScreen> {
     final otp = _otpController.text.trim();
 
     final success = await auth.verifyOtp(widget.email, otp);
+
+    if (!mounted) return;
 
     if (auth.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -97,7 +130,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Enter the 4-digit code sent to:\n${widget.email}",
+                    "Enter the 6-digit code sent to:\n${widget.email}",
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey.shade600,
@@ -108,13 +141,13 @@ class _OtpScreenState extends State<OtpScreen> {
                   TextFormField(
                     controller: _otpController,
                     decoration: const InputDecoration(
-                      labelText: "4-Digit Code",
+                      labelText: "6-Digit Code",
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.pin_outlined),
                       counterText: "",
                     ),
                     keyboardType: TextInputType.number,
-                    maxLength: 4,
+                    maxLength: 6,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 24,
@@ -123,11 +156,11 @@ class _OtpScreenState extends State<OtpScreen> {
                     ),
                     validator: (val) {
                       if (val == null || val.trim().isEmpty) return "Please enter the OTP";
-                      if (val.trim().length != 4) return "OTP must be exactly 4 digits";
+                      if (val.trim().length != 6) return "OTP must be exactly 6 digits";
                       return null;
                     },
                   ),
-                  if (widget.devOtp != null) ...[
+                  if (_currentDevOtp != null) ...[
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -142,7 +175,7 @@ class _OtpScreenState extends State<OtpScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              "Dev Mode: Auto-populated OTP '${widget.devOtp}' from response.",
+                              "Dev Mode: Auto-populated OTP '$_currentDevOtp' from response.",
                               style: TextStyle(
                                 color: Colors.amber.shade900,
                                 fontSize: 13,
@@ -180,6 +213,17 @@ class _OtpScreenState extends State<OtpScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: auth.isLoading ? null : _resendCode,
+                    child: Text(
+                      "Resend Code",
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
