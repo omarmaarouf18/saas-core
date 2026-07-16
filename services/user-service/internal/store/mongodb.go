@@ -239,6 +239,23 @@ func (s *MongoDB) GetJob(ctx context.Context, id string) *models.Job {
 	return &job
 }
 
+func (s *MongoDB) GetJobsByEmployee(ctx context.Context, employeeID string) ([]*models.Job, error) {
+	var jobs []*models.Job
+	cursor, err := s.jobs.Find(ctx, bson.M{"employee_id": employeeID})
+	if err != nil {
+		return nil, fmt.Errorf("store: get jobs by employee: %w", err)
+	}
+	defer cursor.Close(ctx)
+	if err := cursor.All(ctx, &jobs); err != nil {
+		return nil, fmt.Errorf("store: decode jobs by employee: %w", err)
+	}
+	if jobs == nil {
+		jobs = make([]*models.Job, 0)
+	}
+	return jobs, nil
+}
+
+
 func (s *MongoDB) UpdateJobStatus(ctx context.Context, id string, status models.JobStatus) error {
 	res, err := s.jobs.UpdateOne(ctx, bson.M{"_id": id},
 		bson.M{"$set": bson.M{"status": status, "updated_at": time.Now().UTC()}})

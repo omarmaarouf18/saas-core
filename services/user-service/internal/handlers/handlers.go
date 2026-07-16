@@ -566,7 +566,29 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 	}
 	id := r.URL.Query().Get("id")
 	if id == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "id parameter is required"})
+		requesterToken := r.URL.Query().Get("requester_id")
+		if requesterToken == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "id or requester_id parameter is required"})
+			return
+		}
+		resolvedRequester, err := resolveToken(requesterToken)
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+			return
+		}
+		// Check if a client-supplied employee_id query param exists, and validate it matches resolvedRequester
+		clientEmployeeID := r.URL.Query().Get("employee_id")
+		if clientEmployeeID != "" && clientEmployeeID != resolvedRequester {
+			log.Printf("[IDOR DETECTED] Requester %s tried to query jobs for employee %s", resolvedRequester, clientEmployeeID)
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to view jobs for this employee"})
+			return
+		}
+		jobs, err := u.store.GetJobsByEmployee(r.Context(), resolvedRequester)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, jobs)
 		return
 	}
 	ctx := r.Context()

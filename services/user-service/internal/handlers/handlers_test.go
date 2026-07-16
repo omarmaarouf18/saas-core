@@ -277,6 +277,40 @@ func TestUserServiceHandlers(t *testing.T) {
 		if rec.Code != http.StatusOK {
 			t.Errorf("Expected 200 OK for client, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
+
+		// E. Empty id query param with valid employee requester_id -> 200 OK with list of jobs
+		tokenJobEmployee, _ := jwtutil.GenerateToken("job-employee-999", "employee", "job-employee-999", "employee@example.com")
+		req = httptest.NewRequest("GET", "/users/jobs/get?requester_id="+tokenJobEmployee, nil)
+		rec = httptest.NewRecorder()
+		u.GetJob(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for employee listing, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		var jobs []*models.Job
+		if err := json.Unmarshal(rec.Body.Bytes(), &jobs); err != nil {
+			t.Fatalf("Failed to parse jobs list response: %v", err)
+		}
+		if len(jobs) == 0 {
+			t.Errorf("Expected at least 1 job, got 0")
+		}
+		found := false
+		for _, j := range jobs {
+			if j.ID == "test-job-999" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Expected to find test-job-999 in employee jobs list")
+		}
+
+		// F. IDOR check - query param employee_id does not match the token resolved user -> 403 Forbidden
+		req = httptest.NewRequest("GET", "/users/jobs/get?employee_id=different-employee&requester_id="+tokenJobEmployee, nil)
+		rec = httptest.NewRecorder()
+		u.GetJob(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for mismatched employee_id query parameter, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
 	})
 
 	// Test 6: CompleteJob Access Control
