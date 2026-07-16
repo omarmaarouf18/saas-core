@@ -117,6 +117,7 @@ Only features verified directly against the running application are marked as ve
 * **Client-Submitted Booking Coordinates for Pricing**: Distance-based pricing/escrow calculations rely on coordinates submitted by the client at job booking time. Recomputed amounts on CompleteJob and CancelJob use only the initial booking coordinates (`job.Location`). In addition, live location broadcasts from employees are gated by a speed plausibility check (rejecting jumps implying >150.0 km/h) to prevent GPS spoofing.
 * **Missing Job Listing Endpoint**: There is currently no endpoint in `user-service` to list jobs (either active or historical) for owners, employees, or customers. This is noted as a product gap, and the owner dashboard will only display static/empty placeholders for the active jobs list.
 * **Missing Employee Listing Endpoint**: There is currently no endpoint in `auth-service` to retrieve the list of registered employees for a tenant owner.
+* **Documentation-Tooling Gap**: The structural drift test (`shared/infra/docgen/structural_drift_test.go`) only verifies that Dart files are cataloged in `STATUS.md` and package constraints match. It does NOT verify that the descriptions, auth paths, or data access parameters in `APPLICATION_MAP.md` align with actual Go handler implementations, leaving a possibility for undocumented API deviations.
 
 ---
 

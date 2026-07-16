@@ -78,6 +78,11 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Refreshes active JWT sessions.",
 		Targets:     "None.",
 	},
+	"POST /auth/resend-otp": {
+		Permissions: "Public",
+		Function:    "ResendOTP handles resending a fresh OTP for unconfirmed accounts.",
+		Targets:     "Reads `users` collection by email, updates `otp_code` and `otp_expires_at` fields.",
+	},
 	"POST /auth/logout": {
 		Permissions: "Bearer JWT",
 		Function:    "Logs out user, revokes JWT session.",
@@ -215,14 +220,14 @@ var KnownEndpoints = map[string]struct {
 		Targets:     "Downstream: calls `auth-service/auth/user`. Writes `services` collection.",
 	},
 	"POST /users/jobs/track": {
-		Permissions: "Owner JWT (KYC Approved)",
+		Permissions: "Owner/Employee JWT (legacy tracking) OR Customer JWT + service_id (owner resolved server-side)",
 		Function:    "Books job with coordinate validation, broadcasts alert.",
 		Targets:     "Downstream: calls `auth-service/auth/user`. Writes `jobs`.",
 	},
 	"GET /users/jobs/get": {
 		Permissions: "`X-Internal-Token` OR User JWT",
-		Function:    "Resolves detailed job configuration.",
-		Targets:     "Reads `jobs` collection.",
+		Function:    "Resolves detailed job configuration (single job by ID) OR lists all jobs assigned to the requesting employee.",
+		Targets:     "Reads `jobs` collection. Enforces IDOR protection: if `employee_id` query param is provided, it must match the employee identity strictly resolved from the JWT token.",
 	},
 	"POST /users/jobs/complete": {
 		Permissions: "Owner or Employee JWT",

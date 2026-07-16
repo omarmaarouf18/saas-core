@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`1eb6a1c`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`baeebef`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -157,7 +157,7 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`POST /auth/login`** | `auth-service` | Public (via Gateway) | Logs in user, dispatches 2FA OTP. | Reads/writes `users` collection (OTP/attempts). Writes `audit_logs`. |
 | **`POST /auth/logout`** | `auth-service` | Bearer JWT | Logs out user, revokes JWT session. | Writes token JTI to Redis denylist. |
 | **`POST /auth/refresh`** | `auth-service` | Public (via Gateway) | Refreshes active JWT sessions. | None. |
-| **`POST /auth/resend-otp`** | `auth-service` | Public | ResendOTP handles resending a fresh OTP for unconfirmed accounts. | <!-- TODO: verify manually --> |
+| **`POST /auth/resend-otp`** | `auth-service` | Public | ResendOTP handles resending a fresh OTP for unconfirmed accounts. | Reads `users` collection by email, updates `otp_code` and `otp_expires_at` fields. |
 | **`POST /auth/signup`** | `auth-service` | Public (via Gateway) | Registers a new tenant or user. | Writes `users` collection. Logs OTP code. |
 | **`GET /auth/user`** | `auth-service` | `X-Internal-Token` OR User JWT | Resolves user profile and role details. | Reads `users` collection. |
 | **`POST /auth/verify-otp`** | `auth-service` | Public (via Gateway) | Validates 2FA OTP, issues JWT. | Reads/writes `users` collection. Writes `audit_logs`. |
@@ -171,10 +171,10 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`GET /notifications/stream`** | `notification-service` | User JWT | Opens SSE channel for alerts. | Downstream: calls `auth-service/auth/user`. |
 | **`POST /users/jobs/cancel`** | `user-service` | Owner JWT (KYC Approved) | Cancels an active job and processes escrow refunds. | Updates `jobs` collection. Updates `wallets` and `ledger` collections. |
 | **`POST /users/jobs/complete`** | `user-service` | Owner or Employee JWT | Completes active job, processes fees. | Updates `jobs`, writes `wallets`, writes `ledger`. |
-| **`GET /users/jobs/get`** | `user-service` | `X-Internal-Token` OR User JWT | Resolves detailed job configuration. | Reads `jobs` collection. |
+| **`GET /users/jobs/get`** | `user-service` | `X-Internal-Token` OR User JWT | Resolves detailed job configuration (single job by ID) OR lists all jobs assigned to the requesting employee. | Reads `jobs` collection. Enforces IDOR protection: if `employee_id` query param is provided, it must match the employee identity strictly resolved from the JWT token. |
 | **`POST /users/jobs/location/update`** | `user-service` | Employee JWT | Updates driver coordinates (validates coordinate bounds and speed). | Reads `jobs`, updates `jobs`. Downstream: calls `chat-service/chat/internal/broadcast-location`. |
 | **`POST /users/jobs/rate`** | `user-service` | Owner or Employee JWT | Submits a double-blind rating. | Writes `ratings`, updates `jobs`. |
-| **`POST /users/jobs/track`** | `user-service` | Owner JWT (KYC Approved) | Books job with coordinate validation, broadcasts alert. | Downstream: calls `auth-service/auth/user`. Writes `jobs`. |
+| **`POST /users/jobs/track`** | `user-service` | Owner/Employee JWT (legacy tracking) OR Customer JWT + service_id (owner resolved server-side) | Books job with coordinate validation, broadcasts alert. | Downstream: calls `auth-service/auth/user`. Writes `jobs`. |
 | **`GET /users/ledger`** | `user-service` | Owner JWT | Lists financial ledger records. | Reads `ledger` collection. |
 | **`GET /users/platform/config`** | `user-service` | Public | Fetches global fees configuration. | Reads `platform_config` collection. |
 | **`GET /users/ratings`** | `user-service` | User JWT | Returns ratings count and average. | Reads `ratings` collection. |
@@ -215,10 +215,11 @@ Below are the step-by-step transaction lifecycles for each user role on the plat
    * *Validation*: Checks wallet has sufficient funds, deducts subscription cost, and writes record to `subscriptions` and `ledger` collections.
 
 ### 2. Job Lifecycle Flow (Owner & Employee & Customer)
-1. **Job Booking**: Tenant Owner calls `POST /users/jobs/track` with JWT.
-   * *Validation*: Checks that Owner KYC is `"approved"`.
-   * *Constraint*: The endpoint rejects any payment method other than `"cod"` (Cash on Delivery).
-   * *Alerting*: It broadcasts a job alert to nearby employees (this triggers a `notification-service` endpoint in the design, but is currently stubbed/logged in code).
+1. **Job Booking**: Tenant Owner (legacy tracking) OR Customer (marketplace booking) calls `POST /users/jobs/track` with JWT.
+   * *Owner Resolution*: If booked by a customer without an owner token, the backend securely loads the service record from the database by its `service_id` and resolves the owner ID server-side (`svc.TenantID`) to prevent owner-ID spoofing. If an owner token is explicitly provided (owner/employee-initiated tracking), the backend validates the token and cross-checks that the owner matches the service's tenant, rejecting mismatches with a `403 Forbidden` error.
+   * *Validation*: Checks that the resolved Owner KYC status is `"approved"`.
+   * *Constraint*: The endpoint rejects any payment method other than `"cod"` (Cash on Delivery) in non-local environments.
+   * *Alerting*: It broadcasts a job alert to nearby employees (logged in stdout / stubbed).
 2. **Job Assignment**: Job is assigned to an active employee.
 3. **Location Updates (Driver tracking)**: While driving, the Employee client triggers `POST /users/jobs/location/update` with their Employee JWT.
    * *Validation*: `user-service` verifies the Owner's subscription tier is active and enforces a **3-second throttling minimum** between requests.
