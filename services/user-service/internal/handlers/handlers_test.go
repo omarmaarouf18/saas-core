@@ -1395,6 +1395,92 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 	})
 
+	// Test: TrackJob Customer-Initiated Employee Assignment Gating
+	t.Run("TrackJob Customer-Initiated Employee Assignment Gating", func(t *testing.T) {
+		ctx := context.Background()
+		tokenDeactEmp, _ := jwtutil.GenerateToken("deactivated-employee", "employee", "kyc-approved-owner", "deactivated@example.com")
+		tokenUser, _ := jwtutil.GenerateToken("client-user-123", "user", "client-user-123", "client@example.com")
+
+		// Create a mock service to allow TrackJob to pass initial checks
+		testSvc := &models.Service{
+			ID:               "svc-cust-emp-999",
+			TenantID:         "kyc-approved-owner",
+			Name:             "Cust Emp Svc",
+			Category:         "transport",
+			TenantBasePrice:  10.0,
+			TenantPricePerKM: 10.0,
+			Latitude:         30.0,
+			Longitude:        30.0,
+		}
+		s.CreateService(ctx, testSvc)
+
+		// 1. TrackJob request with deactivated employee -> rejected
+		reqBody := map[string]any{
+			"service_id":     "svc-cust-emp-999",
+			"user_id":        tokenUser,
+			"employee_id":    tokenDeactEmp,
+			"payment_method": "cod",
+		}
+		body, _ := json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		u.TrackJob(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for assigning deactivated employee in customer TrackJob, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "employee is not active") {
+			t.Errorf("Expected error about employee not active, got: %s", rec.Body.String())
+		}
+
+		// 2. Assigning another owner's account as employee_id -> rejected
+		tokenOtherOwner, _ := jwtutil.GenerateToken("kyc-approved-owner-other", "owner", "kyc-approved-owner-other", "other@example.com")
+		reqBody["employee_id"] = tokenOtherOwner
+		body, _ = json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req = httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.TrackJob(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for assigning owner as employee in customer TrackJob, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// 3. Assigning a "user" role account as employee_id -> rejected
+		reqBody["employee_id"] = tokenUser
+		body, _ = json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req = httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.TrackJob(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for assigning plain user as employee in customer TrackJob, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// 4. Assigning an employee belonging to a DIFFERENT owner -> rejected
+		tokenDiffOwnerEmp, _ := jwtutil.GenerateToken("employee-under-kyc-approved-owner-other", "employee", "kyc-approved-owner-other", "diffowneremp@example.com")
+		reqBody["employee_id"] = tokenDiffOwnerEmp
+		body, _ = json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req = httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.TrackJob(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for assigning employee of different owner in customer TrackJob, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// 5. Assigning a valid, active employee belonging to the correct owner -> succeeds
+		tokenActiveEmp, _ := jwtutil.GenerateToken("active-employee-under-kyc-approved-owner", "employee", "kyc-approved-owner", "active@example.com")
+		reqBody["employee_id"] = tokenActiveEmp
+		body, _ = json.Marshal(reqBody)
+		rdb.FlushAll(ctx)
+		req = httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		rec = httptest.NewRecorder()
+		u.TrackJob(rec, req)
+		if rec.Code != http.StatusCreated {
+			t.Errorf("Expected 201 Created for assigning active employee in customer TrackJob, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+	})
+
 	// Test: Escrow Integrity and Speed Validation
 	t.Run("Escrow Integrity and Speed Validation", func(t *testing.T) {
 		u.appEnv = "test"
