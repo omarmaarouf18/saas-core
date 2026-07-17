@@ -220,8 +220,8 @@ var KnownEndpoints = map[string]struct {
 		Targets:     "Downstream: calls `auth-service/auth/user`. Writes `services` collection.",
 	},
 	"POST /users/jobs/track": {
-		Permissions: "Owner/Employee JWT (legacy tracking) OR Customer JWT + service_id (owner resolved server-side)",
-		Function:    "Books job with coordinate validation, broadcasts alert.",
+		Permissions: "Owner/Employee JWT (legacy tracking) OR Customer JWT + service_id (owner resolved server-side; supports optional employee pre-assignment)",
+		Function:    "Books job with coordinate validation, resolves owner ID, validates optional employee assignment, and broadcasts alert.",
 		Targets:     "Downstream: calls `auth-service/auth/user`. Writes `jobs`.",
 	},
 	"GET /users/jobs/get": {

@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`baeebef`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`4f125bc`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -174,7 +174,7 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`GET /users/jobs/get`** | `user-service` | `X-Internal-Token` OR User JWT | Resolves detailed job configuration (single job by ID) OR lists all jobs assigned to the requesting employee. | Reads `jobs` collection. Enforces IDOR protection: if `employee_id` query param is provided, it must match the employee identity strictly resolved from the JWT token. |
 | **`POST /users/jobs/location/update`** | `user-service` | Employee JWT | Updates driver coordinates (validates coordinate bounds and speed). | Reads `jobs`, updates `jobs`. Downstream: calls `chat-service/chat/internal/broadcast-location`. |
 | **`POST /users/jobs/rate`** | `user-service` | Owner or Employee JWT | Submits a double-blind rating. | Writes `ratings`, updates `jobs`. |
-| **`POST /users/jobs/track`** | `user-service` | Owner/Employee JWT (legacy tracking) OR Customer JWT + service_id (owner resolved server-side) | Books job with coordinate validation, broadcasts alert. | Downstream: calls `auth-service/auth/user`. Writes `jobs`. |
+| **`POST /users/jobs/track`** | `user-service` | Owner/Employee JWT (legacy tracking) OR Customer JWT + service_id (owner resolved server-side; supports optional employee pre-assignment) | Books job with coordinate validation, resolves owner ID, validates optional employee assignment, and broadcasts alert. | Downstream: calls `auth-service/auth/user`. Writes `jobs`. |
 | **`GET /users/ledger`** | `user-service` | Owner JWT | Lists financial ledger records. | Reads `ledger` collection. |
 | **`GET /users/platform/config`** | `user-service` | Public | Fetches global fees configuration. | Reads `platform_config` collection. |
 | **`GET /users/ratings`** | `user-service` | User JWT | Returns ratings count and average. | Reads `ratings` collection. |
@@ -217,6 +217,7 @@ Below are the step-by-step transaction lifecycles for each user role on the plat
 ### 2. Job Lifecycle Flow (Owner & Employee & Customer)
 1. **Job Booking**: Tenant Owner (legacy tracking) OR Customer (marketplace booking) calls `POST /users/jobs/track` with JWT.
    * *Owner Resolution*: If booked by a customer without an owner token, the backend securely loads the service record from the database by its `service_id` and resolves the owner ID server-side (`svc.TenantID`) to prevent owner-ID spoofing. If an owner token is explicitly provided (owner/employee-initiated tracking), the backend validates the token and cross-checks that the owner matches the service's tenant, rejecting mismatches with a `403 Forbidden` error.
+   * *Employee Pre-Assignment*: If an `employee_id` is supplied to pre-assign an employee, the backend validates that the employee is active, holds the employee role, and belongs to the resolved owner's tenant (whether the owner is resolved from the owner token or server-side from the service record for customer-initiated bookings).
    * *Validation*: Checks that the resolved Owner KYC status is `"approved"`.
    * *Constraint*: The endpoint rejects any payment method other than `"cod"` (Cash on Delivery) in non-local environments.
    * *Alerting*: It broadcasts a job alert to nearby employees (logged in stdout / stubbed).

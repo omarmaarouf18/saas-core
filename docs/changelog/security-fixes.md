@@ -382,6 +382,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``651f9c025ce5244a364f6988293517c9951bfd46``
 - **Verification**: Verified via `services/user-service/internal/handlers/handlers_test.go` (`TestUserServiceHandlers/TrackJob_Security_-_Owner_ID_server-side_resolution`). ✅
 
+## TrackJob Customer Booking Employee Pre-Assignment Gating Correctness
+
+- **Implementation Detail**: Corrected the execution order in the `TrackJob` handler to ensure that the owner ID is fully resolved (either decoded from the owner JWT or resolved server-side from `svc.TenantID` via database service lookup) before calling `verifyEmployeeAssignment`. This resolves a regression where customer-initiated bookings with employee pre-assignment failed because the assignment check was run with an empty owner ID.
+- **Commit SHA**: ``bb405d3dea2c8f4464433e4635a7e4db563adc08``
+- **Verification**: Verified via `services/user-service/internal/handlers/handlers_test.go` (`TestUserServiceHandlers/TrackJob_Customer-Initiated_Employee_Assignment_Gating`). ✅
+
 
 
 
