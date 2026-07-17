@@ -64,3 +64,9 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Implementation Detail**: Added a new `POST /auth/resend-otp` endpoint to `auth-service` allowing unconfirmed users to request a fresh OTP. This breaks the deadlock where an unconfirmed account could not log in, sign up again, or trigger a new code. The endpoint validates parameters, enforces IP and email rate limiting via the existing rate limiter, prevents identity/state leakage by returning a generic success message if the account doesn't exist or is already confirmed, and updates the OTP and expiration in MongoDB. Updated the Flutter frontend's `OtpScreen` to include a "Resend Code" button that invokes this endpoint, dynamically handles the response, and displays the new dev OTP code in development environments.
 - **Commit SHA**: ``119f4f1d2b38527ecb13280574334506b3456a83``
 - **Verification**: Verified via auth-service unit tests (`TestOTPResendFlow`). ✅
+
+## Resilience Client Connection Leak Fix
+
+- **Implementation Detail**: Corrected a resource leak in `ResilienceClient.Do` and `ResilienceRoundTripper.RoundTrip` where intermediate responses returned by the circuit breaker execution on HTTP 5xx failures were not closed during retries or prior to returning the error, leading to connection/file descriptor leaks. Added explicit body closure on error states.
+- **Commit SHA**: ``eb0ddb54b537358b46f00b82b9540d069b531705``
+- **Verification**: Verified via `shared/infra/resilience/resilience_test.go` (`TestResilienceClient_ConnectionLeak`). ✅
