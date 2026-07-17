@@ -264,6 +264,21 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	}
 	req.UserID = resolvedUserID
 
+	ctx := r.Context()
+	var svc *models.Service
+
+	// 3. Securely look up the service from database if owner token was not provided
+	if !hasOwnerToken {
+		svc = u.store.GetServiceByID(ctx, req.ServiceID)
+		if svc == nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service not found"})
+			return
+		}
+		resolvedOwnerID = svc.TenantID
+	}
+	req.OwnerID = resolvedOwnerID
+
+	// 4. Verify assigned employee is active, has employee role, and belongs to this owner's tenant
 	if req.EmployeeID != "" {
 		resolvedEmployeeID, err := resolveToken(req.EmployeeID)
 		if err != nil {
@@ -295,21 +310,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
-	var svc *models.Service
-
-	// 3. Securely look up the service from database if owner token was not provided
-	if !hasOwnerToken {
-		svc = u.store.GetServiceByID(ctx, req.ServiceID)
-		if svc == nil {
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service not found"})
-			return
-		}
-		resolvedOwnerID = svc.TenantID
-	}
-	req.OwnerID = resolvedOwnerID
-
-	// 4. Verify owner exists and has approved KYC
+	// 5. Verify owner exists and has approved KYC
 	kycStatus, err := u.checkKYC(req.OwnerID)
 	if err != nil {
 		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.OwnerID, err)
@@ -335,7 +336,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 5. Look up service if not already loaded (when owner token was provided)
+	// 6. Look up service if not already loaded (when owner token was provided)
 	if svc == nil {
 		svc = u.store.GetServiceByID(ctx, req.ServiceID)
 		if svc == nil {
@@ -344,7 +345,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 6. Security cross-check: the verified owner must own the service being booked
+	// 7. Security cross-check: the verified owner must own the service being booked
 	if hasOwnerToken && resolvedOwnerID != svc.TenantID {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "action blocked: owner ID does not match service tenant"})
 		return
