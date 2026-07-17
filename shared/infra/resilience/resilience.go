@@ -142,6 +142,9 @@ func (rc *ResilienceClient) Do(req *http.Request) (*http.Response, error) {
 		})
 
 		if lastErr != nil {
+			if lastResp != nil && lastResp.Body != nil {
+				lastResp.Body.Close()
+			}
 			if lastErr == gobreaker.ErrOpenState || lastErr == gobreaker.ErrTooManyRequests {
 				break
 			}
@@ -235,6 +238,9 @@ func (rt *ResilienceRoundTripper) RoundTrip(req *http.Request) (*http.Response, 
 		})
 
 		if lastErr != nil {
+			if lastResp != nil && lastResp.Body != nil {
+				lastResp.Body.Close()
+			}
 			if lastErr == gobreaker.ErrOpenState || lastErr == gobreaker.ErrTooManyRequests {
 				break
 			}
