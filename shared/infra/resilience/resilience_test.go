@@ -1,8 +1,10 @@
 package resilience
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -152,5 +154,63 @@ func TestResilienceClient_AuthorizationFailClosed(t *testing.T) {
 	}
 	if err != gobreaker.ErrOpenState {
 		t.Fatalf("expected error to be ErrOpenState, got: %v", err)
+	}
+}
+
+type trackingBody struct {
+	io.ReadCloser
+	closed *int32
+}
+
+func (tb *trackingBody) Close() error {
+	atomic.StoreInt32(tb.closed, 1)
+	return tb.ReadCloser.Close()
+}
+
+type trackingRoundTripper struct {
+	closedStates []*int32
+}
+
+func (tr *trackingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	closed := new(int32)
+	tr.closedStates = append(tr.closedStates, closed)
+	return &http.Response{
+		StatusCode: http.StatusInternalServerError,
+		Body: &trackingBody{
+			ReadCloser: io.NopCloser(strings.NewReader("internal server error")),
+			closed:     closed,
+		},
+		Header: make(http.Header),
+	}, nil
+}
+
+func TestResilienceClient_ConnectionLeak(t *testing.T) {
+	tr := &trackingRoundTripper{}
+	httpClient := &http.Client{Transport: tr}
+	client := NewClient(httpClient, "test-connection-leak", 2, 50*time.Millisecond)
+	client.initialBackoff = 1 * time.Millisecond
+	client.maxBackoff = 2 * time.Millisecond
+
+	req, _ := http.NewRequest("GET", "http://example.com/test", nil)
+	resp, err := client.Do(req)
+
+	// Since it retries and fails, we expect err != nil
+	if err == nil {
+		if resp != nil {
+			resp.Body.Close()
+		}
+		t.Fatal("expected error from all-failing roundtripper")
+	}
+
+	// We expect 3 attempts made, meaning 3 responses returned by Transport.RoundTrip.
+	if len(tr.closedStates) != 3 {
+		t.Fatalf("expected 3 attempts, got %d", len(tr.closedStates))
+	}
+
+	// ALL 3 response bodies must be closed to avoid connection leaks!
+	for i, closed := range tr.closedStates {
+		if atomic.LoadInt32(closed) != 1 {
+			t.Errorf("Response body for attempt %d was NOT closed!", i)
+		}
 	}
 }
