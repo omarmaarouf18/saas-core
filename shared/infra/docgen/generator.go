@@ -710,7 +710,16 @@ func UpdateApplicationMap(repoRoot string, checkOnly bool) (bool, string, error)
 	shaRegex := regexp.MustCompile(`as of Git commit: \*\*` + "`" + `[0-9a-f]{7}` + "`" + `\*\*`)
 	updatedContent = shaRegex.ReplaceAllString(updatedContent, fmt.Sprintf("as of Git commit: **`%s`**", currentSHA))
 
-	if content == updatedContent {
+	// When checking only (dry-run/test), normalize the SHA line before
+	// comparing so the freshness test catches real endpoint-table drift
+	// without false-positives from the inherently-circular commit SHA stamp.
+	if checkOnly {
+		shaStripRe := regexp.MustCompile(`as of Git commit: \*\*` + "`" + `[0-9a-f]{7}` + "`" + `\*\*`)
+		placeholder := "as of Git commit: **`XXXXXXX`**"
+		if shaStripRe.ReplaceAllString(content, placeholder) == shaStripRe.ReplaceAllString(updatedContent, placeholder) {
+			return false, content, nil
+		}
+	} else if content == updatedContent {
 		return false, content, nil
 	}
 
