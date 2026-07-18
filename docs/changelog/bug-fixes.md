@@ -70,3 +70,9 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Implementation Detail**: Corrected a resource leak in `ResilienceClient.Do` and `ResilienceRoundTripper.RoundTrip` where intermediate responses returned by the circuit breaker execution on HTTP 5xx failures were not closed during retries or prior to returning the error, leading to connection/file descriptor leaks. Added explicit body closure on error states.
 - **Commit SHA**: ``eb0ddb54b537358b46f00b82b9540d069b531705``
 - **Verification**: Verified via `shared/infra/resilience/resilience_test.go` (`TestResilienceClient_ConnectionLeak`). ✅
+
+## Documentation Sync and Code Formatting Drift Correction
+
+- **Implementation Detail**: Corrected formatting drift in the notification-service tests, synchronized the APPLICATION_MAP.md Git commit version, and established a pre-commit verification gate in CLAUDE.md to require gofmt, go build, and go test checks before code changes are committed and pushed.
+- **Commit SHA**: ``4e57ef7c5127730198f67800f80b260ab877a2fd``
+- **Verification**: Verified by executing formatting checks (`gofmt -l .`) and running the documentation AST/SHA validators (`TestDocgenFreshness` and `TestChangelogCommitSHAs`). ✅
