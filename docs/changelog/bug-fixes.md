@@ -55,7 +55,7 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 ## KYB/KYE Signed URL Error Propagation
 
 - **Implementation Detail**: Captured and propagated S3/local storage `GetSignedURL` errors in `GetPendingKYBKYESubmissions` (`/auth/kyb-kye/pending`). Server-side failures are now logged with details and surfaced in the client response under `document_errors` per submission rather than silently rendering an empty URL.
-- **Commit SHA**: ``38da350f2f56e9b643e11a0b7e3f6eb10c91d0c0``
+- **Commit SHA**: ``f95367ee3f2cc95be594c795037c874d219269b9``
 - **Verification**: Verified via auth-service integration tests (`TestGetPendingKYBKYESubmissions_StorageError`). ✅
 
 
