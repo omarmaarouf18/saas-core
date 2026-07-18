@@ -166,7 +166,7 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Completed frontend username integration including signup/employee registration forms, rune-aware validator checks (Arabic + Latin), dynamic RTL direction detection, model updates (UserProfile, ChatMessage), screen display propagation (Home, Employee, Chat), and regression widget tests. Ready for Phase 6 SSE notifications.
+* **Immediate Next Step**: Fixed flakiness in user-service location update test via deterministic channel synchronization hook. Ready for Phase 6 SSE notifications.
 
 
 
