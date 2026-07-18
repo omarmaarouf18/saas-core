@@ -29,6 +29,7 @@ To prevent documentation drift, the repository enforces structural and automated
    * **Changelogs, ADRs, & Runbooks**: Additions to `docs/changelog/` (with valid 40-character hex commit SHAs), ADRs under `docs/adr/`, and README guidelines remain manual but must be updated in the same commit.
 4. **Verifying Locally**:
    * Run `make docs-check` to execute the complete freshness and drift-catching verification suite locally.
+   * Run `make setup` once after cloning to activate the `.githooks/pre-push` hook, which automatically blocks pushes that fail `gofmt`, changelog SHA validation, or `go build/vet/test` for any module. Run `make ci` to execute the same gate manually.
 
 ---
 
