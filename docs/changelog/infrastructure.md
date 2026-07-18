@@ -112,5 +112,17 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``ba166a25fa6b04221b674d0e116fb54c02b3d4a7``
 - **Verification**: Verified via `go test ./...` in `services/auth-service` directory. All tests pass. ✅
 
+## user-service Gap Coverage
+
+- **Implementation Detail**: Expanded test coverage in services/user-service handlers. Verified TrackJob pricing client-controlled-distance behavior, UpdateJobLocation speed check cumulative evasion, throttle state replica isolation, CompleteJob original coordinates usage (both COD and Escrow paths), job cancellation and completion authorization checks, and GetJob/GetLedger/GetWallet tenant isolation boundaries.
+- **Commit SHA**: ``1b6424cf629722870aa8dd1cc4a2f1cd6cf34c59``
+- **Verification**: Verified via `go test ./...` in the `services/user-service` directory. All tests pass. ✅
+
+## chat-service Gap Coverage
+
+- **Implementation Detail**: Expanded test coverage in services/chat-service. Added WebSocket token handshake checks for expired, revoked, and malformed tokens, channel subscription authorization validations, message persistence order, and security gating (unauthorized message non-persistence), concurrent hub registration/unregistration stress tests to catch race conditions and memory leaks, and onboard-agent CLI argument parsing validation.
+- **Commit SHA**: ``dce438236e89d2143f886e487e7475cc9a03e292``
+- **Verification**: Verified via `go test ./...` and `go test ./... -race` in the `services/chat-service` directory. All tests pass. ✅
+
 
 
