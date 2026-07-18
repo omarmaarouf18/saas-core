@@ -322,8 +322,6 @@ func TestStreamAuthScenarios(t *testing.T) {
 	})
 }
 
-
-
 func TestStreamTenantScopingAndIsolation(t *testing.T) {
 	jwtutil.Init("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
 
