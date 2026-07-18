@@ -133,7 +133,7 @@ This file tracks historical entries for the primary category: **New Features Cha
 ## Username Propagation & Chat Point-in-Time Snapshot
 
 - **Implementation Detail**: Updated `GET /auth/user` response to return `username`. Updated `GET /auth/kyb-kye/pending` (`GetPendingKYBKYESubmissions`) response to return `username` per submission. Updated `chat-service` to cache usernames upon WebSocket handshake (refreshed at connection init time or every 60 seconds on cache expiry), attach it to WebSocket clients, and embed `sender_username` inside real-time messages and the persisted database schema as a point-in-time snapshot captured at send-time (historical messages preserve the username active when sent). Support agents are assigned a fallback display name matching `Agent <agent_id>` because they are system operators who do not have a standard `models.User` record.
-- **Commit SHA**: `[UNVERIFIED - PENDING COMMIT]`
+- **Commit SHA**: `0c7930212a897a3f31daa42dab802597089fd0f5`
 - **Verification**: Verified via updated integration tests in `auth-service` and `chat-service`. ✅
 
 
