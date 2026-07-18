@@ -43,6 +43,8 @@
 *   **Dashboard KYC Banner**: Renders alert banner to Owners when `kyc_status` is `pending_super_admin_approval`.
 *   **Employee Job Assignment List**: Fetches and renders all active/pending/completed jobs assigned to the logged-in worker.
 *   **Employee Action Simulator**: Logs actions to the audit trail, enforcing frozen and KYC-pending checks.
+*   **Username Validation & RTL Support**: Enforces 3-30 character rune-aware username checking at signup, supports mixed Latin/Arabic text directions, and registers usernames to the backend.
+*   **Username Propagation & Chat Snapshot**: Propagates registered usernames to dashboard welcome messages and profile detail panels, and displays `senderUsername` in the chat UI including fallback support and Agent display name resolution.
 *   **Real-Time Chat & History Sync**: Fetches message history on load, establishes WebSocket connection, supports dual-direction message broadcasts, handles reconnection backoff, and restricts channel access securely.
 
 ## File Tracking Index

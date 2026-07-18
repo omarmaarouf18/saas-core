@@ -18,7 +18,9 @@ class _EmployeeScreenState extends State<EmployeeScreen>
   final _toggleFormKey = GlobalKey<FormState>();
 
   final _regEmailController = TextEditingController();
+  final _regUsernameController = TextEditingController();
   final _regPasswordController = TextEditingController();
+  TextDirection? _regUsernameDirection;
 
   final _togEmailController = TextEditingController();
   final _togPasswordController = TextEditingController();
@@ -63,6 +65,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
     _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     _regEmailController.dispose();
+    _regUsernameController.dispose();
     _regPasswordController.dispose();
     _togEmailController.dispose();
     _togPasswordController.dispose();
@@ -137,6 +140,53 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     ),
                     const Divider(height: 24),
                     TextFormField(
+                      controller: _regUsernameController,
+                      textDirection: _regUsernameDirection,
+                      decoration: const InputDecoration(
+                        labelText: "Employee Username",
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
+                      onChanged: (val) {
+                        if (val.isNotEmpty) {
+                          final firstRune = val.runes.first;
+                          if (firstRune >= 0x0600 && firstRune <= 0x06FF) {
+                            setState(() {
+                              _regUsernameDirection = TextDirection.rtl;
+                            });
+                          } else {
+                            setState(() {
+                              _regUsernameDirection = TextDirection.ltr;
+                            });
+                          }
+                        } else {
+                          setState(() {
+                            _regUsernameDirection = null;
+                          });
+                        }
+                      },
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return "Username is required";
+                        }
+                        final trimmed = value.trim();
+                        final runeCount = trimmed.runes.length;
+                        if (runeCount < 3) {
+                          return "Username must be at least 3 characters";
+                        }
+                        if (runeCount > 30) {
+                          return "Username must be at most 30 characters";
+                        }
+                        final usernameRegex =
+                            RegExp(r'^([a-zA-Z0-9_ ]|[\u0600-\u06FF])+$');
+                        if (!usernameRegex.hasMatch(trimmed)) {
+                          return "Username contains invalid characters";
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
                       controller: _regEmailController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
@@ -191,17 +241,21 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                                     final res =
                                         await ownerProvider.registerEmployee(
                                       email: _regEmailController.text.trim(),
+                                      username:
+                                          _regUsernameController.text.trim(),
                                       password: _regPasswordController.text,
                                       ownerId: auth.user!.id,
                                     );
 
                                     if (mounted) {
                                       _regEmailController.clear();
+                                      _regUsernameController.clear();
                                       _regPasswordController.clear();
                                       _showSuccessDialog(
                                         title: "Employee Registered",
                                         message:
                                             "Successfully created employee account:\n"
+                                            "Username: ${res['username'] ?? ''}\n"
                                             "Email: ${res['email'] ?? ''}\n"
                                             "ID: ${res['user_id'] ?? ''}\n\n"
                                             "This account has no 2FA (auto-confirmed) and is ready for direct login.",

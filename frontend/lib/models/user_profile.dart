@@ -1,6 +1,7 @@
 class UserProfile {
   final String id;
   final String email;
+  final String username;
   final String role;
   final String? tenantId;
   final String? kycStatus;
@@ -8,6 +9,7 @@ class UserProfile {
   UserProfile({
     required this.id,
     required this.email,
+    required this.username,
     required this.role,
     this.tenantId,
     this.kycStatus,
@@ -17,6 +19,7 @@ class UserProfile {
     return UserProfile(
       id: json['user_id'] ?? json['id'] ?? '',
       email: json['email'] ?? '',
+      username: json['username'] ?? '',
       role: json['role'] ?? '',
       tenantId: json['tenant_id'],
       kycStatus: json['kyc_status'],

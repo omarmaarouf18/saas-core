@@ -13,12 +13,15 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   String _selectedRole = "owner"; // Standard default
+  TextDirection? _usernameDirection;
 
   @override
   void dispose() {
     _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -28,9 +31,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final email = _emailController.text.trim();
+    final username = _usernameController.text.trim();
     final password = _passwordController.text;
 
-    final devOtp = await auth.signup(email, password, _selectedRole);
+    final devOtp = await auth.signup(email, username, password, _selectedRole);
     if (!mounted) return;
 
     if (auth.error != null) {
@@ -86,6 +90,53 @@ class _SignupScreenState extends State<SignupScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
+                  TextFormField(
+                    controller: _usernameController,
+                    textDirection: _usernameDirection,
+                    decoration: const InputDecoration(
+                      labelText: "Username",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.person_outline),
+                    ),
+                    onChanged: (val) {
+                      if (val.isNotEmpty) {
+                        final firstRune = val.runes.first;
+                        if (firstRune >= 0x0600 && firstRune <= 0x06FF) {
+                          setState(() {
+                            _usernameDirection = TextDirection.rtl;
+                          });
+                        } else {
+                          setState(() {
+                            _usernameDirection = TextDirection.ltr;
+                          });
+                        }
+                      } else {
+                        setState(() {
+                          _usernameDirection = null;
+                        });
+                      }
+                    },
+                    validator: (val) {
+                      if (val == null || val.trim().isEmpty) {
+                        return "Please enter a username";
+                      }
+                      final trimmed = val.trim();
+                      final runeCount = trimmed.runes.length;
+                      if (runeCount < 3) {
+                        return "Username must be at least 3 characters";
+                      }
+                      if (runeCount > 30) {
+                        return "Username must be at most 30 characters";
+                      }
+                      final usernameRegex =
+                          RegExp(r'^([a-zA-Z0-9_ ]|[\u0600-\u06FF])+$');
+                      if (!usernameRegex.hasMatch(trimmed)) {
+                        return "Username contains invalid characters";
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _emailController,
                     decoration: const InputDecoration(

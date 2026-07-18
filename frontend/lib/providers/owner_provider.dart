@@ -84,6 +84,7 @@ class OwnerProvider extends ChangeNotifier {
   // ---------------------------------------------------------------------------
   Future<Map<String, dynamic>> registerEmployee({
     required String email,
+    required String username,
     required String password,
     required String ownerId,
   }) async {
@@ -94,6 +95,7 @@ class OwnerProvider extends ChangeNotifier {
     try {
       final res = await apiClient.post('/auth/signup', {
         'email': email,
+        'username': username,
         'password': password,
         'role': 'employee',
         'owner_id': ownerId, // RAW ID convention

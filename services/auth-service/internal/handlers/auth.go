@@ -484,11 +484,12 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]any{
-			"status":  "success",
-			"message": "authenticated",
-			"user_id": user.ID,
-			"role":    user.Role,
-			"token":   token,
+			"status":   "success",
+			"message":  "authenticated",
+			"user_id":  user.ID,
+			"role":     user.Role,
+			"username": user.Username,
+			"token":    token,
 		})
 	}
 }
@@ -575,6 +576,7 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		"message":      "2FA verification successful — authenticated",
 		"user_id":      user.ID,
 		"role":         user.Role,
+		"username":     user.Username,
 		"otp_verified": true,
 		"token":        token,
 	}

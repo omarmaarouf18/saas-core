@@ -165,7 +165,9 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(auth.user?.email ?? ''),
+              _buildHeader(auth.user?.username.isNotEmpty == true
+                  ? auth.user!.username
+                  : (auth.user?.email ?? '')),
               const SizedBox(height: 24),
               _buildActionSimulatorCard(),
               const SizedBox(height: 28),
@@ -196,7 +198,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     );
   }
 
-  Widget _buildHeader(String email) {
+  Widget _buildHeader(String displayName) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -210,7 +212,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          "Logged in as: $email",
+          "Logged in as: $displayName",
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey.shade600,

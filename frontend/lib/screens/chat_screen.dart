@@ -337,11 +337,13 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          // Sender ID tag
+          // Sender Username / ID tag
           Text(
             isMe
                 ? "You"
-                : "Sender ID: ${msg.senderId.substring(0, msg.senderId.length > 6 ? 6 : msg.senderId.length)}",
+                : (msg.senderUsername.isNotEmpty
+                    ? msg.senderUsername
+                    : "User #${msg.senderId.substring(0, msg.senderId.length > 6 ? 6 : msg.senderId.length)}"),
             style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
           ),
         ],

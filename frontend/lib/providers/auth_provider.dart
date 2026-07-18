@@ -28,6 +28,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       final token = await _secureStorage.read(key: 'jwt_token');
       final email = await _secureStorage.read(key: 'user_email');
+      final username = await _secureStorage.read(key: 'user_username') ?? '';
       final role = await _secureStorage.read(key: 'user_role');
       final id = await _secureStorage.read(key: 'user_id');
       final kyc = await _secureStorage.read(key: 'user_kyc');
@@ -37,6 +38,7 @@ class AuthProvider extends ChangeNotifier {
         _user = UserProfile(
           id: id,
           email: email,
+          username: username,
           role: role,
           kycStatus: kyc,
         );
@@ -55,7 +57,8 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String?> signup(String email, String password, String role) async {
+  Future<String?> signup(
+      String email, String username, String password, String role) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -63,6 +66,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       final res = await apiClient.post('/auth/signup', {
         'email': email,
+        'username': username,
         'password': password,
         'role': role,
       });
@@ -92,6 +96,7 @@ class AuthProvider extends ChangeNotifier {
           res['token'],
           res['user_id'] ?? '',
           email,
+          res['username'] ?? '',
           res['role'] ?? 'employee',
           res['kyc_status'],
         );
@@ -122,6 +127,7 @@ class AuthProvider extends ChangeNotifier {
           res['token'],
           res['user_id'] ?? '',
           email,
+          res['username'] ?? '',
           res['role'] ?? '',
           res['kyc_status'],
         );
@@ -157,11 +163,12 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _handleAuthSuccess(String token, String id, String email,
-      String role, String? kycStatus) async {
+      String username, String role, String? kycStatus) async {
     _token = token;
     _user = UserProfile(
       id: id,
       email: email,
+      username: username,
       role: role,
       kycStatus: kycStatus,
     );
@@ -170,6 +177,7 @@ class AuthProvider extends ChangeNotifier {
     await _secureStorage.write(key: 'jwt_token', value: token);
     await _secureStorage.write(key: 'user_id', value: id);
     await _secureStorage.write(key: 'user_email', value: email);
+    await _secureStorage.write(key: 'user_username', value: username);
     await _secureStorage.write(key: 'user_role', value: role);
     if (kycStatus != null) {
       await _secureStorage.write(key: 'user_kyc', value: kycStatus);

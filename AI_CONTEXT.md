@@ -166,7 +166,7 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Completed username propagation across `auth-service` and `chat-service` including point-in-time snapshot design for `sender_username` in persisted chat messages, updated corresponding integration tests, and regenerated documentation via docgen. Pending review and commit.
+* **Immediate Next Step**: Completed frontend username integration including signup/employee registration forms, rune-aware validator checks (Arabic + Latin), dynamic RTL direction detection, model updates (UserProfile, ChatMessage), screen display propagation (Home, Employee, Chat), and regression widget tests. Ready for Phase 6 SSE notifications.
 
 
 

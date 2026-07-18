@@ -85,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Welcome back, ${user.email}!",
+                "Welcome back, ${user.username.isNotEmpty ? user.username : user.email}!",
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -120,6 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const Divider(height: 24),
+                      _buildDetailRow("Username", user.username),
                       _buildDetailRow("Email", user.email),
                       _buildDetailRow("Role", user.role.toUpperCase()),
                     ],
@@ -245,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Welcome back, ${authUser.email}!",
+              "Welcome back, ${authUser.username.isNotEmpty ? authUser.username : authUser.email}!",
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
