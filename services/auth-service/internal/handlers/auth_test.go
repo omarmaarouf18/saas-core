@@ -1237,3 +1237,601 @@ func TestOTPResendFlow(t *testing.T) {
 	}
 }
 
+func TestAuth_ExtraGaps(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	defaultIP := "192.0.2.1"
+
+	// 1. POST /auth/refresh: confirm whether the OLD token remains valid (not revoked) after a successful refresh
+	t.Run("Refresh_OldTokenNonRevocation", func(t *testing.T) {
+		// Create a confirmed/active user
+		user := &models.User{
+			ID:          "user_refresh_gap",
+			Email:       "refreshgap@example.com",
+			Password:    "$2a$10$abcdefghijklmnopqrstuv", // Bcrypt placeholder
+			Role:        models.RoleOwner,
+			TenantID:    "tenant_refresh_gap",
+			IsConfirmed: true,
+			IsActive:    true,
+		}
+		if err := s.CreateUser(ctx, user); err != nil {
+			t.Fatalf("failed to create user: %v", err)
+		}
+
+		// Generate initial token
+		oldToken, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email)
+		if err != nil {
+			t.Fatalf("failed to generate token: %v", err)
+		}
+
+		// Refresh the token
+		reqBody := map[string]string{"token": oldToken}
+		bodyBytes, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/auth/refresh", bytes.NewReader(bodyBytes))
+		rec := httptest.NewRecorder()
+		a.Refresh(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// Assert that the old token is still valid (current behavior verification)
+		claims, err := jwtutil.ValidateToken(oldToken)
+		if err != nil {
+			t.Errorf("expected old token to remain valid after refresh, but got error: %v", err)
+		}
+		if claims == nil || claims.UserID != user.ID {
+			t.Errorf("expected claims to contain correct user ID, got %+v", claims)
+		}
+	})
+
+	// 2. Employee provisioning during Signup
+	t.Run("Signup_EmployeeProvisioningRejections", func(t *testing.T) {
+		a.limiter.Reset(defaultIP)
+
+		// Set up an owner user in DB
+		owner := &models.User{
+			ID:          "owner_prov",
+			Email:       "ownerprov@example.com",
+			Password:    "$2a$10$abcdefghijklmnopqrstuv",
+			Role:        models.RoleOwner,
+			TenantID:    "tenant_prov",
+			IsConfirmed: true,
+			IsActive:    true,
+		}
+		if err := s.CreateUser(ctx, owner); err != nil {
+			t.Fatalf("failed to create owner: %v", err)
+		}
+
+		// Set up a non-owner user in DB
+		nonOwner := &models.User{
+			ID:          "user_non_owner",
+			Email:       "usernonowner@example.com",
+			Password:    "$2a$10$abcdefghijklmnopqrstuv",
+			Role:        models.RoleUser,
+			TenantID:    "tenant_prov",
+			IsConfirmed: true,
+			IsActive:    true,
+		}
+		if err := s.CreateUser(ctx, nonOwner); err != nil {
+			t.Fatalf("failed to create non-owner: %v", err)
+		}
+
+		// Generate Bearer tokens
+		ownerToken, _ := jwtutil.GenerateToken(owner.ID, string(owner.Role), owner.TenantID, owner.Email)
+		nonOwnerToken, _ := jwtutil.GenerateToken(nonOwner.ID, string(nonOwner.Role), nonOwner.TenantID, nonOwner.Email)
+
+		// Subtest A: Token user ID mismatch vs owner_id (returns 403)
+		t.Run("TokenUserIDMismatch", func(t *testing.T) {
+			signupReq := models.SignupRequest{
+				Email:    "emp_mismatch@example.com",
+				Password: "password",
+				Role:     models.RoleEmployee,
+				OwnerID:  "different_owner_id",
+			}
+			body, _ := json.Marshal(signupReq)
+			req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(body))
+			req.Header.Set("Authorization", "Bearer "+ownerToken)
+			rec := httptest.NewRecorder()
+			a.Signup(rec, req)
+
+			if rec.Code != http.StatusForbidden {
+				t.Errorf("expected 403 Forbidden, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+			if !strings.Contains(rec.Body.String(), "caller is not the owner specified by owner_id") {
+				t.Errorf("unexpected error response: %s", rec.Body.String())
+			}
+		})
+
+		// Subtest B: Non-owner role token (returns 403)
+		t.Run("NonOwnerRoleToken", func(t *testing.T) {
+			signupReq := models.SignupRequest{
+				Email:    "emp_nonowner_role@example.com",
+				Password: "password",
+				Role:     models.RoleEmployee,
+				OwnerID:  nonOwner.ID,
+			}
+			body, _ := json.Marshal(signupReq)
+			req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(body))
+			req.Header.Set("Authorization", "Bearer "+nonOwnerToken)
+			rec := httptest.NewRecorder()
+			a.Signup(rec, req)
+
+			if rec.Code != http.StatusForbidden {
+				t.Errorf("expected 403 Forbidden, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+			if !strings.Contains(rec.Body.String(), "owner role required to provision employees") {
+				t.Errorf("unexpected error response: %s", rec.Body.String())
+			}
+		})
+
+		// Subtest C: owner_id pointing to a non-existent user (returns 400)
+		t.Run("NonExistentOwnerID", func(t *testing.T) {
+			fakeToken, _ := jwtutil.GenerateToken("fake_owner_id", "owner", "fake_tenant", "fake@example.com")
+			signupReq := models.SignupRequest{
+				Email:    "emp_no_owner@example.com",
+				Password: "password",
+				Role:     models.RoleEmployee,
+				OwnerID:  "fake_owner_id",
+			}
+			body, _ := json.Marshal(signupReq)
+			req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(body))
+			req.Header.Set("Authorization", "Bearer "+fakeToken)
+			rec := httptest.NewRecorder()
+			a.Signup(rec, req)
+
+			if rec.Code != http.StatusBadRequest {
+				t.Errorf("expected 400 Bad Request, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+			if !strings.Contains(rec.Body.String(), "does not exist") {
+				t.Errorf("unexpected error response: %s", rec.Body.String())
+			}
+		})
+
+		// Subtest D: owner_id pointing to a user that is not role=owner (returns 400)
+		t.Run("OwnerIDNotRoleOwner", func(t *testing.T) {
+			fakeToken, _ := jwtutil.GenerateToken(nonOwner.ID, "owner", nonOwner.TenantID, nonOwner.Email)
+			signupReq := models.SignupRequest{
+				Email:    "emp_not_owner_role@example.com",
+				Password: "password",
+				Role:     models.RoleEmployee,
+				OwnerID:  nonOwner.ID,
+			}
+			body, _ := json.Marshal(signupReq)
+			req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(body))
+			req.Header.Set("Authorization", "Bearer "+fakeToken)
+			rec := httptest.NewRecorder()
+			a.Signup(rec, req)
+
+			if rec.Code != http.StatusBadRequest {
+				t.Errorf("expected 400 Bad Request, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+			if !strings.Contains(rec.Body.String(), "is not an owner tenant") {
+				t.Errorf("unexpected error response: %s", rec.Body.String())
+			}
+		})
+
+		// Reset failures recorded on defaultIP during validations
+		a.limiter.Reset(defaultIP)
+	})
+
+	// 3. Login
+	t.Run("Login_Gaps", func(t *testing.T) {
+		a.limiter.Reset(defaultIP)
+
+		// A: locked-out IP vs locked-out email are independent axes
+		t.Run("LockedOutIpHearsLockedOutEmailIndependently", func(t *testing.T) {
+			ip := "192.168.99.1"
+			email := "lockgap@example.com"
+
+			// Lock the IP by recording 5 failures on it
+			for i := 0; i < 5; i++ {
+				a.limiter.RecordFailure(ip)
+			}
+			locked, _ := a.limiter.IsLocked(ip)
+			if !locked {
+				t.Error("expected IP to be locked")
+			}
+
+			// Email should NOT be locked
+			lockedEmail, _ := a.limiter.IsLocked(email)
+			if lockedEmail {
+				t.Error("expected email to not be locked by IP lockout")
+			}
+
+			// Reset IP
+			a.limiter.Reset(ip)
+
+			// Lock the email by recording 5 failures on it
+			for i := 0; i < 5; i++ {
+				a.limiter.RecordFailure(email)
+			}
+			lockedEmail, _ = a.limiter.IsLocked(email)
+			if !lockedEmail {
+				t.Error("expected email to be locked")
+			}
+
+			// IP should NOT be locked
+			locked, _ = a.limiter.IsLocked(ip)
+			if locked {
+				t.Error("expected IP to not be locked by email lockout")
+			}
+
+			// Reset email
+			a.limiter.Reset(email)
+		})
+
+		// B: confirm the generic "invalid email or password" response is identical
+		t.Run("IdenticalResponseForNonExistentAndWrongPassword", func(t *testing.T) {
+			a.limiter.Reset(defaultIP)
+
+			// Case 1: non-existent email
+			loginReq1 := models.LoginRequest{
+				Email:    "doesnotexist@example.com",
+				Password: "password123",
+			}
+			body1, _ := json.Marshal(loginReq1)
+			req1 := httptest.NewRequest("POST", "/auth/login", bytes.NewReader(body1))
+			rec1 := httptest.NewRecorder()
+			a.Login(rec1, req1)
+
+			// Reset failures from the first failure to avoid locking out defaultIP
+			a.limiter.Reset(defaultIP)
+			a.limiter.Reset("doesnotexist@example.com")
+
+			// Case 2: existent email but wrong password
+			hashedPass, _ := bcrypt.GenerateFromPassword([]byte("correctpassword"), bcrypt.DefaultCost)
+			user := &models.User{
+				ID:          "user_login_test",
+				Email:       "exist@example.com",
+				Password:    string(hashedPass),
+				Role:        models.RoleOwner,
+				TenantID:    "tenant_login_test",
+				IsConfirmed: true,
+				IsActive:    true,
+			}
+			if err := s.CreateUser(ctx, user); err != nil {
+				t.Fatalf("failed to create user: %v", err)
+			}
+
+			loginReq2 := models.LoginRequest{
+				Email:    "exist@example.com",
+				Password: "wrongpassword",
+			}
+			body2, _ := json.Marshal(loginReq2)
+			req2 := httptest.NewRequest("POST", "/auth/login", bytes.NewReader(body2))
+			rec2 := httptest.NewRecorder()
+			a.Login(rec2, req2)
+
+			// Verify identical response level details (status code and body)
+			if rec1.Code != rec2.Code {
+				t.Errorf("expected status codes to be identical, got %d vs %d", rec1.Code, rec2.Code)
+			}
+			if rec1.Code != http.StatusUnauthorized {
+				t.Errorf("expected 401 Unauthorized, got %d", rec1.Code)
+			}
+
+			var resp1, resp2 map[string]string
+			json.Unmarshal(rec1.Body.Bytes(), &resp1)
+			json.Unmarshal(rec2.Body.Bytes(), &resp2)
+
+			if resp1["error"] != resp2["error"] || resp1["error"] != "invalid email or password" {
+				t.Errorf("expected identical response bodies 'invalid email or password', got: %q vs %q", resp1["error"], resp2["error"])
+			}
+
+			// Clean up limits
+			a.limiter.Reset(defaultIP)
+			a.limiter.Reset("exist@example.com")
+		})
+	})
+
+	// 4. VerifyOTP
+	t.Run("VerifyOTP_Gaps", func(t *testing.T) {
+		// A: reused OTP after successful verification is rejected
+		t.Run("ReusedOTPRejected", func(t *testing.T) {
+			a.limiter.Reset(defaultIP)
+
+			email := "otp_reuse@example.com"
+			user := &models.User{
+				ID:          "user_otp_reuse",
+				Email:       email,
+				Password:    "$2a$10$abcdefghijklmnopqrstuv",
+				Role:        models.RoleOwner,
+				TenantID:    "tenant_otp",
+				IsConfirmed: false,
+				IsActive:    true,
+			}
+			s.CreateUser(ctx, user)
+			s.SetOTP(ctx, email, "111111")
+
+			// Verification 1: should succeed
+			reqBody1 := models.VerifyOTPRequest{Email: email, OTP: "111111"}
+			b1, _ := json.Marshal(reqBody1)
+			req1 := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(b1))
+			rec1 := httptest.NewRecorder()
+			a.VerifyOTP(rec1, req1)
+			if rec1.Code != http.StatusOK {
+				t.Errorf("expected first verification to succeed, got %d. Body: %s", rec1.Code, rec1.Body.String())
+			}
+
+			// Verification 2: reused OTP must be rejected
+			req1 = httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(b1))
+			rec2 := httptest.NewRecorder()
+			a.VerifyOTP(rec2, req1)
+			if rec2.Code != http.StatusUnauthorized {
+				t.Errorf("expected second verification to fail (401), got %d. Body: %s", rec2.Code, rec2.Body.String())
+			}
+
+			a.limiter.Reset(defaultIP)
+			a.limiter.Reset(email)
+		})
+
+		// B: OTP for wrong email is rejected
+		t.Run("OTPWrongEmailRejected", func(t *testing.T) {
+			a.limiter.Reset(defaultIP)
+
+			s.SetOTP(ctx, "exist@example.com", "222222")
+
+			reqBody := models.VerifyOTPRequest{Email: "doesnotexist@example.com", OTP: "222222"}
+			b, _ := json.Marshal(reqBody)
+			req := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(b))
+			rec := httptest.NewRecorder()
+			a.VerifyOTP(rec, req)
+
+			if rec.Code != http.StatusUnauthorized {
+				t.Errorf("expected 401 Unauthorized, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			a.limiter.Reset(defaultIP)
+			a.limiter.Reset("doesnotexist@example.com")
+		})
+
+		// C: rate limit lockout on repeated wrong OTPs
+		t.Run("RateLimitLockoutRepeatedWrongOTPs", func(t *testing.T) {
+			a.limiter.Reset(defaultIP)
+
+			email := "otp_lockout@example.com"
+			user := &models.User{
+				ID:          "user_otp_lockout",
+				Email:       email,
+				Password:    "$2a$10$abcdefghijklmnopqrstuv",
+				Role:        models.RoleOwner,
+				TenantID:    "tenant_otp",
+				IsConfirmed: false,
+				IsActive:    true,
+			}
+			s.CreateUser(ctx, user)
+			s.SetOTP(ctx, email, "888888")
+
+			a.limiter.Reset(email)
+
+			reqBody := models.VerifyOTPRequest{Email: email, OTP: "000000"}
+			b, _ := json.Marshal(reqBody)
+
+			for i := 0; i < 5; i++ {
+				req := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(b))
+				rec := httptest.NewRecorder()
+				a.VerifyOTP(rec, req)
+				if rec.Code != http.StatusUnauthorized {
+					t.Errorf("expected 401 on failure %d, got %d", i+1, rec.Code)
+				}
+			}
+
+			req := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(b))
+			rec := httptest.NewRecorder()
+			a.VerifyOTP(rec, req)
+			if rec.Code != http.StatusTooManyRequests {
+				t.Errorf("expected 429 Too Many Requests on locked out attempt, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			a.limiter.Reset(email)
+			a.limiter.Reset(defaultIP)
+		})
+	})
+
+	// 5. ToggleEmployee: only owning tenant's owner can toggle their own employee
+	t.Run("ToggleEmployee_TenantValidation", func(t *testing.T) {
+		a.limiter.Reset(defaultIP)
+
+		// Create Owner A
+		ownerAPass, _ := bcrypt.GenerateFromPassword([]byte("pass_a"), bcrypt.DefaultCost)
+		ownerA := &models.User{
+			ID:          "owner_a",
+			Email:       "owner_a@example.com",
+			Password:    string(ownerAPass),
+			Role:        models.RoleOwner,
+			TenantID:    "tenant_a",
+			IsConfirmed: true,
+			IsActive:    true,
+			KYCStatus:   models.KYCApproved,
+		}
+		s.CreateUser(ctx, ownerA)
+
+		// Create Owner B
+		ownerBPass, _ := bcrypt.GenerateFromPassword([]byte("pass_b"), bcrypt.DefaultCost)
+		ownerB := &models.User{
+			ID:          "owner_b",
+			Email:       "owner_b@example.com",
+			Password:    string(ownerBPass),
+			Role:        models.RoleOwner,
+			TenantID:    "tenant_b",
+			IsConfirmed: true,
+			IsActive:    true,
+			KYCStatus:   models.KYCApproved,
+		}
+		s.CreateUser(ctx, ownerB)
+
+		// Create Employee A (belongs to Owner A)
+		empA := &models.User{
+			ID:          "emp_a",
+			Email:       "emp_a@example.com",
+			Password:    "$2a$10$abcdefghijklmnopqrstuv",
+			Role:        models.RoleEmployee,
+			TenantID:    "tenant_a",
+			OwnerID:     "owner_a",
+			IsConfirmed: true,
+			IsActive:    true,
+		}
+		s.CreateUser(ctx, empA)
+
+		// Attempt toggle Employee A by Owner B -> must fail/be unauthorized
+		toggleReq := models.ToggleEmployeeRequest{
+			EmployeeEmail: "emp_a@example.com",
+			OwnerEmail:    "owner_b@example.com",
+			OwnerPassword: "pass_b",
+			SetActive:     false,
+		}
+		body, _ := json.Marshal(toggleReq)
+		req := httptest.NewRequest("POST", "/auth/employee/toggle", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		a.ToggleEmployee(rec, req)
+
+		if rec.Code == http.StatusOK {
+			t.Error("expected unauthorized toggle request to fail, but got 200 OK")
+		}
+		if !strings.Contains(rec.Body.String(), "employee not found or not authorized for this owner") {
+			t.Errorf("unexpected error message: %s", rec.Body.String())
+		}
+
+		a.limiter.Reset(defaultIP)
+		a.limiter.Reset("owner_b@example.com")
+	})
+
+	// 6. authenticateReviewer
+	t.Run("AuthenticateReviewer_Gaps", func(t *testing.T) {
+		t.Run("MissingInternalToken", func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/some-url", nil)
+			_, err := a.authenticateReviewer(req)
+			if err == nil || err.Error() != "unauthorized internal token" {
+				t.Errorf("expected 'unauthorized internal token' error, got: %v", err)
+			}
+		})
+
+		t.Run("MissingReviewerToken", func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/some-url", nil)
+			req.Header.Set("X-Internal-Token", a.internalServiceToken)
+			_, err := a.authenticateReviewer(req)
+			if err == nil || err.Error() != "missing reviewer token" {
+				t.Errorf("expected 'missing reviewer token' error, got: %v", err)
+			}
+		})
+
+		t.Run("InvalidReviewerToken", func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/some-url", nil)
+			req.Header.Set("X-Internal-Token", a.internalServiceToken)
+			req.Header.Set("X-Reviewer-Token", "invalid-token-123")
+			_, err := a.authenticateReviewer(req)
+			if err == nil || err.Error() != "invalid reviewer token" {
+				t.Errorf("expected 'invalid reviewer token' error, got: %v", err)
+			}
+		})
+	})
+
+	// 7. Logout
+	t.Run("Logout_Gaps", func(t *testing.T) {
+		// Set up isolated miniredis for Logout testing
+		mrLog, err := miniredis.Run()
+		if err != nil {
+			t.Fatalf("failed to start miniredis for logout: %v", err)
+		}
+		defer mrLog.Close()
+
+		rdbLog := redis.NewClient(&redis.Options{Addr: mrLog.Addr()})
+		defer rdbLog.Close()
+
+		jwtutil.SetRedisClient(rdbLog)
+		defer jwtutil.SetRedisClient(nil)
+
+		// Create local Auth instance
+		cfgLog := &config.Config{
+			AppEnv:               "local",
+			GatewaySecret:        "mock-gateway-secret",
+			InternalServiceToken: "mock-internal-token",
+			JWTSecret:            "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2",
+		}
+		tempDir := t.TempDir()
+		storeLoc, _ := storage.NewLocalStorage(tempDir, "/api/v1", cfgLog.JWTSecret)
+		aLog := NewAuth(s, &mockOTPDispatcher{}, cfgLog, rdbLog, storeLoc)
+
+		user := &models.User{
+			ID:          "user_logout_gap",
+			Email:       "logoutgap@example.com",
+			Password:    "$2a$10$abcdefghijklmnopqrstuv",
+			Role:        models.RoleOwner,
+			TenantID:    "tenant_logout",
+			IsConfirmed: true,
+			IsActive:    true,
+		}
+		s.CreateUser(ctx, user)
+
+		generateCustomToken := func(expiry time.Duration) string {
+			claims := jwtutil.Claims{
+				UserID:   user.ID,
+				Role:     string(user.Role),
+				TenantID: user.TenantID,
+				Email:    user.Email,
+				RegisteredClaims: jwt.RegisteredClaims{
+					ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiry)),
+					IssuedAt:  jwt.NewNumericDate(time.Now()),
+					ID:        "jti-" + user.ID + "-" + fmt.Sprint(time.Now().UnixNano()),
+				},
+			}
+			token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+			tokenStr, _ := token.SignedString([]byte(cfgLog.JWTSecret))
+			return tokenStr
+		}
+
+		t.Run("RecentlyExpiredToken", func(t *testing.T) {
+			token := generateCustomToken(-1 * time.Hour)
+			req := httptest.NewRequest("POST", "/auth/logout", nil)
+			req.Header.Set("Authorization", "Bearer "+token)
+			rec := httptest.NewRecorder()
+			aLog.Logout(rec, req)
+
+			if rec.Code != http.StatusOK {
+				t.Errorf("expected 200 OK for recently expired token logout, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+		})
+
+		t.Run("AlreadyRevokedToken", func(t *testing.T) {
+			token := generateCustomToken(1 * time.Hour)
+
+			req1 := httptest.NewRequest("POST", "/auth/logout", nil)
+			req1.Header.Set("Authorization", "Bearer "+token)
+			rec1 := httptest.NewRecorder()
+			aLog.Logout(rec1, req1)
+			if rec1.Code != http.StatusOK {
+				t.Fatalf("first logout failed: %d", rec1.Code)
+			}
+
+			req2 := httptest.NewRequest("POST", "/auth/logout", nil)
+			req2.Header.Set("Authorization", "Bearer "+token)
+			rec2 := httptest.NewRecorder()
+			aLog.Logout(rec2, req2)
+
+			if rec2.Code != http.StatusUnauthorized {
+				t.Errorf("expected 401 Unauthorized for already revoked token, got %d. Body: %s", rec2.Code, rec2.Body.String())
+			}
+			if !strings.Contains(rec2.Body.String(), "logout failed: jwtutil: token has been revoked") {
+				t.Errorf("unexpected error: %s", rec2.Body.String())
+			}
+		})
+
+		t.Run("WayPastExpiredToken", func(t *testing.T) {
+			token := generateCustomToken(-8 * 24 * time.Hour)
+			req := httptest.NewRequest("POST", "/auth/logout", nil)
+			req.Header.Set("Authorization", "Bearer "+token)
+			rec := httptest.NewRecorder()
+			aLog.Logout(rec, req)
+
+			if rec.Code != http.StatusOK {
+				t.Errorf("expected 200 OK for way past expired token logout, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+		})
+	})
+}

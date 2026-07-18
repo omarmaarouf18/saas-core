@@ -1628,4 +1628,3 @@ func (a *Auth) ResendOTP(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, genericResponse)
 }
-
