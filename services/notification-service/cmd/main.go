@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/project/notification-service/internal/config"
 	"github.com/project/notification-service/internal/handlers"
@@ -53,12 +54,14 @@ func main() {
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		if err := json.NewEncoder(w).Encode(map[string]any{
 			"status":          "ok",
 			"active_clients":  sseHub.ClientCount(),
 			"clients_by_role": sseHub.ClientsByRole(),
 			"dependencies":    resilience.GetBreakerStats(),
-		})
+		}); err != nil {
+			log.Printf("[ERROR] failed to encode health response: %v", err)
+		}
 	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -68,18 +71,21 @@ func main() {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{
+		if err := json.NewEncoder(w).Encode(map[string]string{
 			"service":   "notification-service",
 			"version":   "0.2.0",
 			"transport": "SSE",
-		})
+		}); err != nil {
+			log.Printf("[ERROR] failed to encode info response: %v", err)
+		}
 	})
 
 	addr := ":" + cfg.Port
 	server := &http.Server{
-		Addr:      addr,
-		Handler:   mux,
-		TLSConfig: tlsConfig,
+		Addr:              addr,
+		Handler:           mux,
+		TLSConfig:         tlsConfig,
+		ReadHeaderTimeout: 3 * time.Second,
 	}
 
 	log.Printf("Notification Service listening on %s (HTTPS/SSE)", addr)

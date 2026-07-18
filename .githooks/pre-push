@@ -21,6 +21,10 @@ done
 if [ "$FAILED_SHA" -eq 1 ]; then
   exit 1
 fi
+GOSEC_BIN=$(which gosec 2>/dev/null || ls ~/go/bin/gosec 2>/dev/null || echo "")
+if [ -z "$GOSEC_BIN" ] && [ -d "$HOME/go/bin" ]; then
+  GOSEC_BIN="$HOME/go/bin/gosec"
+fi
 
 for mod in services/api-gateway services/auth-service services/chat-service \
            services/notification-service services/user-service shared/infra; do
@@ -29,6 +33,23 @@ for mod in services/api-gateway services/auth-service services/chat-service \
     echo "BLOCKED: $mod failed build/vet/test"
     exit 1
   }
+  if [ "$mod" = "services/notification-service" ]; then
+    if [ -z "$GOSEC_BIN" ] || [ ! -x "$GOSEC_BIN" ]; then
+      echo "gosec not found, installing..."
+      go install github.com/securego/gosec/v2/cmd/gosec@latest 2>/dev/null || true
+      GOSEC_BIN="$HOME/go/bin/gosec"
+    fi
+    if [ -x "$GOSEC_BIN" ]; then
+      echo "-- running gosec on $mod --"
+      (cd "$mod" && "$GOSEC_BIN" ./...) || {
+        echo "BLOCKED: $mod failed gosec security scan"
+        exit 1
+      }
+    else
+      echo "BLOCKED: gosec is required but could not be installed/found. Install via: go install github.com/securego/gosec/v2/cmd/gosec@latest"
+      exit 1
+    fi
+  fi
 done
 
 echo "== pre-push gate: all checks passed =="

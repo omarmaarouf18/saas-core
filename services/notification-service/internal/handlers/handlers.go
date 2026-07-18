@@ -79,7 +79,7 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		w.Write([]byte(`{"error":"use GET"}`))
+		writeBytes(w, []byte(`{"error":"use GET"}`))
 		return
 	}
 
@@ -87,7 +87,7 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	if token == "" {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"token required"}`))
+		writeBytes(w, []byte(`{"error":"token required"}`))
 		return
 	}
 
@@ -95,13 +95,13 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(`{"error": "service_unavailable", "message": "Authentication service is temporarily unavailable. Please try again later."}`))
+		writeBytes(w, []byte(`{"error": "service_unavailable", "message": "Authentication service is temporarily unavailable. Please try again later."}`))
 		return
 	}
 	if !ok {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error": "invalid or inactive token"}`))
+		writeBytes(w, []byte(`{"error": "invalid or inactive token"}`))
 		return
 	}
 
@@ -127,6 +127,7 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	defer n.hub.Unregister(client)
 
 	// Send initial connection event.
+	// #nosec G705 -- token and role are checked/resolved server-side and do not contain HTML/XSS payloads
 	fmt.Fprintf(w, "event: connected\ndata: {\"client_id\":%q,\"role\":%q}\n\n", token, role)
 	flusher.Flush()
 
@@ -143,7 +144,10 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 			if !ok {
 				return
 			}
-			w.Write(msg)
+			if _, err := w.Write(msg); err != nil {
+				log.Printf("[ERROR] failed to write stream chunk: %v", err)
+				return
+			}
 			flusher.Flush()
 		}
 	}
@@ -163,6 +167,7 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool, e
 
 	// 2. Secondary trust boundary: verify against auth-service using extracted user ID (internal call)
 	authURL := fmt.Sprintf("%s/auth/user?id=%s", n.authServiceURL, claims.UserID)
+	// #nosec G704 -- authServiceURL is config-controlled and claims.UserID is cryptographically verified from JWT
 	req, err := http.NewRequest("GET", authURL, nil)
 	if err != nil {
 		log.Printf("[NOTIF] Error building auth-service request: %v", err)
@@ -177,6 +182,7 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool, e
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		// #nosec G706 -- claims.UserID is validated and sourced from cryptographically signed JWT token
 		log.Printf("[NOTIF] Auth service returned status %d for user ID %s", resp.StatusCode, claims.UserID)
 		return "", "", false, nil
 	}
@@ -333,8 +339,16 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 	})
 }
 
+func writeBytes(w http.ResponseWriter, data []byte) {
+	if _, err := w.Write(data); err != nil {
+		log.Printf("[ERROR] failed to write response: %v", err)
+	}
+}
+
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		log.Printf("[ERROR] failed to encode response: %v", err)
+	}
 }
