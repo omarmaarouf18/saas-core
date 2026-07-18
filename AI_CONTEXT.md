@@ -31,6 +31,25 @@ To prevent documentation drift, the repository enforces structural and automated
    * Run `make docs-check` to execute the complete freshness and drift-catching verification suite locally.
    * Run `make setup` once after cloning to activate the `.githooks/pre-push` hook, which automatically blocks pushes that fail `gofmt`, changelog SHA validation, or `go build/vet/test` for any module. Run `make ci` to execute the same gate manually.
 
+## Tooling & CI Security Scanner
+
+The CI/CD pipeline and local pre-push hooks run a full-scope, unfiltered security scan using **gosec** (`gosec ./...`).
+
+> [!IMPORTANT]
+> **Gosec Taint Analysis Rules**:
+> The CI workflow installs gosec via `go install github.com/securego/gosec/v2/cmd/gosec@latest`, which fetches a development build ("Gosec: dev" built from the latest master branch). This build includes newer taint-analysis rules beyond the last tagged release that may not be documented in the public `RULES.md`.
+> 
+> Future contributors must be aware of these rules and resolve them appropriately:
+> * **`G704` (CWE-918)**: SSRF via taint analysis (triggered when unsanitized variables propagate to outgoing HTTP requests).
+> * **`G705` (CWE-79)**: XSS via taint analysis (triggered when unescaped parameters propagate to HTTP responses).
+> * **`G706` (CWE-117)**: Log injection via taint analysis (triggered when potentially untrusted parameters write directly to logs).
+> 
+> **Resolving Findings**:
+> * **Genuine Fixes**: Apply domain prefix validation for SSRF, sanitize inputs inline by stripping carriage returns and newlines (`\r`/`\n`) for log injection, and use structured sanitizers for XSS.
+> * **False Positives**: Justify explicitly using a `//nolint:gosec -- <reason>` comment (with both `#nosec` and `//nolint:gosec` headers) on the exact warning line. Do not narrow the scan scope or invent dummy rule IDs to bypass checks.
+> 
+> *Refer to [docs/changelog/security-fixes.md](docs/changelog/security-fixes.md) for specific G704, G705, and G706 fixes applied in the codebase.*
+
 ---
 
 ## Architecture Table
