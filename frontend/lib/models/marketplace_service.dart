@@ -34,8 +34,10 @@ class MarketplaceService {
       name: serviceJson['name'] ?? '',
       category: serviceJson['category'] ?? '',
       basePrice: (serviceJson['base_price'] as num?)?.toDouble() ?? 0.0,
-      tenantBasePrice: (serviceJson['tenant_base_price'] as num?)?.toDouble() ?? 0.0,
-      tenantPricePerKM: (serviceJson['tenant_price_per_km'] as num?)?.toDouble() ?? 0.0,
+      tenantBasePrice:
+          (serviceJson['tenant_base_price'] as num?)?.toDouble() ?? 0.0,
+      tenantPricePerKM:
+          (serviceJson['tenant_price_per_km'] as num?)?.toDouble() ?? 0.0,
       latitude: (serviceJson['latitude'] as num?)?.toDouble() ?? 0.0,
       longitude: (serviceJson['longitude'] as num?)?.toDouble() ?? 0.0,
       distanceKM: (json['distance_km'] as num?)?.toDouble() ?? 0.0,

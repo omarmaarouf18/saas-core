@@ -21,9 +21,9 @@ class ChatMessage {
   }
 
   Map<String, dynamic> toJson() => {
-    'channel': channel,
-    'sender_id': senderId,
-    'content': content,
-    'type': type,
-  };
+        'channel': channel,
+        'sender_id': senderId,
+        'content': content,
+        'type': type,
+      };
 }

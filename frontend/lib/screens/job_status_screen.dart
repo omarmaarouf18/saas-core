@@ -59,7 +59,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       });
 
       // Stop polling if the job is completed or cancelled
-      if (_currentJob.status == 'completed' || _currentJob.status == 'cancelled') {
+      if (_currentJob.status == 'completed' ||
+          _currentJob.status == 'cancelled') {
         _pollingTimer?.cancel();
       }
     } else if (mounted) {
@@ -126,7 +127,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
                   )
                 : const Icon(Icons.refresh),
             onPressed: () => _refreshJobStatus(),
@@ -141,7 +143,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             // Status Banner Card
             Card(
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               color: statusColor.withOpacity(0.08),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -168,7 +171,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                     const SizedBox(height: 6),
                     Text(
                       "Job ID: ${_currentJob.id}",
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     ),
                   ],
                 ),
@@ -180,7 +184,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             if (!isCancelled) ...[
               Card(
                 elevation: 1,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
@@ -188,7 +193,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                     children: [
                       const Text(
                         "Live Tracking",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 20),
                       _buildStepRow(
@@ -224,7 +230,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             // Job details info
             Card(
               elevation: 1,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
@@ -232,26 +239,31 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   children: [
                     const Text(
                       "Job Details",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
-                    _buildInfoRow("Payment Method", _currentJob.paymentMethod.toUpperCase()),
+                    _buildInfoRow("Payment Method",
+                        _currentJob.paymentMethod.toUpperCase()),
                     _buildInfoRow("Service ID", _currentJob.serviceId),
                     _buildInfoRow(
                       "Destination",
                       "${_currentJob.location.latitude.toStringAsFixed(4)}, ${_currentJob.location.longitude.toStringAsFixed(4)}",
                     ),
                     if (_currentJob.employeeId != null)
-                      _buildInfoRow("Assigned Employee ID", _currentJob.employeeId!),
+                      _buildInfoRow(
+                          "Assigned Employee ID", _currentJob.employeeId!),
                     if (isCancelled && _currentJob.cancellationReason != null)
-                      _buildInfoRow("Cancellation Reason", _currentJob.cancellationReason!),
+                      _buildInfoRow("Cancellation Reason",
+                          _currentJob.cancellationReason!),
                     const Divider(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
                           "Total Charge (COD)",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                         Text(
                           "\$${_currentJob.lockedEscrowAmount ?? '0.00'}",
@@ -379,7 +391,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+          Text(label,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
           const SizedBox(width: 16),
           Expanded(
             child: Text(

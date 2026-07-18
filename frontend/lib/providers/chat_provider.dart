@@ -45,9 +45,11 @@ class ChatProvider extends ChangeNotifier {
           'token': token,
         },
       );
-      
+
       if (res is List) {
-        _messages = res.map((m) => ChatMessage.fromJson(m as Map<String, dynamic>)).toList();
+        _messages = res
+            .map((m) => ChatMessage.fromJson(m as Map<String, dynamic>))
+            .toList();
       }
     } catch (e) {
       _error = e.toString().replaceFirst("ApiClientException: ", "");
@@ -69,7 +71,7 @@ class ChatProvider extends ChangeNotifier {
 
   void _connect() {
     if (_currentToken == null || _currentJobId == null) return;
-    
+
     _isConnecting = true;
     _isConnected = false;
     _error = null;
@@ -77,8 +79,9 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
 
     final wsUrl = apiClient.baseUrl
-        .replaceFirst('https://', 'wss://')
-        .replaceFirst('http://', 'ws://') + '/chat/ws?token=$_currentToken';
+            .replaceFirst('https://', 'wss://')
+            .replaceFirst('http://', 'ws://') +
+        '/chat/ws?token=$_currentToken';
 
     try {
       _webSocketSubscription?.cancel();
@@ -133,7 +136,7 @@ class ChatProvider extends ChangeNotifier {
       } else if (type == 'error') {
         final errorVal = map['error'];
         final messageVal = map['message'] ?? errorVal;
-        
+
         if (errorVal == 'not authorized for this channel') {
           _subscriptionError = 'not authorized for this channel';
           // Since it's a security/auth rejection, do not auto-reconnect

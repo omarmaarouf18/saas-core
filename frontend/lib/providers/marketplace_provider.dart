@@ -43,7 +43,9 @@ class MarketplaceProvider extends ChangeNotifier {
 
       if (res is Map && res.containsKey('services')) {
         final list = res['services'] as List<dynamic>? ?? [];
-        _services = list.map((s) => MarketplaceService.fromJson(s as Map<String, dynamic>)).toList();
+        _services = list
+            .map((s) => MarketplaceService.fromJson(s as Map<String, dynamic>))
+            .toList();
       } else {
         _services = [];
       }

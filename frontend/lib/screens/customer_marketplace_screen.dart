@@ -10,15 +10,19 @@ class CustomerMarketplaceScreen extends StatefulWidget {
   const CustomerMarketplaceScreen({super.key});
 
   @override
-  State<CustomerMarketplaceScreen> createState() => _CustomerMarketplaceScreenState();
+  State<CustomerMarketplaceScreen> createState() =>
+      _CustomerMarketplaceScreenState();
 }
 
 class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
-  final _latController = TextEditingController(text: "30.0444"); // default Cairo lat
-  final _lonController = TextEditingController(text: "31.2357"); // default Cairo lon
+  final _latController =
+      TextEditingController(text: "30.0444"); // default Cairo lat
+  final _lonController =
+      TextEditingController(text: "31.2357"); // default Cairo lon
   final _radiusController = TextEditingController(text: "50"); // default radius
-  
-  String _selectedCategory = 'all'; // 'all', 'delivery', 'transport', 'shipping'
+
+  String _selectedCategory =
+      'all'; // 'all', 'delivery', 'transport', 'shipping'
   String _sortBy = 'price'; // 'price' or 'none'
   bool _nearBy = true;
 
@@ -73,7 +77,9 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
     // Filter services client-side by category if not 'all'
     final filteredServices = _selectedCategory == 'all'
         ? marketplace.services
-        : marketplace.services.where((s) => s.category == _selectedCategory).toList();
+        : marketplace.services
+            .where((s) => s.category == _selectedCategory)
+            .toList();
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
@@ -97,7 +103,8 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
           Card(
             margin: const EdgeInsets.all(12),
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             child: Padding(
               padding: const EdgeInsets.all(12.0),
               child: Column(
@@ -114,7 +121,8 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                             isDense: true,
                             border: OutlineInputBorder(),
                           ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -126,7 +134,8 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                             isDense: true,
                             border: OutlineInputBorder(),
                           ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -157,7 +166,8 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                             border: OutlineInputBorder(),
                           ),
                           items: [
-                            const DropdownMenuItem(value: 'all', child: Text("All Categories")),
+                            const DropdownMenuItem(
+                                value: 'all', child: Text("All Categories")),
                             ...serviceCategoryLabels.entries.map(
                               (entry) => DropdownMenuItem(
                                 value: entry.key,
@@ -185,8 +195,10 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                             border: OutlineInputBorder(),
                           ),
                           items: const [
-                            DropdownMenuItem(value: 'price', child: Text("Price")),
-                            DropdownMenuItem(value: 'none', child: Text("None")),
+                            DropdownMenuItem(
+                                value: 'price', child: Text("Price")),
+                            DropdownMenuItem(
+                                value: 'none', child: Text("None")),
                           ],
                           onChanged: (val) {
                             if (val != null) {
@@ -202,8 +214,10 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                       ElevatedButton(
                         onPressed: _loadServices,
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 14, horizontal: 16),
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
                         ),
                         child: const Icon(Icons.search, color: Colors.white),
                       ),
@@ -222,11 +236,13 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
+                            Icon(Icons.search_off,
+                                size: 64, color: Colors.grey.shade400),
                             const SizedBox(height: 16),
                             Text(
                               "No services found nearby.",
-                              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                              style: TextStyle(
+                                  fontSize: 16, color: Colors.grey.shade600),
                             ),
                           ],
                         ),
@@ -236,26 +252,35 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         itemCount: filteredServices.length,
                         itemBuilder: (context, index) {
                           final service = filteredServices[index];
-                          final categoryLabel = serviceCategoryLabels[service.category] ?? service.category;
+                          final categoryLabel =
+                              serviceCategoryLabels[service.category] ??
+                                  service.category;
 
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
                             elevation: 1,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
                             child: Padding(
                               padding: const EdgeInsets.all(16.0),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   CircleAvatar(
-                                    backgroundColor: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
-                                    foregroundColor: Theme.of(context).colorScheme.primary,
-                                    child: Icon(_getCategoryIcon(service.category)),
+                                    backgroundColor: Theme.of(context)
+                                        .colorScheme
+                                        .secondary
+                                        .withOpacity(0.2),
+                                    foregroundColor:
+                                        Theme.of(context).colorScheme.primary,
+                                    child: Icon(
+                                        _getCategoryIcon(service.category)),
                                   ),
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           service.name,
@@ -268,37 +293,52 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                                         Row(
                                           children: [
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 2),
                                               decoration: BoxDecoration(
-                                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(4),
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary
+                                                    .withOpacity(0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
                                               ),
                                               child: Text(
                                                 categoryLabel,
                                                 style: TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.bold,
-                                                  color: Theme.of(context).colorScheme.primary,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .primary,
                                                 ),
                                               ),
                                             ),
                                             const SizedBox(width: 8),
                                             Text(
                                               "${service.distanceKM} km away",
-                                              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                                              style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                  fontSize: 13),
                                             ),
                                           ],
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
                                           "Base: \$${service.tenantBasePrice} + \$${service.tenantPricePerKM}/km",
-                                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                                          style: TextStyle(
+                                              color: Colors.grey.shade600,
+                                              fontSize: 13),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           "Est. Price: \$${service.finalPrice}",
                                           style: TextStyle(
-                                            color: Theme.of(context).colorScheme.secondary,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .secondary,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 16,
                                           ),
@@ -308,11 +348,18 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   ElevatedButton(
-                                    onPressed: () => _showBookingDialog(context, service, auth.token!),
+                                    onPressed: () => _showBookingDialog(
+                                        context, service, auth.token!),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Theme.of(context).colorScheme.secondary,
-                                      foregroundColor: Theme.of(context).colorScheme.onSecondary,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .secondary,
+                                      foregroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .onSecondary,
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8)),
                                     ),
                                     child: const Text("Book"),
                                   ),
@@ -328,7 +375,8 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
     );
   }
 
-  void _showBookingDialog(BuildContext context, MarketplaceService service, String userToken) {
+  void _showBookingDialog(
+      BuildContext context, MarketplaceService service, String userToken) {
     showDialog(
       context: context,
       builder: (dialogCtx) {
@@ -404,7 +452,8 @@ class _BookingDialogState extends State<_BookingDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final categoryLabel = serviceCategoryLabels[widget.service.category] ?? widget.service.category;
+    final categoryLabel = serviceCategoryLabels[widget.service.category] ??
+        widget.service.category;
     return AlertDialog(
       title: const Text("Confirm Booking"),
       content: SingleChildScrollView(
@@ -417,7 +466,8 @@ class _BookingDialogState extends State<_BookingDialog> {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
-            Text("Category: $categoryLabel", style: TextStyle(color: Colors.grey.shade600)),
+            Text("Category: $categoryLabel",
+                style: TextStyle(color: Colors.grey.shade600)),
             const SizedBox(height: 12),
             const Divider(),
             const SizedBox(height: 8),
@@ -435,7 +485,8 @@ class _BookingDialogState extends State<_BookingDialog> {
                 const Text("Estimated Total:"),
                 Text(
                   "\$${widget.service.finalPrice}",
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ],
             ),
@@ -451,7 +502,8 @@ class _BookingDialogState extends State<_BookingDialog> {
               groupValue: "cod",
               onChanged: null, // disabled to force selection
               title: const Text("Cash on Delivery (COD)"),
-              subtitle: const Text("Pay in cash directly to the driver upon arrival"),
+              subtitle:
+                  const Text("Pay in cash directly to the driver upon arrival"),
               dense: true,
               contentPadding: EdgeInsets.zero,
             ),
@@ -486,7 +538,8 @@ class _BookingDialogState extends State<_BookingDialog> {
               ? const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
               : const Text("Confirm & Request"),
         ),

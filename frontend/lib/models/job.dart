@@ -12,9 +12,9 @@ class JobLocation {
   }
 
   Map<String, dynamic> toJson() => {
-    'latitude': latitude,
-    'longitude': longitude,
-  };
+        'latitude': latitude,
+        'longitude': longitude,
+      };
 }
 
 class Job {
@@ -63,8 +63,12 @@ class Job {
       paymentMethod: json['payment_method'] ?? '',
       cancellationReason: json['cancellation_reason'],
       lockedEscrowAmount: (json['locked_escrow_amount'] as num?)?.toDouble(),
-      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at']) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'])
+          : null,
     );
   }
 }

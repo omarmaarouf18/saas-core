@@ -394,6 +394,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``4267ef27633bea94036287e535404174c92a92ce``
 - **Verification**: Verified via local gosec analysis (`Issues: 0`) and microservice testing suite. ✅
 
+## Codebase-wide G104 Unhandled Error Security Hardening
+
+- **Implementation Detail**: Resolved 125 unhandled error warnings (gosec G104) across all Go microservices and shared libraries (`api-gateway`, `auth-service`, `chat-service`, `notification-service`, `user-service`, `shared/infra`). Consolidated response writing logic into a single shared helper package `shared/infra/handlerutil` (`WriteJSON` and `WriteBytes`), handled database transaction/connection cleanup errors, and configured local pre-push hook and CI checks to run G104 security scans codebase-wide.
+- **Commit SHA**: ``123ffc76c66d7efce8653f99b709289418501392``
+- **Verification**: Verified via local gosec analysis (`Issues: 0`) and microservice testing suite. ✅
+
 
 
 

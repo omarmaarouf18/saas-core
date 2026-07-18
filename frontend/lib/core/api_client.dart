@@ -18,9 +18,9 @@ bool bypassBadCertificate(X509Certificate cert, String host, int port) {
   // Strictly gate self-signed trust to local development / debug builds
   return kDebugMode &&
       (host == 'localhost' ||
-       host == '127.0.0.1' ||
-       host == '10.0.2.2' ||
-       host == '10.0.3.2');
+          host == '127.0.0.1' ||
+          host == '10.0.2.2' ||
+          host == '10.0.3.2');
 }
 
 class ApiClient {
@@ -65,7 +65,8 @@ class ApiClient {
       return _handleResponse(response);
     } catch (e) {
       if (e is ApiClientException) rethrow;
-      throw ApiClientException("Network error: Please check your internet connection.");
+      throw ApiClientException(
+          "Network error: Please check your internet connection.");
     }
   }
 
@@ -82,7 +83,8 @@ class ApiClient {
       return _handleResponse(response);
     } catch (e) {
       if (e is ApiClientException) rethrow;
-      throw ApiClientException("Network error: Please check your internet connection.");
+      throw ApiClientException(
+          "Network error: Please check your internet connection.");
     }
   }
 
@@ -103,7 +105,8 @@ class ApiClient {
       if (body is Map) {
         errorMsg = body['error'] ?? body['message'];
       }
-      throw ApiClientException(errorMsg ?? 'Request failed', statusCode: response.statusCode);
+      throw ApiClientException(errorMsg ?? 'Request failed',
+          statusCode: response.statusCode);
     }
   }
 }

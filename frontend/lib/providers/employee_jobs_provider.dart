@@ -25,12 +25,14 @@ class EmployeeJobsProvider extends ChangeNotifier {
         '/users/jobs/get',
         queryParams: {'requester_id': employeeToken},
       );
-      
+
       if (res is List) {
-        _jobs = res.map((j) => Job.fromJson(j as Map<String, dynamic>)).toList();
+        _jobs =
+            res.map((j) => Job.fromJson(j as Map<String, dynamic>)).toList();
       } else if (res is Map && res.containsKey('jobs')) {
         final list = res['jobs'] as List<dynamic>? ?? [];
-        _jobs = list.map((j) => Job.fromJson(j as Map<String, dynamic>)).toList();
+        _jobs =
+            list.map((j) => Job.fromJson(j as Map<String, dynamic>)).toList();
       } else if (res is Map) {
         // Single job response handled gracefully, but we expect list
         _jobs = [Job.fromJson(res as Map<String, dynamic>)];

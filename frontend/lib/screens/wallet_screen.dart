@@ -18,7 +18,9 @@ class _WalletScreenState extends State<WalletScreen> {
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
-      body: ownerProvider.isLoading && ownerProvider.ledgerEntries.isEmpty && ownerProvider.walletBalance == 0.0
+      body: ownerProvider.isLoading &&
+              ownerProvider.ledgerEntries.isEmpty &&
+              ownerProvider.walletBalance == 0.0
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: () async {
@@ -47,12 +49,15 @@ class _WalletScreenState extends State<WalletScreen> {
                           icon: const Icon(Icons.add_card_rounded),
                           label: const Text("Deposit Funds"),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onPrimary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                           ),
                         ),
                       ],
@@ -117,7 +122,8 @@ class _WalletScreenState extends State<WalletScreen> {
                           child: Center(
                             child: Column(
                               children: [
-                                Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey.shade400),
+                                Icon(Icons.receipt_long_outlined,
+                                    size: 48, color: Colors.grey.shade400),
                                 const SizedBox(height: 16),
                                 Text(
                                   "No transactions recorded yet.",
@@ -137,7 +143,8 @@ class _WalletScreenState extends State<WalletScreen> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: ownerProvider.ledgerEntries.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 10),
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           // The ledger list returned is already in chronological order or reverse.
                           // Ensure we render it as-is (we can reverse it on display if the backend is oldest-first).
@@ -213,7 +220,7 @@ class _WalletScreenState extends State<WalletScreen> {
     final balanceAfter = (entry['balance_after'] as num?)?.toDouble() ?? 0.0;
     final description = entry['description'] ?? '';
     final jobId = entry['job_id'] ?? '';
-    
+
     DateTime? timestamp;
     if (entry['timestamp'] != null) {
       try {
@@ -295,9 +302,13 @@ class _WalletScreenState extends State<WalletScreen> {
                       if (jobId.isNotEmpty) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withOpacity(0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -323,7 +334,9 @@ class _WalletScreenState extends State<WalletScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
-                    color: type == 'deposit' || type == 'refund' || type == 'escrow_release'
+                    color: type == 'deposit' ||
+                            type == 'refund' ||
+                            type == 'escrow_release'
                         ? Colors.green.shade700
                         : Colors.red.shade700,
                   ),
@@ -361,7 +374,8 @@ class _WalletScreenState extends State<WalletScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               title: const Text(
                 "Deposit Funds",
                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -379,7 +393,8 @@ class _WalletScreenState extends State<WalletScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: amountController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
                         labelText: "Amount (Credits)",
                         prefixText: "\$ ",
@@ -410,7 +425,8 @@ class _WalletScreenState extends State<WalletScreen> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.error_outline_rounded, color: Colors.red.shade700, size: 20),
+                            Icon(Icons.error_outline_rounded,
+                                color: Colors.red.shade700, size: 20),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -431,7 +447,8 @@ class _WalletScreenState extends State<WalletScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: isSubmitting ? null : () => Navigator.of(context).pop(),
+                  onPressed:
+                      isSubmitting ? null : () => Navigator.of(context).pop(),
                   child: const Text("Cancel"),
                 ),
                 ElevatedButton(
@@ -445,13 +462,15 @@ class _WalletScreenState extends State<WalletScreen> {
                             });
 
                             try {
-                              final amount = double.parse(amountController.text);
+                              final amount =
+                                  double.parse(amountController.text);
                               await ownerProvider.deposit(auth.token!, amount);
                               if (context.mounted) {
                                 Navigator.of(context).pop();
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text("Successfully deposited ${amount.toStringAsFixed(2)} credits."),
+                                    content: Text(
+                                        "Successfully deposited ${amount.toStringAsFixed(2)} credits."),
                                     backgroundColor: Colors.green,
                                   ),
                                 );
@@ -460,8 +479,10 @@ class _WalletScreenState extends State<WalletScreen> {
                               setDialogState(() {
                                 isSubmitting = false;
                                 final errMsg = e.toString();
-                                if (errMsg.contains("payment gateway not yet integrated")) {
-                                  dialogError = "Deposits aren't available yet — payment gateway integration pending";
+                                if (errMsg.contains(
+                                    "payment gateway not yet integrated")) {
+                                  dialogError =
+                                      "Deposits aren't available yet — payment gateway integration pending";
                                 } else {
                                   dialogError = errMsg;
                                 }

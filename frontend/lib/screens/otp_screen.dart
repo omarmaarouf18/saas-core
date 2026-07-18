@@ -37,7 +37,7 @@ class _OtpScreenState extends State<OtpScreen> {
   Future<void> _resendCode() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final newDevOtp = await auth.resendOtp(widget.email);
-    
+
     if (!mounted) return;
 
     if (auth.error != null) {
@@ -65,7 +65,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final otp = _otpController.text.trim();
 
@@ -91,7 +91,7 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-    
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
@@ -155,8 +155,10 @@ class _OtpScreenState extends State<OtpScreen> {
                       letterSpacing: 8,
                     ),
                     validator: (val) {
-                      if (val == null || val.trim().isEmpty) return "Please enter the OTP";
-                      if (val.trim().length != 6) return "OTP must be exactly 6 digits";
+                      if (val == null || val.trim().isEmpty)
+                        return "Please enter the OTP";
+                      if (val.trim().length != 6)
+                        return "OTP must be exactly 6 digits";
                       return null;
                     },
                   ),
@@ -171,7 +173,8 @@ class _OtpScreenState extends State<OtpScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.bug_report_outlined, color: Colors.amber),
+                          const Icon(Icons.bug_report_outlined,
+                              color: Colors.amber),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(

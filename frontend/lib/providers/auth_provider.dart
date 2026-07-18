@@ -156,8 +156,8 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _handleAuthSuccess(
-      String token, String id, String email, String role, String? kycStatus) async {
+  Future<void> _handleAuthSuccess(String token, String id, String email,
+      String role, String? kycStatus) async {
     _token = token;
     _user = UserProfile(
       id: id,

@@ -26,7 +26,7 @@ void main() {
   if (kDebugMode) {
     HttpOverrides.global = DevHttpOverrides();
   }
-  
+
   final apiClient = ApiClient();
 
   runApp(
@@ -49,7 +49,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-    
+
     return MaterialApp(
       title: 'Quick Delivery',
       theme: quickDeliveryTheme,

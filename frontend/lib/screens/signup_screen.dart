@@ -25,7 +25,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final email = _emailController.text.trim();
     final password = _passwordController.text;
@@ -52,7 +52,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-    
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       body: Center(
@@ -94,7 +94,8 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     keyboardType: TextInputType.emailAddress,
                     validator: (val) {
-                      if (val == null || val.trim().isEmpty) return "Please enter an email";
+                      if (val == null || val.trim().isEmpty)
+                        return "Please enter an email";
                       if (!val.contains("@")) return "Invalid email address";
                       return null;
                     },
@@ -109,8 +110,10 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     obscureText: true,
                     validator: (val) {
-                      if (val == null || val.isEmpty) return "Please enter a password";
-                      if (val.length < 6) return "Password must be at least 6 characters";
+                      if (val == null || val.isEmpty)
+                        return "Please enter a password";
+                      if (val.length < 6)
+                        return "Password must be at least 6 characters";
                       return null;
                     },
                   ),
@@ -123,8 +126,10 @@ class _SignupScreenState extends State<SignupScreen> {
                       prefixIcon: Icon(Icons.badge_outlined),
                     ),
                     items: const [
-                      DropdownMenuItem(value: "owner", child: Text("Business Owner")),
-                      DropdownMenuItem(value: "user", child: Text("Customer / Client")),
+                      DropdownMenuItem(
+                          value: "owner", child: Text("Business Owner")),
+                      DropdownMenuItem(
+                          value: "user", child: Text("Customer / Client")),
                     ],
                     onChanged: (val) {
                       if (val != null) {

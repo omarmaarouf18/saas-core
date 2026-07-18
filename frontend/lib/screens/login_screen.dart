@@ -26,7 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final email = _emailController.text.trim();
     final password = _passwordController.text;
@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-    
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       body: Center(
@@ -108,7 +108,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     keyboardType: TextInputType.emailAddress,
                     validator: (val) {
-                      if (val == null || val.trim().isEmpty) return "Please enter an email";
+                      if (val == null || val.trim().isEmpty)
+                        return "Please enter an email";
                       if (!val.contains("@")) return "Invalid email address";
                       return null;
                     },
@@ -123,7 +124,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     obscureText: true,
                     validator: (val) {
-                      if (val == null || val.isEmpty) return "Please enter a password";
+                      if (val == null || val.isEmpty)
+                        return "Please enter a password";
                       return null;
                     },
                   ),

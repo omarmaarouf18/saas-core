@@ -11,7 +11,8 @@ class EmployeeScreen extends StatefulWidget {
   State<EmployeeScreen> createState() => _EmployeeScreenState();
 }
 
-class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProviderStateMixin {
+class _EmployeeScreenState extends State<EmployeeScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _registerFormKey = GlobalKey<FormState>();
   final _toggleFormKey = GlobalKey<FormState>();
@@ -89,7 +90,9 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
               indicatorColor: Theme.of(context).colorScheme.primary,
               tabs: const [
                 Tab(icon: Icon(Icons.people_outline), text: "Manage Workers"),
-                Tab(icon: Icon(Icons.receipt_long_outlined), text: "Audit Trail"),
+                Tab(
+                    icon: Icon(Icons.receipt_long_outlined),
+                    text: "Audit Trail"),
               ],
             ),
           ),
@@ -116,7 +119,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
         children: [
           // 1. Register Employee Form
           Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(20.0),
               child: Form(
@@ -126,7 +130,10 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                   children: [
                     Text(
                       "Register New Employee",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary),
                     ),
                     const Divider(height: 24),
                     TextFormField(
@@ -138,8 +145,10 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                         prefixIcon: Icon(Icons.email_outlined),
                       ),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) return "Email is required";
-                        if (!value.contains("@")) return "Invalid email address";
+                        if (value == null || value.trim().isEmpty)
+                          return "Email is required";
+                        if (!value.contains("@"))
+                          return "Invalid email address";
                         return null;
                       },
                     ),
@@ -153,8 +162,10 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                         prefixIcon: Icon(Icons.lock_outline),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty) return "Password is required";
-                        if (value.length < 6) return "Password must be at least 6 characters";
+                        if (value == null || value.isEmpty)
+                          return "Password is required";
+                        if (value.length < 6)
+                          return "Password must be at least 6 characters";
                         return null;
                       },
                     ),
@@ -173,7 +184,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                                     // Convention: Uses RAW owner ID (auth.user!.id) as 'owner_id' JSON body parameter.
                                     // Why: /auth/signup validates the owner's existence via direct GetByID lookup.
                                     // ---------------------------------------------------------------------------
-                                    final res = await ownerProvider.registerEmployee(
+                                    final res =
+                                        await ownerProvider.registerEmployee(
                                       email: _regEmailController.text.trim(),
                                       password: _regPasswordController.text,
                                       ownerId: auth.user!.id,
@@ -184,7 +196,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                                       _regPasswordController.clear();
                                       _showSuccessDialog(
                                         title: "Employee Registered",
-                                        message: "Successfully created employee account:\n"
+                                        message:
+                                            "Successfully created employee account:\n"
                                             "Email: ${res['email'] ?? ''}\n"
                                             "ID: ${res['user_id'] ?? ''}\n\n"
                                             "This account has no 2FA (auto-confirmed) and is ready for direct login.",
@@ -192,7 +205,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                                     }
                                   } catch (e) {
                                     if (mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         SnackBar(
                                           content: Text(e.toString()),
                                           backgroundColor: Colors.red,
@@ -200,7 +214,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                                       );
                                     }
                                   } finally {
-                                    if (mounted) setState(() => _isRegSubmitting = false);
+                                    if (mounted)
+                                      setState(() => _isRegSubmitting = false);
                                   }
                                 }
                               },
@@ -209,14 +224,18 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
                               )
                             : const Text("Register Worker"),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
                         ),
                       ),
                     ),
@@ -229,7 +248,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
 
           // 2. Freeze/Activate Toggle Form
           Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(20.0),
               child: Form(
@@ -239,7 +259,10 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                   children: [
                     Text(
                       "Freeze / Activate Worker Account",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary),
                     ),
                     const Divider(height: 24),
                     TextFormField(
@@ -251,7 +274,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                         prefixIcon: Icon(Icons.email_outlined),
                       ),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) return "Employee email is required";
+                        if (value == null || value.trim().isEmpty)
+                          return "Employee email is required";
                         return null;
                       },
                     ),
@@ -261,19 +285,28 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                       children: [
                         const Text(
                           "Account Status Setting:",
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w500),
                         ),
                         ChoiceChip(
                           label: Text(_togSetActive ? "ACTIVE" : "FREEZE"),
                           selected: true,
-                          selectedColor: _togSetActive ? Colors.green.shade100 : Colors.red.shade100,
+                          selectedColor: _togSetActive
+                              ? Colors.green.shade100
+                              : Colors.red.shade100,
                           labelStyle: TextStyle(
-                            color: _togSetActive ? Colors.green.shade800 : Colors.red.shade800,
+                            color: _togSetActive
+                                ? Colors.green.shade800
+                                : Colors.red.shade800,
                             fontWeight: FontWeight.bold,
                           ),
                           avatar: Icon(
-                            _togSetActive ? Icons.check_circle_outline : Icons.block_flipped,
-                            color: _togSetActive ? Colors.green.shade800 : Colors.red.shade800,
+                            _togSetActive
+                                ? Icons.check_circle_outline
+                                : Icons.block_flipped,
+                            color: _togSetActive
+                                ? Colors.green.shade800
+                                : Colors.red.shade800,
                             size: 18,
                           ),
                           onSelected: (_) {
@@ -290,12 +323,14 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                       obscureText: true,
                       decoration: const InputDecoration(
                         labelText: "Confirm Owner Password",
-                        helperText: "Required for secure out-of-band operations verification.",
+                        helperText:
+                            "Required for secure out-of-band operations verification.",
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.vpn_key_outlined),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty) return "Owner password is required to re-authenticate";
+                        if (value == null || value.isEmpty)
+                          return "Owner password is required to re-authenticate";
                         return null;
                       },
                     ),
@@ -314,10 +349,13 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                                     // Convention: Uses owner email and owner password (re-auth) in JSON body.
                                     // Why: /auth/employee/toggle re-verifies the owner password via bcrypt.
                                     // ---------------------------------------------------------------------------
-                                    final res = await ownerProvider.toggleEmployee(
-                                      employeeEmail: _togEmailController.text.trim(),
+                                    final res =
+                                        await ownerProvider.toggleEmployee(
+                                      employeeEmail:
+                                          _togEmailController.text.trim(),
                                       ownerEmail: auth.user!.email,
-                                      ownerPassword: _togPasswordController.text,
+                                      ownerPassword:
+                                          _togPasswordController.text,
                                       setActive: _togSetActive,
                                     );
 
@@ -325,12 +363,14 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                                       _togPasswordController.clear();
                                       _showSuccessDialog(
                                         title: "Worker Status Updated",
-                                        message: res['message'] ?? "Successfully changed status.",
+                                        message: res['message'] ??
+                                            "Successfully changed status.",
                                       );
                                     }
                                   } catch (e) {
                                     if (mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         SnackBar(
                                           content: Text(e.toString()),
                                           backgroundColor: Colors.red,
@@ -338,23 +378,32 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                                       );
                                     }
                                   } finally {
-                                    if (mounted) setState(() => _isTogSubmitting = false);
+                                    if (mounted)
+                                      setState(() => _isTogSubmitting = false);
                                   }
                                 }
                               },
-                        icon: Icon(_togSetActive ? Icons.check_circle_outline : Icons.block_flipped),
+                        icon: Icon(_togSetActive
+                            ? Icons.check_circle_outline
+                            : Icons.block_flipped),
                         label: _isTogSubmitting
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
                               )
-                            : Text(_togSetActive ? "Unfreeze Worker" : "Freeze Worker"),
+                            : Text(_togSetActive
+                                ? "Unfreeze Worker"
+                                : "Freeze Worker"),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _togSetActive ? Colors.green.shade700 : Colors.red.shade700,
+                          backgroundColor: _togSetActive
+                              ? Colors.green.shade700
+                              : Colors.red.shade700,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
                         ),
                       ),
                     ),
@@ -377,17 +426,23 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
             onRefresh: _refreshAuditLog,
             child: ListView.builder(
               padding: const EdgeInsets.all(24.0),
-              itemCount: ownerProvider.auditLogEntries.isEmpty ? 1 : ownerProvider.auditLogEntries.length,
+              itemCount: ownerProvider.auditLogEntries.isEmpty
+                  ? 1
+                  : ownerProvider.auditLogEntries.length,
               itemBuilder: (context, index) {
                 if (ownerProvider.auditLogEntries.isEmpty) {
                   return Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     child: const Padding(
                       padding: EdgeInsets.all(40.0),
                       child: Center(
                         child: Text(
                           "No audit events recorded for this tenant.",
-                          style: TextStyle(fontSize: 15, color: Colors.grey, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w500),
                         ),
                       ),
                     ),
@@ -399,7 +454,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                 final action = entry['action'] ?? '';
                 final employeeId = entry['employee_id'] ?? '';
                 final clientIp = entry['client_ip'] ?? '';
-                
+
                 DateTime? timestamp;
                 if (entry['timestamp'] != null) {
                   try {
@@ -413,7 +468,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                   elevation: 1,
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
@@ -425,11 +481,15 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                           children: [
                             Text(
                               action.toString().toUpperCase(),
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 14),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontSize: 14),
                             ),
                             Text(
                               dateStr,
-                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                              style: const TextStyle(
+                                  fontSize: 11, color: Colors.grey),
                             ),
                           ],
                         ),
@@ -442,12 +502,17 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                               children: [
                                 Text(
                                   "Worker ID:",
-                                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade500),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   employeeId,
-                                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.black87),
+                                  style: const TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontSize: 12,
+                                      color: Colors.black87),
                                 ),
                               ],
                             ),
@@ -456,12 +521,15 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
                               children: [
                                 Text(
                                   "IP Address:",
-                                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade500),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   clientIp,
-                                  style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                  style: const TextStyle(
+                                      fontSize: 12, color: Colors.black87),
                                 ),
                               ],
                             ),
@@ -483,7 +551,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> with SingleTickerProvid
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Row(
             children: [
               const Icon(Icons.check_circle_outline, color: Colors.green),

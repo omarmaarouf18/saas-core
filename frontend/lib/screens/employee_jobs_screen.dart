@@ -73,12 +73,14 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
         if (errorMsg.contains("employee account is frozen")) {
           _showErrorDialog(
             title: "Account Frozen",
-            message: "Operation Denied: Your employee account has been frozen by the tenant administrator. Please contact your manager to resolve this issue.",
+            message:
+                "Operation Denied: Your employee account has been frozen by the tenant administrator. Please contact your manager to resolve this issue.",
           );
         } else if (errorMsg.contains("owner KYC approval is pending")) {
           _showErrorDialog(
             title: "KYC Approval Pending",
-            message: "Operation Denied: The business owner's KYC verification is still pending. All simulated field operations are blocked until the owner is approved by a super administrator.",
+            message:
+                "Operation Denied: The business owner's KYC verification is still pending. All simulated field operations are blocked until the owner is approved by a super administrator.",
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -101,10 +103,12 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Row(
             children: [
-              Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
+              Icon(Icons.error_outline,
+                  color: Theme.of(context).colorScheme.error),
               const SizedBox(width: 8),
               Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
             ],
@@ -265,7 +269,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 runSpacing: 4,
                 children: _suggestions.map((suggestion) {
                   return ActionChip(
-                    label: Text(suggestion, style: const TextStyle(fontSize: 12)),
+                    label:
+                        Text(suggestion, style: const TextStyle(fontSize: 12)),
                     onPressed: () {
                       setState(() {
                         _actionController.text = suggestion;
@@ -273,7 +278,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                     },
                     backgroundColor: Colors.grey.shade200,
                     side: BorderSide.none,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
                   );
                 }).toList(),
               ),
@@ -287,14 +293,16 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
                         )
                       : const Text("Simulate Action"),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
               ),
@@ -403,7 +411,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(20),
@@ -438,7 +447,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               "Payment Method",
               job.paymentMethod.toUpperCase(),
             ),
-            if (job.lockedEscrowAmount != null && job.lockedEscrowAmount! > 0) ...[
+            if (job.lockedEscrowAmount != null &&
+                job.lockedEscrowAmount! > 0) ...[
               const SizedBox(height: 10),
               _buildJobDetailRow(
                 Icons.lock_clock_outlined,
@@ -446,7 +456,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 "${job.lockedEscrowAmount!.toStringAsFixed(2)} Credits",
               ),
             ],
-            if (job.cancellationReason != null && job.cancellationReason!.isNotEmpty) ...[
+            if (job.cancellationReason != null &&
+                job.cancellationReason!.isNotEmpty) ...[
               const SizedBox(height: 12),
               Container(
                 width: double.infinity,

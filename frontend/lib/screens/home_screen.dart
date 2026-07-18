@@ -46,7 +46,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final isOwner = user.role == "owner";
-    final isKycPending = isOwner && user.kycStatus == "pending_super_admin_approval";
+    final isKycPending =
+        isOwner && user.kycStatus == "pending_super_admin_approval";
 
     if (!isOwner) {
       if (user.role == 'employee') {
@@ -70,7 +71,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 await auth.logout();
                 if (context.mounted) {
                   Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const LoginScreen()),
                   );
                 }
               },
@@ -165,7 +167,8 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: const [
-                  Icon(Icons.warning_amber_rounded, color: Colors.white, size: 28),
+                  Icon(Icons.warning_amber_rounded,
+                      color: Colors.white, size: 28),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(

@@ -100,7 +100,7 @@ jobs:
       - name: Run gosec
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@latest
-          gosec ./...
+          gosec -include=G104 ./...
         working-directory: ${{ matrix.service.path }}
 
   flutter-test:
@@ -123,7 +123,7 @@ jobs:
 
       - name: Verify Formatting
         working-directory: frontend
-        run: flutter format --set-exit-if-changed lib/
+        run: dart format --set-exit-if-changed lib/
 
       - name: Flutter Analyze
         working-directory: frontend

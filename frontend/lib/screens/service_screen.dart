@@ -36,7 +36,8 @@ class _ServiceScreenState extends State<ServiceScreen> {
 
     final isKycApproved = user.kycStatus == "approved";
     // Filter services belonging to this tenant/owner
-    final myServices = owner.services.where((s) => s['tenant_id'] == user.id).toList();
+    final myServices =
+        owner.services.where((s) => s['tenant_id'] == user.id).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -57,12 +58,15 @@ class _ServiceScreenState extends State<ServiceScreen> {
                       padding: const EdgeInsets.all(12),
                       child: Row(
                         children: [
-                          const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                          const Icon(Icons.warning_amber_rounded,
+                              color: Colors.orange),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               "KYC Approval Pending: You cannot publish new services until your profile is approved by an administrator.",
-                              style: TextStyle(color: Colors.orange.shade900, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  color: Colors.orange.shade900,
+                                  fontWeight: FontWeight.bold),
                             ),
                           ),
                         ],
@@ -78,7 +82,8 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                 child: Text(
                                   "No services configured yet.\nTap the + button to create a service.",
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                                  style: TextStyle(
+                                      fontSize: 16, color: Colors.grey),
                                 ),
                               ),
                             ],
@@ -89,7 +94,9 @@ class _ServiceScreenState extends State<ServiceScreen> {
                             itemCount: myServices.length,
                             itemBuilder: (context, index) {
                               final svc = myServices[index];
-                              final categoryLabel = serviceCategoryLabels[svc['category']] ?? svc['category'];
+                              final categoryLabel =
+                                  serviceCategoryLabels[svc['category']] ??
+                                      svc['category'];
                               return Card(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 shape: RoundedRectangleBorder(
@@ -99,10 +106,12 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                 child: Padding(
                                   padding: const EdgeInsets.all(16),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
                                             svc['name'] ?? '',
@@ -113,30 +122,41 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                           ),
                                           Chip(
                                             label: Text(categoryLabel),
-                                            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                            labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
+                                            backgroundColor: Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                                .withOpacity(0.1),
+                                            labelStyle: TextStyle(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary),
                                           ),
                                         ],
                                       ),
                                       const Divider(),
                                       const SizedBox(height: 8),
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
                                             "Base Price: \$${(svc['tenant_base_price'] as num?)?.toStringAsFixed(2) ?? '0.00'}",
-                                            style: const TextStyle(fontSize: 14),
+                                            style:
+                                                const TextStyle(fontSize: 14),
                                           ),
                                           Text(
                                             "Rate per KM: \$${(svc['tenant_price_per_km'] as num?)?.toStringAsFixed(2) ?? '0.00'}",
-                                            style: const TextStyle(fontSize: 14),
+                                            style:
+                                                const TextStyle(fontSize: 14),
                                           ),
                                         ],
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
                                         "Coordinates: (${(svc['latitude'] as num?)?.toStringAsFixed(4) ?? '0.0000'}, ${(svc['longitude'] as num?)?.toStringAsFixed(4) ?? '0.0000'})",
-                                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600),
                                       ),
                                     ],
                                   ),
@@ -149,9 +169,15 @@ class _ServiceScreenState extends State<ServiceScreen> {
               ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: isKycApproved ? () => _showCreateServiceDialog(context, user.id) : null,
-        backgroundColor: isKycApproved ? Theme.of(context).colorScheme.secondary : Colors.grey,
-        foregroundColor: isKycApproved ? Theme.of(context).colorScheme.onSecondary : Colors.white,
+        onPressed: isKycApproved
+            ? () => _showCreateServiceDialog(context, user.id)
+            : null,
+        backgroundColor: isKycApproved
+            ? Theme.of(context).colorScheme.secondary
+            : Colors.grey,
+        foregroundColor: isKycApproved
+            ? Theme.of(context).colorScheme.onSecondary
+            : Colors.white,
         tooltip: isKycApproved ? "Add Service" : "KYC Pending",
         child: const Icon(Icons.add),
       ),
@@ -163,7 +189,8 @@ class _ServiceScreenState extends State<ServiceScreen> {
     final nameController = TextEditingController();
     final basePriceController = TextEditingController();
     final pricePerKMController = TextEditingController();
-    final latController = TextEditingController(text: "30.0444"); // Cairo default
+    final latController =
+        TextEditingController(text: "30.0444"); // Cairo default
     final lonController = TextEditingController(text: "31.2357");
 
     String selectedCategory = 'delivery';
@@ -183,13 +210,18 @@ class _ServiceScreenState extends State<ServiceScreen> {
                     children: [
                       TextFormField(
                         controller: nameController,
-                        decoration: const InputDecoration(labelText: "Service Name"),
-                        validator: (value) => value == null || value.trim().isEmpty ? "Name is required" : null,
+                        decoration:
+                            const InputDecoration(labelText: "Service Name"),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                                ? "Name is required"
+                                : null,
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
                         value: selectedCategory,
-                        decoration: const InputDecoration(labelText: "Category"),
+                        decoration:
+                            const InputDecoration(labelText: "Category"),
                         items: serviceCategoryLabels.entries.map((entry) {
                           return DropdownMenuItem<String>(
                             value: entry.key,
@@ -207,10 +239,13 @@ class _ServiceScreenState extends State<ServiceScreen> {
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: basePriceController,
-                        decoration: const InputDecoration(labelText: "Base Price (\$)"),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration:
+                            const InputDecoration(labelText: "Base Price (\$)"),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         validator: (value) {
-                          if (value == null || value.isEmpty) return "Base price is required";
+                          if (value == null || value.isEmpty)
+                            return "Base price is required";
                           final val = double.tryParse(value);
                           if (val == null || val < 0) return "Invalid price";
                           return null;
@@ -219,10 +254,13 @@ class _ServiceScreenState extends State<ServiceScreen> {
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: pricePerKMController,
-                        decoration: const InputDecoration(labelText: "Rate per KM (\$)"),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                            labelText: "Rate per KM (\$)"),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         validator: (value) {
-                          if (value == null || value.isEmpty) return "Rate is required";
+                          if (value == null || value.isEmpty)
+                            return "Rate is required";
                           final val = double.tryParse(value);
                           if (val == null || val < 0) return "Invalid rate";
                           return null;
@@ -231,24 +269,30 @@ class _ServiceScreenState extends State<ServiceScreen> {
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: latController,
-                        decoration: const InputDecoration(labelText: "Latitude"),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration:
+                            const InputDecoration(labelText: "Latitude"),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         validator: (value) {
                           if (value == null || value.isEmpty) return "Required";
                           final val = double.tryParse(value);
-                          if (val == null || val < -90.0 || val > 90.0) return "Must be between -90 and 90";
+                          if (val == null || val < -90.0 || val > 90.0)
+                            return "Must be between -90 and 90";
                           return null;
                         },
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: lonController,
-                        decoration: const InputDecoration(labelText: "Longitude"),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration:
+                            const InputDecoration(labelText: "Longitude"),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         validator: (value) {
                           if (value == null || value.isEmpty) return "Required";
                           final val = double.tryParse(value);
-                          if (val == null || val < -180.0 || val > 180.0) return "Must be between -180 and 180";
+                          if (val == null || val < -180.0 || val > 180.0)
+                            return "Must be between -180 and 180";
                           return null;
                         },
                       ),
@@ -264,13 +308,16 @@ class _ServiceScreenState extends State<ServiceScreen> {
                 ElevatedButton(
                   onPressed: () async {
                     if (formKey.currentState?.validate() ?? false) {
-                      final provider = Provider.of<OwnerProvider>(context, listen: false);
+                      final provider =
+                          Provider.of<OwnerProvider>(context, listen: false);
                       try {
                         await provider.createService(
                           name: nameController.text.trim(),
                           category: selectedCategory,
-                          tenantBasePrice: double.parse(basePriceController.text),
-                          tenantPricePerKM: double.parse(pricePerKMController.text),
+                          tenantBasePrice:
+                              double.parse(basePriceController.text),
+                          tenantPricePerKM:
+                              double.parse(pricePerKMController.text),
                           latitude: double.parse(latController.text),
                           longitude: double.parse(lonController.text),
                           ownerId: ownerId,
@@ -278,13 +325,15 @@ class _ServiceScreenState extends State<ServiceScreen> {
                         if (context.mounted) {
                           Navigator.of(context).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Service created successfully!")),
+                            const SnackBar(
+                                content: Text("Service created successfully!")),
                           );
                         }
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Failed to create service: $e")),
+                            SnackBar(
+                                content: Text("Failed to create service: $e")),
                           );
                         }
                       }
