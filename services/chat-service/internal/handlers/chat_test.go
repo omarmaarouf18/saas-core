@@ -205,8 +205,8 @@ func TestGetHistoryAccessControl(t *testing.T) {
 	chatHandler := NewChat(nil, mongoStore, cfg2, rdb2)
 
 	// Pre-seed some cache to bypass auth-service lookup
-	chatHandler.tokenCache["job-owner-id"] = time.Now().Add(60 * time.Second)
-	chatHandler.tokenCache["stranger-id"] = time.Now().Add(60 * time.Second)
+	chatHandler.tokenCache["job-owner-id"] = cachedToken{expiry: time.Now().Add(60 * time.Second), username: "owner_username"}
+	chatHandler.tokenCache["stranger-id"] = cachedToken{expiry: time.Now().Add(60 * time.Second), username: "stranger_username"}
 
 	tokenOwner, _ := jwtutil.GenerateToken("job-owner-id", "owner", "tenant-1", "owner@example.com")
 	tokenStranger, _ := jwtutil.GenerateToken("stranger-id", "user", "tenant-1", "stranger@example.com")
@@ -966,7 +966,7 @@ func TestChatExtraGapsWebSocketFlows(t *testing.T) {
 	}
 
 	// Retrieve history using GET /chat/history
-	c.tokenCache["owner-1"] = time.Now().Add(60 * time.Second)
+	c.tokenCache["owner-1"] = cachedToken{expiry: time.Now().Add(60 * time.Second), username: "owner_username"}
 	reqHist := httptest.NewRequest("GET", "/chat/history?channel=job:valid-job-123&requester_id="+tokenOwner1, nil)
 	recHist := httptest.NewRecorder()
 	c.GetHistory(recHist, reqHist)
@@ -1038,4 +1038,120 @@ func TestChatExtraGapsWebSocketFlows(t *testing.T) {
 			t.Error("Found unauthorized message in chat history database store directly!")
 		}
 	}
+}
+
+func TestPersistedMessageSenderUsername(t *testing.T) {
+	c, mongoStore, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	msg := &chat.Message{
+		Channel:        "job:test-job",
+		SenderID:       "user-sender-123",
+		SenderUsername: "sender_user",
+		Content:        "Hello there",
+		Type:           "message",
+	}
+
+	err := mongoStore.PersistMessage(ctx, msg)
+	if err != nil {
+		t.Fatalf("failed to persist message: %v", err)
+	}
+
+	history, err := mongoStore.GetHistory(ctx, "job:test-job", 10)
+	if err != nil {
+		t.Fatalf("failed to get history: %v", err)
+	}
+
+	if len(history) != 1 {
+		t.Fatalf("expected 1 message in history, got %d", len(history))
+	}
+
+	if history[0].SenderUsername != "sender_user" {
+		t.Errorf("expected sender_username to be 'sender_user', got %q", history[0].SenderUsername)
+	}
+}
+
+func TestReconnectionCachingBehavior(t *testing.T) {
+	c, _, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	var callCount int
+	var mu sync.Mutex
+
+	mockAuth := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		callCount++
+		mu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"id":         "user-cache-123",
+			"username":   "cache_username",
+			"role":       "owner",
+			"kyc_status": "approved",
+		})
+	}))
+	defer mockAuth.Close()
+
+	c.authServiceURL = mockAuth.URL
+
+	// 1. First connection / verification -> must call auth-service
+	active, username, err := c.verifyToken("user-cache-123")
+	if err != nil {
+		t.Fatalf("verifyToken failed: %v", err)
+	}
+	if !active || username != "cache_username" {
+		t.Fatalf("expected active and username 'cache_username', got %v, %q", active, username)
+	}
+
+	mu.Lock()
+	if callCount != 1 {
+		t.Errorf("expected 1 auth-service call, got %d", callCount)
+	}
+	mu.Unlock()
+
+	// 2. Second verification within TTL (60s) -> should reuse cache and NOT call auth-service
+	active2, username2, err := c.verifyToken("user-cache-123")
+	if err != nil {
+		t.Fatalf("verifyToken 2 failed: %v", err)
+	}
+	if !active2 || username2 != "cache_username" {
+		t.Fatalf("expected active and username 'cache_username', got %v, %q", active2, username2)
+	}
+
+	mu.Lock()
+	if callCount != 1 {
+		t.Errorf("expected callCount to remain 1 (cached), got %d", callCount)
+	}
+	mu.Unlock()
+
+	// 3. Manually expire/modify cache to simulate TTL expiration
+	c.tokenCacheMu.Lock()
+	entry := c.tokenCache["user-cache-123"]
+	entry.expiry = time.Now().Add(-1 * time.Second) // expired
+	c.tokenCache["user-cache-123"] = entry
+	c.tokenCacheMu.Unlock()
+
+	// 4. Verification after TTL expiration -> must call auth-service again
+	active3, username3, err := c.verifyToken("user-cache-123")
+	if err != nil {
+		t.Fatalf("verifyToken 3 failed: %v", err)
+	}
+	if !active3 || username3 != "cache_username" {
+		t.Fatalf("expected active and username 'cache_username', got %v, %q", active3, username3)
+	}
+
+	mu.Lock()
+	if callCount != 2 {
+		t.Errorf("expected callCount to increment to 2 (expired cache), got %d", callCount)
+	}
+	mu.Unlock()
 }

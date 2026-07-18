@@ -84,7 +84,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 The detailed project history is distributed across categorized changelog files. Please consult the specific category files for complete details (including file/line references, commit SHAs, and verification details):
 
 *   [Security Fixes](docs/changelog/security-fixes.md) — 66 vulnerabilities found and fixed (including Owner-Authenticated Employee Provisioning, see [ADR-0001](docs/adr/0001-owner-authenticated-employee-provisioning.md), Employee Assignment Tenant Binding, see [ADR-0003](docs/adr/0003-employee-assignment-tenant-binding-check.md), and Customer Booking Employee Pre-Assignment Gating, see [ADR-0004](docs/adr/0004-customer-booking-employee-assignment-order.md)).
-*   [New Features](docs/changelog/new-features.md) — 20 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters).
+*   [New Features](docs/changelog/new-features.md) — 22 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters, username propagation).
 *   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 24 tooling, CI, module refactoring, and onboarding CLI tools.
 *   [Bug Fixes](docs/changelog/bug-fixes.md) — 12 corrections to existing non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic, signup rollback on OTP set failure, resilience client connection leak).
 *   [Documentation](docs/changelog/documentation.md) — 6 documentation-only updates (e.g. Application Map, Audit Correction, Auto-Doc System, DESIGN.md Link Alignment).
@@ -166,7 +166,7 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Completed codebase-wide full-scope gosec audit and security hardening. Restored CI pipeline to full-scope unfiltered gosec scan, mitigated potential path traversal in auth-service document storage upload and open paths, configured ReadHeaderTimeout on HTTP servers (user-service and chat-service) to address Slowloris vectors (G112), and added explicit gosec exception justifications (gosec G118, G304, G306, G404, G703, G704, G706) across all microservices and shared libraries. Next step: proceed with Phase 3 employee dashboard and audit simulator.
+* **Immediate Next Step**: Completed username propagation across `auth-service` and `chat-service` including point-in-time snapshot design for `sender_username` in persisted chat messages, updated corresponding integration tests, and regenerated documentation via docgen. Pending review and commit.
 
 
 

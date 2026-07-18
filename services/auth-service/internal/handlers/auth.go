@@ -860,6 +860,7 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 		"id":         user.ID,
 		"email":      user.Email,
 		"role":       user.Role,
+		"username":   user.Username,
 		"tenant_id":  user.TenantID,
 		"kyc_status": user.KYCStatus,
 		"is_active":  user.IsActive,
@@ -1279,6 +1280,7 @@ func (a *Auth) GetPendingKYBKYESubmissions(w http.ResponseWriter, r *http.Reques
 	type Submission struct {
 		UserID           string           `json:"user_id"`
 		Email            string           `json:"email"`
+		Username         string           `json:"username"`
 		Role             models.Role      `json:"role"`
 		KYCStatus        models.KYCStatus `json:"kyc_status,omitempty"`
 		KYEStatus        models.KYCStatus `json:"kye_status,omitempty"`
@@ -1294,6 +1296,7 @@ func (a *Auth) GetPendingKYBKYESubmissions(w http.ResponseWriter, r *http.Reques
 		sub := Submission{
 			UserID:    u.ID,
 			Email:     u.Email,
+			Username:  u.Username,
 			Role:      u.Role,
 			KYCStatus: u.KYCStatus,
 			KYEStatus: u.KYEStatus,

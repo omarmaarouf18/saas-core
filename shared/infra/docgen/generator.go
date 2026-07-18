@@ -115,7 +115,7 @@ var KnownEndpoints = map[string]struct {
 	},
 	"GET /auth/kyb-kye/pending": {
 		Permissions: "Reviewer Token & `X-Internal-Token`",
-		Function:    "Fetches pending KYB verification submissions.",
+		Function:    "Fetches pending KYB verification submissions (including username).",
 		Targets:     "Reads `users` and `reviewers` collections.",
 	},
 	"POST /auth/kyb-kye/review": {
@@ -130,7 +130,7 @@ var KnownEndpoints = map[string]struct {
 	},
 	"GET /auth/user": {
 		Permissions: "`X-Internal-Token` OR User JWT",
-		Function:    "Resolves user profile and role details.",
+		Function:    "Resolves user profile (including username) and role details.",
 		Targets:     "Reads `users` collection.",
 	},
 
@@ -152,7 +152,7 @@ var KnownEndpoints = map[string]struct {
 	},
 	"GET /chat/history": {
 		Permissions: "Channel Member JWT",
-		Function:    "Retrieves channel chat history.",
+		Function:    "Retrieves channel chat history (containing sender_username point-in-time snapshot).",
 		Targets:     "Reads `chat_messages` collection. Downstream: calls `user-service/users/jobs/get`.",
 	},
 	"POST /chat/internal/broadcast-location": {

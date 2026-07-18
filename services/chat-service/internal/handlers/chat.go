@@ -49,7 +49,7 @@ type Chat struct {
 	store                *store.MongoDB
 	authServiceURL       string
 	userServiceURL       string
-	tokenCache           map[string]time.Time
+	tokenCache           map[string]cachedToken
 	tokenCacheMu         sync.Mutex
 	limiter              *handlerutil.RateLimiter
 	internalServiceToken string
@@ -87,7 +87,7 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Cli
 		store:                s,
 		authServiceURL:       cfg.AuthServiceURL,
 		userServiceURL:       cfg.UserServiceURL,
-		tokenCache:           make(map[string]time.Time),
+		tokenCache:           make(map[string]cachedToken),
 		limiter:              handlerutil.NewRateLimiter(rl),
 		internalServiceToken: cfg.InternalServiceToken,
 		allowedOrigin:        allowedOrigin,
@@ -108,17 +108,29 @@ func (c *Chat) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/chat/tickets/resolve", c.HandleResolveTicket)
 }
 
-func (c *Chat) verifyToken(id string) (bool, error) {
+type cachedToken struct {
+	expiry   time.Time
+	username string
+}
+
+// verifyToken checks if the user is active/valid in auth-service and retrieves their username.
+// Cache Reconnection & Simultaneous Connection behavior:
+// - Querying auth-service's GetUser once per WebSocket connection caches the username in memory for 60 seconds.
+// - If the same user connects simultaneously from another tab/device or reconnects after a disconnect:
+//   - If within 60 seconds: verifyToken returns the cached username immediately, bypassing the auth-service HTTP request.
+//   - If after 60 seconds: verifyToken fetches the latest username from auth-service, updating the cache.
+//     This prevents hitting auth-service repeatedly during reconnection loops or simultaneous logins while allowing updates to propagate.
+func (c *Chat) verifyToken(id string) (bool, string, error) {
 	if id == "" {
-		return false, nil
+		return false, "", nil
 	}
 
 	c.tokenCacheMu.Lock()
-	expiry, found := c.tokenCache[id]
+	cached, found := c.tokenCache[id]
 	c.tokenCacheMu.Unlock()
 
-	if found && time.Now().Before(expiry) {
-		return true, nil
+	if found && time.Now().Before(cached.expiry) {
+		return true, cached.username, nil
 	}
 
 	// Verify against auth-service (internal service-to-service call)
@@ -127,29 +139,32 @@ func (c *Chat) verifyToken(id string) (bool, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("[CHAT] Error building auth-service request: %v", err)
-		return false, err
+		return false, "", err
 	}
 	req.Header.Set("X-Internal-Token", c.internalServiceToken)
 	resp, err := c.authClient.Do(req)
 	if err != nil {
 		log.Printf("[CHAT] Error calling auth-service: %v", err)
-		return false, err
+		return false, "", err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
 		var user struct {
-			ID string `json:"id"`
+			ID       string `json:"id"`
+			Username string `json:"username"`
 		}
 		if err := json.NewDecoder(resp.Body).Decode(&user); err == nil && user.ID != "" {
 			c.tokenCacheMu.Lock()
-			c.tokenCache[id] = time.Now().Add(60 * time.Second)
+			c.tokenCache[id] = cachedToken{
+				expiry:   time.Now().Add(60 * time.Second),
+				username: user.Username,
+			}
 			c.tokenCacheMu.Unlock()
-			return true, nil
+			return true, user.Username, nil
 		}
 	}
-
-	return false, nil
+	return false, "", nil
 }
 
 func (c *Chat) canAccessChannel(userID, channel string) (bool, error) {
@@ -220,9 +235,14 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var userID string
+	var username string
 	agent, err := c.store.GetAgentByToken(r.Context(), token)
 	if err == nil && agent != nil {
+		// NOTE: Support agents are system operator identities stored in the support_agents collection,
+		// which does not have a profile or username field. Reusing "Agent " + agent.ID is intentional
+		// as system support operators do not have an associated models.User account.
 		userID = agent.ID
+		username = "Agent " + agent.ID
 	} else {
 		// 1. Primary trust boundary: Validate JWT token signature and expiry locally
 		claims, err := jwtutil.ValidateToken(token)
@@ -232,7 +252,7 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// 2. Secondary trust boundary: verify against auth-service (using user ID)
-		active, err := c.verifyToken(claims.UserID)
+		active, uname, err := c.verifyToken(claims.UserID)
 		if err != nil {
 			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
 				"error":   "service_unavailable",
@@ -245,6 +265,7 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		userID = claims.UserID
+		username = uname
 	}
 
 	// Upgrade HTTP → WebSocket.
@@ -265,6 +286,7 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	// Create a new hub client.
 	client := &chat.Client{
 		ID:       userID,
+		Username: username,
 		Channels: make(map[string]bool),
 		Send:     make(chan []byte, 256),
 	}
@@ -315,7 +337,7 @@ func (c *Chat) GetHistory(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		active, err := c.verifyToken(claims.UserID)
+		active, _, err := c.verifyToken(claims.UserID)
 		if err != nil {
 			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
 				"error":   "service_unavailable",
@@ -485,11 +507,15 @@ func (c *Chat) readPump(conn *websocket.Conn, client *chat.Client) {
 					continue
 				}
 
+				// Capture point-in-time snapshot of the username at send-time (not live-resolved later).
+				// Consistent with Slack/Discord design, if the username changes in the future,
+				// historical messages will still display the username that was active when sent.
 				chatMsg := &chat.Message{
-					Channel:  msg.Channel,
-					SenderID: client.ID,
-					Content:  msg.Content,
-					Type:     "message",
+					Channel:        msg.Channel,
+					SenderID:       client.ID,
+					SenderUsername: client.Username,
+					Content:        msg.Content,
+					Type:           "message",
 				}
 
 				// Persist message to MongoDB store

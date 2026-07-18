@@ -466,6 +466,13 @@ func TestAuthHandlers(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected 200 OK for GetUser, got %d. Body: %s", rec.Code, rec.Body.String())
 	}
+	var getUserResp map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &getUserResp); err != nil {
+		t.Fatalf("Failed to decode GetUser response: %v", err)
+	}
+	if getUserResp["username"] != "owner_username" {
+		t.Errorf("Expected username to be 'owner_username', got %v", getUserResp["username"])
+	}
 
 	// Test GetUser (Success path via internal service token)
 	req = httptest.NewRequest("GET", "/auth/user?id="+empUserID, nil)
@@ -656,6 +663,7 @@ func TestKYBKYEUploadAndReview(t *testing.T) {
 
 	var pendingList []struct {
 		UserID     string `json:"user_id"`
+		Username   string `json:"username"`
 		IDFrontURL string `json:"id_front_url"`
 	}
 	if err := json.NewDecoder(rec.Body).Decode(&pendingList); err != nil {
@@ -663,6 +671,9 @@ func TestKYBKYEUploadAndReview(t *testing.T) {
 	}
 	if len(pendingList) != 1 || pendingList[0].UserID != owner.ID {
 		t.Errorf("Expected pending list to contain owner, got: %+v", pendingList)
+	}
+	if pendingList[0].Username != owner.Username {
+		t.Errorf("Expected pending list owner username to be %q, got %q", owner.Username, pendingList[0].Username)
 	}
 
 	// 4. Test document viewing
@@ -2060,4 +2071,111 @@ func TestSignupUsernameValidation(t *testing.T) {
 			t.Errorf("expected error message to contain 'email already registered', got: %s", rec3.Body.String())
 		}
 	})
+}
+
+func TestGetUserUsernameResponse(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		t.Skip("setup failed")
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	user := &models.User{
+		ID:          "test-user-user-123",
+		Email:       "propagate_user@example.com",
+		Username:    "propagate_username",
+		Password:    "hashedpass",
+		Role:        models.RoleUser,
+		IsActive:    true,
+		IsConfirmed: true,
+	}
+	if err := s.CreateUser(ctx, user); err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	token, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email)
+	if err != nil {
+		t.Fatalf("failed to generate token: %v", err)
+	}
+
+	req := httptest.NewRequest("GET", "/auth/user?id="+token, nil)
+	rec := httptest.NewRecorder()
+	a.GetUser(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	var res map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+		t.Fatalf("failed to decode: %v", err)
+	}
+
+	if res["username"] != "propagate_username" {
+		t.Errorf("expected username 'propagate_username', got %v", res["username"])
+	}
+}
+
+func TestGetPendingSubmissionsUsername(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		t.Skip("setup failed")
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	user := &models.User{
+		ID:          "pending-user-123",
+		Email:       "pending_propagate@example.com",
+		Username:    "pending_username",
+		Password:    "hashedpass",
+		Role:        models.RoleOwner,
+		IsActive:    true,
+		IsConfirmed: true,
+		KYCStatus:   models.KYCPendingApproval,
+		IDFrontDoc:  "id_front_test.png",
+	}
+	if err := s.CreateUser(ctx, user); err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	reviewer := &models.Reviewer{
+		ID:    "reviewer_test_propagation",
+		Name:  "Test Reviewer",
+		Token: "reviewer-token-prop",
+	}
+	if err := s.AddReviewer(ctx, reviewer); err != nil {
+		t.Fatalf("failed to add reviewer: %v", err)
+	}
+
+	req := httptest.NewRequest("GET", "/auth/kyb-kye/pending", nil)
+	req.Header.Set("X-Internal-Token", "mock-internal-token")
+	req.Header.Set("X-Reviewer-Token", reviewer.Token)
+	rec := httptest.NewRecorder()
+
+	a.GetPendingKYBKYESubmissions(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	var pendingList []struct {
+		UserID   string `json:"user_id"`
+		Username string `json:"username"`
+		Email    string `json:"email"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&pendingList); err != nil {
+		t.Fatalf("failed to decode pending submissions: %v", err)
+	}
+
+	if len(pendingList) != 1 {
+		t.Fatalf("expected 1 submission, got %d", len(pendingList))
+	}
+
+	if pendingList[0].Username != "pending_username" {
+		t.Errorf("expected username 'pending_username', got %q", pendingList[0].Username)
+	}
 }

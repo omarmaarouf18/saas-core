@@ -10,18 +10,20 @@ import (
 
 // Message represents a chat message flowing through the hub.
 type Message struct {
-	Channel    string   `json:"channel"`               // target channel name
-	SenderID   string   `json:"sender_id,omitempty"`   // mocked user identity from token
-	Content    string   `json:"content,omitempty"`     // message body
-	Type       string   `json:"type,omitempty"`        // "message", "join", "leave", "location_update"
-	Latitude   *float64 `json:"latitude,omitempty"`    // live tracking latitude
-	Longitude  *float64 `json:"longitude,omitempty"`   // live tracking longitude
-	EmployeeID string   `json:"employee_id,omitempty"` // live tracking employee id
+	Channel        string   `json:"channel"`                   // target channel name
+	SenderID       string   `json:"sender_id,omitempty"`       // mocked user identity from token
+	SenderUsername string   `json:"sender_username,omitempty"` // point-in-time snapshot username captured at send-time
+	Content        string   `json:"content,omitempty"`         // message body
+	Type           string   `json:"type,omitempty"`            // "message", "join", "leave", "location_update"
+	Latitude       *float64 `json:"latitude,omitempty"`        // live tracking latitude
+	Longitude      *float64 `json:"longitude,omitempty"`       // live tracking longitude
+	EmployeeID     string   `json:"employee_id,omitempty"`     // live tracking employee id
 }
 
 // Client represents a single WebSocket connection registered with the Hub.
 type Client struct {
 	ID       string          // unique connection ID (from token)
+	Username string          // point-in-time username of the client resolved at connection init time
 	Channels map[string]bool // channels this client is subscribed to
 	Send     chan []byte     // outbound message buffer
 }

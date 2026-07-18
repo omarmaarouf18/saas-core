@@ -134,12 +134,13 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 // PersistMessage stores a chat message in MongoDB
 func (s *MongoDB) PersistMessage(ctx context.Context, msg *chat.Message) error {
 	doc := bson.M{
-		"_id":       fmt.Sprintf("msg-%d", time.Now().UnixNano()),
-		"channel":   msg.Channel,
-		"sender_id": msg.SenderID,
-		"content":   msg.Content,
-		"type":      msg.Type,
-		"timestamp": time.Now().UTC(),
+		"_id":             fmt.Sprintf("msg-%d", time.Now().UnixNano()),
+		"channel":         msg.Channel,
+		"sender_id":       msg.SenderID,
+		"sender_username": msg.SenderUsername,
+		"content":         msg.Content,
+		"type":            msg.Type,
+		"timestamp":       time.Now().UTC(),
 	}
 
 	_, err := s.messages.InsertOne(ctx, doc)
@@ -167,10 +168,11 @@ func (s *MongoDB) GetHistory(ctx context.Context, channel string, limit int64) (
 	defer cursor.Close(ctx)
 
 	var dbMsgs []struct {
-		Channel  string `bson:"channel"`
-		SenderID string `bson:"sender_id"`
-		Content  string `bson:"content"`
-		Type     string `bson:"type"`
+		Channel        string `bson:"channel"`
+		SenderID       string `bson:"sender_id"`
+		SenderUsername string `bson:"sender_username"`
+		Content        string `bson:"content"`
+		Type           string `bson:"type"`
 	}
 	if err := cursor.All(ctx, &dbMsgs); err != nil {
 		return nil, fmt.Errorf("store: failed to decode messages: %w", err)
@@ -181,10 +183,11 @@ func (s *MongoDB) GetHistory(ctx context.Context, channel string, limit int64) (
 	res := make([]chat.Message, n)
 	for i, m := range dbMsgs {
 		res[n-1-i] = chat.Message{
-			Channel:  m.Channel,
-			SenderID: m.SenderID,
-			Content:  m.Content,
-			Type:     m.Type,
+			Channel:        m.Channel,
+			SenderID:       m.SenderID,
+			SenderUsername: m.SenderUsername,
+			Content:        m.Content,
+			Type:           m.Type,
 		}
 	}
 
