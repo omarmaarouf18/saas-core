@@ -66,6 +66,9 @@ func ShipSecurityEvent(ctx context.Context, eventType, service, actorID, tenantI
 		return
 	}
 
+	client := CwClient
+	logGroup := CwLogGroup
+
 	// #nosec G118 //nolint:gosec -- async security log shipping must outlive request context to prevent evasion
 	go func() {
 		shipCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -90,7 +93,7 @@ func ShipSecurityEvent(ctx context.Context, eventType, service, actorID, tenantI
 		logStream := service
 
 		input := &cloudwatchlogs.PutLogEventsInput{
-			LogGroupName:  aws.String(CwLogGroup),
+			LogGroupName:  aws.String(logGroup),
 			LogStreamName: aws.String(logStream),
 			LogEvents: []types.InputLogEvent{
 				{
@@ -100,17 +103,17 @@ func ShipSecurityEvent(ctx context.Context, eventType, service, actorID, tenantI
 			},
 		}
 
-		_, err = CwClient.PutLogEvents(shipCtx, input)
+		_, err = client.PutLogEvents(shipCtx, input)
 		if err != nil {
 			var nf *types.ResourceNotFoundException
 			if errors.As(err, &nf) {
-				_, errCreate := CwClient.CreateLogStream(shipCtx, &cloudwatchlogs.CreateLogStreamInput{
-					LogGroupName:  aws.String(CwLogGroup),
+				_, errCreate := client.CreateLogStream(shipCtx, &cloudwatchlogs.CreateLogStreamInput{
+					LogGroupName:  aws.String(logGroup),
 					LogStreamName: aws.String(logStream),
 				})
 				var alreadyExists *types.ResourceAlreadyExistsException
 				if errCreate == nil || errors.As(errCreate, &alreadyExists) {
-					_, err = CwClient.PutLogEvents(shipCtx, input)
+					_, err = client.PutLogEvents(shipCtx, input)
 				} else {
 					log.Printf("[SECURITY-SHIP-FAILED] failed to create log stream %s: %v", logStream, errCreate)
 					return
