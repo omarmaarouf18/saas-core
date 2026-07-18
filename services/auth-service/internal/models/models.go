@@ -35,6 +35,7 @@ const (
 type User struct {
 	ID               string    `json:"id"                        bson:"_id"`
 	Email            string    `json:"email"                     bson:"email"`
+	Username         string    `json:"username"                  bson:"username"`
 	Phone            string    `json:"phone,omitempty"           bson:"phone,omitempty"`
 	Password         string    `json:"-"                         bson:"password"`
 	Role             Role      `json:"role"                      bson:"role"`
@@ -60,6 +61,7 @@ type User struct {
 // SignupRequest is the expected JSON body for POST /auth/signup.
 type SignupRequest struct {
 	Email    string `json:"email"`
+	Username string `json:"username"`
 	Password string `json:"password"`
 	Role     Role   `json:"role"`
 	OwnerID  string `json:"owner_id,omitempty"` // required for employees (KYE binding)

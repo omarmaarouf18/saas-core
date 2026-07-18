@@ -258,6 +258,7 @@ func TestAuthHandlers(t *testing.T) {
 	// 1. Test Signup (Success path)
 	signupBody := models.SignupRequest{
 		Email:    "owner@example.com",
+		Username: "owner_username",
 		Password: "password123",
 		Role:     models.RoleOwner,
 	}
@@ -366,6 +367,7 @@ func TestAuthHandlers(t *testing.T) {
 	// (a) employee signup with no token -> rejected (401)
 	empSignupBody := models.SignupRequest{
 		Email:    "employee@example.com",
+		Username: "employee_username",
 		Password: "password123",
 		Role:     models.RoleEmployee,
 		OwnerID:  ownerID,
@@ -539,6 +541,7 @@ func TestKYBKYEUploadAndReview(t *testing.T) {
 	owner := &models.User{
 		ID:          "owner-user",
 		Email:       "owner@example.com",
+		Username:    "owner_user_username",
 		Password:    "password",
 		Role:        models.RoleOwner,
 		IsActive:    true,
@@ -549,6 +552,7 @@ func TestKYBKYEUploadAndReview(t *testing.T) {
 	employee := &models.User{
 		ID:          "employee-user",
 		Email:       "employee@example.com",
+		Username:    "employee_user_username",
 		Password:    "password",
 		Role:        models.RoleEmployee,
 		IsActive:    true,
@@ -836,6 +840,7 @@ func TestTokenRefresh(t *testing.T) {
 	testUser := &models.User{
 		ID:          "user_refresh_123",
 		Email:       "refresh123@example.com",
+		Username:    "refresh123_username",
 		Password:    "$2a$10$abcdefghijklmnopqrstuv", // Bcrypt format placeholder
 		Role:        models.RoleOwner,
 		TenantID:    "tenant_refresh_123",
@@ -949,6 +954,7 @@ func TestSignupRollbackOnOTPFailure(t *testing.T) {
 	// 1. Prepare signup request
 	signupBody := models.SignupRequest{
 		Email:    "rollback_test@example.com",
+		Username: "rollback_username",
 		Password: "password123",
 		Role:     models.RoleOwner,
 	}
@@ -998,6 +1004,7 @@ func TestGetPendingKYBKYESubmissions_StorageError(t *testing.T) {
 	user := &models.User{
 		ID:               "user_kyb_test_999",
 		Email:            "kyb_error_test@example.com",
+		Username:         "kyb_error_test_username",
 		Role:             models.RoleOwner,
 		KYCStatus:        models.KYCPendingApproval,
 		IDFrontDoc:       "id_front_999.png",
@@ -1152,6 +1159,7 @@ func TestOTPResendFlow(t *testing.T) {
 	// 1. Signup a new user
 	signupBody := models.SignupRequest{
 		Email:    "resend_flow_test@example.com",
+		Username: "resend_flow_username",
 		Password: "password123",
 		Role:     models.RoleUser,
 	}
@@ -1253,6 +1261,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 		user := &models.User{
 			ID:          "user_refresh_gap",
 			Email:       "refreshgap@example.com",
+			Username:    "refreshgap_username",
 			Password:    "$2a$10$abcdefghijklmnopqrstuv", // Bcrypt placeholder
 			Role:        models.RoleOwner,
 			TenantID:    "tenant_refresh_gap",
@@ -1298,6 +1307,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 		owner := &models.User{
 			ID:          "owner_prov",
 			Email:       "ownerprov@example.com",
+			Username:    "ownerprov_username",
 			Password:    "$2a$10$abcdefghijklmnopqrstuv",
 			Role:        models.RoleOwner,
 			TenantID:    "tenant_prov",
@@ -1312,6 +1322,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 		nonOwner := &models.User{
 			ID:          "user_non_owner",
 			Email:       "usernonowner@example.com",
+			Username:    "usernonowner_username",
 			Password:    "$2a$10$abcdefghijklmnopqrstuv",
 			Role:        models.RoleUser,
 			TenantID:    "tenant_prov",
@@ -1330,6 +1341,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 		t.Run("TokenUserIDMismatch", func(t *testing.T) {
 			signupReq := models.SignupRequest{
 				Email:    "emp_mismatch@example.com",
+				Username: "emp_mismatch_user",
 				Password: "password",
 				Role:     models.RoleEmployee,
 				OwnerID:  "different_owner_id",
@@ -1352,6 +1364,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 		t.Run("NonOwnerRoleToken", func(t *testing.T) {
 			signupReq := models.SignupRequest{
 				Email:    "emp_nonowner_role@example.com",
+				Username: "emp_nonowner_role_user",
 				Password: "password",
 				Role:     models.RoleEmployee,
 				OwnerID:  nonOwner.ID,
@@ -1375,6 +1388,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 			fakeToken, _ := jwtutil.GenerateToken("fake_owner_id", "owner", "fake_tenant", "fake@example.com")
 			signupReq := models.SignupRequest{
 				Email:    "emp_no_owner@example.com",
+				Username: "emp_no_owner_user",
 				Password: "password",
 				Role:     models.RoleEmployee,
 				OwnerID:  "fake_owner_id",
@@ -1398,6 +1412,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 			fakeToken, _ := jwtutil.GenerateToken(nonOwner.ID, "owner", nonOwner.TenantID, nonOwner.Email)
 			signupReq := models.SignupRequest{
 				Email:    "emp_not_owner_role@example.com",
+				Username: "emp_not_owner_role_user",
 				Password: "password",
 				Role:     models.RoleEmployee,
 				OwnerID:  nonOwner.ID,
@@ -1489,6 +1504,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 			user := &models.User{
 				ID:          "user_login_test",
 				Email:       "exist@example.com",
+				Username:    "exist_username",
 				Password:    string(hashedPass),
 				Role:        models.RoleOwner,
 				TenantID:    "tenant_login_test",
@@ -1540,6 +1556,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 			user := &models.User{
 				ID:          "user_otp_reuse",
 				Email:       email,
+				Username:    "otp_reuse_username",
 				Password:    "$2a$10$abcdefghijklmnopqrstuv",
 				Role:        models.RoleOwner,
 				TenantID:    "tenant_otp",
@@ -1599,6 +1616,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 			user := &models.User{
 				ID:          "user_otp_lockout",
 				Email:       email,
+				Username:    "otp_lockout_username",
 				Password:    "$2a$10$abcdefghijklmnopqrstuv",
 				Role:        models.RoleOwner,
 				TenantID:    "tenant_otp",
@@ -1643,6 +1661,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 		ownerA := &models.User{
 			ID:          "owner_a",
 			Email:       "owner_a@example.com",
+			Username:    "owner_a_username",
 			Password:    string(ownerAPass),
 			Role:        models.RoleOwner,
 			TenantID:    "tenant_a",
@@ -1657,6 +1676,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 		ownerB := &models.User{
 			ID:          "owner_b",
 			Email:       "owner_b@example.com",
+			Username:    "owner_b_username",
 			Password:    string(ownerBPass),
 			Role:        models.RoleOwner,
 			TenantID:    "tenant_b",
@@ -1670,6 +1690,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 		empA := &models.User{
 			ID:          "emp_a",
 			Email:       "emp_a@example.com",
+			Username:    "emp_a_username",
 			Password:    "$2a$10$abcdefghijklmnopqrstuv",
 			Role:        models.RoleEmployee,
 			TenantID:    "tenant_a",
@@ -1761,6 +1782,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 		user := &models.User{
 			ID:          "user_logout_gap",
 			Email:       "logoutgap@example.com",
+			Username:    "logoutgap_username",
 			Password:    "$2a$10$abcdefghijklmnopqrstuv",
 			Role:        models.RoleOwner,
 			TenantID:    "tenant_logout",
@@ -1833,5 +1855,209 @@ func TestAuth_ExtraGaps(t *testing.T) {
 				t.Errorf("expected 200 OK for way past expired token logout, got %d. Body: %s", rec.Code, rec.Body.String())
 			}
 		})
+	})
+}
+
+func TestSignupUsernameValidation(t *testing.T) {
+	a, _, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	t.Run("ValidUsernameSucceeds", func(t *testing.T) {
+		reqBody := models.SignupRequest{
+			Email:    "valid_username@example.com",
+			Username: "valid_username_123",
+			Password: "password123",
+			Role:     models.RoleUser,
+		}
+		b, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+		rec := httptest.NewRecorder()
+		a.Signup(rec, req)
+		if rec.Code != http.StatusCreated {
+			t.Errorf("expected 201 StatusCreated, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+	})
+
+	t.Run("MissingUsernameRejected", func(t *testing.T) {
+		reqBody := models.SignupRequest{
+			Email:    "missing_username@example.com",
+			Username: "",
+			Password: "password123",
+			Role:     models.RoleUser,
+		}
+		b, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+		rec := httptest.NewRecorder()
+		a.Signup(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 StatusBadRequest, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "username is required") {
+			t.Errorf("expected error message to contain 'username is required', got: %s", rec.Body.String())
+		}
+	})
+
+	t.Run("TooShortUsernameRejected", func(t *testing.T) {
+		reqBody := models.SignupRequest{
+			Email:    "tooshort@example.com",
+			Username: "ab",
+			Password: "password123",
+			Role:     models.RoleUser,
+		}
+		b, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+		rec := httptest.NewRecorder()
+		a.Signup(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 StatusBadRequest, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "username must be between 3 and 30 characters") {
+			t.Errorf("expected error message to contain 'username must be between 3 and 30 characters', got: %s", rec.Body.String())
+		}
+	})
+
+	t.Run("TooLongUsernameRejected", func(t *testing.T) {
+		reqBody := models.SignupRequest{
+			Email:    "toolong@example.com",
+			Username: "abcdefghijklmnopqrstuvwxyz12345", // 31 chars
+			Password: "password123",
+			Role:     models.RoleUser,
+		}
+		b, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+		rec := httptest.NewRecorder()
+		a.Signup(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 StatusBadRequest, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "username must be between 3 and 30 characters") {
+			t.Errorf("expected error message to contain 'username must be between 3 and 30 characters', got: %s", rec.Body.String())
+		}
+	})
+
+	t.Run("InvalidCharactersRejected", func(t *testing.T) {
+		reqBody := models.SignupRequest{
+			Email:    "invalidchars@example.com",
+			Username: "user@name!",
+			Password: "password123",
+			Role:     models.RoleUser,
+		}
+		b, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+		rec := httptest.NewRecorder()
+		a.Signup(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 StatusBadRequest, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "username contains invalid characters") {
+			t.Errorf("expected error message to contain 'username contains invalid characters', got: %s", rec.Body.String())
+		}
+	})
+
+	t.Run("ValidArabicUsernameSucceeds", func(t *testing.T) {
+		reqBody := models.SignupRequest{
+			Email:    "arabic_username@example.com",
+			Username: "أحمد محمد",
+			Password: "password123",
+			Role:     models.RoleUser,
+		}
+		b, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+		rec := httptest.NewRecorder()
+		a.Signup(rec, req)
+		if rec.Code != http.StatusCreated {
+			t.Errorf("expected 201 StatusCreated for Arabic username, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+	})
+
+	t.Run("MixedArabicEnglishUsernameSucceeds", func(t *testing.T) {
+		reqBody := models.SignupRequest{
+			Email:    "mixed_username@example.com",
+			Username: "Ahmed أحمد",
+			Password: "password123",
+			Role:     models.RoleUser,
+		}
+		b, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+		rec := httptest.NewRecorder()
+		a.Signup(rec, req)
+		if rec.Code != http.StatusCreated {
+			t.Errorf("expected 201 StatusCreated for mixed username, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+	})
+
+	t.Run("XSSUnsafeUsernameRejected", func(t *testing.T) {
+		reqBody := models.SignupRequest{
+			Email:    "xss_username@example.com",
+			Username: "<script>alert(1)</script>",
+			Password: "password123",
+			Role:     models.RoleUser,
+		}
+		b, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+		rec := httptest.NewRecorder()
+		a.Signup(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 StatusBadRequest for XSS script tag, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "username contains invalid characters") {
+			t.Errorf("expected error message to contain 'username contains invalid characters', got: %s", rec.Body.String())
+		}
+	})
+
+	t.Run("DuplicateUsernameRejected", func(t *testing.T) {
+		// First user signup: succeeds
+		reqBody1 := models.SignupRequest{
+			Email:    "user1@example.com",
+			Username: "unique_username",
+			Password: "password123",
+			Role:     models.RoleUser,
+		}
+		b1, _ := json.Marshal(reqBody1)
+		req1 := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b1))
+		rec1 := httptest.NewRecorder()
+		a.Signup(rec1, req1)
+		if rec1.Code != http.StatusCreated {
+			t.Fatalf("first signup failed: %d. Body: %s", rec1.Code, rec1.Body.String())
+		}
+
+		// Second user signup with duplicate username but different email: rejected with 409 and specific message
+		reqBody2 := models.SignupRequest{
+			Email:    "user2@example.com",
+			Username: "unique_username",
+			Password: "password123",
+			Role:     models.RoleUser,
+		}
+		b2, _ := json.Marshal(reqBody2)
+		req2 := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b2))
+		rec2 := httptest.NewRecorder()
+		a.Signup(rec2, req2)
+		if rec2.Code != http.StatusConflict {
+			t.Errorf("expected 409 StatusConflict for duplicate username, got %d. Body: %s", rec2.Code, rec2.Body.String())
+		}
+		if !strings.Contains(rec2.Body.String(), "username already taken") {
+			t.Errorf("expected error message to contain 'username already taken', got: %s", rec2.Body.String())
+		}
+
+		// Third user signup with same email but different username: rejected with 409 and specific message
+		reqBody3 := models.SignupRequest{
+			Email:    "user1@example.com",
+			Username: "different_username",
+			Password: "password123",
+			Role:     models.RoleUser,
+		}
+		b3, _ := json.Marshal(reqBody3)
+		req3 := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b3))
+		rec3 := httptest.NewRecorder()
+		a.Signup(rec3, req3)
+		if rec3.Code != http.StatusConflict {
+			t.Errorf("expected 409 StatusConflict for duplicate email, got %d. Body: %s", rec3.Code, rec3.Body.String())
+		}
+		if !strings.Contains(rec3.Body.String(), "email already registered") {
+			t.Errorf("expected error message to contain 'email already registered', got: %s", rec3.Body.String())
+		}
 	})
 }

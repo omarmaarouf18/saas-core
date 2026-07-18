@@ -7,6 +7,7 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -119,6 +120,15 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 		return fmt.Errorf("users email index: %w", err)
 	}
 
+	// Users: unique username index.
+	_, err = s.users.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: "username", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	})
+	if err != nil {
+		return fmt.Errorf("users username index: %w", err)
+	}
+
 	// Users: owner_id index for employee lookups.
 	_, err = s.users.Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.D{{Key: "owner_id", Value: 1}},
@@ -191,7 +201,10 @@ func (s *MongoDB) CreateUser(ctx context.Context, user *models.User) error {
 	_, err := s.users.InsertOne(ctx, user)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			return fmt.Errorf("user with email %q already exists", user.Email)
+			if strings.Contains(err.Error(), "username") {
+				return fmt.Errorf("username already taken")
+			}
+			return fmt.Errorf("email already registered")
 		}
 		return fmt.Errorf("store: insert user: %w", err)
 	}

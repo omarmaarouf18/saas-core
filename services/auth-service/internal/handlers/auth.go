@@ -139,6 +139,31 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Username == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "username is required",
+		})
+		return
+	}
+
+	runeCount := len([]rune(req.Username))
+	if runeCount < 3 || runeCount > 30 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "username must be between 3 and 30 characters",
+		})
+		return
+	}
+
+	// Accepts Latin and Arabic scripts, digits, underscore, and space; rejects other characters to reduce injection/XSS risk.
+	for _, r := range req.Username {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' || r == ' ' || (r >= 0x0600 && r <= 0x06FF)) {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "username contains invalid characters",
+			})
+			return
+		}
+	}
+
 	if !models.ValidRole(req.Role) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error":       "invalid role",
@@ -234,6 +259,7 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 	user := &models.User{
 		ID:          generateID(),
 		Email:       req.Email,
+		Username:    req.Username,
 		Password:    string(hashedPassword),
 		Role:        req.Role,
 		IsActive:    true, // Active by default
