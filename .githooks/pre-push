@@ -29,7 +29,7 @@ fi
 for mod in services/api-gateway services/auth-service services/chat-service \
            services/notification-service services/user-service shared/infra; do
   echo "-- checking $mod --"
-  (cd "$mod" && go build ./... && go vet ./... && go test ./...) || {
+  (cd "$mod" && go build ./... && go vet ./... && go test ./... -count=1) || {
     echo "BLOCKED: $mod failed build/vet/test"
     exit 1
   }

@@ -92,7 +92,7 @@ jobs:
           MONGO_URI: mongodb://localhost:27017
           REDIS_URI: redis://localhost:6379
           MONGO_INITDB_DATABASE: saas_platform_test
-        run: go test ./...
+        run: go test ./... -count=1
 
       - name: Run govulncheck
         uses: golang/govulncheck-action@v1
