@@ -124,3 +124,10 @@ This file tracks historical entries for the primary category: **New Features Cha
 - **Commit SHA**: ``1f46ed23763eca30135f43afdd0f52589174ec0f``
 - **Verification**: Verified via compilation. ✅
 
+## Username Field & Validation
+
+- **Implementation Detail**: Added `Username` field to the `User` model and `SignupRequest` structs (required, not omitempty). Added a validation check to `Signup` handler requiring 3-30 character username length (measured by runes to support multi-byte strings) and allowed character whitelist supporting both Latin and Arabic scripts (U+0600–U+06FF) alongside spaces, digits, and underscores, while blocking unsafe injection strings. Enforced global uniqueness on `username` via a MongoDB unique index in `ensureIndexes`, returning clear, differentiated errors (`username already taken` vs `email already registered`) on duplicate key conflicts.
+- **Commit SHA**: ``7fa065a742bb209cfc8fe9e0a13a960495066bf0``
+- **Verification**: Verified via `TestSignupUsernameValidation` covering success, missing, short/long, invalid chars, valid Arabic, mixed Arabic/Latin, XSS tag rejection, and differentiated duplicate-key errors. ✅
+
+
