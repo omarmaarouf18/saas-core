@@ -145,10 +145,12 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                         prefixIcon: Icon(Icons.email_outlined),
                       ),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty)
+                        if (value == null || value.trim().isEmpty) {
                           return "Email is required";
-                        if (!value.contains("@"))
+                        }
+                        if (!value.contains("@")) {
                           return "Invalid email address";
+                        }
                         return null;
                       },
                     ),
@@ -162,10 +164,12 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                         prefixIcon: Icon(Icons.lock_outline),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty)
+                        if (value == null || value.isEmpty) {
                           return "Password is required";
-                        if (value.length < 6)
+                        }
+                        if (value.length < 6) {
                           return "Password must be at least 6 characters";
+                        }
                         return null;
                       },
                     ),
@@ -214,8 +218,9 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                                       );
                                     }
                                   } finally {
-                                    if (mounted)
+                                    if (mounted) {
                                       setState(() => _isRegSubmitting = false);
+                                    }
                                   }
                                 }
                               },
@@ -274,8 +279,9 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                         prefixIcon: Icon(Icons.email_outlined),
                       ),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty)
+                        if (value == null || value.trim().isEmpty) {
                           return "Employee email is required";
+                        }
                         return null;
                       },
                     ),
@@ -329,8 +335,9 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                         prefixIcon: Icon(Icons.vpn_key_outlined),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty)
+                        if (value == null || value.isEmpty) {
                           return "Owner password is required to re-authenticate";
+                        }
                         return null;
                       },
                     ),
@@ -378,8 +385,9 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                                       );
                                     }
                                   } finally {
-                                    if (mounted)
+                                    if (mounted) {
                                       setState(() => _isTogSubmitting = false);
+                                    }
                                   }
                                 }
                               },

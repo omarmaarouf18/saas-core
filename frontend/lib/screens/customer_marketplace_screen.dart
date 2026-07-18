@@ -24,7 +24,7 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
   String _selectedCategory =
       'all'; // 'all', 'delivery', 'transport', 'shipping'
   String _sortBy = 'price'; // 'price' or 'none'
-  bool _nearBy = true;
+  final bool _nearBy = true;
 
   @override
   void initState() {
@@ -159,7 +159,7 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                       Expanded(
                         flex: 3,
                         child: DropdownButtonFormField<String>(
-                          value: _selectedCategory,
+                          initialValue: _selectedCategory,
                           decoration: const InputDecoration(
                             labelText: "Category",
                             isDense: true,
@@ -188,7 +188,7 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                       Expanded(
                         flex: 2,
                         child: DropdownButtonFormField<String>(
-                          value: _sortBy,
+                          initialValue: _sortBy,
                           decoration: const InputDecoration(
                             labelText: "Sort By",
                             isDense: true,
@@ -269,8 +269,8 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                                   CircleAvatar(
                                     backgroundColor: Theme.of(context)
                                         .colorScheme
-                                        .secondary
-                                        .withOpacity(0.2),
+                                         .secondary
+                                         .withValues(alpha: 0.2),
                                     foregroundColor:
                                         Theme.of(context).colorScheme.primary,
                                     child: Icon(
@@ -300,8 +300,8 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                                               decoration: BoxDecoration(
                                                 color: Theme.of(context)
                                                     .colorScheme
-                                                    .primary
-                                                    .withOpacity(0.1),
+                                                     .primary
+                                                     .withValues(alpha: 0.1),
                                                 borderRadius:
                                                     BorderRadius.circular(4),
                                               ),
@@ -497,10 +497,11 @@ class _BookingDialogState extends State<_BookingDialog> {
             ),
             const SizedBox(height: 8),
             // Forced Option: Cash on Delivery (COD)
-            RadioListTile<String>(
-              value: "cod",
-              groupValue: "cod",
-              onChanged: null, // disabled to force selection
+            ListTile(
+              leading: Icon(
+                Icons.radio_button_checked,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               title: const Text("Cash on Delivery (COD)"),
               subtitle:
                   const Text("Pay in cash directly to the driver upon arrival"),

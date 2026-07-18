@@ -22,8 +22,6 @@ final ThemeData quickDeliveryTheme = ThemeData(
     onSecondary: kBrandNavy, // dark contrast text on amber gold
     error: kStatusDanger,
     onError: Colors.white,
-    background: kBrandLightGray,
-    onBackground: kBrandNavy,
     surface: kBrandWhite,
     onSurface: kBrandNavy,
   ),

@@ -145,7 +145,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               elevation: 2,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
-              color: statusColor.withOpacity(0.08),
+              color: statusColor.withValues(alpha: 0.08),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(

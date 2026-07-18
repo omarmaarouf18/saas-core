@@ -165,8 +165,8 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               color: Colors.amber.shade700,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: const [
+              child: const Row(
+                children: [
                   Icon(Icons.warning_amber_rounded,
                       color: Colors.white, size: 28),
                   SizedBox(width: 12),

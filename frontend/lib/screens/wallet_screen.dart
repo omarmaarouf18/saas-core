@@ -176,11 +176,11 @@ class _WalletScreenState extends State<WalletScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           gradient: LinearGradient(
-            colors: [color.withOpacity(0.08), color.withOpacity(0.02)],
+            colors: [color.withValues(alpha: 0.08), color.withValues(alpha: 0.02)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          border: Border.all(color: color.withOpacity(0.15)),
+          border: Border.all(color: color.withValues(alpha: 0.15)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,7 +272,7 @@ class _WalletScreenState extends State<WalletScreen> {
         child: Row(
           children: [
             CircleAvatar(
-              backgroundColor: color.withOpacity(0.1),
+              backgroundColor: color.withValues(alpha: 0.1),
               radius: 20,
               child: Icon(icon, color: color, size: 22),
             ),
@@ -308,7 +308,7 @@ class _WalletScreenState extends State<WalletScreen> {
                             color: Theme.of(context)
                                 .colorScheme
                                 .primary
-                                .withOpacity(0.1),
+                                .withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(

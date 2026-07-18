@@ -78,10 +78,10 @@ class ChatProvider extends ChangeNotifier {
     _subscriptionError = null;
     notifyListeners();
 
-    final wsUrl = apiClient.baseUrl
-            .replaceFirst('https://', 'wss://')
-            .replaceFirst('http://', 'ws://') +
-        '/chat/ws?token=$_currentToken';
+    final baseWs = apiClient.baseUrl
+        .replaceFirst('https://', 'wss://')
+        .replaceFirst('http://', 'ws://');
+    final wsUrl = '$baseWs/chat/ws?token=$_currentToken';
 
     try {
       _webSocketSubscription?.cancel();

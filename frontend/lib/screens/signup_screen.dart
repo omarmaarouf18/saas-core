@@ -31,6 +31,7 @@ class _SignupScreenState extends State<SignupScreen> {
     final password = _passwordController.text;
 
     final devOtp = await auth.signup(email, password, _selectedRole);
+    if (!mounted) return;
 
     if (auth.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -94,9 +95,12 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     keyboardType: TextInputType.emailAddress,
                     validator: (val) {
-                      if (val == null || val.trim().isEmpty)
+                      if (val == null || val.trim().isEmpty) {
                         return "Please enter an email";
-                      if (!val.contains("@")) return "Invalid email address";
+                      }
+                      if (!val.contains("@")) {
+                        return "Invalid email address";
+                      }
                       return null;
                     },
                   ),
@@ -110,16 +114,18 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     obscureText: true,
                     validator: (val) {
-                      if (val == null || val.isEmpty)
+                      if (val == null || val.isEmpty) {
                         return "Please enter a password";
-                      if (val.length < 6)
+                      }
+                      if (val.length < 6) {
                         return "Password must be at least 6 characters";
+                      }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: _selectedRole,
+                    initialValue: _selectedRole,
                     decoration: const InputDecoration(
                       labelText: "Account Role",
                       border: OutlineInputBorder(),

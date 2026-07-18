@@ -155,10 +155,12 @@ class _OtpScreenState extends State<OtpScreen> {
                       letterSpacing: 8,
                     ),
                     validator: (val) {
-                      if (val == null || val.trim().isEmpty)
+                      if (val == null || val.trim().isEmpty) {
                         return "Please enter the OTP";
-                      if (val.trim().length != 6)
+                      }
+                      if (val.trim().length != 6) {
                         return "OTP must be exactly 6 digits";
+                      }
                       return null;
                     },
                   ),

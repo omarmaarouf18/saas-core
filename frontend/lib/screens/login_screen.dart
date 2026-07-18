@@ -32,6 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text;
 
     final devOtp = await auth.login(email, password);
+    if (!mounted) return;
 
     if (auth.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -108,9 +109,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     keyboardType: TextInputType.emailAddress,
                     validator: (val) {
-                      if (val == null || val.trim().isEmpty)
+                      if (val == null || val.trim().isEmpty) {
                         return "Please enter an email";
-                      if (!val.contains("@")) return "Invalid email address";
+                      }
+                      if (!val.contains("@")) {
+                        return "Invalid email address";
+                      }
                       return null;
                     },
                   ),
@@ -124,8 +128,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     obscureText: true,
                     validator: (val) {
-                      if (val == null || val.isEmpty)
+                      if (val == null || val.isEmpty) {
                         return "Please enter a password";
+                      }
                       return null;
                     },
                   ),

@@ -1,4 +1,4 @@
-/// Global constants for the Quick Delivery (qd) frontend client.
+// Global constants for the Quick Delivery (qd) frontend client.
 
 /// Map of backend service category keys to client-facing UI labels.
 /// - 'transport' maps to "Ride" (representing passenger ride-hailing / travel).

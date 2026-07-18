@@ -125,7 +125,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                             backgroundColor: Theme.of(context)
                                                 .colorScheme
                                                 .primary
-                                                .withOpacity(0.1),
+                                                .withValues(alpha: 0.1),
                                             labelStyle: TextStyle(
                                                 color: Theme.of(context)
                                                     .colorScheme
@@ -219,7 +219,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        value: selectedCategory,
+                        initialValue: selectedCategory,
                         decoration:
                             const InputDecoration(labelText: "Category"),
                         items: serviceCategoryLabels.entries.map((entry) {
@@ -244,10 +244,13 @@ class _ServiceScreenState extends State<ServiceScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         validator: (value) {
-                          if (value == null || value.isEmpty)
+                          if (value == null || value.isEmpty) {
                             return "Base price is required";
+                          }
                           final val = double.tryParse(value);
-                          if (val == null || val < 0) return "Invalid price";
+                          if (val == null || val < 0) {
+                            return "Invalid price";
+                          }
                           return null;
                         },
                       ),
@@ -259,10 +262,13 @@ class _ServiceScreenState extends State<ServiceScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         validator: (value) {
-                          if (value == null || value.isEmpty)
+                          if (value == null || value.isEmpty) {
                             return "Rate is required";
+                          }
                           final val = double.tryParse(value);
-                          if (val == null || val < 0) return "Invalid rate";
+                          if (val == null || val < 0) {
+                            return "Invalid rate";
+                          }
                           return null;
                         },
                       ),
@@ -274,10 +280,13 @@ class _ServiceScreenState extends State<ServiceScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         validator: (value) {
-                          if (value == null || value.isEmpty) return "Required";
+                          if (value == null || value.isEmpty) {
+                            return "Required";
+                          }
                           final val = double.tryParse(value);
-                          if (val == null || val < -90.0 || val > 90.0)
+                          if (val == null || val < -90.0 || val > 90.0) {
                             return "Must be between -90 and 90";
+                          }
                           return null;
                         },
                       ),
@@ -289,10 +298,13 @@ class _ServiceScreenState extends State<ServiceScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         validator: (value) {
-                          if (value == null || value.isEmpty) return "Required";
+                          if (value == null || value.isEmpty) {
+                            return "Required";
+                          }
                           final val = double.tryParse(value);
-                          if (val == null || val < -180.0 || val > 180.0)
+                          if (val == null || val < -180.0 || val > 180.0) {
                             return "Must be between -180 and 180";
+                          }
                           return null;
                         },
                       ),
