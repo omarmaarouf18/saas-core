@@ -1,4 +1,4 @@
-// Package store provides a MongoDB-backed persistent data store for the user-service.
+// Package store provides the MongoDB-backed persistent data store for the user-service.
 package store
 
 import (

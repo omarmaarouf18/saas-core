@@ -26,7 +26,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// TestBcryptHashVerify checks the password hashing and verification flow
+// TestBcryptHashVerify tests the password hashing and verification flow
 func TestBcryptHashVerify(t *testing.T) {
 	password := "my-secret-password-123"
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

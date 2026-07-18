@@ -29,7 +29,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Auth holds dependencies for the authentication handlers.
+// Auth holds runtime dependencies for the authentication handlers.
 type Auth struct {
 	store                *store.MongoDB
 	dispatcher           otp.OTPDispatcher
