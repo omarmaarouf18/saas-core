@@ -255,7 +255,6 @@ func (s *MongoDB) GetJobsByEmployee(ctx context.Context, employeeID string) ([]*
 	return jobs, nil
 }
 
-
 func (s *MongoDB) UpdateJobStatus(ctx context.Context, id string, status models.JobStatus) error {
 	res, err := s.jobs.UpdateOne(ctx, bson.M{"_id": id},
 		bson.M{"$set": bson.M{"status": status, "updated_at": time.Now().UTC()}})
