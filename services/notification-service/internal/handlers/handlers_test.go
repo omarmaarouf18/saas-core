@@ -4,13 +4,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/project/notification-service/internal/config"
 	"github.com/project/notification-service/internal/hub"
 	"github.com/project/shared/infra/jwtutil"
@@ -229,5 +232,307 @@ func TestStreamAndVerifyAndResolve(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "event: connected") {
 		t.Errorf("Expected connected event, got: %s", rec.Body.String())
+	}
+}
+
+func TestStreamAuthScenarios(t *testing.T) {
+	jwtutil.Init("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	mockAuth := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"id":        "user-123",
+			"role":      "owner",
+			"is_active": true,
+			"tenant_id": "tenant-1",
+		})
+	}))
+	defer mockAuth.Close()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+	jwtutil.SetRedisClient(rdb)
+	defer jwtutil.SetRedisClient(nil)
+
+	sseHub := hub.NewSSEHub()
+	cfg := &config.Config{
+		AuthServiceURL:       mockAuth.URL,
+		AllowedOrigin:        "http://localhost:3000",
+		InternalServiceToken: "secret-internal-token",
+	}
+	n := NewNotification(sseHub, cfg, rdb)
+
+	t.Run("Malformed token check", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/notifications/stream?token=malformed-token-xyz", nil)
+		rec := httptest.NewRecorder()
+		n.Stream(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for malformed token, got %d", rec.Code)
+		}
+		if !strings.Contains(rec.Body.String(), "invalid or inactive token") {
+			t.Errorf("Expected invalid token error, got: %s", rec.Body.String())
+		}
+	})
+
+	t.Run("Expired token check", func(t *testing.T) {
+		expiredClaims := jwtutil.Claims{
+			UserID:   "expired-user",
+			Role:     "user",
+			TenantID: "tenant-1",
+			Email:    "expired@example.com",
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(-1 * time.Hour)),
+				IssuedAt:  jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
+				ID:        "expired-jti-456",
+			},
+		}
+		tokenObj := jwt.NewWithClaims(jwt.SigningMethodHS256, expiredClaims)
+		expiredToken, _ := tokenObj.SignedString([]byte("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2"))
+
+		req := httptest.NewRequest("GET", "/notifications/stream?token="+expiredToken, nil)
+		rec := httptest.NewRecorder()
+		n.Stream(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for expired token, got %d", rec.Code)
+		}
+	})
+
+	t.Run("Revoked token check", func(t *testing.T) {
+		validToken, err := jwtutil.GenerateToken("revoked-user", "user", "tenant-1", "revoked@example.com")
+		if err != nil {
+			t.Fatalf("failed to generate token: %v", err)
+		}
+		err = jwtutil.RevokeToken(validToken)
+		if err != nil {
+			t.Fatalf("failed to revoke token: %v", err)
+		}
+
+		req := httptest.NewRequest("GET", "/notifications/stream?token="+validToken, nil)
+		rec := httptest.NewRecorder()
+		n.Stream(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for revoked token, got %d", rec.Code)
+		}
+	})
+}
+
+
+
+func TestStreamTenantScopingAndIsolation(t *testing.T) {
+	jwtutil.Init("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	mockAuth := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		id := r.URL.Query().Get("id")
+		tenant := "tenant-a"
+		if id == "user-b" {
+			tenant = "tenant-b"
+		}
+		json.NewEncoder(w).Encode(map[string]any{
+			"id":        id,
+			"role":      "owner",
+			"is_active": true,
+			"tenant_id": tenant,
+		})
+	}))
+	defer mockAuth.Close()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	sseHub := hub.NewSSEHub()
+	cfg := &config.Config{
+		AuthServiceURL:       mockAuth.URL,
+		AllowedOrigin:        "http://localhost:3000",
+		InternalServiceToken: "secret-internal-token",
+	}
+	n := NewNotification(sseHub, cfg, rdb)
+
+	tokenA, _ := jwtutil.GenerateToken("user-a", "owner", "tenant-a", "a@test.com")
+	tokenB, _ := jwtutil.GenerateToken("user-b", "owner", "tenant-b", "b@test.com")
+
+	ctxA, cancelA := context.WithCancel(context.Background())
+	defer cancelA()
+	reqA := httptest.NewRequest("GET", "/notifications/stream?token="+tokenA, nil)
+	reqA = reqA.WithContext(ctxA)
+	recA := httptest.NewRecorder()
+
+	ctxB, cancelB := context.WithCancel(context.Background())
+	defer cancelB()
+	reqB := httptest.NewRequest("GET", "/notifications/stream?token="+tokenB, nil)
+	reqB = reqB.WithContext(ctxB)
+	recB := httptest.NewRecorder()
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Connect user A and user B to their streams
+	go func() {
+		defer wg.Done()
+		n.Stream(recA, reqA)
+	}()
+	go func() {
+		defer wg.Done()
+		n.Stream(recB, reqB)
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+
+	notif := hub.Notification{
+		ID:       "notif-1",
+		Type:     "popup",
+		TenantID: "tenant-a",
+		Title:    "Tenant A Alert",
+		Body:     "This is for Tenant A only",
+	}
+	sseHub.Broadcast(notif)
+
+	time.Sleep(50 * time.Millisecond)
+
+	// Cancel contexts and wait for streams to exit before reading ResponseRecorders
+	cancelA()
+	cancelB()
+	wg.Wait()
+
+	bodyA := recA.Body.String()
+	if !strings.Contains(bodyA, "Tenant A Alert") {
+		t.Errorf("Expected Tenant A to receive notification, got: %q", bodyA)
+	}
+
+	bodyB := recB.Body.String()
+	if strings.Contains(bodyB, "Tenant A Alert") {
+		t.Errorf("Security Violation: Tenant B received tenant-scoped notification of Tenant A!")
+	}
+}
+
+func TestSSEHubCleanupAndConcurrencyStress(t *testing.T) {
+	jwtutil.Init("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	mockAuth := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"id":        "user-1",
+			"role":      "owner",
+			"is_active": true,
+			"tenant_id": "tenant-1",
+		})
+	}))
+	defer mockAuth.Close()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	sseHub := hub.NewSSEHub()
+	cfg := &config.Config{
+		AuthServiceURL:       mockAuth.URL,
+		AllowedOrigin:        "http://localhost:3000",
+		InternalServiceToken: "secret-internal-token",
+	}
+	n := NewNotification(sseHub, cfg, rdb)
+
+	const numClients = 50
+	var wg sync.WaitGroup
+	wg.Add(numClients)
+
+	stopBroadcaster := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(2 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				sseHub.Broadcast(hub.Notification{
+					ID:       "broadcast-race",
+					Type:     "popup",
+					TenantID: "tenant-1",
+					Title:    "Race Check",
+					Body:     "Check me",
+				})
+			case <-stopBroadcaster:
+				return
+			}
+		}
+	}()
+
+	for i := 0; i < numClients; i++ {
+		go func(idx int) {
+			defer wg.Done()
+
+			token, _ := jwtutil.GenerateToken(fmt.Sprintf("user-%d", idx), "owner", "tenant-1", "user@test.com")
+			ctx, cancel := context.WithCancel(context.Background())
+			req := httptest.NewRequest("GET", "/notifications/stream?token="+token, nil)
+			req = req.WithContext(ctx)
+			rec := httptest.NewRecorder()
+
+			go func() {
+				time.Sleep(time.Duration(10+idx%15) * time.Millisecond)
+				cancel()
+			}()
+
+			n.Stream(rec, req)
+		}(i)
+	}
+
+	wg.Wait()
+	close(stopBroadcaster)
+
+	time.Sleep(100 * time.Millisecond)
+
+	if sseHub.ClientCount() != 0 {
+		t.Errorf("Expected sseHub ClientCount to return to 0 after all client disconnects, got %d", sseHub.ClientCount())
+	}
+}
+
+func TestStreamAuthUnavailableFailClosed(t *testing.T) {
+	jwtutil.Init("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	sseHub := hub.NewSSEHub()
+	cfg := &config.Config{
+		AuthServiceURL:       "http://127.0.0.1:9999",
+		AllowedOrigin:        "http://localhost:3000",
+		InternalServiceToken: "secret-internal-token",
+	}
+	n := NewNotification(sseHub, cfg, rdb)
+
+	token, _ := jwtutil.GenerateToken("user-1", "owner", "tenant-1", "test@example.com")
+	req := httptest.NewRequest("GET", "/notifications/stream?token="+token, nil)
+	rec := httptest.NewRecorder()
+
+	n.Stream(rec, req)
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("Expected fail-closed status 503 Service Unavailable, got %d", rec.Code)
+	}
+
+	var resp map[string]string
+	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp["error"] != "service_unavailable" {
+		t.Errorf("Expected error key to be 'service_unavailable', got: %s", resp["error"])
 	}
 }
