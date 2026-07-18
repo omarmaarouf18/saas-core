@@ -2179,3 +2179,66 @@ func TestGetPendingSubmissionsUsername(t *testing.T) {
 		t.Errorf("expected username 'pending_username', got %q", pendingList[0].Username)
 	}
 }
+
+func TestSignupUsernameWhitespaceTrimming(t *testing.T) {
+	a, _, cleanup := setupTestAuth(t)
+	if a == nil {
+		t.Skip("setup failed")
+		return
+	}
+	defer cleanup()
+
+	// 1. Assert all-space username is rejected with "username is required"
+	reqBodyAllSpaces := models.SignupRequest{
+		Email:    "spaces@example.com",
+		Username: "   ",
+		Password: "password123",
+		Role:     models.RoleUser,
+	}
+	b1, _ := json.Marshal(reqBodyAllSpaces)
+	req1 := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b1))
+	rec1 := httptest.NewRecorder()
+	a.Signup(rec1, req1)
+
+	if rec1.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 Bad Request for all-space username, got %d. Body: %s", rec1.Code, rec1.Body.String())
+	}
+	if !strings.Contains(rec1.Body.String(), "username is required") {
+		t.Errorf("expected error message to contain 'username is required', got: %s", rec1.Body.String())
+	}
+
+	// 2. Register first user with "omar"
+	reqBodyFirst := models.SignupRequest{
+		Email:    "omar@example.com",
+		Username: "omar",
+		Password: "password123",
+		Role:     models.RoleUser,
+	}
+	b2, _ := json.Marshal(reqBodyFirst)
+	req2 := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b2))
+	rec2 := httptest.NewRecorder()
+	a.Signup(rec2, req2)
+
+	if rec2.Code != http.StatusCreated {
+		t.Fatalf("expected 201 Created for first user registration, got %d. Body: %s", rec2.Code, rec2.Body.String())
+	}
+
+	// 3. Register second user with "  omar  " (which should be trimmed to "omar" and rejected as duplicate)
+	reqBodySecond := models.SignupRequest{
+		Email:    "omar_dup@example.com",
+		Username: "  omar  ",
+		Password: "password123",
+		Role:     models.RoleUser,
+	}
+	b3, _ := json.Marshal(reqBodySecond)
+	req3 := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b3))
+	rec3 := httptest.NewRecorder()
+	a.Signup(rec3, req3)
+
+	if rec3.Code != http.StatusConflict {
+		t.Errorf("expected 409 StatusConflict for padded duplicate username, got %d. Body: %s", rec3.Code, rec3.Body.String())
+	}
+	if !strings.Contains(rec3.Body.String(), "username already taken") {
+		t.Errorf("expected error message to contain 'username already taken', got: %s", rec3.Body.String())
+	}
+}

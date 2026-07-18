@@ -139,6 +139,7 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	req.Username = strings.TrimSpace(req.Username)
 	if req.Username == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "username is required",
