@@ -675,7 +675,7 @@ func UpdateApplicationMap(repoRoot string, checkOnly bool) (bool, string, error)
 	// Replace the table block between markers
 	startMarker := "<!-- GENERATED:ENDPOINTS:START -->"
 	endMarker := "<!-- GENERATED:ENDPOINTS:END -->"
-	
+
 	startIdx := strings.Index(content, startMarker)
 	endIdx := strings.Index(content, endMarker)
 	if startIdx == -1 || endIdx == -1 || startIdx >= endIdx {

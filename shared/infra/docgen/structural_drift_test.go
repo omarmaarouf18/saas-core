@@ -13,7 +13,7 @@ func TestDartFilesMentionedInStatus(t *testing.T) {
 	// Paths relative to shared/infra/docgen
 	repoRoot := filepath.Join("..", "..", "..")
 	statusPath := filepath.Join(repoRoot, "docs", "frontend", "STATUS.md")
-	
+
 	statusBytes, err := os.ReadFile(statusPath)
 	if err != nil {
 		t.Fatalf("failed to read %s: %v", statusPath, err)

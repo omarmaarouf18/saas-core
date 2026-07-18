@@ -214,3 +214,102 @@ func TestResilienceClient_ConnectionLeak(t *testing.T) {
 		}
 	}
 }
+
+func TestResilienceClient_ExtraCoverage(t *testing.T) {
+	// 1. Retry behavior on transient failures
+	t.Run("TransientFailuresRetryAndSuccess", func(t *testing.T) {
+		var attempts int32
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			curr := atomic.AddInt32(&attempts, 1)
+			if curr < 3 {
+				// Fail the first 2 attempts
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			// Succeed on the 3rd attempt
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("success"))
+		}))
+		defer ts.Close()
+
+		client := NewClient(http.DefaultClient, "test-transient-success", 2, 100*time.Millisecond)
+		client.initialBackoff = 1 * time.Millisecond
+		client.maxBackoff = 2 * time.Millisecond
+
+		req, _ := http.NewRequest("GET", ts.URL, nil)
+		resp, err := client.Do(req)
+		if err != nil {
+			t.Fatalf("expected request to eventually succeed, got error: %v", err)
+		}
+		defer resp.Body.Close()
+
+		body, _ := io.ReadAll(resp.Body)
+		if string(body) != "success" {
+			t.Errorf("expected body 'success', got %q", string(body))
+		}
+
+		finalAttempts := atomic.LoadInt32(&attempts)
+		if finalAttempts != 3 {
+			t.Errorf("expected exactly 3 attempts (2 failures + 1 success), got %d", finalAttempts)
+		}
+	})
+
+	// 2. Max retry count exhausted
+	t.Run("MaxRetryCountExhausted", func(t *testing.T) {
+		var attempts int32
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			atomic.AddInt32(&attempts, 1)
+			w.WriteHeader(http.StatusInternalServerError)
+		}))
+		defer ts.Close()
+
+		// Max retries = 1 -> total attempts = 2
+		client := NewClient(http.DefaultClient, "test-max-retry", 1, 100*time.Millisecond)
+		client.initialBackoff = 1 * time.Millisecond
+		client.maxBackoff = 2 * time.Millisecond
+
+		req, _ := http.NewRequest("GET", ts.URL, nil)
+		resp, err := client.Do(req)
+		if err == nil {
+			resp.Body.Close()
+			t.Fatal("expected error when retry count is exhausted")
+		}
+
+		finalAttempts := atomic.LoadInt32(&attempts)
+		if finalAttempts != 2 {
+			t.Errorf("expected exactly 2 attempts (1 initial + 1 retry), got %d", finalAttempts)
+		}
+	})
+
+	// 3. Timeout handling (per-attempt timeout)
+	t.Run("PerAttemptTimeoutRetry", func(t *testing.T) {
+		var attempts int32
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			curr := atomic.AddInt32(&attempts, 1)
+			if curr == 1 {
+				// Sleep to trigger timeout on first attempt
+				time.Sleep(100 * time.Millisecond)
+			}
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer ts.Close()
+
+		// Attempt timeout = 10ms (so 100ms sleep triggers it)
+		// Max retries = 1
+		client := NewClient(http.DefaultClient, "test-attempt-timeout", 1, 10*time.Millisecond)
+		client.initialBackoff = 1 * time.Millisecond
+		client.maxBackoff = 2 * time.Millisecond
+
+		req, _ := http.NewRequest("GET", ts.URL, nil)
+		resp, err := client.Do(req)
+		if err != nil {
+			t.Fatalf("expected request to succeed on retry after timeout, got error: %v", err)
+		}
+		defer resp.Body.Close()
+
+		finalAttempts := atomic.LoadInt32(&attempts)
+		if finalAttempts != 2 {
+			t.Errorf("expected 2 attempts (1st timed out, 2nd succeeded), got %d", finalAttempts)
+		}
+	})
+}

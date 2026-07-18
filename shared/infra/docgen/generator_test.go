@@ -75,7 +75,7 @@ func (a *Auth) Throwaway(w http.ResponseWriter, r *http.Request) {}
 		if err != nil {
 			t.Fatalf("failed to create mock dir: %v", err)
 		}
-		
+
 		mockContent := `package handlers
 import "net/http"
 type Type struct{}
