@@ -68,7 +68,7 @@ The detailed project history is distributed across categorized changelog files. 
 *   [New Features](docs/changelog/new-features.md) — 20 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters).
 *   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 22 tooling, CI, module refactoring, and onboarding CLI tools.
 *   [Bug Fixes](docs/changelog/bug-fixes.md) — 10 corrections to existing non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic, signup rollback on OTP set failure, resilience client connection leak).
-*   [Documentation](docs/changelog/documentation.md) — 4 documentation-only updates (e.g. Application Map, Audit Correction, Auto-Doc System).
+*   [Documentation](docs/changelog/documentation.md) — 5 documentation-only updates (e.g. Application Map, Audit Correction, Auto-Doc System, DESIGN.md Link Alignment).
 
 ### 2. Explicitly Deferred by Decision
 
