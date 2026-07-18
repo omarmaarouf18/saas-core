@@ -124,5 +124,11 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``dce438236e89d2143f886e487e7475cc9a03e292``
 - **Verification**: Verified via `go test ./...` and `go test ./... -race` in the `services/chat-service` directory. All tests pass. ✅
 
+## notification-service Gap Coverage
+
+- **Implementation Detail**: Expanded test coverage in services/notification-service handlers. Added test cases verifying SSE stream JWT token handshake validation (expired, revoked, and malformed tokens), tenant scoping and stream isolation, concurrent client disconnection mid-stream cleanup under race conditions, and fail-closed behavior when the auth-service backend is unavailable.
+- **Commit SHA**: ``bbe7f85b4706f2b74be4dc56b6b45cac2ea7945b``
+- **Verification**: Verified via `go test ./...` and `go test ./... -race` in the `services/notification-service` directory. All tests pass. ✅
+
 
 
