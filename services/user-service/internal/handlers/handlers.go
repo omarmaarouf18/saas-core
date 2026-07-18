@@ -56,6 +56,8 @@ type UserService struct {
 	chatClient           *resilience.ResilienceClient
 	httpClient           *http.Client
 	appEnv               string
+	// Test hook to block UpdateJobLocation database write for deterministic testing
+	updateJobLocationBeforeWriteHook func(ctx context.Context)
 }
 
 // NewUserService creates a new UserService handler group.
@@ -1368,6 +1370,11 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 			})
 			return
 		}
+	}
+
+	// Call the test hook if configured
+	if u.updateJobLocationBeforeWriteHook != nil {
+		u.updateJobLocationBeforeWriteHook(ctx)
 	}
 
 	// Update in the store

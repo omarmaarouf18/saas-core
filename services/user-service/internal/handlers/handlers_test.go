@@ -699,6 +699,22 @@ func TestUserServiceHandlers(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
+		// Seed required data to make the subtest self-contained
+		_ = s.UpsertSubscription(ctx, &models.Subscription{
+			ID:        "sub-owner-777",
+			TenantID:  "owner-777",
+			Tier:      models.PlanPaid,
+			StartedAt: time.Now(),
+		})
+		_ = s.CreateJob(ctx, &models.Job{
+			ID:            "active-job-777",
+			OwnerID:       "owner-777",
+			EmployeeID:    "employee-777",
+			UserID:        "client-777",
+			Status:        models.JobStatusActive,
+			PaymentMethod: "cod",
+		})
+
 		tokenEmployee, _ := jwtutil.GenerateToken("employee-777", "employee", "owner-777", "employee@example.com")
 
 		reqBody := map[string]any{
@@ -711,23 +727,41 @@ func TestUserServiceHandlers(t *testing.T) {
 		req := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
 		req = req.WithContext(ctx)
 
-		// Goroutine that polls to detect when the request enters the in-flight state, then cancels the context
-		go func() {
-			for {
-				u.locationThrottleMu.Lock()
-				inFlight := u.locationInFlight["active-job-777"]
-				u.locationThrottleMu.Unlock()
-				if inFlight {
-					cancel()
-					break
-				}
-				time.Sleep(10 * time.Microsecond)
-			}
+		// Setup deterministic synchronization using the test hook
+		writeStartCh := make(chan struct{})
+		writeProceedCh := make(chan struct{})
+
+		u.updateJobLocationBeforeWriteHook = func(hookCtx context.Context) {
+			close(writeStartCh)
+			<-writeProceedCh
+		}
+		defer func() {
+			u.updateJobLocationBeforeWriteHook = nil
 		}()
 
-		// 1. Call UpdateJobLocation with the canceling context → expect 500 internal_error (context cancelled)
+		// 1. Call UpdateJobLocation with the canceling context in a separate goroutine
 		rec := httptest.NewRecorder()
-		u.UpdateJobLocation(rec, req)
+		doneCh := make(chan struct{})
+		go func() {
+			u.UpdateJobLocation(rec, req)
+			close(doneCh)
+		}()
+
+		// Wait until handler is about to write to the store (in-flight is set, ready to write)
+		<-writeStartCh
+
+		// Cancel the context now, guaranteed to cancel context BEFORE store write finishes (or even starts)
+		cancel()
+
+		// Allow the write call to proceed (which will immediately fail due to cancelled context)
+		close(writeProceedCh)
+
+		// Wait for the handler call to return
+		<-doneCh
+
+		// Disable the hook so that the subsequent retry call is not affected by it
+		u.updateJobLocationBeforeWriteHook = nil
+
 		if rec.Code != http.StatusInternalServerError {
 			t.Errorf("Expected 500 Internal Server Error, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
