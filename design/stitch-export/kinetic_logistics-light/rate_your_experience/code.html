@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Rate Your Experience | LogisticsPro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-on-surface": "#f0f1f1",
+                    "primary-container": "#151b2a",
+                    "inverse-surface": "#2f3131",
+                    "on-primary-fixed": "#151b2a",
+                    "surface-container": "#eeeeee",
+                    "secondary": "#785900",
+                    "on-tertiary-container": "#818488",
+                    "tertiary-container": "#191c1f",
+                    "outline-variant": "#c6c6cc",
+                    "outline": "#76777d",
+                    "surface-dim": "#dadada",
+                    "on-surface-variant": "#45464c",
+                    "primary": "#000000",
+                    "on-primary-fixed-variant": "#414657",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed-dim": "#c4c7ca",
+                    "secondary-fixed-dim": "#fabd00",
+                    "surface-tint": "#585e6f",
+                    "surface-container-highest": "#e2e2e2",
+                    "tertiary-fixed": "#e0e2e6",
+                    "error": "#ba1a1a",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed": "#191c1f",
+                    "on-primary": "#ffffff",
+                    "primary-fixed": "#dde2f6",
+                    "on-secondary-fixed": "#261a00",
+                    "background": "#f9f9f9",
+                    "on-background": "#1a1c1c",
+                    "on-tertiary-fixed-variant": "#44474a",
+                    "surface-variant": "#e2e2e2",
+                    "surface": "#f9f9f9",
+                    "surface-bright": "#f9f9f9",
+                    "tertiary": "#000000",
+                    "on-secondary-fixed-variant": "#5b4300",
+                    "on-secondary-container": "#6c5000",
+                    "on-error": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "primary-fixed-dim": "#c1c6da",
+                    "secondary-fixed": "#ffdf9e",
+                    "inverse-primary": "#c1c6da",
+                    "secondary-container": "#fdc003",
+                    "on-primary-container": "#7e8395",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-high": "#e8e8e8",
+                    "surface-container-low": "#f3f3f4",
+                    "error-container": "#ffdad6",
+                    "on-surface": "#1a1c1c"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "lg": "24px",
+                    "margin-desktop": "48px",
+                    "margin-mobile": "16px",
+                    "md": "16px",
+                    "sm": "12px",
+                    "base": "8px",
+                    "gutter": "16px",
+                    "xl": "32px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Poppins"],
+                    "title-md": ["Poppins"],
+                    "headline-lg-mobile": ["Poppins"],
+                    "label-lg": ["Poppins"],
+                    "display-lg": ["Poppins"],
+                    "headline-lg": ["Poppins"],
+                    "label-md": ["Poppins"],
+                    "body-md": ["Poppins"]
+            },
+            "fontSize": {
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "title-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-lg": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "label-md": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Poppins', sans-serif; }
+        .star-rating input:checked ~ label,
+        .star-rating label:hover,
+        .star-rating label:hover ~ label {
+            color: #FFC107;
+        }
+        .star-rating label {
+            transition: color 0.2s ease-in-out;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col">
+<!-- Top App Bar -->
+<header class="w-full top-0 bg-primary-container dark:bg-primary-container flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 z-50 sticky">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-primary-fixed dark:text-primary-fixed hover:bg-on-primary-fixed/10 transition-colors p-2 rounded-full">
+                close
+            </button>
+<h1 class="font-headline-lg text-headline-lg font-bold text-on-primary-fixed dark:text-primary-fixed">LogisticsPro</h1>
+</div>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-secondary-container">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a logistics manager in a modern office environment, wearing a smart casual blazer. The lighting is bright and airy, with a soft-focus background of high-tech logistics monitoring screens. The overall aesthetic is clean, authoritative, and corporate modern, reflecting a premium service identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDS35-V5hfslP6q5XdElnNml5mwlco9RKIfXhC0gtx4-d1atPSamyx4PWy4JswFf10P-b8v4hGzyiSuK8QQs6zQbX4E4rHujwHyXAJ0SrBTvSjmY7EUmQN1-m56DwgWPNy5j86Yy0RxRYs6kznwF0Ix24b8Hn1ZehpLiiZeZoNSItkvuGY7O9l6o6t0vdKMGpNkeTb7oVe_njWSRTgubJp4R-bDFMs3NxzlXLlfSpDafpk9hklVXoHJ3t7nSP9g3wBV46i4wD9cG6tD"/>
+</div>
+</header>
+<main class="flex-1 flex flex-col items-center justify-center p-margin-mobile md:p-margin-desktop">
+<div class="max-w-2xl w-full space-y-8">
+<!-- Context Header -->
+<div class="text-center space-y-2">
+<p class="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-widest">Job #LP-99201 Finished</p>
+<h2 class="font-headline-lg text-headline-lg font-bold">Rate Your Experience</h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-md mx-auto">
+                    Ratings are blind. Neither party will see the other's feedback until both have submitted.
+                </p>
+</div>
+<!-- Main Interactive Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-lg p-8 border border-outline-variant/30">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+<!-- Left Column: Rating Form -->
+<div class="space-y-6">
+<div class="flex items-center gap-4 mb-4">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+</div>
+<div>
+<h3 class="font-title-md text-title-md">Driver: Marcus J.</h3>
+<p class="font-label-md text-label-md text-on-surface-variant">Heavy Cargo Specialist</p>
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-label-lg text-label-lg text-on-surface-variant">Score Experience</label>
+<div class="flex flex-row-reverse justify-end gap-2 star-rating">
+<input class="hidden" id="star5" name="rating" type="radio" value="5"/>
+<label class="material-symbols-outlined text-3xl cursor-pointer text-surface-container-highest" for="star5" style="font-variation-settings: 'FILL' 1;">star</label>
+<input class="hidden" id="star4" name="rating" type="radio" value="4"/>
+<label class="material-symbols-outlined text-3xl cursor-pointer text-surface-container-highest" for="star4" style="font-variation-settings: 'FILL' 1;">star</label>
+<input class="hidden" id="star3" name="rating" type="radio" value="3"/>
+<label class="material-symbols-outlined text-3xl cursor-pointer text-surface-container-highest" for="star3" style="font-variation-settings: 'FILL' 1;">star</label>
+<input class="hidden" id="star2" name="rating" type="radio" value="2"/>
+<label class="material-symbols-outlined text-3xl cursor-pointer text-surface-container-highest" for="star2" style="font-variation-settings: 'FILL' 1;">star</label>
+<input class="hidden" id="star1" name="rating" type="radio" value="1"/>
+<label class="material-symbols-outlined text-3xl cursor-pointer text-surface-container-highest" for="star1" style="font-variation-settings: 'FILL' 1;">star</label>
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-label-lg text-label-lg text-on-surface-variant" for="feedback">Private Feedback (Optional)</label>
+<textarea class="w-full rounded-lg border-outline-variant bg-surface-container-low focus:ring-primary focus:border-primary font-body-md text-body-md p-3" id="feedback" placeholder="What went well? What could be improved?" rows="3"></textarea>
+</div>
+<button class="w-full bg-primary text-on-primary py-4 rounded-lg font-title-md text-title-md hover:bg-on-primary-fixed-variant transition-all active:scale-[0.98]" id="submitBtn">
+                            Submit Blind Rating
+                        </button>
+</div>
+<!-- Right Column: Blind State Visualizer -->
+<div class="relative bg-surface-container-low rounded-xl p-6 border-2 border-dashed border-outline-variant flex flex-col items-center justify-center text-center overflow-hidden">
+<!-- Shimmering overlay for "hidden" effect -->
+<div class="absolute inset-0 opacity-10 pointer-events-none">
+<div class="w-full h-full shimmer"></div>
+</div>
+<div class="z-10 space-y-4">
+<div class="relative inline-block">
+<span class="material-symbols-outlined text-5xl text-on-surface-variant opacity-20">visibility_off</span>
+<div class="absolute -top-1 -right-1 flex h-4 w-4">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-container opacity-75"></span>
+<span class="relative inline-flex rounded-full h-4 w-4 bg-secondary-container"></span>
+</div>
+</div>
+<div class="space-y-1">
+<h4 class="font-title-md text-title-md text-on-surface">Waiting for Marcus...</h4>
+<p class="font-body-md text-body-md text-on-surface-variant px-4">
+                                    The driver has not yet rated the transaction. Your ratings will remain hidden until they submit.
+                                </p>
+</div>
+<!-- Visual progress indicator -->
+<div class="flex items-center justify-center gap-2 mt-4">
+<div class="h-2 w-12 bg-secondary-container rounded-full"></div>
+<div class="h-2 w-12 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-secondary-container/30 w-1/2 animate-pulse"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Information Section -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="flex items-start gap-3 p-4 bg-surface-container-low rounded-lg">
+<span class="material-symbols-outlined text-secondary">security</span>
+<div>
+<h5 class="font-label-lg text-label-lg">Unbiased Reviews</h5>
+<p class="font-label-md text-label-md text-on-surface-variant">Preventing retaliatory or social-pressure ratings.</p>
+</div>
+</div>
+<div class="flex items-start gap-3 p-4 bg-surface-container-low rounded-lg">
+<span class="material-symbols-outlined text-secondary">verified</span>
+<div>
+<h5 class="font-label-lg text-label-lg">Trust Shield</h5>
+<p class="font-label-md text-label-md text-on-surface-variant">Ratings directly impact Marketplace Tier ranking.</p>
+</div>
+</div>
+<div class="flex items-start gap-3 p-4 bg-surface-container-low rounded-lg">
+<span class="material-symbols-outlined text-secondary">history</span>
+<div>
+<h5 class="font-label-lg text-label-lg">24h Window</h5>
+<p class="font-label-md text-label-md text-on-surface-variant">Submit within 24 hours to ensure your score counts.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar (Context: Home-level flow) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center h-20 pb-safe px-2 bg-primary-container dark:bg-primary-container z-50">
+<button class="flex flex-col items-center justify-center text-on-primary-container hover:bg-primary/20 transition-all px-5 py-1">
+<span class="material-symbols-outlined">local_shipping</span>
+<span class="font-label-md text-label-md">Market</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-2xl px-5 py-1">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+<span class="font-label-md text-label-md">Orders</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-primary-container hover:bg-primary/20 transition-all px-5 py-1">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-label-md text-label-md">Fleet</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-primary-container hover:bg-primary/20 transition-all px-5 py-1">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-md text-label-md">Profile</span>
+</button>
+</nav>
+<script>
+        document.getElementById('submitBtn').addEventListener('click', function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            // Interaction feedback
+            btn.disabled = true;
+            btn.innerHTML = '<span class="flex items-center justify-center gap-2"><svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Encrypting Rating...</span>';
+            
+            setTimeout(() => {
+                btn.classList.replace('bg-primary', 'bg-emerald-600');
+                btn.innerHTML = '<span class="flex items-center justify-center gap-2"><span class="material-symbols-outlined">check_circle</span> Rating Submitted</span>';
+                
+                // Show success toast or minor feedback
+                const toast = document.createElement('div');
+                toast.className = 'fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-surface-container-highest text-on-surface px-6 py-3 rounded-full shadow-2xl font-body-md text-body-md flex items-center gap-2 border border-outline-variant animate-bounce';
+                toast.innerHTML = '<span class="material-symbols-outlined text-emerald-600">lock</span> Both ratings will unlock soon.';
+                document.body.appendChild(toast);
+                
+                setTimeout(() => toast.remove(), 4000);
+            }, 1500);
+        });
+
+        // Toggle mobile menu simulation
+        document.querySelector('.material-symbols-outlined[data-icon="menu"]')?.addEventListener('click', () => {
+            console.log('Menu opened');
+        });
+    </script>
+</body></html>

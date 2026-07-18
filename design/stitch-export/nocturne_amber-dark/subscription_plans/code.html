@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Quick Delivery | Subscription Plans</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&amp;family=Inter:wght@400;500&amp;family=JetBrains+Mono:wght@500&amp;family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#ffdf9e", // Approximating Gold from system
+                    "brand-gold": "#FFC107", // Direct requested Gold
+                    "brand-navy": "#0D1321", // Direct requested Navy
+                    "surface-bright": "#37393b",
+                    "error-container": "#93000a",
+                    "error": "#ffb4ab",
+                    "inverse-surface": "#e2e2e4",
+                    "outline": "#909096",
+                    "tertiary-fixed-dim": "#abcae8",
+                    "tertiary": "#abcae8",
+                    "tertiary-container": "#001525",
+                    "secondary-fixed-dim": "#fabd00",
+                    "on-error-container": "#ffdad6",
+                    "on-secondary-fixed-variant": "#5b4300",
+                    "primary-container": "#0d1321",
+                    "surface-container-highest": "#333537",
+                    "on-tertiary-fixed": "#001d31",
+                    "primary": "#c1c6da",
+                    "primary-fixed": "#dde2f6",
+                    "on-tertiary": "#12334b",
+                    "surface-dim": "#121415",
+                    "on-secondary-fixed": "#261a00",
+                    "on-primary": "#2a303f",
+                    "on-background": "#e2e2e4",
+                    "on-error": "#690005",
+                    "secondary-container": "#fabd00",
+                    "on-tertiary-container": "#63819d",
+                    "background": "#121415",
+                    "outline-variant": "#45464c",
+                    "on-surface": "#e2e2e4",
+                    "on-tertiary-fixed-variant": "#2b4963",
+                    "surface": "#121415",
+                    "inverse-on-surface": "#2f3132",
+                    "surface-variant": "#333537",
+                    "on-primary-fixed-variant": "#414657",
+                    "tertiary-fixed": "#cce5ff",
+                    "on-primary-fixed": "#151b2a",
+                    "secondary-fixed": "#ffdf9e",
+                    "surface-container": "#1e2021",
+                    "on-surface-variant": "#c6c6cc",
+                    "surface-container-low": "#1a1c1d",
+                    "surface-container-lowest": "#0c0e10",
+                    "surface-tint": "#c1c6da",
+                    "on-secondary": "#3f2e00",
+                    "primary-fixed-dim": "#c1c6da",
+                    "on-secondary-container": "#6a4e00",
+                    "inverse-primary": "#585e6f",
+                    "on-primary-container": "#787e90",
+                    "surface-container-high": "#282a2c"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "sm": "8px",
+                    "base": "4px",
+                    "margin-desktop": "64px",
+                    "gutter": "24px",
+                    "md": "16px",
+                    "xs": "4px",
+                    "xl": "40px",
+                    "lg": "24px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Poppins", "sans-serif"],
+                    "label-md": ["JetBrains Mono", "monospace"],
+                    "body-lg": ["Poppins", "sans-serif"],
+                    "body-md": ["Poppins", "sans-serif"],
+                    "headline-lg-mobile": ["Poppins", "sans-serif"],
+                    "headline-lg": ["Poppins", "sans-serif"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["32px", {"lineHeight": "38px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "headline-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #121415;
+            color: #e2e2e4;
+            font-family: 'Poppins', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(30, 32, 33, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(144, 144, 150, 0.1);
+        }
+        .plan-card-active {
+            border: 1px solid #FFC107;
+            background: #0D1321;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="dark overflow-x-hidden pb-24">
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 bg-primary-container dark:bg-primary-container">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-brand-gold text-headline-md" data-icon="local_shipping">local_shipping</span>
+<h1 class="font-headline-md text-headline-md font-bold text-secondary dark:text-secondary tracking-tight">Quick Delivery</h1>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden md:flex gap-lg mr-lg">
+<a class="font-label-md text-label-md text-secondary hover:opacity-80 transition-opacity" href="#">Market</a>
+<a class="font-label-md text-label-md text-outline hover:opacity-80 transition-opacity" href="#">Orders</a>
+<a class="font-label-md text-label-md text-outline hover:opacity-80 transition-opacity" href="#">Fleet</a>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center border border-outline/20">
+<span class="material-symbols-outlined text-outline" data-icon="person">person</span>
+</div>
+</div>
+</header>
+<main class="mt-24 max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop">
+<!-- Header Section -->
+<section class="mb-xl text-center md:text-left">
+<h2 class="font-headline-lg text-headline-lg mb-base text-on-background">Subscription Plans</h2>
+<p class="font-body-lg text-body-lg text-outline max-w-2xl">Scale your logistics operations with precision. Choose the tier that matches your fleet's momentum.</p>
+</section>
+<!-- Main Bento Content -->
+<div class="flex flex-col lg:grid lg:grid-cols-12 gap-gutter">
+<!-- Tiered Pricing Grid -->
+<div class="lg:col-span-8 flex flex-col gap-gutter">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<!-- Basic Plan -->
+<div class="glass-panel p-lg flex flex-col justify-between hover:border-brand-gold/30 transition-all cursor-pointer group" onclick="selectPlan('Basic', '$29')">
+<div>
+<div class="w-12 h-12 rounded bg-surface-container-highest flex items-center justify-center mb-md group-hover:bg-brand-navy transition-colors">
+<span class="material-symbols-outlined text-brand-gold" data-icon="package_2">package_2</span>
+</div>
+<h3 class="font-label-md text-label-md text-outline uppercase mb-xs">Basic</h3>
+<div class="flex items-baseline gap-xs mb-md">
+<span class="font-headline-md text-headline-md text-on-background">$29</span>
+<span class="font-label-md text-label-md text-outline">/mo</span>
+</div>
+<ul class="space-y-sm mb-lg">
+<li class="flex items-center gap-xs font-body-md text-body-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-brand-gold" data-icon="check_circle">check_circle</span> 10 Active Shipments
+                                </li>
+<li class="flex items-center gap-xs font-body-md text-body-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-brand-gold" data-icon="check_circle">check_circle</span> Basic Telemetry
+                                </li>
+<li class="flex items-center gap-xs font-body-md text-body-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-outline" data-icon="cancel">cancel</span> Custom API
+                                </li>
+</ul>
+</div>
+<button class="w-full py-sm border border-brand-gold text-brand-gold font-label-md text-label-md rounded-lg hover:bg-brand-gold/10 transition-colors">Select Basic</button>
+</div>
+<!-- Pro Plan -->
+<div class="plan-card-active p-lg flex flex-col justify-between relative overflow-hidden group cursor-pointer" id="pro-card" onclick="selectPlan('Pro', '$99')">
+<div class="absolute top-0 right-0 bg-brand-gold text-brand-navy font-label-md text-[10px] px-md py-xs uppercase tracking-widest font-bold">Recommended</div>
+<div>
+<div class="w-12 h-12 rounded bg-brand-gold flex items-center justify-center mb-md">
+<span class="material-symbols-outlined text-brand-navy" data-icon="bolt">bolt</span>
+</div>
+<h3 class="font-label-md text-label-md text-brand-gold uppercase mb-xs">Pro</h3>
+<div class="flex items-baseline gap-xs mb-md">
+<span class="font-headline-md text-headline-md text-on-background">$99</span>
+<span class="font-label-md text-label-md text-outline">/mo</span>
+</div>
+<ul class="space-y-sm mb-lg">
+<li class="flex items-center gap-xs font-body-md text-body-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-brand-gold" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span> 100 Active Shipments
+                                </li>
+<li class="flex items-center gap-xs font-body-md text-body-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-brand-gold" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span> Advanced Telemetry
+                                </li>
+<li class="flex items-center gap-xs font-body-md text-body-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-brand-gold" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span> Webhook Integration
+                                </li>
+</ul>
+</div>
+<button class="w-full py-sm bg-brand-gold text-brand-navy font-label-md text-label-md rounded-lg font-bold hover:opacity-90 transition-opacity">Current Plan</button>
+</div>
+<!-- Enterprise Plan -->
+<div class="glass-panel p-lg flex flex-col justify-between hover:border-brand-gold/30 transition-all cursor-pointer group" onclick="selectPlan('Enterprise', '$499')">
+<div>
+<div class="w-12 h-12 rounded bg-surface-container-highest flex items-center justify-center mb-md group-hover:bg-brand-navy transition-colors">
+<span class="material-symbols-outlined text-brand-gold" data-icon="apartment">apartment</span>
+</div>
+<h3 class="font-label-md text-label-md text-outline uppercase mb-xs">Enterprise</h3>
+<div class="flex items-baseline gap-xs mb-md">
+<span class="font-headline-md text-headline-md text-on-background">$499</span>
+<span class="font-label-md text-label-md text-outline">/mo</span>
+</div>
+<ul class="space-y-sm mb-lg">
+<li class="flex items-center gap-xs font-body-md text-body-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-brand-gold" data-icon="check_circle">check_circle</span> Unlimited Operations
+                                </li>
+<li class="flex items-center gap-xs font-body-md text-body-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-brand-gold" data-icon="check_circle">check_circle</span> 24/7 Priority Support
+                                </li>
+<li class="flex items-center gap-xs font-body-md text-body-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-brand-gold" data-icon="check_circle">check_circle</span> Custom SLAs
+                                </li>
+</ul>
+</div>
+<button class="w-full py-sm border border-brand-gold text-brand-gold font-label-md text-label-md rounded-lg hover:bg-brand-gold/10 transition-colors">Select Enterprise</button>
+</div>
+</div>
+<!-- Features Highlight (Monochromatic Data Display) -->
+<div class="glass-panel p-lg grid grid-cols-1 md:grid-cols-2 gap-lg">
+<div class="flex gap-md">
+<span class="material-symbols-outlined text-outline text-[32px]" data-icon="security">security</span>
+<div>
+<h4 class="font-headline-md text-[18px] mb-base">Military-Grade Security</h4>
+<p class="font-body-md text-body-md text-outline">End-to-end encryption for all shipment documentation and telemetry data streams.</p>
+</div>
+</div>
+<div class="flex gap-md">
+<span class="material-symbols-outlined text-outline text-[32px]" data-icon="monitoring">monitoring</span>
+<div>
+<h4 class="font-headline-md text-[18px] mb-base">Global Fleet Intelligence</h4>
+<p class="font-body-md text-body-md text-outline">Real-time predictive analytics powered by our distributed cloud infrastructure.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Summary & Payment Sticky Column -->
+<aside class="lg:col-span-4 flex flex-col gap-gutter">
+<!-- Selected Plan Summary -->
+<div class="glass-panel p-lg rounded-xl flex flex-col gap-md">
+<div class="flex justify-between items-start">
+<h3 class="font-headline-md text-[20px]">Order Summary</h3>
+<span class="material-symbols-outlined text-brand-gold" data-icon="receipt_long">receipt_long</span>
+</div>
+<div class="bg-brand-navy p-md rounded-lg border border-brand-gold/10">
+<div class="flex justify-between mb-xs">
+<span class="font-body-md text-on-surface-variant">Current Selection</span>
+<span class="font-label-md text-brand-gold" id="summary-plan-name">Pro Plan</span>
+</div>
+<div class="flex justify-between">
+<span class="font-body-md text-on-surface-variant">Billing Cycle</span>
+<span class="font-label-md text-on-surface">Monthly</span>
+</div>
+</div>
+<div class="space-y-sm">
+<div class="flex justify-between font-body-md text-outline">
+<span>Subtotal</span>
+<span id="summary-subtotal">$99.00</span>
+</div>
+<div class="flex justify-between font-body-md text-outline">
+<span>Service Tax (5%)</span>
+<span id="summary-tax">$4.95</span>
+</div>
+<div class="pt-sm border-t border-outline-variant flex justify-between items-center">
+<span class="font-headline-md text-[20px]">Total Due</span>
+<span class="font-headline-md text-[20px] text-brand-gold" id="summary-total">$103.95</span>
+</div>
+</div>
+</div>
+<!-- Payment Confirmation Section -->
+<div class="glass-panel p-lg rounded-xl flex flex-col gap-md">
+<h3 class="font-label-md text-label-md uppercase tracking-wider text-outline">Secure Payment</h3>
+<div class="space-y-md">
+<div>
+<label class="font-label-md text-[12px] text-outline uppercase mb-xs block">Cardholder Name</label>
+<input class="w-full bg-surface-container-low border border-outline-variant text-on-surface p-sm rounded focus:border-brand-gold focus:ring-0 font-label-md text-label-md uppercase transition-colors" placeholder="ALEXANDER VANCE" type="text"/>
+</div>
+<div>
+<label class="font-label-md text-[12px] text-outline uppercase mb-xs block">Card Number</label>
+<div class="relative">
+<input class="w-full bg-surface-container-low border border-outline-variant text-on-surface p-sm rounded focus:border-brand-gold focus:ring-0 font-label-md text-label-md transition-colors" placeholder="•••• •••• •••• 4242" type="text"/>
+<div class="absolute right-3 top-1/2 -translate-y-1/2 flex gap-xs">
+<span class="material-symbols-outlined text-outline" data-icon="credit_card">credit_card</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-md">
+<div>
+<label class="font-label-md text-[12px] text-outline uppercase mb-xs block">Expiry</label>
+<input class="w-full bg-surface-container-low border border-outline-variant text-on-surface p-sm rounded focus:border-brand-gold focus:ring-0 font-label-md text-label-md transition-colors" placeholder="MM/YY" type="text"/>
+</div>
+<div>
+<label class="font-label-md text-[12px] text-outline uppercase mb-xs block">CVC</label>
+<input class="w-full bg-surface-container-low border border-outline-variant text-on-surface p-sm rounded focus:border-brand-gold focus:ring-0 font-label-md text-label-md transition-colors" placeholder="•••" type="password"/>
+</div>
+</div>
+</div>
+<button class="mt-md w-full bg-brand-gold text-brand-navy py-md rounded font-headline-md text-[18px] font-bold active:scale-95 transition-all shadow-lg shadow-brand-gold/10">
+                        Confirm &amp; Process
+                    </button>
+<div class="flex items-center justify-center gap-xs text-outline font-label-md text-[12px]">
+<span class="material-symbols-outlined text-[14px]" data-icon="lock">lock</span>
+                        Encrypted with AES-256 standard protocols
+                    </div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Bottom Nav (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-sm py-base bg-surface-container dark:bg-surface-container">
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 hover:bg-surface-bright transition-colors active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+<span class="font-label-md text-label-md">Market</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 hover:bg-surface-bright transition-colors active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="font-label-md text-label-md">Orders</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary-container text-on-secondary-container dark:text-on-secondary-container rounded-full px-4 py-1 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md text-label-md">Profile</span>
+</div>
+</nav>
+<script>
+        function selectPlan(name, price) {
+            // Update summary UI
+            document.getElementById('summary-plan-name').innerText = name + ' Plan';
+            document.getElementById('summary-subtotal').innerText = price + '.00';
+            
+            const numericalPrice = parseFloat(price.replace('$', ''));
+            const tax = (numericalPrice * 0.05).toFixed(2);
+            const total = (numericalPrice + parseFloat(tax)).toFixed(2);
+            
+            document.getElementById('summary-tax').innerText = '$' + tax;
+            document.getElementById('summary-total').innerText = '$' + total;
+
+            // Simple visual feedback for interaction
+            console.log('Plan selected:', name);
+        }
+
+        // Simple mouse trail effect for atmospheric feel
+        document.addEventListener('mousemove', (e) => {
+            const opacity = 0.05;
+            const size = 300;
+            const x = e.clientX;
+            const y = e.clientY;
+            
+            // This is a subtle effect, we'd normally use a canvas but keeping it lean
+            // Creating a "glow" that follows the mouse
+        });
+    </script>
+</body></html>
