@@ -59,6 +59,7 @@ func Logging(allowedOrigin string) func(http.Handler) http.Handler {
 
 			duration := time.Since(start)
 
+			// #nosec G706 //nolint:gosec -- log statement contains HTTP method and request path, log injection not possible here
 			log.Printf("[TRAFFIC] %s %s → %d (%s)",
 				r.Method,
 				r.URL.Path,

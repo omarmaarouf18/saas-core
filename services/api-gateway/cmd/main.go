@@ -102,7 +102,12 @@ func main() {
 	addr := ":" + cfg.Port
 	log.Printf("API Gateway listening on HTTPS %s", addr)
 	log.Printf("Routes active: %d", len(cfg.Routes))
-	if err := http.ListenAndServeTLS(addr, cfg.ExternalTLSCertPath, cfg.ExternalTLSKeyPath, logged); err != nil {
+	server := &http.Server{
+		Addr:              addr,
+		Handler:           logged,
+		ReadHeaderTimeout: 3 * time.Second,
+	}
+	if err := server.ListenAndServeTLS(cfg.ExternalTLSCertPath, cfg.ExternalTLSKeyPath); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}
 }

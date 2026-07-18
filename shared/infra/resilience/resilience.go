@@ -56,6 +56,7 @@ func backoffWithJitter(attempt int, initialBackoff, maxBackoff time.Duration) ti
 		temp = float64(maxBackoff)
 	}
 	// Jitter: 50% to 150% of the backoff value
+	// #nosec G404 //nolint:gosec -- math/rand is appropriate for network retry backoff jitter, cryptographic randomness is not needed
 	jitter := 0.5 + rand.Float64()
 	return time.Duration(temp * jitter)
 }
@@ -129,6 +130,7 @@ func (rc *ResilienceClient) Do(req *http.Request) (*http.Response, error) {
 			defer cancel()
 
 			reqClone = reqClone.WithContext(timeoutCtx)
+			// #nosec G704 //nolint:gosec -- Resilience client is a generic wrapper executing caller-supplied requests, SSRF is not applicable here
 			resp, err := rc.client.Do(reqClone)
 			if err != nil {
 				return nil, err

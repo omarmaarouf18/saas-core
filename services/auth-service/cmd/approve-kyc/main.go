@@ -74,11 +74,13 @@ func main() {
 
 	// 2. Verify role is owner
 	if user.Role != models.RoleOwner {
+		// #nosec G706 //nolint:gosec -- admin CLI utility inputs, not untrusted web inputs, log injection is not a concern
 		log.Fatalf("Error: User %q is not an owner (role: %s). KYC is only applicable to owners.", email, user.Role)
 	}
 
 	// 3. Verify current KYC status is pending_super_admin_approval
 	if user.KYCStatus != models.KYCPendingApproval {
+		// #nosec G706 //nolint:gosec -- admin CLI utility inputs, not untrusted web inputs, log injection is not a concern
 		log.Fatalf("Error: Owner %q has KYC status %q, but exactly %q is required.", email, user.KYCStatus, models.KYCPendingApproval)
 	}
 

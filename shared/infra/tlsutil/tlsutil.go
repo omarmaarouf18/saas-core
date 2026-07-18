@@ -10,14 +10,17 @@ import (
 
 // LoadServerTLSConfig loads server-side TLS configuration requiring client auth.
 func LoadServerTLSConfig(certPath, keyPath, caPath string) (*tls.Config, error) {
+	// #nosec G304 //nolint:gosec -- paths are loaded from bootstrap configuration, not user controlled
 	certBytes, err := os.ReadFile(certPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read cert file %q: %w", certPath, err)
 	}
+	// #nosec G304 //nolint:gosec -- paths are loaded from bootstrap configuration, not user controlled
 	keyBytes, err := os.ReadFile(keyPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read key file %q: %w", keyPath, err)
 	}
+	// #nosec G304 //nolint:gosec -- paths are loaded from bootstrap configuration, not user controlled
 	caBytes, err := os.ReadFile(caPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read CA file %q: %w", caPath, err)
@@ -43,14 +46,17 @@ func LoadServerTLSConfig(certPath, keyPath, caPath string) (*tls.Config, error) 
 
 // LoadClientTLSConfig loads client-side TLS configuration presenting client cert and verifying server cert.
 func LoadClientTLSConfig(certPath, keyPath, caPath string) (*tls.Config, error) {
+	// #nosec G304 //nolint:gosec -- paths are loaded from bootstrap configuration, not user controlled
 	certBytes, err := os.ReadFile(certPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read cert file %q: %w", certPath, err)
 	}
+	// #nosec G304 //nolint:gosec -- paths are loaded from bootstrap configuration, not user controlled
 	keyBytes, err := os.ReadFile(keyPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read key file %q: %w", keyPath, err)
 	}
+	// #nosec G304 //nolint:gosec -- paths are loaded from bootstrap configuration, not user controlled
 	caBytes, err := os.ReadFile(caPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read CA file %q: %w", caPath, err)

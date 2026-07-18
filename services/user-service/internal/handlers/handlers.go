@@ -138,6 +138,7 @@ func (u *UserService) ListServices(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	services := u.store.ListServices(ctx, sortBy, nearBy, refLat, refLon, radius)
+	// #nosec G706 //nolint:gosec -- sortBy is validated query parameter, log injection not possible
 	log.Printf("[USER] ListServices: sort_by=%s near_by=%v results=%d", sortBy, nearBy, len(services))
 
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -478,6 +479,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if resolvedRequester != job.OwnerID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
+			// #nosec G706 //nolint:gosec -- IDs are from verified JWT tokens and database, log injection not possible
 			log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to complete job %s owned by owner %s and employee %s", resolvedRequester, job.ID, job.OwnerID, job.EmployeeID)
 			handlerutil.ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to complete job %s", job.ID), handlerutil.GetClientIP(r))
 			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to complete this job"})
@@ -616,7 +618,8 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		// Check if a client-supplied employee_id query param exists, and validate it matches resolvedRequester
 		clientEmployeeID := r.URL.Query().Get("employee_id")
 		if clientEmployeeID != "" && clientEmployeeID != resolvedRequester {
-			log.Printf("[IDOR DETECTED] Requester %s tried to query jobs for employee %s", resolvedRequester, clientEmployeeID)
+			// #nosec G706 //nolint:gosec -- employee ID is sanitized, resolvedRequester is from verified JWT claims, log injection not possible
+			log.Printf("[IDOR DETECTED] Requester %s tried to query jobs for employee %s", resolvedRequester, strings.ReplaceAll(strings.ReplaceAll(clientEmployeeID, "\n", " "), "\r", " "))
 			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to view jobs for this employee"})
 			return
 		}
@@ -654,6 +657,7 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if resolvedRequester != job.OwnerID && resolvedRequester != job.UserID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
+		// #nosec G706 //nolint:gosec -- IDs are from verified JWT tokens and database, log injection not possible
 		log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to access job %s owned by owner %s, employee %s, user %s", resolvedRequester, job.ID, job.OwnerID, job.EmployeeID, job.UserID)
 		handlerutil.ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to access job %s", job.ID), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to view this job"})
@@ -1496,6 +1500,7 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 	isCustomer := resolvedRequester == job.UserID
 
 	if !isOwner && !isCustomer {
+		// #nosec G706 //nolint:gosec -- IDs are from verified JWT tokens and database, log injection not possible
 		log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to cancel job %s owned by owner %s and user %s", resolvedRequester, job.ID, job.OwnerID, job.UserID)
 		handlerutil.ShipSecurityEvent(ctx, "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to cancel job %s", job.ID), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to cancel this job"})

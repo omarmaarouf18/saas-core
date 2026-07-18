@@ -66,6 +66,7 @@ func ShipSecurityEvent(ctx context.Context, eventType, service, actorID, tenantI
 		return
 	}
 
+	// #nosec G118 //nolint:gosec -- async security log shipping must outlive request context to prevent evasion
 	go func() {
 		shipCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()

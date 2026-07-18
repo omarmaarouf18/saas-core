@@ -52,6 +52,7 @@ func RateLimit(limiter *RateLimiter) func(http.Handler) http.Handler {
 			if limited, remaining := limiter.CheckAndRecord(ip); limited {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusTooManyRequests)
+				// #nosec G705 //nolint:gosec -- raw JSON response does not contain user-provided HTML, XSS not possible
 				fmt.Fprintf(w, `{"error":"too many requests, locked out for %.0f seconds"}`, remaining.Seconds())
 				return
 			}

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -47,10 +48,23 @@ func NewLocalStorage(baseDir, baseURL, secret string) (*LocalStorage, error) {
 // Upload writes a document file to the local disk.
 func (l *LocalStorage) Upload(ctx context.Context, key string, reader io.Reader, contentType string) error {
 	destPath := filepath.Join(l.baseDir, filepath.Clean(key))
+	absBase, err := filepath.Abs(l.baseDir)
+	if err != nil {
+		return fmt.Errorf("storage: invalid base directory: %w", err)
+	}
+	absDest, err := filepath.Abs(destPath)
+	if err != nil {
+		return fmt.Errorf("storage: invalid destination path: %w", err)
+	}
+	if !strings.HasPrefix(absDest, absBase) {
+		return fmt.Errorf("storage: directory traversal detected")
+	}
+
 	if err := os.MkdirAll(filepath.Dir(destPath), 0700); err != nil {
 		return fmt.Errorf("storage: failed to create subdirectories: %w", err)
 	}
 
+	// #nosec G304 //nolint:gosec -- path prefix validation ensures file is scoped to storage directory, preventing directory traversal
 	file, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("storage: failed to open destination file: %w", err)
@@ -105,6 +119,19 @@ func (l *LocalStorage) ValidateSignedURLToken(tokenStr string) (string, error) {
 // OpenFile opens the local file for reading.
 func (l *LocalStorage) OpenFile(key string) (io.ReadCloser, error) {
 	destPath := filepath.Join(l.baseDir, filepath.Clean(key))
+	absBase, err := filepath.Abs(l.baseDir)
+	if err != nil {
+		return nil, fmt.Errorf("storage: invalid base directory: %w", err)
+	}
+	absDest, err := filepath.Abs(destPath)
+	if err != nil {
+		return nil, fmt.Errorf("storage: invalid destination path: %w", err)
+	}
+	if !strings.HasPrefix(absDest, absBase) {
+		return nil, fmt.Errorf("storage: directory traversal detected")
+	}
+
+	// #nosec G304 //nolint:gosec -- path prefix validation ensures file is scoped to storage directory, preventing directory traversal
 	file, err := os.Open(destPath)
 	if err != nil {
 		return nil, fmt.Errorf("storage: failed to open file %s: %w", key, err)

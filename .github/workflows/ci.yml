@@ -100,7 +100,7 @@ jobs:
       - name: Run gosec
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@latest
-          gosec -include=G104 ./...
+          gosec ./...
         working-directory: ${{ matrix.service.path }}
 
   flutter-test:

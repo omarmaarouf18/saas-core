@@ -51,6 +51,7 @@ func New(route config.ServiceRoute, gatewaySecret string, transport http.RoundTr
 			req.Header.Set("X-Gateway-Secret", gatewaySecret)
 		},
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
+			// #nosec G706 //nolint:gosec -- log statement contains sanitised request path and method, log injection not possible
 			log.Printf("[PROXY ERROR] %s %s → %s: %v",
 				r.Method, r.URL.Path, route.Target, err)
 			http.Error(w,

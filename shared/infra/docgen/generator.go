@@ -659,6 +659,7 @@ func GenerateMarkdownTable(endpoints []Endpoint) string {
 // UpdateApplicationMap replaces the generated block and Git SHA in docs/APPLICATION_MAP.md
 func UpdateApplicationMap(repoRoot string, checkOnly bool) (bool, string, error) {
 	mapPath := filepath.Join(repoRoot, "docs", "APPLICATION_MAP.md")
+	// #nosec G304 //nolint:gosec -- mapPath is a fixed path within repository root, not user-controlled
 	contentBytes, err := os.ReadFile(mapPath)
 	if err != nil {
 		return false, "", fmt.Errorf("failed to read %s: %w", mapPath, err)
@@ -724,6 +725,7 @@ func UpdateApplicationMap(repoRoot string, checkOnly bool) (bool, string, error)
 	}
 
 	if !checkOnly {
+		// #nosec G703 G306 //nolint:gosec -- mapPath is a fixed path within repo, and 0644 permission is correct for public documentation
 		err = os.WriteFile(mapPath, []byte(updatedContent), 0644)
 		if err != nil {
 			return false, "", fmt.Errorf("failed to write updated application map: %w", err)

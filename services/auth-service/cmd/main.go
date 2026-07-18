@@ -140,9 +140,10 @@ func main() {
 
 	addr := ":" + cfg.Port
 	server := &http.Server{
-		Addr:      addr,
-		Handler:   mux,
-		TLSConfig: tlsConfig,
+		Addr:              addr,
+		Handler:           mux,
+		TLSConfig:         tlsConfig,
+		ReadHeaderTimeout: 3 * time.Second,
 	}
 
 	// Graceful shutdown.
