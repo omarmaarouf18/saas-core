@@ -100,3 +100,10 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``99a1347f0f6eb87b6ee0d1f4934d48bd017de957``
 - **Verification**: Verified via test execution. ✅
 
+## shared/infra Test Coverage
+
+- **Implementation Detail**: Expanded test coverage for shared/infra packages (jwtutil, ratelimit, resilience, tlsutil, handlerutil) focusing on edge cases and failure modes. Added table-driven and concurrent tests verifying JWT none/mismatched signing algorithms, expired tokens, Redis denylist fail-closed behavior, double revocation, rate limiter lockout expiry/reset/capping, resilience retries, timeouts, tlsutil missing/invalid certificate files, and handlerutil non-blocking CloudWatch log shipping.
+- **Commit SHA**: ``40c6c9698cb5aba51e6efc401908889495690ae2``
+- **Verification**: Verified via `go test ./...` in the `shared/infra` directory. All tests pass. ✅
+
+

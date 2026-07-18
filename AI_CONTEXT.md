@@ -65,7 +65,7 @@ The detailed project history is distributed across categorized changelog files. 
 
 *   [Security Fixes](docs/changelog/security-fixes.md) — 58 vulnerabilities found and fixed (including Owner-Authenticated Employee Provisioning, see [ADR-0001](docs/adr/0001-owner-authenticated-employee-provisioning.md), Employee Assignment Tenant Binding, see [ADR-0003](docs/adr/0003-employee-assignment-tenant-binding-check.md), and Customer Booking Employee Pre-Assignment Gating, see [ADR-0004](docs/adr/0004-customer-booking-employee-assignment-order.md)).
 *   [New Features](docs/changelog/new-features.md) — 20 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters).
-*   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 16 tooling, CI, module refactoring, and onboarding CLI tools.
+*   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 17 tooling, CI, module refactoring, and onboarding CLI tools.
 *   [Bug Fixes](docs/changelog/bug-fixes.md) — 10 corrections to existing non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic, signup rollback on OTP set failure, resilience client connection leak).
 *   [Documentation](docs/changelog/documentation.md) — 4 documentation-only updates (e.g. Application Map, Audit Correction, Auto-Doc System).
 
@@ -145,7 +145,8 @@ This file is a persistent document tracking the real state of the repository.
 
 ---
 
-* **Immediate Next Step**: Re-themed the entire frontend application (login, signup, OTP, home/dashboard, wallet, employee management, service directory) to use the Quick Delivery brand kit (Deep Navy, Amber Gold, Light Gray, White, Poppins typography), verifying that it passes analysis and widget tests and launches successfully on the Genymotion emulator. Next step: begin Phase 3 employee dashboard and audit simulator.
+* **Immediate Next Step**: Re-themed the entire frontend application (login, signup, OTP, home/dashboard, wallet, employee management, service directory) to use the Quick Delivery brand kit (Deep Navy, Amber Gold, Light Gray, White, Poppins typography), verifying that it passes analysis and widget tests and launches successfully on the Genymotion emulator. Next step: begin Phase 3 employee dashboard and audit simulator. Completed shared/infra test coverage expansion (jwtutil, ratelimit, resilience, tlsutil, handlerutil) focusing on failure modes under commit 40c6c9698cb5aba51e6efc401908889495690ae2.
+
 
 
 
