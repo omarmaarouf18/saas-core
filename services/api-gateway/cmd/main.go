@@ -6,7 +6,6 @@ package main
 
 import (
 	"crypto/subtle"
-	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"github.com/project/gateway/internal/config"
 	"github.com/project/gateway/internal/middleware"
 	"github.com/project/gateway/internal/proxy"
+	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/ratelimit"
 	"github.com/project/shared/infra/resilience"
 	"github.com/project/shared/infra/tlsutil"
@@ -49,9 +49,7 @@ func main() {
 
 	// ---- Health check endpoint ----
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		handlerutil.WriteJSON(w, http.StatusOK, map[string]any{
 			"status": "ok",
 		})
 	})
@@ -60,14 +58,10 @@ func main() {
 	mux.HandleFunc("/health/internal", func(w http.ResponseWriter, r *http.Request) {
 		gotToken := r.Header.Get("X-Internal-Token")
 		if subtle.ConstantTimeCompare([]byte(gotToken), []byte(cfg.InternalServiceToken)) != 1 {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(map[string]string{"error": "access denied: invalid internal token"})
+			handlerutil.WriteJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: invalid internal token"})
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		handlerutil.WriteJSON(w, http.StatusOK, map[string]any{
 			"status":       "ok",
 			"dependencies": resilience.GetBreakerStats(),
 		})
@@ -80,14 +74,11 @@ func main() {
 			http.NotFound(w, r)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-
 		info := map[string]any{
 			"service": "api-gateway",
 			"version": "0.1.0",
 		}
-		json.NewEncoder(w).Encode(info)
+		handlerutil.WriteJSON(w, http.StatusOK, info)
 	})
 
 	// ---- Register reverse proxy routes ----

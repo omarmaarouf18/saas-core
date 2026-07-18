@@ -138,13 +138,17 @@ func (s *MongoDB) ensureSeedData(ctx context.Context) {
 	var cfg models.PlatformConfig
 	err := s.platConfig.FindOne(ctx, bson.M{"_id": "global"}).Decode(&cfg)
 	if err != nil {
-		s.platConfig.InsertOne(ctx, models.PlatformConfig{
+		if _, err := s.platConfig.InsertOne(ctx, models.PlatformConfig{
 			ID: "global", PlatformFeePercentage: 15.0, PlatformWalletID: "platform-central",
-		})
+		}); err != nil {
+			log.Printf("[ERROR] failed to seed platform config: %v", err)
+		}
 		// Create platform central wallet.
-		s.wallets.InsertOne(ctx, models.Wallet{
+		if _, err := s.wallets.InsertOne(ctx, models.Wallet{
 			ID: "platform-central", TenantID: "platform", UpdatedAt: time.Now().UTC(),
-		})
+		}); err != nil {
+			log.Printf("[ERROR] failed to seed platform wallet: %v", err)
+		}
 		log.Println("[USER-STORE] Platform config seeded (15% fee)")
 	}
 }
@@ -302,7 +306,7 @@ func (s *MongoDB) GetOrCreateWallet(ctx context.Context, tenantID string) (*mode
 	}
 	if _, err := s.wallets.InsertOne(ctx, w); err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			s.wallets.FindOne(ctx, bson.M{"tenant_id": tenantID}).Decode(&w)
+			_ = s.wallets.FindOne(ctx, bson.M{"tenant_id": tenantID}).Decode(&w)
 			return &w, nil
 		}
 		return nil, err
@@ -330,11 +334,13 @@ func (s *MongoDB) Deposit(ctx context.Context, tenantID string, amount float64) 
 	if err != nil {
 		return err
 	}
-	s.ledger.InsertOne(ctx, models.TransactionLedger{
+	if _, err := s.ledger.InsertOne(ctx, models.TransactionLedger{
 		ID: fmt.Sprintf("tx-%d", time.Now().UnixNano()), TenantID: tenantID, Type: models.TxDeposit,
 		Amount: amount, BalanceBefore: w.TotalBalance, BalanceAfter: w.TotalBalance + amount,
 		Description: "wallet deposit", Timestamp: time.Now().UTC(),
-	})
+	}); err != nil {
+		log.Printf("[ERROR] failed to insert transaction ledger: %v", err)
+	}
 	return nil
 }
 
@@ -359,12 +365,14 @@ func (s *MongoDB) LockEscrow(ctx context.Context, tenantID, jobID string, amount
 	if res.MatchedCount == 0 {
 		return fmt.Errorf("escrow lock failed: race condition or insufficient funds")
 	}
-	s.ledger.InsertOne(ctx, models.TransactionLedger{
+	if _, err := s.ledger.InsertOne(ctx, models.TransactionLedger{
 		ID: fmt.Sprintf("tx-%d", time.Now().UnixNano()), TenantID: tenantID, JobID: jobID,
 		Type: models.TxEscrowLock, Amount: amount,
 		BalanceBefore: w.WithdrawableBalance, BalanceAfter: w.WithdrawableBalance - amount,
 		Description: fmt.Sprintf("escrow lock for job %s", jobID), Timestamp: time.Now().UTC(),
-	})
+	}); err != nil {
+		log.Printf("[ERROR] failed to insert transaction ledger: %v", err)
+	}
 	return nil
 }
 
@@ -455,7 +463,7 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 			return err
 		}
 		if err := runTx(sc); err != nil {
-			session.AbortTransaction(sc)
+			_ = session.AbortTransaction(sc)
 			return err
 		}
 		return session.CommitTransaction(sc)
@@ -476,7 +484,9 @@ func (s *MongoDB) GetLedger(ctx context.Context, tenantID string) []models.Trans
 	}
 	defer cursor.Close(ctx)
 	var entries []models.TransactionLedger
-	cursor.All(ctx, &entries)
+	if err := cursor.All(ctx, &entries); err != nil {
+		log.Printf("[ERROR] failed to decode ledger entries: %v", err)
+	}
 	return entries
 }
 
@@ -574,7 +584,7 @@ func (s *MongoDB) DeductCODFee(ctx context.Context, tenantID, jobID string, amou
 			return err
 		}
 		if err := runTx(sc); err != nil {
-			session.AbortTransaction(sc)
+			_ = session.AbortTransaction(sc)
 			return err
 		}
 		return session.CommitTransaction(sc)
@@ -768,7 +778,7 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 			return err
 		}
 		if err := runTx(sc); err != nil {
-			session.AbortTransaction(sc)
+			_ = session.AbortTransaction(sc)
 			return err
 		}
 		return session.CommitTransaction(sc)

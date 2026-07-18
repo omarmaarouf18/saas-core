@@ -340,15 +340,9 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 }
 
 func writeBytes(w http.ResponseWriter, data []byte) {
-	if _, err := w.Write(data); err != nil {
-		log.Printf("[ERROR] failed to write response: %v", err)
-	}
+	handlerutil.WriteBytes(w, data)
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		log.Printf("[ERROR] failed to encode response: %v", err)
-	}
+	handlerutil.WriteJSON(w, status, data)
 }

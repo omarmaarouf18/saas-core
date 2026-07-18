@@ -19,7 +19,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -28,6 +27,7 @@ import (
 	"github.com/project/chat-service/internal/config"
 	"github.com/project/chat-service/internal/handlers"
 	"github.com/project/chat-service/internal/store"
+	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/shared/infra/ratelimit"
 	"github.com/project/shared/infra/resilience"
@@ -79,9 +79,7 @@ func main() {
 
 	// Health check with connection stats.
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		handlerutil.WriteJSON(w, http.StatusOK, map[string]any{
 			"status":          "ok",
 			"active_clients":  hub.ClientCount(),
 			"active_channels": hub.ChannelCount(),
@@ -95,9 +93,7 @@ func main() {
 			http.NotFound(w, r)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{
+		handlerutil.WriteJSON(w, http.StatusOK, map[string]string{
 			"service": "chat-service",
 			"version": "0.1.0",
 		})

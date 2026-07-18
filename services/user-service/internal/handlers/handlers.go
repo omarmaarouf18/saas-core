@@ -373,7 +373,10 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	if req.PaymentMethod == "cod" {
 		log.Printf("[USER] Job %s created (COD payment method)", job.ID)
 		// Progress to active.
-		u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive)
+		if err := u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to activate job: " + err.Error()})
+			return
+		}
 		job.Status = models.JobStatusActive
 		job.UpdatedAt = time.Now().UTC()
 
@@ -416,7 +419,10 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	job.LockedEscrowAmount = escrowAmount
 
 	// Progress to active.
-	u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive)
+	if err := u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to activate job: " + err.Error()})
+		return
+	}
 	job.Status = models.JobStatusActive
 	job.UpdatedAt = time.Now().UTC()
 
@@ -564,7 +570,10 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusCompleted)
+	if err := u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusCompleted); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to complete job: " + err.Error()})
+		return
+	}
 
 	cfg := u.store.GetPlatformConfig(ctx)
 	feePercent := 15.0
@@ -831,9 +840,7 @@ func resolveToken(tokenStr string) (string, error) {
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	handlerutil.WriteJSON(w, status, data)
 }
 
 func generateID() string {

@@ -15,7 +15,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -23,6 +22,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/shared/infra/ratelimit"
 	"github.com/project/shared/infra/resilience"
@@ -67,9 +67,7 @@ func main() {
 	userHandlers.RegisterRoutes(mux)
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		handlerutil.WriteJSON(w, http.StatusOK, map[string]any{
 			"status":       "ok",
 			"storage":      "mongodb",
 			"dependencies": resilience.GetBreakerStats(),
@@ -81,9 +79,7 @@ func main() {
 			http.NotFound(w, r)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{
+		handlerutil.WriteJSON(w, http.StatusOK, map[string]string{
 			"service": "user-service", "version": "0.2.0", "storage": "mongodb",
 		})
 	})
@@ -102,8 +98,12 @@ func main() {
 		log.Println("[USER] Shutting down...")
 		shutdownCtx, sc := context.WithTimeout(context.Background(), 10*time.Second)
 		defer sc()
-		server.Shutdown(shutdownCtx)
-		mongoStore.Close(shutdownCtx)
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("[ERROR] server shutdown error: %v", err)
+		}
+		if err := mongoStore.Close(shutdownCtx); err != nil {
+			log.Printf("[ERROR] mongo store close error: %v", err)
+		}
 	}()
 
 	log.Printf("User Service listening on %s (HTTPS, MongoDB-backed)", addr)

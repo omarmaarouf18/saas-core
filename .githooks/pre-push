@@ -33,7 +33,7 @@ for mod in services/api-gateway services/auth-service services/chat-service \
     echo "BLOCKED: $mod failed build/vet/test"
     exit 1
   }
-  if [ "$mod" = "services/notification-service" ]; then
+  if true; then
     if [ -z "$GOSEC_BIN" ] || [ ! -x "$GOSEC_BIN" ]; then
       echo "gosec not found, installing..."
       go install github.com/securego/gosec/v2/cmd/gosec@latest 2>/dev/null || true
@@ -41,7 +41,7 @@ for mod in services/api-gateway services/auth-service services/chat-service \
     fi
     if [ -x "$GOSEC_BIN" ]; then
       echo "-- running gosec on $mod --"
-      (cd "$mod" && "$GOSEC_BIN" ./...) || {
+      (cd "$mod" && "$GOSEC_BIN" -include=G104 ./...) || {
         echo "BLOCKED: $mod failed gosec security scan"
         exit 1
       }

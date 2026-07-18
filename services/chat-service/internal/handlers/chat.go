@@ -204,9 +204,7 @@ func (c *Chat) canAccessChannel(userID, channel string) (bool, error) {
 func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	ip := handlerutil.GetIP(r)
 	if limited, remaining := c.limiter.CheckAndRecord(ip); limited {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusTooManyRequests)
-		json.NewEncoder(w).Encode(map[string]string{
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})
 		return
@@ -227,27 +225,21 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		// 1. Primary trust boundary: Validate JWT token signature and expiry locally
 		claims, err := jwtutil.ValidateToken(token)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(map[string]string{"error": "invalid or expired token: " + err.Error()})
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "invalid or expired token: " + err.Error()})
 			return
 		}
 
 		// 2. Secondary trust boundary: verify against auth-service (using user ID)
 		active, err := c.verifyToken(claims.UserID)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusServiceUnavailable)
-			json.NewEncoder(w).Encode(map[string]string{
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
 				"error":   "service_unavailable",
 				"message": "Authentication service is temporarily unavailable. Please try again later.",
 			})
 			return
 		}
 		if !active {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(map[string]string{"error": "user associated with token is not active or verified"})
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "user associated with token is not active or verified"})
 			return
 		}
 		userID = claims.UserID
@@ -287,17 +279,13 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 // GET /chat/history?channel=<channel>&limit=<n>
 func (c *Chat) GetHistory(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(map[string]string{"error": "method not allowed, use GET"})
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed, use GET"})
 		return
 	}
 
 	channel := r.URL.Query().Get("channel")
 	if channel == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "channel parameter is required"})
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "channel parameter is required"})
 		return
 	}
 
@@ -306,9 +294,7 @@ func (c *Chat) GetHistory(w http.ResponseWriter, r *http.Request) {
 		requesterToken = r.URL.Query().Get("token")
 	}
 	if requesterToken == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "requester_id parameter is required"})
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester_id parameter is required"})
 		return
 	}
 
@@ -319,26 +305,20 @@ func (c *Chat) GetHistory(w http.ResponseWriter, r *http.Request) {
 	} else {
 		claims, err := jwtutil.ValidateToken(requesterToken)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(map[string]string{"error": "invalid or expired token: " + err.Error()})
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "invalid or expired token: " + err.Error()})
 			return
 		}
 
 		active, err := c.verifyToken(claims.UserID)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusServiceUnavailable)
-			json.NewEncoder(w).Encode(map[string]string{
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
 				"error":   "service_unavailable",
 				"message": "Authentication service is temporarily unavailable. Please try again later.",
 			})
 			return
 		}
 		if !active {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(map[string]string{"error": "user associated with token is not active or verified"})
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "user associated with token is not active or verified"})
 			return
 		}
 		userID = claims.UserID
@@ -346,18 +326,14 @@ func (c *Chat) GetHistory(w http.ResponseWriter, r *http.Request) {
 
 	allowed, err := c.canAccessChannel(userID, channel)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusServiceUnavailable)
-		json.NewEncoder(w).Encode(map[string]string{
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{
 			"error":   "service_unavailable",
 			"message": "User service is temporarily unavailable. Please try again later.",
 		})
 		return
 	}
 	if !allowed {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(map[string]string{"error": "not authorized for this channel"})
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "not authorized for this channel"})
 		return
 	}
 
@@ -375,15 +351,11 @@ func (c *Chat) GetHistory(w http.ResponseWriter, r *http.Request) {
 
 	history, err := c.store.GetHistory(r.Context(), channel, limit)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "failed to retrieve chat history: " + err.Error()})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to retrieve chat history: " + err.Error()})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(history)
+	writeJSON(w, http.StatusOK, history)
 }
 
 // readPump reads messages from the WebSocket connection and dispatches
@@ -391,14 +363,14 @@ func (c *Chat) GetHistory(w http.ResponseWriter, r *http.Request) {
 func (c *Chat) readPump(conn *websocket.Conn, client *chat.Client) {
 	defer func() {
 		c.hub.Unregister <- client
-		conn.Close()
+		_ = conn.Close()
 		log.Printf("[WS] Read pump closed: %s", client.ID)
 	}()
 
 	conn.SetReadLimit(maxMessageSize)
-	conn.SetReadDeadline(time.Now().Add(pongWait))
+	_ = conn.SetReadDeadline(time.Now().Add(pongWait))
 	conn.SetPongHandler(func(string) error {
-		conn.SetReadDeadline(time.Now().Add(pongWait))
+		_ = conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
 
@@ -534,17 +506,17 @@ func (c *Chat) writePump(conn *websocket.Conn, client *chat.Client) {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		conn.Close()
+		_ = conn.Close()
 		log.Printf("[WS] Write pump closed: %s", client.ID)
 	}()
 
 	for {
 		select {
 		case message, ok := <-client.Send:
-			conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// Hub closed the channel — send a close frame.
-				conn.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
@@ -552,13 +524,19 @@ func (c *Chat) writePump(conn *websocket.Conn, client *chat.Client) {
 			if err != nil {
 				return
 			}
-			w.Write(message)
+			if _, err := w.Write(message); err != nil {
+				return
+			}
 
 			// Batch any queued messages into the current write.
 			n := len(client.Send)
 			for i := 0; i < n; i++ {
-				w.Write([]byte("\n"))
-				w.Write(<-client.Send)
+				if _, err := w.Write([]byte("\n")); err != nil {
+					return
+				}
+				if _, err := w.Write(<-client.Send); err != nil {
+					return
+				}
 			}
 
 			if err := w.Close(); err != nil {
@@ -566,7 +544,7 @@ func (c *Chat) writePump(conn *websocket.Conn, client *chat.Client) {
 			}
 
 		case <-ticker.C:
-			conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
@@ -579,18 +557,14 @@ func (c *Chat) writePump(conn *websocket.Conn, client *chat.Client) {
 
 func (c *Chat) BroadcastLocation(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(map[string]string{"error": "use POST"})
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
 		return
 	}
 
 	// Validate internal token
 	gotToken := r.Header.Get("X-Internal-Token")
 	if subtle.ConstantTimeCompare([]byte(gotToken), []byte(c.internalServiceToken)) != 1 {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(map[string]string{"error": "access denied: invalid internal token"})
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: invalid internal token"})
 		return
 	}
 
@@ -602,16 +576,12 @@ func (c *Chat) BroadcastLocation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "invalid JSON body: " + err.Error()})
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body: " + err.Error()})
 		return
 	}
 
 	if req.Channel == "" || req.EmployeeID == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "channel and employee_id are required"})
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "channel and employee_id are required"})
 		return
 	}
 
@@ -625,16 +595,12 @@ func (c *Chat) BroadcastLocation(w http.ResponseWriter, r *http.Request) {
 
 	c.hub.Broadcast <- msg
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "location broadcasted"})
+	writeJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "location broadcasted"})
 }
 
 func (c *Chat) HandleCreateTicket(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(map[string]string{"error": "method not allowed, use POST"})
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed, use POST"})
 		return
 	}
 
@@ -646,25 +612,19 @@ func (c *Chat) HandleCreateTicket(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if token == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "missing token"})
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing token"})
 		return
 	}
 
 	claims, err := jwtutil.ValidateToken(token)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(map[string]string{"error": "invalid or expired token: " + err.Error()})
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "invalid or expired token: " + err.Error()})
 		return
 	}
 
 	// Rate limiting check
 	if limited, remaining := c.limiter.CheckAndRecord("ticket_create:" + claims.UserID); limited {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusTooManyRequests)
-		json.NewEncoder(w).Encode(map[string]string{
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})
 		return
@@ -674,17 +634,13 @@ func (c *Chat) HandleCreateTicket(w http.ResponseWriter, r *http.Request) {
 		ContextID string `json:"context_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "invalid JSON body"})
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
 		return
 	}
 
 	ticket, err := c.store.CreateTicketAndAssign(r.Context(), claims.UserID, req.ContextID)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "failed to create ticket: " + err.Error()})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create ticket: " + err.Error()})
 		return
 	}
 
@@ -696,16 +652,12 @@ func (c *Chat) HandleCreateTicket(w http.ResponseWriter, r *http.Request) {
 		handlerutil.ShipSecurityEvent(r.Context(), "TICKET_QUEUED", "chat-service", claims.UserID, "", fmt.Sprintf("ticket %s queued - no agents available", ticket.ID), handlerutil.GetClientIP(r))
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(ticket)
+	writeJSON(w, http.StatusCreated, ticket)
 }
 
 func (c *Chat) HandleResolveTicket(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(map[string]string{"error": "method not allowed, use POST"})
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed, use POST"})
 		return
 	}
 
@@ -717,17 +669,13 @@ func (c *Chat) HandleResolveTicket(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if token == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "missing token"})
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing token"})
 		return
 	}
 
 	agent, err := c.store.GetAgentByToken(r.Context(), token)
 	if err != nil || agent == nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(map[string]string{"error": "access denied: invalid agent token"})
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: invalid agent token"})
 		return
 	}
 
@@ -735,17 +683,13 @@ func (c *Chat) HandleResolveTicket(w http.ResponseWriter, r *http.Request) {
 		TicketID string `json:"ticket_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "invalid JSON body"})
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
 		return
 	}
 
 	ticket, err := c.store.GetTicket(r.Context(), req.TicketID)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]string{"error": "ticket not found"})
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "ticket not found"})
 		return
 	}
 
@@ -753,22 +697,20 @@ func (c *Chat) HandleResolveTicket(w http.ResponseWriter, r *http.Request) {
 	if ticket.AssignedAgentID != agent.ID {
 		log.Printf("[SECURITY EVENT] Agent %s attempted unauthorized resolve of ticket %s (assigned to %s)", agent.ID, ticket.ID, ticket.AssignedAgentID)
 		handlerutil.ShipSecurityEvent(r.Context(), "TICKET_RESOLVE_BLOCKED", "chat-service", agent.ID, "", fmt.Sprintf("unauthorized attempt to resolve ticket %s", ticket.ID), handlerutil.GetClientIP(r))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(map[string]string{"error": "not authorized to resolve this ticket"})
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "not authorized to resolve this ticket"})
 		return
 	}
 
 	if err := c.store.ResolveTicket(r.Context(), req.TicketID); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "failed to resolve ticket: " + err.Error()})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to resolve ticket: " + err.Error()})
 		return
 	}
 
 	handlerutil.ShipSecurityEvent(r.Context(), "TICKET_RESOLVED", "chat-service", agent.ID, "", fmt.Sprintf("ticket %s resolved by agent %s", ticket.ID, agent.ID), handlerutil.GetClientIP(r))
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "resolved", "ticket_id": req.TicketID})
+	writeJSON(w, http.StatusOK, map[string]string{"status": "resolved", "ticket_id": req.TicketID})
+}
+
+func writeJSON(w http.ResponseWriter, status int, data any) {
+	handlerutil.WriteJSON(w, status, data)
 }

@@ -27,7 +27,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -41,6 +40,7 @@ import (
 	"github.com/project/auth-service/internal/otpcrypto"
 	"github.com/project/auth-service/internal/storage"
 	"github.com/project/auth-service/internal/store"
+	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/shared/infra/ratelimit"
 	"github.com/project/shared/infra/tlsutil"
@@ -116,9 +116,7 @@ func main() {
 
 	// Health check.
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{
+		handlerutil.WriteJSON(w, http.StatusOK, map[string]string{
 			"status":       "ok",
 			"storage":      "mongodb",
 			"otp_crypto":   "AES-256-GCM",
@@ -133,9 +131,7 @@ func main() {
 			http.NotFound(w, r)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{
+		handlerutil.WriteJSON(w, http.StatusOK, map[string]string{
 			"service": "auth-service",
 			"version": "0.3.0",
 			"storage": "mongodb",
@@ -159,8 +155,12 @@ func main() {
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer shutdownCancel()
 
-		server.Shutdown(shutdownCtx)
-		mongoStore.Close(shutdownCtx)
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("[ERROR] server shutdown error: %v", err)
+		}
+		if err := mongoStore.Close(shutdownCtx); err != nil {
+			log.Printf("[ERROR] mongo store close error: %v", err)
+		}
 	}()
 
 	log.Printf("Auth Service listening on %s (HTTPS + MongoDB + AES-256-GCM + %s)", addr, dispatcher.Name())
