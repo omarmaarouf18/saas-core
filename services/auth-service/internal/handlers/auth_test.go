@@ -2242,3 +2242,47 @@ func TestSignupUsernameWhitespaceTrimming(t *testing.T) {
 		t.Errorf("expected error message to contain 'username already taken', got: %s", rec3.Body.String())
 	}
 }
+
+func TestSignupUsernameCaseInsensitivity(t *testing.T) {
+	a, _, cleanup := setupTestAuth(t)
+	if a == nil {
+		t.Skip("setup failed")
+		return
+	}
+	defer cleanup()
+
+	// 1. Register first user with "omar"
+	reqBodyFirst := models.SignupRequest{
+		Email:    "omar@example.com",
+		Username: "omar",
+		Password: "password123",
+		Role:     models.RoleUser,
+	}
+	b1, _ := json.Marshal(reqBodyFirst)
+	req1 := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b1))
+	rec1 := httptest.NewRecorder()
+	a.Signup(rec1, req1)
+
+	if rec1.Code != http.StatusCreated {
+		t.Fatalf("expected 201 Created for first user, got %d. Body: %s", rec1.Code, rec1.Body.String())
+	}
+
+	// 2. Register second user with "Omar" (should fail with StatusConflict / "username already taken")
+	reqBodySecond := models.SignupRequest{
+		Email:    "omar_caps@example.com",
+		Username: "Omar",
+		Password: "password123",
+		Role:     models.RoleUser,
+	}
+	b2, _ := json.Marshal(reqBodySecond)
+	req2 := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b2))
+	rec2 := httptest.NewRecorder()
+	a.Signup(rec2, req2)
+
+	if rec2.Code != http.StatusConflict {
+		t.Errorf("expected 409 StatusConflict for case-variant duplicate username 'Omar', got %d. Body: %s", rec2.Code, rec2.Body.String())
+	}
+	if !strings.Contains(rec2.Body.String(), "username already taken") {
+		t.Errorf("expected error message to contain 'username already taken', got: %s", rec2.Body.String())
+	}
+}

@@ -120,13 +120,50 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 		return fmt.Errorf("users email index: %w", err)
 	}
 
-	// Users: unique username index.
+	// Check for case-insensitive duplicate usernames before creating unique index
+	dupPipeline := mongo.Pipeline{
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: bson.D{{Key: "$toLower", Value: "$username"}}},
+			{Key: "count", Value: bson.D{{Key: "$sum", Value: 1}}},
+			{Key: "usernames", Value: bson.D{{Key: "$push", Value: "$username"}}},
+		}}},
+		{{Key: "$match", Value: bson.D{
+			{Key: "count", Value: bson.D{{Key: "$gt", Value: 1}}},
+			{Key: "_id", Value: bson.D{{Key: "$ne", Value: nil}}}, // skip empty/null usernames
+		}}},
+	}
+
+	cursor, err := s.users.Aggregate(ctx, dupPipeline)
+	if err == nil {
+		defer cursor.Close(ctx)
+		var duplicates []struct {
+			ID        string   `bson:"_id"`
+			Count     int      `bson:"count"`
+			Usernames []string `bson:"usernames"`
+		}
+		if err := cursor.All(ctx, &duplicates); err == nil && len(duplicates) > 0 {
+			var conflicts []string
+			for _, dup := range duplicates {
+				conflicts = append(conflicts, fmt.Sprintf("%q (matches: %v)", dup.ID, dup.Usernames))
+			}
+			log.Printf("[MIGRATION ERROR] Cannot enable case-insensitive username uniqueness because duplicate usernames exist: %v. Please resolve these manually.", conflicts)
+			return fmt.Errorf("case-insensitive duplicate usernames exist in database: %v", conflicts)
+		}
+	}
+
+	// Drop old case-sensitive username index if it exists to prevent options conflict
+	_ = s.users.Indexes().DropOne(ctx, "username_1")
+
+	// Users: unique case-insensitive username index.
 	_, err = s.users.Indexes().CreateOne(ctx, mongo.IndexModel{
-		Keys:    bson.D{{Key: "username", Value: 1}},
-		Options: options.Index().SetUnique(true),
+		Keys: bson.D{{Key: "username", Value: 1}},
+		Options: options.Index().SetUnique(true).SetCollation(&options.Collation{
+			Locale:   "en",
+			Strength: 2, // Case-insensitive
+		}),
 	})
 	if err != nil {
-		return fmt.Errorf("users username index: %w", err)
+		return fmt.Errorf("users username unique index: %w", err)
 	}
 
 	// Users: owner_id index for employee lookups.
