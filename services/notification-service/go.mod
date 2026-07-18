@@ -4,6 +4,7 @@ go 1.24
 
 require (
 	github.com/alicebob/miniredis/v2 v2.38.0
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/project/shared/infra v0.0.0
 	github.com/redis/go-redis/v9 v9.21.0
 )
@@ -26,7 +27,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.44.0 // indirect
 	github.com/aws/smithy-go v1.27.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/sony/gobreaker/v2 v2.4.0 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
