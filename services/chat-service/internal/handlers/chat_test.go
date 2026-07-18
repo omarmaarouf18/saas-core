@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
 	"github.com/project/chat-service/internal/chat"
 	"github.com/project/chat-service/internal/config"
@@ -526,6 +527,7 @@ func setupTestChat(t *testing.T) (*Chat, *store.MongoDB, func()) {
 		t.Fatalf("failed to start miniredis: %v", err)
 	}
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	jwtutil.SetRedisClient(rdb)
 
 	cfg := &config.Config{
 		UserServiceURL:       mockAuthUserServer.URL,
@@ -544,6 +546,7 @@ func setupTestChat(t *testing.T) (*Chat, *store.MongoDB, func()) {
 		mr.Close()
 		rdb.Close()
 		mockAuthUserServer.Close()
+		jwtutil.SetRedisClient(nil)
 	}
 	return c, s, cleanup
 }
@@ -814,5 +817,225 @@ func TestChatWebSocketCommunication(t *testing.T) {
 	}
 	if rejection["type"] != "error" || rejection["error"] != "not authorized for this channel" {
 		t.Errorf("Expected authorization error, got: %v", rejection)
+	}
+}
+
+func TestWebSocketUpgradeExtraGaps(t *testing.T) {
+	c, _, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	// 1. Malformed Token -> 403 Forbidden
+	reqMalformed := httptest.NewRequest("GET", "/chat/ws?token=malformed.token.xyz", nil)
+	recMalformed := httptest.NewRecorder()
+	c.HandleWebSocket(recMalformed, reqMalformed)
+	if recMalformed.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden for malformed token, got %d", recMalformed.Code)
+	}
+	if !strings.Contains(recMalformed.Body.String(), "token is malformed") && !strings.Contains(recMalformed.Body.String(), "invalid or expired token") {
+		t.Errorf("Expected body to contain malformed message, got: %s", recMalformed.Body.String())
+	}
+
+	// 2. Expired Token -> 403 Forbidden
+	expiredClaims := jwtutil.Claims{
+		UserID:   "expired-user",
+		Role:     "user",
+		TenantID: "tenant-1",
+		Email:    "expired@example.com",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-1 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
+			ID:        "expired-jti-123",
+		},
+	}
+	tokenObj := jwt.NewWithClaims(jwt.SigningMethodHS256, expiredClaims)
+	expiredToken, _ := tokenObj.SignedString([]byte("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2"))
+
+	reqExpired := httptest.NewRequest("GET", "/chat/ws?token="+expiredToken, nil)
+	recExpired := httptest.NewRecorder()
+	c.HandleWebSocket(recExpired, reqExpired)
+	if recExpired.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden for expired token, got %d", recExpired.Code)
+	}
+	if !strings.Contains(recExpired.Body.String(), "token has expired") {
+		t.Errorf("Expected body to contain token expired message, got: %s", recExpired.Body.String())
+	}
+
+	// 3. Revoked (denylisted) Token -> 403 Forbidden
+	validToken, err := jwtutil.GenerateToken("revoked-user", "user", "tenant-1", "revoked@example.com")
+	if err != nil {
+		t.Fatalf("failed to generate valid token: %v", err)
+	}
+	err = jwtutil.RevokeToken(validToken)
+	if err != nil {
+		t.Fatalf("failed to revoke token: %v", err)
+	}
+
+	reqRevoked := httptest.NewRequest("GET", "/chat/ws?token="+validToken, nil)
+	recRevoked := httptest.NewRecorder()
+	c.HandleWebSocket(recRevoked, reqRevoked)
+	if recRevoked.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden for revoked token, got %d", recRevoked.Code)
+	}
+	if !strings.Contains(recRevoked.Body.String(), "token has been revoked") {
+		t.Errorf("Expected body to contain token revoked message, got: %s", recRevoked.Body.String())
+	}
+}
+
+func TestChatExtraGapsWebSocketFlows(t *testing.T) {
+	c, mongoStore, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	// Create test server mapping the WS route
+	mux := http.NewServeMux()
+	mux.HandleFunc("/chat/ws", c.HandleWebSocket)
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/chat/ws"
+
+	// Generate tokens
+	tokenTenantBOwner, _ := jwtutil.GenerateToken("tenant-b-owner", "owner", "tenant-b", "ownerB@test.com")
+	tokenOwner1, _ := jwtutil.GenerateToken("owner-1", "owner", "tenant-a", "owner1@test.com")
+
+	// 1. Channel subscription authorization: Tenant B owner attempts to subscribe to Tenant A owner's job:valid-job-123
+	dialer := websocket.Dialer{}
+	header := http.Header{}
+	header.Set("Origin", "http://localhost:3000")
+
+	connB, _, err := dialer.Dial(wsURL+"?token="+tokenTenantBOwner, header)
+	if err != nil {
+		t.Fatalf("Failed to dial B ws: %v", err)
+	}
+	defer connB.Close()
+
+	err = connB.WriteJSON(map[string]string{
+		"action":  "subscribe",
+		"channel": "job:valid-job-123",
+	})
+	if err != nil {
+		t.Fatalf("Failed to write subscribe JSON: %v", err)
+	}
+
+	var respB map[string]string
+	err = connB.ReadJSON(&respB)
+	if err != nil {
+		t.Fatalf("Failed to read subscribe JSON response: %v", err)
+	}
+	if respB["type"] != "error" || respB["error"] != "not authorized for this channel" {
+		t.Errorf("Expected subscription rejection, got: %v", respB)
+	}
+
+	// 2. Message persistence & order check
+	connA, _, err := dialer.Dial(wsURL+"?token="+tokenOwner1, header)
+	if err != nil {
+		t.Fatalf("Failed to dial A ws: %v", err)
+	}
+	defer connA.Close()
+
+	err = connA.WriteJSON(map[string]string{
+		"action":  "subscribe",
+		"channel": "job:valid-job-123",
+	})
+	if err != nil {
+		t.Fatalf("Failed to subscribe A: %v", err)
+	}
+
+	var confirmA map[string]string
+	_ = connA.ReadJSON(&confirmA)
+
+	messagesToSend := []string{"First message", "Second message", "Third message"}
+	for _, m := range messagesToSend {
+		err = connA.WriteJSON(map[string]string{
+			"action":  "message",
+			"channel": "job:valid-job-123",
+			"content": m,
+		})
+		if err != nil {
+			t.Fatalf("Failed to write message: %v", err)
+		}
+		// Read self broadcast reflection to sync
+		var selfReflect map[string]any
+		_ = connA.ReadJSON(&selfReflect)
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	// Retrieve history using GET /chat/history
+	c.tokenCache["owner-1"] = time.Now().Add(60 * time.Second)
+	reqHist := httptest.NewRequest("GET", "/chat/history?channel=job:valid-job-123&requester_id="+tokenOwner1, nil)
+	recHist := httptest.NewRecorder()
+	c.GetHistory(recHist, reqHist)
+
+	if recHist.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for history, got %d. Body: %s", recHist.Code, recHist.Body.String())
+	}
+
+	var history []chat.Message
+	if err := json.NewDecoder(recHist.Body).Decode(&history); err != nil {
+		t.Fatalf("Failed to decode history: %v", err)
+	}
+
+	if len(history) < 3 {
+		t.Fatalf("Expected at least 3 messages in history, got %d", len(history))
+	}
+
+	// Assert correct order (oldest to newest)
+	histLen := len(history)
+	if history[histLen-3].Content != "First message" {
+		t.Errorf("Expected oldest message to be 'First message', got %s", history[histLen-3].Content)
+	}
+	if history[histLen-2].Content != "Second message" {
+		t.Errorf("Expected middle message to be 'Second message', got %s", history[histLen-2].Content)
+	}
+	if history[histLen-1].Content != "Third message" {
+		t.Errorf("Expected newest message to be 'Third message', got %s", history[histLen-1].Content)
+	}
+
+	// 3. Message from unauthorized channel does not get persisted
+	// Try sending a message to a channel where user is not authorized (e.g. connB tries to send to job:valid-job-123)
+	err = connB.WriteJSON(map[string]string{
+		"action":  "message",
+		"channel": "job:valid-job-123",
+		"content": "Malicious non-persisted message",
+	})
+	if err != nil {
+		t.Fatalf("Failed to write unauthorized message JSON: %v", err)
+	}
+
+	// Read error response
+	var errResp map[string]string
+	_ = connB.ReadJSON(&errResp)
+	if errResp["type"] != "error" || errResp["error"] != "not authorized for this channel" {
+		t.Errorf("Expected unauthorized message error, got: %v", errResp)
+	}
+
+	// Double-check history to ensure the unauthorized message was not persisted
+	reqHist2 := httptest.NewRequest("GET", "/chat/history?channel=job:valid-job-123&requester_id="+tokenOwner1, nil)
+	recHist2 := httptest.NewRecorder()
+	c.GetHistory(recHist2, reqHist2)
+
+	var history2 []chat.Message
+	_ = json.NewDecoder(recHist2.Body).Decode(&history2)
+
+	for _, msg := range history2 {
+		if msg.Content == "Malicious non-persisted message" {
+			t.Error("Found unauthorized message in chat history — security gate failed to prevent persistence!")
+		}
+	}
+
+	// Double-check store directly to ensure the unauthorized message was not persisted in database
+	histDirect, err := mongoStore.GetHistory(context.Background(), "job:valid-job-123", 50)
+	if err != nil {
+		t.Fatalf("failed to query history from store: %v", err)
+	}
+	for _, msg := range histDirect {
+		if msg.Content == "Malicious non-persisted message" {
+			t.Error("Found unauthorized message in chat history database store directly!")
+		}
 	}
 }

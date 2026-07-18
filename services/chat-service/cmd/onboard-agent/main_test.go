@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -86,5 +89,20 @@ func TestOnboardAgentIntegration(t *testing.T) {
 	_, err3 := mongoStore.GetAgent(ctx, "non_existent_agent")
 	if !errors.Is(err3, mongo.ErrNoDocuments) {
 		t.Errorf("expected ErrNoDocuments for non-existent agent, got: %v", err3)
+	}
+}
+
+func TestOnboardAgentCLIArgs(t *testing.T) {
+	cmd := exec.Command("go", "run", "main.go", "--yes")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err == nil {
+		t.Fatal("expected CLI command to exit with error when missing --id, but got success")
+	}
+
+	output := stderr.String()
+	if !strings.Contains(output, "Error: --id flag is required") {
+		t.Errorf("expected error output to contain '--id flag is required', got: %q", output)
 	}
 }
