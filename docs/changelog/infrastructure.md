@@ -106,4 +106,11 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``40c6c9698cb5aba51e6efc401908889495690ae2``
 - **Verification**: Verified via `go test ./...` in the `shared/infra` directory. All tests pass. ✅
 
+## auth-service Gap Coverage
+
+- **Implementation Detail**: Expanded test coverage in services/auth-service handlers to close gaps and test edge cases. Added tests confirming old token validity after refresh, verifying employee provisioning signup rejections (token userID mismatch, non-owner role token, non-existent owner, non-owner role owner), checking IP vs email independent rate-limiting lockout axes, verifying identical error wording/status for user non-existence and wrong password login attempts, validating VerifyOTP reuse, wrong email rejections, and wrong OTP rate limit lockouts, checking ToggleEmployee tenant owner constraints, asserting authenticateReviewer missing/invalid tokens rejections, and validating Logout behavior for expired/revoked tokens.
+- **Commit SHA**: ``ba166a25fa6b04221b674d0e116fb54c02b3d4a7``
+- **Verification**: Verified via `go test ./...` in `services/auth-service` directory. All tests pass. ✅
+
+
 
