@@ -136,5 +136,17 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``4a2122ab54b9b59c2aa9caae280ef32c7fc1489f``
 - **Verification**: Verified via `go test ./...` and `go test ./... -race` in the `services/api-gateway` directory. All tests pass. ✅
 
+## Docgen Freshness Test Circular Dependency Fix
+
+- **Implementation Detail**: Resolved a circular dependency in the `TestDocgenFreshness` AST validation test by normalizing/ignoring the embedded commit SHA stamp note in `docs/APPLICATION_MAP.md` before comparison during freshness checks. This allows the check to verify the endpoint route table itself without failing due to the circular SHA stamp dependency on new commits.
+- **Commit SHA**: ``869933855f1920ebf024a0b2eb0fb67ff2aad431``
+- **Verification**: Verified via shared module test execution (`TestDocgenFreshness`). ✅
+
+## Pre-Push Verification Git Hook and Setup
+
+- **Implementation Detail**: Built a comprehensive bash pre-push hook (`.githooks/pre-push`) that intercepts pushes to verify code formatting (`gofmt`), validate that all changelog commit SHAs exist in local Git history, and build/vet/test all microservice modules. Configured a `Makefile` target `setup` to set Git's `core.hooksPath` to `.githooks` and updated `README.md` with setup guidelines. Staged file permissions correctly using `git update-index --chmod=+x`.
+- **Commit SHA**: ``31b33da2b4c685694a060fb10915d8b6ac2bb38f``
+- **Verification**: Verified by testing push blockage against fabricated commit SHAs and validating hook execution in subsequent pushes. ✅
+
 
 
