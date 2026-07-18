@@ -395,10 +395,16 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Verification**: Verified via local gosec analysis (`Issues: 0`) and microservice testing suite. ✅
 
 ## Codebase-wide G104 Unhandled Error Security Hardening
-
+ 
 - **Implementation Detail**: Resolved 125 unhandled error warnings (gosec G104) across all Go microservices and shared libraries (`api-gateway`, `auth-service`, `chat-service`, `notification-service`, `user-service`, `shared/infra`). Consolidated response writing logic into a single shared helper package `shared/infra/handlerutil` (`WriteJSON` and `WriteBytes`), handled database transaction/connection cleanup errors, and configured local pre-push hook and CI checks to run G104 security scans codebase-wide.
 - **Commit SHA**: ``123ffc76c66d7efce8653f99b709289418501392``
 - **Verification**: Verified via local gosec analysis (`Issues: 0`) and microservice testing suite. ✅
+ 
+## Codebase-wide Gosec Security Hardening and Full-Scope Verification
+ 
+- **Implementation Detail**: Performed a full-scope unfiltered `gosec ./...` security audit across all 6 modules. Fixed Slowloris attack vectors (G112) by configuring `ReadHeaderTimeout: 3 * time.Second` on `http.Server` in `chat-service` and `user-service`. Mitigated local directory traversal vulnerabilities (G304) in `auth-service` document upload/open storage paths by introducing strict prefix path validation. Added explicit, justified `//nolint:gosec` exception annotations to handle false positives in G118 (WebSockets and async log shipping), G304/G703/G306 (documentation generation and local TLS file boots), G404 (non-cryptographic retry jitter), and G704/G706 (SSRF and sanitised log statements). Reverted CI config narrowing to enforce unfiltered, full-scope security scanning repository-wide.
+- **Commit SHA**: ``fee8376f9171fe3c6031c89e72f4f8175f807646``
+- **Verification**: Verified via local full-scope gosec checks (`Issues: 0` across all modules) and test suite execution. ✅
 
 
 
