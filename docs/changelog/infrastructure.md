@@ -130,5 +130,11 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``bbe7f85b4706f2b74be4dc56b6b45cac2ea7945b``
 - **Verification**: Verified via `go test ./...` and `go test ./... -race` in the `services/notification-service` directory. All tests pass. ✅
 
+## api-gateway Gap Coverage
+
+- **Implementation Detail**: Expanded test coverage in services/api-gateway. Verified public vs internal-only route segregation gating, hardened client IP extraction against X-Forwarded-For spoofing attempts, verified fail-closed behavior when Redis is unreachable, confirmed that sensitive credentials (passwords, JWT tokens) are excluded from gateway traffic logs, and documented the request body size/format forwarding behavior gap.
+- **Commit SHA**: ``4a2122ab54b9b59c2aa9caae280ef32c7fc1489f``
+- **Verification**: Verified via `go test ./...` and `go test ./... -race` in the `services/api-gateway` directory. All tests pass. ✅
+
 
 
