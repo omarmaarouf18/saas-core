@@ -34,6 +34,12 @@ This file tracks historical entries for the primary category: **Documentation Ch
 - **Commit SHA**: ``5d6411b500d0e5f094d6b956f75dbcb74c821643``
 - **Verification**: Verified via test suite (`TestDocgenFreshness`, `TestDocgenDriftCatching`, `TestDartFilesMentionedInStatus`, and `TestPubspecDependenciesInDesignDoc`). ✅
 
+## DESIGN.md Link Alignment
+
+- **Implementation Detail**: Fixed stale/drifted code line-number references in DESIGN.md for Go source handlers and helper functions to prevent documentation drift and align with actual locations.
+- **Commit SHA**: ``ab02e2e8d127edd4ce58bcc888ee032d763315c0``
+- **Verification**: Verified via visual review and checked that docgen/structural checks pass cleanly. ✅
+
 
 
 
