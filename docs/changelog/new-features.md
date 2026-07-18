@@ -134,7 +134,7 @@ This file tracks historical entries for the primary category: **New Features Cha
 
 - **Implementation Detail**: Updated `GET /auth/user` response to return `username`. Updated `GET /auth/kyb-kye/pending` (`GetPendingKYBKYESubmissions`) response to return `username` per submission. Updated `chat-service` to cache usernames upon WebSocket handshake (refreshed at connection init time or every 60 seconds on cache expiry), attach it to WebSocket clients, and embed `sender_username` inside real-time messages and the persisted database schema as a point-in-time snapshot captured at send-time (historical messages preserve the username active when sent). Support agents are assigned a fallback display name matching `Agent <agent_id>` because they are system operators who do not have a standard `models.User` record.
   On the frontend: added a username input field to the signup and employee registration forms with rune-aware length check and dynamic RTL text direction detection for Arabic script input. Updated `UserProfile` and `ChatMessage` Dart models to parse `username` and `sender_username` respectively. Propagated the username display to the chat screen (with agent/legacy user fallbacks), home dashboard banners, profile detail tables, and employee dashboard screen.
-- **Commit SHA**: `0c7930212a897a3f31daa42dab802597089fd0f5` (backend), `[UNVERIFIED - PENDING COMMIT]` (frontend)
+- **Commit SHA**: `0c7930212a897a3f31daa42dab802597089fd0f5` (backend), `74ffbb7e4d269c405b6caff4c883459430508e22` (frontend)
 - **Verification**: Verified via backend integration tests in `auth-service` and `chat-service`, and Flutter widget tests in `widget_test.dart` asserting signup validation logic and chat sender name rendering. ✅
 
 
