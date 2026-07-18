@@ -1,0 +1,34 @@
+#!/bin/bash
+set -e
+echo "== pre-push gate: running checks =="
+
+UNFORMATTED=$(gofmt -l . 2>&1)
+if [ -n "$UNFORMATTED" ]; then
+  echo "BLOCKED: gofmt found unformatted files:"
+  echo "$UNFORMATTED"
+  exit 1
+fi
+
+FAILED_SHA=0
+for file in docs/changelog/*.md; do
+  for sha in $(grep -oE "[0-9a-f]{40}" "$file"); do
+    if ! git cat-file -e "$sha^{commit}" 2>/dev/null; then
+      echo "BLOCKED: fabricated/non-existent SHA $sha in $file"
+      FAILED_SHA=1
+    fi
+  done
+done
+if [ "$FAILED_SHA" -eq 1 ]; then
+  exit 1
+fi
+
+for mod in services/api-gateway services/auth-service services/chat-service \
+           services/notification-service services/user-service shared/infra; do
+  echo "-- checking $mod --"
+  (cd "$mod" && go build ./... && go vet ./... && go test ./...) || {
+    echo "BLOCKED: $mod failed build/vet/test"
+    exit 1
+  }
+done
+
+echo "== pre-push gate: all checks passed =="

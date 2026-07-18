@@ -1,5 +1,19 @@
 # Quick Delivery
 
+## Developer Setup (Required After Cloning)
+
+After cloning this repository, run the following command once to activate the
+pre-push git hook that enforces formatting, changelog SHA validity, and
+build/vet/test checks before every push:
+
+```bash
+make setup
+```
+
+This sets `core.hooksPath` to `.githooks/` in your local git config. The hook
+lives at `.githooks/pre-push` and is tracked in the repo so it stays up to date
+with pulls. You can also run the same checks manually at any time via `make ci`.
+
 ## Manual KYC Approval Process (Ops Runbook)
 
 To maintain security and avoid exposing administrative endpoints that could be targeted by attackers, Know Your Customer (KYC) approval for tenant owners is deliberately **not** automated or exposed via in-app API endpoints.
