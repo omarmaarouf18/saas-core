@@ -16,7 +16,8 @@ void main() {
         providers: [
           ChangeNotifierProvider(create: (_) => AuthProvider(apiClient)),
           ChangeNotifierProvider(create: (_) => OwnerProvider(apiClient)),
-          ChangeNotifierProvider(create: (_) => EmployeeJobsProvider(apiClient)),
+          ChangeNotifierProvider(
+              create: (_) => EmployeeJobsProvider(apiClient)),
         ],
         child: const MyApp(),
       ),
@@ -27,7 +28,8 @@ void main() {
     expect(find.text('Log in to manage your services'), findsOneWidget);
   });
 
-  testWidgets('OtpScreen OTP length regression guard', (WidgetTester tester) async {
+  testWidgets('OtpScreen OTP length regression guard',
+      (WidgetTester tester) async {
     final apiClient = ApiClient();
     final authProvider = AuthProvider(apiClient);
 

@@ -176,7 +176,10 @@ class _WalletScreenState extends State<WalletScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           gradient: LinearGradient(
-            colors: [color.withValues(alpha: 0.08), color.withValues(alpha: 0.02)],
+            colors: [
+              color.withValues(alpha: 0.08),
+              color.withValues(alpha: 0.02)
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

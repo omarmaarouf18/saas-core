@@ -269,8 +269,8 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                                   CircleAvatar(
                                     backgroundColor: Theme.of(context)
                                         .colorScheme
-                                         .secondary
-                                         .withValues(alpha: 0.2),
+                                        .secondary
+                                        .withValues(alpha: 0.2),
                                     foregroundColor:
                                         Theme.of(context).colorScheme.primary,
                                     child: Icon(
@@ -300,8 +300,8 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                                               decoration: BoxDecoration(
                                                 color: Theme.of(context)
                                                     .colorScheme
-                                                     .primary
-                                                     .withValues(alpha: 0.1),
+                                                    .primary
+                                                    .withValues(alpha: 0.1),
                                                 borderRadius:
                                                     BorderRadius.circular(4),
                                               ),
