@@ -388,6 +388,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``bb405d3dea2c8f4464433e4635a7e4db563adc08``
 - **Verification**: Verified via `services/user-service/internal/handlers/handlers_test.go` (`TestUserServiceHandlers/TrackJob_Customer-Initiated_Employee_Assignment_Gating`). ✅
 
+## Handled Unchecked Response Writes in notification-service
+
+- **Implementation Detail**: Captured and handled unchecked response writing and JSON encoding errors (gosec G104) across all handlers in `services/notification-service` to satisfy CWE-703 bounds. Implemented local helper functions, structured error handling to print log diagnostics on write failures, and added `ReadHeaderTimeout` to prevent Slowloris attacks. Resolved false positives via targeted inline `// #nosec` annotations.
+- **Commit SHA**: ``4267ef27633bea94036287e535404174c92a92ce``
+- **Verification**: Verified via local gosec analysis (`Issues: 0`) and microservice testing suite. ✅
+
 
 
 
