@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/constants.dart';
+import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
-import '../core/constants.dart';
+import '../widgets/primary_button.dart';
+import '../widgets/secondary_button.dart';
+import '../widgets/themed_card.dart';
+import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_error_banner.dart';
+import '../widgets/themed_loading_indicator.dart';
+import '../widgets/themed_text_field.dart';
 
 class ServiceScreen extends StatefulWidget {
   const ServiceScreen({super.key});
@@ -31,7 +39,11 @@ class _ServiceScreenState extends State<ServiceScreen> {
     final user = auth.user;
 
     if (user == null) {
-      return const Center(child: Text("Unauthenticated"));
+      return const Scaffold(
+        body: Center(
+          child: Text("Unauthenticated"),
+        ),
+      );
     }
 
     final isKycApproved = user.kycStatus == "approved";
@@ -40,36 +52,24 @@ class _ServiceScreenState extends State<ServiceScreen> {
         owner.services.where((s) => s['tenant_id'] == user.id).toList();
 
     return Scaffold(
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         title: const Text("Configure Services"),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
       ),
       body: RefreshIndicator(
         onRefresh: _loadServices,
         child: owner.isLoading && myServices.isEmpty
-            ? const Center(child: CircularProgressIndicator())
+            ? const ThemedLoadingIndicator(message: "Loading services...")
             : Column(
                 children: [
                   if (!isKycApproved)
-                    Container(
-                      color: Colors.amber.shade100,
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.warning_amber_rounded,
-                              color: Colors.orange),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              "KYC Approval Pending: You cannot publish new services until your profile is approved by an administrator.",
-                              style: TextStyle(
-                                  color: Colors.orange.shade900,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
+                    const Padding(
+                      padding: EdgeInsets.all(AppSpacing.md),
+                      child: ThemedErrorBanner(
+                        message:
+                            "KYC Approval Pending: You cannot publish new services until your profile is approved by an administrator.",
                       ),
                     ),
                   Expanded(
@@ -78,33 +78,37 @@ class _ServiceScreenState extends State<ServiceScreen> {
                             physics: const AlwaysScrollableScrollPhysics(),
                             children: const [
                               SizedBox(height: 100),
-                              Center(
-                                child: Text(
-                                  "No services configured yet.\nTap the + button to create a service.",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                      fontSize: 16, color: Colors.grey),
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.lg),
+                                child: ThemedCard(
+                                  borderRadius: AppRadius.md,
+                                  padding: AppSpacing.lg,
+                                  child: ThemedEmptyState(
+                                    icon: Icons.design_services_outlined,
+                                    title: "No Services Configured",
+                                    description:
+                                        "No services configured yet.\nTap the + button to create a service.",
+                                  ),
                                 ),
                               ),
                             ],
                           )
                         : ListView.builder(
                             physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(AppSpacing.md),
                             itemCount: myServices.length,
                             itemBuilder: (context, index) {
                               final svc = myServices[index];
                               final categoryLabel =
                                   serviceCategoryLabels[svc['category']] ??
                                       svc['category'];
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 2,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                    bottom: AppSpacing.sm),
+                                child: ThemedCard(
+                                  borderRadius: AppRadius.md,
+                                  padding: AppSpacing.md,
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -113,28 +117,44 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Text(
-                                            svc['name'] ?? '',
-                                            style: const TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
+                                          Expanded(
+                                            child: Text(
+                                              svc['name'] ?? '',
+                                              style: AppTypography.titleMd
+                                                  .copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.primary,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
-                                          Chip(
-                                            label: Text(categoryLabel),
-                                            backgroundColor: Theme.of(context)
-                                                .colorScheme
-                                                .primary
-                                                .withValues(alpha: 0.1),
-                                            labelStyle: TextStyle(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .primary),
+                                          const SizedBox(width: AppSpacing.sm),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primary
+                                                  .withValues(alpha: 0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                            child: Text(
+                                              categoryLabel,
+                                              style: AppTypography.labelMd
+                                                  .copyWith(
+                                                color: AppColors.primary,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
                                           ),
                                         ],
                                       ),
-                                      const Divider(),
-                                      const SizedBox(height: 8),
+                                      const Divider(
+                                        height: AppSpacing.lg,
+                                        color: AppColors.outlineVariant,
+                                      ),
                                       Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
@@ -142,21 +162,25 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                           Text(
                                             "Base Price: \$${(svc['tenant_base_price'] as num?)?.toStringAsFixed(2) ?? '0.00'}",
                                             style:
-                                                const TextStyle(fontSize: 14),
+                                                AppTypography.bodyMd.copyWith(
+                                              color: AppColors.onSurface,
+                                            ),
                                           ),
                                           Text(
                                             "Rate per KM: \$${(svc['tenant_price_per_km'] as num?)?.toStringAsFixed(2) ?? '0.00'}",
                                             style:
-                                                const TextStyle(fontSize: 14),
+                                                AppTypography.bodyMd.copyWith(
+                                              color: AppColors.onSurface,
+                                            ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 8),
+                                      const SizedBox(height: AppSpacing.xs),
                                       Text(
                                         "Coordinates: (${(svc['latitude'] as num?)?.toStringAsFixed(4) ?? '0.0000'}, ${(svc['longitude'] as num?)?.toStringAsFixed(4) ?? '0.0000'})",
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey.shade600),
+                                        style: AppTypography.labelMd.copyWith(
+                                          color: AppColors.outline,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -172,12 +196,10 @@ class _ServiceScreenState extends State<ServiceScreen> {
         onPressed: isKycApproved
             ? () => _showCreateServiceDialog(context, user.id)
             : null,
-        backgroundColor: isKycApproved
-            ? Theme.of(context).colorScheme.secondary
-            : Colors.grey,
-        foregroundColor: isKycApproved
-            ? Theme.of(context).colorScheme.onSecondary
-            : Colors.white,
+        backgroundColor:
+            isKycApproved ? AppColors.secondary : AppColors.outline,
+        foregroundColor:
+            isKycApproved ? AppColors.onSecondary : AppColors.surface,
         tooltip: isKycApproved ? "Add Service" : "KYC Pending",
         child: const Icon(Icons.add),
       ),
@@ -197,31 +219,68 @@ class _ServiceScreenState extends State<ServiceScreen> {
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text("Create New Service"),
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              title: Text(
+                "Create New Service",
+                style: AppTypography.titleMd.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               content: SingleChildScrollView(
                 child: Form(
                   key: formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      TextFormField(
+                      ThemedTextField(
                         controller: nameController,
-                        decoration:
-                            const InputDecoration(labelText: "Service Name"),
+                        labelText: "Service Name",
                         validator: (value) =>
                             value == null || value.trim().isEmpty
                                 ? "Name is required"
                                 : null,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       DropdownButtonFormField<String>(
                         initialValue: selectedCategory,
-                        decoration:
-                            const InputDecoration(labelText: "Category"),
+                        style: AppTypography.bodyMd.copyWith(
+                          color: AppColors.onSurface,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: "Category",
+                          labelStyle: AppTypography.labelLg.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                          filled: true,
+                          fillColor: AppColors.surface,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                            vertical: AppSpacing.md,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: AppRadius.defaultBorder,
+                            borderSide: const BorderSide(
+                              color: AppColors.outlineVariant,
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: AppRadius.defaultBorder,
+                            borderSide: const BorderSide(
+                              color: AppColors.primary,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
                         items: serviceCategoryLabels.entries.map((entry) {
                           return DropdownMenuItem<String>(
                             value: entry.key,
@@ -236,11 +295,10 @@ class _ServiceScreenState extends State<ServiceScreen> {
                           }
                         },
                       ),
-                      const SizedBox(height: 8),
-                      TextFormField(
+                      const SizedBox(height: AppSpacing.sm),
+                      ThemedTextField(
                         controller: basePriceController,
-                        decoration:
-                            const InputDecoration(labelText: "Base Price (\$)"),
+                        labelText: "Base Price (\$)",
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         validator: (value) {
@@ -254,11 +312,10 @@ class _ServiceScreenState extends State<ServiceScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 8),
-                      TextFormField(
+                      const SizedBox(height: AppSpacing.sm),
+                      ThemedTextField(
                         controller: pricePerKMController,
-                        decoration: const InputDecoration(
-                            labelText: "Rate per KM (\$)"),
+                        labelText: "Rate per KM (\$)",
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         validator: (value) {
@@ -272,11 +329,10 @@ class _ServiceScreenState extends State<ServiceScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 8),
-                      TextFormField(
+                      const SizedBox(height: AppSpacing.sm),
+                      ThemedTextField(
                         controller: latController,
-                        decoration:
-                            const InputDecoration(labelText: "Latitude"),
+                        labelText: "Latitude",
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         validator: (value) {
@@ -290,11 +346,10 @@ class _ServiceScreenState extends State<ServiceScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 8),
-                      TextFormField(
+                      const SizedBox(height: AppSpacing.sm),
+                      ThemedTextField(
                         controller: lonController,
-                        decoration:
-                            const InputDecoration(labelText: "Longitude"),
+                        labelText: "Longitude",
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         validator: (value) {
@@ -312,46 +367,66 @@ class _ServiceScreenState extends State<ServiceScreen> {
                   ),
                 ),
               ),
+              actionsPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text("Cancel"),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (formKey.currentState?.validate() ?? false) {
-                      final provider =
-                          Provider.of<OwnerProvider>(context, listen: false);
-                      try {
-                        await provider.createService(
-                          name: nameController.text.trim(),
-                          category: selectedCategory,
-                          tenantBasePrice:
-                              double.parse(basePriceController.text),
-                          tenantPricePerKM:
-                              double.parse(pricePerKMController.text),
-                          latitude: double.parse(latController.text),
-                          longitude: double.parse(lonController.text),
-                          ownerId: ownerId,
-                        );
-                        if (context.mounted) {
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text("Service created successfully!")),
-                          );
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text("Failed to create service: $e")),
-                          );
-                        }
-                      }
-                    }
-                  },
-                  child: const Text("Create"),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SecondaryButton(
+                        text: "Cancel",
+                        isOutlined: true,
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: PrimaryButton(
+                        text: "Create",
+                        onPressed: () async {
+                          if (formKey.currentState?.validate() ?? false) {
+                            final provider = Provider.of<OwnerProvider>(context,
+                                listen: false);
+                            try {
+                              await provider.createService(
+                                name: nameController.text.trim(),
+                                category: selectedCategory,
+                                tenantBasePrice:
+                                    double.parse(basePriceController.text),
+                                tenantPricePerKM:
+                                    double.parse(pricePerKMController.text),
+                                latitude: double.parse(latController.text),
+                                longitude: double.parse(lonController.text),
+                                ownerId: ownerId,
+                              );
+                              if (context.mounted) {
+                                Navigator.of(context).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content:
+                                        Text("Service created successfully!"),
+                                    backgroundColor: AppColors.success,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content:
+                                        Text("Failed to create service: $e"),
+                                    backgroundColor: AppColors.error,
+                                  ),
+                                );
+                              }
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
             );
