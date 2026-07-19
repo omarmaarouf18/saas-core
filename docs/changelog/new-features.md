@@ -130,10 +130,10 @@ This file tracks historical entries for the primary category: **New Features Cha
 - **Commit SHA**: ``7fa065a742bb209cfc8fe9e0a13a960495066bf0``
 - **Verification**: Verified via `TestSignupUsernameValidation` covering success, missing, short/long, invalid chars, valid Arabic, mixed Arabic/Latin, XSS tag rejection, and differentiated duplicate-key errors. ✅
 
-## Username Propagation & Chat Point-in-Time Snapshot
-
 - **Implementation Detail**: Updated `GET /auth/user` response to return `username`. Updated `GET /auth/kyb-kye/pending` (`GetPendingKYBKYESubmissions`) response to return `username` per submission. Updated `chat-service` to cache usernames upon WebSocket handshake (refreshed at connection init time or every 60 seconds on cache expiry), attach it to WebSocket clients, and embed `sender_username` inside real-time messages and the persisted database schema as a point-in-time snapshot captured at send-time (historical messages preserve the username active when sent). Support agents are assigned a fallback display name matching `Agent <agent_id>` because they are system operators who do not have a standard `models.User` record.
   On the frontend: added a username input field to the signup and employee registration forms with rune-aware length check and dynamic RTL text direction detection for Arabic script input. Updated `UserProfile` and `ChatMessage` Dart models to parse `username` and `sender_username` respectively. Propagated the username display to the chat screen (with agent/legacy user fallbacks), home dashboard banners, profile detail tables, and employee dashboard screen.
+  
+  *Security & Minimal Disclosure Design*: To resolve employee usernames on the job status screen client-side without exposing sensitive attributes (such as `kyc_status`, `role`, `tenant_id`, `email`), a scoped public profile endpoint (`GET /auth/user/public-profile`) was introduced. It requires a valid signed requester token and returns only the target user's `id` and `username` (public display name lookups are allowed, but sensitive account data is strictly protected from disclosure).
 - **Commit SHA (backend)**: `0c7930212a897a3f31daa42dab802597089fd0f5`
 - **Commit SHA (frontend)**: `74ffbb7e4d269c405b6caff4c883459430508e22`
 - **Verification**: Verified via backend integration tests in `auth-service` and `chat-service`, and Flutter widget tests in `widget_test.dart` asserting signup validation logic and chat sender name rendering. ✅

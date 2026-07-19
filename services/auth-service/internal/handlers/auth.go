@@ -95,6 +95,7 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/employee/action", a.SimulateEmployeeAction)
 	mux.HandleFunc("/auth/audit-log", a.GetAuditLog)
 	mux.HandleFunc("/auth/user", a.GetUser)
+	mux.HandleFunc("/auth/user/public-profile", a.GetPublicProfile)
 	mux.HandleFunc("/auth/kyb/upload", a.UploadKYB)
 	mux.HandleFunc("/auth/kye/upload", a.UploadKYE)
 	mux.HandleFunc("/auth/kyb-kye/pending", a.GetPendingKYBKYESubmissions)
@@ -1662,4 +1663,59 @@ func (a *Auth) ResendOTP(w http.ResponseWriter, r *http.Request) {
 	a.limiter.RecordFailure(user.Email)
 
 	writeJSON(w, http.StatusOK, genericResponse)
+}
+
+// GET /auth/user/public-profile?id=<target_id>&requester_id=<token>
+// GetPublicProfile returns only non-sensitive, public profile fields (ID and username).
+// Note: This endpoint is consciously designed to allow any authenticated user to lookup
+// another user's username by ID (acting as a public display name), while strictly
+// excluding sensitive user attributes (kyc_status, role, tenant_id, email) to prevent
+// information disclosure.
+func (a *Auth) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "method not allowed, use GET",
+		})
+		return
+	}
+
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "id parameter is required",
+		})
+		return
+	}
+
+	requesterID := r.URL.Query().Get("requester_id")
+	if requesterID == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "requester_id parameter is required",
+		})
+		return
+	}
+
+	// Validate requester token signature
+	_, err := jwtutil.ValidateToken(requesterID)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "invalid requester token: " + err.Error(),
+		})
+		return
+	}
+
+	ctx := r.Context()
+	user := a.store.GetByID(ctx, id)
+	if user == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error": "user not found",
+		})
+		return
+	}
+
+	// Return ONLY public, non-sensitive profile information
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"id":       user.ID,
+		"username": user.Username,
+	})
 }

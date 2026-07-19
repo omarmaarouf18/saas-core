@@ -25,12 +25,15 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
   late Job _currentJob;
   Timer? _pollingTimer;
   bool _isRefreshing = false;
+  String? _resolvedUsername;
+  String? _lastResolvedEmployeeId;
 
   @override
   void initState() {
     super.initState();
     _currentJob = widget.job;
     _startPolling();
+    _resolveEmployeeUsername();
   }
 
   @override
@@ -43,6 +46,53 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       _refreshJobStatus(silent: true);
     });
+  }
+
+  Future<void> _resolveEmployeeUsername() async {
+    final employeeId = _currentJob.employeeId;
+    if (employeeId == null || employeeId.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _resolvedUsername = null;
+          _lastResolvedEmployeeId = null;
+        });
+      }
+      return;
+    }
+
+    if (employeeId == _lastResolvedEmployeeId) {
+      return; // Already resolved for this ID!
+    }
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final token = authProvider.token;
+    if (token == null) return;
+
+    try {
+      final res = await authProvider.apiClient.get(
+        '/auth/user/public-profile',
+        queryParams: {
+          'id': employeeId,
+          'requester_id': token,
+        },
+      );
+      if (res is Map && res.containsKey('username')) {
+        if (mounted) {
+          setState(() {
+            _resolvedUsername = res['username'];
+            _lastResolvedEmployeeId = employeeId;
+          });
+        }
+      }
+    } catch (_) {
+      // Graceful fallback to raw ID on failure or if auth-service is unreachable
+      if (mounted) {
+        setState(() {
+          _resolvedUsername = null;
+          _lastResolvedEmployeeId = null;
+        });
+      }
+    }
   }
 
   Future<void> _refreshJobStatus({bool silent = false}) async {
@@ -63,6 +113,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         _currentJob = updated;
         _isRefreshing = false;
       });
+      _resolveEmployeeUsername();
 
       // Stop polling if the job is completed or cancelled
       if (_currentJob.status == 'completed' ||
@@ -183,7 +234,10 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                       title: "Worker Dispatched",
                       subtitle: _currentJob.employeeId == null
                           ? "Assigning an employee..."
-                          : "Employee assigned & active",
+                          : (_resolvedUsername != null &&
+                                  _resolvedUsername!.isNotEmpty
+                              ? "Assigned to: $_resolvedUsername"
+                              : "Employee assigned & active"),
                       isLast: false,
                     ),
                     _buildStepRow(
@@ -219,7 +273,11 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   ),
                   if (_currentJob.employeeId != null)
                     _buildInfoRow(
-                        "Assigned Employee ID", _currentJob.employeeId!),
+                      "Assigned Employee",
+                      _resolvedUsername != null && _resolvedUsername!.isNotEmpty
+                          ? _resolvedUsername!
+                          : _currentJob.employeeId!,
+                    ),
                   if (isCancelled && _currentJob.cancellationReason != null)
                     _buildInfoRow(
                         "Cancellation Reason", _currentJob.cancellationReason!),
