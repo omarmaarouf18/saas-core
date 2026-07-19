@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/primary_button.dart';
+import '../widgets/secondary_button.dart';
+import '../widgets/themed_card.dart';
+import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_error_banner.dart';
+import '../widgets/themed_loading_indicator.dart';
+import '../widgets/themed_section_header.dart';
+import '../widgets/themed_text_field.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -17,18 +26,18 @@ class _WalletScreenState extends State<WalletScreen> {
     final ownerProvider = Provider.of<OwnerProvider>(context);
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: AppColors.scaffoldBackground,
       body: ownerProvider.isLoading &&
               ownerProvider.ledgerEntries.isEmpty &&
               ownerProvider.walletBalance == 0.0
-          ? const Center(child: CircularProgressIndicator())
+          ? const ThemedLoadingIndicator(message: "Loading wallet...")
           : RefreshIndicator(
               onRefresh: () async {
                 await ownerProvider.fetchDashboardData(auth.token!);
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -36,33 +45,24 @@ class _WalletScreenState extends State<WalletScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           "My Wallet",
-                          style: TextStyle(
-                            fontSize: 24,
+                          style: AppTypography.headlineLgMobile.copyWith(
+                            color: AppColors.primary,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
                           ),
                         ),
-                        ElevatedButton.icon(
-                          onPressed: () => _showDepositDialog(context),
-                          icon: const Icon(Icons.add_card_rounded),
-                          label: const Text("Deposit Funds"),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                Theme.of(context).colorScheme.primary,
-                            foregroundColor:
-                                Theme.of(context).colorScheme.onPrimary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
+                        SizedBox(
+                          width: 170,
+                          child: PrimaryButton(
+                            onPressed: () => _showDepositDialog(context),
+                            icon: Icons.add_card_rounded,
+                            text: "Deposit Funds",
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.lg),
 
                     // Balance Display Cards
                     Row(
@@ -72,12 +72,12 @@ class _WalletScreenState extends State<WalletScreen> {
                             title: "Total Balance",
                             value: ownerProvider.walletBalance,
                             icon: Icons.account_balance_rounded,
-                            color: Theme.of(context).colorScheme.primary,
+                            color: AppColors.primary,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.md),
                     Row(
                       children: [
                         Expanded(
@@ -85,57 +85,37 @@ class _WalletScreenState extends State<WalletScreen> {
                             title: "Withdrawable",
                             value: ownerProvider.withdrawableBalance,
                             icon: Icons.check_circle_outline_rounded,
-                            color: Colors.green,
+                            color: AppColors.success,
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: _buildBalanceCard(
                             title: "Locked (Escrow)",
                             value: ownerProvider.escrowBalance,
                             icon: Icons.lock_outline_rounded,
-                            color: Colors.amber.shade800,
+                            color: AppColors.warning,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppSpacing.xl),
 
                     // Transaction History Section
-                    const Text(
-                      "Transaction Ledger",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+                    const ThemedSectionHeader(
+                      title: "Transaction Ledger",
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.sm),
 
                     if (ownerProvider.ledgerEntries.isEmpty)
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: Center(
-                            child: Column(
-                              children: [
-                                Icon(Icons.receipt_long_outlined,
-                                    size: 48, color: Colors.grey.shade400),
-                                const SizedBox(height: 16),
-                                Text(
-                                  "No transactions recorded yet.",
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                      const ThemedCard(
+                        borderRadius: AppRadius.md,
+                        padding: AppSpacing.lg,
+                        child: ThemedEmptyState(
+                          icon: Icons.receipt_long_outlined,
+                          title: "No transactions recorded yet.",
+                          description:
+                              "Your transaction history will appear here once deposits or charges occur.",
                         ),
                       )
                     else
@@ -144,11 +124,8 @@ class _WalletScreenState extends State<WalletScreen> {
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: ownerProvider.ledgerEntries.length,
                         separatorBuilder: (context, index) =>
-                            const SizedBox(height: 10),
+                            const SizedBox(height: AppSpacing.base),
                         itemBuilder: (context, index) {
-                          // The ledger list returned is already in chronological order or reverse.
-                          // Ensure we render it as-is (we can reverse it on display if the backend is oldest-first).
-                          // Usually GetLedger fetches all entries ordered by timestamp. Let's render as retrieved.
                           final entry = ownerProvider.ledgerEntries[index];
                           return _buildLedgerTile(entry);
                         },
@@ -166,53 +143,34 @@ class _WalletScreenState extends State<WalletScreen> {
     required IconData icon,
     required Color color,
   }) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      elevation: 2,
-      child: Container(
-        padding: const EdgeInsets.all(20.0),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            colors: [
-              color.withValues(alpha: 0.08),
-              color.withValues(alpha: 0.02)
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          border: Border.all(color: color.withValues(alpha: 0.15)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
-                  ),
+    return ThemedCard(
+      borderRadius: AppRadius.md,
+      padding: AppSpacing.md,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: AppTypography.bodyMd.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.onSurfaceVariant,
                 ),
-                Icon(icon, color: color, size: 24),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              "${value.toStringAsFixed(2)} Credits",
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
               ),
+              Icon(icon, color: color, size: 24),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            "${value.toStringAsFixed(2)} Credits",
+            style: AppTypography.headlineLgMobile.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.onSurface,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -237,15 +195,15 @@ class _WalletScreenState extends State<WalletScreen> {
     switch (type) {
       case 'deposit':
         icon = Icons.add_circle_outline_rounded;
-        color = Colors.green;
+        color = AppColors.success;
         break;
       case 'escrow_lock':
         icon = Icons.lock_outline_rounded;
-        color = Colors.orange;
+        color = AppColors.warning;
         break;
       case 'escrow_release':
         icon = Icons.lock_open_rounded;
-        color = Theme.of(context).colorScheme.primary;
+        color = AppColors.primary;
         break;
       case 'refund':
         icon = Icons.replay_rounded;
@@ -253,109 +211,98 @@ class _WalletScreenState extends State<WalletScreen> {
         break;
       case 'fee_deduction':
         icon = Icons.remove_circle_outline_rounded;
-        color = Colors.red;
+        color = AppColors.error;
         break;
       default:
         icon = Icons.monetization_on_outlined;
-        color = Colors.grey;
+        color = AppColors.outline;
     }
 
     final dateStr = timestamp != null
         ? "${timestamp.year}-${_twoDigits(timestamp.month)}-${_twoDigits(timestamp.day)} ${_twoDigits(timestamp.hour)}:${_twoDigits(timestamp.minute)}"
         : "";
 
-    return Card(
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: color.withValues(alpha: 0.1),
-              radius: 20,
-              child: Icon(icon, color: color, size: 22),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    description.isNotEmpty ? description : type.toUpperCase(),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        dateStr,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
-                      if (jobId.isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            "Job: ${jobId.substring(0, jobId.length > 8 ? 8 : jobId.length)}",
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+    return ThemedCard(
+      borderRadius: AppRadius.defaultValue,
+      padding: AppSpacing.md,
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: color.withValues(alpha: 0.1),
+            radius: 20,
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "${type == 'deposit' || type == 'refund' || type == 'escrow_release' ? '+' : '-'}${amount.toStringAsFixed(2)}",
-                  style: TextStyle(
+                  description.isNotEmpty ? description : type.toUpperCase(),
+                  style: AppTypography.bodyMd.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: type == 'deposit' ||
-                            type == 'refund' ||
-                            type == 'escrow_release'
-                        ? Colors.green.shade700
-                        : Colors.red.shade700,
+                    color: AppColors.onSurface,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  "Bal: ${balanceAfter.toStringAsFixed(2)}",
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade600,
-                  ),
+                const SizedBox(height: AppSpacing.xs),
+                Row(
+                  children: [
+                    Text(
+                      dateStr,
+                      style: AppTypography.labelMd.copyWith(
+                        color: AppColors.outline,
+                      ),
+                    ),
+                    if (jobId.isNotEmpty) ...[
+                      const SizedBox(width: AppSpacing.base),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                        child: Text(
+                          "Job: ${jobId.substring(0, jobId.length > 8 ? 8 : jobId.length)}",
+                          style: AppTypography.labelMd.copyWith(
+                            fontSize: 10,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                "${type == 'deposit' || type == 'refund' || type == 'escrow_release' ? '+' : '-'}${amount.toStringAsFixed(2)}",
+                style: AppTypography.bodyLg.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: type == 'deposit' ||
+                          type == 'refund' ||
+                          type == 'escrow_release'
+                      ? AppColors.success
+                      : AppColors.error,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                "Bal: ${balanceAfter.toStringAsFixed(2)}",
+                style: AppTypography.labelMd.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -377,11 +324,16 @@ class _WalletScreenState extends State<WalletScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              backgroundColor: AppColors.surface,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              title: const Text(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              title: Text(
                 "Deposit Funds",
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: AppTypography.titleMd.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               content: Form(
                 key: formKey,
@@ -389,20 +341,20 @@ class _WalletScreenState extends State<WalletScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Enter the amount in credits to deposit to your wallet.",
-                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                      style: AppTypography.bodyMd.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
+                    const SizedBox(height: AppSpacing.md),
+                    ThemedTextField(
                       controller: amountController,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: "Amount (Credits)",
-                        prefixText: "\$ ",
-                        border: OutlineInputBorder(),
-                      ),
+                      labelText: "Amount (Credits)",
+                      prefixIcon: const Icon(Icons.attach_money,
+                          color: AppColors.outline),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return "Amount is required";
@@ -418,46 +370,34 @@ class _WalletScreenState extends State<WalletScreen> {
                       },
                     ),
                     if (dialogError != null) ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade50,
-                          border: Border.all(color: Colors.red.shade200),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline_rounded,
-                                color: Colors.red.shade700, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                dialogError!,
-                                style: TextStyle(
-                                  color: Colors.red.shade800,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      ThemedErrorBanner(message: dialogError!),
                     ],
                   ],
                 ),
               ),
+              actionsPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
               actions: [
-                TextButton(
-                  onPressed:
-                      isSubmitting ? null : () => Navigator.of(context).pop(),
-                  child: const Text("Cancel"),
-                ),
-                ElevatedButton(
-                  onPressed: isSubmitting
-                      ? null
-                      : () async {
+                Row(
+                  children: [
+                    Expanded(
+                      child: SecondaryButton(
+                        text: "Cancel",
+                        isOutlined: true,
+                        onPressed: isSubmitting
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: PrimaryButton(
+                        text: "Confirm",
+                        isLoading: isSubmitting,
+                        onPressed: () async {
                           if (formKey.currentState!.validate()) {
                             setDialogState(() {
                               isSubmitting = true;
@@ -474,7 +414,7 @@ class _WalletScreenState extends State<WalletScreen> {
                                   SnackBar(
                                     content: Text(
                                         "Successfully deposited ${amount.toStringAsFixed(2)} credits."),
-                                    backgroundColor: Colors.green,
+                                    backgroundColor: AppColors.success,
                                   ),
                                 );
                               }
@@ -493,20 +433,9 @@ class _WalletScreenState extends State<WalletScreen> {
                             }
                           }
                         },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  ),
-                  child: isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text("Confirm"),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             );
