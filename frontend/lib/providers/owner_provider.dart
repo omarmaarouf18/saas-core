@@ -228,6 +228,41 @@ class OwnerProvider extends ChangeNotifier {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // API Call: Update Subscription
+  // ---------------------------------------------------------------------------
+  Future<Map<String, dynamic>> updateSubscription({
+    required String tenantId,
+    required String tier,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post('/users/subscription', {
+        'tenant_id': tenantId,
+        'tier': tier,
+        'requester_id': tenantId,
+      });
+      
+      if (res is Map) {
+        if (res.containsKey('tier')) {
+          _subscriptionTier = res['tier'] ?? 'free';
+        } else if (res.containsKey('status')) {
+          _subscriptionTier = res['status'] ?? 'pending_payment';
+        }
+      }
+      return Map<String, dynamic>.from(res);
+    } catch (e) {
+      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();

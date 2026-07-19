@@ -33,8 +33,9 @@
     *   *SSE Subscriber Provider*: **[VERIFIED]** Implemented `NotificationsProvider` utilizing `flutter_client_sse` to subscribe to the API Gateway proxied route (`/notifications/stream?token=<token>`). Listens to `"notification"` events, parsing them into `NotificationModel` payloads, and handles dynamic unread tracking and connection status/errors.
     *   *Notifications Screen*: **[VERIFIED]** Built a responsive layout (`NotificationsScreen`) supporting category chip filters (All, Jobs, System, Alerts), chronological group splits (Today, Yesterday, Earlier), dynamic system connectivity banners, inline dismiss/reply actions, and integrated direct deep-link tracking ("Track Shipment" to `JobStatusScreen`). Colors are strictly mapped to theme roles.
     *   *App Bar Integration*: **[VERIFIED]** Embedded a reactive bell icon and unread count badge in the AppBars of `home_screen.dart` (owner & basic dashboards), `customer_marketplace_screen.dart`, and `employee_jobs_screen.dart` to make notifications accessible for all roles.
-*   **Phase 7: Ratings & Subscriptions (Final Polish)** — **[NOT STARTED]**
-    *   *Planned*: Subscription checkout forms, BLIND rating forms, and averages display.
+*   **Phase 7: Ratings & Subscriptions (Final Polish)** — **[IN PROGRESS]**
+    *   *Subscription Screen*: **[VERIFIED]** Created `SubscriptionScreen` enabling owners to select subscription tiers. Integrates with the backend POST `/users/subscription` endpoint via `OwnerProvider`. Supports manual activation warnings for Professional plan and instant downgrade to Free plan. Styled completely using `Theme.of(context)` color roles.
+    *   *Planned*: BLIND rating forms, and averages display.
  
  ---
  

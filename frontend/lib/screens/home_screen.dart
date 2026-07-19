@@ -8,6 +8,7 @@ import 'wallet_screen.dart';
 import 'employee_screen.dart';
 import 'service_screen.dart';
 import 'notifications_screen.dart';
+import 'subscription_screen.dart';
 
 import 'employee_jobs_screen.dart';
 import 'customer_marketplace_screen.dart';
@@ -336,11 +337,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   title: "Subscription Tier",
                   value: ownerProvider.isLoading
                       ? "..."
-                      : ownerProvider.subscriptionTier.toUpperCase(),
+                      : ownerProvider.subscriptionTier.toUpperCase().replaceAll('_', ' '),
                   icon: Icons.card_membership_outlined,
                   color: ownerProvider.subscriptionTier == "paid"
                       ? Colors.green
-                      : Colors.orange,
+                      : (ownerProvider.subscriptionTier == "pending_payment" ? Colors.blue : Colors.orange),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const SubscriptionScreen(),
+                      ),
+                    );
+                  },
                 ),
                 _buildMetricCard(
                   title: "Employee Count",
@@ -414,14 +422,18 @@ class _HomeScreenState extends State<HomeScreen> {
     String? subtitle,
     required IconData icon,
     required Color color,
+    VoidCallback? onTap,
   }) {
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -470,8 +482,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildDetailRow(String label, String value, {Color? valueColor}) {
     return Padding(
