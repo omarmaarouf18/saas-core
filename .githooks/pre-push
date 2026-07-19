@@ -9,6 +9,15 @@ if [ -n "$UNFORMATTED" ]; then
   exit 1
 fi
 
+if [ -d "frontend" ]; then
+  echo "-- checking frontend Dart formatting --"
+  UNFORMATTED_DART=$(cd frontend && dart format --output=none --set-exit-if-changed lib/ 2>&1) || {
+    echo "BLOCKED: dart format found unformatted files:"
+    echo "$UNFORMATTED_DART"
+    exit 1
+  }
+fi
+
 FAILED_SHA=0
 for file in docs/changelog/*.md; do
   for sha in $(grep -oE "[0-9a-f]{40}" "$file"); do
@@ -51,5 +60,13 @@ for mod in services/api-gateway services/auth-service services/chat-service \
     fi
   fi
 done
+
+if [ -d "frontend" ]; then
+  echo "-- checking frontend Flutter analyze/test --"
+  (cd frontend && flutter analyze --no-fatal-warnings --no-fatal-infos && flutter test) || {
+    echo "BLOCKED: frontend failed analyze or test checks"
+    exit 1
+  }
+fi
 
 echo "== pre-push gate: all checks passed =="
