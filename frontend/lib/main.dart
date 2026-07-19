@@ -10,6 +10,7 @@ import 'providers/owner_provider.dart';
 import 'providers/employee_jobs_provider.dart';
 import 'providers/marketplace_provider.dart';
 import 'providers/chat_provider.dart';
+import 'providers/notifications_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -37,6 +38,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => EmployeeJobsProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => MarketplaceProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => ChatProvider(apiClient)),
+        ChangeNotifierProvider(create: (_) => NotificationsProvider(apiClient)),
       ],
       child: const MyApp(),
     ),
@@ -49,6 +51,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    final notifications = Provider.of<NotificationsProvider>(context, listen: false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (auth.isAuthenticated) {
+        notifications.initSse(auth.token!);
+      } else {
+        notifications.unsubscribe();
+      }
+    });
 
     return MaterialApp(
       title: 'Quick Delivery',
@@ -60,3 +71,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/employee_jobs_provider.dart';
+import '../providers/notifications_provider.dart';
 import '../models/job.dart';
 import 'login_screen.dart';
+import 'notifications_screen.dart';
 
 class EmployeeJobsScreen extends StatefulWidget {
   const EmployeeJobsScreen({super.key});
@@ -128,6 +130,54 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     );
   }
 
+  Widget _buildNotificationBell(BuildContext context) {
+    return Consumer<NotificationsProvider>(
+      builder: (context, provider, child) {
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications),
+              tooltip: 'Notifications',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsScreen(),
+                  ),
+                );
+              },
+            ),
+            if (provider.unreadCount > 0)
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    '${provider.unreadCount}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
@@ -143,6 +193,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             tooltip: "Refresh Jobs",
             onPressed: _refreshJobs,
           ),
+          _buildNotificationBell(context),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: "Logout",

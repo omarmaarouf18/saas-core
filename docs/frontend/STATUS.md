@@ -29,49 +29,55 @@
     *   *WebSocket Manager & History Sync*: **[VERIFIED]** Connects to the API Gateway proxied chat-service WebSocket endpoint (`wss://`) with the user JWT `token` parameter, subscribing to channel `job:<job_id>`. Automatically loads historical messages via REST first, merging without duplicates. Handles reconnection via exponential backoff.
     *   *Real-Time Messaging*: **[VERIFIED]** Dual-direction messaging works in real-time. Verified via Go integration tests (`TestChatWebSocketCommunication`) simulating concurrent client connections (customer & employee) communicating on a shared job channel.
     *   *Authorization Gating*: **[VERIFIED]** Attempts by unauthorized users to subscribe to channels they do not participate in are blocked by the backend server-side (`canAccessChannel` checks) and correctly surfaced in the UI as access-denied error boards.
-*   **Phase 6: Server-Sent Events Notifications** — **[NOT STARTED]**
-    *   *Planned*: SSE subscriber services and in-app popup notifications.
+*   **Phase 6: Server-Sent Events Notifications** — **[100% COMPLETE & VERIFIED]**
+    *   *SSE Subscriber Provider*: **[VERIFIED]** Implemented `NotificationsProvider` utilizing `flutter_client_sse` to subscribe to the API Gateway proxied route (`/notifications/stream?token=<token>`). Listens to `"notification"` events, parsing them into `NotificationModel` payloads, and handles dynamic unread tracking and connection status/errors.
+    *   *Notifications Screen*: **[VERIFIED]** Built a responsive layout (`NotificationsScreen`) supporting category chip filters (All, Jobs, System, Alerts), chronological group splits (Today, Yesterday, Earlier), dynamic system connectivity banners, inline dismiss/reply actions, and integrated direct deep-link tracking ("Track Shipment" to `JobStatusScreen`). Colors are strictly mapped to theme roles.
+    *   *App Bar Integration*: **[VERIFIED]** Embedded a reactive bell icon and unread count badge in the AppBars of `home_screen.dart` (owner & basic dashboards), `customer_marketplace_screen.dart`, and `employee_jobs_screen.dart` to make notifications accessible for all roles.
 *   **Phase 7: Ratings & Subscriptions (Final Polish)** — **[NOT STARTED]**
     *   *Planned*: Subscription checkout forms, BLIND rating forms, and averages display.
-
----
-
-## Verified Capabilities
-*   **Owner/Customer Signup**: Sends email/password/role parameters to backend. Returns `dev_otp` in development.
-*   **2FA OTP Verification**: Validates 6-digit code and securely stores signed JWT session details.
-*   **Employee Direct Authentication**: Logs in directly bypassing 2FA.
-*   **Dashboard KYC Banner**: Renders alert banner to Owners when `kyc_status` is `pending_super_admin_approval`.
-*   **Employee Job Assignment List**: Fetches and renders all active/pending/completed jobs assigned to the logged-in worker.
-*   **Employee Action Simulator**: Logs actions to the audit trail, enforcing frozen and KYC-pending checks.
-*   **Username Validation & RTL Support**: Enforces 3-30 character rune-aware username checking at signup, supports mixed Latin/Arabic text directions, and registers usernames to the backend.
-*   **Username Propagation & Chat Snapshot**: Propagates registered usernames to dashboard welcome messages and profile detail panels, and displays `senderUsername` in the chat UI including fallback support and Agent display name resolution.
-*   **Real-Time Chat & History Sync**: Fetches message history on load, establishes WebSocket connection, supports dual-direction message broadcasts, handles reconnection backoff, and restricts channel access securely.
-
-## File Tracking Index
-
-The following Dart implementation files are currently active in the codebase and tracked by the structural drift check:
-* **Models**:
-  * `user_profile.dart`
-  * `job.dart`
-  * `marketplace_service.dart`
-  * `chat_message.dart`
-* **Theme**:
-  * `theme.dart`
-* **Providers**:
-  * `auth_provider.dart`
-  * `owner_provider.dart`
-  * `employee_jobs_provider.dart`
-  * `marketplace_provider.dart`
-  * `chat_provider.dart`
-* **Screens**:
-  * `employee_jobs_screen.dart`
-  * `employee_screen.dart`
-  * `home_screen.dart`
-  * `login_screen.dart`
-  * `otp_screen.dart`
-  * `service_screen.dart`
-  * `signup_screen.dart`
-  * `wallet_screen.dart`
-  * `customer_marketplace_screen.dart`
-  * `job_status_screen.dart`
-  * `chat_screen.dart`
+ 
+ ---
+ 
+ ## Verified Capabilities
+ *   **Owner/Customer Signup**: Sends email/password/role parameters to backend. Returns `dev_otp` in development.
+ *   **2FA OTP Verification**: Validates 6-digit code and securely stores signed JWT session details.
+ *   **Employee Direct Authentication**: Logs in directly bypassing 2FA.
+ *   **Dashboard KYC Banner**: Renders alert banner to Owners when `kyc_status` is `pending_super_admin_approval`.
+ *   **Employee Job Assignment List**: Fetches and renders all active/pending/completed jobs assigned to the logged-in worker.
+ *   **Employee Action Simulator**: Logs actions to the audit trail, enforcing frozen and KYC-pending checks.
+ *   **Username Validation & RTL Support**: Enforces 3-30 character rune-aware username checking at signup, supports mixed Latin/Arabic text directions, and registers usernames to the backend.
+ *   **Username Propagation & Chat Snapshot**: Propagates registered usernames to dashboard welcome messages and profile detail panels, and displays `senderUsername` in the chat UI including fallback support and Agent display name resolution.
+ *   **Real-Time Chat & History Sync**: Fetches message history on load, establishes WebSocket connection, supports dual-direction message broadcasts, handles reconnection backoff, and restricts channel access securely.
+ *   **SSE Notifications Stream**: Establishes Server-Sent Events subscription, decodes real-time JSON alert payloads, manages local message history, filters by category, groups alerts chronologically, and integrates unread notification badges in dashboard AppBars.
+ 
+ ## File Tracking Index
+ 
+ The following Dart implementation files are currently active in the codebase and tracked by the structural drift check:
+ * **Models**:
+   * `user_profile.dart`
+   * `job.dart`
+   * `marketplace_service.dart`
+   * `chat_message.dart`
+   * `notification_model.dart`
+ * **Theme**:
+   * `theme.dart`
+ * **Providers**:
+   * `auth_provider.dart`
+   * `owner_provider.dart`
+   * `employee_jobs_provider.dart`
+   * `marketplace_provider.dart`
+   * `chat_provider.dart`
+   * `notifications_provider.dart`
+ * **Screens**:
+   * `employee_jobs_screen.dart`
+   * `employee_screen.dart`
+   * `home_screen.dart`
+   * `login_screen.dart`
+   * `otp_screen.dart`
+   * `service_screen.dart`
+   * `signup_screen.dart`
+   * `wallet_screen.dart`
+   * `customer_marketplace_screen.dart`
+   * `job_status_screen.dart`
+   * `chat_screen.dart`
+   * `notifications_screen.dart`

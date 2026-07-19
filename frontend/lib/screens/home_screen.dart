@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../providers/notifications_provider.dart';
 import 'login_screen.dart';
 import 'wallet_screen.dart';
 import 'employee_screen.dart';
 import 'service_screen.dart';
+import 'notifications_screen.dart';
 
 import 'employee_jobs_screen.dart';
 import 'customer_marketplace_screen.dart';
@@ -36,6 +38,54 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Widget _buildNotificationBell(BuildContext context) {
+    return Consumer<NotificationsProvider>(
+      builder: (context, provider, child) {
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications),
+              tooltip: 'Notifications',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsScreen(),
+                  ),
+                );
+              },
+            ),
+            if (provider.unreadCount > 0)
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    '${provider.unreadCount}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
@@ -64,6 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
           title: const Text("Quick Delivery Dashboard"),
           foregroundColor: Colors.white,
           actions: [
+            _buildNotificationBell(context),
             IconButton(
               icon: const Icon(Icons.logout),
               tooltip: "Logout",
@@ -145,6 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: "Refresh Data",
             onPressed: _refreshData,
           ),
+          _buildNotificationBell(context),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: "Logout",
