@@ -12,6 +12,8 @@ import 'subscription_screen.dart';
 
 import 'employee_jobs_screen.dart';
 import 'customer_marketplace_screen.dart';
+import '../providers/marketplace_provider.dart';
+import '../widgets/rating_summary_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -288,6 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDashboardTab(BuildContext context, authUser) {
+    final auth = Provider.of<AuthProvider>(context);
     final ownerProvider = Provider.of<OwnerProvider>(context);
 
     return RefreshIndicator(
@@ -358,6 +361,45 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Colors.grey,
                 ),
               ],
+            ),
+
+            const SizedBox(height: 24),
+            FutureBuilder<Map<String, dynamic>>(
+              future: Provider.of<MarketplaceProvider>(context, listen: false)
+                  .fetchRatings(auth.token!),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (snapshot.hasError) {
+                  return const SizedBox.shrink();
+                }
+                final data = snapshot.data;
+                if (data == null) {
+                  return const SizedBox.shrink();
+                }
+                final double avg = (data['average_rating'] as num?)?.toDouble() ?? 0.0;
+                final int count = (data['count'] as num?)?.toInt() ?? 0;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Your Service Reputation",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    RatingSummaryCard(averageRating: avg, ratingCount: count),
+                    const SizedBox(height: 24),
+                  ],
+                );
+              },
             ),
 
             const SizedBox(height: 32),

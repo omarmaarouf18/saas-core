@@ -374,6 +374,8 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                                                   color: Colors.grey.shade600,
                                                   fontSize: 13),
                                             ),
+                                            const SizedBox(width: 8),
+                                            ServiceRatingWidget(tenantId: service.tenantId),
                                           ],
                                         ),
                                         const SizedBox(height: 8),
@@ -594,6 +596,75 @@ class _BookingDialogState extends State<_BookingDialog> {
                       strokeWidth: 2, color: Colors.white),
                 )
               : const Text("Confirm & Request"),
+        ),
+      ],
+    );
+  }
+}
+
+class ServiceRatingWidget extends StatefulWidget {
+  final String tenantId;
+
+  const ServiceRatingWidget({super.key, required this.tenantId});
+
+  @override
+  State<ServiceRatingWidget> createState() => _ServiceRatingWidgetState();
+}
+
+class _ServiceRatingWidgetState extends State<ServiceRatingWidget> {
+  double? _avg;
+  int? _count;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRating();
+  }
+
+  Future<void> _loadRating() async {
+    final provider = Provider.of<MarketplaceProvider>(context, listen: false);
+    try {
+      final res = await provider.fetchRatings(widget.tenantId);
+      if (mounted) {
+        setState(() {
+          _avg = (res['average_rating'] as num?)?.toDouble() ?? 0.0;
+          _count = (res['count'] as num?)?.toInt() ?? 0;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const SizedBox(
+        width: 12,
+        height: 12,
+        child: CircularProgressIndicator(strokeWidth: 1.5),
+      );
+    }
+    if (_count == null || _count == 0) {
+      return Text(
+        "No ratings",
+        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+      );
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.star, color: Theme.of(context).colorScheme.secondary, size: 16),
+        const SizedBox(width: 4),
+        Text(
+          "${_avg!.toStringAsFixed(1)} ($_count)",
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
         ),
       ],
     );
