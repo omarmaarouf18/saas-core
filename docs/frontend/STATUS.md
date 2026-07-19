@@ -87,3 +87,11 @@
    * `rating_screen.dart`
  * **Widgets**:
    * `rating_summary_card.dart`
+   * `primary_button.dart`
+   * `secondary_button.dart`
+   * `themed_text_field.dart`
+   * `themed_card.dart`
+   * `themed_section_header.dart`
+   * `themed_loading_indicator.dart`
+   * `themed_empty_state.dart`
+   * `themed_error_banner.dart`
