@@ -95,4 +95,11 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Commit SHA**: ``f6aedfa84b70cba80ba9f88370dc376b24c55dea``
 - **Verification**: Verified via `services/notification-service` handlers tests running in a loop of 50 runs under the Go race detector with zero failures. ✅
 
+## Chat-Service Hub Test Sleep Auditing
+
+- **Implementation Detail**: Audited and replaced flaky `time.Sleep` calls in `services/chat-service` tests. Replaced the fixed `time.Sleep(50 * time.Millisecond)` in `internal/chat/hub_test.go` with a deterministic, thread-safe polling loop on `hub.ClientCount()` and `hub.ChannelCount()` to synchronize after concurrent client unregistrations. The remaining `time.Sleep` calls in `hub_test.go` (spacing simulated active overlapping traffic) and `chat_test.go` (spacing database write timestamps) were verified as safe timing configurations with no active I/O races, and were left unmodified.
+- **Commit SHA**: ``51c50e96efba171d6c0b115db0601972ee508389``
+- **Verification**: Verified via `services/chat-service` unit and stress tests running in a loop of 50 runs under the Go race detector with zero failures. ✅
+
+
 

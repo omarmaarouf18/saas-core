@@ -164,7 +164,7 @@ This file is a persistent document tracking the real state of the repository.
 > **Dependency Drift Prevention**: Any change to shared/infra that adds a new external dependency must be followed by `go mod tidy && go build ./...` in every service that imports shared/infra, and a full `docker compose down && build --no-cache && up` verification, before considering the change complete — go.sum drift can pass CI's module resolution while still breaking local/production Docker builds.
 
 
-* **Immediate Next Step**: Audited all 5 time.Sleep calls in notification-service tests and replaced them with deterministic synchronization and polling. Test suite is verified race-free and passing. Ready for next backend/integration phase.
+* **Immediate Next Step**: Audited all 3 time.Sleep calls in chat-service tests, replacing the client unregistration race sleep with deterministic polling. Test suite is verified race-free and passing. Ready for next backend/integration phase.
 
 
 
