@@ -227,4 +227,43 @@ Randomly selected 10 entries from `docs/changelog/security-fixes.md`. Verified e
 
 ---
 
-**Audit Complete.** No critical security documentation drift found. Primary action items are metadata freshness (SHA), one stale comment, and the docgen tooling gap noted in AI_CONTEXT.md itself.
+## 9. Audit Refresh (2026-07-19)
+
+### 9.1 Summary of Changes since Commit `ae48b0e`
+A comprehensive codebase audit was performed at commit `31dec993c74906ec3adf66b78198ddf4c373a36e` (HEAD) to track security fixes, feature additions, tooling gates, and test flakiness mitigation.
+
+#### 9.1.1 gosec Findings and Fixes
+- **Unchecked Errors (G104)**: Resolved unchecked error returns codebase-wide (in `services/api-gateway`, `services/auth-service`, `services/chat-service`, `services/notification-service`, `services/user-service`, and `shared/infra/resilience`). Added standard error-logging response wrappers in `shared/infra/handlerutil/response.go` to safely write bytes and encode JSON without leaking resources.
+- **Directory Traversal Mitigation (G304)**: Hardened the local storage driver in `services/auth-service/internal/storage/storage.go` by verifying all destination and file-open paths against `filepath.Abs` and asserting prefix containment under the configured base storage directory (`strings.HasPrefix(absDest, absBase)`). Explicitly justified the necessary `#nosec G304` annotations inline.
+- **HTTP Server Timeout Configurations (G114)**: Configured `ReadHeaderTimeout: 3 * time.Second` on `http.Server` definitions across all entry points in all microservices to prevent Slowloris denial of service vectors.
+
+#### 9.1.2 Pre-Push Git Hook Enforcements
+- Implemented a mandatory pre-push hook (`.githooks/pre-push`) which is automatically executed prior to pushing to origin. The hook strictly enforces:
+  - Code formatting check (`gofmt -l .`)
+  - Changelog SHA validation (verifying that all commit SHAs cited in the changelogs exist in the git object database)
+  - Compilation and test execution (`go build`, `go vet`, and `go test`) across all modules.
+
+#### 9.1.3 Stale/Fabricated Changelog SHAs
+- Audited the changelogs and replaced 4 previously fabricated or stale commit SHAs with real, verified git history hashes, ensuring documentation integrity.
+
+#### 9.1.4 Concurrency and Flaky-Test Synchronization
+- **user-service (`UpdateJobLocation Throttle Error Rollback`)**: Resolved a timing race where context cancellation raced against MongoDB write operations by introducing an unexported test-only sync hook (`updateJobLocationBeforeWriteHook`).
+- **time.Sleep Audit**: Conducted a codebase-wide audit of all `time.Sleep` calls in tests:
+  - **Reclassified SAFE**: Spacing delays for consecutive MongoDB insertion timestamps (`chat_test.go:965`) and simulated activity timers in stress tests (`hub_test.go:59`).
+  - **Replaced with Active Polling**: Replaced unregistration wait timers in `chat/hub_test.go:73` and connection/hub registration waits in `notification-service/handlers_test.go` with deterministic, thread-safe polling loops (checking client and channel counts with a 2s timeout).
+  - **Data-Race Mitigation**: Created a thread-safe `safeRecorder` wrapper for `httptest.ResponseRecorder` in `notification-service/handlers_test.go` to eliminate read/write data races when polling stream responses concurrently.
+
+#### 9.1.5 New Product Features
+- **Required Username Field**: Added a new mandatory `username` field on signup, with validation rules (must be 3-20 characters, alphanumeric, supporting Arabic and case-insensitive uniqueness in MongoDB).
+- **Username Propagation & Chat Snapshots**: Implemented point-in-time username snapshots inside `chat-service` message persistence so that historical messages preserve the sender's username snapshot from the time of transmission.
+
+### 9.2 Known Issues Reality Check (As of HEAD)
+We re-verified all known items and open issues against the current implementation:
+1. **mTLS CA**: Verified still **dev-grade**. File-based cert loading in `tlsutil.go` and local CA creation scripts are unchanged.
+2. **Missing Job Listing Endpoint**: Verified still **missing**. No listing route exists under `RegisterRoutes` in `user-service`.
+3. **Missing Employee Listing Endpoint**: Verified still **missing**. No route exists under `RegisterRoutes` in `auth-service`.
+4. **Client-Submitted Coordinates Pricing Risk**: Verified still **present**. Pricing uses client-supplied booking coordinates. The speed plausibility check (>150 km/h) in `UpdateJobLocation` remains the sole runtime check.
+
+---
+
+**Audit Complete.** No critical security documentation drift found. Primary action items for metadata freshness, error handling, directory traversal, and timeouts have been resolved, and pre-push hooks are fully operational.

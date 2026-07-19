@@ -78,3 +78,22 @@ During import tracing, the following items under `services/` were flagged as req
 1. **`auth-service/internal/handlers/auth.go`**: Verify why token expiry is compared against a hardcoded `7*24*time.Hour` refresh window. Check if this value is configurable or documented.
 2. **`chat-service/internal/handlers/chat.go`**: Verify that query-parameter authentication tokens (`?token=`) for WebSocket connections are securely cleared/redacted on client handshake errors before logging.
 3. **`user-service/internal/handlers/handlers.go`**: Ensure spatial coordinate bounds checking is consistent across all service directory queries and is not vulnerable to out-of-bounds input bypasses.
+
+---
+
+## 5. Audit Refresh (2026-07-19)
+
+### 5.1 Overview of Scope Expansion
+Since the original audit on 2026-07-17, the `logic-exploitation` branch has received significant expansions, including codebase-wide `gosec` verification, testing improvements, and username validation features. This refresh validates changes under `shared/infra` and traces how key integration items flagged in the previous pass have been corrected.
+
+### 5.2 Verification of Flagged Items & Security Gaps
+1. **gosec G104 (Unchecked Error Handling)**: Verified that all unchecked error returns codebase-wide have been resolved. In `shared/infra`, standard response helpers were added via `shared/infra/handlerutil/response.go` to wrap byte writing and JSON encoding safely.
+2. **Directory Traversal (G304)**: Mitigated in `services/auth-service/internal/storage/storage.go` by verifying all destination and file-open paths against `filepath.Abs` and asserting prefix containment under the configured base storage directory (`strings.HasPrefix(absDest, absBase)`). Explicitly justified the necessary `#nosec G304` annotations inline.
+3. **HTTP Server Timeouts (G114)**: Verified that all microservices now configure `ReadHeaderTimeout: 3 * time.Second` on their `http.Server` definitions (addressing Slowloris DDoS vectors).
+4. **Test Coverage Expansion**:
+   - `shared/infra/jwtutil/jwt_test.go` and `shared/infra/resilience/resilience_test.go` have been expanded to include comprehensive edge cases, signature mismatches, expired tokens, and connection leaks.
+   - `shared/infra/tlsutil/` has had comprehensive unit tests added (`tlsutil_test.go`).
+5. **Flaky-Test Auditing & Sleep Replacements**:
+   - `shared/infra` test suites were audited and verified.
+   - Fixed sleeps in `services/chat-service` and `services/notification-service` were audited. The fixed sleep in `services/chat-service/internal/chat/hub_test.go` was replaced with a thread-safe active polling loop checking `hub.ClientCount()` and `hub.ChannelCount()` to ensure clean teardown. Other sleeps (such as sequential database insertion timestamp spacers in `chat_test.go` and stress-test activity spacers in `hub_test.go`) were analyzed and classified as `SAFE` due to lack of I/O races.
+
