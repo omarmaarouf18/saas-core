@@ -116,8 +116,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             color: provider.isConnected
-                ? colorScheme.secondaryContainer.withOpacity(0.4)
-                : colorScheme.errorContainer.withOpacity(0.4),
+                ? colorScheme.secondaryContainer.withValues(alpha: 0.4)
+                : colorScheme.errorContainer.withValues(alpha: 0.4),
             child: Row(
               children: [
                 Icon(
@@ -222,7 +222,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
-          color: colorScheme.primary.withOpacity(0.7),
+          color: colorScheme.primary.withValues(alpha: 0.7),
         ),
       ),
     );
@@ -253,13 +253,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       elevation: notif.isRead ? 0 : 2,
       color: notif.isRead
           ? colorScheme.surface
-          : colorScheme.surfaceVariant.withOpacity(0.3),
+          : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: notif.isRead
               ? Colors.transparent
-              : colorScheme.secondary.withOpacity(0.3),
+              : colorScheme.secondary.withValues(alpha: 0.3),
           width: 1,
         ),
       ),

@@ -181,7 +181,7 @@ class _RatingScreenState extends State<RatingScreen> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: colorScheme.primary.withOpacity(0.7),
+                      color: colorScheme.primary.withValues(alpha: 0.7),
                       letterSpacing: 1.5,
                     ),
                   ),
@@ -410,7 +410,7 @@ class _RatingScreenState extends State<RatingScreen> {
         color: colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: colorScheme.outline.withOpacity(0.2),
+          color: colorScheme.outline.withValues(alpha: 0.2),
           style: BorderStyle.solid,
         ),
       ),
@@ -425,7 +425,7 @@ class _RatingScreenState extends State<RatingScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: Colors.green.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -458,7 +458,7 @@ class _RatingScreenState extends State<RatingScreen> {
                 Icon(
                   Icons.visibility_off_outlined,
                   size: 48,
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.3),
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
                 ),
                 Positioned(
                   right: 0,
@@ -508,7 +508,7 @@ class _RatingScreenState extends State<RatingScreen> {
                   child: Container(
                     height: 6,
                     decoration: BoxDecoration(
-                      color: colorScheme.outline.withOpacity(0.2),
+                      color: colorScheme.outline.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(3),
                     ),
                   ),

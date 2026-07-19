@@ -41,7 +41,7 @@ class RatingSummaryCard extends StatelessWidget {
         color: colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: colorScheme.outline.withOpacity(0.1),
+          color: colorScheme.outline.withValues(alpha: 0.1),
         ),
       ),
       child: Column(
@@ -79,7 +79,7 @@ class RatingSummaryCard extends StatelessWidget {
           const SizedBox(height: 10),
           Divider(
             height: 1,
-            color: colorScheme.outline.withOpacity(0.2),
+            color: colorScheme.outline.withValues(alpha: 0.2),
           ),
           const SizedBox(height: 10),
           Text(

@@ -87,7 +87,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: colorScheme.onPrimaryContainer.withOpacity(0.7),
+                        color: colorScheme.onPrimaryContainer
+                            .withValues(alpha: 0.7),
                         letterSpacing: 1.2,
                       ),
                     ),
@@ -230,7 +231,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         side: BorderSide(
           color: highlighted
               ? colorScheme.secondary
-              : colorScheme.outline.withOpacity(0.2),
+              : colorScheme.outline.withValues(alpha: 0.2),
           width: highlighted ? 2 : 1,
         ),
       ),
