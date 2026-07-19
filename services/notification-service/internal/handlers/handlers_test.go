@@ -20,6 +20,31 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+type safeRecorder struct {
+	*httptest.ResponseRecorder
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func newSafeRecorder() *safeRecorder {
+	return &safeRecorder{
+		ResponseRecorder: httptest.NewRecorder(),
+	}
+}
+
+func (sr *safeRecorder) Write(p []byte) (int, error) {
+	sr.mu.Lock()
+	defer sr.mu.Unlock()
+	sr.buf.Write(p)
+	return sr.ResponseRecorder.Write(p)
+}
+
+func (sr *safeRecorder) BodyString() string {
+	sr.mu.Lock()
+	defer sr.mu.Unlock()
+	return sr.buf.String()
+}
+
 func TestNotificationHandlersAuth(t *testing.T) {
 	sseHub := hub.NewSSEHub()
 	internalToken := "secret-internal-token"
@@ -221,8 +246,11 @@ func TestStreamAndVerifyAndResolve(t *testing.T) {
 
 	// Run in a goroutine so we can disconnect it
 	go func() {
-		// Wait a moment and then cancel connection context
-		time.Sleep(50 * time.Millisecond)
+		// Poll until client is registered in the hub, then cancel
+		deadline := time.Now().Add(2 * time.Second)
+		for sseHub.ClientCount() == 0 && time.Now().Before(deadline) {
+			time.Sleep(2 * time.Millisecond)
+		}
 		cancel()
 	}()
 
@@ -364,19 +392,20 @@ func TestStreamTenantScopingAndIsolation(t *testing.T) {
 	defer cancelA()
 	reqA := httptest.NewRequest("GET", "/notifications/stream?token="+tokenA, nil)
 	reqA = reqA.WithContext(ctxA)
-	recA := httptest.NewRecorder()
+	recA := newSafeRecorder()
 
 	ctxB, cancelB := context.WithCancel(context.Background())
 	defer cancelB()
 	reqB := httptest.NewRequest("GET", "/notifications/stream?token="+tokenB, nil)
 	reqB = reqB.WithContext(ctxB)
-	recB := httptest.NewRecorder()
+	recB := newSafeRecorder()
 
 	var wg sync.WaitGroup
 	wg.Add(2)
 
 	// Connect user A and user B to their streams
 	go func() {
+		// Wait until both clients are registered in the hub
 		defer wg.Done()
 		n.Stream(recA, reqA)
 	}()
@@ -385,7 +414,11 @@ func TestStreamTenantScopingAndIsolation(t *testing.T) {
 		n.Stream(recB, reqB)
 	}()
 
-	time.Sleep(50 * time.Millisecond)
+	// Wait until both clients are registered in the hub
+	deadline := time.Now().Add(2 * time.Second)
+	for sseHub.ClientCount() < 2 && time.Now().Before(deadline) {
+		time.Sleep(2 * time.Millisecond)
+	}
 
 	notif := hub.Notification{
 		ID:       "notif-1",
@@ -396,19 +429,23 @@ func TestStreamTenantScopingAndIsolation(t *testing.T) {
 	}
 	sseHub.Broadcast(notif)
 
-	time.Sleep(50 * time.Millisecond)
+	// Wait until Tenant A alert has been written to recA's buffer
+	deadline = time.Now().Add(2 * time.Second)
+	for !strings.Contains(recA.BodyString(), "Tenant A Alert") && time.Now().Before(deadline) {
+		time.Sleep(2 * time.Millisecond)
+	}
 
 	// Cancel contexts and wait for streams to exit before reading ResponseRecorders
 	cancelA()
 	cancelB()
 	wg.Wait()
 
-	bodyA := recA.Body.String()
+	bodyA := recA.ResponseRecorder.Body.String()
 	if !strings.Contains(bodyA, "Tenant A Alert") {
 		t.Errorf("Expected Tenant A to receive notification, got: %q", bodyA)
 	}
 
-	bodyB := recB.Body.String()
+	bodyB := recB.ResponseRecorder.Body.String()
 	if strings.Contains(bodyB, "Tenant A Alert") {
 		t.Errorf("Security Violation: Tenant B received tenant-scoped notification of Tenant A!")
 	}
@@ -476,9 +513,15 @@ func TestSSEHubCleanupAndConcurrencyStress(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			req := httptest.NewRequest("GET", "/notifications/stream?token="+token, nil)
 			req = req.WithContext(ctx)
-			rec := httptest.NewRecorder()
+			rec := newSafeRecorder()
 
 			go func() {
+				// Wait until the client registers (indicated by receiving "event: connected")
+				deadline := time.Now().Add(2 * time.Second)
+				for !strings.Contains(rec.BodyString(), "event: connected") && time.Now().Before(deadline) {
+					time.Sleep(2 * time.Millisecond)
+				}
+				// Staggered disconnect
 				time.Sleep(time.Duration(10+idx%15) * time.Millisecond)
 				cancel()
 			}()
@@ -490,7 +533,11 @@ func TestSSEHubCleanupAndConcurrencyStress(t *testing.T) {
 	wg.Wait()
 	close(stopBroadcaster)
 
-	time.Sleep(100 * time.Millisecond)
+	// Wait until client count reaches 0 with a timeout
+	deadline := time.Now().Add(2 * time.Second)
+	for sseHub.ClientCount() > 0 && time.Now().Before(deadline) {
+		time.Sleep(2 * time.Millisecond)
+	}
 
 	if sseHub.ClientCount() != 0 {
 		t.Errorf("Expected sseHub ClientCount to return to 0 after all client disconnects, got %d", sseHub.ClientCount())
