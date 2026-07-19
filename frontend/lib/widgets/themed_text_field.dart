@@ -13,6 +13,7 @@ class ThemedTextField extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final bool enabled;
   final int? maxLines;
+  final TextDirection? textDirection;
 
   const ThemedTextField({
     super.key,
@@ -27,6 +28,7 @@ class ThemedTextField extends StatelessWidget {
     this.onChanged,
     this.enabled = true,
     this.maxLines = 1,
+    this.textDirection,
   });
 
   @override
@@ -52,6 +54,7 @@ class ThemedTextField extends StatelessWidget {
           onChanged: onChanged,
           enabled: enabled,
           maxLines: maxLines,
+          textDirection: textDirection,
           style: AppTypography.bodyMd.copyWith(color: AppColors.onSurface),
           decoration: InputDecoration(
             hintText: hintText,

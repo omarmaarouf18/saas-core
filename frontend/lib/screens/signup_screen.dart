@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/primary_button.dart';
+import '../widgets/themed_card.dart';
+import '../widgets/themed_text_field.dart';
 import 'otp_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -41,7 +45,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(auth.error!),
-          backgroundColor: Colors.red.shade800,
+          backgroundColor: AppColors.error,
         ),
       );
     } else {
@@ -59,10 +63,10 @@ class _SignupScreenState extends State<SignupScreen> {
     final auth = Provider.of<AuthProvider>(context);
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: AppColors.scaffoldBackground,
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
             child: Form(
@@ -73,163 +77,182 @@ class _SignupScreenState extends State<SignupScreen> {
                 children: [
                   Text(
                     "Create Account",
-                    style: TextStyle(
-                      fontSize: 32,
+                    style: AppTypography.headlineLg.copyWith(
+                      color: AppColors.primary,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.base),
                   Text(
                     "Join Quick Delivery",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade600,
+                    style: AppTypography.bodyLg.copyWith(
+                      color: AppColors.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 32),
-                  TextFormField(
-                    controller: _usernameController,
-                    textDirection: _usernameDirection,
-                    decoration: const InputDecoration(
-                      labelText: "Username",
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.person_outline),
-                    ),
-                    onChanged: (val) {
-                      if (val.isNotEmpty) {
-                        final firstRune = val.runes.first;
-                        if (firstRune >= 0x0600 && firstRune <= 0x06FF) {
-                          setState(() {
-                            _usernameDirection = TextDirection.rtl;
-                          });
-                        } else {
-                          setState(() {
-                            _usernameDirection = TextDirection.ltr;
-                          });
-                        }
-                      } else {
-                        setState(() {
-                          _usernameDirection = null;
-                        });
-                      }
-                    },
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) {
-                        return "Please enter a username";
-                      }
-                      final trimmed = val.trim();
-                      final runeCount = trimmed.runes.length;
-                      if (runeCount < 3) {
-                        return "Username must be at least 3 characters";
-                      }
-                      if (runeCount > 30) {
-                        return "Username must be at most 30 characters";
-                      }
-                      final usernameRegex =
-                          RegExp(r'^([a-zA-Z0-9_ ]|[\u0600-\u06FF])+$');
-                      if (!usernameRegex.hasMatch(trimmed)) {
-                        return "Username contains invalid characters";
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: const InputDecoration(
-                      labelText: "Email Address",
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.email_outlined),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) {
-                        return "Please enter an email";
-                      }
-                      if (!val.contains("@")) {
-                        return "Invalid email address";
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _passwordController,
-                    decoration: const InputDecoration(
-                      labelText: "Password",
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.lock_outline),
-                    ),
-                    obscureText: true,
-                    validator: (val) {
-                      if (val == null || val.isEmpty) {
-                        return "Please enter a password";
-                      }
-                      if (val.length < 6) {
-                        return "Password must be at least 6 characters";
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedRole,
-                    decoration: const InputDecoration(
-                      labelText: "Account Role",
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.badge_outlined),
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                          value: "owner", child: Text("Business Owner")),
-                      DropdownMenuItem(
-                          value: "user", child: Text("Customer / Client")),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedRole = val;
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: auth.isLoading ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: auth.isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                  const SizedBox(height: AppSpacing.xl),
+                  ThemedCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ThemedTextField(
+                          controller: _usernameController,
+                          labelText: "Username",
+                          hintText: "Enter your username",
+                          prefixIcon: const Icon(Icons.person_outline),
+                          textDirection: _usernameDirection,
+                          onChanged: (val) {
+                            if (val.isNotEmpty) {
+                              final firstRune = val.runes.first;
+                              if (firstRune >= 0x0600 && firstRune <= 0x06FF) {
+                                setState(() {
+                                  _usernameDirection = TextDirection.rtl;
+                                });
+                              } else {
+                                setState(() {
+                                  _usernameDirection = TextDirection.ltr;
+                                });
+                              }
+                            } else {
+                              setState(() {
+                                _usernameDirection = null;
+                              });
+                            }
+                          },
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return "Please enter a username";
+                            }
+                            final trimmed = val.trim();
+                            final runeCount = trimmed.runes.length;
+                            if (runeCount < 3) {
+                              return "Username must be at least 3 characters";
+                            }
+                            if (runeCount > 30) {
+                              return "Username must be at most 30 characters";
+                            }
+                            final usernameRegex =
+                                RegExp(r'^([a-zA-Z0-9_ ]|[\u0600-\u06FF])+$');
+                            if (!usernameRegex.hasMatch(trimmed)) {
+                              return "Username contains invalid characters";
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        ThemedTextField(
+                          controller: _emailController,
+                          labelText: "Email Address",
+                          hintText: "Enter your email address",
+                          prefixIcon: const Icon(Icons.email_outlined),
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return "Please enter an email";
+                            }
+                            if (!val.contains("@")) {
+                              return "Invalid email address";
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        ThemedTextField(
+                          controller: _passwordController,
+                          labelText: "Password",
+                          hintText: "Enter your password",
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          obscureText: true,
+                          validator: (val) {
+                            if (val == null || val.isEmpty) {
+                              return "Please enter a password";
+                            }
+                            if (val.length < 6) {
+                              return "Password must be at least 6 characters";
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        // Account Role dropdown styled with design system tokens
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "ACCOUNT ROLE",
+                              style: AppTypography.labelLg.copyWith(
+                                color: AppColors.onSurfaceVariant,
+                              ),
                             ),
-                          )
-                        : const Text(
-                            "SIGN UP",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                            const SizedBox(height: AppSpacing.base),
+                            DropdownButtonFormField<String>(
+                              initialValue: _selectedRole,
+                              decoration: InputDecoration(
+                                prefixIcon: const Icon(Icons.badge_outlined),
+                                filled: true,
+                                fillColor: AppColors.surface,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md,
+                                  vertical: AppSpacing.md,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: AppRadius.defaultBorder,
+                                  borderSide: const BorderSide(
+                                    color: AppColors.outlineVariant,
+                                    width: 1,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: AppRadius.defaultBorder,
+                                  borderSide: const BorderSide(
+                                    color: AppColors.primary,
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                              style: AppTypography.bodyMd.copyWith(
+                                color: AppColors.onSurface,
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                    value: "owner",
+                                    child: Text("Business Owner")),
+                                DropdownMenuItem(
+                                    value: "user",
+                                    child: Text("Customer / Client")),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() {
+                                    _selectedRole = val;
+                                  });
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        PrimaryButton(
+                          text: "SIGN UP",
+                          isLoading: auth.isLoading,
+                          onPressed: _submit,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: Text(
+                            "Already have an account? Log In",
+                            style: AppTypography.bodyMd.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text("Already have an account? Log In"),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
