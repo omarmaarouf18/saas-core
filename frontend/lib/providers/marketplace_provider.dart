@@ -115,6 +115,54 @@ class MarketplaceProvider extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>> rateJob({
+    required String jobId,
+    required String ratedByToken,
+    required String ratedUserId,
+    required int stars,
+    required String comment,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post('/users/jobs/rate', {
+        'job_id': jobId,
+        'rated_by': ratedByToken,
+        'rated_user': ratedUserId,
+        'stars': stars,
+        'comment': comment,
+      });
+      return Map<String, dynamic>.from(res);
+    } catch (e) {
+      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchRatings(String userTokenOrId) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.get('/users/ratings', queryParams: {
+        'user_id': userTokenOrId,
+      });
+      return Map<String, dynamic>.from(res);
+    } catch (e) {
+      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();

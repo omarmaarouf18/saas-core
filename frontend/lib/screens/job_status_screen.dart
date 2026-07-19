@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../models/job.dart';
 import 'chat_screen.dart';
+import 'rating_screen.dart';
 
 class JobStatusScreen extends StatefulWidget {
   final Job job;
@@ -280,6 +281,26 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               ),
             ),
             const SizedBox(height: 32),
+
+            if (_currentJob.status == 'completed') ...[
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => RatingScreen(job: _currentJob),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.star_outline),
+                label: const Text("Rate Your Experience"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.secondary,
+                  foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
 
             ElevatedButton(
               onPressed: () {

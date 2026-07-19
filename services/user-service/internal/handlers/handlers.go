@@ -1135,11 +1135,9 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 	req.RatedBy = resolvedRatedBy
 
 	resolvedRatedUser, err := resolveToken(req.RatedUser)
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid rated_user token: " + err.Error()})
-		return
-	}
-	req.RatedUser = resolvedRatedUser
+	if err == nil {
+		req.RatedUser = resolvedRatedUser
+	} // Fallback: if token resolution fails, treat req.RatedUser as the raw user ID directly
 
 	ctx := r.Context()
 	job := u.store.GetJob(ctx, req.JobID)
