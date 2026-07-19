@@ -156,6 +156,19 @@ This file tracks historical entries for the primary category: **New Features Cha
 - **Commit SHA**: ``eed6786bb28254b553cd272e6d979c18ff58abfb``
 - **Verification**: Verified via `flutter analyze` and widget tests checking clean compilation and metric integration. ✅
 
+## Blind Rating Screen
+
+- **Implementation Detail**: Built the Blind Rating screen (Phase 7 - Ratings & Subscriptions) on the frontend. Created `RatingScreen` supporting 1-5 star score selection and text comment inputs. Wired it via `MarketplaceProvider.rateJob` to query POST `/users/jobs/rate`. Implemented a fallback in the backend handler `RateJob` so that it accepts the raw ratee user ID directly when JWT resolution fails, correcting a design gap where the frontend previously had to pass the other party's private token. Queries the user's received ratings via GET `/users/ratings` to dynamically determine if the partner has rated the job, displaying a live blind status card. Added the navigation trigger button to `JobStatusScreen` for completed jobs.
+- **Commit SHA**: ``8d3d17752486b92d71435108f6803e4ac22d07d9``
+- **Verification**: Verified via backend unit tests (`TestUserServiceHandlers`) and frontend static analysis + widget tests. ✅
+
+## Rating Summary Component
+
+- **Implementation Detail**: Built the reusable `RatingSummaryCard` (Phase 7 - Ratings & Subscriptions) on the frontend. Renders an average star rating using full, half, and empty icons, alongside a total review count. Embedded the component inside the Owner dashboard welcome panel to show service reputation, and inside Customer Marketplace service cards to highlight carrier trustworthiness.
+- **Commit SHA**: ``f01d25be38c7d0cdd70f59ca696c043e2f0db08e``
+- **Verification**: Verified via `flutter analyze` and widget tests confirming clean layout integration. ✅
+
+
 
 
 
