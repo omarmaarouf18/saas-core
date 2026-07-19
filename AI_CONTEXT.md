@@ -164,7 +164,7 @@ This file is a persistent document tracking the real state of the repository.
 > **Dependency Drift Prevention**: Any change to shared/infra that adds a new external dependency must be followed by `go mod tidy && go build ./...` in every service that imports shared/infra, and a full `docker compose down && build --no-cache && up` verification, before considering the change complete — go.sum drift can pass CI's module resolution while still breaking local/production Docker builds.
 
 
-* **Immediate Next Step**: Completed codebase-wide audit report refresh, documenting gosec fixes, pre-push git hooks, flaky test mitigations, and new username features. Ready for next developmental phase.
+* **Immediate Next Step**: Implement the SSE notifications screen (Phase 6 - SSE) on the frontend.
 
 
 

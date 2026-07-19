@@ -138,4 +138,11 @@ This file tracks historical entries for the primary category: **New Features Cha
 - **Commit SHA (frontend)**: `74ffbb7e4d269c405b6caff4c883459430508e22`
 - **Verification**: Verified via backend integration tests in `auth-service` and `chat-service`, and Flutter widget tests in `widget_test.dart` asserting signup validation logic and chat sender name rendering. ✅
 
+## Programmatic Dark Theme
+
+- **Implementation Detail**: Added programmatic dark theme support to the Flutter frontend application using `quickDeliveryDarkTheme`. Seeded the dark scheme from `Color(0xFF0D1321)` with `Brightness.dark`, overriding the `secondary` role to preserve the brand gold (`Color(0xFFFFC107)`). Configured `MaterialApp` with both light and dark themes and set `themeMode` to `ThemeMode.system`.
+- **Commit SHA**: ``149c3a823908a144511f1226767f17d4505ee80b``
+- **Verification**: Verified via `flutter analyze` and widget tests confirming clean compilation and theme initialization. ✅
+
+
 
