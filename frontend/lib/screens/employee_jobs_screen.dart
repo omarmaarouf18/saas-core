@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme.dart';
+import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/employee_jobs_provider.dart';
 import '../providers/notifications_provider.dart';
-import '../models/job.dart';
+import '../widgets/primary_button.dart';
+import '../widgets/secondary_button.dart';
+import '../widgets/themed_card.dart';
+import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_error_banner.dart';
+import '../widgets/themed_loading_indicator.dart';
+import '../widgets/themed_section_header.dart';
+import '../widgets/themed_text_field.dart';
 import 'login_screen.dart';
 import 'notifications_screen.dart';
 
@@ -65,7 +74,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Action logged successfully: \"$action\""),
-            backgroundColor: Colors.green.shade700,
+            backgroundColor: AppColors.success,
           ),
         );
       }
@@ -88,7 +97,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text("Simulation Failed: $errorMsg"),
-              backgroundColor: Theme.of(context).colorScheme.error,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -105,24 +114,40 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
           title: Row(
             children: [
-              Icon(Icons.error_outline,
-                  color: Theme.of(context).colorScheme.error),
-              const SizedBox(width: 8),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+              const Icon(Icons.error_outline, color: AppColors.error),
+              const SizedBox(width: AppSpacing.base),
+              Text(
+                title,
+                style: AppTypography.titleMd.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           content: Text(
             message,
-            style: const TextStyle(fontSize: 15, height: 1.4),
+            style: AppTypography.bodyMd.copyWith(
+              color: AppColors.onSurfaceVariant,
+              height: 1.4,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text("Dismiss"),
+              child: Text(
+                "Dismiss",
+                style: AppTypography.bodyMd.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         );
@@ -154,7 +179,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    color: Colors.red,
+                    color: AppColors.error,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   constraints: const BoxConstraints(
@@ -163,10 +188,10 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                   ),
                   child: Text(
                     '${provider.unreadCount}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
+                    style: AppTypography.labelMd.copyWith(
+                      color: AppColors.onPrimary,
                       fontWeight: FontWeight.bold,
+                      fontSize: 10,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -184,8 +209,10 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     final jobsProvider = Provider.of<EmployeeJobsProvider>(context);
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
         title: const Text("Employee Jobs Dashboard"),
         actions: [
           IconButton(
@@ -212,34 +239,26 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
         onRefresh: _refreshJobs,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(auth.user?.username.isNotEmpty == true
                   ? auth.user!.username
                   : (auth.user?.email ?? '')),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.lg),
               _buildActionSimulatorCard(),
-              const SizedBox(height: 28),
-              const Text(
-                "Your Assigned Jobs",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.xl),
+              const ThemedSectionHeader(title: "Your Assigned Jobs"),
+              const SizedBox(height: AppSpacing.sm),
               if (jobsProvider.isLoading && jobsProvider.jobs.isEmpty)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(40.0),
-                    child: CircularProgressIndicator(),
-                  ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40.0),
+                  child: ThemedLoadingIndicator(
+                      message: "Loading assigned jobs..."),
                 )
               else if (jobsProvider.error != null && jobsProvider.jobs.isEmpty)
-                _buildErrorCard(jobsProvider.error!)
+                ThemedErrorBanner(message: jobsProvider.error!)
               else
                 _buildJobsList(jobsProvider.jobs),
             ],
@@ -255,18 +274,16 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
       children: [
         Text(
           "Welcome back!",
-          style: TextStyle(
-            fontSize: 24,
+          style: AppTypography.headlineLgMobile.copyWith(
+            color: AppColors.primary,
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.primary,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.xs),
         Text(
           "Logged in as: $displayName",
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade600,
+          style: AppTypography.bodyMd.copyWith(
+            color: AppColors.onSurfaceVariant,
           ),
         ),
       ],
@@ -274,116 +291,62 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   }
 
   Widget _buildActionSimulatorCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Employee Action Simulator",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                "Log service events directly into the tenant audit trail.",
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const Divider(height: 24),
-              TextFormField(
-                controller: _actionController,
-                decoration: const InputDecoration(
-                  labelText: "Simulation Action Text",
-                  hintText: "e.g., Arrived at Pickup, Job in Route",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.run_circle_outlined),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return "Please enter or select an action to simulate";
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: _suggestions.map((suggestion) {
-                  return ActionChip(
-                    label:
-                        Text(suggestion, style: const TextStyle(fontSize: 12)),
+    return ThemedCard(
+      borderRadius: AppRadius.md,
+      padding: AppSpacing.lg,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const ThemedSectionHeader(
+              title: "Employee Action Simulator",
+              subtitle:
+                  "Log service events directly into the tenant audit trail.",
+            ),
+            const Divider(
+              height: AppSpacing.lg,
+              color: AppColors.outlineVariant,
+            ),
+            ThemedTextField(
+              controller: _actionController,
+              labelText: "Simulation Action Text",
+              hintText: "e.g., Arrived at Pickup, Job in Route",
+              prefixIcon: const Icon(Icons.run_circle_outlined,
+                  color: AppColors.outline),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return "Please enter or select an action to simulate";
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Wrap(
+              spacing: AppSpacing.base,
+              runSpacing: AppSpacing.xs,
+              children: _suggestions.map((suggestion) {
+                return SizedBox(
+                  width: 175,
+                  height: 40,
+                  child: SecondaryButton(
+                    text: suggestion,
+                    isOutlined: true,
                     onPressed: () {
                       setState(() {
                         _actionController.text = suggestion;
                       });
                     },
-                    backgroundColor: Colors.grey.shade200,
-                    side: BorderSide.none,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _isSimulating ? null : _submitAction,
-                  icon: const Icon(Icons.send_outlined, size: 18),
-                  label: _isSimulating
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text("Simulate Action"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
                   ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorCard(String errorMsg) {
-    return Card(
-      color: Colors.red.shade50,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.red.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.red),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                errorMsg,
-                style: const TextStyle(color: Colors.red, fontSize: 14),
-              ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            PrimaryButton(
+              onPressed: _isSimulating ? null : _submitAction,
+              icon: Icons.send_outlined,
+              text: "Simulate Action",
+              isLoading: _isSimulating,
             ),
           ],
         ),
@@ -393,20 +356,13 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
 
   Widget _buildJobsList(List<Job> jobs) {
     if (jobs.isEmpty) {
-      return Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: const Padding(
-          padding: EdgeInsets.all(40.0),
-          child: Center(
-            child: Text(
-              "No jobs currently assigned to you.",
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
+      return const ThemedCard(
+        borderRadius: AppRadius.md,
+        padding: AppSpacing.lg,
+        child: ThemedEmptyState(
+          icon: Icons.assignment_late_outlined,
+          title: "No Jobs Assigned",
+          description: "No jobs currently assigned to you.",
         ),
       );
     }
@@ -426,26 +382,26 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     Color statusColor;
     switch (job.status.toLowerCase()) {
       case 'completed':
-        statusColor = const Color(0xFF00E676); // kStatusSuccess
+        statusColor = AppColors.success;
         break;
       case 'active':
-        statusColor = const Color(0xFFFF7A00); // kStatusWarning
+        statusColor = AppColors.warning;
         break;
       case 'cancelled':
-        statusColor = const Color(0xFFFF1744); // kStatusDanger
+        statusColor =
+            const Color(0xFFFF1744); // kStatusDanger (Distinct danger red)
         break;
       case 'pending':
       default:
-        statusColor = Colors.grey;
+        statusColor = AppColors.outline;
         break;
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: ThemedCard(
+        borderRadius: AppRadius.md,
+        padding: AppSpacing.md,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -455,10 +411,10 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 Expanded(
                   child: Text(
                     "Job ID: ${job.id}",
-                    style: const TextStyle(
+                    style: AppTypography.bodyMd.copyWith(
                       fontFamily: 'monospace',
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      color: AppColors.onSurface,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -473,28 +429,30 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                   ),
                   child: Text(
                     job.status.toUpperCase(),
-                    style: TextStyle(
+                    style: AppTypography.labelMd.copyWith(
                       color: statusColor,
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
                     ),
                   ),
                 ),
               ],
             ),
-            const Divider(height: 24),
+            const Divider(
+              height: AppSpacing.lg,
+              color: AppColors.outlineVariant,
+            ),
             _buildJobDetailRow(
               Icons.location_on_outlined,
               "Destination",
               "Lat: ${job.location.latitude.toStringAsFixed(6)}, Lon: ${job.location.longitude.toStringAsFixed(6)}",
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.xs),
             _buildJobDetailRow(
               Icons.person_outline,
               "Customer ID",
               job.userId,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.xs),
             _buildJobDetailRow(
               Icons.payment_outlined,
               "Payment Method",
@@ -502,7 +460,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             ),
             if (job.lockedEscrowAmount != null &&
                 job.lockedEscrowAmount! > 0) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.xs),
               _buildJobDetailRow(
                 Icons.lock_clock_outlined,
                 "Escrow Locked",
@@ -511,17 +469,19 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             ],
             if (job.cancellationReason != null &&
                 job.cancellationReason!.isNotEmpty) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.sm),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  borderRadius: AppRadius.defaultBorder,
                 ),
                 child: Text(
                   "Cancellation Reason: ${job.cancellationReason}",
-                  style: TextStyle(color: Colors.red.shade800, fontSize: 13),
+                  style: AppTypography.bodyMd.copyWith(
+                    color: AppColors.error,
+                  ),
                 ),
               ),
             ],
@@ -535,22 +495,20 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: Colors.grey.shade600),
-        const SizedBox(width: 8),
+        Icon(icon, size: 18, color: AppColors.outline),
+        const SizedBox(width: AppSpacing.base),
         Text(
           "$label: ",
-          style: const TextStyle(
+          style: AppTypography.bodyMd.copyWith(
             fontWeight: FontWeight.w600,
-            color: Colors.black54,
-            fontSize: 14,
+            color: AppColors.onSurfaceVariant,
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              color: Colors.black87,
-              fontSize: 14,
+            style: AppTypography.bodyMd.copyWith(
+              color: AppColors.onSurface,
             ),
           ),
         ),
