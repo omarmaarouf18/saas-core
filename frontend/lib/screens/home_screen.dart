@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
 import '../providers/notifications_provider.dart';
+import '../widgets/themed_card.dart';
+import '../widgets/themed_section_header.dart';
+import '../widgets/themed_empty_state.dart';
 import 'login_screen.dart';
 import 'wallet_screen.dart';
 import 'employee_screen.dart';
@@ -65,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    color: Colors.red,
+                    color: AppColors.error,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   constraints: const BoxConstraints(
@@ -74,10 +78,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Text(
                     '${provider.unreadCount}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
+                    style: AppTypography.labelMd.copyWith(
+                      color: AppColors.onPrimary,
                       fontWeight: FontWeight.bold,
+                      fontSize: 10,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -111,11 +115,11 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       // Non-owner basic dashboard
       return Scaffold(
-        backgroundColor: Colors.grey.shade100,
+        backgroundColor: AppColors.scaffoldBackground,
         appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.primary,
+          backgroundColor: AppColors.primary,
           title: const Text("Quick Delivery Dashboard"),
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.onPrimary,
           actions: [
             _buildNotificationBell(context),
             IconButton(
@@ -134,51 +138,40 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 "Welcome back, ${user.username.isNotEmpty ? user.username : user.email}!",
-                style: const TextStyle(
-                  fontSize: 24,
+                style: AppTypography.headlineLgMobile.copyWith(
+                  color: AppColors.primary,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.base),
               Text(
                 "Account ID: ${user.id}",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
+                style: AppTypography.bodyMd.copyWith(
+                  color: AppColors.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 24),
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Profile Information",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      const Divider(height: 24),
-                      _buildDetailRow("Username", user.username),
-                      _buildDetailRow("Email", user.email),
-                      _buildDetailRow("Role", user.role.toUpperCase()),
-                    ],
-                  ),
+              const SizedBox(height: AppSpacing.lg),
+              ThemedCard(
+                borderRadius: AppRadius.md,
+                padding: AppSpacing.lg,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const ThemedSectionHeader(title: "Profile Information"),
+                    const Divider(
+                      height: AppSpacing.lg,
+                      color: AppColors.outlineVariant,
+                    ),
+                    _buildDetailRow("Username", user.username),
+                    _buildDetailRow("Email", user.email),
+                    _buildDetailRow("Role", user.role.toUpperCase()),
+                  ],
                 ),
               ),
             ],
@@ -188,11 +181,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        backgroundColor: AppColors.primary,
         title: const Text("Quick Delivery Owner Dashboard"),
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -219,20 +212,22 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           if (isKycPending)
             Container(
-              color: Colors.amber.shade700,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: const Row(
+              color: AppColors.warning,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              child: Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded,
-                      color: Colors.white, size: 28),
-                  SizedBox(width: 12),
+                  const Icon(Icons.warning_amber_rounded,
+                      color: AppColors.onPrimary, size: 28),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
                       "KYC Pending Approval: Your account documents are being reviewed. Some actions (e.g. creating services, deposits) are restricted.",
-                      style: TextStyle(
-                        color: Colors.white,
+                      style: AppTypography.bodyMd.copyWith(
+                        color: AppColors.onPrimary,
                         fontWeight: FontWeight.w600,
-                        fontSize: 14,
                       ),
                     ),
                   ),
@@ -254,8 +249,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.outline,
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
         onTap: (index) {
@@ -297,35 +292,33 @@ class _HomeScreenState extends State<HomeScreen> {
       onRefresh: _refreshData,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               "Welcome back, ${authUser.username.isNotEmpty ? authUser.username : authUser.email}!",
-              style: const TextStyle(
-                fontSize: 24,
+              style: AppTypography.headlineLgMobile.copyWith(
+                color: AppColors.primary,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.base),
             Text(
               "Tenant Owner ID: ${authUser.id}",
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
+              style: AppTypography.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
 
             // Dashboard Metrics Grid
             GridView.count(
               crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
+              crossAxisSpacing: AppSpacing.md,
+              mainAxisSpacing: AppSpacing.md,
               childAspectRatio: 1.3,
               children: [
                 _buildMetricCard(
@@ -334,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? "..."
                       : "${ownerProvider.walletBalance.toStringAsFixed(2)} Credits",
                   icon: Icons.account_balance_wallet_outlined,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: AppColors.primary,
                 ),
                 _buildMetricCard(
                   title: "Subscription Tier",
@@ -345,10 +338,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           .replaceAll('_', ' '),
                   icon: Icons.card_membership_outlined,
                   color: ownerProvider.subscriptionTier == "paid"
-                      ? Colors.green
+                      ? AppColors.success
                       : (ownerProvider.subscriptionTier == "pending_payment"
-                          ? Colors.blue
-                          : Colors.orange),
+                          ? const Color(0xFF2196F3)
+                          : AppColors.warning),
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
@@ -362,20 +355,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   value: "0",
                   subtitle: "N/A (No List API)",
                   icon: Icons.people_outline,
-                  color: Colors.grey,
+                  color: AppColors.outline,
                 ),
               ],
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
             FutureBuilder<Map<String, dynamic>>(
               future: Provider.of<MarketplaceProvider>(context, listen: false)
                   .fetchRatings(auth.token!),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Center(child: CircularProgressIndicator()),
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      ),
+                    ),
                   );
                 }
                 if (snapshot.hasError) {
@@ -391,70 +389,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Your Service Reputation",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+                    const ThemedSectionHeader(
+                      title: "Your Service Reputation",
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.sm),
                     RatingSummaryCard(averageRating: avg, ratingCount: count),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
                 );
               },
             ),
 
-            const SizedBox(height: 32),
-            const Text(
-              "Active Jobs",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.xl),
+            const ThemedSectionHeader(title: "Active Jobs"),
+            const SizedBox(height: AppSpacing.sm),
 
             // Active Jobs placeholder stating the API gap
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.assignment_late_outlined,
-                      size: 48,
-                      color: Colors.grey.shade400,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      "No Active Jobs Found",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Active job tracking is active on the platform, but the user-service does not currently expose an API endpoint to list active jobs for owners.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
+            const ThemedCard(
+              borderRadius: AppRadius.md,
+              padding: AppSpacing.lg,
+              child: ThemedEmptyState(
+                icon: Icons.assignment_late_outlined,
+                title: "No Active Jobs Found",
+                description:
+                    "Active job tracking is active on the platform, but the user-service does not currently expose an API endpoint to list active jobs for owners.",
               ),
             ),
           ],
@@ -471,63 +429,54 @@ class _HomeScreenState extends State<HomeScreen> {
     required Color color,
     VoidCallback? onTap,
   }) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      elevation: 2,
+    return ThemedCard(
+      borderRadius: AppRadius.md,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+        borderRadius: AppRadius.mdBorder,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: AppTypography.bodyMd.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.onSurfaceVariant,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  Icon(icon, color: color),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                ),
+                Icon(icon, color: color),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: AppTypography.titleMd.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                    subtitle,
+                    style: AppTypography.labelMd.copyWith(
+                      color: AppColors.outline,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade500,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
                 ],
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -535,24 +484,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildDetailRow(String label, String value, {Color? valueColor}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.base),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: AppTypography.bodyMd.copyWith(
               fontWeight: FontWeight.w500,
-              color: Colors.black54,
-              fontSize: 15,
+              color: AppColors.onSurfaceVariant,
             ),
           ),
           Text(
             value,
-            style: TextStyle(
+            style: AppTypography.bodyMd.copyWith(
               fontWeight: FontWeight.bold,
-              color: valueColor ?? Colors.black87,
-              fontSize: 15,
+              color: valueColor ?? AppColors.onSurface,
             ),
           ),
         ],
