@@ -46,3 +46,39 @@ final ThemeData quickDeliveryTheme = ThemeData(
     foregroundColor: kBrandNavy,
   ),
 );
+
+final ColorScheme _darkBaseScheme = ColorScheme.fromSeed(
+  seedColor: const Color(0xFF0D1321),
+  brightness: Brightness.dark,
+);
+
+final ThemeData quickDeliveryDarkTheme = ThemeData(
+  useMaterial3: true,
+  colorScheme: _darkBaseScheme.copyWith(
+    secondary: kBrandGold,
+    onSecondary: kBrandNavy,
+    secondaryContainer: const Color(0xFF594300),
+    onSecondaryContainer: const Color(0xFFFFDF9E),
+  ),
+  scaffoldBackgroundColor: _darkBaseScheme.surface,
+  appBarTheme: AppBarTheme(
+    backgroundColor: _darkBaseScheme.surface,
+    foregroundColor: _darkBaseScheme.onSurface,
+    elevation: 0,
+  ),
+  textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: kBrandNavy,
+      foregroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+    ),
+  ),
+  floatingActionButtonTheme: const FloatingActionButtonThemeData(
+    backgroundColor: kBrandGold,
+    foregroundColor: kBrandNavy,
+  ),
+);
+

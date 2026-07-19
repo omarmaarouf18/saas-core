@@ -53,6 +53,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Quick Delivery',
       theme: quickDeliveryTheme,
+      darkTheme: quickDeliveryDarkTheme,
+      themeMode: ThemeMode.system,
       debugShowCheckedModeBanner: false,
       home: auth.isAuthenticated ? const HomeScreen() : const LoginScreen(),
     );
