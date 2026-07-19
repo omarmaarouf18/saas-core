@@ -1,9 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
 import '../models/chat_message.dart';
+import '../widgets/themed_text_field.dart';
+import '../widgets/themed_loading_indicator.dart';
+import '../widgets/themed_error_banner.dart';
+import '../widgets/themed_empty_state.dart';
 
 class ChatScreen extends StatefulWidget {
   final String jobId;
@@ -95,7 +100,7 @@ class _ChatScreenState extends State<ChatScreen> {
     Widget statusIndicator;
     if (chat.subscriptionError != null) {
       statusIndicator =
-          const Icon(Icons.gpp_bad, color: Colors.redAccent, size: 16);
+          const Icon(Icons.gpp_bad, color: AppColors.error, size: 16);
     } else if (chat.isConnected) {
       statusIndicator = Row(
         mainAxisSize: MainAxisSize.min,
@@ -104,28 +109,32 @@ class _ChatScreenState extends State<ChatScreen> {
             width: 8,
             height: 8,
             decoration: const BoxDecoration(
-                color: Colors.green, shape: BoxShape.circle),
+                color: AppColors.success, shape: BoxShape.circle),
           ),
           const SizedBox(width: 4),
-          const Text("Live",
-              style: TextStyle(fontSize: 12, color: Colors.green)),
+          Text(
+            "Live",
+            style: AppTypography.labelMd.copyWith(color: AppColors.success),
+          ),
         ],
       );
     } else if (chat.isConnecting) {
       statusIndicator = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
+          const SizedBox(
             width: 8,
             height: 8,
             child: CircularProgressIndicator(
               strokeWidth: 1.5,
-              color: Theme.of(context).colorScheme.secondary,
+              color: AppColors.warning,
             ),
           ),
           const SizedBox(width: 4),
-          const Text("Connecting...",
-              style: TextStyle(fontSize: 12, color: Colors.amber)),
+          Text(
+            "Connecting...",
+            style: AppTypography.labelMd.copyWith(color: AppColors.warning),
+          ),
         ],
       );
     } else {
@@ -135,110 +144,65 @@ class _ChatScreenState extends State<ChatScreen> {
           Container(
             width: 8,
             height: 8,
-            decoration:
-                const BoxDecoration(color: Colors.grey, shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+                color: AppColors.outline, shape: BoxShape.circle),
           ),
           const SizedBox(width: 4),
-          const Text("Disconnected",
-              style: TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(
+            "Disconnected",
+            style: AppTypography.labelMd.copyWith(color: AppColors.outline),
+          ),
         ],
       );
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: AppColors.surfaceDim,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-                "Job Chat #${widget.jobId.substring(0, widget.jobId.length > 8 ? 8 : widget.jobId.length)}"),
+              "Job Chat #${widget.jobId.substring(0, widget.jobId.length > 8 ? 8 : widget.jobId.length)}",
+              style: AppTypography.titleMd.copyWith(color: AppColors.onPrimary),
+            ),
             const SizedBox(height: 2),
             statusIndicator,
           ],
         ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
       ),
       body: Column(
         children: [
           // Error banners
           if (chat.error != null && chat.subscriptionError == null)
-            Container(
-              color: Colors.red.shade50,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.red),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      chat.error!,
-                      style:
-                          TextStyle(color: Colors.red.shade900, fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
+            ThemedErrorBanner(
+              message: chat.error!,
             ),
           // Main Body
           Expanded(
             child: chat.subscriptionError != null
                 ? Center(
-                    child: Card(
-                      margin: const EdgeInsets.all(24),
-                      color: Colors.red.shade50,
-                      shape: RoundedRectangleBorder(
-                        side: BorderSide(color: Colors.red.shade200),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.gpp_bad,
-                                size: 64, color: Colors.red),
-                            const SizedBox(height: 16),
-                            const Text(
-                              "Access Denied",
-                              style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              "You are not authorized to view or join the chat for Job #${widget.jobId}.",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  color: Colors.grey.shade700, fontSize: 14),
-                            ),
-                          ],
-                        ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: ThemedErrorBanner(
+                        message:
+                            "Access Denied: You are not authorized to view or join the chat for Job #${widget.jobId}.",
                       ),
                     ),
                   )
                 : chat.messages.isEmpty && chat.isConnecting
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(child: ThemedLoadingIndicator())
                     : chat.messages.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.chat_bubble_outline,
-                                    size: 64, color: Colors.grey.shade400),
-                                const SizedBox(height: 16),
-                                Text(
-                                  "No messages yet. Start the conversation!",
-                                  style: TextStyle(color: Colors.grey.shade600),
-                                ),
-                              ],
-                            ),
+                        ? const ThemedEmptyState(
+                            icon: Icons.chat_bubble_outline,
+                            title: "No messages yet",
+                            description: "Start the conversation!",
                           )
                         : ListView.builder(
                             controller: _scrollController,
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(AppSpacing.md),
                             itemCount: chat.messages.length,
                             itemBuilder: (context, index) {
                               final msg = chat.messages[index];
@@ -250,9 +214,9 @@ class _ChatScreenState extends State<ChatScreen> {
           // Input Row (only if authorized)
           if (chat.subscriptionError == null)
             Container(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
@@ -265,32 +229,18 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: TextFormField(
+                      child: ThemedTextField(
                         controller: _messageController,
-                        decoration: InputDecoration(
-                          hintText: "Type a message...",
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(
-                                color: Theme.of(context).colorScheme.primary),
-                          ),
-                        ),
+                        hintText: "Type a message...",
                         textInputAction: TextInputAction.send,
                         onFieldSubmitted: (_) => _sendMessage(),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    FloatingActionButton.small(
+                    const SizedBox(width: AppSpacing.md),
+                    IconButton(
                       onPressed: _sendMessage,
-                      shape: const CircleBorder(),
-                      child: const Icon(Icons.send, size: 18),
+                      icon: const Icon(Icons.send),
+                      color: AppColors.primary,
                     ),
                   ],
                 ),
@@ -302,11 +252,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageBubble(ChatMessage msg, bool isMe) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
-    final secondaryColor = Theme.of(context).colorScheme.secondary;
+    const primaryColor = AppColors.primary;
+    const secondaryColor = AppColors.secondary;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Column(
         crossAxisAlignment:
             isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -315,28 +265,30 @@ class _ChatScreenState extends State<ChatScreen> {
           Container(
             constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.75),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             decoration: BoxDecoration(
               color:
                   isMe ? primaryColor : secondaryColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(16),
-                topRight: const Radius.circular(16),
-                bottomLeft:
-                    isMe ? const Radius.circular(16) : const Radius.circular(0),
-                bottomRight:
-                    isMe ? const Radius.circular(0) : const Radius.circular(16),
+                topLeft: const Radius.circular(AppRadius.lg),
+                topRight: const Radius.circular(AppRadius.lg),
+                bottomLeft: isMe
+                    ? const Radius.circular(AppRadius.lg)
+                    : const Radius.circular(0),
+                bottomRight: isMe
+                    ? const Radius.circular(0)
+                    : const Radius.circular(AppRadius.lg),
               ),
             ),
             child: Text(
               msg.content,
-              style: TextStyle(
-                color: isMe ? Colors.white : primaryColor,
-                fontSize: 15,
+              style: AppTypography.bodyMd.copyWith(
+                color: isMe ? AppColors.onPrimary : AppColors.primary,
               ),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           // Sender Username / ID tag
           Text(
             isMe
@@ -344,7 +296,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 : (msg.senderUsername.isNotEmpty
                     ? msg.senderUsername
                     : "User #${msg.senderId.substring(0, msg.senderId.length > 6 ? 6 : msg.senderId.length)}"),
-            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+            style: AppTypography.labelMd
+                .copyWith(color: AppColors.onSurfaceVariant),
           ),
         ],
       ),

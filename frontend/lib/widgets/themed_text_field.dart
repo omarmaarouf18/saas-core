@@ -19,6 +19,9 @@ class ThemedTextField extends StatelessWidget {
   final TextStyle? style;
   final String? counterText;
 
+  final ValueChanged<String>? onFieldSubmitted;
+  final TextInputAction? textInputAction;
+
   const ThemedTextField({
     super.key,
     this.controller,
@@ -37,6 +40,8 @@ class ThemedTextField extends StatelessWidget {
     this.textAlign = TextAlign.start,
     this.style,
     this.counterText,
+    this.onFieldSubmitted,
+    this.textInputAction,
   });
 
   @override
@@ -67,6 +72,8 @@ class ThemedTextField extends StatelessWidget {
           textAlign: textAlign,
           style: style ??
               AppTypography.bodyMd.copyWith(color: AppColors.onSurface),
+          textInputAction: textInputAction,
+          onFieldSubmitted: onFieldSubmitted,
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: AppTypography.bodyMd.copyWith(color: AppColors.outline),
