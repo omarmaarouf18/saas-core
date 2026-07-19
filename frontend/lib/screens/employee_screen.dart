@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/primary_button.dart';
+import '../widgets/themed_card.dart';
+import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_loading_indicator.dart';
+import '../widgets/themed_section_header.dart';
+import '../widgets/themed_text_field.dart';
 import 'employee_jobs_screen.dart';
 
 class EmployeeScreen extends StatefulWidget {
@@ -80,17 +87,17 @@ class _EmployeeScreenState extends State<EmployeeScreen>
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Container(
-          color: Colors.white,
+          color: AppColors.surface,
           child: SafeArea(
             child: TabBar(
               controller: _tabController,
-              labelColor: Theme.of(context).colorScheme.primary,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: Theme.of(context).colorScheme.primary,
+              labelColor: AppColors.primary,
+              unselectedLabelColor: AppColors.outline,
+              indicatorColor: AppColors.primary,
               tabs: const [
                 Tab(icon: Icon(Icons.people_outline), text: "Manage Workers"),
                 Tab(
@@ -116,361 +123,302 @@ class _EmployeeScreenState extends State<EmployeeScreen>
     final ownerProvider = Provider.of<OwnerProvider>(context);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Register Employee Form
-          Card(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Form(
-                key: _registerFormKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Register New Employee",
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary),
-                    ),
-                    const Divider(height: 24),
-                    TextFormField(
-                      controller: _regUsernameController,
-                      textDirection: _regUsernameDirection,
-                      decoration: const InputDecoration(
-                        labelText: "Employee Username",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.person_outline),
-                      ),
-                      onChanged: (val) {
-                        if (val.isNotEmpty) {
-                          final firstRune = val.runes.first;
-                          if (firstRune >= 0x0600 && firstRune <= 0x06FF) {
-                            setState(() {
-                              _regUsernameDirection = TextDirection.rtl;
-                            });
-                          } else {
-                            setState(() {
-                              _regUsernameDirection = TextDirection.ltr;
-                            });
-                          }
+          ThemedCard(
+            borderRadius: AppRadius.md,
+            padding: AppSpacing.lg,
+            child: Form(
+              key: _registerFormKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const ThemedSectionHeader(
+                    title: "Register New Employee",
+                  ),
+                  const Divider(
+                    height: AppSpacing.lg,
+                    color: AppColors.outlineVariant,
+                  ),
+                  ThemedTextField(
+                    controller: _regUsernameController,
+                    textDirection: _regUsernameDirection,
+                    labelText: "Employee Username",
+                    prefixIcon: const Icon(Icons.person_outline,
+                        color: AppColors.outline),
+                    onChanged: (val) {
+                      if (val.isNotEmpty) {
+                        final firstRune = val.runes.first;
+                        if (firstRune >= 0x0600 && firstRune <= 0x06FF) {
+                          setState(() {
+                            _regUsernameDirection = TextDirection.rtl;
+                          });
                         } else {
                           setState(() {
-                            _regUsernameDirection = null;
+                            _regUsernameDirection = TextDirection.ltr;
                           });
                         }
-                      },
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return "Username is required";
-                        }
-                        final trimmed = value.trim();
-                        final runeCount = trimmed.runes.length;
-                        if (runeCount < 3) {
-                          return "Username must be at least 3 characters";
-                        }
-                        if (runeCount > 30) {
-                          return "Username must be at most 30 characters";
-                        }
-                        final usernameRegex =
-                            RegExp(r'^([a-zA-Z0-9_ ]|[\u0600-\u06FF])+$');
-                        if (!usernameRegex.hasMatch(trimmed)) {
-                          return "Username contains invalid characters";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _regEmailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: "Employee Email",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.email_outlined),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return "Email is required";
-                        }
-                        if (!value.contains("@")) {
-                          return "Invalid email address";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _regPasswordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: "Employee Password",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.lock_outline),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Password is required";
-                        }
-                        if (value.length < 6) {
-                          return "Password must be at least 6 characters";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _isRegSubmitting
-                            ? null
-                            : () async {
-                                if (_registerFormKey.currentState!.validate()) {
-                                  setState(() => _isRegSubmitting = true);
-                                  try {
-                                    // ---------------------------------------------------------------------------
-                                    // API Call: Register Employee
-                                    // Convention: Uses RAW owner ID (auth.user!.id) as 'owner_id' JSON body parameter.
-                                    // Why: /auth/signup validates the owner's existence via direct GetByID lookup.
-                                    // ---------------------------------------------------------------------------
-                                    final res =
-                                        await ownerProvider.registerEmployee(
-                                      email: _regEmailController.text.trim(),
-                                      username:
-                                          _regUsernameController.text.trim(),
-                                      password: _regPasswordController.text,
-                                      ownerId: auth.user!.id,
-                                    );
+                      } else {
+                        setState(() {
+                          _regUsernameDirection = null;
+                        });
+                      }
+                    },
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return "Username is required";
+                      }
+                      final trimmed = value.trim();
+                      final runeCount = trimmed.runes.length;
+                      if (runeCount < 3) {
+                        return "Username must be at least 3 characters";
+                      }
+                      if (runeCount > 30) {
+                        return "Username must be at most 30 characters";
+                      }
+                      final usernameRegex =
+                          RegExp(r'^([a-zA-Z0-9_ ]|[\u0600-\u06FF])+$');
+                      if (!usernameRegex.hasMatch(trimmed)) {
+                        return "Username contains invalid characters";
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  ThemedTextField(
+                    controller: _regEmailController,
+                    keyboardType: TextInputType.emailAddress,
+                    labelText: "Employee Email",
+                    prefixIcon: const Icon(Icons.email_outlined,
+                        color: AppColors.outline),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return "Email is required";
+                      }
+                      if (!value.contains("@")) {
+                        return "Invalid email address";
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  ThemedTextField(
+                    controller: _regPasswordController,
+                    obscureText: true,
+                    labelText: "Employee Password",
+                    prefixIcon: const Icon(Icons.lock_outline,
+                        color: AppColors.outline),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Password is required";
+                      }
+                      if (value.length < 6) {
+                        return "Password must be at least 6 characters";
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  PrimaryButton(
+                    onPressed: _isRegSubmitting
+                        ? null
+                        : () async {
+                            if (_registerFormKey.currentState!.validate()) {
+                              setState(() => _isRegSubmitting = true);
+                              try {
+                                // ---------------------------------------------------------------------------
+                                // API Call: Register Employee
+                                // Convention: Uses RAW owner ID (auth.user!.id) as 'owner_id' JSON body parameter.
+                                // Why: /auth/signup validates the owner's existence via direct GetByID lookup.
+                                // ---------------------------------------------------------------------------
+                                final res =
+                                    await ownerProvider.registerEmployee(
+                                  email: _regEmailController.text.trim(),
+                                  username: _regUsernameController.text.trim(),
+                                  password: _regPasswordController.text,
+                                  ownerId: auth.user!.id,
+                                );
 
-                                    if (mounted) {
-                                      _regEmailController.clear();
-                                      _regUsernameController.clear();
-                                      _regPasswordController.clear();
-                                      _showSuccessDialog(
-                                        title: "Employee Registered",
-                                        message:
-                                            "Successfully created employee account:\n"
-                                            "Username: ${res['username'] ?? ''}\n"
-                                            "Email: ${res['email'] ?? ''}\n"
-                                            "ID: ${res['user_id'] ?? ''}\n\n"
-                                            "This account has no 2FA (auto-confirmed) and is ready for direct login.",
-                                      );
-                                    }
-                                  } catch (e) {
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(e.toString()),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    }
-                                  } finally {
-                                    if (mounted) {
-                                      setState(() => _isRegSubmitting = false);
-                                    }
-                                  }
+                                if (mounted) {
+                                  _regEmailController.clear();
+                                  _regUsernameController.clear();
+                                  _regPasswordController.clear();
+                                  _showSuccessDialog(
+                                    title: "Employee Registered",
+                                    message:
+                                        "Successfully created employee account:\n"
+                                        "Username: ${res['username'] ?? ''}\n"
+                                        "Email: ${res['email'] ?? ''}\n"
+                                        "ID: ${res['user_id'] ?? ''}\n\n"
+                                        "This account has no 2FA (auto-confirmed) and is ready for direct login.",
+                                  );
                                 }
-                              },
-                        icon: const Icon(Icons.person_add_alt_1_outlined),
-                        label: _isRegSubmitting
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Text("Register Worker"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
-                          foregroundColor:
-                              Theme.of(context).colorScheme.onPrimary,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(e.toString()),
+                                      backgroundColor: AppColors.error,
+                                    ),
+                                  );
+                                }
+                              } finally {
+                                if (mounted) {
+                                  setState(() => _isRegSubmitting = false);
+                                }
+                              }
+                            }
+                          },
+                    text: "Register Worker",
+                    isLoading: _isRegSubmitting,
+                    icon: Icons.person_add_alt_1_outlined,
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.lg),
 
           // 2. Freeze/Activate Toggle Form
-          Card(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Form(
-                key: _toggleFormKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Freeze / Activate Worker Account",
-                      style: TextStyle(
-                          fontSize: 18,
+          ThemedCard(
+            borderRadius: AppRadius.md,
+            padding: AppSpacing.lg,
+            child: Form(
+              key: _toggleFormKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const ThemedSectionHeader(
+                    title: "Freeze / Activate Worker Account",
+                  ),
+                  const Divider(
+                    height: AppSpacing.lg,
+                    color: AppColors.outlineVariant,
+                  ),
+                  ThemedTextField(
+                    controller: _togEmailController,
+                    keyboardType: TextInputType.emailAddress,
+                    labelText: "Employee Email",
+                    prefixIcon: const Icon(Icons.email_outlined,
+                        color: AppColors.outline),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return "Employee email is required";
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Account Status Setting:",
+                        style: AppTypography.bodyLg.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.onSurface,
+                        ),
+                      ),
+                      ChoiceChip(
+                        label: Text(_togSetActive ? "ACTIVE" : "FREEZE"),
+                        selected: true,
+                        selectedColor: _togSetActive
+                            ? AppColors.success.withValues(alpha: 0.15)
+                            : AppColors.error.withValues(alpha: 0.15),
+                        labelStyle: AppTypography.labelLg.copyWith(
+                          color: _togSetActive
+                              ? AppColors.success
+                              : AppColors.error,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary),
-                    ),
-                    const Divider(height: 24),
-                    TextFormField(
-                      controller: _togEmailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: "Employee Email",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.email_outlined),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return "Employee email is required";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Account Status Setting:",
-                          style: TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w500),
                         ),
-                        ChoiceChip(
-                          label: Text(_togSetActive ? "ACTIVE" : "FREEZE"),
-                          selected: true,
-                          selectedColor: _togSetActive
-                              ? Colors.green.shade100
-                              : Colors.red.shade100,
-                          labelStyle: TextStyle(
-                            color: _togSetActive
-                                ? Colors.green.shade800
-                                : Colors.red.shade800,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          avatar: Icon(
-                            _togSetActive
-                                ? Icons.check_circle_outline
-                                : Icons.block_flipped,
-                            color: _togSetActive
-                                ? Colors.green.shade800
-                                : Colors.red.shade800,
-                            size: 18,
-                          ),
-                          onSelected: (_) {
-                            setState(() {
-                              _togSetActive = !_togSetActive;
-                            });
-                          },
+                        avatar: Icon(
+                          _togSetActive
+                              ? Icons.check_circle_outline
+                              : Icons.block_flipped,
+                          color: _togSetActive
+                              ? AppColors.success
+                              : AppColors.error,
+                          size: 18,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _togPasswordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: "Confirm Owner Password",
-                        helperText:
-                            "Required for secure out-of-band operations verification.",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.vpn_key_outlined),
+                        onSelected: (_) {
+                          setState(() {
+                            _togSetActive = !_togSetActive;
+                          });
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Owner password is required to re-authenticate";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _isTogSubmitting
-                            ? null
-                            : () async {
-                                if (_toggleFormKey.currentState!.validate()) {
-                                  setState(() => _isTogSubmitting = true);
-                                  try {
-                                    // ---------------------------------------------------------------------------
-                                    // API Call: Toggle Employee Status (Freeze/Activate)
-                                    // Convention: Uses owner email and owner password (re-auth) in JSON body.
-                                    // Why: /auth/employee/toggle re-verifies the owner password via bcrypt.
-                                    // ---------------------------------------------------------------------------
-                                    final res =
-                                        await ownerProvider.toggleEmployee(
-                                      employeeEmail:
-                                          _togEmailController.text.trim(),
-                                      ownerEmail: auth.user!.email,
-                                      ownerPassword:
-                                          _togPasswordController.text,
-                                      setActive: _togSetActive,
-                                    );
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  ThemedTextField(
+                    controller: _togPasswordController,
+                    obscureText: true,
+                    labelText: "Confirm Owner Password",
+                    hintText:
+                        "Required for secure out-of-band operations verification.",
+                    prefixIcon: const Icon(Icons.vpn_key_outlined,
+                        color: AppColors.outline),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Owner password is required to re-authenticate";
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  PrimaryButton(
+                    onPressed: _isTogSubmitting
+                        ? null
+                        : () async {
+                            if (_toggleFormKey.currentState!.validate()) {
+                              setState(() => _isTogSubmitting = true);
+                              try {
+                                // ---------------------------------------------------------------------------
+                                // API Call: Toggle Employee Status (Freeze/Activate)
+                                // Convention: Uses owner email and owner password (re-auth) in JSON body.
+                                // Why: /auth/employee/toggle re-verifies the owner password via bcrypt.
+                                // ---------------------------------------------------------------------------
+                                final res = await ownerProvider.toggleEmployee(
+                                  employeeEmail:
+                                      _togEmailController.text.trim(),
+                                  ownerEmail: auth.user!.email,
+                                  ownerPassword: _togPasswordController.text,
+                                  setActive: _togSetActive,
+                                );
 
-                                    if (mounted) {
-                                      _togPasswordController.clear();
-                                      _showSuccessDialog(
-                                        title: "Worker Status Updated",
-                                        message: res['message'] ??
-                                            "Successfully changed status.",
-                                      );
-                                    }
-                                  } catch (e) {
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(e.toString()),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    }
-                                  } finally {
-                                    if (mounted) {
-                                      setState(() => _isTogSubmitting = false);
-                                    }
-                                  }
+                                if (mounted) {
+                                  _togPasswordController.clear();
+                                  _showSuccessDialog(
+                                    title: "Worker Status Updated",
+                                    message: res['message'] ??
+                                        "Successfully changed status.",
+                                  );
                                 }
-                              },
-                        icon: Icon(_togSetActive
-                            ? Icons.check_circle_outline
-                            : Icons.block_flipped),
-                        label: _isTogSubmitting
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white),
-                              )
-                            : Text(_togSetActive
-                                ? "Unfreeze Worker"
-                                : "Freeze Worker"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _togSetActive
-                              ? Colors.green.shade700
-                              : Colors.red.shade700,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(e.toString()),
+                                      backgroundColor: AppColors.error,
+                                    ),
+                                  );
+                                }
+                              } finally {
+                                if (mounted) {
+                                  setState(() => _isTogSubmitting = false);
+                                }
+                              }
+                            }
+                          },
+                    text: _togSetActive ? "Unfreeze Worker" : "Freeze Worker",
+                    isLoading: _isTogSubmitting,
+                    icon: _togSetActive
+                        ? Icons.check_circle_outline
+                        : Icons.block_flipped,
+                  ),
+                ],
               ),
             ),
           ),
@@ -483,30 +431,23 @@ class _EmployeeScreenState extends State<EmployeeScreen>
     final ownerProvider = Provider.of<OwnerProvider>(context);
 
     return ownerProvider.isLoading && ownerProvider.auditLogEntries.isEmpty
-        ? const Center(child: CircularProgressIndicator())
+        ? const ThemedLoadingIndicator(message: "Loading audit trail...")
         : RefreshIndicator(
             onRefresh: _refreshAuditLog,
             child: ListView.builder(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               itemCount: ownerProvider.auditLogEntries.isEmpty
                   ? 1
                   : ownerProvider.auditLogEntries.length,
               itemBuilder: (context, index) {
                 if (ownerProvider.auditLogEntries.isEmpty) {
-                  return Card(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    child: const Padding(
-                      padding: EdgeInsets.all(40.0),
-                      child: Center(
-                        child: Text(
-                          "No audit events recorded for this tenant.",
-                          style: TextStyle(
-                              fontSize: 15,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w500),
-                        ),
-                      ),
+                  return const ThemedCard(
+                    borderRadius: AppRadius.md,
+                    padding: AppSpacing.lg,
+                    child: ThemedEmptyState(
+                      icon: Icons.receipt_long_outlined,
+                      title: "No audit events recorded",
+                      description: "No audit events recorded for this tenant.",
                     ),
                   );
                 }
@@ -528,13 +469,11 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     ? "${timestamp.year}-${_twoDigits(timestamp.month)}-${_twoDigits(timestamp.day)} ${_twoDigits(timestamp.hour)}:${_twoDigits(timestamp.minute)}:${_twoDigits(timestamp.second)}"
                     : "";
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  elevation: 1,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: ThemedCard(
+                    borderRadius: AppRadius.md,
+                    padding: AppSpacing.md,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -543,19 +482,23 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                           children: [
                             Text(
                               action.toString().toUpperCase(),
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontSize: 14),
+                              style: AppTypography.bodyMd.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
                             ),
                             Text(
                               dateStr,
-                              style: const TextStyle(
-                                  fontSize: 11, color: Colors.grey),
+                              style: AppTypography.labelMd.copyWith(
+                                color: AppColors.outline,
+                              ),
                             ),
                           ],
                         ),
-                        const Divider(height: 20),
+                        const Divider(
+                          height: AppSpacing.md,
+                          color: AppColors.outlineVariant,
+                        ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -564,17 +507,17 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                               children: [
                                 Text(
                                   "Worker ID:",
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey.shade500),
+                                  style: AppTypography.labelMd.copyWith(
+                                    color: AppColors.outline,
+                                  ),
                                 ),
-                                const SizedBox(height: 2),
+                                const SizedBox(height: AppSpacing.xs),
                                 Text(
                                   employeeId,
-                                  style: const TextStyle(
-                                      fontFamily: 'monospace',
-                                      fontSize: 12,
-                                      color: Colors.black87),
+                                  style: AppTypography.bodyMd.copyWith(
+                                    fontFamily: 'monospace',
+                                    color: AppColors.onSurface,
+                                  ),
                                 ),
                               ],
                             ),
@@ -583,15 +526,16 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                               children: [
                                 Text(
                                   "IP Address:",
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey.shade500),
+                                  style: AppTypography.labelMd.copyWith(
+                                    color: AppColors.outline,
+                                  ),
                                 ),
-                                const SizedBox(height: 2),
+                                const SizedBox(height: AppSpacing.xs),
                                 Text(
                                   clientIp,
-                                  style: const TextStyle(
-                                      fontSize: 12, color: Colors.black87),
+                                  style: AppTypography.bodyMd.copyWith(
+                                    color: AppColors.onSurface,
+                                  ),
                                 ),
                               ],
                             ),
@@ -613,20 +557,39 @@ class _EmployeeScreenState extends State<EmployeeScreen>
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
           title: Row(
             children: [
-              const Icon(Icons.check_circle_outline, color: Colors.green),
-              const SizedBox(width: 8),
-              Text(title),
+              const Icon(Icons.check_circle_outline, color: AppColors.success),
+              const SizedBox(width: AppSpacing.base),
+              Text(
+                title,
+                style: AppTypography.titleMd.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
-          content: Text(message),
+          content: Text(
+            message,
+            style: AppTypography.bodyMd.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text("OK"),
+              child: Text(
+                "OK",
+                style: AppTypography.bodyMd.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         );
