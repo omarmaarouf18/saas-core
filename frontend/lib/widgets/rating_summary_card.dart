@@ -18,7 +18,8 @@ class RatingSummaryCard extends StatelessWidget {
     // Generate stars list
     List<Widget> stars = [];
     int fullStars = averageRating.floor();
-    bool hasHalfStar = (averageRating - fullStars) >= 0.25 && (averageRating - fullStars) < 0.75;
+    bool hasHalfStar = (averageRating - fullStars) >= 0.25 &&
+        (averageRating - fullStars) < 0.75;
     if ((averageRating - fullStars) >= 0.75) {
       fullStars++;
     }
@@ -27,7 +28,8 @@ class RatingSummaryCard extends StatelessWidget {
       if (i <= fullStars) {
         stars.add(Icon(Icons.star, color: colorScheme.secondary, size: 20));
       } else if (i == fullStars + 1 && hasHalfStar) {
-        stars.add(Icon(Icons.star_half, color: colorScheme.secondary, size: 20));
+        stars
+            .add(Icon(Icons.star_half, color: colorScheme.secondary, size: 20));
       } else {
         stars.add(const Icon(Icons.star_border, color: Colors.grey, size: 20));
       }

@@ -51,7 +51,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-    final notifications = Provider.of<NotificationsProvider>(context, listen: false);
+    final notifications =
+        Provider.of<NotificationsProvider>(context, listen: false);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (auth.isAuthenticated) {
@@ -71,4 +72,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-

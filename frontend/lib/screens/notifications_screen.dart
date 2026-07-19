@@ -35,13 +35,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   List<NotificationModel> _filterNotifications(List<NotificationModel> list) {
     if (_selectedCategory == 'All') return list;
     if (_selectedCategory == 'Jobs') {
-      return list.where((n) => n.type == 'job_alert' || n.id.startsWith('job-')).toList();
+      return list
+          .where((n) => n.type == 'job_alert' || n.id.startsWith('job-'))
+          .toList();
     }
     if (_selectedCategory == 'System') {
       return list.where((n) => n.type == 'system').toList();
     }
     if (_selectedCategory == 'Alerts') {
-      return list.where((n) => n.type == 'status_update' || n.type == 'popup').toList();
+      return list
+          .where((n) => n.type == 'status_update' || n.type == 'popup')
+          .toList();
     }
     return list;
   }
@@ -55,7 +59,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     // Grouping
     final todayNotifs = filtered.where((n) => _isToday(n.timestamp)).toList();
-    final yesterdayNotifs = filtered.where((n) => _isYesterday(n.timestamp)).toList();
+    final yesterdayNotifs =
+        filtered.where((n) => _isYesterday(n.timestamp)).toList();
     final earlierNotifs = filtered
         .where((n) => !_isToday(n.timestamp) && !_isYesterday(n.timestamp))
         .toList();
@@ -83,7 +88,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('Clear Notifications'),
-                  content: const Text('Are you sure you want to clear all notifications?'),
+                  content: const Text(
+                      'Are you sure you want to clear all notifications?'),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
@@ -171,7 +177,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.notifications_none, size: 64, color: Colors.grey),
+                        Icon(Icons.notifications_none,
+                            size: 64, color: Colors.grey),
                         SizedBox(height: 16),
                         Text(
                           'No notifications found',
@@ -185,15 +192,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     children: [
                       if (todayNotifs.isNotEmpty) ...[
                         _buildSectionHeader('Today', colorScheme),
-                        ...todayNotifs.map((n) => _buildNotificationCard(n, provider, auth.token, colorScheme)),
+                        ...todayNotifs.map((n) => _buildNotificationCard(
+                            n, provider, auth.token, colorScheme)),
                       ],
                       if (yesterdayNotifs.isNotEmpty) ...[
                         _buildSectionHeader('Yesterday', colorScheme),
-                        ...yesterdayNotifs.map((n) => _buildNotificationCard(n, provider, auth.token, colorScheme)),
+                        ...yesterdayNotifs.map((n) => _buildNotificationCard(
+                            n, provider, auth.token, colorScheme)),
                       ],
                       if (earlierNotifs.isNotEmpty) ...[
                         _buildSectionHeader('Earlier', colorScheme),
-                        ...earlierNotifs.map((n) => _buildNotificationCard(n, provider, auth.token, colorScheme)),
+                        ...earlierNotifs.map((n) => _buildNotificationCard(
+                            n, provider, auth.token, colorScheme)),
                       ],
                       const SizedBox(height: 24),
                     ],
@@ -224,7 +234,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     String? userToken,
     ColorScheme colorScheme,
   ) {
-    final bool isJobAlert = notif.type == 'job_alert' || notif.id.startsWith('job-');
+    final bool isJobAlert =
+        notif.type == 'job_alert' || notif.id.startsWith('job-');
     final String bodyText = notif.body;
 
     // Extract Job ID from body if possible
@@ -240,11 +251,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: notif.isRead ? 0 : 2,
-      color: notif.isRead ? colorScheme.surface : colorScheme.surfaceVariant.withOpacity(0.3),
+      color: notif.isRead
+          ? colorScheme.surface
+          : colorScheme.surfaceVariant.withOpacity(0.3),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: notif.isRead ? Colors.transparent : colorScheme.secondary.withOpacity(0.3),
+          color: notif.isRead
+              ? Colors.transparent
+              : colorScheme.secondary.withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -267,7 +282,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       notif.title,
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight: notif.isRead ? FontWeight.w500 : FontWeight.bold,
+                        fontWeight:
+                            notif.isRead ? FontWeight.w500 : FontWeight.bold,
                       ),
                     ),
                   ),
@@ -290,7 +306,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (isJobAlert && extractedJobId != null && userToken != null) ...[
+                  if (isJobAlert &&
+                      extractedJobId != null &&
+                      userToken != null) ...[
                     TextButton.icon(
                       icon: const Icon(Icons.gps_fixed, size: 16),
                       label: const Text('Track Shipment'),
@@ -329,7 +347,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       provider.markAsRead(notif.id);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Reply feature is in beta and local-only.'),
+                          content:
+                              Text('Reply feature is in beta and local-only.'),
                         ),
                       );
                     },

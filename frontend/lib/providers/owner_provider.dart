@@ -245,7 +245,7 @@ class OwnerProvider extends ChangeNotifier {
         'tier': tier,
         'requester_id': tenantId,
       });
-      
+
       if (res is Map) {
         if (res.containsKey('tier')) {
           _subscriptionTier = res['tier'] ?? 'free';

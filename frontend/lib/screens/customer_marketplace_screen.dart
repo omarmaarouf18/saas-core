@@ -375,7 +375,8 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                                                   fontSize: 13),
                                             ),
                                             const SizedBox(width: 8),
-                                            ServiceRatingWidget(tenantId: service.tenantId),
+                                            ServiceRatingWidget(
+                                                tenantId: service.tenantId),
                                           ],
                                         ),
                                         const SizedBox(height: 8),
@@ -660,7 +661,8 @@ class _ServiceRatingWidgetState extends State<ServiceRatingWidget> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.star, color: Theme.of(context).colorScheme.secondary, size: 16),
+        Icon(Icons.star,
+            color: Theme.of(context).colorScheme.secondary, size: 16),
         const SizedBox(width: 4),
         Text(
           "${_avg!.toStringAsFixed(1)} ($_count)",

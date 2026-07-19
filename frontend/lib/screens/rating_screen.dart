@@ -60,7 +60,8 @@ class _RatingScreenState extends State<RatingScreen> {
     });
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    final marketplaceProvider = Provider.of<MarketplaceProvider>(context, listen: false);
+    final marketplaceProvider =
+        Provider.of<MarketplaceProvider>(context, listen: false);
 
     try {
       // Fetch ratings received by the current user
@@ -105,7 +106,8 @@ class _RatingScreenState extends State<RatingScreen> {
     });
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    final marketplaceProvider = Provider.of<MarketplaceProvider>(context, listen: false);
+    final marketplaceProvider =
+        Provider.of<MarketplaceProvider>(context, listen: false);
 
     try {
       await marketplaceProvider.rateJob(
@@ -212,7 +214,8 @@ class _RatingScreenState extends State<RatingScreen> {
             // Main Interactive Card
             Card(
               elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: isWide
@@ -221,7 +224,9 @@ class _RatingScreenState extends State<RatingScreen> {
                         children: [
                           Expanded(child: _buildRatingForm(colorScheme, theme)),
                           const SizedBox(width: 32),
-                          Expanded(child: _buildBlindStatusVisualizer(colorScheme, theme)),
+                          Expanded(
+                              child: _buildBlindStatusVisualizer(
+                                  colorScheme, theme)),
                         ],
                       )
                     : Column(
@@ -248,19 +253,22 @@ class _RatingScreenState extends State<RatingScreen> {
                 _buildInfoCard(
                   icon: Icons.security_outlined,
                   title: "Unbiased Reviews",
-                  subtitle: "Preventing retaliatory or social-pressure ratings.",
+                  subtitle:
+                      "Preventing retaliatory or social-pressure ratings.",
                   colorScheme: colorScheme,
                 ),
                 _buildInfoCard(
                   icon: Icons.verified_outlined,
                   title: "Trust Shield",
-                  subtitle: "Ratings directly impact platform reliability ranks.",
+                  subtitle:
+                      "Ratings directly impact platform reliability ranks.",
                   colorScheme: colorScheme,
                 ),
                 _buildInfoCard(
                   icon: Icons.history_toggle_off_outlined,
                   title: "24h Window",
-                  subtitle: "Submit within 24 hours to ensure your score counts.",
+                  subtitle:
+                      "Submit within 24 hours to ensure your score counts.",
                   colorScheme: colorScheme,
                 ),
               ],
@@ -376,13 +384,15 @@ class _RatingScreenState extends State<RatingScreen> {
             backgroundColor: colorScheme.primary,
             foregroundColor: colorScheme.onPrimary,
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: _isSubmitting
               ? const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
               : const Text(
                   "Submit Blind Rating",

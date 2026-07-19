@@ -74,7 +74,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             // Current Plan Header Card
             Card(
               elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               color: colorScheme.primaryContainer,
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -103,7 +104,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           ),
                         ),
                         Icon(
-                          currentTier == 'free' ? Icons.star_border : Icons.stars,
+                          currentTier == 'free'
+                              ? Icons.star_border
+                              : Icons.stars,
                           color: colorScheme.secondary,
                           size: 32,
                         ),
@@ -112,14 +115,16 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     if (currentTier == 'pending_payment') ...[
                       const SizedBox(height: 12),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
                           color: colorScheme.errorContainer,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.info_outline, color: colorScheme.onErrorContainer, size: 18),
+                            Icon(Icons.info_outline,
+                                color: colorScheme.onErrorContainer, size: 18),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -165,7 +170,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               onPressed: _isSubmitting || currentTier == 'free'
                   ? null
                   : () => _changeSubscription('free'),
-              buttonText: currentTier == 'free' ? 'Active Plan' : 'Downgrade to Free',
+              buttonText:
+                  currentTier == 'free' ? 'Active Plan' : 'Downgrade to Free',
               colorScheme: colorScheme,
               theme: theme,
             ),
@@ -182,13 +188,18 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 'Access to advanced pricing metrics',
                 'Premium 24/7 dedicated support',
               ],
-              isCurrent: currentTier == 'paid' || currentTier == 'pending_payment',
-              onPressed: _isSubmitting || currentTier == 'paid' || currentTier == 'pending_payment'
+              isCurrent:
+                  currentTier == 'paid' || currentTier == 'pending_payment',
+              onPressed: _isSubmitting ||
+                      currentTier == 'paid' ||
+                      currentTier == 'pending_payment'
                   ? null
                   : () => _changeSubscription('paid'),
               buttonText: currentTier == 'paid'
                   ? 'Active Plan'
-                  : (currentTier == 'pending_payment' ? 'Awaiting Payment' : 'Upgrade to Professional'),
+                  : (currentTier == 'pending_payment'
+                      ? 'Awaiting Payment'
+                      : 'Upgrade to Professional'),
               colorScheme: colorScheme,
               theme: theme,
               highlighted: true,
@@ -217,7 +228,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: highlighted ? colorScheme.secondary : colorScheme.outline.withOpacity(0.2),
+          color: highlighted
+              ? colorScheme.secondary
+              : colorScheme.outline.withOpacity(0.2),
           width: highlighted ? 2 : 1,
         ),
       ),
@@ -230,7 +243,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: colorScheme.secondary,
                     borderRadius: BorderRadius.circular(20),
@@ -264,7 +278,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   style: TextStyle(
                     fontSize: 36,
                     fontWeight: FontWeight.bold,
-                    color: highlighted ? colorScheme.secondary : colorScheme.onSurface,
+                    color: highlighted
+                        ? colorScheme.secondary
+                        : colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -286,7 +302,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       Icon(
                         Icons.check_circle_outline,
                         size: 20,
-                        color: highlighted ? colorScheme.secondary : Colors.grey,
+                        color:
+                            highlighted ? colorScheme.secondary : Colors.grey,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -304,10 +321,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: isCurrent
                     ? Colors.grey
-                    : (highlighted ? colorScheme.secondary : colorScheme.primary),
+                    : (highlighted
+                        ? colorScheme.secondary
+                        : colorScheme.primary),
                 foregroundColor: isCurrent
                     ? Colors.white
-                    : (highlighted ? colorScheme.onSecondary : colorScheme.onPrimary),
+                    : (highlighted
+                        ? colorScheme.onSecondary
+                        : colorScheme.onPrimary),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

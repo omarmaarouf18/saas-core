@@ -81,4 +81,3 @@ final ThemeData quickDeliveryDarkTheme = ThemeData(
     foregroundColor: kBrandNavy,
   ),
 );
-

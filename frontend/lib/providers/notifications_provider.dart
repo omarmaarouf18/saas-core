@@ -24,8 +24,9 @@ class NotificationsProvider extends ChangeNotifier {
     if (_isConnected) return;
 
     try {
-      final String sseUrl = '${apiClient.baseUrl}/notifications/stream?token=$token';
-      
+      final String sseUrl =
+          '${apiClient.baseUrl}/notifications/stream?token=$token';
+
       SSEClient.subscribeToSSE(
         method: SSERequestType.GET,
         url: sseUrl,
@@ -42,7 +43,7 @@ class NotificationsProvider extends ChangeNotifier {
             try {
               final Map<String, dynamic> rawData = jsonDecode(event.data!);
               final notif = NotificationModel.fromJson(rawData);
-              
+
               // Prevent duplicate notification entries
               if (!_notifications.any((n) => n.id == notif.id)) {
                 _notifications.insert(0, notif);

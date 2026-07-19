@@ -340,11 +340,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   title: "Subscription Tier",
                   value: ownerProvider.isLoading
                       ? "..."
-                      : ownerProvider.subscriptionTier.toUpperCase().replaceAll('_', ' '),
+                      : ownerProvider.subscriptionTier
+                          .toUpperCase()
+                          .replaceAll('_', ' '),
                   icon: Icons.card_membership_outlined,
                   color: ownerProvider.subscriptionTier == "paid"
                       ? Colors.green
-                      : (ownerProvider.subscriptionTier == "pending_payment" ? Colors.blue : Colors.orange),
+                      : (ownerProvider.subscriptionTier == "pending_payment"
+                          ? Colors.blue
+                          : Colors.orange),
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
@@ -381,7 +385,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (data == null) {
                   return const SizedBox.shrink();
                 }
-                final double avg = (data['average_rating'] as num?)?.toDouble() ?? 0.0;
+                final double avg =
+                    (data['average_rating'] as num?)?.toDouble() ?? 0.0;
                 final int count = (data['count'] as num?)?.toInt() ?? 0;
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,57 +481,57 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Icon(icon, color: color),
-              ],
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade500,
-                      fontWeight: FontWeight.w500,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  Icon(icon, color: color),
                 ],
-              ],
-            ),
-          ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildDetailRow(String label, String value, {Color? valueColor}) {
     return Padding(
