@@ -14,6 +14,10 @@ class ThemedTextField extends StatelessWidget {
   final bool enabled;
   final int? maxLines;
   final TextDirection? textDirection;
+  final int? maxLength;
+  final TextAlign textAlign;
+  final TextStyle? style;
+  final String? counterText;
 
   const ThemedTextField({
     super.key,
@@ -29,6 +33,10 @@ class ThemedTextField extends StatelessWidget {
     this.enabled = true,
     this.maxLines = 1,
     this.textDirection,
+    this.maxLength,
+    this.textAlign = TextAlign.start,
+    this.style,
+    this.counterText,
   });
 
   @override
@@ -55,12 +63,16 @@ class ThemedTextField extends StatelessWidget {
           enabled: enabled,
           maxLines: maxLines,
           textDirection: textDirection,
-          style: AppTypography.bodyMd.copyWith(color: AppColors.onSurface),
+          maxLength: maxLength,
+          textAlign: textAlign,
+          style: style ??
+              AppTypography.bodyMd.copyWith(color: AppColors.onSurface),
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: AppTypography.bodyMd.copyWith(color: AppColors.outline),
             prefixIcon: prefixIcon,
             suffixIcon: suffixIcon,
+            counterText: counterText,
             filled: true,
             fillColor: AppColors.surface,
             contentPadding: const EdgeInsets.symmetric(

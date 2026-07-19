@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/primary_button.dart';
+import '../widgets/themed_card.dart';
+import '../widgets/themed_text_field.dart';
 import 'home_screen.dart';
 
 class OtpScreen extends StatefulWidget {
@@ -44,14 +48,14 @@ class _OtpScreenState extends State<OtpScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(auth.error!),
-          backgroundColor: Colors.red.shade800,
+          backgroundColor: AppColors.error,
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("A new OTP code has been sent successfully."),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
         ),
       );
       setState(() {
@@ -77,7 +81,7 @@ class _OtpScreenState extends State<OtpScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(auth.error!),
-          backgroundColor: Colors.red.shade800,
+          backgroundColor: AppColors.error,
         ),
       );
     } else if (success) {
@@ -93,18 +97,18 @@ class _OtpScreenState extends State<OtpScreen> {
     final auth = Provider.of<AuthProvider>(context);
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: const Icon(Icons.arrow_back, color: AppColors.onBackground),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
             child: Form(
@@ -113,121 +117,104 @@ class _OtpScreenState extends State<OtpScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.security_outlined,
                     size: 64,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: AppColors.primary,
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
                     "Two-Factor Auth",
-                    style: TextStyle(
-                      fontSize: 28,
+                    style: AppTypography.headlineLg.copyWith(
+                      color: AppColors.primary,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.base),
                   Text(
                     "Enter the 6-digit code sent to:\n${widget.email}",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade600,
+                    style: AppTypography.bodyLg.copyWith(
+                      color: AppColors.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 32),
-                  TextFormField(
-                    controller: _otpController,
-                    decoration: const InputDecoration(
-                      labelText: "6-Digit Code",
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.pin_outlined),
-                      counterText: "",
-                    ),
-                    keyboardType: TextInputType.number,
-                    maxLength: 6,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 8,
-                    ),
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) {
-                        return "Please enter the OTP";
-                      }
-                      if (val.trim().length != 6) {
-                        return "OTP must be exactly 6 digits";
-                      }
-                      return null;
-                    },
-                  ),
-                  if (_currentDevOtp != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.shade50,
-                        border: Border.all(color: Colors.amber.shade200),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.bug_report_outlined,
-                              color: Colors.amber),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              "Dev Mode: Auto-populated OTP '$_currentDevOtp' from response.",
-                              style: TextStyle(
-                                color: Colors.amber.shade900,
-                                fontSize: 13,
+                  const SizedBox(height: AppSpacing.xl),
+                  ThemedCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ThemedTextField(
+                          controller: _otpController,
+                          labelText: "6-Digit Code",
+                          hintText: "000000",
+                          prefixIcon: const Icon(Icons.pin_outlined),
+                          keyboardType: TextInputType.number,
+                          maxLength: 6,
+                          counterText: "",
+                          textAlign: TextAlign.center,
+                          style: AppTypography.headlineLgMobile.copyWith(
+                            color: AppColors.onSurface,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 8,
+                          ),
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return "Please enter the OTP";
+                            }
+                            if (val.trim().length != 6) {
+                              return "OTP must be exactly 6 digits";
+                            }
+                            return null;
+                          },
+                        ),
+                        if (_currentDevOtp != null) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.sm),
+                            decoration: BoxDecoration(
+                              color: AppColors.secondary.withValues(alpha: 0.1),
+                              border: Border.all(
+                                color:
+                                    AppColors.secondary.withValues(alpha: 0.4),
                               ),
+                              borderRadius: AppRadius.defaultBorder,
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.bug_report_outlined,
+                                    color: AppColors.secondary),
+                                const SizedBox(width: AppSpacing.base),
+                                Expanded(
+                                  child: Text(
+                                    "Dev Mode: Auto-populated OTP '$_currentDevOtp' from response.",
+                                    style: AppTypography.labelMd.copyWith(
+                                      color: AppColors.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: auth.isLoading ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: auth.isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text(
-                            "VERIFY OTP",
-                            style: TextStyle(
-                              fontSize: 16,
+                        const SizedBox(height: AppSpacing.lg),
+                        PrimaryButton(
+                          text: "VERIFY OTP",
+                          isLoading: auth.isLoading,
+                          onPressed: _submit,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        TextButton(
+                          onPressed: auth.isLoading ? null : _resendCode,
+                          child: Text(
+                            "Resend Code",
+                            style: AppTypography.bodyMd.copyWith(
+                              color: AppColors.primary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: auth.isLoading ? null : _resendCode,
-                    child: Text(
-                      "Resend Code",
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
