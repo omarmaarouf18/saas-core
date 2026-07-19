@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme.dart';
 import '../providers/notifications_provider.dart';
 import '../models/notification_model.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/themed_card.dart';
+import '../widgets/themed_empty_state.dart';
 import 'job_status_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -69,15 +72,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: Text(
+          'Notifications',
+          style: AppTypography.titleMd.copyWith(color: AppColors.onPrimary),
+        ),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
         actions: [
           if (filtered.any((n) => !n.isRead))
             TextButton(
               onPressed: () => provider.markAllAsRead(),
               child: Text(
                 'Mark all read',
-                style: TextStyle(color: colorScheme.onPrimary),
+                style:
+                    AppTypography.labelMd.copyWith(color: AppColors.onPrimary),
               ),
             ),
           IconButton(
@@ -87,19 +97,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Clear Notifications'),
-                  content: const Text(
-                      'Are you sure you want to clear all notifications?'),
+                  backgroundColor: AppColors.surface,
+                  title: Text(
+                    'Clear Notifications',
+                    style: AppTypography.titleMd
+                        .copyWith(color: AppColors.onSurface),
+                  ),
+                  content: Text(
+                    'Are you sure you want to clear all notifications?',
+                    style: AppTypography.bodyMd
+                        .copyWith(color: AppColors.onSurfaceVariant),
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Cancel'),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: AppColors.primary),
+                      ),
                     ),
                     ElevatedButton(
                       onPressed: () {
                         provider.clearAll();
                         Navigator.of(context).pop();
                       },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.onPrimary,
+                      ),
                       child: const Text('Clear'),
                     ),
                   ],
@@ -114,29 +139,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         children: [
           // System Status Banner
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             color: provider.isConnected
-                ? colorScheme.secondaryContainer.withValues(alpha: 0.4)
-                : colorScheme.errorContainer.withValues(alpha: 0.4),
+                ? AppColors.success.withValues(alpha: 0.15)
+                : AppColors.error.withValues(alpha: 0.15),
             child: Row(
               children: [
                 Icon(
                   provider.isConnected ? Icons.check_circle : Icons.error,
-                  color: provider.isConnected ? Colors.green : Colors.red,
+                  color: provider.isConnected
+                      ? AppColors.success
+                      : AppColors.error,
                   size: 20,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.base),
                 Expanded(
                   child: Text(
                     provider.isConnected
                         ? 'System Status: Operational. Real-time alert stream active.'
                         : 'System Status: Disconnected. Reconnecting...',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                    style: AppTypography.labelMd.copyWith(
                       color: provider.isConnected
-                          ? colorScheme.onSecondaryContainer
-                          : colorScheme.onErrorContainer,
+                          ? AppColors.onSurface
+                          : AppColors.error,
                     ),
                   ),
                 ),
@@ -147,16 +173,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           // Categories Filter Tabs
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm, vertical: AppSpacing.base),
             child: Row(
               children: _categories.map((cat) {
                 final isSelected = _selectedCategory == cat;
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
                   child: ChoiceChip(
                     label: Text(cat),
                     selected: isSelected,
-                    selectedColor: colorScheme.secondary,
+                    selectedColor: AppColors.secondary,
+                    labelStyle: AppTypography.labelMd.copyWith(
+                      color: isSelected
+                          ? AppColors.onSecondary
+                          : AppColors.onSurface,
+                    ),
                     onSelected: (val) {
                       if (val) {
                         setState(() {
@@ -173,22 +206,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           // List of Notifications
           Expanded(
             child: filtered.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.notifications_none,
-                            size: 64, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(
-                          'No notifications found',
-                          style: TextStyle(color: Colors.grey, fontSize: 16),
-                        ),
-                      ],
-                    ),
+                ? const ThemedEmptyState(
+                    icon: Icons.notifications_none,
+                    title: 'No notifications found',
+                    description: 'No new notifications to display.',
                   )
                 : ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                     children: [
                       if (todayNotifs.isNotEmpty) ...[
                         _buildSectionHeader('Today', colorScheme),
@@ -205,7 +230,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ...earlierNotifs.map((n) => _buildNotificationCard(
                             n, provider, auth.token, colorScheme)),
                       ],
-                      const SizedBox(height: 24),
+                      const SizedBox(height: AppSpacing.lg),
                     ],
                   ),
           ),
@@ -216,13 +241,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _buildSectionHeader(String title, ColorScheme colorScheme) {
     return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      padding:
+          const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.base),
       child: Text(
         title.toUpperCase(),
-        style: TextStyle(
-          fontSize: 14,
+        style: AppTypography.labelMd.copyWith(
+          color: AppColors.primary.withValues(alpha: 0.7),
           fontWeight: FontWeight.bold,
-          color: colorScheme.primary.withValues(alpha: 0.7),
         ),
       ),
     );
@@ -248,28 +273,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: notif.isRead ? 0 : 2,
-      color: notif.isRead
-          ? colorScheme.surface
-          : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.base),
+      child: ThemedCard(
+        padding: AppSpacing.md,
+        color: notif.isRead
+            ? AppColors.surface
+            : AppColors.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderSide: BorderSide(
           color: notif.isRead
               ? Colors.transparent
-              : colorScheme.secondary.withValues(alpha: 0.3),
+              : AppColors.secondary.withValues(alpha: 0.3),
           width: 1,
         ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          provider.markAsRead(notif.id);
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+        borderRadius: AppRadius.md,
+        child: InkWell(
+          borderRadius: AppRadius.mdBorder,
+          onTap: () {
+            provider.markAsRead(notif.id);
+          },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -280,8 +302,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   Expanded(
                     child: Text(
                       notif.title,
-                      style: TextStyle(
-                        fontSize: 15,
+                      style: AppTypography.bodyLg.copyWith(
                         fontWeight:
                             notif.isRead ? FontWeight.w500 : FontWeight.bold,
                       ),
@@ -289,18 +310,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ),
                   Text(
                     _formatTime(notif.timestamp),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: AppTypography.labelMd
+                        .copyWith(color: AppColors.outline),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.base),
 
               // Body content
               Text(
                 notif.body,
-                style: const TextStyle(fontSize: 14, height: 1.3),
+                style: AppTypography.bodyMd.copyWith(height: 1.3),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.sm),
 
               // Action buttons
               Row(
@@ -313,7 +335,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       icon: const Icon(Icons.gps_fixed, size: 16),
                       label: const Text('Track Shipment'),
                       style: TextButton.styleFrom(
-                        foregroundColor: colorScheme.secondary,
+                        foregroundColor: AppColors.secondary,
+                        textStyle: AppTypography.labelLg,
                       ),
                       onPressed: () {
                         provider.markAsRead(notif.id);
@@ -335,13 +358,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         );
                       },
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.base),
                   ],
                   TextButton.icon(
                     icon: const Icon(Icons.reply, size: 16),
                     label: const Text('Reply'),
                     style: TextButton.styleFrom(
-                      foregroundColor: colorScheme.primary,
+                      foregroundColor: AppColors.primary,
+                      textStyle: AppTypography.labelLg,
                     ),
                     onPressed: () {
                       provider.markAsRead(notif.id);
@@ -353,10 +377,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       );
                     },
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.base),
                   IconButton(
                     icon: const Icon(Icons.delete_outline, size: 18),
                     tooltip: 'Dismiss',
+                    color: AppColors.onSurfaceVariant,
                     onPressed: () => provider.dismiss(notif.id),
                   ),
                 ],
