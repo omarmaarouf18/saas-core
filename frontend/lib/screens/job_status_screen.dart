@@ -1,9 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme.dart';
+import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
-import '../models/job.dart';
+import '../widgets/primary_button.dart';
+import '../widgets/secondary_button.dart';
+import '../widgets/themed_card.dart';
+import '../widgets/themed_section_header.dart';
 import 'chat_screen.dart';
 import 'rating_screen.dart';
 
@@ -87,15 +92,15 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'pending':
-        return Colors.orange;
+        return AppColors.warning;
       case 'active':
-        return Colors.blue;
+        return AppColors.primary;
       case 'completed':
-        return Colors.green;
+        return AppColors.success;
       case 'cancelled':
-        return Colors.red;
+        return AppColors.error;
       default:
-        return Colors.grey;
+        return AppColors.outline;
     }
   }
 
@@ -106,184 +111,150 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     final statusColor = _getStatusColor(_currentJob.status);
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         title: const Text("Job Progress"),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.chat_bubble_outline),
-            tooltip: "Chat",
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => ChatScreen(jobId: _currentJob.id),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: _isRefreshing
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
-                  )
-                : const Icon(Icons.refresh),
-            onPressed: () => _refreshJobStatus(),
-          ),
-        ],
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Status Banner Card
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+            ThemedCard(
+              borderRadius: AppRadius.md,
+              padding: AppSpacing.lg,
               color: statusColor.withValues(alpha: 0.08),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    Icon(
-                      isCancelled
-                          ? Icons.cancel_outlined
-                          : _currentJob.status == 'completed'
-                              ? Icons.check_circle_outline
-                              : Icons.hourglass_empty,
-                      size: 48,
+              child: Column(
+                children: [
+                  Icon(
+                    isCancelled
+                        ? Icons.cancel_outlined
+                        : _currentJob.status == 'completed'
+                            ? Icons.check_circle_outline
+                            : Icons.hourglass_empty,
+                    size: 48,
+                    color: statusColor,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    "Status: ${_currentJob.status.toUpperCase()}",
+                    style: AppTypography.headlineLgMobile.copyWith(
+                      fontWeight: FontWeight.bold,
                       color: statusColor,
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      "Status: ${_currentJob.status.toUpperCase()}",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: statusColor,
-                      ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    "Job ID: ${_currentJob.id}",
+                    style: AppTypography.labelMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      "Job ID: ${_currentJob.id}",
-                      style:
-                          TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.md),
 
             // Progress Timeline (Stepper visual design)
             if (!isCancelled) ...[
-              Card(
-                elevation: 1,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Live Tracking",
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 20),
-                      _buildStepRow(
-                        index: 0,
-                        currentStep: step,
-                        title: "Request Placed",
-                        subtitle: "Waiting for operator approval",
-                        isLast: false,
-                      ),
-                      _buildStepRow(
-                        index: 1,
-                        currentStep: step,
-                        title: "Worker Dispatched",
-                        subtitle: _currentJob.employeeId == null
-                            ? "Assigning an employee..."
-                            : "Employee assigned & active",
-                        isLast: false,
-                      ),
-                      _buildStepRow(
-                        index: 2,
-                        currentStep: step,
-                        title: "Job Completed",
-                        subtitle: "Delivery completed successfully",
-                        isLast: true,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-
-            // Job details info
-            Card(
-              elevation: 1,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
+              ThemedCard(
+                borderRadius: AppRadius.md,
+                padding: AppSpacing.lg,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Job Details",
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    const ThemedSectionHeader(
+                      title: "Live Tracking",
                     ),
-                    const SizedBox(height: 16),
-                    _buildInfoRow("Payment Method",
-                        _currentJob.paymentMethod.toUpperCase()),
-                    _buildInfoRow("Service ID", _currentJob.serviceId),
-                    _buildInfoRow(
-                      "Destination",
-                      "${_currentJob.location.latitude.toStringAsFixed(4)}, ${_currentJob.location.longitude.toStringAsFixed(4)}",
+                    const SizedBox(height: AppSpacing.md),
+                    _buildStepRow(
+                      index: 0,
+                      currentStep: step,
+                      title: "Request Placed",
+                      subtitle: "Waiting for operator approval",
+                      isLast: false,
                     ),
-                    if (_currentJob.employeeId != null)
-                      _buildInfoRow(
-                          "Assigned Employee ID", _currentJob.employeeId!),
-                    if (isCancelled && _currentJob.cancellationReason != null)
-                      _buildInfoRow("Cancellation Reason",
-                          _currentJob.cancellationReason!),
-                    const Divider(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Total Charge (COD)",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        Text(
-                          "\$${_currentJob.lockedEscrowAmount ?? '0.00'}",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                            color: Theme.of(context).colorScheme.secondary,
-                          ),
-                        ),
-                      ],
+                    _buildStepRow(
+                      index: 1,
+                      currentStep: step,
+                      title: "Worker Dispatched",
+                      subtitle: _currentJob.employeeId == null
+                          ? "Assigning an employee..."
+                          : "Employee assigned & active",
+                      isLast: false,
+                    ),
+                    _buildStepRow(
+                      index: 2,
+                      currentStep: step,
+                      title: "Job Completed",
+                      subtitle: "Delivery completed successfully",
+                      isLast: true,
                     ),
                   ],
                 ),
               ),
+              const SizedBox(height: AppSpacing.md),
+            ],
+
+            // Job details info
+            ThemedCard(
+              borderRadius: AppRadius.md,
+              padding: AppSpacing.lg,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const ThemedSectionHeader(
+                    title: "Job Details",
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildInfoRow("Payment Method",
+                      _currentJob.paymentMethod.toUpperCase()),
+                  _buildInfoRow("Service ID", _currentJob.serviceId),
+                  _buildInfoRow(
+                    "Destination",
+                    "${_currentJob.location.latitude.toStringAsFixed(4)}, ${_currentJob.location.longitude.toStringAsFixed(4)}",
+                  ),
+                  if (_currentJob.employeeId != null)
+                    _buildInfoRow(
+                        "Assigned Employee ID", _currentJob.employeeId!),
+                  if (isCancelled && _currentJob.cancellationReason != null)
+                    _buildInfoRow(
+                        "Cancellation Reason", _currentJob.cancellationReason!),
+                  const Divider(
+                    height: AppSpacing.lg,
+                    color: AppColors.outlineVariant,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Total Charge (COD)",
+                        style: AppTypography.bodyMd.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.onSurface,
+                        ),
+                      ),
+                      Text(
+                        "\$${_currentJob.lockedEscrowAmount ?? '0.00'}",
+                        style: AppTypography.titleMd.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.secondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.lg),
 
             if (_currentJob.status == 'completed') ...[
-              ElevatedButton.icon(
+              PrimaryButton(
+                text: "Rate Your Experience",
+                icon: Icons.star_outline,
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
@@ -291,26 +262,46 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                     ),
                   );
                 },
-                icon: const Icon(Icons.star_outline),
-                label: const Text("Rate Your Experience"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.secondary,
-                  foregroundColor: Theme.of(context).colorScheme.onSecondary,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.sm),
             ],
 
-            ElevatedButton(
+            Row(
+              children: [
+                Expanded(
+                  child: SecondaryButton(
+                    text: "Chat Support",
+                    icon: Icons.chat_bubble_outline,
+                    isOutlined: true,
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              ChatScreen(jobId: _currentJob.id),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: SecondaryButton(
+                    text: "Refresh Status",
+                    icon: Icons.refresh,
+                    isOutlined: true,
+                    isLoading: _isRefreshing,
+                    onPressed: () => _refreshJobStatus(),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+
+            PrimaryButton(
+              text: "Back to Directory",
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: const Text("Back to Directory"),
             ),
           ],
         ),
@@ -328,10 +319,10 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     final bool isDone = index < currentStep;
     final bool isCurrent = index == currentStep;
     final Color indicatorColor = isDone
-        ? Colors.green
+        ? AppColors.success
         : isCurrent
-            ? Theme.of(context).colorScheme.primary
-            : Colors.grey.shade300;
+            ? AppColors.primary
+            : AppColors.outlineVariant;
 
     return IntrinsicHeight(
       child: Row(
@@ -344,22 +335,23 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 height: 24,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isDone ? Colors.green : Colors.white,
+                  color: isDone ? AppColors.success : AppColors.surface,
                   border: Border.all(
                     color: indicatorColor,
                     width: 2,
                   ),
                 ),
                 child: isDone
-                    ? const Icon(Icons.check, size: 14, color: Colors.white)
+                    ? const Icon(Icons.check,
+                        size: 14, color: AppColors.onPrimary)
                     : isCurrent
                         ? Center(
                             child: Container(
                               width: 8,
                               height: 8,
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Theme.of(context).colorScheme.primary,
+                                color: AppColors.primary,
                               ),
                             ),
                           )
@@ -369,32 +361,33 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 Expanded(
                   child: Container(
                     width: 2,
-                    color: isDone ? Colors.green : Colors.grey.shade300,
+                    color:
+                        isDone ? AppColors.success : AppColors.outlineVariant,
                   ),
                 ),
             ],
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 24.0),
+              padding: const EdgeInsets.only(bottom: AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
+                    style: AppTypography.bodyMd.copyWith(
                       fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: isDone || isCurrent ? Colors.black87 : Colors.grey,
+                      color: isDone || isCurrent
+                          ? AppColors.onSurface
+                          : AppColors.outline,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
+                    style: AppTypography.labelMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -408,18 +401,25 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
-          const SizedBox(width: 16),
+          Text(
+            label,
+            style: AppTypography.bodyMd.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.end,
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+              style: AppTypography.bodyMd.copyWith(
+                fontWeight: FontWeight.w500,
+                color: AppColors.onSurface,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
