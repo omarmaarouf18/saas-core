@@ -69,8 +69,11 @@ func TestHubConcurrencyStress(t *testing.T) {
 	wg.Wait()
 	close(stopBroadcaster)
 
-	// Wait for the hub to process final unregistrations
-	time.Sleep(50 * time.Millisecond)
+	// Poll until the hub processes final unregistrations
+	deadline := time.Now().Add(2 * time.Second)
+	for (hub.ClientCount() > 0 || hub.ChannelCount() > 0) && time.Now().Before(deadline) {
+		time.Sleep(2 * time.Millisecond)
+	}
 
 	if hub.ClientCount() != 0 {
 		t.Errorf("Expected 0 clients remaining, got %d", hub.ClientCount())
