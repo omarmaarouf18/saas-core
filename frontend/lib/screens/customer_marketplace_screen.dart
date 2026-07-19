@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/constants.dart';
+import '../core/theme.dart';
+import '../models/marketplace_service.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../providers/notifications_provider.dart';
-import '../models/marketplace_service.dart';
-import '../core/constants.dart';
+import '../widgets/primary_button.dart';
+import '../widgets/secondary_button.dart';
+import '../widgets/themed_card.dart';
+import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_loading_indicator.dart';
+import '../widgets/themed_section_header.dart';
+import '../widgets/themed_text_field.dart';
 import 'job_status_screen.dart';
 import 'notifications_screen.dart';
 
@@ -82,7 +90,7 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    color: Colors.red,
+                    color: AppColors.error,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   constraints: const BoxConstraints(
@@ -91,10 +99,10 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                   ),
                   child: Text(
                     '${provider.unreadCount}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
+                    style: AppTypography.labelMd.copyWith(
+                      color: AppColors.onPrimary,
                       fontWeight: FontWeight.bold,
+                      fontSize: 10,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -132,11 +140,11 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
             .toList();
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         title: const Text("Marketplace"),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
         actions: [
           _buildNotificationBell(context),
           IconButton(
@@ -151,70 +159,82 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
       body: Column(
         children: [
           // Filter & Coordinates Control Panel
-          Card(
-            margin: const EdgeInsets.all(12),
-            elevation: 2,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: ThemedCard(
+              borderRadius: AppRadius.md,
+              padding: AppSpacing.md,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Location Coordinates row
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: TextFormField(
+                        child: ThemedTextField(
                           controller: _latController,
-                          decoration: const InputDecoration(
-                            labelText: "Latitude",
-                            isDense: true,
-                            border: OutlineInputBorder(),
-                          ),
+                          labelText: "Latitude",
                           keyboardType: const TextInputType.numberWithOptions(
                               decimal: true),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       Expanded(
-                        child: TextFormField(
+                        child: ThemedTextField(
                           controller: _lonController,
-                          decoration: const InputDecoration(
-                            labelText: "Longitude",
-                            isDense: true,
-                            border: OutlineInputBorder(),
-                          ),
+                          labelText: "Longitude",
                           keyboardType: const TextInputType.numberWithOptions(
                               decimal: true),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       Expanded(
-                        child: TextFormField(
+                        child: ThemedTextField(
                           controller: _radiusController,
-                          decoration: const InputDecoration(
-                            labelText: "Radius (KM)",
-                            isDense: true,
-                            border: OutlineInputBorder(),
-                          ),
+                          labelText: "Radius (KM)",
                           keyboardType: TextInputType.number,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   // Filters row
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         flex: 3,
                         child: DropdownButtonFormField<String>(
                           initialValue: _selectedCategory,
-                          decoration: const InputDecoration(
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.onSurface,
+                          ),
+                          decoration: InputDecoration(
                             labelText: "Category",
-                            isDense: true,
-                            border: OutlineInputBorder(),
+                            labelStyle: AppTypography.labelLg.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                            filled: true,
+                            fillColor: AppColors.surface,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.md,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: AppRadius.defaultBorder,
+                              borderSide: const BorderSide(
+                                color: AppColors.outlineVariant,
+                                width: 1,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: AppRadius.defaultBorder,
+                              borderSide: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.5,
+                              ),
+                            ),
                           ),
                           items: [
                             const DropdownMenuItem(
@@ -235,15 +255,39 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         flex: 2,
                         child: DropdownButtonFormField<String>(
                           initialValue: _sortBy,
-                          decoration: const InputDecoration(
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.onSurface,
+                          ),
+                          decoration: InputDecoration(
                             labelText: "Sort By",
-                            isDense: true,
-                            border: OutlineInputBorder(),
+                            labelStyle: AppTypography.labelLg.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                            filled: true,
+                            fillColor: AppColors.surface,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.md,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: AppRadius.defaultBorder,
+                              borderSide: const BorderSide(
+                                color: AppColors.outlineVariant,
+                                width: 1,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: AppRadius.defaultBorder,
+                              borderSide: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.5,
+                              ),
+                            ),
                           ),
                           items: const [
                             DropdownMenuItem(
@@ -261,16 +305,20 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       ElevatedButton(
                         onPressed: _loadServices,
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 14, horizontal: 16),
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(52, 52),
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.onPrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadius.defaultBorder,
+                          ),
+                          elevation: 0,
                         ),
-                        child: const Icon(Icons.search, color: Colors.white),
+                        child: const Icon(Icons.search),
                       ),
                     ],
                   ),
@@ -281,25 +329,25 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
           // Services Listing
           Expanded(
             child: marketplace.isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const ThemedLoadingIndicator(message: "Searching services...")
                 : filteredServices.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.search_off,
-                                size: 64, color: Colors.grey.shade400),
-                            const SizedBox(height: 16),
-                            Text(
-                              "No services found nearby.",
-                              style: TextStyle(
-                                  fontSize: 16, color: Colors.grey.shade600),
-                            ),
-                          ],
+                    ? const Padding(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                        child: ThemedCard(
+                          borderRadius: AppRadius.md,
+                          padding: AppSpacing.lg,
+                          child: ThemedEmptyState(
+                            icon: Icons.search_off,
+                            title: "No services found nearby.",
+                            description:
+                                "Try broadening your search radius or changing your coordinates.",
+                          ),
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md),
                         itemCount: filteredServices.length,
                         itemBuilder: (context, index) {
                           final service = filteredServices[index];
@@ -307,27 +355,23 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                               serviceCategoryLabels[service.category] ??
                                   service.category;
 
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            elevation: 1,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
+                          return Padding(
+                            padding:
+                                const EdgeInsets.only(bottom: AppSpacing.sm),
+                            child: ThemedCard(
+                              borderRadius: AppRadius.md,
+                              padding: AppSpacing.md,
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   CircleAvatar(
-                                    backgroundColor: Theme.of(context)
-                                        .colorScheme
-                                        .secondary
+                                    backgroundColor: AppColors.secondary
                                         .withValues(alpha: 0.2),
-                                    foregroundColor:
-                                        Theme.of(context).colorScheme.primary,
+                                    foregroundColor: AppColors.primary,
                                     child: Icon(
                                         _getCategoryIcon(service.category)),
                                   ),
-                                  const SizedBox(width: 16),
+                                  const SizedBox(width: AppSpacing.md),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -335,12 +379,12 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                                       children: [
                                         Text(
                                           service.name,
-                                          style: const TextStyle(
-                                            fontSize: 18,
+                                          style: AppTypography.titleMd.copyWith(
                                             fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
+                                        const SizedBox(height: AppSpacing.xs),
                                         Row(
                                           children: [
                                             Container(
@@ -349,73 +393,64 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                                                       horizontal: 8,
                                                       vertical: 2),
                                               decoration: BoxDecoration(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .primary
+                                                color: AppColors.primary
                                                     .withValues(alpha: 0.1),
                                                 borderRadius:
-                                                    BorderRadius.circular(4),
+                                                    BorderRadius.circular(
+                                                        AppRadius.sm),
                                               ),
                                               child: Text(
                                                 categoryLabel,
-                                                style: TextStyle(
+                                                style: AppTypography.labelMd
+                                                    .copyWith(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.bold,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .primary,
+                                                  color: AppColors.primary,
                                                 ),
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
+                                            const SizedBox(
+                                                width: AppSpacing.base),
                                             Text(
                                               "${service.distanceKM} km away",
-                                              style: TextStyle(
-                                                  color: Colors.grey.shade600,
-                                                  fontSize: 13),
+                                              style:
+                                                  AppTypography.bodyMd.copyWith(
+                                                color:
+                                                    AppColors.onSurfaceVariant,
+                                              ),
                                             ),
-                                            const SizedBox(width: 8),
+                                            const SizedBox(
+                                                width: AppSpacing.base),
                                             ServiceRatingWidget(
                                                 tenantId: service.tenantId),
                                           ],
                                         ),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(height: AppSpacing.base),
                                         Text(
                                           "Base: \$${service.tenantBasePrice} + \$${service.tenantPricePerKM}/km",
-                                          style: TextStyle(
-                                              color: Colors.grey.shade600,
-                                              fontSize: 13),
+                                          style: AppTypography.bodyMd.copyWith(
+                                            color: AppColors.onSurfaceVariant,
+                                          ),
                                         ),
-                                        const SizedBox(height: 4),
+                                        const SizedBox(height: AppSpacing.xs),
                                         Text(
                                           "Est. Price: \$${service.finalPrice}",
-                                          style: TextStyle(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .secondary,
+                                          style: AppTypography.titleMd.copyWith(
+                                            color: AppColors.secondary,
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 16,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  ElevatedButton(
-                                    onPressed: () => _showBookingDialog(
-                                        context, service, auth.token!),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Theme.of(context)
-                                          .colorScheme
-                                          .secondary,
-                                      foregroundColor: Theme.of(context)
-                                          .colorScheme
-                                          .onSecondary,
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8)),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  SizedBox(
+                                    width: 80,
+                                    child: PrimaryButton(
+                                      text: "Book",
+                                      onPressed: () => _showBookingDialog(
+                                          context, service, auth.token!),
                                     ),
-                                    child: const Text("Book"),
                                   ),
                                 ],
                               ),
@@ -433,6 +468,7 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
       BuildContext context, MarketplaceService service, String userToken) {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (dialogCtx) {
         return _BookingDialog(
           service: service,
@@ -498,7 +534,7 @@ class _BookingDialogState extends State<_BookingDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Booking Failed: $e"),
-          backgroundColor: Colors.red.shade800,
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -509,7 +545,17 @@ class _BookingDialogState extends State<_BookingDialog> {
     final categoryLabel = serviceCategoryLabels[widget.service.category] ??
         widget.service.category;
     return AlertDialog(
-      title: const Text("Confirm Booking"),
+      backgroundColor: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      title: Text(
+        "Confirm Booking",
+        style: AppTypography.titleMd.copyWith(
+          color: AppColors.primary,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -517,86 +563,129 @@ class _BookingDialogState extends State<_BookingDialog> {
           children: [
             Text(
               widget.service.name,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: AppTypography.headlineLgMobile.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.onSurface,
+              ),
             ),
-            const SizedBox(height: 4),
-            Text("Category: $categoryLabel",
-                style: TextStyle(color: Colors.grey.shade600)),
-            const SizedBox(height: 12),
-            const Divider(),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              "Category: $categoryLabel",
+              style: AppTypography.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            const Divider(color: AppColors.outlineVariant),
+            const SizedBox(height: AppSpacing.sm),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("Pickup Distance:"),
-                Text("${widget.service.distanceKM} km"),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Estimated Total:"),
                 Text(
-                  "\$${widget.service.finalPrice}",
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 16),
+                  "Pickup Distance:",
+                  style: AppTypography.bodyMd.copyWith(
+                    color: AppColors.onSurface,
+                  ),
+                ),
+                Text(
+                  "${widget.service.distanceKM} km",
+                  style: AppTypography.bodyMd.copyWith(
+                    color: AppColors.onSurface,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            const Text(
-              "Payment Method",
-              style: TextStyle(fontWeight: FontWeight.bold),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Estimated Total:",
+                  style: AppTypography.bodyMd.copyWith(
+                    color: AppColors.onSurface,
+                  ),
+                ),
+                Text(
+                  "\$${widget.service.finalPrice}",
+                  style: AppTypography.titleMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.onSurface,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.lg),
+            const ThemedSectionHeader(
+              title: "Payment Method",
+            ),
+            const SizedBox(height: AppSpacing.xs),
             // Forced Option: Cash on Delivery (COD)
             ListTile(
-              leading: Icon(
+              leading: const Icon(
                 Icons.radio_button_checked,
-                color: Theme.of(context).colorScheme.primary,
+                color: AppColors.primary,
               ),
-              title: const Text("Cash on Delivery (COD)"),
-              subtitle:
-                  const Text("Pay in cash directly to the driver upon arrival"),
+              title: Text(
+                "Cash on Delivery (COD)",
+                style: AppTypography.bodyMd.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Text(
+                "Pay in cash directly to the driver upon arrival",
+                style: AppTypography.labelMd.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
               dense: true,
               contentPadding: EdgeInsets.zero,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             // Inline note explaining escrow/other methods are deferred
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
-                color: Colors.amber.shade50,
-                border: Border.all(color: Colors.amber.shade200),
-                borderRadius: BorderRadius.circular(6),
+                color: AppColors.warning.withValues(alpha: 0.1),
+                border: Border.all(
+                  color: AppColors.warning.withValues(alpha: 0.3),
+                ),
+                borderRadius: AppRadius.defaultBorder,
               ),
               child: Text(
                 "Note: Escrow payments and wallet deductions are currently deferred for this beta launch.",
-                style: TextStyle(color: Colors.amber.shade900, fontSize: 12),
+                style: AppTypography.labelMd.copyWith(
+                  color: AppColors.warning,
+                ),
               ),
             ),
           ],
         ),
       ),
+      actionsPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
       actions: [
-        TextButton(
-          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
-          child: const Text("Cancel"),
-        ),
-        ElevatedButton(
-          onPressed: _isSubmitting ? null : _confirmBooking,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-          ),
-          child: _isSubmitting
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
-                )
-              : const Text("Confirm & Request"),
+        Row(
+          children: [
+            Expanded(
+              child: SecondaryButton(
+                text: "Cancel",
+                isOutlined: true,
+                onPressed:
+                    _isSubmitting ? null : () => Navigator.of(context).pop(),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: PrimaryButton(
+                text: "Confirm & Request",
+                isLoading: _isSubmitting,
+                onPressed: _confirmBooking,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -655,18 +744,20 @@ class _ServiceRatingWidgetState extends State<ServiceRatingWidget> {
     if (_count == null || _count == 0) {
       return Text(
         "No ratings",
-        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+        style: AppTypography.labelMd.copyWith(color: AppColors.outline),
       );
     }
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.star,
-            color: Theme.of(context).colorScheme.secondary, size: 16),
+        const Icon(Icons.star, color: AppColors.secondary, size: 16),
         const SizedBox(width: 4),
         Text(
           "${_avg!.toStringAsFixed(1)} ($_count)",
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          style: AppTypography.labelMd.copyWith(
+            fontWeight: FontWeight.bold,
+            color: AppColors.onSurface,
+          ),
         ),
       ],
     );
