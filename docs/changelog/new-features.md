@@ -150,6 +150,13 @@ This file tracks historical entries for the primary category: **New Features Cha
 - **Commit SHA**: ``a025ecebaad7edfeeb4f2dd7f620856c664d7cf9``
 - **Verification**: Verified via `flutter analyze` and widget tests checking clean compilation, state mapping, and setup. ✅
 
+## Subscription Plans Screen
+
+- **Implementation Detail**: Built the Subscription screen (Phase 7 - Ratings & Subscriptions) on the frontend. Created `SubscriptionScreen` and wired it to `OwnerProvider.updateSubscription` to interact with POST `/users/subscription`. Displays the current subscription tier, supports instant downgrades/switches to the Free Plan, and alerts/warns the user when the Professional Plan is selected and activation is pending manual approval. Integrated the page navigation as a tap interaction on the "Subscription Tier" dashboard card in `home_screen.dart`.
+- **Commit SHA**: ``eed6786bb28254b553cd272e6d979c18ff58abfb``
+- **Verification**: Verified via `flutter analyze` and widget tests checking clean compilation and metric integration. ✅
+
+
 
 
 

@@ -82,3 +82,4 @@
    * `job_status_screen.dart`
    * `chat_screen.dart`
    * `notifications_screen.dart`
+   * `subscription_screen.dart`
