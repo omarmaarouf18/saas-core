@@ -89,3 +89,10 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Commit SHA**: ``b6cae1753e1146c5b1900cafbce9935f3b18389f``
 - **Verification**: Verified via `services/user-service` handlers tests (`TestUserServiceHandlers/UpdateJobLocation_Throttle_Error_Rollback`) running in a tight loop of 50 runs with zero failures. ✅
 
+## Notification-Service Handlers Test Sleep Auditing
+
+- **Implementation Detail**: Audited and replaced 5 flaky, fixed `time.Sleep` calls in `services/notification-service/internal/handlers/handlers_test.go` with deterministic polling loops using generous timeouts (2s). Introduced a thread-safe `safeRecorder` helper struct to prevent data races on `httptest.ResponseRecorder`'s unsynchronized `bytes.Buffer` when polling for writes concurrently. Staggered client disconnect stress testing is now synchronized to wait for active hub registration before scheduling disconnect timers, ensuring robust execution under load.
+- **Commit SHA**: ``f6aedfa84b70cba80ba9f88370dc376b24c55dea``
+- **Verification**: Verified via `services/notification-service` handlers tests running in a loop of 50 runs under the Go race detector with zero failures. ✅
+
+
