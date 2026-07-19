@@ -144,5 +144,12 @@ This file tracks historical entries for the primary category: **New Features Cha
 - **Commit SHA**: ``149c3a823908a144511f1226767f17d4505ee80b``
 - **Verification**: Verified via `flutter analyze` and widget tests confirming clean compilation and theme initialization. ✅
 
+## Server-Sent Events Notifications
+
+- **Implementation Detail**: Built the SSE notifications screen (Phase 6 - SSE) on the frontend. Created `NotificationModel` and `NotificationsProvider` to subscribe to the API Gateway proxied SSE stream `/notifications/stream?token=<token>` using the `flutter_client_sse` package. Implemented `NotificationsScreen` with category chip filtering, chronological group splits (Today, Yesterday, Earlier), dynamic connection status/errors banner, and deep-link tracking to `JobStatusScreen`. Registered the provider in `main.dart` and added a notification bell icon with an unread badge to dashboard AppBars in `home_screen.dart`, `customer_marketplace_screen.dart`, and `employee_jobs_screen.dart`.
+- **Commit SHA**: ``a025ecebaad7edfeeb4f2dd7f620856c664d7cf9``
+- **Verification**: Verified via `flutter analyze` and widget tests checking clean compilation, state mapping, and setup. ✅
+
+
 
 
