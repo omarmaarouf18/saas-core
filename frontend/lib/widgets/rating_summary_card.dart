@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../core/theme.dart';
+import 'themed_card.dart';
 
 class RatingSummaryCard extends StatelessWidget {
   final double averageRating;
@@ -12,9 +14,6 @@ class RatingSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     // Generate stars list
     List<Widget> stars = [];
     int fullStars = averageRating.floor();
@@ -26,24 +25,21 @@ class RatingSummaryCard extends StatelessWidget {
 
     for (int i = 1; i <= 5; i++) {
       if (i <= fullStars) {
-        stars.add(Icon(Icons.star, color: colorScheme.secondary, size: 20));
+        stars.add(const Icon(Icons.star, color: AppColors.secondary, size: 20));
       } else if (i == fullStars + 1 && hasHalfStar) {
-        stars
-            .add(Icon(Icons.star_half, color: colorScheme.secondary, size: 20));
+        stars.add(
+            const Icon(Icons.star_half, color: AppColors.secondary, size: 20));
       } else {
-        stars.add(const Icon(Icons.star_border, color: Colors.grey, size: 20));
+        stars.add(const Icon(Icons.star_border,
+            color: AppColors.outlineVariant, size: 20));
       }
     }
 
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.1),
-        ),
-      ),
+    return ThemedCard(
+      hasShadow: false,
+      color: AppColors.surfaceContainerLow,
+      borderRadius: AppRadius.md,
+      padding: AppSpacing.md,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -52,13 +48,13 @@ class RatingSummaryCard extends StatelessWidget {
             children: [
               Text(
                 averageRating.toStringAsFixed(1),
-                style: const TextStyle(
-                  fontSize: 32,
+                style: AppTypography.headlineLg.copyWith(
                   fontWeight: FontWeight.bold,
                   height: 1.0,
+                  color: AppColors.onSurface,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.sm),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -66,9 +62,8 @@ class RatingSummaryCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     'Verified Service Score',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: colorScheme.onSurfaceVariant,
+                    style: AppTypography.labelMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -76,17 +71,17 @@ class RatingSummaryCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.base + 2),
           Divider(
             height: 1,
-            color: colorScheme.outline.withValues(alpha: 0.2),
+            color: AppColors.outlineVariant.withValues(alpha: 0.2),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.base + 2),
           Text(
             'Based on $ratingCount ratings',
-            style: TextStyle(
+            style: AppTypography.bodyMd.copyWith(
               fontSize: 13,
-              color: colorScheme.onSurfaceVariant,
+              color: AppColors.onSurfaceVariant,
               fontWeight: FontWeight.w400,
             ),
           ),

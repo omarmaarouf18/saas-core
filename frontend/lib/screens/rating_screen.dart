@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
+import '../widgets/primary_button.dart';
+import '../widgets/themed_card.dart';
+import '../widgets/themed_loading_indicator.dart';
+import '../widgets/themed_text_field.dart';
 
 class RatingScreen extends StatefulWidget {
   final Job job;
@@ -168,7 +173,7 @@ class _RatingScreenState extends State<RatingScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -178,30 +183,28 @@ class _RatingScreenState extends State<RatingScreen> {
                 children: [
                   Text(
                     'JOB ID: ${widget.job.id.substring(0, widget.job.id.length > 8 ? 8 : widget.job.id.length).toUpperCase()}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.primary.withValues(alpha: 0.7),
+                    style: AppTypography.labelLg.copyWith(
+                      color: AppColors.primary.withValues(alpha: 0.7),
                       letterSpacing: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.base),
                   Text(
                     'Rate Your Experience',
-                    style: theme.textTheme.headlineMedium?.copyWith(
+                    style: AppTypography.headlineLgMobile.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
+                      color: AppColors.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.base),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     child: Text(
                       'Ratings are blind. Neither party will see the other\'s feedback until both have submitted.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: colorScheme.onSurfaceVariant,
+                      style: AppTypography.bodyMd.copyWith(
+                        color: AppColors.onSurfaceVariant,
                         height: 1.4,
                       ),
                     ),
@@ -209,45 +212,41 @@ class _RatingScreenState extends State<RatingScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xl),
 
             // Main Interactive Card
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: isWide
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: _buildRatingForm(colorScheme, theme)),
-                          const SizedBox(width: 32),
-                          Expanded(
-                              child: _buildBlindStatusVisualizer(
-                                  colorScheme, theme)),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _buildRatingForm(colorScheme, theme),
-                          const SizedBox(height: 32),
-                          _buildBlindStatusVisualizer(colorScheme, theme),
-                        ],
-                      ),
-              ),
+            ThemedCard(
+              borderRadius: AppRadius.lg,
+              padding: AppSpacing.lg,
+              child: isWide
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _buildRatingForm(colorScheme, theme)),
+                        const SizedBox(width: AppSpacing.xl),
+                        Expanded(
+                            child: _buildBlindStatusVisualizer(
+                                colorScheme, theme)),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildRatingForm(colorScheme, theme),
+                        const SizedBox(height: AppSpacing.xl),
+                        _buildBlindStatusVisualizer(colorScheme, theme),
+                      ],
+                    ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xl),
 
             // Information Grid
             GridView.count(
               crossAxisCount: isWide ? 3 : 1,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
+              crossAxisSpacing: AppSpacing.md,
+              mainAxisSpacing: AppSpacing.md,
               childAspectRatio: isWide ? 1.8 : 3.5,
               children: [
                 _buildInfoCard(
@@ -255,21 +254,18 @@ class _RatingScreenState extends State<RatingScreen> {
                   title: "Unbiased Reviews",
                   subtitle:
                       "Preventing retaliatory or social-pressure ratings.",
-                  colorScheme: colorScheme,
                 ),
                 _buildInfoCard(
                   icon: Icons.verified_outlined,
                   title: "Trust Shield",
                   subtitle:
                       "Ratings directly impact platform reliability ranks.",
-                  colorScheme: colorScheme,
                 ),
                 _buildInfoCard(
                   icon: Icons.history_toggle_off_outlined,
                   title: "24h Window",
                   subtitle:
                       "Submit within 24 hours to ensure your score counts.",
-                  colorScheme: colorScheme,
                 ),
               ],
             ),
@@ -291,30 +287,29 @@ class _RatingScreenState extends State<RatingScreen> {
               height: 48,
               decoration: BoxDecoration(
                 color: colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Icon(
                 Icons.local_shipping,
                 color: colorScheme.onPrimaryContainer,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     _otherPartyName,
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: AppTypography.bodyLg.copyWith(
                       fontWeight: FontWeight.bold,
+                      color: AppColors.onSurface,
                     ),
                   ),
                   Text(
                     _otherPartyRole,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurfaceVariant,
+                    style: AppTypography.labelLg.copyWith(
+                      color: AppColors.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -322,19 +317,17 @@ class _RatingScreenState extends State<RatingScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.lg),
 
         // Score stars
         Text(
           'Score Experience',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurfaceVariant,
+          style: AppTypography.labelLg.copyWith(
+            color: AppColors.onSurfaceVariant,
             letterSpacing: 1.1,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.base),
         Row(
           children: List.generate(5, (index) {
             final starValue = index + 1;
@@ -347,108 +340,72 @@ class _RatingScreenState extends State<RatingScreen> {
               },
               icon: Icon(
                 isSelected ? Icons.star : Icons.star_border,
-                color: isSelected ? colorScheme.secondary : Colors.grey,
+                color:
+                    isSelected ? AppColors.secondary : AppColors.outlineVariant,
                 size: 36,
               ),
             );
           }),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.lg),
 
         // Feedback input
-        Text(
-          'Private Feedback (Optional)',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurfaceVariant,
-            letterSpacing: 1.1,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
+        ThemedTextField(
           controller: _commentController,
+          labelText: 'Private Feedback (Optional)',
+          hintText: "What went well? What could be improved?",
           maxLines: 3,
-          decoration: InputDecoration(
-            hintText: "What went well? What could be improved?",
-            border: const OutlineInputBorder(),
-            fillColor: colorScheme.surfaceContainerLow,
-            filled: true,
-          ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.lg),
 
-        ElevatedButton(
-          onPressed: _isSubmitting ? null : _submitRating,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: colorScheme.primary,
-            foregroundColor: colorScheme.onPrimary,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          child: _isSubmitting
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
-                )
-              : const Text(
-                  "Submit Blind Rating",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+        PrimaryButton(
+          text: "Submit Blind Rating",
+          onPressed: _submitRating,
+          isLoading: _isSubmitting,
         ),
       ],
     );
   }
 
   Widget _buildBlindStatusVisualizer(ColorScheme colorScheme, ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(24.0),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.2),
-          style: BorderStyle.solid,
-        ),
-      ),
+    return ThemedCard(
+      hasShadow: false,
+      color: AppColors.surfaceContainerLow,
+      borderRadius: AppRadius.lg,
+      padding: AppSpacing.lg,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (_isLoadingOtherStatus) ...[
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            const Text("Loading status..."),
-          ] else if (_otherPartyHasRated) ...[
+          if (_isLoadingOtherStatus)
+            const ThemedLoadingIndicator(message: "Loading status...")
+          else if (_otherPartyHasRated) ...[
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.1),
+                color: AppColors.success.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.check_circle_outline,
-                color: Colors.green,
+                color: AppColors.success,
                 size: 48,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             Text(
               "Feedback Locked In!",
-              style: theme.textTheme.titleMedium?.copyWith(
+              style: AppTypography.titleMd.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.green,
+                color: AppColors.success,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.base),
             Text(
               "The other party has submitted their rating. Both feedbacks are now visible under profile summary.",
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: AppTypography.bodyMd.copyWith(
                 fontSize: 13,
-                color: colorScheme.onSurfaceVariant,
+                color: AppColors.onSurfaceVariant,
               ),
             ),
           ] else ...[
@@ -458,7 +415,7 @@ class _RatingScreenState extends State<RatingScreen> {
                 Icon(
                   Icons.visibility_off_outlined,
                   size: 48,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                  color: AppColors.onSurfaceVariant.withValues(alpha: 0.3),
                 ),
                 Positioned(
                   right: 0,
@@ -466,31 +423,32 @@ class _RatingScreenState extends State<RatingScreen> {
                   child: Container(
                     width: 10,
                     height: 10,
-                    decoration: BoxDecoration(
-                      color: colorScheme.secondary,
+                    decoration: const BoxDecoration(
+                      color: AppColors.secondary,
                       shape: BoxShape.circle,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             Text(
               "Waiting for other party...",
-              style: theme.textTheme.titleMedium?.copyWith(
+              style: AppTypography.titleMd.copyWith(
                 fontWeight: FontWeight.bold,
+                color: AppColors.onSurface,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.base),
             Text(
               "The other party has not yet rated this transaction. Your ratings will remain hidden until they submit.",
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: AppTypography.bodyMd.copyWith(
                 fontSize: 13,
-                color: colorScheme.onSurfaceVariant,
+                color: AppColors.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             // Progress Bar
             Row(
               children: [
@@ -503,12 +461,12 @@ class _RatingScreenState extends State<RatingScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.base),
                 Expanded(
                   child: Container(
                     height: 6,
                     decoration: BoxDecoration(
-                      color: colorScheme.outline.withValues(alpha: 0.2),
+                      color: AppColors.outline.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(3),
                     ),
                   ),
@@ -525,44 +483,40 @@ class _RatingScreenState extends State<RatingScreen> {
     required IconData icon,
     required String title,
     required String subtitle,
-    required ColorScheme colorScheme,
   }) {
-    return Card(
-      elevation: 0,
-      color: colorScheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: colorScheme.secondary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
+    return ThemedCard(
+      hasShadow: false,
+      color: AppColors.surfaceContainerLow,
+      borderRadius: AppRadius.md,
+      padding: AppSpacing.md,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.secondary),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: AppTypography.bodyMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.onSurface,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  subtitle,
+                  style: AppTypography.labelMd.copyWith(
+                    color: AppColors.onSurfaceVariant,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

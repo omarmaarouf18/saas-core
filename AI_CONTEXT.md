@@ -164,7 +164,7 @@ This file is a persistent document tracking the real state of the repository.
 > **Dependency Drift Prevention**: Any change to shared/infra that adds a new external dependency must be followed by `go mod tidy && go build ./...` in every service that imports shared/infra, and a full `docker compose down && build --no-cache && up` verification, before considering the change complete — go.sum drift can pass CI's module resolution while still breaking local/production Docker builds.
 
 
-* **Immediate Next Step**: All planned frontend features (Programmatic dark theme, SSE Notifications, Subscription plans, Blind rating screen, and Rating summary component) have been successfully built, verified, documented, and pushed. All tests are passing!
+* **Immediate Next Step**: Refactored the frontend rating screen (rating_screen.dart) and rating summary component (rating_summary_card.dart) to fully adopt the unified design system (theme.dart tokens and shared widgets: ThemedCard, PrimaryButton, ThemedTextField, and ThemedLoadingIndicator). All tests are passing.
 
 
 

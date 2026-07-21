@@ -95,3 +95,10 @@
    * `themed_loading_indicator.dart`
    * `themed_empty_state.dart`
    * `themed_error_banner.dart`
+
+---
+
+## Known Gaps & Limitations
+
+*   **Mock Reply Feature**: The "Reply" button on notification cards in [notifications_screen.dart](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/notifications_screen.dart) marks the notification as read and shows a `SnackBar` stating that the feature is in beta and local-only. It does not send any backend messages. This is a frontend-only demo placeholder.
+*   **Notification Deep-Linking (Temporary Bootstrap Stub)**: When navigating to [job_status_screen.dart](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/job_status_screen.dart) from a notification alert with a parsable Job ID, the screen is initialized with a temporary, minimal placeholder `Job` model (a bootstrap stub). Once loaded, the screen's polling mechanism and manual refresh invoke `MarketplaceProvider.fetchJobStatus` to retrieve the real, complete job record from the API, fully replacing the placeholder data with the live state. Thus, it is a temporary transition state rather than permanent fake/mock data.
