@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`d5e7321`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`f12cc2b`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -139,6 +139,18 @@ The platform is comprised of **5 microservices** and **1 compile-time shared pac
 ## Section 2: Complete Endpoint Table
 
 All HTTP endpoints registered across the services are listed below, cross-referenced with their actual routing definitions.
+
+> [!NOTE]
+> **Request Parameter Naming Compatibility**: To address naming clarity issues where request fields expected signed JWT tokens rather than raw database IDs, the Go backend supports newer `_token` aliases alongside legacy parameter names (preferring `_token` if both are present).
+> 
+> | Legacy Field Name | New Preferred Alias | Affected Endpoints |
+> |---|---|---|
+> | `user_id` / `id` | `user_token` | GET /auth/user, GET /auth/user/public-profile, POST /users/jobs/track, GET /users/ratings |
+> | `owner_id` | `owner_token` | POST /users/services, POST /users/jobs/track |
+> | `employee_id` | `employee_token` | POST /users/jobs/track, GET /users/jobs/get |
+> | `requester_id` | `requester_token` | GET /auth/audit-log, GET /auth/user/public-profile, GET /users/jobs/get, POST /users/jobs/complete, POST /users/jobs/cancel, POST /users/subscription, POST /users/jobs/location/update |
+> | `tenant_id` | `tenant_token` | GET /users/wallet, POST /users/wallet/deposit, GET /users/ledger, GET /users/subscription, POST /users/subscription |
+> | `rated_by` / `rated_user` | `rated_by_token` / `rated_user_token` | POST /users/jobs/rate |
 
 <!-- GENERATED:ENDPOINTS:START -->
 | Method + Path | Owning Service | Caller Permissions | Core Functionality | Read / Write Target & Downstream Actions |

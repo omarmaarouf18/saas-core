@@ -145,12 +145,14 @@ Only features verified directly against the running application are marked as ve
 ## Request Field Naming Compatibility (JWT Integration)
 
 To address naming clarity issues where request fields expected signed JWT tokens rather than raw database IDs, the backend supports newer `_token` field aliases alongside legacy `_id` / raw parameter names:
-1. `user_token` as an alias for `user_id` / `id` (e.g. GET `/auth/user`, GET `/auth/user/public-profile`, POST `/users/jobs/track`, GET `/users/ratings`).
-2. `owner_token` as an alias for `owner_id` (e.g. POST `/users/services`, POST `/users/jobs/track`).
-3. `employee_token` as an alias for `employee_id` (e.g. POST `/users/jobs/track`, GET `/users/jobs/get`).
-4. `requester_token` as an alias for `requester_id` (e.g. GET `/auth/audit-log`, GET `/auth/user/public-profile`, GET `/users/jobs/get`, POST `/users/jobs/complete`, POST `/users/jobs/cancel`, POST `/users/subscription`, POST `/users/jobs/location/update`).
-5. `tenant_token` as an alias for `tenant_id` (e.g. GET `/users/wallet`, POST `/users/wallet/deposit`, GET `/users/ledger`, GET `/users/subscription`, POST `/users/subscription`).
-6. `rated_by_token` / `rated_user_token` as aliases for `rated_by` / `rated_user` (e.g. POST `/users/jobs/rate`).
+| Legacy Field Name | New Preferred Alias | Affected Endpoints |
+|---|---|---|
+| `user_id` / `id` | `user_token` | GET /auth/user, GET /auth/user/public-profile, POST /users/jobs/track, GET /users/ratings |
+| `owner_id` | `owner_token` | POST /users/services, POST /users/jobs/track |
+| `employee_id` | `employee_token` | POST /users/jobs/track, GET /users/jobs/get |
+| `requester_id` | `requester_token` | GET /auth/audit-log, GET /auth/user/public-profile, GET /users/jobs/get, POST /users/jobs/complete, POST /users/jobs/cancel, POST /users/subscription, POST /users/jobs/location/update |
+| `tenant_id` | `tenant_token` | GET /users/wallet, POST /users/wallet/deposit, GET /users/ledger, GET /users/subscription, POST /users/subscription |
+| `rated_by` / `rated_user` | `rated_by_token` / `rated_user_token` | POST /users/jobs/rate |
 
 The Go backend handles both legacy and preferred naming conventions compatibly (preferring `_token` if both are supplied). *Note: The Flutter frontend has not yet been updated to use the preferred fields.*
 
