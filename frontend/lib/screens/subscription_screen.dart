@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/primary_button.dart';
+import '../widgets/secondary_button.dart';
+import '../widgets/themed_card.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -41,7 +45,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Error: $e"),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -59,102 +63,95 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     final ownerProvider = Provider.of<OwnerProvider>(context);
     final currentTier = ownerProvider.subscriptionTier;
 
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Subscription Plans'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Current Plan Header Card
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              color: colorScheme.primaryContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'YOUR CURRENT PLAN',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onPrimaryContainer
-                            .withValues(alpha: 0.7),
-                        letterSpacing: 1.2,
+            ThemedCard(
+              borderRadius: AppRadius.lg,
+              padding: AppSpacing.lg,
+              color: AppColors.primary,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'YOUR CURRENT PLAN',
+                    style: AppTypography.labelLg.copyWith(
+                      color: AppColors.onPrimary.withValues(alpha: 0.7),
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.base),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        currentTier.toUpperCase().replaceAll('_', ' '),
+                        style: AppTypography.headlineLgMobile.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.onPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          currentTier.toUpperCase().replaceAll('_', ' '),
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onPrimaryContainer,
-                          ),
-                        ),
-                        Icon(
-                          currentTier == 'free'
-                              ? Icons.star_border
-                              : Icons.stars,
-                          color: colorScheme.secondary,
-                          size: 32,
-                        ),
-                      ],
-                    ),
-                    if (currentTier == 'pending_payment') ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: colorScheme.errorContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.info_outline,
-                                color: colorScheme.onErrorContainer, size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Pending activation. Please contact support to complete payment.',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: colorScheme.onErrorContainer,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      Icon(
+                        currentTier == 'free' ? Icons.star_border : Icons.stars,
+                        color: AppColors.secondary,
+                        size: 32,
                       ),
                     ],
+                  ),
+                  if (currentTier == 'pending_payment') ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm, vertical: AppSpacing.base),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        border: Border.all(
+                          color: AppColors.error.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            color: AppColors.error,
+                            size: 18,
+                          ),
+                          const SizedBox(width: AppSpacing.base),
+                          Expanded(
+                            child: Text(
+                              'Pending activation. Please contact support to complete payment.',
+                              style: AppTypography.bodyMd.copyWith(
+                                fontSize: 12,
+                                color: AppColors.error,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
 
             Text(
               'Available Plans',
-              style: theme.textTheme.headlineSmall?.copyWith(
+              style: AppTypography.headlineLgMobile.copyWith(
                 fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
+                color: AppColors.onSurface,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
 
             // Plan 1: Free Tier Card
             _buildPlanCard(
@@ -173,10 +170,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   : () => _changeSubscription('free'),
               buttonText:
                   currentTier == 'free' ? 'Active Plan' : 'Downgrade to Free',
-              colorScheme: colorScheme,
-              theme: theme,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
 
             // Plan 2: Professional Paid Tier Card
             _buildPlanCard(
@@ -201,11 +196,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   : (currentTier == 'pending_payment'
                       ? 'Awaiting Payment'
                       : 'Upgrade to Professional'),
-              colorScheme: colorScheme,
-              theme: theme,
               highlighted: true,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
           ],
         ),
       ),
@@ -220,131 +213,115 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     required bool isCurrent,
     required VoidCallback? onPressed,
     required String buttonText,
-    required ColorScheme colorScheme,
-    required ThemeData theme,
     bool highlighted = false,
   }) {
-    return Card(
-      elevation: highlighted ? 6 : 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: highlighted
-              ? colorScheme.secondary
-              : colorScheme.outline.withValues(alpha: 0.2),
-          width: highlighted ? 2 : 1,
-        ),
+    final bool isThisPlanLoading = _isSubmitting && !isCurrent;
+
+    return ThemedCard(
+      hasShadow: true,
+      color: AppColors.surface,
+      borderRadius: AppRadius.lg,
+      padding: AppSpacing.lg,
+      borderSide: BorderSide(
+        color: highlighted
+            ? AppColors.secondary
+            : AppColors.outlineVariant.withValues(alpha: 0.3),
+        width: highlighted ? 2 : 1,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (highlighted) ...[
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: colorScheme.secondary,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'RECOMMENDED',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSecondary,
-                    ),
-                  ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (highlighted) ...[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary,
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
                 ),
-              ),
-              const SizedBox(height: 8),
-            ],
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(
-                  price,
-                  style: TextStyle(
-                    fontSize: 36,
+                child: Text(
+                  'RECOMMENDED',
+                  style: AppTypography.labelMd.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: highlighted
-                        ? colorScheme.secondary
-                        : colorScheme.onSurface,
+                    color: AppColors.onSecondary,
                   ),
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  '/ $billing',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
+              ),
             ),
-            const Divider(height: 32),
-            ...features.map((f) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 20,
-                        color:
-                            highlighted ? colorScheme.secondary : Colors.grey,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          f,
-                          style: const TextStyle(fontSize: 14),
+            const SizedBox(height: AppSpacing.base),
+          ],
+          Text(
+            title,
+            style: AppTypography.titleMd.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.onSurface,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                price,
+                style: AppTypography.displayLg.copyWith(
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                  color:
+                      highlighted ? AppColors.secondary : AppColors.onSurface,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                '/ $billing',
+                style: AppTypography.bodyMd.copyWith(
+                  color: AppColors.outline,
+                ),
+              ),
+            ],
+          ),
+          Divider(
+            height: AppSpacing.xl,
+            color: AppColors.outlineVariant.withValues(alpha: 0.3),
+          ),
+          ...features.map((f) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.base),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.check_circle_outline,
+                      size: 20,
+                      color:
+                          highlighted ? AppColors.secondary : AppColors.outline,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        f,
+                        style: AppTypography.bodyMd.copyWith(
+                          color: AppColors.onSurface,
                         ),
                       ),
-                    ],
-                  ),
-                )),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: onPressed,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isCurrent
-                    ? Colors.grey
-                    : (highlighted
-                        ? colorScheme.secondary
-                        : colorScheme.primary),
-                foregroundColor: isCurrent
-                    ? Colors.white
-                    : (highlighted
-                        ? colorScheme.onSecondary
-                        : colorScheme.onPrimary),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                    ),
+                  ],
                 ),
-              ),
-              child: Text(
-                buttonText,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              )),
+          const SizedBox(height: AppSpacing.lg),
+          highlighted
+              ? SecondaryButton(
+                  text: buttonText,
+                  onPressed: onPressed,
+                  isLoading: isThisPlanLoading,
+                )
+              : PrimaryButton(
+                  text: buttonText,
+                  onPressed: onPressed,
+                  isLoading: isThisPlanLoading,
                 ),
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
