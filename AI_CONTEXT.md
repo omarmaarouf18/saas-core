@@ -83,11 +83,11 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 
 The detailed project history is distributed across categorized changelog files. Please consult the specific category files for complete details (including file/line references, commit SHAs, and verification details):
 
-*   [Security Fixes](docs/changelog/security-fixes.md) — 66 vulnerabilities found and fixed (including Owner-Authenticated Employee Provisioning, see [ADR-0001](docs/adr/0001-owner-authenticated-employee-provisioning.md), Employee Assignment Tenant Binding, see [ADR-0003](docs/adr/0003-employee-assignment-tenant-binding-check.md), and Customer Booking Employee Pre-Assignment Gating, see [ADR-0004](docs/adr/0004-customer-booking-employee-assignment-order.md)).
-*   [New Features](docs/changelog/new-features.md) — 22 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters, username propagation).
+*   [Security Fixes](docs/changelog/security-fixes.md) — 67 vulnerabilities found and fixed (including Owner-Authenticated Employee Provisioning, see [ADR-0001](docs/adr/0001-owner-authenticated-employee-provisioning.md), Employee Assignment Tenant Binding, see [ADR-0003](docs/adr/0003-employee-assignment-tenant-binding-check.md), and Customer Booking Employee Pre-Assignment Gating, see [ADR-0004](docs/adr/0004-customer-booking-employee-assignment-order.md)).
+*   [New Features](docs/changelog/new-features.md) — 26 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters, username propagation).
 *   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 24 tooling, CI, module refactoring, and onboarding CLI tools.
-*   [Bug Fixes](docs/changelog/bug-fixes.md) — 12 corrections to existing non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic, signup rollback on OTP set failure, resilience client connection leak).
-*   [Documentation](docs/changelog/documentation.md) — 6 documentation-only updates (e.g. Application Map, Audit Correction, Auto-Doc System, DESIGN.md Link Alignment).
+*   [Bug Fixes](docs/changelog/bug-fixes.md) — 16 corrections to existing non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic, signup rollback on OTP set failure, resilience client connection leak).
+*   [Documentation](docs/changelog/documentation.md) — 7 documentation-only updates (e.g. Application Map, Audit Correction, Auto-Doc System, DESIGN.md Link Alignment).
 
 ### 2. Explicitly Deferred by Decision
 
@@ -164,7 +164,7 @@ This file is a persistent document tracking the real state of the repository.
 > **Dependency Drift Prevention**: Any change to shared/infra that adds a new external dependency must be followed by `go mod tidy && go build ./...` in every service that imports shared/infra, and a full `docker compose down && build --no-cache && up` verification, before considering the change complete — go.sum drift can pass CI's module resolution while still breaking local/production Docker builds.
 
 
-* **Immediate Next Step**: Refactored the frontend subscription screen (subscription_screen.dart) to fully adopt the unified design system (theme.dart tokens and shared widgets: ThemedCard, PrimaryButton, SecondaryButton). All tests are passing.
+* **Immediate Next Step**: Completed the comprehensive E2E integration audit checks on the active Docker orchestration stack (signup/login flows, KYC/frozen gates, COD booking, WebSocket access control, and resolved username caching). All 14 frontend screens are 100% design-system complete, and all unit, integration, and security checks are passing.
 
 
 
