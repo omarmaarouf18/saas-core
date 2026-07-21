@@ -100,7 +100,7 @@ var KnownEndpoints = map[string]struct {
 	},
 	"GET /auth/audit-log": {
 		Permissions: "Tenant Owner JWT",
-		Function:    "Fetches tenant security audit logs.",
+		Function:    "Fetches tenant security audit logs. Accepts requester_id (legacy) or requester_token (preferred).",
 		Targets:     "Reads `audit_logs` collection.",
 	},
 	"POST /auth/kyb/upload": {
@@ -130,7 +130,12 @@ var KnownEndpoints = map[string]struct {
 	},
 	"GET /auth/user": {
 		Permissions: "`X-Internal-Token` OR User JWT",
-		Function:    "Resolves user profile (including username) and role details.",
+		Function:    "Resolves user profile (including username) and role details. Accepts id (legacy) or user_token (preferred).",
+		Targets:     "Reads `users` collection.",
+	},
+	"GET /auth/user/public-profile": {
+		Permissions: "User JWT",
+		Function:    "Returns only non-sensitive, public profile fields (ID and username). Accepts id (legacy) or user_token (preferred), and requester_id (legacy) or requester_token (preferred).",
 		Targets:     "Reads `users` collection.",
 	},
 
@@ -221,37 +226,37 @@ var KnownEndpoints = map[string]struct {
 	},
 	"POST /users/jobs/track": {
 		Permissions: "Owner/Employee JWT (legacy tracking) OR Customer JWT + service_id (owner resolved server-side; supports optional employee pre-assignment)",
-		Function:    "Books job with coordinate validation, resolves owner ID, validates optional employee assignment, and broadcasts alert.",
+		Function:    "Books job with coordinate validation. Accepts user_id (legacy) or user_token (preferred), owner_id (legacy) or owner_token (preferred), and employee_id (legacy) or employee_token (preferred).",
 		Targets:     "Downstream: calls `auth-service/auth/user`. Writes `jobs`.",
 	},
 	"GET /users/jobs/get": {
 		Permissions: "`X-Internal-Token` OR User JWT",
-		Function:    "Resolves detailed job configuration (single job by ID) OR lists all jobs assigned to the requesting employee.",
+		Function:    "Resolves detailed job configuration (single job by ID) or lists jobs. Accepts id (legacy) or user_token (preferred), requester_id (legacy) or requester_token (preferred), and employee_id (legacy) or employee_token (preferred).",
 		Targets:     "Reads `jobs` collection. Enforces IDOR protection: if `employee_id` query param is provided, it must match the employee identity strictly resolved from the JWT token.",
 	},
 	"POST /users/jobs/complete": {
 		Permissions: "Owner or Employee JWT",
-		Function:    "Completes active job, processes fees.",
+		Function:    "Completes active job, processes fees. Accepts requester_id (legacy) or requester_token (preferred) in body or query.",
 		Targets:     "Updates `jobs`, writes `wallets`, writes `ledger`.",
 	},
 	"POST /users/jobs/cancel": {
 		Permissions: "Owner JWT (KYC Approved)",
-		Function:    "Cancels an active job and processes escrow refunds.",
+		Function:    "Cancels an active job and processes escrow refunds. Accepts requester_id (legacy) or requester_token (preferred).",
 		Targets:     "Updates `jobs` collection. Updates `wallets` and `ledger` collections.",
 	},
 	"GET /users/wallet": {
 		Permissions: "Owner JWT",
-		Function:    "Fetches active balance details.",
+		Function:    "Fetches active balance details. Accepts tenant_id (legacy) or tenant_token (preferred).",
 		Targets:     "Reads `wallets` collection.",
 	},
 	"POST /users/wallet/deposit": {
 		Permissions: "Owner JWT",
-		Function:    "Loads funds up to maximum limits.",
+		Function:    "Loads funds up to maximum limits. Accepts tenant_id (legacy) or tenant_token (preferred).",
 		Targets:     "Updates `wallets` collection.",
 	},
 	"GET /users/ledger": {
 		Permissions: "Owner JWT",
-		Function:    "Lists financial ledger records.",
+		Function:    "Lists financial ledger records. Accepts tenant_id (legacy) or tenant_token (preferred).",
 		Targets:     "Reads `ledger` collection.",
 	},
 	"GET /users/platform/config": {
@@ -261,22 +266,22 @@ var KnownEndpoints = map[string]struct {
 	},
 	"POST /users/subscription": {
 		Permissions: "Owner JWT (KYC Approved)",
-		Function:    "Subscribes/renews SaaS tier.",
+		Function:    "Subscribes/renews SaaS tier. Accepts tenant_id (legacy) or tenant_token (preferred), and requester_id (legacy) or requester_token (preferred).",
 		Targets:     "Updates `subscriptions`, writes `wallets`, writes `ledger`.",
 	},
 	"POST /users/jobs/rate": {
 		Permissions: "Owner or Employee JWT",
-		Function:    "Submits a double-blind rating.",
+		Function:    "Submits a double-blind rating. Accepts rated_by (legacy) or rated_by_token (preferred), and rated_user (legacy) or rated_user_token (preferred).",
 		Targets:     "Writes `ratings`, updates `jobs`.",
 	},
 	"GET /users/ratings": {
 		Permissions: "User JWT",
-		Function:    "Returns ratings count and average.",
+		Function:    "Returns ratings count and average. Accepts user_id (legacy) or user_token (preferred).",
 		Targets:     "Reads `ratings` collection.",
 	},
 	"POST /users/jobs/location/update": {
 		Permissions: "Employee JWT",
-		Function:    "Updates driver coordinates (validates coordinate bounds and speed).",
+		Function:    "Updates driver coordinates. Accepts requester_id (legacy) or requester_token (preferred).",
 		Targets:     "Reads `jobs`, updates `jobs`. Downstream: calls `chat-service/chat/internal/broadcast-location`.",
 	},
 }

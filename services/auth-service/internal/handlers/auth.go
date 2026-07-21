@@ -828,7 +828,10 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := r.URL.Query().Get("id")
+	id := r.URL.Query().Get("user_token")
+	if id == "" {
+		id = r.URL.Query().Get("id")
+	}
 	if id == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "id parameter is required",
@@ -899,7 +902,10 @@ func (a *Auth) GetAuditLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requesterParam := r.URL.Query().Get("requester_id")
+	requesterParam := r.URL.Query().Get("requester_token")
+	if requesterParam == "" {
+		requesterParam = r.URL.Query().Get("requester_id")
+	}
 	if requesterParam == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "requester_id parameter is required",
@@ -1679,7 +1685,10 @@ func (a *Auth) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := r.URL.Query().Get("id")
+	id := r.URL.Query().Get("user_token")
+	if id == "" {
+		id = r.URL.Query().Get("id")
+	}
 	if id == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "id parameter is required",
@@ -1687,7 +1696,10 @@ func (a *Auth) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requesterID := r.URL.Query().Get("requester_id")
+	requesterID := r.URL.Query().Get("requester_token")
+	if requesterID == "" {
+		requesterID = r.URL.Query().Get("requester_id")
+	}
 	if requesterID == "" {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
 			"error": "requester_id parameter is required",

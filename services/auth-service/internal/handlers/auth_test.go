@@ -2286,3 +2286,73 @@ func TestSignupUsernameCaseInsensitivity(t *testing.T) {
 		t.Errorf("expected error message to contain 'username already taken', got: %s", rec2.Body.String())
 	}
 }
+
+func TestTokenNameAliasesInAuth(t *testing.T) {
+	a, _, cleanup := setupTestAuth(t)
+	if a == nil {
+		t.Skip("setup failed")
+		return
+	}
+	defer cleanup()
+
+	// Sign up a user to query
+	reqBodyFirst := models.SignupRequest{
+		Email:    "alias_auth@example.com",
+		Username: "alias_auth",
+		Password: "password123",
+		Role:     models.RoleUser,
+	}
+	b1, _ := json.Marshal(reqBodyFirst)
+	req1 := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b1))
+	rec1 := httptest.NewRecorder()
+	a.Signup(rec1, req1)
+	if rec1.Code != http.StatusCreated {
+		t.Fatalf("expected 201 Created for signup, got %d. Body: %s", rec1.Code, rec1.Body.String())
+	}
+
+	var signupResp map[string]any
+	json.Unmarshal(rec1.Body.Bytes(), &signupResp)
+	signupOTP := signupResp["dev_otp"].(string)
+
+	// Verify OTP
+	verifyReqBody := models.VerifyOTPRequest{
+		Email: "alias_auth@example.com",
+		OTP:   signupOTP,
+	}
+	b2, _ := json.Marshal(verifyReqBody)
+	req2 := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(b2))
+	rec2 := httptest.NewRecorder()
+	a.VerifyOTP(rec2, req2)
+	if rec2.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for VerifyOTP, got %d. Body: %s", rec2.Code, rec2.Body.String())
+	}
+
+	var verifyResp map[string]any
+	json.Unmarshal(rec2.Body.Bytes(), &verifyResp)
+	userID := verifyResp["user_id"].(string)
+	token := verifyResp["token"].(string)
+
+	// 1. GetUser using user_token query param
+	req := httptest.NewRequest("GET", "/auth/user?user_token="+token, nil)
+	rec := httptest.NewRecorder()
+	a.GetUser(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("GetUser with user_token: expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// 2. GetPublicProfile using user_token and requester_token query params
+	req = httptest.NewRequest("GET", "/auth/user/public-profile?user_token="+userID+"&requester_token="+token, nil)
+	rec = httptest.NewRecorder()
+	a.GetPublicProfile(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("GetPublicProfile with requester_token: expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// 3. GetAuditLog using requester_token
+	req = httptest.NewRequest("GET", "/auth/audit-log?tenant_id="+userID+"&requester_token="+token, nil)
+	rec = httptest.NewRecorder()
+	a.GetAuditLog(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("GetAuditLog with requester_token: expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+}

@@ -146,6 +146,7 @@ type PlatformConfig struct {
 // CreateServiceRequest is the expected JSON body for POST /users/services.
 type CreateServiceRequest struct {
 	OwnerID          string  `json:"owner_id"`
+	OwnerToken       string  `json:"owner_token,omitempty"`
 	Name             string  `json:"name"`
 	Category         string  `json:"category"`
 	TenantBasePrice  float64 `json:"tenant_base_price"`
@@ -157,24 +158,29 @@ type CreateServiceRequest struct {
 // CreateJobRequest is the expected JSON body for POST /users/jobs/track.
 type CreateJobRequest struct {
 	OwnerID       string   `json:"owner_id"`
+	OwnerToken    string   `json:"owner_token,omitempty"`
 	EmployeeID    string   `json:"employee_id,omitempty"`
+	EmployeeToken string   `json:"employee_token,omitempty"`
 	ServiceID     string   `json:"service_id"`
 	Location      Location `json:"location"`
 	PaymentMethod string   `json:"payment_method"`
 	UserID        string   `json:"user_id"`
+	UserToken     string   `json:"user_token,omitempty"`
 }
 
 // DepositRequest is the expected JSON body for POST /users/wallet/deposit.
 type DepositRequest struct {
-	TenantID string  `json:"tenant_id"`
-	Amount   float64 `json:"amount"`
+	TenantID    string  `json:"tenant_id"`
+	TenantToken string  `json:"tenant_token,omitempty"`
+	Amount      float64 `json:"amount"`
 }
 
 // CompleteJobRequest is the expected JSON body for POST /users/jobs/complete.
 type CompleteJobRequest struct {
-	JobID         string `json:"job_id"`
-	CashCollected bool   `json:"cash_collected"`
-	RequesterID   string `json:"requester_id"`
+	JobID          string `json:"job_id"`
+	CashCollected  bool   `json:"cash_collected"`
+	RequesterID    string `json:"requester_id"`
+	RequesterToken string `json:"requester_token,omitempty"`
 }
 
 type PlanTier string

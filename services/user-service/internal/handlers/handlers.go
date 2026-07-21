@@ -158,11 +158,13 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
 	}
+	if req.OwnerToken != "" {
+		req.OwnerID = req.OwnerToken
+	}
 	if req.OwnerID == "" || req.Name == "" || req.Category == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "owner_id, name, and category are required"})
 		return
 	}
-
 	resolvedOwnerID, err := resolveToken(req.OwnerID)
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
@@ -232,6 +234,15 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
+	}
+	if req.OwnerToken != "" {
+		req.OwnerID = req.OwnerToken
+	}
+	if req.EmployeeToken != "" {
+		req.EmployeeID = req.EmployeeToken
+	}
+	if req.UserToken != "" {
+		req.UserID = req.UserToken
 	}
 	if req.ServiceID == "" || req.UserID == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service_id and user_id are required"})
@@ -465,7 +476,13 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 	resolvedRequester := "internal_service"
 	isInternal := subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
 	if !isInternal {
-		requesterToken := r.URL.Query().Get("requester_id")
+		if req.RequesterToken != "" {
+			req.RequesterID = req.RequesterToken
+		}
+		requesterToken := r.URL.Query().Get("requester_token")
+		if requesterToken == "" {
+			requesterToken = r.URL.Query().Get("requester_id")
+		}
 		if requesterToken == "" {
 			requesterToken = req.RequesterID
 		}
@@ -605,9 +622,15 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 		return
 	}
-	id := r.URL.Query().Get("id")
+	id := r.URL.Query().Get("user_token")
 	if id == "" {
-		requesterToken := r.URL.Query().Get("requester_id")
+		id = r.URL.Query().Get("id")
+	}
+	if id == "" {
+		requesterToken := r.URL.Query().Get("requester_token")
+		if requesterToken == "" {
+			requesterToken = r.URL.Query().Get("requester_id")
+		}
 		if requesterToken == "" {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "id or requester_id parameter is required"})
 			return
@@ -618,7 +641,10 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// Check if a client-supplied employee_id query param exists, and validate it matches resolvedRequester
-		clientEmployeeID := r.URL.Query().Get("employee_id")
+		clientEmployeeID := r.URL.Query().Get("employee_token")
+		if clientEmployeeID == "" {
+			clientEmployeeID = r.URL.Query().Get("employee_id")
+		}
 		if clientEmployeeID != "" && clientEmployeeID != resolvedRequester {
 			// #nosec G706 //nolint:gosec -- employee ID is sanitized, resolvedRequester is from verified JWT claims, log injection not possible
 			log.Printf("[IDOR DETECTED] Requester %s tried to query jobs for employee %s", resolvedRequester, strings.ReplaceAll(strings.ReplaceAll(clientEmployeeID, "\n", " "), "\r", " "))
@@ -647,7 +673,10 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. External client check: require requester_id query param
-	requesterToken := r.URL.Query().Get("requester_id")
+	requesterToken := r.URL.Query().Get("requester_token")
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_id")
+	}
 	if requesterToken == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester_id parameter is required"})
 		return
@@ -678,7 +707,10 @@ func (u *UserService) GetWallet(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
 		return
 	}
-	tenantID := r.URL.Query().Get("tenant_id")
+	tenantID := r.URL.Query().Get("tenant_token")
+	if tenantID == "" {
+		tenantID = r.URL.Query().Get("tenant_id")
+	}
 	if tenantID == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
 		return
@@ -735,6 +767,9 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
+	}
+	if req.TenantToken != "" {
+		req.TenantID = req.TenantToken
 	}
 	const maxDepositAmount = 1_000_000
 	if req.TenantID == "" || req.Amount <= 0 || req.Amount > maxDepositAmount {
@@ -804,7 +839,10 @@ func (u *UserService) GetLedger(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
 		return
 	}
-	tenantID := r.URL.Query().Get("tenant_id")
+	tenantID := r.URL.Query().Get("tenant_token")
+	if tenantID == "" {
+		tenantID = r.URL.Query().Get("tenant_id")
+	}
 	if tenantID == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
 		return
@@ -973,7 +1011,10 @@ func (u *UserService) requireTier(ctx context.Context, tenantID string, min mode
 func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		tenantID := r.URL.Query().Get("tenant_id")
+		tenantID := r.URL.Query().Get("tenant_token")
+		if tenantID == "" {
+			tenantID = r.URL.Query().Get("tenant_id")
+		}
 		if tenantID == "" {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
 			return
@@ -996,13 +1037,21 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, sub)
 	case http.MethodPost:
 		var req struct {
-			TenantID    string          `json:"tenant_id"`
-			Tier        models.PlanTier `json:"tier"`
-			RequesterID string          `json:"requester_id"`
+			TenantID       string          `json:"tenant_id"`
+			TenantToken    string          `json:"tenant_token"`
+			Tier           models.PlanTier `json:"tier"`
+			RequesterID    string          `json:"requester_id"`
+			RequesterToken string          `json:"requester_token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 			return
+		}
+		if req.TenantToken != "" {
+			req.TenantID = req.TenantToken
+		}
+		if req.RequesterToken != "" {
+			req.RequesterID = req.RequesterToken
 		}
 		if req.TenantID == "" {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id is required"})
@@ -1110,16 +1159,25 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		JobID     string `json:"job_id"`
-		RatedBy   string `json:"rated_by"`
-		RatedUser string `json:"rated_user"`
-		Stars     int    `json:"stars"`
-		Comment   string `json:"comment"`
+		JobID          string `json:"job_id"`
+		RatedBy        string `json:"rated_by"`
+		RatedByToken   string `json:"rated_by_token"`
+		RatedUser      string `json:"rated_user"`
+		RatedUserToken string `json:"rated_user_token"`
+		Stars          int    `json:"stars"`
+		Comment        string `json:"comment"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
+	}
+
+	if req.RatedByToken != "" {
+		req.RatedBy = req.RatedByToken
+	}
+	if req.RatedUserToken != "" {
+		req.RatedUser = req.RatedUserToken
 	}
 
 	if req.Stars < 1 || req.Stars > 5 {
@@ -1194,7 +1252,10 @@ func (u *UserService) GetRatings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.URL.Query().Get("user_id")
+	userID := r.URL.Query().Get("user_token")
+	if userID == "" {
+		userID = r.URL.Query().Get("user_id")
+	}
 	if userID == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "user_id required"})
 		return
@@ -1241,14 +1302,19 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var req struct {
-		JobID       string  `json:"job_id"`
-		RequesterID string  `json:"requester_id"`
-		Latitude    float64 `json:"latitude"`
-		Longitude   float64 `json:"longitude"`
+		JobID          string  `json:"job_id"`
+		RequesterID    string  `json:"requester_id"`
+		RequesterToken string  `json:"requester_token"`
+		Latitude       float64 `json:"latitude"`
+		Longitude      float64 `json:"longitude"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
+	}
+
+	if req.RequesterToken != "" {
+		req.RequesterID = req.RequesterToken
 	}
 
 	if req.JobID == "" || req.RequesterID == "" {
@@ -1449,13 +1515,18 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		JobID       string `json:"job_id"`
-		RequesterID string `json:"requester_id"`
-		Reason      string `json:"reason"`
+		JobID          string `json:"job_id"`
+		RequesterID    string `json:"requester_id"`
+		RequesterToken string `json:"requester_token"`
+		Reason         string `json:"reason"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
+	}
+
+	if req.RequesterToken != "" {
+		req.RequesterID = req.RequesterToken
 	}
 
 	if req.JobID == "" {

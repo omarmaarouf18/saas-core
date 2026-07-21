@@ -2871,6 +2871,172 @@ func TestUserServiceHandlers(t *testing.T) {
 				t.Errorf("Expected Tenant B's ledger count to be 0, got %.0f", count)
 			}
 		})
+
+		// 4. Token parameter aliases check
+		t.Run("Token Parameter Aliases Compatibility", func(t *testing.T) {
+			tokenOwner, _ := jwtutil.GenerateToken("kyc-approved-owner-alias", "owner", "kyc-approved-owner-alias", "ownerAlias@example.com")
+			tokenCustomer, _ := jwtutil.GenerateToken("customer-alias", "user", "", "customerAlias@example.com")
+			tokenEmployee, _ := jwtutil.GenerateToken("employee-under-kyc-approved-owner-alias", "employee", "kyc-approved-owner-alias", "employeeAlias@example.com")
+
+			// A. CreateService using owner_token
+			reqBody := map[string]any{
+				"owner_token":         tokenOwner,
+				"name":                "Alias Test Service",
+				"category":            "delivery",
+				"tenant_base_price":   5.0,
+				"tenant_price_per_km": 1.0,
+				"latitude":            30.0,
+				"longitude":           31.0,
+			}
+			body, _ := json.Marshal(reqBody)
+			req := httptest.NewRequest("POST", "/users/services", bytes.NewReader(body))
+			req.Header.Set("X-Real-IP", "192.168.200.1")
+			rec := httptest.NewRecorder()
+			u.CreateService(rec, req)
+			if rec.Code != http.StatusCreated {
+				t.Fatalf("CreateService: Expected 201 Created with owner_token, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			var svcResp map[string]any
+			json.Unmarshal(rec.Body.Bytes(), &svcResp)
+			svcData := svcResp["service"].(map[string]any)
+			serviceID := svcData["id"].(string)
+
+			// B. TrackJob using owner_token, user_token, and employee_token
+			reqBodyJob := map[string]any{
+				"service_id":     serviceID,
+				"owner_token":    tokenOwner,
+				"user_token":     tokenCustomer,
+				"employee_token": tokenEmployee,
+				"payment_method": "cod",
+				"location": map[string]any{
+					"latitude":  30.0,
+					"longitude": 31.0,
+				},
+			}
+			bodyJob, _ := json.Marshal(reqBodyJob)
+			req = httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(bodyJob))
+			req.Header.Set("X-Real-IP", "192.168.200.2")
+			rec = httptest.NewRecorder()
+			u.TrackJob(rec, req)
+			if rec.Code != http.StatusCreated {
+				t.Fatalf("TrackJob: Expected 201 Created with owner_token/user_token, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			var jobResp map[string]any
+			json.Unmarshal(rec.Body.Bytes(), &jobResp)
+			jobData := jobResp["job"].(map[string]any)
+			jobID := jobData["id"].(string)
+
+			// C. GetJob using requester_token
+			req = httptest.NewRequest("GET", "/users/jobs/get?id="+jobID+"&requester_token="+tokenOwner, nil)
+			req.Header.Set("X-Real-IP", "192.168.200.3")
+			rec = httptest.NewRecorder()
+			u.GetJob(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Errorf("GetJob: Expected 200 OK with requester_token, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			// D. GetWallet using tenant_token
+			req = httptest.NewRequest("GET", "/users/wallet?tenant_token="+tokenOwner, nil)
+			req.Header.Set("X-Real-IP", "192.168.200.4")
+			rec = httptest.NewRecorder()
+			u.GetWallet(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Errorf("GetWallet: Expected 200 OK with tenant_token, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			// E. GetLedger using tenant_token
+			req = httptest.NewRequest("GET", "/users/ledger?tenant_token="+tokenOwner, nil)
+			req.Header.Set("X-Real-IP", "192.168.200.5")
+			rec = httptest.NewRecorder()
+			u.GetLedger(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Errorf("GetLedger: Expected 200 OK with tenant_token, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			// F. WalletDeposit using tenant_token (with AppEnv override)
+			oldEnv := u.appEnv
+			u.appEnv = "local"
+			defer func() { u.appEnv = oldEnv }()
+
+			reqBodyDeposit := map[string]any{
+				"tenant_token": tokenOwner,
+				"amount":       20.0,
+			}
+			bodyDep, _ := json.Marshal(reqBodyDeposit)
+			req = httptest.NewRequest("POST", "/users/wallet/deposit", bytes.NewReader(bodyDep))
+			req.Header.Set("X-Real-IP", "192.168.200.6")
+			rec = httptest.NewRecorder()
+			u.WalletDeposit(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Errorf("WalletDeposit: Expected 200 OK with tenant_token, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			// G. UpdateJobLocation using requester_token
+			s.UpsertSubscription(context.Background(), &models.Subscription{
+				ID:        "sub-alias-kyc-approved-owner-alias",
+				TenantID:  "kyc-approved-owner-alias",
+				Tier:      models.PlanPaid,
+				StartedAt: time.Now().UTC(),
+			})
+
+			reqBodyLoc := map[string]any{
+				"job_id":          jobID,
+				"requester_token": tokenEmployee,
+				"latitude":        30.0,
+				"longitude":       31.0,
+			}
+			bodyLoc, _ := json.Marshal(reqBodyLoc)
+			req = httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(bodyLoc))
+			req.Header.Set("X-Real-IP", "192.168.200.7")
+			rec = httptest.NewRecorder()
+			u.UpdateJobLocation(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Errorf("UpdateJobLocation: Expected 200 OK with requester_token, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			// H. CompleteJob using requester_token
+			reqBodyComp := map[string]any{
+				"job_id":          jobID,
+				"requester_token": tokenOwner,
+				"cash_collected":  true,
+			}
+			bodyComp, _ := json.Marshal(reqBodyComp)
+			req = httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(bodyComp))
+			req.Header.Set("X-Real-IP", "192.168.200.8")
+			rec = httptest.NewRecorder()
+			u.CompleteJob(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Errorf("CompleteJob: Expected 200 OK with requester_token, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			// I. RateJob using rated_by_token & rated_user_token
+			reqBodyRate := map[string]any{
+				"job_id":           jobID,
+				"rated_by_token":   tokenOwner,
+				"rated_user_token": tokenEmployee,
+				"stars":            4,
+				"comment":          "Good job!",
+			}
+			bodyRate, _ := json.Marshal(reqBodyRate)
+			req = httptest.NewRequest("POST", "/users/jobs/rate", bytes.NewReader(bodyRate))
+			req.Header.Set("X-Real-IP", "192.168.200.9")
+			rec = httptest.NewRecorder()
+			u.RateJob(rec, req)
+			if rec.Code != http.StatusCreated {
+				t.Errorf("RateJob: Expected 201 Created with rated_by_token/rated_user_token, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			// J. GetRatings using user_token
+			req = httptest.NewRequest("GET", "/users/ratings?user_token="+tokenEmployee, nil)
+			req.Header.Set("X-Real-IP", "192.168.200.10")
+			rec = httptest.NewRecorder()
+			u.GetRatings(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Errorf("GetRatings: Expected 200 OK with user_token, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+		})
 	})
 }
 

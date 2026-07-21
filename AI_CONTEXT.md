@@ -84,7 +84,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 The detailed project history is distributed across categorized changelog files. Please consult the specific category files for complete details (including file/line references, commit SHAs, and verification details):
 
 *   [Security Fixes](docs/changelog/security-fixes.md) — 67 vulnerabilities found and fixed (including Owner-Authenticated Employee Provisioning, see [ADR-0001](docs/adr/0001-owner-authenticated-employee-provisioning.md), Employee Assignment Tenant Binding, see [ADR-0003](docs/adr/0003-employee-assignment-tenant-binding-check.md), and Customer Booking Employee Pre-Assignment Gating, see [ADR-0004](docs/adr/0004-customer-booking-employee-assignment-order.md)).
-*   [New Features](docs/changelog/new-features.md) — 26 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters, username propagation).
+*   [New Features](docs/changelog/new-features.md) — 27 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters, username propagation, request field token aliases).
 *   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 24 tooling, CI, module refactoring, and onboarding CLI tools.
 *   [Bug Fixes](docs/changelog/bug-fixes.md) — 16 corrections to existing non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic, signup rollback on OTP set failure, resilience client connection leak).
 *   [Documentation](docs/changelog/documentation.md) — 7 documentation-only updates (e.g. Application Map, Audit Correction, Auto-Doc System, DESIGN.md Link Alignment).
@@ -142,11 +142,17 @@ Only features verified directly against the running application are marked as ve
 
 ---
 
-## Breaking Token Policy Change (JWT Integration)
+## Request Field Naming Compatibility (JWT Integration)
 
-With JWT support enabled:
-1. Client-facing endpoints expecting a `token` (such as `chat-service` WebSocket `?token=` and `notification-service` SSE stream `?token=`) must now pass a valid signed JWT token instead of raw user IDs.
-2. `user-service` JSON fields/query params (`owner_id`, `tenant_id`, `requester_id`, `user_id`, `rated_by`, `rated_user`) support JWT tokens. The backend will validate the token signature/expiry locally, extract the raw user ID, and map it.
+To address naming clarity issues where request fields expected signed JWT tokens rather than raw database IDs, the backend supports newer `_token` field aliases alongside legacy `_id` / raw parameter names:
+1. `user_token` as an alias for `user_id` / `id` (e.g. GET `/auth/user`, GET `/auth/user/public-profile`, POST `/users/jobs/track`, GET `/users/ratings`).
+2. `owner_token` as an alias for `owner_id` (e.g. POST `/users/services`, POST `/users/jobs/track`).
+3. `employee_token` as an alias for `employee_id` (e.g. POST `/users/jobs/track`, GET `/users/jobs/get`).
+4. `requester_token` as an alias for `requester_id` (e.g. GET `/auth/audit-log`, GET `/auth/user/public-profile`, GET `/users/jobs/get`, POST `/users/jobs/complete`, POST `/users/jobs/cancel`, POST `/users/subscription`, POST `/users/jobs/location/update`).
+5. `tenant_token` as an alias for `tenant_id` (e.g. GET `/users/wallet`, POST `/users/wallet/deposit`, GET `/users/ledger`, GET `/users/subscription`, POST `/users/subscription`).
+6. `rated_by_token` / `rated_user_token` as aliases for `rated_by` / `rated_user` (e.g. POST `/users/jobs/rate`).
+
+The Go backend handles both legacy and preferred naming conventions compatibly (preferring `_token` if both are supplied). *Note: The Flutter frontend has not yet been updated to use the preferred fields.*
 
 ---
 
