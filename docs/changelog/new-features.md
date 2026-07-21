@@ -168,6 +168,12 @@ This file tracks historical entries for the primary category: **New Features Cha
 - **Commit SHA**: ``f01d25be38c7d0cdd70f59ca696c043e2f0db08e``
 - **Verification**: Verified via `flutter analyze` and widget tests confirming clean layout integration. ✅
 
+## Request Field Token Aliases
+
+- **Implementation Detail**: Added clearer `_token` field name aliases alongside legacy `_id` and raw parameter names across Go backend handlers (`user-service` and `auth-service`) to resolve naming clarity issues (since these fields carried signed JWT tokens instead of raw database IDs). Implemented alias mappings for: `user_token` (as alias for `user_id` / `id`), `owner_token` (as alias for `owner_id`), `employee_token` (as alias for `employee_id`), `requester_token` (as alias for `requester_id`), `tenant_token` (as alias for `tenant_id`), and `rated_by_token`/`rated_user_token` (as aliases for `rated_by`/`rated_user`). Enforced backward compatibility by resolving either variant, preferring the new naming. Updated API generator `KnownEndpoints` descriptions and updated `APPLICATION_MAP.md` via `make docs`.
+- **Commit SHA**: ``f967906b413fedadc38dae163766697c9e7aeb60``
+- **Verification**: Verified via backend integration test suites (`TestTokenNameAliasesCompatibility` in `user-service`, `TestTokenNameAliasesInAuth` in `auth-service`) and local `make docs-check`. ✅
+
 
 
 
