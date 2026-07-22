@@ -60,9 +60,8 @@ for mod in services/api-gateway services/auth-service services/chat-service \
   # We also filter for vulnerabilities that are actually called (where the trace contains a package starting
   # with "github.com/project/"), to prevent blocking on uncalled module-level dependencies that do not impact
   # the compiled binary.
-  # This is because the local Go compiler version (e.g. go1.26.4) might have known stdlib vulnerabilities
-  # (like GO-2026-5856) that the developer cannot easily update. CI runs on a fixed Go version (1.24) and
-  # will fail if standard library or third-party vulnerabilities are introduced.
+  # If a standard library vulnerability is skipped, we print a loud warning highlighting the skipped GO-ID
+  # and the Go version mismatch (since CI uses Go 1.24, which does not trigger Go 1.26 stdlib issues).
   if [ -z "$GOVULNCHECK_BIN" ] || [ ! -x "$GOVULNCHECK_BIN" ]; then
     echo "govulncheck not found, installing..."
     go install golang.org/x/vuln/cmd/govulncheck@latest 2>/dev/null || true
@@ -71,6 +70,16 @@ for mod in services/api-gateway services/auth-service services/chat-service \
   if [ -x "$GOVULNCHECK_BIN" ]; then
     echo "-- running govulncheck on $mod --"
     VULN_OUT=$( (cd "$mod" && "$GOVULNCHECK_BIN" -format json ./...) || true)
+    
+    # Check for stdlib vulnerabilities to print loud warnings
+    STDLIB_VULNS=$(echo "$VULN_OUT" | jq -r 'select(.finding != null and (.finding.trace | any(.package != null and (.package | startswith("github.com/project/")))) and .finding.trace[0].module == "stdlib") | .finding.osv' | sort -u)
+    if [ -n "$STDLIB_VULNS" ]; then
+      for id in $STDLIB_VULNS; do
+        echo "WARNING: SKIPPED ($id) (stdlib version mismatch, CI uses Go 1.24) — verify this doesn't affect CI"
+      done
+    fi
+
+    # Block on active third-party dependencies vulnerabilities
     NON_STDLIB_VULNS=$(echo "$VULN_OUT" | jq -c 'select(.finding != null and (.finding.trace | any(.package != null and (.package | startswith("github.com/project/")))) and .finding.trace[0].module != "stdlib")')
     if [ -n "$NON_STDLIB_VULNS" ]; then
       echo "BLOCKED: $mod failed govulncheck security scan with third-party vulnerabilities:"

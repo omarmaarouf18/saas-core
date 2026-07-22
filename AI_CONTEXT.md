@@ -63,7 +63,7 @@ To ensure that code which passes local checks is guaranteed to pass CI (and vice
    - `go vet ./...`
    - `go test ./... -count=1`
 3. **Security & Vulnerability Scans**:
-   - `govulncheck` (checks Go dependencies for known vulnerabilities; local execution filters for stdlib and uncalled packages for compiler flexibility)
+   - `govulncheck` (checks Go dependencies for known vulnerabilities; local execution filters for uncalled packages and stdlib vulnerabilities due to Go version mismatch, printing a loud warning in the terminal for each skipped standard library vulnerability)
    - `gosec` (runs full default Go security scans)
 4. **Frontend Analysis**:
    - `flutter analyze` (strict checks)
