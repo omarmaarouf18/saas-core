@@ -162,6 +162,7 @@ Only features verified directly against the running application are marked as ve
 * **Partial Job Listing Coverage**: GET /users/jobs/get supports employee-side job listing (via `requester_id`, IDOR-protected, returns jobs assigned to that employee) — implemented and verified in Phase 3. However, there is still no endpoint for an owner to list all jobs across their tenant, or for a customer to list their own booking history. The owner dashboard and customer profile will only show static/empty placeholders for these views until this is built.
 * **Missing Employee Listing Endpoint**: There is currently no endpoint in `auth-service` to retrieve the list of registered employees for a tenant owner.
 * **Documentation-Tooling Gap**: The structural drift test (`shared/infra/docgen/structural_drift_test.go`) only verifies that Dart files are cataloged in `STATUS.md` and package constraints match. It does NOT verify that the descriptions, auth paths, or data access parameters in `APPLICATION_MAP.md` align with actual Go handler implementations, leaving a possibility for undocumented API deviations.
+* **Local govulncheck stdlib warning (GO-2026-5856)**: The local govulncheck stdlib warning (GO-2026-5856 in crypto/tls) will disappear once the local Go installation is upgraded to go1.26.5 or later (the vulnerability is already patched there) — no code change needed, just a toolchain upgrade whenever convenient. This is a low-priority cleanup, not a blocker.
 
 ---
 
