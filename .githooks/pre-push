@@ -2,6 +2,7 @@
 set -e
 echo "== pre-push gate: running checks =="
 
+# 1. Verify Go formatting
 UNFORMATTED=$(gofmt -l . 2>&1)
 if [ -n "$UNFORMATTED" ]; then
   echo "BLOCKED: gofmt found unformatted files:"
@@ -9,6 +10,7 @@ if [ -n "$UNFORMATTED" ]; then
   exit 1
 fi
 
+# 2. Verify Dart formatting
 if [ -d "frontend" ]; then
   echo "-- checking frontend Dart formatting --"
   UNFORMATTED_DART=$(cd frontend && dart format --output=none --set-exit-if-changed lib/ 2>&1) || {
@@ -18,6 +20,7 @@ if [ -d "frontend" ]; then
   }
 fi
 
+# 3. Verify Changelog Commit SHAs
 FAILED_SHA=0
 for file in docs/changelog/*.md; do
   for sha in $(grep -oE "[0-9a-f]{40}" "$file"); do
@@ -30,40 +33,77 @@ done
 if [ "$FAILED_SHA" -eq 1 ]; then
   exit 1
 fi
+
+# 4. Resolve security check binaries (gosec & govulncheck)
 GOSEC_BIN=$(which gosec 2>/dev/null || ls ~/go/bin/gosec 2>/dev/null || echo "")
 if [ -z "$GOSEC_BIN" ] && [ -d "$HOME/go/bin" ]; then
   GOSEC_BIN="$HOME/go/bin/gosec"
 fi
 
+GOVULNCHECK_BIN=$(which govulncheck 2>/dev/null || ls ~/go/bin/govulncheck 2>/dev/null || echo "")
+if [ -z "$GOVULNCHECK_BIN" ] && [ -d "$HOME/go/bin" ]; then
+  GOVULNCHECK_BIN="$HOME/go/bin/govulncheck"
+fi
+
 for mod in services/api-gateway services/auth-service services/chat-service \
            services/notification-service services/user-service shared/infra; do
   echo "-- checking $mod --"
+  
+  # Go Build, Vet, Test parity
   (cd "$mod" && go build ./... && go vet ./... && go test ./... -count=1) || {
     echo "BLOCKED: $mod failed build/vet/test"
     exit 1
   }
-  if true; then
-    if [ -z "$GOSEC_BIN" ] || [ ! -x "$GOSEC_BIN" ]; then
-      echo "gosec not found, installing..."
-      go install github.com/securego/gosec/v2/cmd/gosec@latest 2>/dev/null || true
-      GOSEC_BIN="$HOME/go/bin/gosec"
-    fi
-    if [ -x "$GOSEC_BIN" ]; then
-      echo "-- running gosec on $mod --"
-      (cd "$mod" && "$GOSEC_BIN" -include=G104 ./...) || {
-        echo "BLOCKED: $mod failed gosec security scan"
-        exit 1
-      }
-    else
-      echo "BLOCKED: gosec is required but could not be installed/found. Install via: go install github.com/securego/gosec/v2/cmd/gosec@latest"
+
+  # govulncheck check parity
+  # NOTE: We run govulncheck but filter out standard library ("stdlib") vulnerabilities locally.
+  # We also filter for vulnerabilities that are actually called (where the trace contains a package starting
+  # with "github.com/project/"), to prevent blocking on uncalled module-level dependencies that do not impact
+  # the compiled binary.
+  # This is because the local Go compiler version (e.g. go1.26.4) might have known stdlib vulnerabilities
+  # (like GO-2026-5856) that the developer cannot easily update. CI runs on a fixed Go version (1.24) and
+  # will fail if standard library or third-party vulnerabilities are introduced.
+  if [ -z "$GOVULNCHECK_BIN" ] || [ ! -x "$GOVULNCHECK_BIN" ]; then
+    echo "govulncheck not found, installing..."
+    go install golang.org/x/vuln/cmd/govulncheck@latest 2>/dev/null || true
+    GOVULNCHECK_BIN="$HOME/go/bin/govulncheck"
+  fi
+  if [ -x "$GOVULNCHECK_BIN" ]; then
+    echo "-- running govulncheck on $mod --"
+    VULN_OUT=$( (cd "$mod" && "$GOVULNCHECK_BIN" -format json ./...) || true)
+    NON_STDLIB_VULNS=$(echo "$VULN_OUT" | jq -c 'select(.finding != null and (.finding.trace | any(.package != null and (.package | startswith("github.com/project/")))) and .finding.trace[0].module != "stdlib")')
+    if [ -n "$NON_STDLIB_VULNS" ]; then
+      echo "BLOCKED: $mod failed govulncheck security scan with third-party vulnerabilities:"
+      echo "$NON_STDLIB_VULNS" | jq .
       exit 1
     fi
+  else
+    echo "BLOCKED: govulncheck is required but could not be installed/found. Install via: go install golang.org/x/vuln/cmd/govulncheck@latest"
+    exit 1
+  fi
+
+  # gosec check parity
+  if [ -z "$GOSEC_BIN" ] || [ ! -x "$GOSEC_BIN" ]; then
+    echo "gosec not found, installing..."
+    go install github.com/securego/gosec/v2/cmd/gosec@latest 2>/dev/null || true
+    GOSEC_BIN="$HOME/go/bin/gosec"
+  fi
+  if [ -x "$GOSEC_BIN" ]; then
+    echo "-- running gosec on $mod --"
+    (cd "$mod" && "$GOSEC_BIN" ./...) || {
+      echo "BLOCKED: $mod failed gosec security scan"
+      exit 1
+    }
+  else
+    echo "BLOCKED: gosec is required but could not be installed/found. Install via: go install github.com/securego/gosec/v2/cmd/gosec@latest"
+    exit 1
   fi
 done
 
+# 5. Flutter analyze & test checks parity (strict without ignoring warnings/infos)
 if [ -d "frontend" ]; then
   echo "-- checking frontend Flutter analyze/test --"
-  (cd frontend && flutter analyze --no-fatal-warnings --no-fatal-infos && flutter test) || {
+  (cd frontend && flutter analyze && flutter test) || {
     echo "BLOCKED: frontend failed analyze or test checks"
     exit 1
   }

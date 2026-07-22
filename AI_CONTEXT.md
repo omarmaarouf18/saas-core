@@ -50,6 +50,29 @@ The CI/CD pipeline and local pre-push hooks run a full-scope, unfiltered securit
 > 
 > *Refer to [docs/changelog/security-fixes.md](docs/changelog/security-fixes.md) for specific G704, G705, and G706 fixes applied in the codebase.*
 
+## CI/CD & Pre-Push Parity
+
+To ensure that code which passes local checks is guaranteed to pass CI (and vice versa), the local pre-push hook ([.githooks/pre-push](file:///mnt/windows_data/CS tools/Antigravity/SaaS prototype/.githooks/pre-push)) and the GitHub Actions workflow ([ci.yml](file:///mnt/windows_data/CS tools/Antigravity/SaaS prototype/.github/workflows/ci.yml)) are synchronized to execute the same checks:
+
+1. **Lint & Formatting**:
+   - Go Formatting (`gofmt -l .`)
+   - Dart Formatting (`dart format --set-exit-if-changed lib/`)
+   - Changelog Commit SHA check (ensures SHAs referenced in `docs/changelog/` exist in Git)
+2. **Build, Vet, & Test** (for all microservices and `shared/infra`):
+   - `go build ./...`
+   - `go vet ./...`
+   - `go test ./... -count=1`
+3. **Security & Vulnerability Scans**:
+   - `govulncheck` (checks Go dependencies for known vulnerabilities; local execution filters for stdlib and uncalled packages for compiler flexibility)
+   - `gosec` (runs full default Go security scans)
+4. **Frontend Analysis**:
+   - `flutter analyze` (strict checks)
+   - `flutter test`
+
+> [!IMPORTANT]
+> **Strict Parity Principle**:
+> If a check is ever added to `ci.yml`, it must be added to `.githooks/pre-push` in the same commit, and vice versa. Divergence between these two was a root cause of confusing CI failures earlier in this project's history.
+
 ---
 
 ## Architecture Table

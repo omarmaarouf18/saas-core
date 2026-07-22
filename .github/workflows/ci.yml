@@ -30,6 +30,21 @@ jobs:
             exit 1
           fi
 
+      - name: Verify Changelog Commit SHAs
+        run: |
+          FAILED_SHA=0
+          for file in docs/changelog/*.md; do
+            for sha in $(grep -oE "[0-9a-f]{40}" "$file"); do
+              if ! git cat-file -e "$sha^{commit}" 2>/dev/null; then
+                echo "BLOCKED: fabricated/non-existent SHA $sha in $file"
+                FAILED_SHA=1
+              fi
+            done
+          done
+          if [ "$FAILED_SHA" -eq 1 ]; then
+            exit 1
+          fi
+
   build-test:
     name: Build & Test
     runs-on: ubuntu-latest
