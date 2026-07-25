@@ -3,7 +3,7 @@
 # ===========================================================================
 
 # ---- Development Stage ---------------------------------------------------
-FROM golang:1.24-alpine AS dev
+FROM golang:1.26-alpine AS dev
 
 RUN apk add --no-cache git \
     && go install github.com/air-verse/air@v1.52.2
@@ -20,7 +20,7 @@ EXPOSE 3002
 CMD ["air", "-c", ".air.toml"]
 
 # ---- Build Stage ---------------------------------------------------------
-FROM golang:1.24-alpine AS build
+FROM golang:1.26-alpine AS build
 
 WORKDIR /app
 
