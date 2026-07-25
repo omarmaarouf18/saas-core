@@ -1380,3 +1380,89 @@ func TestVerifyToken_ExtraCoverage(t *testing.T) {
 		t.Errorf("Expected error and active=false for unreachable auth service, got active=%v, err=%v", active, err)
 	}
 }
+
+func TestNewChat_Coverage(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	jwtutil.Init("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	cfg := &config.Config{
+		AuthServiceURL:       "http://localhost:3002",
+		UserServiceURL:       "http://localhost:3003",
+		InternalServiceToken: "test-internal-token",
+		TLSCertPath:          "",
+		TLSKeyPath:           "",
+		TLSCAPath:            "",
+	}
+
+	c := NewChat(nil, nil, cfg, nil)
+	if c == nil {
+		t.Fatalf("Expected NewChat to return non-nil instance")
+	}
+}
+
+func TestCanAccessChannel_ExtraCoverage(t *testing.T) {
+	c, mongoStore, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	// Add support agent
+	agent := &store.SupportAgent{
+		ID:     "agent-access-1",
+		Status: "available",
+		Token:  "token-access-1",
+	}
+	_ = mongoStore.AddSupportAgent(ctx, agent)
+
+	ticket, err := mongoStore.CreateTicketAndAssign(ctx, "cust-access-1", "job-100")
+	if err != nil {
+		t.Fatalf("CreateTicketAndAssign failed: %v", err)
+	}
+
+	// 1. Ticket channel access by assigned support agent -> true
+	ok, err := c.canAccessChannel(ticket.AssignedAgentID, "ticket:"+ticket.ID)
+	if err != nil || !ok {
+		t.Errorf("Expected support agent to have access to ticket channel, got ok=%v, err=%v", ok, err)
+	}
+
+	// 2. Non-ticket/non-job channel -> false
+	ok, err = c.canAccessChannel("usr-A", "general-channel")
+	if err != nil || ok {
+		t.Errorf("Expected non-job channel to return false, got ok=%v, err=%v", ok, err)
+	}
+}
+
+func TestHandleCreateTicket_ExtraCoverage(t *testing.T) {
+	c, _, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	// 1. Non-POST method -> 405 MethodNotAllowed
+	req := httptest.NewRequest("GET", "/chat/support/ticket", nil)
+	rec := httptest.NewRecorder()
+	c.HandleCreateTicket(rec, req)
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Expected 405 MethodNotAllowed, got %d", rec.Code)
+	}
+
+	// 2. Missing customer token -> 401 Unauthorized
+	req = httptest.NewRequest("POST", "/chat/support/ticket", strings.NewReader(`{"context_id":"job-100"}`))
+	rec = httptest.NewRecorder()
+	c.HandleCreateTicket(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized, got %d", rec.Code)
+	}
+
+	// 3. Malformed JSON -> 400 Bad Request
+	token, _ := jwtutil.GenerateToken("cust-create-tkt", "user", "tenant-1", "cust@example.com")
+	req = httptest.NewRequest("POST", "/chat/support/ticket?token="+token, strings.NewReader(`{"context_id":`))
+	rec = httptest.NewRecorder()
+	c.HandleCreateTicket(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request for malformed JSON, got %d", rec.Code)
+	}
+}
