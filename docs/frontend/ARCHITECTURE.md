@@ -30,6 +30,6 @@ Flutter HTTP requests map directly onto the backend's microservices through the 
     *   `POST /auth/login` -> `LoginScreen` / `AuthProvider.login`
     *   `POST /auth/verify-otp` -> `OtpScreen` / `AuthProvider.verifyOtp`
 
-## Real-Time Subscriptions (Planned)
-*   *WebSocket Chat (Phase 5)*: Connection configurations pointing to `ws://localhost:8080/api/v1/chat/ws`.
-*   *SSE Notifications (Phase 6)*: Server-Sent Events subscribers listening to `GET /notifications/stream`.
+## Real-Time Subscriptions
+*   *WebSocket Chat*: Real-time channel messaging via `wss://` gateway proxy connection (`/chat/ws?token=<token>`). Integrated in `ChatProvider` / `ChatScreen`.
+*   *SSE Notifications*: Server-Sent Events alerts via `NotificationsProvider` using `flutter_client_sse` subscribing to `/notifications/stream?token=<token>`. Integrated in `NotificationsScreen`.
