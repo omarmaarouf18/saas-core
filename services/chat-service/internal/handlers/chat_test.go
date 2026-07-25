@@ -1155,3 +1155,228 @@ func TestReconnectionCachingBehavior(t *testing.T) {
 	}
 	mu.Unlock()
 }
+
+func TestHandleResolveTicket(t *testing.T) {
+	c, mongoStore, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+
+	// Seed agent 1 (assigned) and agent 2 (unassigned)
+	agent1 := &store.SupportAgent{ID: "agent-resolve-1", Status: "available", Token: "agent-resolve-token-1"}
+	agent2 := &store.SupportAgent{ID: "agent-resolve-2", Status: "available", Token: "agent-resolve-token-2"}
+	if err := mongoStore.AddSupportAgent(ctx, agent1); err != nil {
+		t.Fatalf("failed to add agent 1: %v", err)
+	}
+	if err := mongoStore.AddSupportAgent(ctx, agent2); err != nil {
+		t.Fatalf("failed to add agent 2: %v", err)
+	}
+
+	// Create a ticket assigned to agent 1
+	ticket, err := mongoStore.CreateTicketAndAssign(ctx, "customer-resolve-1", "context-123")
+	if err != nil {
+		t.Fatalf("failed to create ticket: %v", err)
+	}
+
+	tests := []struct {
+		name           string
+		method         string
+		token          string
+		headerToken    bool
+		body           string
+		expectedStatus int
+	}{
+		{
+			name:           "Method Not Allowed (GET)",
+			method:         "GET",
+			token:          "agent-resolve-token-1",
+			body:           fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID),
+			expectedStatus: http.StatusMethodNotAllowed,
+		},
+		{
+			name:           "Missing Token",
+			method:         "POST",
+			token:          "",
+			body:           fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID),
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "Invalid Agent Token",
+			method:         "POST",
+			token:          "invalid-token-xyz",
+			body:           fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID),
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:           "Invalid JSON Body",
+			method:         "POST",
+			token:          "agent-resolve-token-1",
+			body:           `{"ticket_id":`,
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "Ticket Not Found",
+			method:         "POST",
+			token:          "agent-resolve-token-1",
+			body:           `{"ticket_id":"non-existent-ticket-id"}`,
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:           "IDOR Mismatch - Agent 2 resolving Agent 1's ticket",
+			method:         "POST",
+			token:          "agent-resolve-token-2",
+			body:           fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID),
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:           "Success - Agent 1 resolving assigned ticket via query token",
+			method:         "POST",
+			token:          "agent-resolve-token-1",
+			body:           fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID),
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Success - Agent 1 resolving assigned ticket via Bearer header",
+			method:         "POST",
+			token:          "agent-resolve-token-1",
+			headerToken:    true,
+			body:           fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID),
+			expectedStatus: http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			url := "/chat/tickets/resolve"
+			if tt.token != "" && !tt.headerToken {
+				url += "?token=" + tt.token
+			}
+			var bodyReader *bytes.Reader
+			if tt.body != "" {
+				bodyReader = bytes.NewReader([]byte(tt.body))
+			} else {
+				bodyReader = bytes.NewReader([]byte{})
+			}
+
+			req := httptest.NewRequest(tt.method, url, bodyReader)
+			if tt.headerToken && tt.token != "" {
+				req.Header.Set("Authorization", "Bearer "+tt.token)
+			}
+			rec := httptest.NewRecorder()
+			c.HandleResolveTicket(rec, req)
+
+			if rec.Code != tt.expectedStatus {
+				t.Errorf("Expected status %d, got %d. Body: %s", tt.expectedStatus, rec.Code, rec.Body.String())
+			}
+		})
+	}
+}
+
+func TestRegisterRoutes(t *testing.T) {
+	c, _, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	mux := http.NewServeMux()
+	c.RegisterRoutes(mux)
+
+	routes := []struct {
+		method string
+		path   string
+	}{
+		{"GET", "/chat/ws"},
+		{"GET", "/chat/history"},
+		{"POST", "/chat/internal/broadcast-location"},
+		{"POST", "/chat/tickets"},
+		{"POST", "/chat/tickets/resolve"},
+	}
+
+	for _, r := range routes {
+		req := httptest.NewRequest(r.method, r.path, nil)
+		_, pattern := mux.Handler(req)
+		if pattern == "" {
+			t.Errorf("Expected pattern for %s %s, got empty", r.method, r.path)
+		}
+	}
+}
+
+func TestGetHistory_ExtraCoverage(t *testing.T) {
+	c, _, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	// 1. Non-GET method -> 405 MethodNotAllowed
+	req := httptest.NewRequest("POST", "/chat/history?channel=job:123", nil)
+	rec := httptest.NewRecorder()
+	c.GetHistory(rec, req)
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Expected 405 MethodNotAllowed, got %d", rec.Code)
+	}
+
+	// 2. Missing channel -> 400 Bad Request
+	req = httptest.NewRequest("GET", "/chat/history", nil)
+	rec = httptest.NewRecorder()
+	c.GetHistory(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d", rec.Code)
+	}
+
+	// 3. Missing token -> 400 Bad Request
+	req = httptest.NewRequest("GET", "/chat/history?channel=job:123", nil)
+	rec = httptest.NewRecorder()
+	c.GetHistory(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d", rec.Code)
+	}
+
+	// 4. Invalid JWT token -> 403 Forbidden
+	req = httptest.NewRequest("GET", "/chat/history?channel=job:123&token=invalid-jwt", nil)
+	rec = httptest.NewRecorder()
+	c.GetHistory(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden, got %d", rec.Code)
+	}
+
+	// 5. Auth service unavailable -> 503 ServiceUnavailable
+	badAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer badAuthServer.Close()
+	c.authServiceURL = badAuthServer.URL
+
+	token, _ := jwtutil.GenerateToken("user-unauth-svc", "user", "tenant-1", "user@example.com")
+	req = httptest.NewRequest("GET", "/chat/history?channel=job:valid-job-123&token="+token, nil)
+	rec = httptest.NewRecorder()
+	c.GetHistory(rec, req)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("Expected 503 ServiceUnavailable on auth service failure, got %d", rec.Code)
+	}
+}
+
+func TestVerifyToken_ExtraCoverage(t *testing.T) {
+	c, _, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	// 1. Empty ID -> returns false, "", nil
+	active, username, err := c.verifyToken("")
+	if err != nil || active || username != "" {
+		t.Errorf("Expected false, '', nil for empty ID, got active=%v, username=%q, err=%v", active, username, err)
+	}
+
+	// 2. Auth service unreachable -> returns false, "", error
+	c.authServiceURL = "http://127.0.0.1:59999" // unreachable port
+	active, username, err = c.verifyToken("user-unreachable-123")
+	if err == nil || active {
+		t.Errorf("Expected error and active=false for unreachable auth service, got active=%v, err=%v", active, err)
+	}
+}
