@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **New Features Cha
 
 ---
 
+## Owner Employee Listing Endpoint (GET /auth/employees)
+
+- **Implementation Detail**: Added GET /auth/employees endpoint letting tenant owners list all employees registered under their account. Authenticated via JWT (Authorization Bearer header or owner_token query parameter), IDOR-protected by resolving owner ID directly from claims, returns employee ID, username, email, is_active status (including frozen accounts), and created_at while omitting sensitive fields. Protected by Redis-backed rate limiting (30 req/min per owner).
+- **Commit SHA**: `PENDING_COMMIT_SHA`
+- **Verification**: Verified via auth-service unit tests (TestGetEmployees) and E2E curl testing against Docker stack. ✅
+
 ## COD Platform Fee Overdraft
 
 - **Implementation Detail**: Deducts 15% platform fee directly from Owner e-wallet upon job completion, allowing negative balances.

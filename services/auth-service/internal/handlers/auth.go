@@ -94,6 +94,7 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/employee/toggle", a.ToggleEmployee)
 	mux.HandleFunc("/auth/employee/action", a.SimulateEmployeeAction)
 	mux.HandleFunc("/auth/audit-log", a.GetAuditLog)
+	mux.HandleFunc("/auth/employees", a.GetEmployees)
 	mux.HandleFunc("/auth/user", a.GetUser)
 	mux.HandleFunc("/auth/user/public-profile", a.GetPublicProfile)
 	mux.HandleFunc("/auth/kyb/upload", a.UploadKYB)
@@ -1730,4 +1731,73 @@ func (a *Auth) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 		"id":       user.ID,
 		"username": user.Username,
 	})
+}
+
+// EmployeeResponse represents an employee item returned by GetEmployees.
+type EmployeeResponse struct {
+	ID        string    `json:"id"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	IsActive  bool      `json:"is_active"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// GetEmployees returns all employees registered under the caller's tenant owner account.
+//
+// GET /auth/employees
+func (a *Auth) GetEmployees(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
+		return
+	}
+
+	tokenStr := ""
+	authHeader := r.Header.Get("Authorization")
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		tokenStr = strings.TrimPrefix(authHeader, "Bearer ")
+	} else {
+		tokenStr = r.URL.Query().Get("owner_token")
+	}
+	if tokenStr == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "authorization token required"})
+		return
+	}
+
+	claims, err := jwtutil.ValidateToken(tokenStr)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		return
+	}
+
+	ctx := r.Context()
+	owner := a.store.GetByID(ctx, claims.UserID)
+	if owner == nil || owner.Role != models.RoleOwner {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: owner role required"})
+		return
+	}
+
+	if limited, remaining := a.limiter.CheckAndRecord(owner.ID); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests for this account. Please try again in %.0f seconds.", remaining.Seconds()),
+		})
+		return
+	}
+
+	employees := a.store.GetEmployeesByOwner(ctx, owner.ID)
+
+	res := make([]EmployeeResponse, 0, len(employees))
+	for _, emp := range employees {
+		if emp == nil {
+			continue
+		}
+		res = append(res, EmployeeResponse{
+			ID:        emp.ID,
+			Username:  emp.Username,
+			Email:     emp.Email,
+			IsActive:  emp.IsActive,
+			CreatedAt: emp.CreatedAt,
+		})
+	}
+
+	writeJSON(w, http.StatusOK, res)
 }

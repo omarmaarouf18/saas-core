@@ -2356,3 +2356,248 @@ func TestTokenNameAliasesInAuth(t *testing.T) {
 		t.Errorf("GetAuditLog with requester_token: expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestGetEmployees(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		t.Skip("setup failed")
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+
+	// 1. Create Owners A, B, C, D
+	ownerA := &models.User{
+		ID:          "owner_a_id",
+		Email:       "owner_a@example.com",
+		Username:    "owner_a",
+		Role:        models.RoleOwner,
+		TenantID:    "tenant_a",
+		IsConfirmed: true,
+		IsActive:    true,
+		CreatedAt:   time.Now(),
+	}
+	s.CreateUser(ctx, ownerA)
+
+	ownerB := &models.User{
+		ID:          "owner_b_id",
+		Email:       "owner_b@example.com",
+		Username:    "owner_b",
+		Role:        models.RoleOwner,
+		TenantID:    "tenant_b",
+		IsConfirmed: true,
+		IsActive:    true,
+		CreatedAt:   time.Now(),
+	}
+	s.CreateUser(ctx, ownerB)
+
+	ownerC := &models.User{
+		ID:          "owner_c_id",
+		Email:       "owner_c@example.com",
+		Username:    "owner_c",
+		Role:        models.RoleOwner,
+		TenantID:    "tenant_c",
+		IsConfirmed: true,
+		IsActive:    true,
+		CreatedAt:   time.Now(),
+	}
+	s.CreateUser(ctx, ownerC)
+
+	ownerD := &models.User{
+		ID:          "owner_d_id",
+		Email:       "owner_d@example.com",
+		Username:    "owner_d",
+		Role:        models.RoleOwner,
+		TenantID:    "tenant_d",
+		IsConfirmed: true,
+		IsActive:    true,
+		CreatedAt:   time.Now(),
+	}
+	s.CreateUser(ctx, ownerD)
+
+	// 2. Create Employees under Owner A (1 active, 1 frozen/inactive)
+	empA1 := &models.User{
+		ID:          "emp_a1_id",
+		Email:       "emp_a1@example.com",
+		Username:    "emp_a1",
+		Role:        models.RoleEmployee,
+		TenantID:    "tenant_a",
+		OwnerID:     "owner_a_id",
+		IsConfirmed: true,
+		IsActive:    true,
+		Password:    "$2a$10$secret_hash",
+		IDFrontDoc:  "documents/id_front.png",
+		OTPCode:     "123456",
+		CreatedAt:   time.Now(),
+	}
+	s.CreateUser(ctx, empA1)
+
+	empA2 := &models.User{
+		ID:          "emp_a2_id",
+		Email:       "emp_a2@example.com",
+		Username:    "emp_a2",
+		Role:        models.RoleEmployee,
+		TenantID:    "tenant_a",
+		OwnerID:     "owner_a_id",
+		IsConfirmed: true,
+		IsActive:    false, // Frozen/inactive
+		Password:    "$2a$10$secret_hash",
+		IDFrontDoc:  "documents/id_front_2.png",
+		OTPCode:     "654321",
+		CreatedAt:   time.Now(),
+	}
+	s.CreateUser(ctx, empA2)
+
+	// 3. Create Employee under Owner B
+	empB1 := &models.User{
+		ID:          "emp_b1_id",
+		Email:       "emp_b1@example.com",
+		Username:    "emp_b1",
+		Role:        models.RoleEmployee,
+		TenantID:    "tenant_b",
+		OwnerID:     "owner_b_id",
+		IsConfirmed: true,
+		IsActive:    true,
+		CreatedAt:   time.Now(),
+	}
+	s.CreateUser(ctx, empB1)
+
+	// Generate JWT tokens
+	tokenOwnerA, _ := jwtutil.GenerateToken("owner_a_id", string(models.RoleOwner), "tenant_a", "owner_a@example.com")
+	tokenOwnerB, _ := jwtutil.GenerateToken("owner_b_id", string(models.RoleOwner), "tenant_b", "owner_b@example.com")
+	tokenOwnerC, _ := jwtutil.GenerateToken("owner_c_id", string(models.RoleOwner), "tenant_c", "owner_c@example.com")
+	tokenOwnerD, _ := jwtutil.GenerateToken("owner_d_id", string(models.RoleOwner), "tenant_d", "owner_d@example.com")
+	tokenEmpA1, _ := jwtutil.GenerateToken("emp_a1_id", string(models.RoleEmployee), "tenant_a", "emp_a1@example.com")
+
+	// Test Case 1 & 5: Owner A lists employees (active + frozen, correct fields, no sensitive leaks)
+	t.Run("OwnerA_ListsEmployees_IncludesActiveAndFrozen_NoSensitiveFields", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/auth/employees", nil)
+		req.Header.Set("Authorization", "Bearer "+tokenOwnerA)
+		rec := httptest.NewRecorder()
+
+		a.GetEmployees(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK for Owner A, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		var rawItems []map[string]interface{}
+		if err := json.Unmarshal(rec.Body.Bytes(), &rawItems); err != nil {
+			t.Fatalf("Failed to parse JSON response: %v", err)
+		}
+
+		if len(rawItems) != 2 {
+			t.Fatalf("Expected 2 employees for Owner A, got %d", len(rawItems))
+		}
+
+		foundActive := false
+		foundFrozen := false
+		for _, item := range rawItems {
+			if _, ok := item["password"]; ok {
+				t.Errorf("Security leak: password field present in response")
+			}
+			if _, ok := item["otp_code"]; ok {
+				t.Errorf("Security leak: otp_code field present in response")
+			}
+			if _, ok := item["id_front_doc"]; ok {
+				t.Errorf("Security leak: id_front_doc field present in response")
+			}
+
+			if item["id"] == "emp_a1_id" {
+				foundActive = true
+				if item["is_active"] != true {
+					t.Errorf("Expected emp_a1_id to have is_active=true")
+				}
+			}
+			if item["id"] == "emp_a2_id" {
+				foundFrozen = true
+				if item["is_active"] != false {
+					t.Errorf("Expected emp_a2_id to have is_active=false")
+				}
+			}
+		}
+
+		if !foundActive || !foundFrozen {
+			t.Errorf("Did not find both active and frozen employees in Owner A list")
+		}
+	})
+
+	// Test Case 2: Non-owner role rejected with 403
+	t.Run("NonOwner_Employee_Rejected403", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/auth/employees", nil)
+		req.Header.Set("Authorization", "Bearer "+tokenEmpA1)
+		rec := httptest.NewRecorder()
+
+		a.GetEmployees(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Fatalf("Expected 403 Forbidden for employee role, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+	})
+
+	// Test Case 3: Tenant isolation (Owner A cannot see Owner B's employees, and vice versa)
+	t.Run("TenantIsolation_OwnerA_DoesNotSeeOwnerB", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/auth/employees", nil)
+		req.Header.Set("Authorization", "Bearer "+tokenOwnerB)
+		rec := httptest.NewRecorder()
+
+		a.GetEmployees(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK for Owner B, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		var rawItems []map[string]interface{}
+		if err := json.Unmarshal(rec.Body.Bytes(), &rawItems); err != nil {
+			t.Fatalf("Failed to parse JSON response: %v", err)
+		}
+
+		if len(rawItems) != 1 {
+			t.Fatalf("Expected 1 employee for Owner B, got %d", len(rawItems))
+		}
+		if rawItems[0]["id"] != "emp_b1_id" {
+			t.Errorf("Expected Owner B to only see emp_b1_id, got %v", rawItems[0]["id"])
+		}
+	})
+
+	// Test Case 4: Owner with zero employees gets [] (empty array)
+	t.Run("EmptyList_ReturnsEmptyArrayNotNil", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/auth/employees", nil)
+		req.Header.Set("Authorization", "Bearer "+tokenOwnerC)
+		rec := httptest.NewRecorder()
+
+		a.GetEmployees(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK for Owner C, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		bodyStr := strings.TrimSpace(rec.Body.String())
+		if bodyStr != "[]" {
+			t.Fatalf("Expected exact JSON array '[]' for zero employees, got '%s'", bodyStr)
+		}
+	})
+
+	// Test Case 6: Rate limiting (31st request from same owner returns 429)
+	t.Run("RateLimiting_31stRequestReturns429", func(t *testing.T) {
+		for i := 1; i <= 30; i++ {
+			req := httptest.NewRequest("GET", "/auth/employees", nil)
+			req.Header.Set("Authorization", "Bearer "+tokenOwnerD)
+			rec := httptest.NewRecorder()
+			a.GetEmployees(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("Request %d for Owner D expected 200 OK, got %d. Body: %s", i, rec.Code, rec.Body.String())
+			}
+		}
+
+		// 31st request
+		req := httptest.NewRequest("GET", "/auth/employees", nil)
+		req.Header.Set("Authorization", "Bearer "+tokenOwnerD)
+		rec := httptest.NewRecorder()
+		a.GetEmployees(rec, req)
+
+		if rec.Code != http.StatusTooManyRequests {
+			t.Fatalf("Expected 31st request to return 429 Too Many Requests, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "too many requests") {
+			t.Errorf("Expected 429 response body to contain 'too many requests', got: %s", rec.Body.String())
+		}
+	})
+}

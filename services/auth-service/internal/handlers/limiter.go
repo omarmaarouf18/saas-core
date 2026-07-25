@@ -9,15 +9,30 @@ import (
 )
 
 type RateLimiter struct {
-	ipLimiter    *ratelimit.AuthRateLimiter
-	emailLimiter *ratelimit.AuthRateLimiter
+	ipLimiter      *ratelimit.AuthRateLimiter
+	emailLimiter   *ratelimit.AuthRateLimiter
+	generalLimiter *ratelimit.RateLimiter
 }
 
 func NewRateLimiter(client *redis.Client) *RateLimiter {
-	return &RateLimiter{
-		ipLimiter:    ratelimit.NewAuthRateLimiter(client, "auth:ip"),
-		emailLimiter: ratelimit.NewAuthRateLimiter(client, "auth:email"),
+	var gen *ratelimit.RateLimiter
+	if client != nil {
+		gen = ratelimit.NewRateLimiter(client, 30, 1*time.Minute, "auth:employees")
 	}
+	return &RateLimiter{
+		ipLimiter:      ratelimit.NewAuthRateLimiter(client, "auth:ip"),
+		emailLimiter:   ratelimit.NewAuthRateLimiter(client, "auth:email"),
+		generalLimiter: gen,
+	}
+}
+
+// CheckAndRecord checks and records a hit against the sliding window rate limiter for general endpoint keys.
+// Returns true and remaining lockout duration if limited.
+func (rl *RateLimiter) CheckAndRecord(key string) (bool, time.Duration) {
+	if key == "" || rl == nil || rl.generalLimiter == nil {
+		return false, 0
+	}
+	return rl.generalLimiter.CheckAndRecord(key)
 }
 
 func (rl *RateLimiter) getLimiter(key string) *ratelimit.AuthRateLimiter {
