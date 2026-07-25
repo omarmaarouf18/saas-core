@@ -409,7 +409,7 @@ This file tracks historical entries for the primary category: **Security Fixes C
 ## Upgrade golang.org/x/crypto to v0.53.0 for Go 1.24 CI Compatibility and CVE Mitigation
 
 - **Implementation Detail**: Upgraded `golang.org/x/crypto` from `v0.33.0` to `v0.53.0` across `auth-service`, `chat-service`, and `user-service`. Version `v0.53.0` is the highest release compatible with the Go 1.24 CI toolchain (since `v0.54.0` requires Go 1.25+) and resolves all known CVEs in `golang.org/x/crypto` (CVE-2025-22869, CVE-2025-47914, CVE-2025-58181).
-- **Commit SHA**: ``d68487a38d0c2dcb6cc860226ca4c6eaac76bebc``
+- **Commit SHA**: ``60b23555eb268f51112fc13a9811386605d62626``
 - **Verification**: Verified via `gofmt`, `go build ./...`, `go vet ./...`, `go test ./...`, and `govulncheck ./...` across all services. ✅
 
 
