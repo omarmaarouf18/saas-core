@@ -160,5 +160,11 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``2fb500873908fed2e813317c42947fe048d4e4a7``
 - **Verification**: Verified via `go test ./... -v -race` in services/chat-service. All tests pass and handlers statement coverage increased from 66.5% to 76.5%. ✅
 
+## shared/infra Test Coverage Expansion
+
+- **Implementation Detail**: Expanded test coverage in shared/infra modules to cover HTTP response utilities (`WriteJSON`, `WriteBytes`), IP resolution (`GetIP`, `GetClientIP`), rate limiter delegation (`handlerutil.RateLimiter`), resilience circuit breaker metrics (`GetBreakerStats`), resilience round tripper (`ResilienceRoundTripper`), docgen markdown table formatting (`GenerateMarkdownTable`), and secure token generation (`GenerateSecureToken`).
+- **Commit SHA**: ``887b2315f11ca1fdcc04c31fe0bd7a57d0372539``
+- **Verification**: Verified via `go test ./... -v -race` in shared/infra. All tests pass and overall module statement coverage increased from 64.2% to 74.1% (with handlerutil from 29.6% to 71.7% and resilience from 47.3% to 88.2%). ✅
+
 
 
