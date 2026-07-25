@@ -148,5 +148,11 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``31b33da2b4c685694a060fb10915d8b6ac2bb38f``
 - **Verification**: Verified by testing push blockage against fabricated commit SHAs and validating hook execution in subsequent pushes. ✅
 
+## Go Version Standardization & Automated Drift Guard
+
+- **Implementation Detail**: Standardized Go version across all sources of truth (`go.work`, 7 `go.mod` files, `.github/workflows/ci.yml`, and 5 `Dockerfile`s) to Go 1.26 (latest stable patch release 1.26.5). Added an automated Go version drift guard step to `.githooks/pre-push` and `.github/workflows/ci.yml` to enforce strict version consistency across all files.
+- **Commit SHA**: ``06fd1690290a7a89297c0a5f439009a09080d42f``
+- **Verification**: Verified via manual drift-guard check execution, simulated 1-character version mismatch test failure, and clean compilation/test execution across all microservices and shared/infra modules. ✅
+
 
 
