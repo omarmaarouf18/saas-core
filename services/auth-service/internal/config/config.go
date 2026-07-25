@@ -99,8 +99,8 @@ func Load() (*Config, error) {
 
 	resendAPIKey := os.Getenv("RESEND_API_KEY")
 	resendFromEmail := os.Getenv("RESEND_FROM_EMAIL")
-	if resendFromEmail == "" {
-		resendFromEmail = "onboarding@resend.dev"
+	if resendAPIKey != "" && resendFromEmail == "" {
+		return nil, errors.New("config: RESEND_FROM_EMAIL is required when RESEND_API_KEY is set")
 	}
 
 	return &Config{
