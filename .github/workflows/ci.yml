@@ -45,6 +45,39 @@ jobs:
             exit 1
           fi
 
+      - name: Verify Go Version Consistency (Drift Guard)
+        run: |
+          CANONICAL_GO_VERSION="1.26"
+          DRIFT_FAILED=0
+          for f in go.work services/*/go.mod shared/infra/go.mod tools/docgen/go.mod; do
+            if [ -f "$f" ]; then
+              v=$(grep -E '^go [0-9]+\.[0-9]+' "$f" | head -n 1 | awk '{print $2}')
+              if [ "$v" != "$CANONICAL_GO_VERSION" ]; then
+                echo "BLOCKED: Go version drift in $f: expected $CANONICAL_GO_VERSION, found '${v:-NONE}'"
+                DRIFT_FAILED=1
+              fi
+            fi
+          done
+          for v in $(grep -oE "go-version: '[0-9]+\.[0-9]+'" .github/workflows/ci.yml | grep -oE "[0-9]+\.[0-9]+"); do
+            if [ "$v" != "$CANONICAL_GO_VERSION" ]; then
+              echo "BLOCKED: Go version drift in .github/workflows/ci.yml: expected $CANONICAL_GO_VERSION, found '$v'"
+              DRIFT_FAILED=1
+            fi
+          done
+          for d in services/*/Dockerfile; do
+            if [ -f "$d" ]; then
+              for v in $(grep -oE "FROM golang:[0-9]+\.[0-9]+" "$d" | grep -oE "[0-9]+\.[0-9]+"); do
+                if [ "$v" != "$CANONICAL_GO_VERSION" ]; then
+                  echo "BLOCKED: Go version drift in $d: expected $CANONICAL_GO_VERSION, found '$v'"
+                  DRIFT_FAILED=1
+                fi
+              done
+            fi
+          done
+          if [ "$DRIFT_FAILED" -eq 1 ]; then
+            exit 1
+          fi
+
   build-test:
     name: Build & Test
     runs-on: ubuntu-latest
