@@ -114,6 +114,8 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	})
 	mux.HandleFunc("/users/jobs/track", u.TrackJob)
 	mux.HandleFunc("/users/jobs/get", u.GetJob)
+	mux.HandleFunc("/users/jobs/owner", u.GetOwnerJobs)
+	mux.HandleFunc("/users/jobs/mine", u.GetCustomerJobs)
 	mux.HandleFunc("/users/jobs/complete", u.CompleteJob)
 	mux.HandleFunc("/users/jobs/cancel", u.CancelJob)
 	mux.HandleFunc("/users/wallet", u.GetWallet)
@@ -699,6 +701,162 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 }
 
 // ---------------------------------------------------------------------------
+// GET /users/jobs/owner
+// ---------------------------------------------------------------------------
+
+func (u *UserService) GetOwnerJobs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") {
+		requesterToken = strings.TrimPrefix(requesterToken, "Bearer ")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("owner_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_id")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("owner_id")
+	}
+	if requesterToken == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "owner token required"})
+		return
+	}
+
+	claims, err := resolveClaims(requesterToken)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+	resolvedOwnerID := claims.UserID
+
+	// Enforce IDOR matching if client explicitly provided an owner_id / owner_token parameter
+	clientOwnerID := r.URL.Query().Get("owner_token")
+	if clientOwnerID == "" {
+		clientOwnerID = r.URL.Query().Get("owner_id")
+	}
+	if clientOwnerID != "" && clientOwnerID != resolvedOwnerID {
+		// #nosec G706 //nolint:gosec -- IDs are sanitized from claims/query, log injection not possible
+		log.Printf("[IDOR DETECTED] Requester %s tried to query owner jobs for %s", resolvedOwnerID, strings.ReplaceAll(strings.ReplaceAll(clientOwnerID, "\n", " "), "\r", " "))
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to view jobs for this owner"})
+		return
+	}
+
+	// Verify owner role
+	if claims.Role != "" && claims.Role != "owner" {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: owner role required"})
+		return
+	}
+
+	// Identity-based rate limiting (30 req/min)
+	rateKey := "jobs_owner:" + resolvedOwnerID
+	if limited, remaining := u.limiter.CheckAndRecord(rateKey); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
+	jobs, err := u.store.GetJobsByOwner(r.Context(), resolvedOwnerID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	resps := make([]models.OwnerJobResponse, 0, len(jobs))
+	for _, j := range jobs {
+		resps = append(resps, models.NewOwnerJobResponse(j))
+	}
+	writeJSON(w, http.StatusOK, resps)
+}
+
+// ---------------------------------------------------------------------------
+// GET /users/jobs/mine
+// ---------------------------------------------------------------------------
+
+func (u *UserService) GetCustomerJobs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") {
+		requesterToken = strings.TrimPrefix(requesterToken, "Bearer ")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("customer_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("user_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_id")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("user_id")
+	}
+	if requesterToken == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "user token required"})
+		return
+	}
+
+	claims, err := resolveClaims(requesterToken)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+	resolvedCustomerID := claims.UserID
+
+	// Enforce IDOR matching if client explicitly provided a user_id / customer_token parameter
+	clientUserID := r.URL.Query().Get("customer_token")
+	if clientUserID == "" {
+		clientUserID = r.URL.Query().Get("user_token")
+	}
+	if clientUserID == "" {
+		clientUserID = r.URL.Query().Get("user_id")
+	}
+	if clientUserID != "" && clientUserID != resolvedCustomerID {
+		// #nosec G706 //nolint:gosec -- IDs are sanitized from claims/query, log injection not possible
+		log.Printf("[IDOR DETECTED] Requester %s tried to query customer jobs for %s", resolvedCustomerID, strings.ReplaceAll(strings.ReplaceAll(clientUserID, "\n", " "), "\r", " "))
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to view jobs for this user"})
+		return
+	}
+
+	// Identity-based rate limiting (30 req/min)
+	rateKey := "jobs_customer:" + resolvedCustomerID
+	if limited, remaining := u.limiter.CheckAndRecord(rateKey); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
+	jobs, err := u.store.GetJobsByCustomer(r.Context(), resolvedCustomerID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	resps := make([]models.CustomerJobResponse, 0, len(jobs))
+	for _, j := range jobs {
+		resps = append(resps, models.NewCustomerJobResponse(j))
+	}
+	writeJSON(w, http.StatusOK, resps)
+}
+
+// ---------------------------------------------------------------------------
 // GET /users/wallet?tenant_id=xxx
 // ---------------------------------------------------------------------------
 
@@ -875,10 +1033,18 @@ func (u *UserService) GetPlatformConfig(w http.ResponseWriter, r *http.Request) 
 // Helpers
 // ---------------------------------------------------------------------------
 
-func resolveToken(tokenStr string) (string, error) {
+func resolveClaims(tokenStr string) (*jwtutil.Claims, error) {
 	claims, err := jwtutil.ValidateToken(tokenStr)
 	if err != nil {
-		return "", fmt.Errorf("invalid or missing token: %w", err)
+		return nil, fmt.Errorf("invalid or missing token: %w", err)
+	}
+	return claims, nil
+}
+
+func resolveToken(tokenStr string) (string, error) {
+	claims, err := resolveClaims(tokenStr)
+	if err != nil {
+		return "", err
 	}
 	return claims.UserID, nil
 }
