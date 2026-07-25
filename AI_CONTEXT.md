@@ -73,6 +73,10 @@ To ensure that code which passes local checks is guaranteed to pass CI (and vice
 > **Strict Parity Principle**:
 > If a check is ever added to `ci.yml`, it must be added to `.githooks/pre-push` in the same commit, and vice versa. Divergence between these two was a root cause of confusing CI failures earlier in this project's history.
 
+> [!NOTE]
+> **Pre-Push Hook Activation & Fresh Clone Enforcement**:
+> Local git hooks (`.githooks/pre-push`) are NOT automatically activated on fresh clones because `core.hooksPath` is a local git configuration. To prevent commits or pushes that bypass local validation on fresh clones or new agent sessions, all primary `Makefile` targets (`setup`, `docs`, `docs-check`, `ci`) execute an automated `ensure-hooks` prerequisite step that checks `git config --get core.hooksPath` and automatically runs `git config core.hooksPath .githooks` before proceeding.
+
 ---
 
 ## Architecture Table
