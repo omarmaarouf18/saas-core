@@ -75,7 +75,7 @@ To ensure that code which passes local checks is guaranteed to pass CI (and vice
 
 > [!NOTE]
 > **Pre-Push Hook Activation & Fresh Clone Enforcement**:
-> Local git hooks (`.githooks/pre-push`) are NOT automatically activated on fresh clones because `core.hooksPath` is a local git configuration. To prevent commits or pushes that bypass local validation on fresh clones or new agent sessions, all primary `Makefile` targets (`setup`, `docs`, `docs-check`, `ci`) execute an automated `ensure-hooks` prerequisite step that checks `git config --get core.hooksPath` and automatically runs `git config core.hooksPath .githooks` before proceeding.
+> Local git hooks (`.githooks/pre-push`) are NOT automatically activated on fresh clones because `core.hooksPath` is a local git configuration. To prevent commits or pushes that bypass local validation on fresh clones or new agent sessions, all primary `Makefile` targets (`setup`, `docs`, `docs-check`, `ci`, `commit`, `push`) execute an automated `ensure-hooks` prerequisite step that checks `git config --get core.hooksPath` and automatically runs `git config core.hooksPath .githooks` before proceeding. Furthermore, the `CLAUDE.md` auto-commit policy requires `git config core.hooksPath .githooks` as the literal first command before `git add` in every commit sequence.
 
 ---
 

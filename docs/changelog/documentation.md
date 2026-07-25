@@ -46,6 +46,12 @@ This file tracks historical entries for the primary category: **Documentation Ch
 - **Commit SHA**: ``3dae5df21adc6bd1ea9e2644990248c17d1aea5b``
 - **Verification**: Verified that docgen tests and changelog SHA validation tests pass cleanly. ✅
 
+## Pre-Push Hook Activation & Auto-Commit Policy Hardening
+
+- **Implementation Detail**: Corrected invalid commit SHA in `bug-fixes.md` for Resend configuration validation to reference the actual commit (`7cd13c04e407ae527d8a641193d0cb37fc2db777`). Added `commit` and `push` Makefile targets with `ensure-hooks` as an explicit prerequisite. Updated `CLAUDE.md` auto-commit policy requiring `git config core.hooksPath .githooks` as an unconditional, idempotent first command before any `git add` to prevent unhooked commits on fresh clones.
+- **Commit SHA**: ``51cf0a36ccadb1cb00903009c9bba8a6ae90304b``
+- **Verification**: Verified via `make docs-check`, `TestChangelogCommitSHAs`, and a fresh clone test demonstrating automatic hook activation on push. ✅
+
 
 
 
