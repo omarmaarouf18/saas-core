@@ -154,5 +154,11 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``06fd1690290a7a89297c0a5f439009a09080d42f``
 - **Verification**: Verified via manual drift-guard check execution, simulated 1-character version mismatch test failure, and clean compilation/test execution across all microservices and shared/infra modules. ✅
 
+## chat-service Test Coverage Expansion
+
+- **Implementation Detail**: Expanded test coverage in services/chat-service handlers to cover ticket resolution (`HandleResolveTicket`, IDOR authorization gating, agent assignment checks), HTTP route registration (`RegisterRoutes`), and error paths in history retrieval and token verification.
+- **Commit SHA**: ``2fb500873908fed2e813317c42947fe048d4e4a7``
+- **Verification**: Verified via `go test ./... -v -race` in services/chat-service. All tests pass and handlers statement coverage increased from 66.5% to 76.5%. ✅
+
 
 
