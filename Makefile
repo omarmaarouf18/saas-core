@@ -22,4 +22,14 @@ commit: ensure-hooks
 	git add -A && git commit -m "$(MSG)"
 
 push: ensure-hooks
-	git push origin logic-exploitation
+	@BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
+	LOCAL=$$(git rev-parse HEAD); \
+	git push origin $$BRANCH; \
+	REMOTE=$$(git ls-remote origin $$BRANCH | awk '{print $$1}'); \
+	if [ "$$LOCAL" = "$$REMOTE" ]; then \
+		echo "PUSH_VERIFIED: $$LOCAL"; \
+	else \
+		echo "PUSH_MISMATCH: local=$$LOCAL remote=$$REMOTE"; \
+		exit 1; \
+	fi
+

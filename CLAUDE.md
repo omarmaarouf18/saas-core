@@ -28,7 +28,11 @@ git config core.hooksPath .githooks
 ```
 as the literal first command in the sequence, unconditionally and idempotently. This line must NEVER be skipped or assumed to be already done, even mid-session, and even if it was run earlier in the same session. (Alternatively, use `make commit MSG="..."` and `make push` which execute `ensure-hooks` as an unavoidable prerequisite).
 
-Do not batch multiple unrelated changes into one commit, and do not wait until a whole task is finished if it has multiple independent sub-changes. Once verified, run `git config core.hooksPath .githooks`, `git add`, `git commit` with a specific message, and push to origin/logic-exploitation.
+Do not batch multiple unrelated changes into one commit, and do not wait until a whole task is finished if it has multiple independent sub-changes. Once verified, run `git config core.hooksPath .githooks`, `git add`, `git commit` with a specific message, and push to origin/logic-exploitation via `make push`.
 
-docs/APPLICATION_MAP.md must be updated in the same commit whenever a change adds, removes, renames, or changes the auth/permission requirements of an HTTP endpoint, or changes an inter-service call path. The "as of Git commit" note at the top must be refreshed to the new commit's short SHA in that same commit.
+### Reporting Push Verification
+- The agent MUST run `make push` (not raw `git push`) for the final push of any task.
+- The agent's final report MUST include the literal, unedited output of `make push` (the `PUSH_VERIFIED: <hash>` line) pasted as-is.
+- The agent must NOT write a sentence re-stating, re-typing, or "confirming" the hash separately anywhere else in its response (e.g. no "Local HEAD Hash: X / Remote Hash: X, both match" section). The `PUSH_VERIFIED` line from the script IS the mechanical confirmation — retyping it in prose is prohibited to prevent manual transcription drift. If `make push` prints `PUSH_VERIFIED`, the agent may state "push verified" in prose without retyping the hash itself; if it needs to reference the hash for a changelog entry, it must copy it from that same pasted output block.
+
 
