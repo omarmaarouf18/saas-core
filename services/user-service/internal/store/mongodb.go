@@ -85,6 +85,16 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 		return fmt.Errorf("jobs owner_id index: %w", err)
 	}
 	if _, err := s.jobs.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "user_id", Value: 1}},
+	}); err != nil {
+		return fmt.Errorf("jobs user_id index: %w", err)
+	}
+	if _, err := s.jobs.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "employee_id", Value: 1}},
+	}); err != nil {
+		return fmt.Errorf("jobs employee_id index: %w", err)
+	}
+	if _, err := s.jobs.Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.D{{Key: "service_id", Value: 1}},
 	}); err != nil {
 		return fmt.Errorf("jobs service_id index: %w", err)
@@ -252,6 +262,40 @@ func (s *MongoDB) GetJobsByEmployee(ctx context.Context, employeeID string) ([]*
 	defer cursor.Close(ctx)
 	if err := cursor.All(ctx, &jobs); err != nil {
 		return nil, fmt.Errorf("store: decode jobs by employee: %w", err)
+	}
+	if jobs == nil {
+		jobs = make([]*models.Job, 0)
+	}
+	return jobs, nil
+}
+
+func (s *MongoDB) GetJobsByOwner(ctx context.Context, ownerID string) ([]*models.Job, error) {
+	var jobs []*models.Job
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).SetLimit(100)
+	cursor, err := s.jobs.Find(ctx, bson.M{"owner_id": ownerID}, opts)
+	if err != nil {
+		return nil, fmt.Errorf("store: get jobs by owner: %w", err)
+	}
+	defer cursor.Close(ctx)
+	if err := cursor.All(ctx, &jobs); err != nil {
+		return nil, fmt.Errorf("store: decode jobs by owner: %w", err)
+	}
+	if jobs == nil {
+		jobs = make([]*models.Job, 0)
+	}
+	return jobs, nil
+}
+
+func (s *MongoDB) GetJobsByCustomer(ctx context.Context, customerID string) ([]*models.Job, error) {
+	var jobs []*models.Job
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).SetLimit(100)
+	cursor, err := s.jobs.Find(ctx, bson.M{"user_id": customerID}, opts)
+	if err != nil {
+		return nil, fmt.Errorf("store: get jobs by customer: %w", err)
+	}
+	defer cursor.Close(ctx)
+	if err := cursor.All(ctx, &jobs); err != nil {
+		return nil, fmt.Errorf("store: decode jobs by customer: %w", err)
 	}
 	if jobs == nil {
 		jobs = make([]*models.Job, 0)
