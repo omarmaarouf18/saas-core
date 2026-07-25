@@ -1,4 +1,4 @@
-.PHONY: docs docs-check setup ci ensure-hooks commit push
+.PHONY: docs docs-check setup ci ensure-hooks commit push since-last-report
 
 ensure-hooks:
 	@if [ "$$(git config --get core.hooksPath 2>/dev/null)" != ".githooks" ]; then \
@@ -32,4 +32,12 @@ push: ensure-hooks
 		echo "PUSH_MISMATCH: local=$$LOCAL remote=$$REMOTE"; \
 		exit 1; \
 	fi
+
+since-last-report:
+	@if [ -z "$(SINCE)" ]; then \
+		echo "Usage: make since-last-report SINCE=<commit-sha>"; \
+		exit 1; \
+	fi; \
+	git log --oneline $(SINCE)..HEAD --stat
+
 

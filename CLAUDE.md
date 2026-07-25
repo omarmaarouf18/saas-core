@@ -35,4 +35,8 @@ Do not batch multiple unrelated changes into one commit, and do not wait until a
 - The agent's final report MUST include the literal, unedited output of `make push` (the `PUSH_VERIFIED: <hash>` line) pasted as-is.
 - The agent must NOT write a sentence re-stating, re-typing, or "confirming" the hash separately anywhere else in its response (e.g. no "Local HEAD Hash: X / Remote Hash: X, both match" section). The `PUSH_VERIFIED` line from the script IS the mechanical confirmation — retyping it in prose is prohibited to prevent manual transcription drift. If `make push` prints `PUSH_VERIFIED`, the agent may state "push verified" in prose without retyping the hash itself; if it needs to reference the hash for a changelog entry, it must copy it from that same pasted output block.
 
+### Proactive Commit Disclosure Rule
+At the start of EVERY response to the user (not just when asked), if any commits exist that were not already reported in a previous response, the agent MUST proactively list them before doing anything else — run `git log --oneline <last-reported-SHA>..HEAD` (or `make since-last-report SINCE=<last-reported-SHA>`) and paste the full list, even if the user's current message is about something unrelated. The agent must track (e.g., in a comment or scratch note) which SHA was last reported to the user, so this check is always relative to the true last-disclosed state, not just 'since I last checked.' Silence about intervening commits is not acceptable, even if the work was correct and tests passed — the user must always have visibility into everything that changed, not just what they asked about.
+
+
 
