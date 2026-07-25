@@ -98,3 +98,10 @@ func TestShipSecurityEvent_AgnosticFailureModes(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 	})
 }
+
+func TestGetClientIP(t *testing.T) {
+	// 1. Nil request -> returns ""
+	if ip := GetClientIP(nil); ip != "" {
+		t.Errorf("Expected empty string for nil request, got %q", ip)
+	}
+}

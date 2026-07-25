@@ -135,3 +135,32 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {}
 		t.Errorf("ast parser failed to detect the newly added throwaway route '/auth/throwaway_test_route'!")
 	}
 }
+
+func TestGenerateMarkdownTable(t *testing.T) {
+	endpoints := []Endpoint{
+		{
+			Method:      "POST",
+			Path:        "/auth/login",
+			Service:     "auth-service",
+			Permissions: "Public",
+			Function:    "Logs in user",
+			Targets:     "Users DB",
+		},
+		{
+			Method:      "GET",
+			Path:        "/users/profile",
+			Service:     "user-service",
+			Permissions: "User JWT",
+			Function:    "Get profile",
+			Targets:     "Users DB",
+		},
+	}
+
+	tbl := GenerateMarkdownTable(endpoints)
+	if !strings.Contains(tbl, "| **`POST /auth/login`** | `auth-service` | Public | Logs in user | Users DB |") {
+		t.Errorf("GenerateMarkdownTable missing expected row for POST /auth/login. Got:\n%s", tbl)
+	}
+	if !strings.Contains(tbl, "| **`GET /users/profile`** | `user-service` | User JWT | Get profile | Users DB |") {
+		t.Errorf("GenerateMarkdownTable missing expected row for GET /users/profile. Got:\n%s", tbl)
+	}
+}

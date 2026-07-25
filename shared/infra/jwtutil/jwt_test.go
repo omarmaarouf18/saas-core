@@ -299,3 +299,13 @@ func TestJWT_ExtraCoverage(t *testing.T) {
 		}
 	})
 }
+
+func TestGenerateSecureToken(t *testing.T) {
+	tok, err := GenerateSecureToken()
+	if err != nil {
+		t.Fatalf("GenerateSecureToken failed: %v", err)
+	}
+	if len(tok) != 64 {
+		t.Errorf("Expected hex string of length 64 (32 bytes), got length %d", len(tok))
+	}
+}

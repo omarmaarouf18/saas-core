@@ -313,3 +313,46 @@ func TestResilienceClient_ExtraCoverage(t *testing.T) {
 		}
 	})
 }
+
+func TestGetBreakerStats(t *testing.T) {
+	cbSettings := gobreaker.Settings{
+		Name: "test-breaker-stats-service",
+	}
+	cb := gobreaker.NewCircuitBreaker[*http.Response](cbSettings)
+	RegisterBreaker("test-breaker-stats-service", cb)
+
+	stats := GetBreakerStats()
+	found := false
+	for _, s := range stats {
+		if s.Name == "test-breaker-stats-service" {
+			found = true
+			if s.State != "closed" {
+				t.Errorf("Expected state 'closed', got %q", s.State)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("GetBreakerStats did not return registered breaker 'test-breaker-stats-service'")
+	}
+}
+
+func TestResilienceRoundTripper(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer ts.Close()
+
+	rt := NewRoundTripper(http.DefaultTransport, "test-rt-service", 2, 5*time.Second)
+	req, _ := http.NewRequest("GET", ts.URL, nil)
+
+	resp, err := rt.RoundTrip(req)
+	if err != nil {
+		t.Fatalf("RoundTrip failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d", resp.StatusCode)
+	}
+}
