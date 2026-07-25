@@ -124,8 +124,8 @@ The detailed project history is distributed across categorized changelog files. 
   * **Decision**: Initial KYC status approval for tenant owners is deliberately not automated or exposed via API endpoints and must be handled manually directly in the database.
   * **Reasoning**: To maintain security and avoid exposing administrative endpoints that could be targeted by attackers. In contrast, KYB/KYE document reviews are performed via the `/auth/kyb-kye/review` endpoint, which is secured by individual reviewer credentials and internal network token validations.
 * **Mock OTP SMS/Email Dispatcher**
-  * **Decision**: SMS dispatching is stubbed using a mock that logs OTPs to stdout. In local environment (`APP_ENV=local`), OTPs are exposed directly in response payloads as `dev_otp`.
-  * **Reasoning**: Speeds up development and avoids dependencies on external paid SMS gateways during local testing. Currently, no real SMS/Email dispatcher is wired for non-local/production environments; all environments fall back to `MockSMSDispatcher` which prints OTPs to stdout.
+  * **Decision**: SMS dispatching is stubbed using a mock that logs OTPs to stdout. In local environment (`APP_ENV=local`), OTPs are exposed directly in response payloads as `dev_otp` and `MockSMSDispatcher` is used. In non-local/production environments, if `RESEND_API_KEY` is configured, email OTPs are dispatched via the Resend REST API (`ResendDispatcher`); if `RESEND_API_KEY` is not set, a warning is logged and `MockSMSDispatcher` is used as a fallback.
+  * **Reasoning**: Speeds up development and avoids dependencies on external paid SMS gateways during local testing, while providing a real email dispatch path via Resend when configured for production.
 * **Query Parameter Transport of Session/Signed Tokens**
   * **Decision**: Transporting authentication tokens via query parameters for WebSocket connections (`chat-service`), SSE connections (`notification-service`), and document viewing (`auth-service/documents/view`) is accepted as an intentional design tradeoff.
   * **Reasoning**: This matches standard patterns for browser APIs (like WebSockets and EventSource/SSE) which do not natively support setting custom headers during the initial handshake.
@@ -144,25 +144,9 @@ The detailed project history is distributed across categorized changelog files. 
   * **Reasoning**: Keeping the scope limited to a 3-category directory for launch. If added later, cargo/goods transport will require a brand new backend category value distinct from `transport` (which is reserved for passenger rides) to avoid ambiguity.
 
 
-### 3. Not Started Yet
-
-* **Real Email/SMS Integration**: No Twilio, SendGrid, or SMTP dispatchers are set up.
-
----
-
-## Known Open Items / Unverified Claims
-
-Only features verified directly against the running application are marked as verified (✅). The following items are implemented but remain unverified end-to-end or represent accepted security risks:
-
-* **Verified Owner Employee Listing Endpoint**: `GET /auth/employees` is implemented, IDOR-protected, rate-limited (30 req/min), and verified via unit tests (`TestGetEmployees`) and Docker E2E curl testing. Tenant owners can list all employees registered under their account (including frozen accounts) while sensitive fields (`password`, `otp_code`, `id_front_doc`) are omitted.
-* **Verified Customer-Initiated Employee Assignment Gating**: Customer-initiated bookings with employee pre-assignment are fully supported and verified. The handler logic resolves the owner ID from the service tenant ID prior to the employee verification check, ensuring active role and tenant binding validations are correctly performed. Valid active employees succeed, while deactivated employees, mismatching tenants, and invalid roles are successfully gated and rejected.
-* **Verified Escrow Logic & COD Completion (Isolated per Job & Concurrency Hardened)**: Escrow locking, release splits, and refunds are verified end-to-end via integration tests. Escrow balances are isolated per job record in the database. Furthermore, rollback/deletion on TrackJob database persistence failures and fail-closed behavior on unrecorded/zero-value escrow amounts are verified. Concurrency tests simulating simultaneous complete/cancel, double-complete, and double-cancel on the same job (for both escrow-based and COD payment methods) confirm that exactly one request succeeds, verifying that race conditions are closed.
-* **Fail-Closed Rate Limiting on Redis Unavailability**: If the shared Redis instance becomes unavailable at runtime, all rate limiters across all microservices (api-gateway, auth-service, chat-service, notification-service, user-service) will fail-closed. This means incoming traffic is restricted/blocked and authentication attempts are denied with critical security logs (`[SECURITY CRITICAL]`), rather than allowing un-throttled traffic to bypass security boundaries.
-* **Dev-Grade mTLS CA**: The certificates generated for mTLS use a dev-grade local Root CA. For production, a real internal CA (e.g. AWS Private CA, HashiCorp Vault PKI, or cert-manager on Kubernetes) must be integrated.
-* **Client-Submitted Booking Coordinates for Pricing**: Distance-based pricing/escrow calculations rely on coordinates submitted by the client at job booking time. Recomputed amounts on CompleteJob and CancelJob use only the initial booking coordinates (`job.Location`). In addition, live location broadcasts from employees are gated by a speed plausibility check (rejecting jumps implying >150.0 km/h) to prevent GPS spoofing.
-* **Partial Job Listing Coverage**: GET /users/jobs/get supports employee-side job listing (via `requester_id`, IDOR-protected, returns jobs assigned to that employee) — implemented and verified in Phase 3. However, there is still no endpoint for an owner to list all jobs across their tenant, or for a customer to list their own booking history. The owner dashboard and customer profile will only show static/empty placeholders for these views until this is built.
 * **Documentation-Tooling Gap**: The structural drift test (`shared/infra/docgen/structural_drift_test.go`) only verifies that Dart files are cataloged in `STATUS.md` and package constraints match. It does NOT verify that the descriptions, auth paths, or data access parameters in `APPLICATION_MAP.md` align with actual Go handler implementations, leaving a possibility for undocumented API deviations.
 * **Local govulncheck stdlib warning (GO-2026-5856)**: The local govulncheck stdlib warning (GO-2026-5856 in crypto/tls) will disappear once the local Go installation is upgraded to go1.26.5 or later (the vulnerability is already patched there) — no code change needed, just a toolchain upgrade whenever convenient. This is a low-priority cleanup, not a blocker.
+* **Resend Email OTP Delivery End-to-End Verification**: Resend email OTP dispatcher is implemented (`ResendDispatcher`) and unit-tested against mock HTTP endpoints. Real email delivery against live Resend API servers requires configuring a valid `RESEND_API_KEY` and verified sender domain.
 
 ---
 

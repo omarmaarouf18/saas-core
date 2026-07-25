@@ -22,6 +22,8 @@ type Config struct {
 	StorageBaseURL       string
 	RedisURI             string
 	UserServiceURL       string
+	ResendAPIKey         string
+	ResendFromEmail      string
 }
 
 func Load() (*Config, error) {
@@ -95,6 +97,12 @@ func Load() (*Config, error) {
 		userServiceURL = "https://user-service:3003"
 	}
 
+	resendAPIKey := os.Getenv("RESEND_API_KEY")
+	resendFromEmail := os.Getenv("RESEND_FROM_EMAIL")
+	if resendFromEmail == "" {
+		resendFromEmail = "onboarding@resend.dev"
+	}
+
 	return &Config{
 		Port:                 port,
 		MongoURI:             mongoURI,
@@ -112,5 +120,7 @@ func Load() (*Config, error) {
 		StorageBaseDir:       storageBaseDir,
 		StorageBaseURL:       storageBaseURL,
 		UserServiceURL:       userServiceURL,
+		ResendAPIKey:         resendAPIKey,
+		ResendFromEmail:      resendFromEmail,
 	}, nil
 }

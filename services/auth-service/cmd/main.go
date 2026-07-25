@@ -87,10 +87,13 @@ func main() {
 		dispatcher = &otp.MockSMSDispatcher{}
 		log.Printf("[AUTH] OTP dispatcher: %s (no external network calls)", dispatcher.Name())
 	default:
-		// In production, this would be a real SMS/Email dispatcher.
-		// For now, fall back to mock with a warning.
-		dispatcher = &otp.MockSMSDispatcher{}
-		log.Printf("[AUTH] ⚠ No production OTP dispatcher configured — using %s", dispatcher.Name())
+		if cfg.ResendAPIKey != "" {
+			dispatcher = otp.NewResendDispatcher(cfg.ResendAPIKey, cfg.ResendFromEmail)
+			log.Printf("[AUTH] OTP dispatcher: %s (Resend API active)", dispatcher.Name())
+		} else {
+			dispatcher = &otp.MockSMSDispatcher{}
+			log.Printf("[AUTH] ⚠ No production OTP dispatcher configured — using %s", dispatcher.Name())
+		}
 	}
 
 	// Connect to Redis for rate limiting.

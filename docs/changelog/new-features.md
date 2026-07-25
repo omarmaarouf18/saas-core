@@ -176,9 +176,16 @@ This file tracks historical entries for the primary category: **New Features Cha
 
 ## Request Field Token Aliases
 
-- **Implementation Detail**: Added clearer `_token` field name aliases alongside legacy `_id` and raw parameter names across Go backend handlers (`user-service` and `auth-service`) to resolve naming clarity issues (since these fields carried signed JWT tokens instead of raw database IDs). Implemented alias mappings for: `user_token` (as alias for `user_id` / `id`), `owner_token` (as alias for `owner_id`), `employee_token` (as alias for `employee_id`), `requester_token` (as alias for `requester_id`), `tenant_token` (as alias for `tenant_id`), and `rated_by_token`/`rated_user_token` (as aliases for `rated_by`/`rated_user`). Enforced backward compatibility by resolving either variant, preferring the new naming. Updated API generator `KnownEndpoints` descriptions and updated `APPLICATION_MAP.md` via `make docs`.
+- **Implementation Detail**: Added clearer `_token` field name aliases alongside legacy `_id` and raw parameter names across Go backend handlers (`user-service` and `auth-service`) to resolve naming clarity issues (since these fields carried signed JWT tokens instead of raw database IDs). Implemented alias mappings for: `user_token` (as alias for `user_id` / `id`), `owner_token` (as alias for `owner_id`), `employee_token` (as alias for `employee_id`), `requester_token` (as alias for `requester_token`), `tenant_token` (as alias for `tenant_id`), and `rated_by_token`/`rated_user_token` (as aliases for `rated_by`/`rated_user`). Enforced backward compatibility by resolving either variant, preferring the new naming. Updated API generator `KnownEndpoints` descriptions and updated `APPLICATION_MAP.md` via `make docs`.
 - **Commit SHA**: ``f967906b413fedadc38dae163766697c9e7aeb60``
 - **Verification**: Verified via backend integration test suites (`TestTokenNameAliasesCompatibility` in `user-service`, `TestTokenNameAliasesInAuth` in `auth-service`) and local `make docs-check`. ✅
+
+## Resend Email OTP Dispatcher
+
+- **Implementation Detail**: Implemented `ResendDispatcher` in `services/auth-service/internal/otp/resend_dispatcher.go` to dispatch 2FA and signup OTP codes via the Resend REST API (`POST https://api.resend.com/emails`). Configured non-local mode (`APP_ENV!=local`) to activate `ResendDispatcher` when `RESEND_API_KEY` is present and fall back to `MockSMSDispatcher` with a warning when omitted. Preserved `MockSMSDispatcher` for local development (`APP_ENV=local`). Input parameters and log outputs are sanitized against carriage return/newline characters to prevent header and log injection vulnerabilities (satisfying gosec G704/G705/G706 rules). Added `RESEND_API_KEY` and `RESEND_FROM_EMAIL` configuration settings to `auth-service` and `infrastructure/.env.example`.
+- **Commit SHA**: ``a780550be44d2dd3675387b3685eea5574e9138d``
+- **Verification**: Verified via unit tests (`TestResendDispatcher_Dispatch_Success`, `TestResendDispatcher_Dispatch_APIErrorResponse`, `TestResendDispatcher_Dispatch_NetworkError`, `TestResendDispatcher_Dispatch_InputSanitizationAndValidation`) using an `httptest.Server` mock, and full-scope gosec scanning. ✅
+
 
 
 
