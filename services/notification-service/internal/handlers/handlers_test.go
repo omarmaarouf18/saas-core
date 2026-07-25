@@ -581,3 +581,95 @@ func TestStreamAuthUnavailableFailClosed(t *testing.T) {
 		t.Errorf("Expected error key to be 'service_unavailable', got: %s", resp["error"])
 	}
 }
+
+func TestRegisterRoutes(t *testing.T) {
+	sseHub := hub.NewSSEHub()
+	cfg := &config.Config{
+		AuthServiceURL:       "http://localhost:3002",
+		AllowedOrigin:        "http://localhost:3000",
+		InternalServiceToken: "secret-internal-token",
+	}
+	n := NewNotification(sseHub, cfg, nil)
+
+	mux := http.NewServeMux()
+	n.RegisterRoutes(mux)
+
+	routes := []struct {
+		method string
+		path   string
+	}{
+		{"GET", "/notifications/stream"},
+		{"POST", "/notifications/send"},
+		{"POST", "/notifications/broadcast/job-alert"},
+	}
+
+	for _, r := range routes {
+		req := httptest.NewRequest(r.method, r.path, nil)
+		_, pattern := mux.Handler(req)
+		if pattern == "" {
+			t.Errorf("Expected pattern for %s %s, got empty", r.method, r.path)
+		}
+	}
+}
+
+func TestSend_ExtraCoverage(t *testing.T) {
+	sseHub := hub.NewSSEHub()
+	cfg := &config.Config{
+		AuthServiceURL:       "http://localhost:3002",
+		AllowedOrigin:        "http://localhost:3000",
+		InternalServiceToken: "secret-internal-token",
+	}
+	n := NewNotification(sseHub, cfg, nil)
+
+	// 1. Non-POST method -> 405 MethodNotAllowed
+	req := httptest.NewRequest("GET", "/notifications/send", nil)
+	rec := httptest.NewRecorder()
+	n.Send(rec, req)
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Expected 405 MethodNotAllowed, got %d", rec.Code)
+	}
+
+	// 2. Missing token -> 401 Unauthorized
+	req = httptest.NewRequest("POST", "/notifications/send", strings.NewReader(`{"title":"hello"}`))
+	rec = httptest.NewRecorder()
+	n.Send(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for missing token, got %d", rec.Code)
+	}
+}
+
+func TestBroadcastJobAlert_ExtraCoverage(t *testing.T) {
+	sseHub := hub.NewSSEHub()
+	cfg := &config.Config{
+		AuthServiceURL:       "http://localhost:3002",
+		AllowedOrigin:        "http://localhost:3000",
+		InternalServiceToken: "secret-internal-token",
+	}
+	n := NewNotification(sseHub, cfg, nil)
+
+	// 1. Non-POST method -> 405 MethodNotAllowed
+	req := httptest.NewRequest("GET", "/notifications/broadcast/job-alert", nil)
+	rec := httptest.NewRecorder()
+	n.BroadcastJobAlert(rec, req)
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Expected 405 MethodNotAllowed, got %d", rec.Code)
+	}
+
+	// 2. Missing or invalid internal token -> 401 Unauthorized
+	req = httptest.NewRequest("POST", "/notifications/broadcast/job-alert", strings.NewReader(`{"job_id":"j-1"}`))
+	req.Header.Set("X-Internal-Token", "invalid-token")
+	rec = httptest.NewRecorder()
+	n.BroadcastJobAlert(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for invalid internal token, got %d", rec.Code)
+	}
+
+	// 3. Malformed JSON body -> 400 Bad Request
+	req = httptest.NewRequest("POST", "/notifications/broadcast/job-alert", strings.NewReader(`{"job_id":`))
+	req.Header.Set("X-Internal-Token", "secret-internal-token")
+	rec = httptest.NewRecorder()
+	n.BroadcastJobAlert(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request for malformed JSON, got %d", rec.Code)
+	}
+}
