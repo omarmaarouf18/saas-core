@@ -98,6 +98,11 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Records a simulated worker activity.",
 		Targets:     "Writes `audit_logs` collection.",
 	},
+	"GET /auth/employees": {
+		Permissions: "Owner JWT",
+		Function:    "GetEmployees returns all employees registered under the caller's tenant owner account.",
+		Targets:     "Reads `users` collection by `tenant_id`. Returns JSON array of `EmployeeResponse` (`ID`, `Username`, `Email`, `IsActive`, `CreatedAt`). Rate-limited per owner ID.",
+	},
 	"GET /auth/audit-log": {
 		Permissions: "Tenant Owner JWT",
 		Function:    "Fetches tenant security audit logs. Accepts requester_id (legacy) or requester_token (preferred).",
