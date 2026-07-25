@@ -2601,3 +2601,191 @@ func TestGetEmployees(t *testing.T) {
 		}
 	})
 }
+
+func TestAuth_RegisterRoutes(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	jwtutil.Init("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	a := &Auth{}
+	mux := http.NewServeMux()
+	a.RegisterRoutes(mux)
+
+	routes := []struct {
+		method string
+		path   string
+	}{
+		{"POST", "/auth/signup"},
+		{"POST", "/auth/login"},
+		{"POST", "/auth/verify-otp"},
+		{"GET", "/auth/user"},
+		{"POST", "/auth/employee/toggle"},
+		{"POST", "/auth/employee/action"},
+		{"POST", "/auth/kyb/upload"},
+		{"POST", "/auth/kye/upload"},
+		{"GET", "/auth/kyb-kye/pending"},
+		{"POST", "/auth/kyb-kye/review"},
+		{"GET", "/auth/documents/view"},
+		{"GET", "/auth/audit-log"},
+		{"POST", "/auth/resend-otp"},
+		{"POST", "/auth/logout"},
+		{"GET", "/auth/user/public-profile"},
+		{"GET", "/auth/employees"},
+	}
+
+	for _, r := range routes {
+		req := httptest.NewRequest(r.method, r.path, nil)
+		_, pattern := mux.Handler(req)
+		if pattern == "" {
+			t.Errorf("Expected pattern for %s %s, got empty", r.method, r.path)
+		}
+	}
+}
+
+func TestResendOTP_ExtraCoverage(t *testing.T) {
+	a, _, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	// 1. Non-POST method -> 405 MethodNotAllowed
+	req := httptest.NewRequest("GET", "/auth/resend-otp", nil)
+	rec := httptest.NewRecorder()
+	a.ResendOTP(rec, req)
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Expected 405 MethodNotAllowed, got %d", rec.Code)
+	}
+
+	// 2. Malformed JSON -> 400 Bad Request
+	req = httptest.NewRequest("POST", "/auth/resend-otp", strings.NewReader(`{"email":`))
+	rec = httptest.NewRecorder()
+	a.ResendOTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d", rec.Code)
+	}
+
+	// 3. Missing email -> 400 Bad Request
+	req = httptest.NewRequest("POST", "/auth/resend-otp", strings.NewReader(`{"email":""}`))
+	rec = httptest.NewRecorder()
+	a.ResendOTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d", rec.Code)
+	}
+
+	// 4. User not found -> 200 OK (Generic success to prevent identity leakage)
+	req = httptest.NewRequest("POST", "/auth/resend-otp", strings.NewReader(`{"email":"nonexistent-resend@example.com"}`))
+	rec = httptest.NewRecorder()
+	a.ResendOTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK (generic success), got %d", rec.Code)
+	}
+}
+
+func TestGetPublicProfile_ExtraCoverage(t *testing.T) {
+	a, mongoStore, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	user := &models.User{
+		ID:          "pub-prof-id-123",
+		Email:       "pubprof@example.com",
+		Username:    "pubprofuser",
+		Role:        models.RoleOwner,
+		IsActive:    true,
+		IsConfirmed: true,
+	}
+	if err := mongoStore.CreateUser(ctx, user); err != nil {
+		t.Fatalf("failed to create test user: %v", err)
+	}
+
+	reqToken, _ := jwtutil.GenerateToken("req-user-1", "user", "tenant-1", "requester@example.com")
+
+	// 1. Missing user ID -> 400 Bad Request
+	req := httptest.NewRequest("GET", "/auth/user/public-profile?requester_id="+reqToken, nil)
+	rec := httptest.NewRecorder()
+	a.GetPublicProfile(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d", rec.Code)
+	}
+
+	// 2. Missing requester token -> 401 Unauthorized
+	req = httptest.NewRequest("GET", "/auth/user/public-profile?id=pub-prof-id-123", nil)
+	rec = httptest.NewRecorder()
+	a.GetPublicProfile(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for missing requester token, got %d", rec.Code)
+	}
+
+	// 3. User not found -> 404 Not Found
+	req = httptest.NewRequest("GET", "/auth/user/public-profile?id=non-existent-id&requester_id="+reqToken, nil)
+	rec = httptest.NewRecorder()
+	a.GetPublicProfile(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("Expected 404 Not Found, got %d", rec.Code)
+	}
+
+	// 4. Valid lookup by ID -> 200 OK
+	req = httptest.NewRequest("GET", "/auth/user/public-profile?id=pub-prof-id-123&requester_id="+reqToken, nil)
+	rec = httptest.NewRecorder()
+	a.GetPublicProfile(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK for ID lookup, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestSimulateEmployeeAction_ExtraCoverage(t *testing.T) {
+	a, mongoStore, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	activeEmp := &models.User{
+		ID:          "active-emp-123",
+		Email:       "activeemp@example.com",
+		Role:        models.RoleEmployee,
+		IsActive:    true,
+		IsConfirmed: true,
+	}
+	frozenEmp := &models.User{
+		ID:          "frozen-emp-123",
+		Email:       "frozenemp@example.com",
+		Role:        models.RoleEmployee,
+		IsActive:    false,
+		IsConfirmed: true,
+	}
+	_ = mongoStore.CreateUser(ctx, activeEmp)
+	_ = mongoStore.CreateUser(ctx, frozenEmp)
+
+	// 1. Non-POST -> 405 MethodNotAllowed
+	req := httptest.NewRequest("GET", "/auth/employee/action", nil)
+	rec := httptest.NewRecorder()
+	a.SimulateEmployeeAction(rec, req)
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Expected 405 MethodNotAllowed, got %d", rec.Code)
+	}
+
+	// 2. Missing Auth Header -> 401 Unauthorized
+	body := `{"email":"activeemp@example.com","action":"check_in"}`
+	req = httptest.NewRequest("POST", "/auth/employee/action", strings.NewReader(body))
+	rec = httptest.NewRecorder()
+	a.SimulateEmployeeAction(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for missing auth header, got %d", rec.Code)
+	}
+
+	// 3. Frozen Employee Action -> 403 Forbidden
+	frozenToken, _ := jwtutil.GenerateToken("frozen-emp-123", "employee", "tenant-1", "frozenemp@example.com")
+	frozenBody := `{"email":"frozenemp@example.com","action":"check_in"}`
+	req = httptest.NewRequest("POST", "/auth/employee/action", strings.NewReader(frozenBody))
+	req.Header.Set("Authorization", "Bearer "+frozenToken)
+	rec = httptest.NewRecorder()
+	a.SimulateEmployeeAction(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden for frozen employee action, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+}
