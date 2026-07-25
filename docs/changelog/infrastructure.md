@@ -184,6 +184,19 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``6e0cd2ae6347d92c319d19cbb2af90fd78102bfc``
 - **Verification**: Verified via `go test ./... -v -race` in services/chat-service. All tests pass and overall module statement coverage increased from 51.4% to 70.8% (with config from 0% to 100% and store from 0% to 80.6%). ✅
 
+## notification-service Test Coverage Expansion
+
+- **Implementation Detail**: Expanded test coverage in services/notification-service across environment configuration (`Load` required variable validation and default fallback verification), SSE broadcasting hub (`NewSSEHub`, client registration/unregistration, role counting, tenant scoping, role filtering, slow client buffer overflow drop), and HTTP handlers (`RegisterRoutes` endpoint mapping, `Send` HTTP method and auth error handling, `BroadcastJobAlert` internal token authorization and JSON validation).
+- **Commit SHA**: ``f699850a294ed72d8f61fdb055b0c1bb08d7cf73``
+- **Verification**: Verified via `go test ./... -v -race` in services/notification-service. All tests pass and overall module statement coverage increased from 40.6% to 73.5% (with config from 0% to 100% and hub from 0% to 96.4%). ✅
+
+## api-gateway Test Coverage Expansion
+
+- **Implementation Detail**: Expanded test coverage in services/api-gateway across environment configuration (`Load` missing required variable checking and default route population), logging & CORS middleware (`Logging` CORS headers, OPTIONS preflight status, status code recording, hijack fallback), and rate limiting middleware (`RateLimit` client IP extraction for IPv4/IPv6/bracketed addresses, passthrough, 429 Too Many Requests response).
+- **Commit SHA**: ``9e46dedd23f2ca0bf59d580d341455f8e6b48f0d``
+- **Verification**: Verified via `go test ./... -v -race` in services/api-gateway. All tests pass and overall module statement coverage increased from 10.9% to 58.4% (with config from 0% to 94.3% and middleware from 0% to 88.2%). ✅
+
+
 
 
 
