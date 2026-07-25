@@ -166,5 +166,11 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``887b2315f11ca1fdcc04c31fe0bd7a57d0372539``
 - **Verification**: Verified via `go test ./... -v -race` in shared/infra. All tests pass and overall module statement coverage increased from 64.2% to 74.1% (with handlerutil from 29.6% to 71.7% and resilience from 47.3% to 88.2%). ✅
 
+## auth-service Test Coverage Expansion
+
+- **Implementation Detail**: Expanded test coverage in services/auth-service across data storage (`LocalStorage` upload, directory traversal protection, signed URLs, file opening), AES-256-GCM cipher (`otpcrypto` encrypt, decrypt, environment key validation), OTP dispatchers (`MockSMSDispatcher`, `MockEmailDispatcher`, `NoopDispatcher`), model role validation (`ValidRole`), MongoDB store (`NewMongoDB` connection handling, CRUD operations, duplicate key error handling, OTP lifecycle, reviewer management), and HTTP handlers (`RegisterRoutes`, `ResendOTP` anti-enumeration, `GetPublicProfile`, `SimulateEmployeeAction`).
+- **Commit SHA**: ``7edbe74dbfdfa9c8f3aa6ffb53ce471ebbe94264``
+- **Verification**: Verified via `go test ./... -v -race` in services/auth-service. All tests pass and overall module statement coverage increased from 45.5% to 72.4% (with storage from 0% to 83.1%, store from 0% to 81.2%, and otpcrypto from 51.1% to 90.0%). ✅
+
 
 
