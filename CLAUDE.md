@@ -22,7 +22,13 @@ After completing any change, you must verify it before committing or pushing:
 4. The Commit SHA in any changelog entry must be written AFTER running `git commit` (never before), captured directly via `git rev-parse HEAD`, and then verified with `git cat-file -e <sha>^{commit}` to confirm it actually exists before the entry is considered final.
 5. Do not fabricate, guess, or approximate a commit SHA under any circumstances. If the real SHA can't be determined, mark the entry as unverified and flag it instead of writing a placeholder.
 
-Do not batch multiple unrelated changes into one commit, and do not wait until a whole task is finished if it has multiple independent sub-changes. Once verified, git add, commit with a specific message, and push to origin/logic-exploitation.
+Before performing `git add`, every commit and push sequence must explicitly execute:
+```bash
+git config core.hooksPath .githooks
+```
+as the literal first command in the sequence, unconditionally and idempotently. This line must NEVER be skipped or assumed to be already done, even mid-session, and even if it was run earlier in the same session. (Alternatively, use `make commit MSG="..."` and `make push` which execute `ensure-hooks` as an unavoidable prerequisite).
+
+Do not batch multiple unrelated changes into one commit, and do not wait until a whole task is finished if it has multiple independent sub-changes. Once verified, run `git config core.hooksPath .githooks`, `git add`, `git commit` with a specific message, and push to origin/logic-exploitation.
 
 docs/APPLICATION_MAP.md must be updated in the same commit whenever a change adds, removes, renames, or changes the auth/permission requirements of an HTTP endpoint, or changes an inter-service call path. The "as of Git commit" note at the top must be refreshed to the new commit's short SHA in that same commit.
 

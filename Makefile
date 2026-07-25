@@ -1,4 +1,4 @@
-.PHONY: docs docs-check setup ci ensure-hooks
+.PHONY: docs docs-check setup ci ensure-hooks commit push
 
 ensure-hooks:
 	@if [ "$$(git config --get core.hooksPath 2>/dev/null)" != ".githooks" ]; then \
@@ -17,3 +17,9 @@ docs-check: ensure-hooks
 
 ci: ensure-hooks
 	./.githooks/pre-push
+
+commit: ensure-hooks
+	git add -A && git commit -m "$(MSG)"
+
+push: ensure-hooks
+	git push origin logic-exploitation
