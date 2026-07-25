@@ -412,6 +412,13 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``60b23555eb268f51112fc13a9811386605d62626``
 - **Verification**: Verified via `gofmt`, `go build ./...`, `go vet ./...`, `go test ./...`, and `govulncheck ./...` across all services. ✅
 
+## Upgrade golang.org/x/crypto to v0.54.0 & Vulnerability Mitigation
+
+- **Implementation Detail**: Upgraded `golang.org/x/crypto` from `v0.33.0` to `v0.54.0` across all backend Go modules (`auth-service`, `chat-service`, `notification-service`, `user-service`, `api-gateway`, `shared/infra`). This resolved 17 vulnerabilities present in older releases (leaving only the uncalled, unmaintained upstream `openpgp` finding).
+- **Commit SHA**: ``5006ba499dd6545455af3b3bc5cd67f5f178ead5``
+- **Verification**: Verified via `govulncheck ./...`, `go build ./...`, `go vet ./...`, and full test execution (`go test ./...`) across all backend modules. ✅
+
+
 
 
 
