@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/resend/resend-go/v3"
 )
 
 func TestResendDispatcher_Dispatch_Success(t *testing.T) {
@@ -18,6 +21,9 @@ func TestResendDispatcher_Dispatch_Success(t *testing.T) {
 		// Verify HTTP Method and Path
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST method, got %s", r.Method)
+		}
+		if r.URL.Path != "/emails" {
+			t.Errorf("expected path /emails, got %s", r.URL.Path)
 		}
 
 		// Verify Authorization Header
@@ -32,7 +38,7 @@ func TestResendDispatcher_Dispatch_Success(t *testing.T) {
 		}
 
 		// Verify JSON Body
-		var req ResendRequest
+		var req resend.SendEmailRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			t.Fatalf("failed to decode JSON request: %v", err)
 		}
@@ -43,8 +49,8 @@ func TestResendDispatcher_Dispatch_Success(t *testing.T) {
 		if len(req.To) != 1 || req.To[0] != targetEmail {
 			t.Errorf("expected To [%q], got %v", targetEmail, req.To)
 		}
-		if !strings.Contains(req.HTML, otpCode) {
-			t.Errorf("expected HTML payload to contain code %s, got %s", otpCode, req.HTML)
+		if !strings.Contains(req.Html, otpCode) {
+			t.Errorf("expected HTML payload to contain code %s, got %s", otpCode, req.Html)
 		}
 		if !strings.Contains(req.Text, otpCode) {
 			t.Errorf("expected Text payload to contain code %s, got %s", otpCode, req.Text)
@@ -57,19 +63,29 @@ func TestResendDispatcher_Dispatch_Success(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := NewResendDispatcherWithClient(apiKey, fromEmail, server.URL, server.Client())
+	resendClient := resend.NewCustomClient(server.Client(), apiKey)
+	baseURL, err := url.Parse(server.URL + "/")
+	if err != nil {
+		t.Fatalf("failed to parse server URL: %v", err)
+	}
+	resendClient.BaseURL = baseURL
+
+	dispatcher := NewResendDispatcherWithClient(apiKey, fromEmail, resendClient)
 
 	if name := dispatcher.Name(); name != "Resend" {
 		t.Errorf("expected Name() 'Resend', got %q", name)
 	}
 
-	err := dispatcher.Dispatch(targetEmail, otpCode)
+	err = dispatcher.Dispatch(targetEmail, otpCode)
 	if err != nil {
 		t.Fatalf("expected nil error on success, got: %v", err)
 	}
 }
 
 func TestResendDispatcher_Dispatch_APIErrorResponse(t *testing.T) {
+	apiKey := "invalid_key"
+	fromEmail := "onboarding@resend.dev"
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -77,32 +93,50 @@ func TestResendDispatcher_Dispatch_APIErrorResponse(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := NewResendDispatcherWithClient("invalid_key", "onboarding@resend.dev", server.URL, server.Client())
+	resendClient := resend.NewCustomClient(server.Client(), apiKey)
+	baseURL, err := url.Parse(server.URL + "/")
+	if err != nil {
+		t.Fatalf("failed to parse server URL: %v", err)
+	}
+	resendClient.BaseURL = baseURL
 
-	err := dispatcher.Dispatch("user@example.com", "123456")
+	dispatcher := NewResendDispatcherWithClient(apiKey, fromEmail, resendClient)
+
+	err = dispatcher.Dispatch("user@example.com", "123456")
 	if err == nil {
 		t.Fatalf("expected error on 401 response, got nil")
 	}
 
-	if !strings.Contains(err.Error(), "401") || !strings.Contains(err.Error(), "invalid_api_key") {
-		t.Errorf("expected error message to contain status 401 and error name, got: %v", err)
+	if !strings.Contains(err.Error(), "resend email dispatch failed") {
+		t.Errorf("expected wrapped error message, got: %v", err)
 	}
 }
 
 func TestResendDispatcher_Dispatch_NetworkError(t *testing.T) {
+	apiKey := "key"
+	fromEmail := "from@resend.dev"
+
 	// Point to a closed server URL to force network error
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	serverURL := server.URL
 	server.Close()
 
-	dispatcher := NewResendDispatcherWithClient("key", "from@resend.dev", server.URL, nil)
+	resendClient := resend.NewCustomClient(nil, apiKey)
+	baseURL, err := url.Parse(serverURL + "/")
+	if err != nil {
+		t.Fatalf("failed to parse server URL: %v", err)
+	}
+	resendClient.BaseURL = baseURL
 
-	err := dispatcher.Dispatch("user@example.com", "123456")
+	dispatcher := NewResendDispatcherWithClient(apiKey, fromEmail, resendClient)
+
+	err = dispatcher.Dispatch("user@example.com", "123456")
 	if err == nil {
 		t.Fatalf("expected network error, got nil")
 	}
 
-	if !strings.Contains(err.Error(), "HTTP request failed") && !strings.Contains(err.Error(), "connection refused") && !strings.Contains(err.Error(), "connect") {
-		t.Errorf("expected network failure error message, got: %v", err)
+	if !strings.Contains(err.Error(), "resend email dispatch failed") {
+		t.Errorf("expected wrapped network error message, got: %v", err)
 	}
 }
 

@@ -183,7 +183,7 @@ This file tracks historical entries for the primary category: **New Features Cha
 ## Resend Email OTP Dispatcher
 
 - **Implementation Detail**: Implemented `ResendDispatcher` in `services/auth-service/internal/otp/resend_dispatcher.go` to dispatch 2FA and signup OTP codes via the Resend REST API (`POST https://api.resend.com/emails`). Configured non-local mode (`APP_ENV!=local`) to activate `ResendDispatcher` when `RESEND_API_KEY` is present and fall back to `MockSMSDispatcher` with a warning when omitted. Preserved `MockSMSDispatcher` for local development (`APP_ENV=local`). Input parameters and log outputs are sanitized against carriage return/newline characters to prevent header and log injection vulnerabilities (satisfying gosec G704/G705/G706 rules). Added `RESEND_API_KEY` and `RESEND_FROM_EMAIL` configuration settings to `auth-service` and `infrastructure/.env.example`.
-- **Commit SHA**: ``a780550be44d2dd3675387b3685eea5574e9138d``
+- **Commit SHA**: ``a95e5254d6b58706f6174a67187b0b722c43f711``
 - **Verification**: Verified via unit tests (`TestResendDispatcher_Dispatch_Success`, `TestResendDispatcher_Dispatch_APIErrorResponse`, `TestResendDispatcher_Dispatch_NetworkError`, `TestResendDispatcher_Dispatch_InputSanitizationAndValidation`) using an `httptest.Server` mock, and full-scope gosec scanning. ✅
 
 
