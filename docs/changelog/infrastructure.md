@@ -172,5 +172,11 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``7edbe74dbfdfa9c8f3aa6ffb53ce471ebbe94264``
 - **Verification**: Verified via `go test ./... -v -race` in services/auth-service. All tests pass and overall module statement coverage increased from 45.5% to 72.4% (with storage from 0% to 83.1%, store from 0% to 81.2%, and otpcrypto from 51.1% to 90.0%). ✅
 
+## user-service Test Coverage Expansion
+
+- **Implementation Detail**: Expanded test coverage in services/user-service across domain models (`NewGeoJSONPoint`, `ValidJobStatus`), MongoDB store (`NewMongoDB` ping check, service listing/querying, job lifecycle, wallet balances, escrow lock/release splits, COD fee deduction, subscriptions, ratings), and HTTP handlers (`RegisterRoutes` route table verification, `CreateService` parameter validation, `WalletDeposit` production environment gating, `Subscription` defaults/validation, `RateJob` star bounds).
+- **Commit SHA**: ``f674e7648a20ca10524cc072e5333d2f80a882b9``
+- **Verification**: Verified via `go test ./... -v -race` in services/user-service. All tests pass and overall module statement coverage increased from 44.9% to 64.3% (with models from 0% to 100%, store from 0% to 65.5%, and handlers from 67.2% to 71.2%). ✅
+
 
 
