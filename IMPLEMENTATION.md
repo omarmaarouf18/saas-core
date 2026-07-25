@@ -36,9 +36,9 @@ We will proceed in the following order:
     *   Create `AuthProvider` in `lib/providers/auth_provider.dart` to manage the currently authenticated user's profile, role, and active session.
 
 4.  **Register / Login Screens**:
-    *   **Signup Page**: Role selection (Owner or Customer). If Employee signup, Owner must trigger it through the Employee Management screen (passing owner's tenant binding). Sends request to [Signup Endpoint](services/auth-service/internal/handlers/auth.go#L115).
-    *   **Login Page**: E-mail and password credentials. Sends request to [Login Endpoint](services/auth-service/internal/handlers/auth.go#L269).
-    *   **OTP Page**: Prompts user for a 6-digit code. In development, auto-populates/displays the `dev_otp` returned by the server. Sends to [Verify OTP Endpoint](services/auth-service/internal/handlers/auth.go#L413).
+    *   **Signup Page**: Role selection (Owner or Customer). If Employee signup, Owner must trigger it through the Employee Management screen (passing owner's tenant binding). Sends request to [Signup Endpoint](services/auth-service/internal/handlers/auth.go#L120).
+    *   **Login Page**: E-mail and password credentials. Sends request to [Login Endpoint](services/auth-service/internal/handlers/auth.go#L359).
+    *   **OTP Page**: Prompts user for a 6-digit code. In development, auto-populates/displays the `dev_otp` returned by the server. Sends to [Verify OTP Endpoint](services/auth-service/internal/handlers/auth.go#L509).
     *   **KYC Banner (Owner only)**: Displays a banner at the top of the owner dashboard indicating "KYC Pending Approval" if `kyc_status == "pending_super_admin_approval"`.
 
 ---
@@ -49,16 +49,16 @@ We will proceed in the following order:
     *   Grid view containing wallet balance, current subscription status (Free/Paid), employee counts, and active jobs list.
 
 2.  **Wallet Management**:
-    *   Visual representation of balance and transactions history from [GetWallet](services/user-service/internal/handlers/handlers.go#L561) and [GetLedger](services/user-service/internal/handlers/handlers.go#L680).
-    *   Deposit dialog calling [WalletDeposit](services/user-service/internal/handlers/handlers.go#L589) (requires approved KYC).
+    *   Visual representation of balance and transactions history from [GetWallet](services/user-service/internal/handlers/handlers.go#L705) and [GetLedger](services/user-service/internal/handlers/handlers.go#L837).
+    *   Deposit dialog calling [WalletDeposit](services/user-service/internal/handlers/handlers.go#L736) (requires approved KYC).
 
 3.  **Employee Management**:
     *   Register new employee (automates password generation and sets current tenant ID binding).
-    *   Freeze / Activate toggle invoking [ToggleEmployee](services/auth-service/internal/handlers/auth.go#L505).
-    *   Audit Log list calling [GetAuditLog](services/auth-service/internal/handlers/auth.go#L786).
+    *   Freeze / Activate toggle invoking [ToggleEmployee](services/auth-service/internal/handlers/auth.go#L602).
+    *   Audit Log list calling [GetAuditLog](services/auth-service/internal/handlers/auth.go#L890).
 
 4.  **Service Directory Configuration**:
-    *   Add service (category choice of `shipping`, `delivery`, `transport`, coordinates, rates) calling [CreateService](services/user-service/internal/handlers/handlers.go#L147). Gated by KYC.
+    *   Add service (category choice of `shipping`, `delivery`, `transport`, coordinates, rates) calling [CreateService](services/user-service/internal/handlers/handlers.go#L155). Gated by KYC.
 
 ---
 
@@ -70,7 +70,7 @@ We will proceed in the following order:
 
 2.  **Employee Action Simulator**:
     *   Text field and action button allowing employees to execute a task (e.g., "Arrived at Pickup", "Job in Route").
-    *   Calls [SimulateEmployeeAction](services/auth-service/internal/handlers/auth.go#L617) to log employee actions into the tenant audit trail. Blocks operations if employee's status is frozen or owner KYC is not approved.
+    *   Calls [SimulateEmployeeAction](services/auth-service/internal/handlers/auth.go#L716) to log employee actions into the tenant audit trail. Blocks operations if employee's status is frozen or owner KYC is not approved.
 
 ---
 
@@ -79,12 +79,12 @@ We will proceed in the following order:
 1.  **Marketplace Directory**:
     *   Map and list views querying services near a custom latitude/longitude coordinate.
     *   Provides exactly 3 service categories (Delivery, Ride, Shipping — "Ride" is the UI label for the backend's `transport` category).
-    *   Sort and filter selectors (by base price, category) calling [ListServices](services/user-service/internal/handlers/handlers.go#L126).
+    *   Sort and filter selectors (by base price, category) calling [ListServices](services/user-service/internal/handlers/handlers.go#L133).
 
 2.  **Booking Workflow (COD Only)**:
     *   Book service button.
     *   Forced payment method selection: "Cash on Delivery (COD)" only. Clarifies that escrow payments are currently deferred.
-    *   Creates job by calling [TrackJob](services/user-service/internal/handlers/handlers.go#L210).
+    *   Creates job by calling [TrackJob](services/user-service/internal/handlers/handlers.go#L220).
 
 3.  **Real-Time Status Screen**:
     *   Visual progress indicator (Pending -> Active -> Completed) linking directly to live job updates.
@@ -120,13 +120,13 @@ We will proceed in the following order:
 
 1.  **Upgrade Page**:
     *   "Upgrade to Paid" tier button on the Owner dashboard.
-    *   Submits subscription change request via [Subscription POST](services/user-service/internal/handlers/handlers.go#L848).
+    *   Submits subscription change request via [Subscription POST](services/user-service/internal/handlers/handlers.go#L1011).
     *   Honest pending payment screen display informing owner to contact platform administrators for manual processing (no simulated fake checkouts).
 
 2.  **Job Rating Forms**:
     *   On job completion (where COD cash has been confirmed by Owner), prompts a rating screen.
-    *   Owner rates Employee and Employee rates Owner via [RateJob](services/user-service/internal/handlers/handlers.go#L981).
-    *   Display averages using [GetRatings](services/user-service/internal/handlers/handlers.go#L1068).
+    *   Owner rates Employee and Employee rates Owner via [RateJob](services/user-service/internal/handlers/handlers.go#L1155).
+    *   Display averages using [GetRatings](services/user-service/internal/handlers/handlers.go#L1249).
 
 ---
 

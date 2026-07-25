@@ -102,21 +102,21 @@ graph TD
 The Flutter client interacts with backend microservices routed through the Gateway (`http://localhost:8080`).
 
 ### 1. Authentication Flow
-- **Signup**: Calls [Signup handler](services/auth-service/internal/handlers/auth.go#L118) (`POST /api/v1/auth/signup`). Accepts `email`, `password`, `role`. Gated by signup-time anti-spam OTP; accounts are unconfirmed (`is_confirmed = false`) until the OTP is verified.
-- **Login**: Calls [Login handler](services/auth-service/internal/handlers/auth.go#L330) (`POST /api/v1/auth/login`). Initiates authentication, sends/mocks a 6-digit OTP, and returns `dev_otp` in local development mode.
-- **Verify OTP**: Calls [VerifyOTP handler](services/auth-service/internal/handlers/auth.go#L479) (`POST /api/v1/auth/verify-otp`). Activates the account and returns a signed HS256 JWT token.
-- **Refresh Token**: Calls [Refresh handler](services/auth-service/internal/handlers/auth.go#L910) (`POST /api/v1/auth/refresh`). Reissues a new JWT token, validating that the old one expired no more than 7 days ago.
+- **Signup**: Calls [Signup handler](services/auth-service/internal/handlers/auth.go#L120) (`POST /api/v1/auth/signup`). Accepts `email`, `password`, `role`. Gated by signup-time anti-spam OTP; accounts are unconfirmed (`is_confirmed = false`) until the OTP is verified.
+- **Login**: Calls [Login handler](services/auth-service/internal/handlers/auth.go#L359) (`POST /api/v1/auth/login`). Initiates authentication, sends/mocks a 6-digit OTP, and returns `dev_otp` in local development mode.
+- **Verify OTP**: Calls [VerifyOTP handler](services/auth-service/internal/handlers/auth.go#L509) (`POST /api/v1/auth/verify-otp`). Activates the account and returns a signed HS256 JWT token.
+- **Refresh Token**: Calls [Refresh handler](services/auth-service/internal/handlers/auth.go#L950) (`POST /api/v1/auth/refresh`). Reissues a new JWT token, validating that the old one expired no more than 7 days ago.
 - **Header Structure**: All authenticated service endpoints require `Authorization: Bearer <JWT_TOKEN>`. The backend validates the HS256 signature and expiry locally using the shared `JWT_SECRET`.
 
 ### 2. Jobs & Services Flow
-- **Browse**: Calls [ListServices](services/user-service/internal/handlers/handlers.go#L131) (`GET /api/v1/users/services?sort_by=price&near_by=true&lat=30&lon=31`).
-- **Create Service**: Calls [CreateService](services/user-service/internal/handlers/handlers.go#L152) (`POST /api/v1/users/services`). Gated by [checkKYC](services/user-service/internal/handlers/handlers.go#L868) (Owner KYC must be approved).
-- **Track/Book Job**: Calls [TrackJob](services/user-service/internal/handlers/handlers.go#L215) (`POST /api/v1/users/jobs/track`). Requires `payment_method: "cod"`. Other payment methods are blocked client-side.
-- **Complete Job**: Calls [CompleteJob](services/user-service/internal/handlers/handlers.go#L433) (`POST /api/v1/users/jobs/complete`). For COD, requires `cash_collected: true`. Triggering completion automatically deducts the platform fee from the owner's e-wallet via [DeductCODFee](services/user-service/internal/store/mongodb.go#L492).
+- **Browse**: Calls [ListServices](services/user-service/internal/handlers/handlers.go#L133) (`GET /api/v1/users/services?sort_by=price&near_by=true&lat=30&lon=31`).
+- **Create Service**: Calls [CreateService](services/user-service/internal/handlers/handlers.go#L155) (`POST /api/v1/users/services`). Gated by [checkKYC](services/user-service/internal/handlers/handlers.go#L919) (Owner KYC must be approved).
+- **Track/Book Job**: Calls [TrackJob](services/user-service/internal/handlers/handlers.go#L220) (`POST /api/v1/users/jobs/track`). Requires `payment_method: "cod"`. Other payment methods are blocked client-side.
+- **Complete Job**: Calls [CompleteJob](services/user-service/internal/handlers/handlers.go#L453) (`POST /api/v1/users/jobs/complete`). For COD, requires `cash_collected: true`. Triggering completion automatically deducts the platform fee from the owner's e-wallet via [DeductCODFee](services/user-service/internal/store/mongodb.go#L492).
 - **Cancel Job**: Calls `POST /api/v1/users/jobs/cancel`. Pending jobs can be cancelled by the owner or customer. Active jobs can only be cancelled by the owner; active cancellation by a customer is rejected with `403 Forbidden` (directing them to the complaint ticket flow). Cancellation of completed or already cancelled jobs is rejected with `409 Conflict`. For non-COD jobs, cancellation refunds the escrow amount back to the owner's withdrawable balance.
 
 ### 3. Subscription Flow
-- **Upgrade**: Calls [Subscription POST](services/user-service/internal/handlers/handlers.go#L960) (`POST /api/v1/users/subscription`) with `tier: "paid"`. Returns `202 Accepted` and transitions to `pending_payment` status. The UI displays "upgrade pending, contact support" status.
+- **Upgrade**: Calls [Subscription POST](services/user-service/internal/handlers/handlers.go#L1011) (`POST /api/v1/users/subscription`) with `tier: "paid"`. Returns `202 Accepted` and transitions to `pending_payment` status. The UI displays "upgrade pending, contact support" status.
 
 ### 4. Real-time Communications Flow
 - **SSE Stream**: Subscribes to [Stream](services/notification-service/internal/handlers/handlers.go#L76) (`GET /api/v1/notifications/stream?token=<jwt_token>`). Pushes alerts client-side.
