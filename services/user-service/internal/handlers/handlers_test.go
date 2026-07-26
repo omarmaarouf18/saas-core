@@ -4191,3 +4191,33 @@ func TestRoleEnforcement_WalletAndSubscription(t *testing.T) {
 		t.Fatalf("Expected 401 Unauthorized with role mismatch for Subscription GET with employee token, got status %d, body: %s", recSub.Code, recSub.Body.String())
 	}
 }
+
+func TestRoleEnforcement_RateJobAndGetRatings(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	cfg := &config.Config{AppEnv: "test"}
+	u := NewUserService(nil, cfg, rdb)
+
+	invalidRoleToken, _ := jwtutil.GenerateToken("usr-invalid", "admin", "owner-1", "admin@example.com")
+
+	// 1. RateJob with invalid role token MUST fail with 401 Unauthorized
+	bodyRate, _ := json.Marshal(map[string]any{
+		"job_id":         "job-1",
+		"rated_by_token": invalidRoleToken,
+		"stars":          5,
+	})
+	reqRate := httptest.NewRequest("POST", "/users/jobs/rate", bytes.NewReader(bodyRate))
+	recRate := httptest.NewRecorder()
+	u.RateJob(recRate, reqRate)
+	if recRate.Code != http.StatusUnauthorized || !strings.Contains(recRate.Body.String(), "role mismatch") {
+		t.Fatalf("Expected 401 Unauthorized with role mismatch for RateJob with invalid role token, got status %d, body: %s", recRate.Code, recRate.Body.String())
+	}
+}

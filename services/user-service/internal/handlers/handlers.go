@@ -1472,14 +1472,14 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Comment = strings.TrimSpace(html.EscapeString(req.Comment))
 
-	resolvedRatedBy, err := resolveToken(req.RatedBy)
+	resolvedRatedBy, err := resolveTokenWithRole(req.RatedBy, "owner", "employee", "user", "customer")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid rated_by token: " + err.Error()})
 		return
 	}
 	req.RatedBy = resolvedRatedBy
 
-	resolvedRatedUser, err := resolveToken(req.RatedUser)
+	resolvedRatedUser, err := resolveTokenWithRole(req.RatedUser, "owner", "employee", "user", "customer")
 	if err == nil {
 		req.RatedUser = resolvedRatedUser
 	} // Fallback: if token resolution fails, treat req.RatedUser as the raw user ID directly
@@ -1582,7 +1582,7 @@ func (u *UserService) GetRatings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resolvedTarget, err := resolveToken(targetUserID)
+	resolvedTarget, err := resolveTokenWithRole(targetUserID, "owner", "employee", "user", "customer")
 	if err == nil {
 		targetUserID = resolvedTarget
 	}
