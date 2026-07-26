@@ -59,7 +59,7 @@ This file tracks historical entries for the primary category: **Documentation Ch
 ## ADR-0005 Realtime Hub Horizontal Scaling Design
 
 - **Implementation Detail**: Produced ADR-0005 (`docs/adr/0005-realtime-hub-horizontal-scaling.md`) defining the Redis Pub/Sub horizontal scaling design for `notification-service` and `chat-service`. Updated `AI_CONTEXT.md` architecture section.
-- **Commit SHA**: ``120413b3cf6589303f4561753f76971892716ed9``
+- **Commit SHA**: ``09263f46220a89da4b93e4805283944c3f0d954a``
 - **Verification**: Verified via `make docs-check` and `go test ./shared/infra/... -run TestChangelogCommitSHAs`. ✅
 
 

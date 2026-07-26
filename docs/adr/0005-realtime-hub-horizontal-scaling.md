@@ -2,7 +2,7 @@
 
 - **Status**: Accepted
 - **Date**: 2026-07-26
-- **Related Commit SHA**: ``120413b3cf6589303f4561753f76971892716ed9``
+- **Related Commit SHA**: ``09263f46220a89da4b93e4805283944c3f0d954a``
 - **Related audit finding**: In-memory single-instance WebSocket (`chat-service`) and SSE (`notification-service`) connection hubs causing silent message/notification loss when scaled across 2 or more replicas.
 
 ## Context
