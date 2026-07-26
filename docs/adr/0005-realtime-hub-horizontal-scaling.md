@@ -46,6 +46,13 @@ We decided to implement horizontal scale safety for both real-time hubs using **
 - **Resource Footprint**: Minimal overhead; Redis Pub/Sub connection per instance with zero disk persistence overhead. Dynamic subscribe/unsubscribe in `chat-service` ensures instances only listen to active channels.
 - **Deferred**: Message persistence / historical offline message delivery remains handled by MongoDB (`chat_messages` collection).
 
+## Known Limitations
+
+### 1. `notification-service` Redis Pub/Sub Self-Delivery Dependency
+- **Context**: In `notification-service` (`services/notification-service/internal/hub/hub.go`), `Broadcast()` publishes payloads to Redis Pub/Sub channels (`notify:tenant:<id>` and `notify:global`) when Redis is enabled, relying on the instance's own pattern subscription (`PSubscribe("notify:*")`) to loop messages back to locally connected clients.
+- **Tradeoff**: Every notification — including delivery to clients on the originating instance — incurs a full Redis network round-trip. `rdb.Publish()` confirming success only guarantees Redis received the payload; if the publishing instance's subscriber connection experiences a transient network hiccup, local clients on the origin replica could miss the alert without a surfaced error.
+- **Forward Pointer / Recommended Remediation**: Future contributors can call `deliverLocal(n)` immediately on the origin instance (fast in-process path) in addition to `rdb.Publish()`, paired with de-duplication on the subscriber loop via `Notification.ID` tracking.
+
 ## Alternatives Considered
 - **NATS / Kafka / RabbitMQ**: Rejected to avoid introducing a new infrastructure dependency; Redis is already established in the codebase and infrastructure for rate-limiting and idempotency (`shared/infra/ratelimit`).
 - **Global Pub/Sub Channel for Chat**: Having every instance subscribe to a single `chat:pubsub:all` channel was considered but rejected in favor of dynamic per-channel subscription (`chat:channel:<name>`), preventing instances from receiving message traffic for channels with zero local subscribers.
