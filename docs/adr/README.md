@@ -33,3 +33,4 @@ When adding a new ADR, use the following template:
 *   [ADR-0002: Per-Job Escrow Integrity and Location Validation](0002-per-job-escrow-integrity.md)
 *   [ADR-0003: Employee Assignment Tenant Binding Check](0003-employee-assignment-tenant-binding-check.md)
 *   [ADR-0004: Customer Booking Employee Assignment Ordering Correctness](0004-customer-booking-employee-assignment-order.md)
+*   [ADR-0005: Realtime Hub Horizontal Scaling via Redis Pub/Sub](0005-realtime-hub-horizontal-scaling.md)

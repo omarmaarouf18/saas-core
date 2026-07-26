@@ -99,6 +99,7 @@ The platform uses a microservices architecture coordinated via a reverse-proxy A
   * `shared/infra/jwtutil`: Cryptographically signed JSON Web Token (JWT) generation and validation helpers.
 
 * **Security Decisions & Architecture Records**: Refer to [docs/adr/README.md](docs/adr/README.md) as the source of truth for security-boundary decisions going forward. Numbered ADR files detail exact context, implementation decisions, and consequences. Future contributors must document significant design and security changes as ADRs.
+* **Realtime Hub Horizontal Scaling Architecture**: Real-time hubs (`chat-service` and `notification-service`) use Redis Pub/Sub for cross-replica event fan-out (see [ADR-0005](docs/adr/0005-realtime-hub-horizontal-scaling.md)). `notification-service` subscribes to identity/global channels, while `chat-service` dynamically subscribes to channel-scoped Redis topics upon client join and unsubscribes upon client leave. If Redis is unreachable, hubs degrade gracefully to local-only delivery.
 
 ---
 
