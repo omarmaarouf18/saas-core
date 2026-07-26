@@ -1064,6 +1064,14 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------------------
 
 func (u *UserService) GetLedger(w http.ResponseWriter, r *http.Request) {
+	ip := handlerutil.GetIP(r)
+	if limited, remaining := u.limiter.CheckAndRecord("get_ledger_ip:" + ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
 	if r.Method != http.MethodGet {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
 		return
@@ -1076,12 +1084,21 @@ func (u *UserService) GetLedger(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
 		return
 	}
-	resolvedTenantID, err := resolveToken(tenantID)
+	resolvedTenantID, err := resolveTokenWithRole(tenantID, "owner")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
 		return
 	}
 	tenantID = resolvedTenantID
+
+	tenantKey := "ledger_tenant:" + tenantID
+	if limited, remaining := u.limiter.CheckAndRecord(tenantKey); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many ledger requests for this tenant, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
 	entries := u.store.GetLedger(r.Context(), tenantID)
 	writeJSON(w, http.StatusOK, map[string]any{"count": len(entries), "entries": entries})
 }
