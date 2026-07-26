@@ -107,6 +107,12 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Commit SHA**: ``7cd13c04e407ae527d8a641193d0cb37fc2db777``
 - **Verification**: Verified via `services/auth-service/internal/config` unit tests (`TestLoad_ResendConfig`) covering error on missing sender email, success on full config, and un-gated fallback when Resend is disabled. ✅
 
+## Rate Limiting for RateJob and GetRatings Handlers (Item #3)
+
+- **Implementation Detail**: Resolved deep-tester Item #3 (severity 5/10, priority 6/10). Added IP-based rate limiting via `u.limiter.CheckAndRecord` to `RateJob` (`POST /users/jobs/rate`) and `GetRatings` (`GET /users/ratings`), matching the security controls on `TrackJob` and `WalletDeposit` to prevent request flooding and rating enumeration attacks.
+- **Commit SHA**: ``12fde32e15a4f150ac9f10f6f9223ff2163f5d5c``
+- **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestRateJobAndGetRatings_RateLimiting -v` (asserting 429 Too Many Requests response after exceeding rate limit). ✅
+
 
 
 
