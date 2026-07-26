@@ -1009,8 +1009,9 @@ func TestUserServiceHandlers(t *testing.T) {
 
 	// Test: GetRatings
 	t.Run("GetRatings", func(t *testing.T) {
-		// Happy path (user_id parameter holds the token)
-		req := httptest.NewRequest("GET", "/users/ratings?user_id="+tokenApprovedOwner, nil)
+		// Happy path (requester passes auth header, user_id specifies target user)
+		req := httptest.NewRequest("GET", "/users/ratings?user_id=emp-101", nil)
+		req.Header.Set("Authorization", "Bearer "+tokenApprovedOwner)
 		rec := httptest.NewRecorder()
 		u.GetRatings(rec, req)
 		if rec.Code != http.StatusOK {
@@ -1019,14 +1020,16 @@ func TestUserServiceHandlers(t *testing.T) {
 
 		// Validation failure (missing user_id)
 		req = httptest.NewRequest("GET", "/users/ratings", nil)
+		req.Header.Set("Authorization", "Bearer "+tokenApprovedOwner)
 		rec = httptest.NewRecorder()
 		u.GetRatings(rec, req)
 		if rec.Code != http.StatusBadRequest {
 			t.Errorf("Expected 400 Bad Request for missing user_id in GetRatings, got %d", rec.Code)
 		}
 
-		// Invalid token -> 401 Unauthorized
-		req = httptest.NewRequest("GET", "/users/ratings?user_id=invalid-token", nil)
+		// Invalid requester token -> 401 Unauthorized
+		req = httptest.NewRequest("GET", "/users/ratings?user_id=emp-101", nil)
+		req.Header.Set("Authorization", "Bearer invalid-token")
 		rec = httptest.NewRecorder()
 		u.GetRatings(rec, req)
 		if rec.Code != http.StatusUnauthorized {
@@ -3810,9 +3813,12 @@ func TestRateJobAndGetRatings_RateLimiting(t *testing.T) {
 	cfg := &config.Config{AppEnv: "test"}
 	u := NewUserService(s, cfg, rdb)
 
+	tok, _ := jwtutil.GenerateToken("usr-1", "user", "owner-1", "u@example.com")
+
 	// Rate limit is 5 requests per minute per IP
 	for i := 0; i < 5; i++ {
 		req := httptest.NewRequest("GET", "/users/ratings?user_id=usr-1", nil)
+		req.Header.Set("Authorization", "Bearer "+tok)
 		req.RemoteAddr = "192.168.1.100:12345"
 		rec := httptest.NewRecorder()
 		u.GetRatings(rec, req)
@@ -3820,6 +3826,7 @@ func TestRateJobAndGetRatings_RateLimiting(t *testing.T) {
 
 	// 6th request should be rate-limited (429 Too Many Requests)
 	req6 := httptest.NewRequest("GET", "/users/ratings?user_id=usr-1", nil)
+	req6.Header.Set("Authorization", "Bearer "+tok)
 	req6.RemoteAddr = "192.168.1.100:12345"
 	rec6 := httptest.NewRecorder()
 	u.GetRatings(rec6, req6)

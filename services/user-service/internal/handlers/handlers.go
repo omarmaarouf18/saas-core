@@ -1521,23 +1521,47 @@ func (u *UserService) GetRatings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.URL.Query().Get("user_token")
-	if userID == "" {
-		userID = r.URL.Query().Get("user_id")
+	// Authenticate requester
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") {
+		requesterToken = strings.TrimPrefix(requesterToken, "Bearer ")
 	}
-	if userID == "" {
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_id")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("user_token")
+	}
+	if requesterToken == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "requester authorization token required"})
+		return
+	}
+
+	_, err := resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
+	// Target user ID to query (can be raw ID or JWT token)
+	targetUserID := r.URL.Query().Get("user_id")
+	if targetUserID == "" {
+		targetUserID = r.URL.Query().Get("user_token")
+	}
+	if targetUserID == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "user_id required"})
 		return
 	}
 
-	resolvedUserID, err := resolveToken(userID)
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid user token: " + err.Error()})
-		return
+	resolvedTarget, err := resolveToken(targetUserID)
+	if err == nil {
+		targetUserID = resolvedTarget
 	}
-	userID = resolvedUserID
 
-	ratings, err := u.store.GetRatingsForUser(r.Context(), userID)
+	ratings, err := u.store.GetRatingsForUser(r.Context(), targetUserID)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -1554,7 +1578,7 @@ func (u *UserService) GetRatings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"user_id":        userID,
+		"user_id":        targetUserID,
 		"ratings":        ratings,
 		"average_rating": avg,
 		"count":          len(ratings),
