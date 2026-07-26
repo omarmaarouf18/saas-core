@@ -44,17 +44,17 @@ const MaxReasonableSpeedKmh = 150.0
 
 // UserService holds dependencies for the user-service handlers.
 type UserService struct {
-	store                *store.MongoDB
-	authServiceURL       string
-	chatServiceURL       string
-	limiter              *handlerutil.RateLimiter
-	internalServiceToken string
-	locationThrottleMu   sync.Mutex
-	locationLastUpdate   map[string]time.Time
-	locationInFlight     map[string]bool
-	authClient           *resilience.ResilienceClient
-	chatClient           *resilience.ResilienceClient
-	httpClient           *http.Client
+	store                  *store.MongoDB
+	authServiceURL         string
+	chatServiceURL         string
+	limiter                *handlerutil.RateLimiter
+	internalServiceToken   string
+	locationThrottleMu     sync.Mutex
+	locationLastUpdate     map[string]time.Time
+	locationInFlight       map[string]bool
+	authClient             *resilience.ResilienceClient
+	chatClient             *resilience.ResilienceClient
+	httpClient             *http.Client
 	appEnv                 string
 	allowTestPaymentBypass bool
 	idempotencyMu          sync.Mutex
