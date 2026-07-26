@@ -62,6 +62,12 @@ This file tracks historical entries for the primary category: **Documentation Ch
 - **Commit SHA**: ``09263f46220a89da4b93e4805283944c3f0d954a``
 - **Verification**: Verified via `make docs-check` and `go test ./shared/infra/... -run TestChangelogCommitSHAs`. ✅
 
+## ADR-0006 Negotiable Transport Pricing Model Design
+
+- **Implementation Detail**: Produced ADR-0006 (`docs/adr/0006-negotiable-transport-pricing.md`) defining the negotiable pricing architecture, single-shot proposal rules, 5-minute timeout stages, owner vehicle/amenity governance, and deferred escrow locking for the Transport/Rides category. Added index entry in `docs/adr/README.md`.
+- **Commit SHA**: ``ba4c94a17437892534d6f88c02d517b0cc151270``
+- **Verification**: Verified via `make docs-check` and `go test ./shared/infra/... -run TestChangelogCommitSHAs`. ✅
+
 
 
 
