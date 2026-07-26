@@ -458,6 +458,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``3ee92f9861123c39255f5f55defb10c1581da2ea``
 - **Verification**: Verified via `go test ./services/chat-service/... -run TestMongoDB_ConcurrentPersistMessageNoCollision -v` (asserting 500 concurrent messages receive unique RFC 4122 `msg-<uuid>` IDs). ✅
 
+## TrackJob Escrow Rollback Failure Job Preservation (Item #1)
+
+- **Implementation Detail**: Resolved deep-tester Item #1 (severity 7/10, priority 8/10). If `RollbackEscrow` fails during `TrackJob` escrow lock rollback (after `UpdateJobLockedEscrow` error), the job record is no longer deleted. Instead, the handler executes a single retry attempt and, if rollback still fails, marks the job in MongoDB with status `escrow_reconciliation_required` (`models.JobStatusEscrowReconciliationRequired`) along with durable failure context in `ReconciliationNote` and `EscrowFailureReason`. This preserves the stuck-funds job document for operator reconciliation without blocking HTTP client responses.
+- **Commit SHA**: ``9b61b343e1f39ef8e8e57ce432542b2ad7fdc680``
+- **Verification**: Verified via `go test ./services/user-service/... -run TestTrackJob_EscrowRollbackFailure_ReconciliationRequired -v` (asserting job survival, status change, failure notes, and 500 error response). ✅
+
 
 
 
