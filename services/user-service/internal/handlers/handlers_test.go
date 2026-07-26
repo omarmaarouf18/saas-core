@@ -516,8 +516,8 @@ func TestUserServiceHandlers(t *testing.T) {
 		req := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
 		rec := httptest.NewRecorder()
 		u.UpdateJobLocation(rec, req)
-		if rec.Code != http.StatusForbidden {
-			t.Errorf("Expected 403 Forbidden for mismatched employee, got %d. Body: %s", rec.Code, rec.Body.String())
+		if rec.Code != http.StatusUnauthorized && rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 401 Unauthorized or 403 Forbidden for mismatched employee, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 
 		// B. Job is not active (pending) -> 403 Forbidden
@@ -4076,5 +4076,71 @@ func TestRoleEnforcement_CreateServiceAndTrackJob(t *testing.T) {
 	u.TrackJob(recTrack2, reqTrack2)
 	if recTrack2.Code != http.StatusUnauthorized || !strings.Contains(recTrack2.Body.String(), "role mismatch") {
 		t.Fatalf("Expected 401 Unauthorized with role mismatch for TrackJob with owner user_id, got status %d, body: %s", recTrack2.Code, recTrack2.Body.String())
+	}
+}
+
+func TestRoleEnforcement_JobLifecycle(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
+		return
+	}
+	defer func() {
+		_ = s.DropDatabase(context.Background())
+		s.Close(context.Background())
+	}()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	cfg := &config.Config{AppEnv: "test"}
+	u := NewUserService(s, cfg, rdb)
+
+	ownerToken, _ := jwtutil.GenerateToken("owner-1", "owner", "owner-1", "owner@example.com")
+	userToken, _ := jwtutil.GenerateToken("usr-1", "user", "owner-1", "user@example.com")
+
+	dummyJob := &models.Job{
+		ID:       "job-lifecycle-1",
+		OwnerID:  "owner-1",
+		Status:   models.JobStatusActive,
+		Location: models.Location{Latitude: 30.0, Longitude: 30.0},
+	}
+	_ = s.CreateJob(context.Background(), dummyJob)
+
+	// 1. GetJob by employee list passing owner token MUST fail with 401 Unauthorized
+	reqGetEmp := httptest.NewRequest("GET", "/users/jobs?requester_id="+ownerToken, nil)
+	recGetEmp := httptest.NewRecorder()
+	u.GetJob(recGetEmp, reqGetEmp)
+	if recGetEmp.Code != http.StatusUnauthorized || !strings.Contains(recGetEmp.Body.String(), "role mismatch") {
+		t.Fatalf("Expected 401 Unauthorized with role mismatch for GetJob by employee using owner token, got status %d, body: %s", recGetEmp.Code, recGetEmp.Body.String())
+	}
+
+	// 2. UpdateJobLocation passing user/customer token MUST fail with 401 Unauthorized
+	bodyLoc, _ := json.Marshal(map[string]any{
+		"job_id":       "job-lifecycle-1",
+		"requester_id": userToken,
+		"latitude":     30.0,
+		"longitude":    30.0,
+	})
+	reqLoc := httptest.NewRequest("POST", "/users/jobs/location", bytes.NewReader(bodyLoc))
+	recLoc := httptest.NewRecorder()
+	u.UpdateJobLocation(recLoc, reqLoc)
+	if recLoc.Code != http.StatusUnauthorized || !strings.Contains(recLoc.Body.String(), "role mismatch") {
+		t.Fatalf("Expected 401 Unauthorized with role mismatch for UpdateJobLocation using user token, got status %d, body: %s", recLoc.Code, recLoc.Body.String())
 	}
 }

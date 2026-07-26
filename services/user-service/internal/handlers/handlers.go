@@ -573,7 +573,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		var err error
-		resolvedRequester, err = resolveToken(requesterToken)
+		resolvedRequester, err = resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 			return
@@ -717,7 +717,7 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "id or requester_id parameter is required"})
 			return
 		}
-		resolvedRequester, err := resolveToken(requesterToken)
+		resolvedRequester, err := resolveTokenWithRole(requesterToken, "employee")
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 			return
@@ -760,7 +760,7 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester_id parameter is required"})
 		return
 	}
-	resolvedRequester, err := resolveToken(requesterToken)
+	resolvedRequester, err := resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 		return
@@ -1641,7 +1641,7 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	resolvedRequester, err := resolveToken(req.RequesterID)
+	resolvedRequester, err := resolveTokenWithRole(req.RequesterID, "employee", "owner")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 		return
@@ -1884,7 +1884,7 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resolvedRequester, err := resolveToken(requesterToken)
+	resolvedRequester, err := resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 		return
