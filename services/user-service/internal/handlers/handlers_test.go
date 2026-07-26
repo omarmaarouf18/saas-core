@@ -3107,6 +3107,327 @@ func TestUserServiceHandlers(t *testing.T) {
 	})
 }
 
+func TestGetJobsByOwner(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("saas_platform_test_owner_jobs_%d", time.Now().UnixNano())
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping TestGetJobsByOwner integration test: MongoDB not available (%v)", err)
+		return
+	}
+	defer func() {
+		_ = s.DropDatabase(context.Background())
+		s.Close(context.Background())
+	}()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	cfg := &config.Config{
+		InternalServiceToken: "mock-internal-token",
+	}
+	u := NewUserService(s, cfg, rdb)
+
+	ownerID1 := "owner-tenant-100"
+	ownerID2 := "owner-tenant-200"
+
+	job1 := &models.Job{
+		ID:         "job-owner-101",
+		OwnerID:    ownerID1,
+		EmployeeID: "emp-100",
+		UserID:     "cust-100",
+		ServiceID:  "svc-100",
+		Status:     models.JobStatusPending,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+	job2 := &models.Job{
+		ID:         "job-owner-201",
+		OwnerID:    ownerID2,
+		EmployeeID: "emp-200",
+		UserID:     "cust-200",
+		ServiceID:  "svc-200",
+		Status:     models.JobStatusActive,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+	if err := s.CreateJob(ctx, job1); err != nil {
+		t.Fatalf("failed to create job1: %v", err)
+	}
+	if err := s.CreateJob(ctx, job2); err != nil {
+		t.Fatalf("failed to create job2: %v", err)
+	}
+
+	tokenOwner1, _ := jwtutil.GenerateToken(ownerID1, "owner", ownerID1, "owner1@example.com")
+	tokenOwner2, _ := jwtutil.GenerateToken(ownerID2, "owner", ownerID2, "owner2@example.com")
+	tokenNonOwner, _ := jwtutil.GenerateToken("employee-999", "employee", "employee-999", "emp@example.com")
+
+	// 1. Tenant Isolation: Owner 1 receives only Job 1
+	t.Run("Tenant Isolation", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/users/jobs/owner", nil)
+		req.Header.Set("Authorization", "Bearer "+tokenOwner1)
+		rec := httptest.NewRecorder()
+		u.GetOwnerJobs(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		var jobs []models.OwnerJobResponse
+		if err := json.Unmarshal(rec.Body.Bytes(), &jobs); err != nil {
+			t.Fatalf("Failed to parse response: %v", err)
+		}
+		if len(jobs) != 1 {
+			t.Fatalf("Expected 1 job for owner1, got %d", len(jobs))
+		}
+		if jobs[0].ID != "job-owner-101" {
+			t.Errorf("Expected job ID job-owner-101, got %s", jobs[0].ID)
+		}
+
+		// Verify Owner 2 receives only Job 2
+		req2 := httptest.NewRequest("GET", "/users/jobs/owner", nil)
+		req2.Header.Set("Authorization", "Bearer "+tokenOwner2)
+		rec2 := httptest.NewRecorder()
+		u.GetOwnerJobs(rec2, req2)
+		if rec2.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK for owner2, got %d. Body: %s", rec2.Code, rec2.Body.String())
+		}
+		var jobs2 []models.OwnerJobResponse
+		if err := json.Unmarshal(rec2.Body.Bytes(), &jobs2); err != nil {
+			t.Fatalf("Failed to parse owner2 response: %v", err)
+		}
+		if len(jobs2) != 1 || jobs2[0].ID != "job-owner-201" {
+			t.Errorf("Expected 1 job (job-owner-201) for owner2, got %v", jobs2)
+		}
+	})
+
+	// 2. IDOR Verification: own owner_id matches, mismatched owner_id returns 403
+	t.Run("IDOR Verification", func(t *testing.T) {
+		reqMatch := httptest.NewRequest("GET", "/users/jobs/owner?owner_id="+ownerID1, nil)
+		reqMatch.Header.Set("Authorization", "Bearer "+tokenOwner1)
+		recMatch := httptest.NewRecorder()
+		u.GetOwnerJobs(recMatch, reqMatch)
+		if recMatch.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for matching owner_id, got %d. Body: %s", recMatch.Code, recMatch.Body.String())
+		}
+
+		reqMismatch := httptest.NewRequest("GET", "/users/jobs/owner?owner_id="+ownerID2, nil)
+		reqMismatch.Header.Set("Authorization", "Bearer "+tokenOwner1)
+		recMismatch := httptest.NewRecorder()
+		u.GetOwnerJobs(recMismatch, reqMismatch)
+		if recMismatch.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for mismatched owner_id, got %d. Body: %s", recMismatch.Code, recMismatch.Body.String())
+		}
+	})
+
+	// 3. Role Enforcement: non-owner role returns 403
+	t.Run("Role Enforcement", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/users/jobs/owner", nil)
+		req.Header.Set("Authorization", "Bearer "+tokenNonOwner)
+		rec := httptest.NewRecorder()
+		u.GetOwnerJobs(rec, req)
+
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for employee role, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+	})
+
+	// 4. Rate Limiting: 31st request receives 429
+	t.Run("Rate Limiting", func(t *testing.T) {
+		rateLimitOwnerID := "owner-ratelimit-300"
+		tokenRateLimit, _ := jwtutil.GenerateToken(rateLimitOwnerID, "owner", rateLimitOwnerID, "rate@example.com")
+
+		for i := 0; i < 5; i++ {
+			req := httptest.NewRequest("GET", "/users/jobs/owner", nil)
+			req.Header.Set("Authorization", "Bearer "+tokenRateLimit)
+			rec := httptest.NewRecorder()
+			u.GetOwnerJobs(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("Request %d failed unexpectedly with status %d: %s", i+1, rec.Code, rec.Body.String())
+			}
+		}
+
+		// 6th request must trigger 429
+		reqLimit := httptest.NewRequest("GET", "/users/jobs/owner", nil)
+		reqLimit.Header.Set("Authorization", "Bearer "+tokenRateLimit)
+		recLimit := httptest.NewRecorder()
+		u.GetOwnerJobs(recLimit, reqLimit)
+
+		if recLimit.Code != http.StatusTooManyRequests {
+			t.Fatalf("Expected 429 Too Many Requests on 6th call, got %d. Body: %s", recLimit.Code, recLimit.Body.String())
+		}
+		if !strings.Contains(recLimit.Body.String(), "too many requests") {
+			t.Errorf("Expected rate limit error message in body, got %s", recLimit.Body.String())
+		}
+	})
+}
+
+func TestGetJobsByCustomer(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("saas_platform_test_customer_jobs_%d", time.Now().UnixNano())
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping TestGetJobsByCustomer integration test: MongoDB not available (%v)", err)
+		return
+	}
+	defer func() {
+		_ = s.DropDatabase(context.Background())
+		s.Close(context.Background())
+	}()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	cfg := &config.Config{
+		InternalServiceToken: "mock-internal-token",
+	}
+	u := NewUserService(s, cfg, rdb)
+
+	custID1 := "cust-user-100"
+	custID2 := "cust-user-200"
+
+	job1 := &models.Job{
+		ID:         "job-cust-101",
+		OwnerID:    "owner-100",
+		EmployeeID: "emp-100",
+		UserID:     custID1,
+		ServiceID:  "svc-100",
+		Status:     models.JobStatusPending,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+	job2 := &models.Job{
+		ID:         "job-cust-201",
+		OwnerID:    "owner-200",
+		EmployeeID: "emp-200",
+		UserID:     custID2,
+		ServiceID:  "svc-200",
+		Status:     models.JobStatusActive,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+	if err := s.CreateJob(ctx, job1); err != nil {
+		t.Fatalf("failed to create job1: %v", err)
+	}
+	if err := s.CreateJob(ctx, job2); err != nil {
+		t.Fatalf("failed to create job2: %v", err)
+	}
+
+	tokenCust1, _ := jwtutil.GenerateToken(custID1, "user", custID1, "cust1@example.com")
+	tokenCust2, _ := jwtutil.GenerateToken(custID2, "user", custID2, "cust2@example.com")
+
+	// 1. Tenant Isolation: Customer 1 receives only Customer 1's jobs
+	t.Run("Tenant Isolation", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/users/jobs/mine", nil)
+		req.Header.Set("Authorization", "Bearer "+tokenCust1)
+		rec := httptest.NewRecorder()
+		u.GetCustomerJobs(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		var jobs []models.CustomerJobResponse
+		if err := json.Unmarshal(rec.Body.Bytes(), &jobs); err != nil {
+			t.Fatalf("Failed to parse response: %v", err)
+		}
+		if len(jobs) != 1 {
+			t.Fatalf("Expected 1 job for customer 1, got %d", len(jobs))
+		}
+		if jobs[0].ID != "job-cust-101" {
+			t.Errorf("Expected job ID job-cust-101, got %s", jobs[0].ID)
+		}
+
+		// Verify Customer 2 receives only Job 2
+		req2 := httptest.NewRequest("GET", "/users/jobs/mine", nil)
+		req2.Header.Set("Authorization", "Bearer "+tokenCust2)
+		rec2 := httptest.NewRecorder()
+		u.GetCustomerJobs(rec2, req2)
+		if rec2.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK for customer2, got %d. Body: %s", rec2.Code, rec2.Body.String())
+		}
+		var jobs2 []models.CustomerJobResponse
+		if err := json.Unmarshal(rec2.Body.Bytes(), &jobs2); err != nil {
+			t.Fatalf("Failed to parse customer2 response: %v", err)
+		}
+		if len(jobs2) != 1 || jobs2[0].ID != "job-cust-201" {
+			t.Errorf("Expected 1 job (job-cust-201) for customer2, got %v", jobs2)
+		}
+	})
+
+	// 2. IDOR Verification: matching user_id succeeds, mismatch fails with 403
+	t.Run("IDOR Verification", func(t *testing.T) {
+		reqMatch := httptest.NewRequest("GET", "/users/jobs/mine?user_id="+custID1, nil)
+		reqMatch.Header.Set("Authorization", "Bearer "+tokenCust1)
+		recMatch := httptest.NewRecorder()
+		u.GetCustomerJobs(recMatch, reqMatch)
+		if recMatch.Code != http.StatusOK {
+			t.Errorf("Expected 200 OK for matching user_id, got %d. Body: %s", recMatch.Code, recMatch.Body.String())
+		}
+
+		reqMismatch := httptest.NewRequest("GET", "/users/jobs/mine?user_id="+custID2, nil)
+		reqMismatch.Header.Set("Authorization", "Bearer "+tokenCust1)
+		recMismatch := httptest.NewRecorder()
+		u.GetCustomerJobs(recMismatch, reqMismatch)
+		if recMismatch.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for mismatched user_id, got %d. Body: %s", recMismatch.Code, recMismatch.Body.String())
+		}
+	})
+
+	// 3. Rate Limiting: 31st request receives 429
+	t.Run("Rate Limiting", func(t *testing.T) {
+		rateLimitCustID := "cust-ratelimit-300"
+		tokenRateLimit, _ := jwtutil.GenerateToken(rateLimitCustID, "user", rateLimitCustID, "custrate@example.com")
+
+		for i := 0; i < 5; i++ {
+			req := httptest.NewRequest("GET", "/users/jobs/mine", nil)
+			req.Header.Set("Authorization", "Bearer "+tokenRateLimit)
+			rec := httptest.NewRecorder()
+			u.GetCustomerJobs(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("Request %d failed unexpectedly with status %d: %s", i+1, rec.Code, rec.Body.String())
+			}
+		}
+
+		// 6th request must trigger 429
+		reqLimit := httptest.NewRequest("GET", "/users/jobs/mine", nil)
+		reqLimit.Header.Set("Authorization", "Bearer "+tokenRateLimit)
+		recLimit := httptest.NewRecorder()
+		u.GetCustomerJobs(recLimit, reqLimit)
+
+		if recLimit.Code != http.StatusTooManyRequests {
+			t.Fatalf("Expected 429 Too Many Requests on 6th call, got %d. Body: %s", recLimit.Code, recLimit.Body.String())
+		}
+		if !strings.Contains(recLimit.Body.String(), "too many requests") {
+			t.Errorf("Expected rate limit error message in body, got %s", recLimit.Body.String())
+		}
+	})
+}
+
 type contextMock struct {
 	context.Context
 }

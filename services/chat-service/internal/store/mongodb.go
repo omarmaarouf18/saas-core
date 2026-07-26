@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"time"
@@ -233,8 +235,10 @@ func (s *MongoDB) GetTicket(ctx context.Context, ticketID string) (*ComplaintTic
 // CreateTicketAndAssign attempts to atomically assign an available support agent to a new ticket.
 // If no agent is available, the ticket is created with "pending" status (queued).
 func (s *MongoDB) CreateTicketAndAssign(ctx context.Context, customerID, contextID string) (*ComplaintTicket, error) {
+	b := make([]byte, 8)
+	_, _ = rand.Read(b)
 	ticket := &ComplaintTicket{
-		ID:         fmt.Sprintf("tkt-%d", time.Now().UnixNano()),
+		ID:         fmt.Sprintf("tkt-%d-%s", time.Now().UnixNano(), hex.EncodeToString(b)),
 		CustomerID: customerID,
 		ContextID:  contextID,
 		Status:     "pending",

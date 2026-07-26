@@ -289,6 +289,16 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Updates driver coordinates. Accepts requester_id (legacy) or requester_token (preferred).",
 		Targets:     "Reads `jobs`, updates `jobs`. Downstream: calls `chat-service/chat/internal/broadcast-location`.",
 	},
+	"GET /users/jobs/owner": {
+		Permissions: "Owner JWT",
+		Function:    "Lists all jobs owned by the authenticated tenant owner (DTO: OwnerJobResponse). Supports optional owner_id parameter matching for IDOR validation.",
+		Targets:     "Reads `jobs` collection. Rate-limited per owner identity (30 req/min).",
+	},
+	"GET /users/jobs/mine": {
+		Permissions: "Customer JWT",
+		Function:    "Lists all jobs booked by the authenticated customer (DTO: CustomerJobResponse). Supports optional user_id parameter matching for IDOR validation.",
+		Targets:     "Reads `jobs` collection. Rate-limited per customer identity (30 req/min).",
+	},
 }
 
 // HandlerFuncInfo parses a file's AST to gather functions and their comments
