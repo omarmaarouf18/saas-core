@@ -476,6 +476,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``97a02c0dcf8220b86eec43daabe794d7aeda1460``
 - **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestRoleEnforcement_CreateServiceAndTrackJob -v` (asserting 401 Unauthorized with role mismatch error for employee/owner token role violations). ✅
 
+## Remediation: Explicit Token Role Enforcement in Job Lifecycle Handlers (Item #4 Remediation - Part 2)
+
+- **Implementation Detail**: Extended Item #4 remediation (original commit `a81a75323978195cf3d22c40dbc2c9400adc89a7`). Replaced bare `resolveToken` calls in job lifecycle endpoints (`GetJob`, `CompleteJob`, `CancelJob`, `UpdateJobLocation`) with explicit `resolveTokenWithRole` checks, returning HTTP 401 Unauthorized on role mismatch.
+- **Commit SHA**: ``5ff9c141a5395d0229bb11315ff7c15017f18bda``
+- **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestRoleEnforcement_JobLifecycle -v` (asserting 401 Unauthorized with role mismatch error for unauthorized token roles). ✅
+
 
 
 
