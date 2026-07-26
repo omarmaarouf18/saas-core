@@ -125,6 +125,12 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Commit SHA**: ``0213d4674fbd411923b1511262417edecceda47d``
 - **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestUserServiceHandlers/GetRatings -v` (asserting authenticated owner query for target employee rating summary returns 200 OK). ✅
 
+## Dual-Layer Rate Limiting for GetLedger Handler (Item #6)
+
+- **Implementation Detail**: Resolved deep-tester Item #6 (severity 3/10, priority 4/10). Added IP-based and tenant-based rate limiting via `u.limiter.CheckAndRecord` to `GetLedger` (`GET /users/ledger`), matching the financial rate limiting protections on `WalletDeposit` to prevent ledger scraping and resource exhaustion attacks.
+- **Commit SHA**: ``2398fcd44ee834b78f073d424c9cb08e7ad5094a``
+- **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestGetLedger_RateLimiting -v` (asserting 429 Too Many Requests response after 5 requests from same IP). ✅
+
 
 
 
