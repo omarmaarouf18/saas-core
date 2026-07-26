@@ -482,6 +482,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``5ff9c141a5395d0229bb11315ff7c15017f18bda``
 - **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestRoleEnforcement_JobLifecycle -v` (asserting 401 Unauthorized with role mismatch error for unauthorized token roles). ✅
 
+## Remediation: Explicit Token Role Enforcement in Wallet & Subscription Handlers (Item #4 Remediation - Part 3)
+
+- **Implementation Detail**: Extended Item #4 remediation (original commit `a81a75323978195cf3d22c40dbc2c9400adc89a7`). Replaced bare `resolveToken` calls in financial and administrative endpoints (`GetWallet`, `WalletDeposit`, `GetSubscription`, `UpdateSubscription`) with explicit `resolveTokenWithRole(..., "owner")` checks, returning HTTP 401 Unauthorized on non-owner tokens.
+- **Commit SHA**: ``c6da74b1db9263c3ae7c02fd6b0a815f91447b85``
+- **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestRoleEnforcement_WalletAndSubscription -v` (asserting 401 Unauthorized with role mismatch error for employee/user token role violations). ✅
+
 
 
 
