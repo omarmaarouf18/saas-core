@@ -227,6 +227,7 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool, e
 type sendRequest struct {
 	Type     string     `json:"type"`
 	TenantID string     `json:"tenant_id"`
+	Global   bool       `json:"global,omitempty"`
 	Title    string     `json:"title"`
 	Body     string     `json:"body"`
 	Roles    []hub.Role `json:"roles,omitempty"` // empty = broadcast to all roles
@@ -262,11 +263,16 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "title and body required"})
 		return
 	}
+	if req.TenantID == "" && !req.Global {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id is required unless global is true"})
+		return
+	}
 
 	notif := hub.Notification{
 		ID:        fmt.Sprintf("notif-%d", time.Now().UnixNano()),
 		Type:      req.Type,
 		TenantID:  req.TenantID,
+		Global:    req.Global,
 		Title:     req.Title,
 		Body:      req.Body,
 		Roles:     req.Roles,

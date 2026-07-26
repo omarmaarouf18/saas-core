@@ -26,6 +26,7 @@ type Notification struct {
 	ID        string    `json:"id"`
 	Type      string    `json:"type"`      // "job_alert", "status_update", "system", "popup"
 	TenantID  string    `json:"tenant_id"` // scope to tenant
+	Global    bool      `json:"global"`    // explicit opt-in for platform-wide global broadcast
 	Title     string    `json:"title"`
 	Body      string    `json:"body"`
 	Roles     []Role    `json:"roles"` // target roles (empty = broadcast all)
@@ -71,6 +72,12 @@ func (h *SSEHub) Unregister(c *SSEClient) {
 	log.Printf("[SSE-HUB] Client unregistered: id=%s (total: %d)", c.ID, h.ClientCount())
 }
 
+// BroadcastGlobal sends a notification platform-wide to all clients regardless of tenant.
+func (h *SSEHub) BroadcastGlobal(n Notification) {
+	n.Global = true
+	h.Broadcast(n)
+}
+
 // Broadcast sends a notification to all matching clients based on tenant and role filters.
 func (h *SSEHub) Broadcast(n Notification) {
 	if n.Timestamp.IsZero() {
@@ -99,8 +106,8 @@ func (h *SSEHub) Broadcast(n Notification) {
 
 	sent := 0
 	for client := range h.clients {
-		// Tenant scoping: if notification has a tenant, only send to that tenant's clients.
-		if n.TenantID != "" && client.TenantID != n.TenantID {
+		// Tenant scoping: unless explicitly marked global, only send to clients belonging to the target tenant.
+		if !n.Global && client.TenantID != n.TenantID {
 			continue
 		}
 		// Role filtering: if roles specified, only send to matching roles.

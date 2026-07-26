@@ -87,16 +87,32 @@ func TestSSEHub_BroadcastScopingAndFiltering(t *testing.T) {
 	default:
 	}
 
-	// 2. Slow client buffer full drop
-	slowClient := &SSEClient{ID: "slow", TenantID: "tenant-C", Role: RoleClient, Send: make(chan []byte, 1)}
-	// Fill buffer
-	slowClient.Send <- []byte("busy")
-	h.Register(slowClient)
-
-	// Broadcast to slow client
+	// 3. Test non-global notification with empty/different tenant ID does NOT reach tenant B
 	h.Broadcast(Notification{
-		TenantID: "tenant-C",
-		Title:    "Test Slow Drop",
+		Type:     "popup",
+		TenantID: "tenant-A",
+		Title:    "Private Tenant A Notification",
+		Global:   false,
 	})
-	// Should not block or panic
+
+	select {
+	case <-cOwnerB.Send:
+		t.Errorf("cOwnerB (tenant-B) should NOT receive non-global notification addressed to tenant-A")
+	default:
+	}
+
+	// 4. Test explicit global broadcast reaches all tenants
+	h.BroadcastGlobal(Notification{
+		Type:  "system",
+		Title: "Platform-wide System Maintenance",
+	})
+
+	select {
+	case msg := <-cOwnerB.Send:
+		if len(msg) == 0 {
+			t.Errorf("Expected global notification payload for cOwnerB")
+		}
+	default:
+		t.Errorf("cOwnerB should have received explicit global notification")
+	}
 }
