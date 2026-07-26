@@ -30,6 +30,19 @@ for file in $(find . -type f -name "*.md" -not -path "*/node_modules/*" -not -pa
     fi
   done
 done
+
+PREV_COMMIT="HEAD~1"
+if git rev-parse --verify "$PREV_COMMIT" >/dev/null 2>&1; then
+  NEW_SHAS=$(git diff "$PREV_COMMIT" HEAD -- "docs/changelog/*.md" | grep -E "^\+[[:space:]]*- \*\*Commit SHA\*\*" | grep -oE "[0-9a-f]{40}" || true)
+  HEAD_SHA=$(git rev-parse HEAD)
+  for sha in $NEW_SHAS; do
+    if [ "$sha" != "$HEAD_SHA" ]; then
+      echo "BLOCKED: Newly added changelog commit SHA $sha does not match current HEAD $HEAD_SHA"
+      FAILED_SHA=1
+    fi
+  done
+fi
+
 if [ "$FAILED_SHA" -eq 1 ]; then
   exit 1
 fi
