@@ -58,8 +58,7 @@ type UserService struct {
 	httpClient             *http.Client
 	appEnv                 string
 	allowTestPaymentBypass bool
-	idempotencyMu          sync.Mutex
-	idempotencyJobs        map[string]string
+	rdb                    *redis.Client
 	// Test hook to block UpdateJobLocation database write for deterministic testing
 	updateJobLocationBeforeWriteHook func(ctx context.Context)
 	// Test hook to force RollbackEscrow to fail for deterministic testing
@@ -99,7 +98,7 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		internalServiceToken:   cfg.InternalServiceToken,
 		locationLastUpdate:     make(map[string]time.Time),
 		locationInFlight:       make(map[string]bool),
-		idempotencyJobs:        make(map[string]string),
+		rdb:                    rdb,
 		authClient:             authClient,
 		chatClient:             chatClient,
 		httpClient:             client,
@@ -274,11 +273,10 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		idempotencyKey = req.IdempotencyKey
 	}
 
-	if idempotencyKey != "" {
-		u.idempotencyMu.Lock()
-		existingJobID, exists := u.idempotencyJobs[idempotencyKey]
-		u.idempotencyMu.Unlock()
-		if exists {
+	if idempotencyKey != "" && u.rdb != nil {
+		redisKey := "idempotency:job:" + idempotencyKey
+		existingJobID, err := u.rdb.Get(r.Context(), redisKey).Result()
+		if err == nil && existingJobID != "" {
 			existingJob := u.store.GetJob(r.Context(), existingJobID)
 			if existingJob != nil {
 				writeJSON(w, http.StatusOK, map[string]any{
@@ -436,11 +434,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		job.Status = models.JobStatusActive
 		job.UpdatedAt = time.Now().UTC()
 
-		if idempotencyKey != "" {
-			u.idempotencyMu.Lock()
-			u.idempotencyJobs[idempotencyKey] = job.ID
-			u.idempotencyMu.Unlock()
-		}
+		u.saveIdempotencyKey(r.Context(), idempotencyKey, job.ID)
 
 		writeJSON(w, http.StatusCreated, map[string]any{
 			"message":        "job tracking record created",
@@ -454,11 +448,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	if err := u.store.LockEscrow(ctx, req.OwnerID, job.ID, escrowAmount); err != nil {
 		log.Printf("[USER] Escrow lock failed for job %s: %v", job.ID, err)
 		// Job created but unfunded — still report it.
-		if idempotencyKey != "" {
-			u.idempotencyMu.Lock()
-			u.idempotencyJobs[idempotencyKey] = job.ID
-			u.idempotencyMu.Unlock()
-		}
+		u.saveIdempotencyKey(r.Context(), idempotencyKey, job.ID)
 		writeJSON(w, http.StatusCreated, map[string]any{
 			"message": "job created but escrow lock failed — deposit funds first",
 			"warning": err.Error(), "job": job, "escrow_amount": escrowAmount,
@@ -509,11 +499,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	job.Status = models.JobStatusActive
 	job.UpdatedAt = time.Now().UTC()
 
-	if idempotencyKey != "" {
-		u.idempotencyMu.Lock()
-		u.idempotencyJobs[idempotencyKey] = job.ID
-		u.idempotencyMu.Unlock()
-	}
+	u.saveIdempotencyKey(r.Context(), idempotencyKey, job.ID)
 
 	writeJSON(w, http.StatusCreated, map[string]any{
 		"message": "job tracking record created", "lifecycle_note": "escrow locked, all up to date",
@@ -1154,6 +1140,15 @@ func resolveTokenWithRole(tokenStr string, allowedRoles ...string) (string, erro
 
 func resolveToken(tokenStr string) (string, error) {
 	return resolveTokenWithRole(tokenStr)
+}
+
+func (u *UserService) saveIdempotencyKey(ctx context.Context, key, jobID string) {
+	if key != "" && u.rdb != nil {
+		redisKey := "idempotency:job:" + key
+		if err := u.rdb.Set(ctx, redisKey, jobID, 24*time.Hour).Err(); err != nil {
+			log.Printf("[ERROR] failed to store idempotency key %s in Redis: %v", key, err)
+		}
+	}
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
