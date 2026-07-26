@@ -1,6 +1,6 @@
 # ADR-0006: Negotiable Transport Pricing Model
 
-- **Status**: Proposed
+- **Status**: Accepted
 - **Date**: 2026-07-26
 - **Related Commit SHA**: TBD
 - **Related audit finding**: Real-time Ride Pricing & Flexible Fare Escalation
@@ -29,27 +29,27 @@ We decided to implement negotiable pricing for the **Transport/Rides category on
 2. **Formula Extension**: The system computes a baseline suggested price $P_{\text{system}}$ extending the base formula with vehicle-type and amenity multipliers:
    $$P_{\text{system}} = (\text{TenantBasePrice} + (\text{Distance} \times \text{TenantPricePerKM})) \times \text{VehicleTypeMultiplier} \times \prod \text{AmenityMultipliers}$$
 3. **Single-Shot Take-It-Or-Leave-It Proposal**: Either party (customer or employee — whichever acts first) may propose exactly ONE adjusted price within the strict range $[0.5 \times P_{\text{system}}, 1.5 \times P_{\text{system}}]$. The counterparty gets exactly one decision: **Accept** or **Decline**. No counter-proposals are permitted. Any second proposal attempt on the same job must be rejected by the server with HTTP 400 (`proposal_already_submitted`).
-4. **5-Minute Auto-Cancellation**: If a proposal in `awaiting_response` state is not Accepted or Declined within 5 minutes, it automatically expires: the matched employee is released back to the available fleet pool, and the job returns to `pending` / broadcast state at $P_{\text{system}}$.
+4. **5-Minute Auto-Cancellation**: If a proposal in `awaiting_price_response` state is not Accepted or Declined within 5 minutes (`PriceProposalExpiresAt`), it automatically expires: the job transitions to `JobStatusCancelled` with `CancellationReason = "price_proposal_expired"`, and the pre-selected employee is released.
 5. **Deferred Escrow Locking for Rides**: For non-COD `transport` jobs, wallet/card escrow locking does **not** occur at initial `TrackJob` booking. Instead, escrow locking occurs only after a final `AgreedPrice` is established via acceptance. Once locked, the escrow allocation reuses the exact per-job isolation, `LockedEscrowAmount` persistence, and atomic deduction guarantees from [ADR-0002](0002-per-job-escrow-integrity.md).
 6. **No Cooldown Required**: Because single-shot negotiation permits only one proposal per match, abusive counter-proposal loops are structurally impossible, eliminating the need for complex decline cooldown mechanisms.
 
 ---
 
-### 2. Detailed Technical Decisions & Justifications for Open Questions
+### 2. Detailed Technical Decisions & Justifications
 
 #### Q1: Who can initiate the first price proposal, and when?
 - **Decision**: Either party (customer or employee — whichever acts first) may initiate a price proposal.
-- **Justification**: The customer may include a target custom price proposal during job creation (`POST /users/jobs/track`), OR leave it empty to broadcast at the system-computed price $P_{\text{system}}$. Once an employee is matched or responds to the broadcast, if no customer proposal is active, the employee may propose an adjusted price upon reviewing job details. Allowing either party to propose first aligns with real-world ride-hailing dynamics (e.g. InDrive/Uber bidding), permitting budget-conscious customers to offer a fare up front while giving drivers flexibility to adjust fares based on real-time traffic or road conditions.
+- **Justification**: The customer may include a target custom price proposal during job creation (`POST /users/jobs/track`), OR leave it empty to use the system-computed price $P_{\text{system}}$. Once an assigned employee reviews the pre-selected job, if no customer proposal is active, the employee may propose an adjusted price upon reviewing job details. Allowing either party to propose first aligns with real-world ride-hailing dynamics (e.g. InDrive/Uber bidding), permitting budget-conscious customers to offer a fare up front while giving drivers flexibility to adjust fares based on real-time traffic or road conditions.
 
 #### Q2: What happens to the job if a proposal is declined?
-- **Decision**: If a price proposal is declined (by either customer or employee), the job is re-broadcast to other available employees in the tenant pool at the default $P_{\text{system}}$, excluding the employee who declined.
-- **Justification**: Re-broadcasting at $P_{\text{system}}$ ensures that a price disagreement between a single customer-driver pair does not terminate the customer's booking session prematurely. The declining employee is released back to the available pool, protecting fleet liquidity while giving other drivers an opportunity to accept the ride at $P_{\text{system}}$ or propose a different fare.
+- **Decision**: Declining a price proposal ends that job session immediately — it transitions to terminal `JobStatusCancelled` with `CancellationReason = "price_disagreement"`. The pre-selected employee is released, and no automatic reassignment occurs. To request service again, the customer must submit a new booking request.
+- **Justification**: This decision is supported by two fundamental considerations:
+  1. *Architecture Scope*: The existing platform architecture assigns a specific employee directly at booking time via `EmployeeID` in `TrackJob`; no dynamic driver broadcast or matching pool exists in the codebase today, making employee re-matching out of scope for this feature v1.
+  2. *Product Semantics for Rides*: Unlike delivery or shipping (where the courier fulfilling the delivery is interchangeable and does not alter the underlying product), a passenger transport proposal is anchored directly to that specific employee's vehicle type and amenities (e.g. vehicle size, comfort level, AC). Silently re-assigning a different driver or vehicle for the same negotiated price range would violate the customer's explicit choice of vehicle class and amenities.
 
 #### Q3: When does the 5-minute clock start?
-- **Decision**: We enforce **two distinct stage-gated timers**:
-  1. **Broadcast Expiry Timer (5 minutes)**: Starts when a job enters `pending` / broadcast state. If no employee accepts or responds within 5 minutes, the job auto-expires as `expired_no_driver`.
-  2. **Negotiation Response Timer (5 minutes)**: Starts immediately when a price proposal enters `awaiting_response` state. If the counterparty does not Accept or Decline within 5 minutes, the proposal auto-cancels, releasing the driver and returning the job to `pending` / broadcast at $P_{\text{system}}$.
-- **Justification**: Separating the broadcast matching timer from the proposal decision timer prevents time spent searching for a driver from eroding the decision window for price negotiation, ensuring predictable 5-minute decision windows at each lifecycle stage.
+- **Decision**: We enforce **a single 5-minute timer**: the **Negotiation Response Timer** (`PriceProposalExpiresAt`), which starts immediately when a price proposal enters the `awaiting_price_response` state.
+- **Justification**: Because the employee is pre-selected at booking time (`EmployeeID` set in `TrackJob`), there is no driver matching or broadcast phase to measure. A single 5-minute timer cleanly governs the counterparty decision window.
 
 #### Q4: Vehicle type & amenities data model and administrative governance
 - **Decision**: Vehicle types and amenity multipliers are configured at the **Tenant Owner level** (`tenant_vehicle_pricing` and `tenant_amenities` tables), editable **strictly by Tenant Owners (`RoleOwner`)**. Employees select their registered vehicle type and active amenities from their tenant's approved catalog during vehicle registration or shift check-in.
@@ -61,13 +61,13 @@ We decided to implement negotiable pricing for the **Transport/Rides category on
 
 ---
 
-## Proposed Defaults — Pending Confirmation
+## Confirmed Design Decisions
 
-The following 5 proposed defaults are embedded in the Decision section above and summarized here for rapid review and human sign-off:
+The following 5 design decisions are finalized for v1 implementation:
 
-1. **Initiation**: Either party (customer at `TrackJob` booking, or matched employee upon job review) can propose the first fare.
-2. **Decline Handling**: Declining a proposal re-broadcasts the job to other drivers at $P_{\text{system}}$ (excluding the declining driver), rather than ending the booking session.
-3. **Timer Management**: Two separate 5-minute timers are maintained: Broadcast Expiry Timer (5m in `pending`) and Negotiation Response Timer (5m in `awaiting_response`).
+1. **Initiation**: Either party (customer at `TrackJob` booking, or pre-selected employee upon job review) can propose the first fare.
+2. **Decline Handling**: Declining a proposal immediately cancels the job (`JobStatusCancelled`, reason `"price_disagreement"`). The customer must create a new booking request if they wish to rebook.
+3. **Timer Management**: A single 5-minute timer (`PriceProposalExpiresAt`) governs the proposal decision window in `awaiting_price_response`.
 4. **Vehicle/Amenity Governance**: Multipliers are configured strictly by Tenant Owners (`RoleOwner`). Employees select approved vehicle/amenity options from their tenant's catalog.
 5. **COD Compatibility**: Negotiable pricing applies identically to COD rides, with the finalized `AgreedPrice` collected in cash at ride completion.
 
@@ -79,7 +79,7 @@ The following 5 proposed defaults are embedded in the Decision section above and
   - Provides flexible, market-responsive pricing for passenger rides (`transport`), increasing driver acceptance rates and rider fulfillment.
   - Preserves 100% of existing fixed-pricing and initial-booking escrow guarantees for `delivery` and `shipping` categories.
   - Maintains strict per-job escrow isolation and atomic wallet accounting ([ADR-0002](0002-per-job-escrow-integrity.md)) for `transport` rides by executing wallet locks immediately after `AgreedPrice` confirmation.
-- **Resource Footprint**: Minimal overhead; adds state transitions (`awaiting_response`, `agreed`) and background timer cleanup for expired proposals.
+- **Resource Footprint**: Minimal overhead; adds state transition (`awaiting_price_response`) and background timer cleanup for expired proposals.
 - **Security & Integrity**: Bounded proposals $[0.5 \times P_{\text{system}}, 1.5 \times P_{\text{system}}]$ and single-shot enforcement prevent price manipulation, runaway fare inflation, and counter-bidding spam.
 
 ---
