@@ -1138,10 +1138,6 @@ func resolveTokenWithRole(tokenStr string, allowedRoles ...string) (string, erro
 	return claims.UserID, nil
 }
 
-func resolveToken(tokenStr string) (string, error) {
-	return resolveTokenWithRole(tokenStr)
-}
-
 func (u *UserService) saveIdempotencyKey(ctx context.Context, key, jobID string) {
 	if key != "" && u.rdb != nil {
 		redisKey := "idempotency:job:" + key
