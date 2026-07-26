@@ -552,8 +552,14 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	if err := a.store.VerifyOTP(ctx, req.Email, req.OTP); err != nil {
 		a.limiter.RecordFailure(clientIP)
 		a.limiter.RecordFailure(req.Email)
+		if strings.Contains(err.Error(), "not found") {
+			writeJSON(w, http.StatusNotFound, map[string]string{
+				"error": err.Error(),
+			})
+			return
+		}
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
-			"error": err.Error(),
+			"error": "invalid or expired OTP code",
 		})
 		return
 	}
