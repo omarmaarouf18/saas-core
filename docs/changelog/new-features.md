@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **New Features Cha
 
 ---
 
+## Negotiable Transport Pricing Handler Wiring & Endpoints
+
+- **Implementation Detail**: Updated `TrackJob` for `transport` category services to initialize `JobStatusAwaitingPriceResponse`, compute `SuggestedPrice`, validate optional customer initial proposal, and defer escrow locking. Added endpoints `POST /users/jobs/propose-price` (single-shot proposal enforcement, ±50% bound check, 5m expiry timer) and `POST /users/jobs/respond-price` (accept sets `AgreedPrice` and activates job; decline cancels with `price_disagreement`). Implemented lazy proposal expiry in `GetJob` and proposal endpoints. Added unit test suite `TestNegotiableTransportPricing`.
+- **Commit SHA**: ``036901ba292a73d2bf67cd14603f643d5d25e74c``
+- **Verification**: Verified via `gofmt -l .`, `go vet ./...`, `go test ./... -v -race -count=1`, `make docs-check`, and pre-push CI gate. ✅
+
 ## Negotiable Transport Pricing Data Model Foundation
 
 - **Implementation Detail**: Added negotiable pricing fields to `Job` struct (`SuggestedPrice`, `ProposedPrice`, `ProposedBy`, `AgreedPrice`, `PriceProposalExpiresAt`), defined explicit `JobStatusAwaitingPriceResponse` enum state, and implemented `ValidPriceProposal` validation helper enforcing bounds $[0.5 \times P_{\text{system}}, 1.5 \times P_{\text{system}}]$.
