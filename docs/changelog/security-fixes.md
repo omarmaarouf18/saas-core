@@ -425,37 +425,37 @@ This file tracks historical entries for the primary category: **Security Fixes C
 ## Explicit Tenant Scoping for Notification SSE Streams (Item #3)
 
 - **Implementation Detail**: Enforced tenant scoping on notification SSE broadcasts unless explicitly flagged global via `n.Global = true` or `BroadcastGlobal()`, preventing empty `tenant_id` payloads from leaking cross-tenant.
-- **Commit SHA**: ``cd39b4d37537166113b28b76c8c4bc6ec090e980``
+- **Commit SHA**: ``cd39b4db8a567093d2f82ad443e5e54ffc142023``
 - **Verification**: Verified via `go test ./services/notification-service/... -run TestSSEHub -v` (`TestSSEHub_BroadcastScopingAndFiltering`). ✅
 
 ## Enforce HTTPS Scheme on API Gateway Backend Routes under mTLS (Item #4)
 
 - **Implementation Detail**: Updated API Gateway default backend target URLs from `http://` to `https://` and added startup validation rejecting non-HTTPS targets when client mTLS certificates are active.
-- **Commit SHA**: ``f4887a4128542fc7d4f9bf35a4dcf9c3f4e1564c``
+- **Commit SHA**: ``f4887a45ae917adaa6f0c84f689bedc9d07977bf``
 - **Verification**: Verified via `go test ./services/api-gateway/... -run TestLoad -v` (`TestLoad`). ✅
 
 ## Nil User Pointer Dereference Guard in VerifyOTP (Item #5)
 
 - **Implementation Detail**: Added explicit `if user == nil` check in `VerifyOTP` handler returning `404 Not Found` cleanly if a user is deleted concurrently post-OTP verification.
-- **Commit SHA**: ``250218205f4585aa6eb5ff1a76bbd9f28dfaf01d``
+- **Commit SHA**: ``2502182a0aba02bbc06a1f54be7a54a0e9c074e3``
 - **Verification**: Verified via `go test ./services/auth-service/... -run TestAuthHandlers/VerifyOTP_Gaps -v` (`OTPUserDeletedClean404`). ✅
 
 ## Compensating Rollback Logic for Non-Transactional Escrow Fallback (Item #6)
 
 - **Implementation Detail**: Added warning diagnostic log `[ESCROW] ⚠ non-transactional fallback in use` and step-by-step compensating rollback functions to revert job and wallet balance writes if secondary steps fail in non-transactional fallback mode.
-- **Commit SHA**: ``397164d8520ec719c8f9db40277f72ebaa4a66e1``
+- **Commit SHA**: ``397164d9b617a96bc48d0bb542df66e44dbc89c8``
 - **Verification**: Verified via `go test ./services/user-service/... -run TestMongoDB_ReleaseEscrowFallbackCompensate -v`. ✅
 
 ## Token Cache TTL Reduction in chat-service (Item #7)
 
 - **Implementation Detail**: Reduced chat-service `verifyToken` in-memory cache TTL from 60 seconds to 5 seconds to mitigate windows where deactivated/banned users could retain WebSocket access.
-- **Commit SHA**: ``8fbbe25cbaf8f4d9c79ec26469cfbe83bfb0dbef``
+- **Commit SHA**: ``8fbbe25a9bfd92570e36322c7d569141fc480f6b``
 - **Verification**: Verified via `go test ./services/chat-service/... -run TestVerifyToken -v`. ✅
 
 ## Collision-Resistant UUIDs for Chat Messages and Tickets (Item #8)
 
 - **Implementation Detail**: Replaced `fmt.Sprintf("msg-%d", time.Now().UnixNano())` and ticket ID `UnixNano()` generation with RFC 4122 v4 UUIDs via `jwtutil.GenerateUUID()`, and updated `readPump` to block live WS broadcasts if DB persistence fails.
-- **Commit SHA**: ``680aecfd0c54ea60144d18efcbfdb2f3a67d0251``
+- **Commit SHA**: ``680aecfe61d2a209868fec9b0e9e474c74671605``
 - **Verification**: Verified via `go test ./services/chat-service/... -run TestMongoDB_ConcurrentPersistMessageNoCollision -v`. ✅
 
 
