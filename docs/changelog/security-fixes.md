@@ -488,6 +488,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``c6da74b1db9263c3ae7c02fd6b0a815f91447b85``
 - **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestRoleEnforcement_WalletAndSubscription -v` (asserting 401 Unauthorized with role mismatch error for employee/user token role violations). ✅
 
+## Remediation: Explicit Token Role Enforcement in RateJob & GetRatings Handlers (Item #4 Remediation - Part 4)
+
+- **Implementation Detail**: Completed Item #4 remediation across all remaining call sites (original commit `a81a75323978195cf3d22c40dbc2c9400adc89a7`). Replaced bare `resolveToken` calls in `RateJob` (`req.RatedBy`, `req.RatedUser`) and `GetRatings` (`targetUserID`) with explicit `resolveTokenWithRole` checks, completing 100% role enforcement across all 18 endpoint token resolution locations in `handlers.go`. Zero bare `resolveToken` calls remain without role validation.
+- **Commit SHA**: ``45328ebbcf8eb4adcca143c6ed5101d0cfb97208``
+- **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestRoleEnforcement_RateJobAndGetRatings -v` and grep-counting 0 remaining bare `resolveToken` calls in `handlers.go`. ✅
+
 
 
 
