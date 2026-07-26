@@ -130,8 +130,15 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 
 // PersistMessage stores a chat message in MongoDB
 func (s *MongoDB) PersistMessage(ctx context.Context, msg *chat.Message) error {
+	msgUUID, err := jwtutil.GenerateUUID()
+	if err != nil {
+		b := make([]byte, 8)
+		_, _ = rand.Read(b)
+		msgUUID = fmt.Sprintf("%d-%s", time.Now().UnixNano(), hex.EncodeToString(b))
+	}
+
 	doc := bson.M{
-		"_id":             fmt.Sprintf("msg-%d", time.Now().UnixNano()),
+		"_id":             fmt.Sprintf("msg-%s", msgUUID),
 		"channel":         msg.Channel,
 		"sender_id":       msg.SenderID,
 		"sender_username": msg.SenderUsername,
@@ -140,7 +147,7 @@ func (s *MongoDB) PersistMessage(ctx context.Context, msg *chat.Message) error {
 		"timestamp":       time.Now().UTC(),
 	}
 
-	_, err := s.messages.InsertOne(ctx, doc)
+	_, err = s.messages.InsertOne(ctx, doc)
 	if err != nil {
 		return fmt.Errorf("store: failed to insert message: %w", err)
 	}

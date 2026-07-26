@@ -196,15 +196,16 @@ func TestMongoDB_ConcurrentPersistMessageNoCollision(t *testing.T) {
 	ctx := context.Background()
 	channel := "concurrent-test-channel"
 
-	const numMsgs = 20
+	const numMsgs = 500
+	const numGoroutines = 50
 	errCh := make(chan error, numMsgs)
 
 	for i := 0; i < numMsgs; i++ {
 		go func(idx int) {
 			msg := &chat.Message{
 				Channel:        channel,
-				SenderID:       fmt.Sprintf("user-%d", idx),
-				SenderUsername: fmt.Sprintf("user%d", idx),
+				SenderID:       fmt.Sprintf("user-%d", idx%numGoroutines),
+				SenderUsername: fmt.Sprintf("user%d", idx%numGoroutines),
 				Content:        fmt.Sprintf("Concurrent message %d", idx),
 				Type:           "chat",
 			}
@@ -218,8 +219,39 @@ func TestMongoDB_ConcurrentPersistMessageNoCollision(t *testing.T) {
 		}
 	}
 
-	history, err := s.GetHistory(ctx, channel, 100)
+	history, err := s.GetHistory(ctx, channel, 1000)
 	if err != nil || len(history) != numMsgs {
 		t.Fatalf("Expected %d persisted messages in history, got %d (err: %v)", numMsgs, len(history), err)
+	}
+
+	// Verify all raw documents in MongoDB have valid msg- UUID IDs, not UnixNano timestamps
+	cursor, err := s.messages.Find(ctx, map[string]interface{}{"channel": channel})
+	if err != nil {
+		t.Fatalf("Failed to query messages collection: %v", err)
+	}
+	defer cursor.Close(ctx)
+
+	var docs []struct {
+		ID string `bson:"_id"`
+	}
+	if err := cursor.All(ctx, &docs); err != nil {
+		t.Fatalf("Failed to decode message docs: %v", err)
+	}
+
+	idMap := make(map[string]bool)
+	for _, doc := range docs {
+		if idMap[doc.ID] {
+			t.Errorf("Duplicate message ID found: %s", doc.ID)
+		}
+		idMap[doc.ID] = true
+
+		// Assert ID format is msg-<uuid> (where UUID has hyphenated RFC4122 pattern, e.g. length > 30)
+		if len(doc.ID) < 30 || doc.ID[:4] != "msg-" {
+			t.Errorf("Message ID %q does not match collision-resistant msg-<uuid> format", doc.ID)
+		}
+	}
+
+	if len(idMap) != numMsgs {
+		t.Errorf("Expected %d unique message IDs, got %d", numMsgs, len(idMap))
 	}
 }
