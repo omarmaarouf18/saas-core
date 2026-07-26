@@ -1,4 +1,4 @@
-.PHONY: docs docs-check setup ci ensure-hooks commit push since-last-report
+.PHONY: docs docs-check setup ci ensure-hooks commit push since-last-report report-hash
 
 ensure-hooks:
 	@if [ "$$(git config --get core.hooksPath 2>/dev/null)" != ".githooks" ]; then \
@@ -27,11 +27,19 @@ push: ensure-hooks
 	git push origin $$BRANCH; \
 	REMOTE=$$(git ls-remote origin $$BRANCH | awk '{print $$1}'); \
 	if [ "$$LOCAL" = "$$REMOTE" ]; then \
+		echo "$$LOCAL" > .last_push_verified; \
 		echo "PUSH_VERIFIED: $$LOCAL"; \
 	else \
 		echo "PUSH_MISMATCH: local=$$LOCAL remote=$$REMOTE"; \
 		exit 1; \
 	fi
+
+report-hash:
+	@if [ ! -f .last_push_verified ]; then \
+		echo "ERROR: no .last_push_verified file — run 'make push' first"; \
+		exit 1; \
+	fi; \
+	cat .last_push_verified
 
 since-last-report:
 	@if [ -z "$(SINCE)" ]; then \
@@ -39,5 +47,6 @@ since-last-report:
 		exit 1; \
 	fi; \
 	git log --oneline $(SINCE)..HEAD --stat
+
 
 

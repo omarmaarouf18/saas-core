@@ -30,3 +30,4 @@ services/*/data/documents/
 
 # Temp/debug files
 dummy.png
+.last_push_verified
