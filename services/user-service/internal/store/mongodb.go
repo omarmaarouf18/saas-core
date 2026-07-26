@@ -347,6 +347,55 @@ func (s *MongoDB) UpdateJobReconciliation(ctx context.Context, id string, status
 	return nil
 }
 
+func (s *MongoDB) UpdateJobPriceProposal(ctx context.Context, id string, proposedPrice *float64, proposedBy string, expiresAt *time.Time) error {
+	res, err := s.jobs.UpdateOne(ctx, bson.M{"_id": id},
+		bson.M{"$set": bson.M{
+			"proposed_price":            proposedPrice,
+			"proposed_by":               proposedBy,
+			"price_proposal_expires_at": expiresAt,
+			"updated_at":                time.Now().UTC(),
+		}})
+	if err != nil {
+		return fmt.Errorf("store: update job price proposal: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("job %q not found", id)
+	}
+	return nil
+}
+
+func (s *MongoDB) UpdateJobAgreedPrice(ctx context.Context, id string, agreedPrice *float64, status models.JobStatus) error {
+	res, err := s.jobs.UpdateOne(ctx, bson.M{"_id": id},
+		bson.M{"$set": bson.M{
+			"agreed_price": agreedPrice,
+			"status":       status,
+			"updated_at":   time.Now().UTC(),
+		}})
+	if err != nil {
+		return fmt.Errorf("store: update job agreed price: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("job %q not found", id)
+	}
+	return nil
+}
+
+func (s *MongoDB) UpdateJobCancellation(ctx context.Context, id string, status models.JobStatus, reason string) error {
+	res, err := s.jobs.UpdateOne(ctx, bson.M{"_id": id},
+		bson.M{"$set": bson.M{
+			"status":              status,
+			"cancellation_reason": reason,
+			"updated_at":          time.Now().UTC(),
+		}})
+	if err != nil {
+		return fmt.Errorf("store: update job cancellation: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("job %q not found", id)
+	}
+	return nil
+}
+
 func (s *MongoDB) GetServiceByID(ctx context.Context, id string) *models.Service {
 	var svc models.Service
 	if err := s.services.FindOne(ctx, bson.M{"_id": id}).Decode(&svc); err != nil {

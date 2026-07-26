@@ -118,19 +118,24 @@ type Job struct {
 
 // OwnerJobResponse provides full tenant job visibility for business owners.
 type OwnerJobResponse struct {
-	ID                  string    `json:"id"`
-	OwnerID             string    `json:"owner_id"`
-	ServiceID           string    `json:"service_id"`
-	UserID              string    `json:"user_id"`
-	EmployeeID          string    `json:"employee_id,omitempty"`
-	Status              JobStatus `json:"status"`
-	Location            Location  `json:"location"`
-	PaymentMethod       string    `json:"payment_method"`
-	LockedEscrowAmount  float64   `json:"locked_escrow_amount,omitempty"`
-	ReconciliationNote  string    `json:"reconciliation_note,omitempty"`
-	EscrowFailureReason string    `json:"escrow_failure_reason,omitempty"`
-	CreatedAt           time.Time `json:"created_at"`
-	UpdatedAt           time.Time `json:"updated_at"`
+	ID                     string     `json:"id"`
+	OwnerID                string     `json:"owner_id"`
+	ServiceID              string     `json:"service_id"`
+	UserID                 string     `json:"user_id"`
+	EmployeeID             string     `json:"employee_id,omitempty"`
+	Status                 JobStatus  `json:"status"`
+	Location               Location   `json:"location"`
+	PaymentMethod          string     `json:"payment_method"`
+	LockedEscrowAmount     float64    `json:"locked_escrow_amount,omitempty"`
+	ReconciliationNote     string     `json:"reconciliation_note,omitempty"`
+	EscrowFailureReason    string     `json:"escrow_failure_reason,omitempty"`
+	SuggestedPrice         float64    `json:"suggested_price,omitempty"`
+	ProposedPrice          *float64   `json:"proposed_price,omitempty"`
+	ProposedBy             string     `json:"proposed_by,omitempty"`
+	AgreedPrice            *float64   `json:"agreed_price,omitempty"`
+	PriceProposalExpiresAt *time.Time `json:"price_proposal_expires_at,omitempty"`
+	CreatedAt              time.Time  `json:"created_at"`
+	UpdatedAt              time.Time  `json:"updated_at"`
 }
 
 // NewOwnerJobResponse maps a Job struct to an OwnerJobResponse DTO.
@@ -139,32 +144,42 @@ func NewOwnerJobResponse(j *Job) OwnerJobResponse {
 		return OwnerJobResponse{}
 	}
 	return OwnerJobResponse{
-		ID:                  j.ID,
-		OwnerID:             j.OwnerID,
-		ServiceID:           j.ServiceID,
-		UserID:              j.UserID,
-		EmployeeID:          j.EmployeeID,
-		Status:              j.Status,
-		Location:            j.Location,
-		PaymentMethod:       j.PaymentMethod,
-		LockedEscrowAmount:  j.LockedEscrowAmount,
-		ReconciliationNote:  j.ReconciliationNote,
-		EscrowFailureReason: j.EscrowFailureReason,
-		CreatedAt:           j.CreatedAt,
-		UpdatedAt:           j.UpdatedAt,
+		ID:                     j.ID,
+		OwnerID:                j.OwnerID,
+		ServiceID:              j.ServiceID,
+		UserID:                 j.UserID,
+		EmployeeID:             j.EmployeeID,
+		Status:                 j.Status,
+		Location:               j.Location,
+		PaymentMethod:          j.PaymentMethod,
+		LockedEscrowAmount:     j.LockedEscrowAmount,
+		ReconciliationNote:     j.ReconciliationNote,
+		EscrowFailureReason:    j.EscrowFailureReason,
+		SuggestedPrice:         j.SuggestedPrice,
+		ProposedPrice:          j.ProposedPrice,
+		ProposedBy:             j.ProposedBy,
+		AgreedPrice:            j.AgreedPrice,
+		PriceProposalExpiresAt: j.PriceProposalExpiresAt,
+		CreatedAt:              j.CreatedAt,
+		UpdatedAt:              j.UpdatedAt,
 	}
 }
 
 // CustomerJobResponse provides job booking history for customers, excluding internal tenant & financial fields.
 type CustomerJobResponse struct {
-	ID            string    `json:"id"`
-	ServiceID     string    `json:"service_id"`
-	EmployeeID    string    `json:"employee_id,omitempty"`
-	Status        JobStatus `json:"status"`
-	Location      Location  `json:"location"`
-	PaymentMethod string    `json:"payment_method"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	ID                     string     `json:"id"`
+	ServiceID              string     `json:"service_id"`
+	EmployeeID             string     `json:"employee_id,omitempty"`
+	Status                 JobStatus  `json:"status"`
+	Location               Location   `json:"location"`
+	PaymentMethod          string     `json:"payment_method"`
+	SuggestedPrice         float64    `json:"suggested_price,omitempty"`
+	ProposedPrice          *float64   `json:"proposed_price,omitempty"`
+	ProposedBy             string     `json:"proposed_by,omitempty"`
+	AgreedPrice            *float64   `json:"agreed_price,omitempty"`
+	PriceProposalExpiresAt *time.Time `json:"price_proposal_expires_at,omitempty"`
+	CreatedAt              time.Time  `json:"created_at"`
+	UpdatedAt              time.Time  `json:"updated_at"`
 }
 
 // NewCustomerJobResponse maps a Job struct to a CustomerJobResponse DTO.
@@ -173,14 +188,19 @@ func NewCustomerJobResponse(j *Job) CustomerJobResponse {
 		return CustomerJobResponse{}
 	}
 	return CustomerJobResponse{
-		ID:            j.ID,
-		ServiceID:     j.ServiceID,
-		EmployeeID:    j.EmployeeID,
-		Status:        j.Status,
-		Location:      j.Location,
-		PaymentMethod: j.PaymentMethod,
-		CreatedAt:     j.CreatedAt,
-		UpdatedAt:     j.UpdatedAt,
+		ID:                     j.ID,
+		ServiceID:              j.ServiceID,
+		EmployeeID:             j.EmployeeID,
+		Status:                 j.Status,
+		Location:               j.Location,
+		PaymentMethod:          j.PaymentMethod,
+		SuggestedPrice:         j.SuggestedPrice,
+		ProposedPrice:          j.ProposedPrice,
+		ProposedBy:             j.ProposedBy,
+		AgreedPrice:            j.AgreedPrice,
+		PriceProposalExpiresAt: j.PriceProposalExpiresAt,
+		CreatedAt:              j.CreatedAt,
+		UpdatedAt:              j.UpdatedAt,
 	}
 }
 
@@ -257,6 +277,7 @@ type CreateJobRequest struct {
 	UserID         string   `json:"user_id"`
 	UserToken      string   `json:"user_token,omitempty"`
 	IdempotencyKey string   `json:"idempotency_key,omitempty"`
+	ProposedPrice  *float64 `json:"proposed_price,omitempty"`
 }
 
 // DepositRequest is the expected JSON body for POST /users/wallet/deposit.

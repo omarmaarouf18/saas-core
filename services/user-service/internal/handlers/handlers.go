@@ -125,6 +125,8 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users/jobs/mine", u.GetCustomerJobs)
 	mux.HandleFunc("/users/jobs/complete", u.CompleteJob)
 	mux.HandleFunc("/users/jobs/cancel", u.CancelJob)
+	mux.HandleFunc("/users/jobs/propose-price", u.ProposePrice)
+	mux.HandleFunc("/users/jobs/respond-price", u.RespondPrice)
 	mux.HandleFunc("/users/wallet", u.GetWallet)
 	mux.HandleFunc("/users/wallet/deposit", u.WalletDeposit)
 	mux.HandleFunc("/users/ledger", u.GetLedger)
@@ -409,17 +411,63 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	dist := haversineKm(req.Location.Latitude, req.Location.Longitude, svc.Latitude, svc.Longitude)
 	escrowAmount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
 
+	isTransport := svc.Category == "transport"
 	now := time.Now().UTC()
+
+	var suggestedPrice float64
+	var proposedPrice *float64
+	var proposedBy string
+	var expiresAt *time.Time
+
+	initialStatus := models.JobStatusPending
+
+	if isTransport {
+		suggestedPrice = escrowAmount
+		initialStatus = models.JobStatusAwaitingPriceResponse
+
+		if req.ProposedPrice != nil {
+			if !models.ValidPriceProposal(suggestedPrice, *req.ProposedPrice) {
+				writeJSON(w, http.StatusBadRequest, map[string]string{
+					"error":   "invalid_proposed_price",
+					"message": "proposed_price must be between 50% and 150% of the suggested price",
+				})
+				return
+			}
+			proposedPrice = req.ProposedPrice
+			proposedBy = "customer"
+			exp := now.Add(5 * time.Minute)
+			expiresAt = &exp
+		}
+	}
+
 	job := &models.Job{
 		ID: generateID(), OwnerID: req.OwnerID, EmployeeID: req.EmployeeID,
 		UserID:    req.UserID,
-		ServiceID: req.ServiceID, Status: models.JobStatusPending,
+		ServiceID: req.ServiceID, Status: initialStatus,
 		Location: req.Location, PaymentMethod: req.PaymentMethod,
 		CreatedAt: now, UpdatedAt: now,
 	}
 
+	if isTransport {
+		job.SuggestedPrice = suggestedPrice
+		job.ProposedPrice = proposedPrice
+		job.ProposedBy = proposedBy
+		job.PriceProposalExpiresAt = expiresAt
+	}
+
 	if err := u.store.CreateJob(ctx, job); err != nil {
 		writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+		return
+	}
+
+	// For transport category jobs, skip escrow locking entirely during TrackJob regardless of payment method.
+	if isTransport {
+		log.Printf("[USER] Transport Job %s created awaiting price proposal response (suggested=%.2f)", job.ID, suggestedPrice)
+		u.saveIdempotencyKey(r.Context(), idempotencyKey, job.ID)
+		writeJSON(w, http.StatusCreated, map[string]any{
+			"message": "job tracking record created",
+			"job":     job,
+		})
 		return
 	}
 
@@ -730,6 +778,8 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
 		return
 	}
+
+	u.checkLazyPriceProposalExpiry(ctx, job)
 
 	// 1. Internal trusted token check
 	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1 {
@@ -1967,4 +2017,336 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 
 func isValidCoordinate(lat, lon float64) bool {
 	return lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180
+}
+
+func (u *UserService) checkLazyPriceProposalExpiry(ctx context.Context, job *models.Job) bool {
+	if job == nil {
+		return false
+	}
+	if job.Status == models.JobStatusCancelled && job.CancellationReason == "price_proposal_expired" {
+		return true
+	}
+	if job.Status != models.JobStatusAwaitingPriceResponse {
+		return false
+	}
+	if job.PriceProposalExpiresAt != nil && time.Now().UTC().After(*job.PriceProposalExpiresAt) {
+		job.Status = models.JobStatusCancelled
+		job.CancellationReason = "price_proposal_expired"
+		job.UpdatedAt = time.Now().UTC()
+		if err := u.store.UpdateJobCancellation(ctx, job.ID, models.JobStatusCancelled, "price_proposal_expired"); err != nil {
+			// #nosec G706 //nolint:gosec -- job.ID is system-generated UUID, log injection not possible
+			log.Printf("[ERROR] Failed to persist lazy price proposal cancellation for job %s: %v", job.ID, err)
+		}
+		return true
+	}
+	return false
+}
+
+// ---------------------------------------------------------------------------
+// POST /users/jobs/propose-price
+// ---------------------------------------------------------------------------
+
+type proposePriceRequest struct {
+	JobID          string  `json:"job_id"`
+	ProposedPrice  float64 `json:"proposed_price"`
+	RequesterID    string  `json:"requester_id,omitempty"`
+	RequesterToken string  `json:"requester_token,omitempty"`
+}
+
+func (u *UserService) ProposePrice(w http.ResponseWriter, r *http.Request) {
+	ip := handlerutil.GetIP(r)
+	if limited, remaining := u.limiter.CheckAndRecord(ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	var req proposePriceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+	if req.JobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") {
+		requesterToken = strings.TrimPrefix(requesterToken, "Bearer ")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_id")
+	}
+	if requesterToken == "" {
+		requesterToken = req.RequesterToken
+	}
+	if requesterToken == "" {
+		requesterToken = req.RequesterID
+	}
+	if requesterToken == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester token is required"})
+		return
+	}
+
+	resolvedRequester, err := resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
+	if resolvedRequester != job.UserID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: only the assigned customer or employee can propose a price"})
+		return
+	}
+
+	svc := u.store.GetServiceByID(ctx, job.ServiceID)
+	if svc == nil || svc.Category != "transport" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_category",
+			"message": "price negotiation is only supported for transport category jobs",
+		})
+		return
+	}
+
+	if u.checkLazyPriceProposalExpiry(ctx, job) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "proposal_expired",
+			"message": "price proposal window has expired",
+		})
+		return
+	}
+
+	if job.Status != models.JobStatusAwaitingPriceResponse {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_job_status",
+			"message": "job is not awaiting a price proposal",
+		})
+		return
+	}
+
+	if job.ProposedPrice != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "proposal_already_submitted",
+			"message": "a price proposal has already been submitted for this job",
+		})
+		return
+	}
+
+	proposerRole := "customer"
+	if resolvedRequester == job.EmployeeID {
+		proposerRole = "employee"
+	}
+
+	if !models.ValidPriceProposal(job.SuggestedPrice, req.ProposedPrice) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_proposed_price",
+			"message": "proposed price must be between 50% and 150% of the suggested price",
+		})
+		return
+	}
+
+	now := time.Now().UTC()
+	exp := now.Add(5 * time.Minute)
+	job.ProposedPrice = &req.ProposedPrice
+	job.ProposedBy = proposerRole
+	job.PriceProposalExpiresAt = &exp
+	job.UpdatedAt = now
+
+	if err := u.store.UpdateJobPriceProposal(ctx, job.ID, &req.ProposedPrice, proposerRole, &exp); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to persist price proposal: " + err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"message": "price proposal submitted successfully",
+		"job":     job,
+	})
+}
+
+// ---------------------------------------------------------------------------
+// POST /users/jobs/respond-price
+// ---------------------------------------------------------------------------
+
+// DESIGN NOTE: Accept with no prior proposal (employee accepting SuggestedPrice directly).
+// If the customer creates a transport job without an initial price proposal, the baseline P_system stands
+// as the implied offer. Allowing the employee to call respond-price directly with decision: "accept" sets
+// AgreedPrice = SuggestedPrice and activates the job. Forcing a propose-price call first with the exact
+// same P_system would add an unnecessary round-trip for standard, un-negotiated rides.
+
+type respondPriceRequest struct {
+	JobID          string `json:"job_id"`
+	Decision       string `json:"decision"` // "accept" or "decline"
+	RequesterID    string `json:"requester_id,omitempty"`
+	RequesterToken string `json:"requester_token,omitempty"`
+}
+
+func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
+	ip := handlerutil.GetIP(r)
+	if limited, remaining := u.limiter.CheckAndRecord(ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	var req respondPriceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+	if req.JobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		return
+	}
+
+	decision := strings.ToLower(strings.TrimSpace(req.Decision))
+	if decision != "accept" && decision != "decline" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_decision",
+			"message": "decision must be 'accept' or 'decline'",
+		})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") {
+		requesterToken = strings.TrimPrefix(requesterToken, "Bearer ")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_id")
+	}
+	if requesterToken == "" {
+		requesterToken = req.RequesterToken
+	}
+	if requesterToken == "" {
+		requesterToken = req.RequesterID
+	}
+	if requesterToken == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester token is required"})
+		return
+	}
+
+	resolvedRequester, err := resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
+	if resolvedRequester != job.UserID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: only the assigned customer or employee can respond to a price proposal"})
+		return
+	}
+
+	svc := u.store.GetServiceByID(ctx, job.ServiceID)
+	if svc == nil || svc.Category != "transport" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_category",
+			"message": "price negotiation is only supported for transport category jobs",
+		})
+		return
+	}
+
+	if u.checkLazyPriceProposalExpiry(ctx, job) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "proposal_expired",
+			"message": "price proposal window has expired",
+		})
+		return
+	}
+
+	if job.Status != models.JobStatusAwaitingPriceResponse {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_job_status",
+			"message": "job is not awaiting a price proposal response",
+		})
+		return
+	}
+
+	if job.ProposedPrice != nil {
+		isCustomer := resolvedRequester == job.UserID
+		isEmployee := resolvedRequester == job.EmployeeID
+		if (job.ProposedBy == "customer" && isCustomer) || (job.ProposedBy == "employee" && isEmployee) {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error":   "cannot_respond_to_own_proposal",
+				"message": "you cannot accept or decline your own price proposal",
+			})
+			return
+		}
+	} else {
+		if resolvedRequester == job.UserID {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error":   "cannot_respond_to_own_proposal",
+				"message": "no active proposal from driver to respond to",
+			})
+			return
+		}
+	}
+
+	now := time.Now().UTC()
+	if decision == "accept" {
+		activePrice := job.SuggestedPrice
+		if job.ProposedPrice != nil {
+			activePrice = *job.ProposedPrice
+		}
+		job.AgreedPrice = &activePrice
+		job.Status = models.JobStatusActive
+		job.UpdatedAt = now
+
+		if err := u.store.UpdateJobAgreedPrice(ctx, job.ID, &activePrice, models.JobStatusActive); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to accept price proposal: " + err.Error()})
+			return
+		}
+
+		writeJSON(w, http.StatusOK, map[string]any{
+			"message": "price proposal accepted — job is now active",
+			"job":     job,
+		})
+		return
+	}
+
+	job.Status = models.JobStatusCancelled
+	job.CancellationReason = "price_disagreement"
+	job.UpdatedAt = now
+
+	if err := u.store.UpdateJobCancellation(ctx, job.ID, models.JobStatusCancelled, "price_disagreement"); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to decline price proposal: " + err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"message": "price proposal declined — job cancelled",
+		"job":     job,
+	})
 }

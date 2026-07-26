@@ -1694,7 +1694,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			ID:               "svc-zeroval-999",
 			TenantID:         "kyc-approved-owner-zeroval",
 			Name:             "Zeroval Svc",
-			Category:         "transport",
+			Category:         "delivery",
 			TenantBasePrice:  10.0,
 			TenantPricePerKM: 10.0,
 			Latitude:         30.0,
@@ -2382,7 +2382,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			ID:               "svc-pricing-coords-1",
 			TenantID:         "kyc-approved-owner-pricing",
 			Name:             "Pricing Coords Svc",
-			Category:         "transport",
+			Category:         "delivery",
 			TenantBasePrice:  25.0,
 			TenantPricePerKM: 5.0,
 			Latitude:         30.0,
@@ -4343,3 +4343,646 @@ func TestTrackJob_RedisBackedIdempotency_MultiInstanceAndTTL(t *testing.T) {
 		t.Fatalf("Expected Redis key TTL around 24 hours, got %v", ttl)
 	}
 }
+
+func TestNegotiableTransportPricing(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
+		return
+	}
+	defer func() {
+		_ = s.DropDatabase(context.Background())
+		s.Close(context.Background())
+	}()
+
+	ownerID := "kyc-approved-owner-transport-1"
+	empID := "emp-transport-1"
+	custID := "cust-transport-1"
+	unrelatedID := "unrelated-user-1"
+
+	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		id := r.URL.Query().Get("id")
+
+		if strings.HasPrefix(id, "kyc-approved-owner") {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]any{
+				"id":         id,
+				"role":       "owner",
+				"kyc_status": "approved",
+				"is_active":  true,
+				"tenant_id":  id,
+			})
+			return
+		}
+
+		if strings.HasPrefix(id, "emp-transport") {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]any{
+				"id":        id,
+				"role":      "employee",
+				"is_active": true,
+				"tenant_id": ownerID,
+			})
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"id":        id,
+			"role":      "customer",
+			"is_active": true,
+			"tenant_id": id,
+		})
+	}))
+	defer mockAuthServer.Close()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	cfg := &config.Config{
+		AuthServiceURL:         mockAuthServer.URL,
+		InternalServiceToken:   "test-internal-token",
+		AppEnv:                 "test",
+		AllowTestPaymentBypass: true,
+	}
+	u := NewUserService(s, cfg, rdb)
+
+	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@example.com")
+	tokenEmp, _ := jwtutil.GenerateToken(empID, "employee", ownerID, "emp@example.com")
+	tokenCust, _ := jwtutil.GenerateToken(custID, "customer", ownerID, "cust@example.com")
+	tokenUnrelated, _ := jwtutil.GenerateToken(unrelatedID, "user", ownerID, "unrelated@example.com")
+
+	// Seed transport service (suggested price = 100.0)
+	svcTransport := &models.Service{
+		ID:               "svc-trans-100",
+		TenantID:         ownerID,
+		Name:             "City Ride",
+		Category:         "transport",
+		TenantBasePrice:  100.0,
+		TenantPricePerKM: 0.0,
+		Latitude:         30.0,
+		Longitude:        30.0,
+	}
+	s.CreateService(ctx, svcTransport)
+
+	// Seed delivery service
+	svcDelivery := &models.Service{
+		ID:               "svc-deliv-100",
+		TenantID:         ownerID,
+		Name:             "Fast Delivery",
+		Category:         "delivery",
+		TenantBasePrice:  50.0,
+		TenantPricePerKM: 0.0,
+		Latitude:         30.0,
+		Longitude:        30.0,
+	}
+	s.CreateService(ctx, svcDelivery)
+
+	var reqCounter int
+	nextIP := func() string {
+		reqCounter++
+		return fmt.Sprintf("192.168.100.%d", reqCounter)
+	}
+
+	// 1. Customer proposes at booking -> Employee Accepts
+	t.Run("Customer Proposes at Booking then Employee Accepts", func(t *testing.T) {
+		trackReq := map[string]any{
+			"owner_id":       tokenOwner,
+			"service_id":     "svc-trans-100",
+			"user_id":        tokenCust,
+			"employee_id":    tokenEmp,
+			"payment_method": "cod",
+			"proposed_price": 120.0,
+			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+		}
+		body, _ := json.Marshal(trackReq)
+		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec := httptest.NewRecorder()
+		u.TrackJob(rec, req)
+
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("Expected 201 Created on TrackJob, got %d: %s", rec.Code, rec.Body.String())
+		}
+		var trackResp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &trackResp)
+		jobData, _ := trackResp["job"].(map[string]any)
+		jobID, _ := jobData["id"].(string)
+
+		if jobData["status"] != string(models.JobStatusAwaitingPriceResponse) {
+			t.Errorf("Expected status %s, got %v", models.JobStatusAwaitingPriceResponse, jobData["status"])
+		}
+		if jobData["proposed_by"] != "customer" {
+			t.Errorf("Expected proposed_by 'customer', got %v", jobData["proposed_by"])
+		}
+
+		// Employee accepts
+		respReq := map[string]any{
+			"job_id":          jobID,
+			"decision":        "accept",
+			"requester_token": tokenEmp,
+		}
+		body, _ = json.Marshal(respReq)
+		req = httptest.NewRequest("POST", "/users/jobs/respond-price", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec = httptest.NewRecorder()
+		u.RespondPrice(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK on respond-price accept, got %d: %s", rec.Code, rec.Body.String())
+		}
+		var respResp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &respResp)
+		updatedJob, _ := respResp["job"].(map[string]any)
+		if updatedJob["status"] != string(models.JobStatusActive) {
+			t.Errorf("Expected status active, got %v", updatedJob["status"])
+		}
+		if updatedJob["agreed_price"] != 120.0 {
+			t.Errorf("Expected agreed_price 120.0, got %v", updatedJob["agreed_price"])
+		}
+	})
+
+	// 2. Customer proposes at booking -> Employee Declines
+	t.Run("Customer Proposes at Booking then Employee Declines", func(t *testing.T) {
+		trackReq := map[string]any{
+			"owner_id":       tokenOwner,
+			"service_id":     "svc-trans-100",
+			"user_id":        tokenCust,
+			"employee_id":    tokenEmp,
+			"payment_method": "cod",
+			"proposed_price": 80.0,
+			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+		}
+		body, _ := json.Marshal(trackReq)
+		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec := httptest.NewRecorder()
+		u.TrackJob(rec, req)
+
+		var trackResp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &trackResp)
+		jobData, _ := trackResp["job"].(map[string]any)
+		jobID, _ := jobData["id"].(string)
+
+		// Employee declines
+		respReq := map[string]any{
+			"job_id":          jobID,
+			"decision":        "decline",
+			"requester_token": tokenEmp,
+		}
+		body, _ = json.Marshal(respReq)
+		req = httptest.NewRequest("POST", "/users/jobs/respond-price", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec = httptest.NewRecorder()
+		u.RespondPrice(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK on respond-price decline, got %d: %s", rec.Code, rec.Body.String())
+		}
+		var respResp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &respResp)
+		updatedJob, _ := respResp["job"].(map[string]any)
+		if updatedJob["status"] != string(models.JobStatusCancelled) {
+			t.Errorf("Expected status cancelled, got %v", updatedJob["status"])
+		}
+		if updatedJob["cancellation_reason"] != "price_disagreement" {
+			t.Errorf("Expected cancellation_reason 'price_disagreement', got %v", updatedJob["cancellation_reason"])
+		}
+	})
+
+	// 3. No initial proposal -> Employee Proposes -> Customer Accepts
+	t.Run("No Initial Proposal then Employee Proposes then Customer Accepts", func(t *testing.T) {
+		trackReq := map[string]any{
+			"owner_id":       tokenOwner,
+			"service_id":     "svc-trans-100",
+			"user_id":        tokenCust,
+			"employee_id":    tokenEmp,
+			"payment_method": "cod",
+			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+		}
+		body, _ := json.Marshal(trackReq)
+		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec := httptest.NewRecorder()
+		u.TrackJob(rec, req)
+
+		var trackResp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &trackResp)
+		jobData, _ := trackResp["job"].(map[string]any)
+		jobID, _ := jobData["id"].(string)
+
+		// Employee proposes
+		propReq := map[string]any{
+			"job_id":          jobID,
+			"proposed_price":  110.0,
+			"requester_token": tokenEmp,
+		}
+		body, _ = json.Marshal(propReq)
+		req = httptest.NewRequest("POST", "/users/jobs/propose-price", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec = httptest.NewRecorder()
+		u.ProposePrice(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK on propose-price, got %d: %s", rec.Code, rec.Body.String())
+		}
+
+		// Customer accepts
+		respReq := map[string]any{
+			"job_id":          jobID,
+			"decision":        "accept",
+			"requester_token": tokenCust,
+		}
+		body, _ = json.Marshal(respReq)
+		req = httptest.NewRequest("POST", "/users/jobs/respond-price", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec = httptest.NewRecorder()
+		u.RespondPrice(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK on respond-price accept, got %d: %s", rec.Code, rec.Body.String())
+		}
+		var respResp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &respResp)
+		updatedJob, _ := respResp["job"].(map[string]any)
+		if updatedJob["status"] != string(models.JobStatusActive) {
+			t.Errorf("Expected status active, got %v", updatedJob["status"])
+		}
+		if updatedJob["agreed_price"] != 110.0 {
+			t.Errorf("Expected agreed_price 110.0, got %v", updatedJob["agreed_price"])
+		}
+	})
+
+	// 4. Employee accepts SuggestedPrice directly with no prior proposal
+	t.Run("Employee Accepts SuggestedPrice Directly", func(t *testing.T) {
+		trackReq := map[string]any{
+			"owner_id":       tokenOwner,
+			"service_id":     "svc-trans-100",
+			"user_id":        tokenCust,
+			"employee_id":    tokenEmp,
+			"payment_method": "cod",
+			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+		}
+		body, _ := json.Marshal(trackReq)
+		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec := httptest.NewRecorder()
+		u.TrackJob(rec, req)
+
+		var trackResp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &trackResp)
+		jobData, _ := trackResp["job"].(map[string]any)
+		jobID, _ := jobData["id"].(string)
+
+		// Employee accepts directly
+		respReq := map[string]any{
+			"job_id":          jobID,
+			"decision":        "accept",
+			"requester_token": tokenEmp,
+		}
+		body, _ = json.Marshal(respReq)
+		req = httptest.NewRequest("POST", "/users/jobs/respond-price", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec = httptest.NewRecorder()
+		u.RespondPrice(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK on direct accept, got %d: %s", rec.Code, rec.Body.String())
+		}
+		var respResp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &respResp)
+		updatedJob, _ := respResp["job"].(map[string]any)
+		if updatedJob["status"] != string(models.JobStatusActive) {
+			t.Errorf("Expected status active, got %v", updatedJob["status"])
+		}
+		if updatedJob["agreed_price"] != 100.0 {
+			t.Errorf("Expected agreed_price 100.0, got %v", updatedJob["agreed_price"])
+		}
+	})
+
+	// 5. Single-shot proposal enforcement
+	t.Run("Single-Shot Proposal Enforcement", func(t *testing.T) {
+		trackReq := map[string]any{
+			"owner_id":       tokenOwner,
+			"service_id":     "svc-trans-100",
+			"user_id":        tokenCust,
+			"employee_id":    tokenEmp,
+			"payment_method": "cod",
+			"proposed_price": 120.0,
+			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+		}
+		body, _ := json.Marshal(trackReq)
+		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec := httptest.NewRecorder()
+		u.TrackJob(rec, req)
+
+		var trackResp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &trackResp)
+		jobData, _ := trackResp["job"].(map[string]any)
+		jobID, _ := jobData["id"].(string)
+
+		// Employee tries to propose a second time -> rejected
+		propReq := map[string]any{
+			"job_id":          jobID,
+			"proposed_price":  110.0,
+			"requester_token": tokenEmp,
+		}
+		body, _ = json.Marshal(propReq)
+		req = httptest.NewRequest("POST", "/users/jobs/propose-price", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec = httptest.NewRecorder()
+		u.ProposePrice(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for second proposal attempt, got %d: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "proposal_already_submitted") {
+			t.Errorf("Expected proposal_already_submitted error, got %s", rec.Body.String())
+		}
+	})
+
+	// 6. Proposer cannot respond to own proposal
+	t.Run("Proposer Cannot Respond to Own Proposal", func(t *testing.T) {
+		trackReq := map[string]any{
+			"owner_id":       tokenOwner,
+			"service_id":     "svc-trans-100",
+			"user_id":        tokenCust,
+			"employee_id":    tokenEmp,
+			"payment_method": "cod",
+			"proposed_price": 120.0,
+			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+		}
+		body, _ := json.Marshal(trackReq)
+		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec := httptest.NewRecorder()
+		u.TrackJob(rec, req)
+
+		var trackResp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &trackResp)
+		jobData, _ := trackResp["job"].(map[string]any)
+		jobID, _ := jobData["id"].(string)
+
+		// Customer attempts to respond to customer's own proposal
+		respReq := map[string]any{
+			"job_id":          jobID,
+			"decision":        "accept",
+			"requester_token": tokenCust,
+		}
+		body, _ = json.Marshal(respReq)
+		req = httptest.NewRequest("POST", "/users/jobs/respond-price", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec = httptest.NewRecorder()
+		u.RespondPrice(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request when proposer responds to own proposal, got %d: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "cannot_respond_to_own_proposal") {
+			t.Errorf("Expected cannot_respond_to_own_proposal error, got %s", rec.Body.String())
+		}
+	})
+
+	// 7. Bounds validation (±50% of suggested price)
+	t.Run("Bounds Validation Rejects Out-of-Bounds Proposals", func(t *testing.T) {
+		// (a) Below 50% (40.0 for 100.0 suggested)
+		trackReq := map[string]any{
+			"owner_id":       tokenOwner,
+			"service_id":     "svc-trans-100",
+			"user_id":        tokenCust,
+			"employee_id":    tokenEmp,
+			"payment_method": "cod",
+			"proposed_price": 40.0,
+			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+		}
+		body, _ := json.Marshal(trackReq)
+		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec := httptest.NewRecorder()
+		u.TrackJob(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for < 50%% proposal in TrackJob, got %d: %s", rec.Code, rec.Body.String())
+		}
+
+		// (b) Above 150% (160.0 for 100.0 suggested) via propose-price
+		trackReqValid := map[string]any{
+			"owner_id":       tokenOwner,
+			"service_id":     "svc-trans-100",
+			"user_id":        tokenCust,
+			"employee_id":    tokenEmp,
+			"payment_method": "cod",
+			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+		}
+		body, _ = json.Marshal(trackReqValid)
+		req = httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec = httptest.NewRecorder()
+		u.TrackJob(rec, req)
+
+		var trackResp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &trackResp)
+		jobData, _ := trackResp["job"].(map[string]any)
+		jobID, _ := jobData["id"].(string)
+
+		propReq := map[string]any{
+			"job_id":          jobID,
+			"proposed_price":  160.0,
+			"requester_token": tokenEmp,
+		}
+		body, _ = json.Marshal(propReq)
+		req = httptest.NewRequest("POST", "/users/jobs/propose-price", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec = httptest.NewRecorder()
+		u.ProposePrice(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for > 150%% proposal in propose-price, got %d: %s", rec.Code, rec.Body.String())
+		}
+	})
+
+	// 8. Auth gating (unrelated party rejected with 403)
+	t.Run("Auth Gating Rejects Unrelated Users", func(t *testing.T) {
+		trackReq := map[string]any{
+			"owner_id":       tokenOwner,
+			"service_id":     "svc-trans-100",
+			"user_id":        tokenCust,
+			"employee_id":    tokenEmp,
+			"payment_method": "cod",
+			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+		}
+		body, _ := json.Marshal(trackReq)
+		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec := httptest.NewRecorder()
+		u.TrackJob(rec, req)
+
+		var trackResp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &trackResp)
+		jobData, _ := trackResp["job"].(map[string]any)
+		jobID, _ := jobData["id"].(string)
+
+		// Unrelated user tries propose-price
+		propReq := map[string]any{
+			"job_id":          jobID,
+			"proposed_price":  110.0,
+			"requester_token": tokenUnrelated,
+		}
+		body, _ = json.Marshal(propReq)
+		req = httptest.NewRequest("POST", "/users/jobs/propose-price", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec = httptest.NewRecorder()
+		u.ProposePrice(rec, req)
+
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for unrelated user on propose-price, got %d: %s", rec.Code, rec.Body.String())
+		}
+
+		// Unrelated user tries respond-price
+		respReq := map[string]any{
+			"job_id":          jobID,
+			"decision":        "accept",
+			"requester_token": tokenUnrelated,
+		}
+		body, _ = json.Marshal(respReq)
+		req = httptest.NewRequest("POST", "/users/jobs/respond-price", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec = httptest.NewRecorder()
+		u.RespondPrice(rec, req)
+
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for unrelated user on respond-price, got %d: %s", rec.Code, rec.Body.String())
+		}
+	})
+
+	// 9. Lazy Expiry
+	t.Run("Lazy Expiry Auto-Cancels Expired Proposals", func(t *testing.T) {
+		trackReq := map[string]any{
+			"owner_id":       tokenOwner,
+			"service_id":     "svc-trans-100",
+			"user_id":        tokenCust,
+			"employee_id":    tokenEmp,
+			"payment_method": "cod",
+			"proposed_price": 120.0,
+			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+		}
+		body, _ := json.Marshal(trackReq)
+		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec := httptest.NewRecorder()
+		u.TrackJob(rec, req)
+
+		var trackResp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &trackResp)
+		jobData, _ := trackResp["job"].(map[string]any)
+		jobID, _ := jobData["id"].(string)
+
+		// Manually set PriceProposalExpiresAt to past in store
+		expiredTime := time.Now().UTC().Add(-1 * time.Minute)
+		s.UpdateJobPriceProposal(ctx, jobID, floatPtr(120.0), "customer", &expiredTime)
+
+		// GetJob triggers lazy expiry
+		reqGet := httptest.NewRequest("GET", "/users/jobs/get?id="+jobID+"&requester_id="+tokenCust, nil)
+		reqGet.Header.Set("X-Real-IP", nextIP())
+		recGet := httptest.NewRecorder()
+		u.GetJob(recGet, reqGet)
+
+		if recGet.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK on GetJob, got %d: %s", recGet.Code, recGet.Body.String())
+		}
+		var getResp map[string]any
+		json.Unmarshal(recGet.Body.Bytes(), &getResp)
+		if getResp["status"] != string(models.JobStatusCancelled) {
+			t.Errorf("Expected GetJob status cancelled after lazy expiry, got %v", getResp["status"])
+		}
+		if getResp["cancellation_reason"] != "price_proposal_expired" {
+			t.Errorf("Expected cancellation_reason 'price_proposal_expired', got %v", getResp["cancellation_reason"])
+		}
+
+		// Subsequent respond-price on expired job fails
+		respReq := map[string]any{
+			"job_id":          jobID,
+			"decision":        "accept",
+			"requester_token": tokenEmp,
+		}
+		body, _ = json.Marshal(respReq)
+		req = httptest.NewRequest("POST", "/users/jobs/respond-price", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec = httptest.NewRecorder()
+		u.RespondPrice(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request on respond-price for expired job, got %d: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "proposal_expired") {
+			t.Errorf("Expected proposal_expired error message, got %s", rec.Body.String())
+		}
+	})
+
+	// 10. Delivery / Shipping category jobs unaffected
+	t.Run("Delivery and Shipping Jobs Unaffected", func(t *testing.T) {
+		trackReq := map[string]any{
+			"owner_id":       tokenOwner,
+			"service_id":     "svc-deliv-100",
+			"user_id":        tokenCust,
+			"employee_id":    tokenEmp,
+			"payment_method": "cod",
+			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+		}
+		body, _ := json.Marshal(trackReq)
+		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec := httptest.NewRecorder()
+		u.TrackJob(rec, req)
+
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("Expected 201 Created on delivery TrackJob, got %d: %s", rec.Code, rec.Body.String())
+		}
+		var trackResp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &trackResp)
+		jobData, _ := trackResp["job"].(map[string]any)
+		jobID, _ := jobData["id"].(string)
+
+		if jobData["status"] != string(models.JobStatusActive) {
+			t.Errorf("Expected delivery COD job status to be active, got %v", jobData["status"])
+		}
+
+		// Propose price on delivery job fails with invalid_category
+		propReq := map[string]any{
+			"job_id":          jobID,
+			"proposed_price":  60.0,
+			"requester_token": tokenCust,
+		}
+		body, _ = json.Marshal(propReq)
+		req = httptest.NewRequest("POST", "/users/jobs/propose-price", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec = httptest.NewRecorder()
+		u.ProposePrice(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for propose-price on delivery job, got %d: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "invalid_category") {
+			t.Errorf("Expected invalid_category error, got %s", rec.Body.String())
+		}
+	})
+}
+
+func floatPtr(f float64) *float64 { return &f }
