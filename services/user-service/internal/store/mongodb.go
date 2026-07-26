@@ -27,6 +27,8 @@ type MongoDB struct {
 	platConfig    *mongo.Collection
 	subscriptions *mongo.Collection
 	ratings       *mongo.Collection
+
+	releaseEscrowBeforePlatformWalletHook func(ctx context.Context) error
 }
 
 // NewMongoDB connects to MongoDB and ensures all indexes.
@@ -432,7 +434,11 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 	now := time.Now().UTC()
 	tsBase := now.UnixNano()
 
-	runTx := func(sc context.Context) error {
+	runTx := func(sc context.Context, isFallback bool) error {
+		if isFallback {
+			log.Printf("[ESCROW] ⚠ non-transactional fallback in use — mid-sequence failure risk for job %s", jobID)
+		}
+
 		// Atomic check and deduct against that job's own locked amount by updating the job document.
 		// status must be JobStatusActive and locked_escrow_amount >= amount.
 		resJob, err := s.jobs.UpdateOne(sc,
@@ -452,6 +458,15 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 			return fmt.Errorf("escrow release failed: job %s is not active or has insufficient locked escrow", jobID)
 		}
 
+		revertJob := func() {
+			if isFallback {
+				_, _ = s.jobs.UpdateOne(sc, bson.M{"_id": jobID}, bson.M{
+					"$inc": bson.M{"locked_escrow_amount": amount},
+					"$set": bson.M{"status": models.JobStatusActive, "updated_at": time.Now().UTC()},
+				})
+			}
+		}
+
 		// Atomic: deduct escrow, credit withdrawable with net amount.
 		res, err := s.wallets.UpdateOne(sc,
 			bson.M{"tenant_id": tenantID, "escrow_balance": bson.M{"$gte": amount}},
@@ -459,11 +474,29 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 				"$inc": bson.M{"escrow_balance": -amount, "total_balance": -feeAmount, "withdrawable_balance": netAmount},
 				"$set": bson.M{"updated_at": now},
 			})
-		if err != nil {
-			return err
-		}
-		if res.MatchedCount == 0 {
+		if err != nil || res.MatchedCount == 0 {
+			revertJob()
+			if err != nil {
+				return err
+			}
 			return fmt.Errorf("escrow release failed: insufficient escrow balance")
+		}
+
+		revertTenantWallet := func() {
+			if isFallback {
+				_, _ = s.wallets.UpdateOne(sc, bson.M{"tenant_id": tenantID}, bson.M{
+					"$inc": bson.M{"escrow_balance": amount, "total_balance": feeAmount, "withdrawable_balance": -netAmount},
+					"$set": bson.M{"updated_at": time.Now().UTC()},
+				})
+				revertJob()
+			}
+		}
+
+		if isFallback && s.releaseEscrowBeforePlatformWalletHook != nil {
+			if err := s.releaseEscrowBeforePlatformWalletHook(sc); err != nil {
+				revertTenantWallet()
+				return err
+			}
 		}
 
 		// Credit platform wallet with fee.
@@ -473,7 +506,18 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 				"$set": bson.M{"updated_at": now},
 			})
 		if err != nil {
+			revertTenantWallet()
 			return err
+		}
+
+		revertPlatformWallet := func() {
+			if isFallback {
+				_, _ = s.wallets.UpdateOne(sc, bson.M{"tenant_id": "platform"}, bson.M{
+					"$inc": bson.M{"total_balance": -feeAmount, "withdrawable_balance": -feeAmount},
+					"$set": bson.M{"updated_at": time.Now().UTC()},
+				})
+				revertTenantWallet()
+			}
 		}
 
 		// Ledger entries.
@@ -493,12 +537,16 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 			},
 		}
 		_, err = s.ledger.InsertMany(sc, entries)
-		return err
+		if err != nil {
+			revertPlatformWallet()
+			return err
+		}
+		return nil
 	}
 
 	session, err := s.client.StartSession()
 	if err != nil {
-		return runTx(ctx)
+		return runTx(ctx, true)
 	}
 	defer session.EndSession(ctx)
 
@@ -506,7 +554,7 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 		if err := session.StartTransaction(); err != nil {
 			return err
 		}
-		if err := runTx(sc); err != nil {
+		if err := runTx(sc, false); err != nil {
 			_ = session.AbortTransaction(sc)
 			return err
 		}
@@ -514,8 +562,7 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 	})
 
 	if err != nil && (strings.Contains(err.Error(), "Transaction numbers") || strings.Contains(err.Error(), "replica set")) {
-		log.Printf("[USER-STORE] Standalone MongoDB detected. Falling back to sequential execution for ReleaseEscrowWithSplit.")
-		return runTx(ctx)
+		return runTx(ctx, true)
 	}
 	return err
 }

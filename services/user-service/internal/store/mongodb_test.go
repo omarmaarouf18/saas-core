@@ -264,3 +264,56 @@ func TestMongoDB_SubscriptionsAndRatings(t *testing.T) {
 		t.Errorf("GetRatingsForUser failed: len=%d, err=%v", len(gotRatings), err)
 	}
 }
+
+func TestMongoDB_ReleaseEscrowFallbackCompensate(t *testing.T) {
+	s, cleanup := setupTestMongoDB(t)
+	if s == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	tenantID := "tenant-fallback-1"
+	jobID := "job-fallback-1"
+
+	// Create wallet with $100 withdrawable balance
+	_ = s.Deposit(ctx, tenantID, 100.0)
+	// Lock $40 in escrow
+	_ = s.LockEscrow(ctx, tenantID, jobID, 40.0)
+
+	job := &models.Job{
+		ID:                 jobID,
+		OwnerID:            tenantID,
+		Status:             models.JobStatusActive,
+		LockedEscrowAmount: 40.0,
+	}
+	_ = s.CreateJob(ctx, job)
+
+	// Inject failure hook before platform wallet update
+	s.releaseEscrowBeforePlatformWalletHook = func(c context.Context) error {
+		return fmt.Errorf("injected platform wallet update failure")
+	}
+
+	// Direct call to runTx in fallback mode
+	// Call store method which triggers fallback
+	err := s.ReleaseEscrowWithSplit(ctx, tenantID, jobID, 40.0)
+	if err == nil {
+		t.Fatalf("Expected error from injected failure hook, got nil")
+	}
+
+	// Verify job status and locked escrow were reverted
+	revertedJob := s.GetJob(ctx, jobID)
+	if revertedJob.Status != models.JobStatusActive {
+		t.Errorf("Expected job status to be reverted to active, got %s", revertedJob.Status)
+	}
+	if revertedJob.LockedEscrowAmount != 40.0 {
+		t.Errorf("Expected job locked escrow to be reverted to 40.0, got %.2f", revertedJob.LockedEscrowAmount)
+	}
+
+	// Verify tenant wallet balance was reverted
+	revertedWallet := s.GetWallet(ctx, tenantID)
+	if revertedWallet.EscrowBalance != 40.0 || revertedWallet.WithdrawableBalance != 60.0 {
+		t.Errorf("Expected wallet balances to be reverted (escrow=40, withdrawable=60), got escrow=%.2f withdrawable=%.2f",
+			revertedWallet.EscrowBalance, revertedWallet.WithdrawableBalance)
+	}
+}
