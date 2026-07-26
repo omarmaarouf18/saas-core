@@ -437,7 +437,7 @@ This file tracks historical entries for the primary category: **Security Fixes C
 ## Nil User Pointer Dereference Guard in VerifyOTP (Item #5)
 
 - **Implementation Detail**: Added explicit `if user == nil` check in `VerifyOTP` handler returning `404 Not Found` cleanly if a user is deleted concurrently post-OTP verification.
-- **Commit SHA**: ``93454ad8354c0e64c4892cfa30cebd0aa5b2149e``
+- **Commit SHA**: ``93454add7ec13aa486cc578d5ea5e86487026ea5``
 - **Verification**: Verified via `go test ./services/auth-service/... -run TestAuthHandlers/VerifyOTP_Gaps -v` (`OTPUserDeletedClean404`). ✅
 
 ## Compensating Rollback Logic for Non-Transactional Escrow Fallback (Item #6)
