@@ -3845,3 +3845,28 @@ func TestRateJobAndGetRatings_RateLimiting(t *testing.T) {
 		t.Fatalf("Expected status 429 Too Many Requests for RateJob rate limit, got %d. Body: %s", recRateLimited.Code, recRateLimited.Body.String())
 	}
 }
+
+func TestResolveTokenWithRole(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	ownerToken, _ := jwtutil.GenerateToken("user-owner-1", "owner", "owner-1", "owner@example.com")
+	employeeToken, _ := jwtutil.GenerateToken("user-emp-1", "employee", "owner-1", "emp@example.com")
+
+	// Matching role should succeed
+	id, err := resolveTokenWithRole(ownerToken, "owner")
+	if err != nil || id != "user-owner-1" {
+		t.Fatalf("Expected success resolving owner token, got id %q, err %v", id, err)
+	}
+
+	// Multiple allowed roles including match should succeed
+	id, err = resolveTokenWithRole(employeeToken, "owner", "employee")
+	if err != nil || id != "user-emp-1" {
+		t.Fatalf("Expected success resolving employee token with allowed roles, got id %q, err %v", id, err)
+	}
+
+	// Mismatching role should fail
+	_, err = resolveTokenWithRole(employeeToken, "owner")
+	if err == nil || !strings.Contains(err.Error(), "role mismatch") {
+		t.Fatalf("Expected role mismatch error when passing employee token for owner role, got err: %v", err)
+	}
+}

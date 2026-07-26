@@ -1112,12 +1112,28 @@ func resolveClaims(tokenStr string) (*jwtutil.Claims, error) {
 	return claims, nil
 }
 
-func resolveToken(tokenStr string) (string, error) {
+func resolveTokenWithRole(tokenStr string, allowedRoles ...string) (string, error) {
 	claims, err := resolveClaims(tokenStr)
 	if err != nil {
 		return "", err
 	}
+	if len(allowedRoles) > 0 {
+		matched := false
+		for _, role := range allowedRoles {
+			if claims.Role == role {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return "", fmt.Errorf("role mismatch: claim role %q not in allowed roles %v", claims.Role, allowedRoles)
+		}
+	}
 	return claims.UserID, nil
+}
+
+func resolveToken(tokenStr string) (string, error) {
+	return resolveTokenWithRole(tokenStr)
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
