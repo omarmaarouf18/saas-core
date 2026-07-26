@@ -4144,3 +4144,50 @@ func TestRoleEnforcement_JobLifecycle(t *testing.T) {
 		t.Fatalf("Expected 401 Unauthorized with role mismatch for UpdateJobLocation using user token, got status %d, body: %s", recLoc.Code, recLoc.Body.String())
 	}
 }
+
+func TestRoleEnforcement_WalletAndSubscription(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	cfg := &config.Config{AppEnv: "test", AllowTestPaymentBypass: true}
+	u := NewUserService(nil, cfg, rdb)
+
+	employeeToken, _ := jwtutil.GenerateToken("emp-1", "employee", "owner-1", "emp@example.com")
+	userToken, _ := jwtutil.GenerateToken("usr-1", "user", "owner-1", "user@example.com")
+
+	// 1. GetWallet with employee token MUST fail with 401 Unauthorized
+	reqWallet := httptest.NewRequest("GET", "/users/wallet?tenant_token="+employeeToken, nil)
+	recWallet := httptest.NewRecorder()
+	u.GetWallet(recWallet, reqWallet)
+	if recWallet.Code != http.StatusUnauthorized || !strings.Contains(recWallet.Body.String(), "role mismatch") {
+		t.Fatalf("Expected 401 Unauthorized with role mismatch for GetWallet with employee token, got status %d, body: %s", recWallet.Code, recWallet.Body.String())
+	}
+
+	// 2. WalletDeposit with user token MUST fail with 401 Unauthorized
+	bodyDep, _ := json.Marshal(map[string]any{
+		"tenant_token":   userToken,
+		"amount":         100.0,
+		"payment_method": "test",
+	})
+	reqDep := httptest.NewRequest("POST", "/users/wallet/deposit", bytes.NewReader(bodyDep))
+	recDep := httptest.NewRecorder()
+	u.WalletDeposit(recDep, reqDep)
+	if recDep.Code != http.StatusUnauthorized || !strings.Contains(recDep.Body.String(), "role mismatch") {
+		t.Fatalf("Expected 401 Unauthorized with role mismatch for WalletDeposit with user token, got status %d, body: %s", recDep.Code, recDep.Body.String())
+	}
+
+	// 3. Subscription GET with employee token MUST fail with 401 Unauthorized
+	reqSub := httptest.NewRequest("GET", "/users/subscription?tenant_token="+employeeToken, nil)
+	recSub := httptest.NewRecorder()
+	u.Subscription(recSub, reqSub)
+	if recSub.Code != http.StatusUnauthorized || !strings.Contains(recSub.Body.String(), "role mismatch") {
+		t.Fatalf("Expected 401 Unauthorized with role mismatch for Subscription GET with employee token, got status %d, body: %s", recSub.Code, recSub.Body.String())
+	}
+}

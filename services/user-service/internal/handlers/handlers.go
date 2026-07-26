@@ -947,7 +947,7 @@ func (u *UserService) GetWallet(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
 		return
 	}
-	resolvedTenantID, err := resolveToken(tenantID)
+	resolvedTenantID, err := resolveTokenWithRole(tenantID, "owner")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
 		return
@@ -1011,7 +1011,7 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resolvedTenantID, err := resolveToken(req.TenantID)
+	resolvedTenantID, err := resolveTokenWithRole(req.TenantID, "owner")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
 		return
@@ -1292,7 +1292,7 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
 			return
 		}
-		resolvedTenantID, err := resolveToken(tenantID)
+		resolvedTenantID, err := resolveTokenWithRole(tenantID, "owner")
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
 			return
@@ -1335,14 +1335,14 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		resolvedTenantID, err := resolveToken(req.TenantID)
+		resolvedTenantID, err := resolveTokenWithRole(req.TenantID, "owner")
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
 			return
 		}
 		req.TenantID = resolvedTenantID
 
-		resolvedRequesterID, err := resolveToken(req.RequesterID)
+		resolvedRequesterID, err := resolveTokenWithRole(req.RequesterID, "owner")
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 			return
