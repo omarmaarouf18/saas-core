@@ -50,7 +50,11 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 - **Implementation Detail**: Corrected invalid commit SHA in `bug-fixes.md` for Resend configuration validation to reference the actual commit (`7cd13c04e407ae527d8a641193d0cb37fc2db777`). Added `commit` and `push` Makefile targets with `ensure-hooks` as an explicit prerequisite. Updated `CLAUDE.md` auto-commit policy requiring `git config core.hooksPath .githooks` as an unconditional, idempotent first command before any `git add` to prevent unhooked commits on fresh clones.
 - **Commit SHA**: ``51cf0a36ccadb1cb00903009c9bba8a6ae90304b``
-- **Verification**: Verified via `make docs-check`, `TestChangelogCommitSHAs`, and a fresh clone test demonstrating automatic hook activation on push. ✅
+## Endpoint Mapping Regeneration & Role Description Alignment
+
+- **Implementation Detail**: Regenerated `docs/APPLICATION_MAP.md` via `make docs` to update the Git commit short SHA note (`78c35ac`) and updated `KnownEndpoints` in `shared/infra/docgen/generator.go` to accurately describe enforced caller roles across all `user-service` endpoints following the Gap 1 remediation (`resolveTokenWithRole`).
+- **Commit SHA**: ``78c35ac5d9a766a05502f28d233eb45584d11884``
+- **Verification**: Verified via `make docs-check` passing all freshness and drift-catching tests cleanly. ✅
 
 
 
