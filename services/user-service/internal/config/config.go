@@ -6,19 +6,20 @@ import (
 )
 
 type Config struct {
-	AppEnv               string
-	Port                 string
-	MongoURI             string
-	MongoDatabase        string
-	JWTSecret            string
-	InternalServiceToken string
-	AuthServiceURL       string
-	ChatServiceURL       string
-	CloudWatchLogGroup   string
-	TLSCertPath          string
-	TLSKeyPath           string
-	TLSCAPath            string
-	RedisURI             string
+	AppEnv                 string
+	AllowTestPaymentBypass bool
+	Port                   string
+	MongoURI               string
+	MongoDatabase          string
+	JWTSecret              string
+	InternalServiceToken   string
+	AuthServiceURL         string
+	ChatServiceURL         string
+	CloudWatchLogGroup     string
+	TLSCertPath            string
+	TLSKeyPath             string
+	TLSCAPath              string
+	RedisURI               string
 }
 
 func Load() (*Config, error) {
@@ -82,19 +83,25 @@ func Load() (*Config, error) {
 		appEnv = "production"
 	}
 
+	allowTestPaymentBypass := os.Getenv("ALLOW_TEST_PAYMENT_BYPASS") == "true"
+	if allowTestPaymentBypass && appEnv == "production" {
+		return nil, errors.New("config: ALLOW_TEST_PAYMENT_BYPASS=true is strictly forbidden when APP_ENV is production")
+	}
+
 	return &Config{
-		AppEnv:               appEnv,
-		Port:                 port,
-		MongoURI:             mongoURI,
-		MongoDatabase:        dbName,
-		JWTSecret:            jwtSecret,
-		InternalServiceToken: internalServiceToken,
-		AuthServiceURL:       authServiceURL,
-		ChatServiceURL:       chatServiceURL,
-		CloudWatchLogGroup:   os.Getenv("CLOUDWATCH_LOG_GROUP"),
-		TLSCertPath:          tlsCertPath,
-		TLSKeyPath:           tlsKeyPath,
-		TLSCAPath:            tlsCAPath,
-		RedisURI:             redisURI,
+		AppEnv:                 appEnv,
+		AllowTestPaymentBypass: allowTestPaymentBypass,
+		Port:                   port,
+		MongoURI:               mongoURI,
+		MongoDatabase:          dbName,
+		JWTSecret:              jwtSecret,
+		InternalServiceToken:   internalServiceToken,
+		AuthServiceURL:         authServiceURL,
+		ChatServiceURL:         chatServiceURL,
+		CloudWatchLogGroup:     os.Getenv("CLOUDWATCH_LOG_GROUP"),
+		TLSCertPath:            tlsCertPath,
+		TLSKeyPath:             tlsKeyPath,
+		TLSCAPath:              tlsCAPath,
+		RedisURI:               redisURI,
 	}, nil
 }

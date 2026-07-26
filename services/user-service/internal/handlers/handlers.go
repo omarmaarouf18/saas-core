@@ -55,9 +55,10 @@ type UserService struct {
 	authClient           *resilience.ResilienceClient
 	chatClient           *resilience.ResilienceClient
 	httpClient           *http.Client
-	appEnv               string
-	idempotencyMu        sync.Mutex
-	idempotencyJobs      map[string]string
+	appEnv                 string
+	allowTestPaymentBypass bool
+	idempotencyMu          sync.Mutex
+	idempotencyJobs        map[string]string
 	// Test hook to block UpdateJobLocation database write for deterministic testing
 	updateJobLocationBeforeWriteHook func(ctx context.Context)
 	// Test hook to force RollbackEscrow to fail for deterministic testing
@@ -90,18 +91,19 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 	chatClient := resilience.NewClient(client, "chat-service", 2, 5*time.Second)
 
 	return &UserService{
-		store:                s,
-		authServiceURL:       cfg.AuthServiceURL,
-		chatServiceURL:       chatServiceURL,
-		limiter:              handlerutil.NewRateLimiter(rl),
-		internalServiceToken: cfg.InternalServiceToken,
-		locationLastUpdate:   make(map[string]time.Time),
-		locationInFlight:     make(map[string]bool),
-		idempotencyJobs:      make(map[string]string),
-		authClient:           authClient,
-		chatClient:           chatClient,
-		httpClient:           client,
-		appEnv:               cfg.AppEnv,
+		store:                  s,
+		authServiceURL:         cfg.AuthServiceURL,
+		chatServiceURL:         chatServiceURL,
+		limiter:                handlerutil.NewRateLimiter(rl),
+		internalServiceToken:   cfg.InternalServiceToken,
+		locationLastUpdate:     make(map[string]time.Time),
+		locationInFlight:       make(map[string]bool),
+		idempotencyJobs:        make(map[string]string),
+		authClient:             authClient,
+		chatClient:             chatClient,
+		httpClient:             client,
+		appEnv:                 cfg.AppEnv,
+		allowTestPaymentBypass: cfg.AllowTestPaymentBypass,
 	}
 }
 
@@ -356,7 +358,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if req.PaymentMethod != "cod" && u.appEnv != "test" && u.appEnv != "local" {
+	if req.PaymentMethod != "cod" && (!u.allowTestPaymentBypass || (u.appEnv != "test" && u.appEnv != "local")) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "invalid payment_method: only 'cod' is currently supported",
 		})
@@ -976,7 +978,7 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if u.appEnv != "local" && u.appEnv != "test" {
+	if !u.allowTestPaymentBypass || (u.appEnv != "local" && u.appEnv != "test") {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "payment gateway not yet integrated",
 		})

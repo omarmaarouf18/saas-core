@@ -120,8 +120,9 @@ func TestUserServiceHandlers(t *testing.T) {
 	defer mockAuthServer.Close()
 
 	cfg := &config.Config{
-		AuthServiceURL:       mockAuthServer.URL,
-		InternalServiceToken: "mock-internal-token",
+		AuthServiceURL:         mockAuthServer.URL,
+		InternalServiceToken:   "mock-internal-token",
+		AllowTestPaymentBypass: true,
 	}
 	u := NewUserService(s, cfg, rdb)
 
@@ -393,9 +394,10 @@ func TestUserServiceHandlers(t *testing.T) {
 		defer mockAuthServer3.Close()
 
 		cfg3 := &config.Config{
-			AppEnv:               "test",
-			AuthServiceURL:       mockAuthServer3.URL,
-			InternalServiceToken: "mock-internal-token",
+			AppEnv:                 "test",
+			AuthServiceURL:         mockAuthServer3.URL,
+			InternalServiceToken:   "mock-internal-token",
+			AllowTestPaymentBypass: true,
 		}
 		u3 := NewUserService(s, cfg3, rdb)
 
@@ -3546,9 +3548,10 @@ func TestTrackJob_EscrowRollbackFailure_ReconciliationRequired(t *testing.T) {
 	defer mockAuthServer.Close()
 
 	cfg := &config.Config{
-		AuthServiceURL:       mockAuthServer.URL,
-		InternalServiceToken: "mock-internal-token",
-		AppEnv:               "test",
+		AuthServiceURL:         mockAuthServer.URL,
+		InternalServiceToken:   "mock-internal-token",
+		AppEnv:                 "test",
+		AllowTestPaymentBypass: true,
 	}
 
 	u := NewUserService(s, cfg, rdb)
@@ -3686,9 +3689,10 @@ func TestTrackJob_IdempotencyKey(t *testing.T) {
 	defer mockAuthServer.Close()
 
 	cfg := &config.Config{
-		AuthServiceURL:       mockAuthServer.URL,
-		InternalServiceToken: "mock-internal-token",
-		AppEnv:               "test",
+		AuthServiceURL:         mockAuthServer.URL,
+		InternalServiceToken:   "mock-internal-token",
+		AppEnv:                 "test",
+		AllowTestPaymentBypass: true,
 	}
 
 	u := NewUserService(s, cfg, rdb)
@@ -3810,7 +3814,7 @@ func TestRateJobAndGetRatings_RateLimiting(t *testing.T) {
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	defer rdb.Close()
 
-	cfg := &config.Config{AppEnv: "test"}
+	cfg := &config.Config{AppEnv: "test", AllowTestPaymentBypass: true}
 	u := NewUserService(s, cfg, rdb)
 
 	tok, _ := jwtutil.GenerateToken("usr-1", "user", "owner-1", "u@example.com")
@@ -3931,5 +3935,46 @@ func TestGetLedger_RateLimiting(t *testing.T) {
 
 	if rec6.Code != http.StatusTooManyRequests {
 		t.Fatalf("Expected status 429 Too Many Requests for GetLedger rate limit, got %d. Body: %s", rec6.Code, rec6.Body.String())
+	}
+}
+
+func TestTestPaymentBypass_Gating(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	// Config with AllowTestPaymentBypass: false
+	cfgDisabled := &config.Config{
+		AppEnv:                 "test",
+		AllowTestPaymentBypass: false,
+	}
+	uDisabled := NewUserService(nil, cfgDisabled, rdb)
+
+	// WalletDeposit without AllowTestPaymentBypass MUST be rejected (400 Bad Request)
+	reqDeposit := httptest.NewRequest("POST", "/users/wallet/deposit", strings.NewReader(`{"tenant_id":"t1","amount":100}`))
+	recDeposit := httptest.NewRecorder()
+	uDisabled.WalletDeposit(recDeposit, reqDeposit)
+
+	if recDeposit.Code != http.StatusBadRequest {
+		t.Fatalf("Expected 400 Bad Request for WalletDeposit when AllowTestPaymentBypass is false, got %d", recDeposit.Code)
+	}
+
+	userToken, _ := jwtutil.GenerateToken("u1", "user", "u1", "user@example.com")
+	ownerToken, _ := jwtutil.GenerateToken("o1", "owner", "o1", "owner@example.com")
+
+	// TrackJob non-COD without AllowTestPaymentBypass MUST be rejected (400 Bad Request)
+	trackBody := strings.NewReader(fmt.Sprintf(`{"owner_id":%q,"service_id":"s1","user_id":%q,"payment_method":"wallet","location":{"latitude":30.0,"longitude":30.0}}`, ownerToken, userToken))
+	reqTrack := httptest.NewRequest("POST", "/users/jobs/track", trackBody)
+	recTrack := httptest.NewRecorder()
+	uDisabled.TrackJob(recTrack, reqTrack)
+
+	if recTrack.Code != http.StatusBadRequest {
+		t.Fatalf("Expected 400 Bad Request for non-COD TrackJob when AllowTestPaymentBypass is false, got %d. Body: %s", recTrack.Code, recTrack.Body.String())
 	}
 }
