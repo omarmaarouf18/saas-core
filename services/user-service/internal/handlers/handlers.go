@@ -643,10 +643,7 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// Check if a client-supplied employee_id query param exists, and validate it matches resolvedRequester
-		clientEmployeeID := r.URL.Query().Get("employee_token")
-		if clientEmployeeID == "" {
-			clientEmployeeID = r.URL.Query().Get("employee_id")
-		}
+		clientEmployeeID := r.URL.Query().Get("employee_id")
 		if clientEmployeeID != "" && clientEmployeeID != resolvedRequester {
 			// #nosec G706 //nolint:gosec -- employee ID is sanitized, resolvedRequester is from verified JWT claims, log injection not possible
 			log.Printf("[IDOR DETECTED] Requester %s tried to query jobs for employee %s", resolvedRequester, strings.ReplaceAll(strings.ReplaceAll(clientEmployeeID, "\n", " "), "\r", " "))
@@ -738,11 +735,8 @@ func (u *UserService) GetOwnerJobs(w http.ResponseWriter, r *http.Request) {
 	}
 	resolvedOwnerID := claims.UserID
 
-	// Enforce IDOR matching if client explicitly provided an owner_id / owner_token parameter
-	clientOwnerID := r.URL.Query().Get("owner_token")
-	if clientOwnerID == "" {
-		clientOwnerID = r.URL.Query().Get("owner_id")
-	}
+	// Enforce IDOR matching if client explicitly provided an owner_id parameter
+	clientOwnerID := r.URL.Query().Get("owner_id")
 	if clientOwnerID != "" && clientOwnerID != resolvedOwnerID {
 		// #nosec G706 //nolint:gosec -- IDs are sanitized from claims/query, log injection not possible
 		log.Printf("[IDOR DETECTED] Requester %s tried to query owner jobs for %s", resolvedOwnerID, strings.ReplaceAll(strings.ReplaceAll(clientOwnerID, "\n", " "), "\r", " "))
@@ -819,14 +813,8 @@ func (u *UserService) GetCustomerJobs(w http.ResponseWriter, r *http.Request) {
 	}
 	resolvedCustomerID := claims.UserID
 
-	// Enforce IDOR matching if client explicitly provided a user_id / customer_token parameter
-	clientUserID := r.URL.Query().Get("customer_token")
-	if clientUserID == "" {
-		clientUserID = r.URL.Query().Get("user_token")
-	}
-	if clientUserID == "" {
-		clientUserID = r.URL.Query().Get("user_id")
-	}
+	// Enforce IDOR matching if client explicitly provided a user_id parameter
+	clientUserID := r.URL.Query().Get("user_id")
 	if clientUserID != "" && clientUserID != resolvedCustomerID {
 		// #nosec G706 //nolint:gosec -- IDs are sanitized from claims/query, log injection not possible
 		log.Printf("[IDOR DETECTED] Requester %s tried to query customer jobs for %s", resolvedCustomerID, strings.ReplaceAll(strings.ReplaceAll(clientUserID, "\n", " "), "\r", " "))

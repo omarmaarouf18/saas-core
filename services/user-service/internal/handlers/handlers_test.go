@@ -3036,6 +3036,73 @@ func TestUserServiceHandlers(t *testing.T) {
 			if rec.Code != http.StatusOK {
 				t.Errorf("GetRatings: Expected 200 OK with user_token, got %d. Body: %s", rec.Code, rec.Body.String())
 			}
+
+			// K. IDOR Regression Tests: GetOwnerJobs, GetCustomerJobs, GetJob
+			// (a) Legitimate caller with no extra param -> 200 OK
+			req = httptest.NewRequest("GET", "/users/jobs/owner", nil)
+			req.Header.Set("Authorization", "Bearer "+tokenApprovedOwner)
+			rec = httptest.NewRecorder()
+			u.GetOwnerJobs(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Errorf("GetOwnerJobs (no param): expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			// (b) Legitimate owner passing owner_token / owner_id back -> 200 OK (no false positive IDOR)
+			req = httptest.NewRequest("GET", "/users/jobs/owner?owner_token="+tokenApprovedOwner, nil)
+			rec = httptest.NewRecorder()
+			u.GetOwnerJobs(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Errorf("GetOwnerJobs (owner_token): expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			req = httptest.NewRequest("GET", "/users/jobs/owner?owner_id=kyc-approved-owner", nil)
+			req.Header.Set("Authorization", "Bearer "+tokenApprovedOwner)
+			rec = httptest.NewRecorder()
+			u.GetOwnerJobs(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Errorf("GetOwnerJobs (own owner_id): expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			// (c) Owner passing different owner_id -> 403 Forbidden (genuine IDOR)
+			req = httptest.NewRequest("GET", "/users/jobs/owner?owner_id=different-owner", nil)
+			req.Header.Set("Authorization", "Bearer "+tokenApprovedOwner)
+			rec = httptest.NewRecorder()
+			u.GetOwnerJobs(rec, req)
+			if rec.Code != http.StatusForbidden {
+				t.Errorf("GetOwnerJobs (mismatched owner_id): expected 403 Forbidden, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			// Customer Jobs Regression:
+			req = httptest.NewRequest("GET", "/users/jobs/mine", nil)
+			req.Header.Set("Authorization", "Bearer "+tokenClientUser)
+			rec = httptest.NewRecorder()
+			u.GetCustomerJobs(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Errorf("GetCustomerJobs (no param): expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			req = httptest.NewRequest("GET", "/users/jobs/mine?customer_token="+tokenClientUser, nil)
+			rec = httptest.NewRecorder()
+			u.GetCustomerJobs(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Errorf("GetCustomerJobs (customer_token): expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			req = httptest.NewRequest("GET", "/users/jobs/mine?user_id=client-user-123", nil)
+			req.Header.Set("Authorization", "Bearer "+tokenClientUser)
+			rec = httptest.NewRecorder()
+			u.GetCustomerJobs(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Errorf("GetCustomerJobs (own user_id): expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			req = httptest.NewRequest("GET", "/users/jobs/mine?user_id=different-user", nil)
+			req.Header.Set("Authorization", "Bearer "+tokenClientUser)
+			rec = httptest.NewRecorder()
+			u.GetCustomerJobs(rec, req)
+			if rec.Code != http.StatusForbidden {
+				t.Errorf("GetCustomerJobs (mismatched user_id): expected 403 Forbidden, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
 		})
 	})
 }
