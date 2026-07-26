@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -96,5 +97,10 @@ func TestLoad(t *testing.T) {
 	}
 	if len(cfg.Routes) != 4 {
 		t.Errorf("Expected 4 default routes, got %d", len(cfg.Routes))
+	}
+	for _, route := range cfg.Routes {
+		if !strings.HasPrefix(route.Target, "https://") {
+			t.Errorf("Route %s target %q must use https scheme when mTLS client config is active", route.Prefix, route.Target)
+		}
 	}
 }

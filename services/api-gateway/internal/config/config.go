@@ -4,6 +4,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 // ServiceRoute maps a URL path prefix to a backend service address.
@@ -91,16 +92,19 @@ func Load() (*Config, error) {
 		envKey     string
 		defaultURL string
 	}{
-		{"/api/v1/auth/", "AUTH_SERVICE_URL", "http://auth-service:3002"},
-		{"/api/v1/users/", "USER_SERVICE_URL", "http://user-service:3003"},
-		{"/api/v1/chat/", "CHAT_SERVICE_URL", "http://chat-service:3001"},
-		{"/api/v1/notifications/stream", "NOTIFICATION_SERVICE_URL", "http://notification-service:3004"},
+		{"/api/v1/auth/", "AUTH_SERVICE_URL", "https://auth-service:3002"},
+		{"/api/v1/users/", "USER_SERVICE_URL", "https://user-service:3003"},
+		{"/api/v1/chat/", "CHAT_SERVICE_URL", "https://chat-service:3001"},
+		{"/api/v1/notifications/stream", "NOTIFICATION_SERVICE_URL", "https://notification-service:3004"},
 	}
 
 	for _, rd := range routeDefs {
 		target := envOrDefault(rd.envKey, rd.defaultURL)
 		if target == "" {
 			return nil, fmt.Errorf("config: required env var %s is empty", rd.envKey)
+		}
+		if tlsCertPath != "" && !strings.HasPrefix(target, "https://") {
+			return nil, fmt.Errorf("config: route %s target %q must use https scheme when mTLS client config is active", rd.prefix, target)
 		}
 		cfg.Routes = append(cfg.Routes, ServiceRoute{
 			Prefix:      rd.prefix,
