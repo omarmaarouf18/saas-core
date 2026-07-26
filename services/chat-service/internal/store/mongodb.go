@@ -13,60 +13,55 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/project/chat-service/internal/chat"
+	"github.com/project/shared/infra/jwtutil"
 )
 
 type SupportAgent struct {
 	ID              string `bson:"_id" json:"agent_id"`
 	Status          string `bson:"status" json:"status"` // "available", "busy", "offline"
+	AssignedTickets int    `bson:"assigned_tickets" json:"assigned_tickets"`
 	Token           string `bson:"token" json:"token"`
-	CurrentTicketID string `bson:"current_ticket_id,omitempty" json:"current_ticket_id,omitempty"`
 }
 
 type ComplaintTicket struct {
 	ID              string    `bson:"_id" json:"ticket_id"`
 	CustomerID      string    `bson:"customer_id" json:"customer_id"`
-	ContextID       string    `bson:"context_id" json:"context_id"` // job_id or owner_id/employee_id context
-	Status          string    `bson:"status" json:"status"`         // "pending", "assigned", "resolved", "closed"
 	AssignedAgentID string    `bson:"assigned_agent_id" json:"assigned_agent_id"`
+	ContextID       string    `bson:"context_id" json:"context_id"`
+	Status          string    `bson:"status" json:"status"` // "pending", "assigned", "resolved"
 	CreatedAt       time.Time `bson:"created_at" json:"created_at"`
-	AssignedAt      time.Time `bson:"assigned_at,omitempty" json:"assigned_at,omitempty"`
 }
 
 type MongoDB struct {
 	client   *mongo.Client
 	db       *mongo.Database
 	messages *mongo.Collection
-	tickets  *mongo.Collection
 	agents   *mongo.Collection
+	tickets  *mongo.Collection
 }
 
+// NewMongoDB connects to MongoDB and initializes collections.
 func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 	client, err := mongo.Connect(options.Client().ApplyURI(uri))
 	if err != nil {
 		return nil, fmt.Errorf("store: failed to connect to MongoDB: %w", err)
 	}
 
-	pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	if err := client.Ping(pingCtx, nil); err != nil {
-		return nil, fmt.Errorf("store: MongoDB ping failed: %w", err)
+	if err := client.Ping(ctx, nil); err != nil {
+		return nil, fmt.Errorf("store: failed to ping MongoDB: %w", err)
 	}
 
 	db := client.Database(dbName)
-	s := &MongoDB{
+	store := &MongoDB{
 		client:   client,
 		db:       db,
-		messages: db.Collection("chat_messages"),
-		tickets:  db.Collection("complaint_tickets"),
+		messages: db.Collection("messages"),
 		agents:   db.Collection("support_agents"),
-	}
-
-	if err := s.ensureIndexes(ctx); err != nil {
-		return nil, fmt.Errorf("store: failed to create indexes: %w", err)
+		tickets:  db.Collection("complaint_tickets"),
 	}
 
 	log.Printf("[CHAT-STORE] Connected to MongoDB: %s/%s", uri, dbName)
-	return s, nil
+	return store, nil
 }
 
 func (s *MongoDB) Close(ctx context.Context) error {
@@ -235,10 +230,14 @@ func (s *MongoDB) GetTicket(ctx context.Context, ticketID string) (*ComplaintTic
 // CreateTicketAndAssign attempts to atomically assign an available support agent to a new ticket.
 // If no agent is available, the ticket is created with "pending" status (queued).
 func (s *MongoDB) CreateTicketAndAssign(ctx context.Context, customerID, contextID string) (*ComplaintTicket, error) {
-	b := make([]byte, 8)
-	_, _ = rand.Read(b)
+	tktUUID, err := jwtutil.GenerateUUID()
+	if err != nil {
+		b := make([]byte, 8)
+		_, _ = rand.Read(b)
+		tktUUID = fmt.Sprintf("%d-%s", time.Now().UnixNano(), hex.EncodeToString(b))
+	}
 	ticket := &ComplaintTicket{
-		ID:         fmt.Sprintf("tkt-%d-%s", time.Now().UnixNano(), hex.EncodeToString(b)),
+		ID:         fmt.Sprintf("tkt-%s", tktUUID),
 		CustomerID: customerID,
 		ContextID:  contextID,
 		Status:     "pending",
@@ -253,11 +252,10 @@ func (s *MongoDB) CreateTicketAndAssign(ctx context.Context, customerID, context
 		},
 	}
 	var agent SupportAgent
-	err := s.agents.FindOneAndUpdate(ctx, filter, update, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&agent)
+	err = s.agents.FindOneAndUpdate(ctx, filter, update, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&agent)
 	if err == nil {
 		ticket.Status = "assigned"
 		ticket.AssignedAgentID = agent.ID
-		ticket.AssignedAt = time.Now().UTC()
 	} else if err != mongo.ErrNoDocuments {
 		return nil, err
 	}

@@ -521,6 +521,16 @@ func (c *Chat) readPump(conn *websocket.Conn, client *chat.Client) {
 				// Persist message to MongoDB store
 				if err := c.store.PersistMessage(context.Background(), chatMsg); err != nil {
 					log.Printf("[WS] Failed to persist message: %v", err)
+					denied, _ := json.Marshal(map[string]string{
+						"type":    "error",
+						"channel": msg.Channel,
+						"error":   "failed to persist message",
+					})
+					select {
+					case client.Send <- denied:
+					default:
+					}
+					continue
 				}
 
 				c.hub.Broadcast <- chatMsg

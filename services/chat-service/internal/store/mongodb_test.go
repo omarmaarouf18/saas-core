@@ -160,8 +160,8 @@ func TestMongoDB_ComplaintTicketOperations(t *testing.T) {
 
 	// Verify agent status changed to busy
 	updatedAgent, _ := s.GetAgent(ctx, "agent-supp-1")
-	if updatedAgent.Status != "busy" || updatedAgent.CurrentTicketID != ticketAssigned.ID {
-		t.Errorf("Expected agent to be busy with ticket ID, got %v", updatedAgent)
+	if updatedAgent.Status != "busy" {
+		t.Errorf("Expected agent to be busy, got %v", updatedAgent)
 	}
 
 	// 4. GetTicket
@@ -181,7 +181,45 @@ func TestMongoDB_ComplaintTicketOperations(t *testing.T) {
 	}
 
 	freedAgent, _ := s.GetAgent(ctx, "agent-supp-1")
-	if freedAgent.Status != "available" || freedAgent.CurrentTicketID != "" {
+	if freedAgent.Status != "available" {
 		t.Errorf("Expected agent to be freed and available, got %v", freedAgent)
+	}
+}
+
+func TestMongoDB_ConcurrentPersistMessageNoCollision(t *testing.T) {
+	s, cleanup := setupTestMongoDB(t)
+	if s == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	channel := "concurrent-test-channel"
+
+	const numMsgs = 20
+	errCh := make(chan error, numMsgs)
+
+	for i := 0; i < numMsgs; i++ {
+		go func(idx int) {
+			msg := &chat.Message{
+				Channel:        channel,
+				SenderID:       fmt.Sprintf("user-%d", idx),
+				SenderUsername: fmt.Sprintf("user%d", idx),
+				Content:        fmt.Sprintf("Concurrent message %d", idx),
+				Type:           "chat",
+			}
+			errCh <- s.PersistMessage(ctx, msg)
+		}(i)
+	}
+
+	for i := 0; i < numMsgs; i++ {
+		if err := <-errCh; err != nil {
+			t.Errorf("Concurrent PersistMessage failed: %v", err)
+		}
+	}
+
+	history, err := s.GetHistory(ctx, channel, 100)
+	if err != nil || len(history) != numMsgs {
+		t.Fatalf("Expected %d persisted messages in history, got %d (err: %v)", numMsgs, len(history), err)
 	}
 }
