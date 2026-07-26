@@ -38,14 +38,18 @@ func main() {
 		log.Fatalf("[NOTIF] Failed to load TLS configuration: %v", err)
 	}
 
+	sseHub := hub.NewSSEHub()
+
 	// Connect to Redis.
 	redisClient, err := ratelimit.NewRedisClient(cfg.RedisURI)
 	if err != nil {
-		log.Fatalf("[NOTIF] Failed to connect to Redis: %v", err)
+		log.Printf("[WARN] Redis Pub/Sub initialization failed (%v) - falling back to single-instance local hub mode", err)
+	} else {
+		jwtutil.SetRedisClient(redisClient)
+		sseHub.SetRedisClient(redisClient)
 	}
-	jwtutil.SetRedisClient(redisClient)
+	defer sseHub.Close()
 
-	sseHub := hub.NewSSEHub()
 	notifHandlers := handlers.NewNotification(sseHub, cfg, redisClient)
 
 	mux := http.NewServeMux()

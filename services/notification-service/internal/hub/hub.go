@@ -3,6 +3,7 @@
 package hub
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -10,6 +11,8 @@ import (
 	"log"
 	"sync"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 // Role represents the session pool a client belongs to.
@@ -43,13 +46,71 @@ type SSEClient struct {
 
 // SSEHub manages SSE client pools organized by role and tenant.
 type SSEHub struct {
-	mu      sync.RWMutex
-	clients map[*SSEClient]bool
+	mu       sync.RWMutex
+	clients  map[*SSEClient]bool
+	rdb      *redis.Client
+	pubsub   *redis.PubSub
+	cancel   context.CancelFunc
+	stopOnce sync.Once
 }
 
 // NewSSEHub creates a new hub.
 func NewSSEHub() *SSEHub {
 	return &SSEHub{clients: make(map[*SSEClient]bool)}
+}
+
+// SetRedisClient configures Redis Pub/Sub cross-instance fan-out.
+func (h *SSEHub) SetRedisClient(rdb *redis.Client) {
+	if rdb == nil {
+		return
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	h.rdb = rdb
+	ctx, cancel := context.WithCancel(context.Background())
+	h.cancel = cancel
+	h.pubsub = rdb.PSubscribe(ctx, "notify:*")
+
+	go h.redisSubscriberLoop(ctx, h.pubsub)
+	log.Printf("[SSE-HUB] Connected to Redis Pub/Sub for cross-replica notification fan-out")
+}
+
+// Close gracefully stops the Redis Pub/Sub subscriber loop.
+func (h *SSEHub) Close() {
+	h.stopOnce.Do(func() {
+		h.mu.Lock()
+		cancel := h.cancel
+		pubsub := h.pubsub
+		h.mu.Unlock()
+
+		if cancel != nil {
+			cancel()
+		}
+		if pubsub != nil {
+			_ = pubsub.Close()
+		}
+	})
+}
+
+func (h *SSEHub) redisSubscriberLoop(ctx context.Context, pubsub *redis.PubSub) {
+	ch := pubsub.Channel()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case msg, ok := <-ch:
+			if !ok {
+				return
+			}
+			var n Notification
+			if err := json.Unmarshal([]byte(msg.Payload), &n); err != nil {
+				log.Printf("[SSE-HUB] Failed to unmarshal Redis notification payload: %v", err)
+				continue
+			}
+			h.deliverLocal(n)
+		}
+	}
 }
 
 // Register adds a client to the hub.
@@ -98,6 +159,35 @@ func (h *SSEHub) Broadcast(n Notification) {
 		return
 	}
 
+	h.mu.RLock()
+	rdb := h.rdb
+	h.mu.RUnlock()
+
+	if rdb != nil {
+		channel := "notify:global"
+		if !n.Global {
+			channel = fmt.Sprintf("notify:tenant:%s", n.TenantID)
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		if err := rdb.Publish(ctx, channel, data).Err(); err != nil {
+			log.Printf("[REDIS-PUBSUB-WARNING] Failed to publish notification to Redis channel %s: %v — falling back to local delivery", channel, err)
+			h.deliverLocal(n)
+		}
+	} else {
+		h.deliverLocal(n)
+	}
+}
+
+func (h *SSEHub) deliverLocal(n Notification) {
+	data, err := json.Marshal(n)
+	if err != nil {
+		log.Printf("[SSE-HUB] Failed to marshal notification for local delivery: %v", err)
+		return
+	}
+
 	// Format as SSE event.
 	ssePayload := fmt.Appendf(nil, "event: notification\ndata: %s\n\n", data)
 
@@ -121,7 +211,7 @@ func (h *SSEHub) Broadcast(n Notification) {
 			log.Printf("[SSE-HUB] Dropped notification for slow client %s", client.ID)
 		}
 	}
-	log.Printf("[SSE-HUB] Broadcast: type=%s tenant=%s → %d clients", n.Type, n.TenantID, sent)
+	log.Printf("[SSE-HUB] Broadcast: type=%s tenant=%s → %d local clients", n.Type, n.TenantID, sent)
 }
 
 // ClientCount returns the number of connected clients.
