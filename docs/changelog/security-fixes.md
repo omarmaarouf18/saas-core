@@ -500,6 +500,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``45328ebbcf8eb4adcca143c6ed5101d0cfb97208``
 - **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestRoleEnforcement_RateJobAndGetRatings -v` and grep-counting 0 remaining bare `resolveToken` calls in `handlers.go`. ✅
 
+## Remediation: Removal of Dead resolveToken Function (Task 2)
+
+- **Implementation Detail**: Following the complete migration of all 18 token resolution locations in `user-service` to `resolveTokenWithRole`, deleted the legacy `resolveToken` pass-through function from `services/user-service/internal/handlers/handlers.go`. Verified via grep search that zero references to `resolveToken` remain anywhere in the repository.
+- **Commit SHA**: ``60e8939ace375df1240e08e35a7efeddd77630aa``
+- **Verification**: Verified via `grep -rn "resolveToken(" services/` returning zero caller sites, and full `user-service` build, vet, and test suite passing. ✅
+
 
 
 
