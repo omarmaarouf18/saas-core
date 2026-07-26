@@ -203,6 +203,13 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid category, must be: shipping, delivery, transport"})
 		return
 	}
+	if req.TenantBasePrice < 0 || req.TenantPricePerKM < 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_pricing",
+			"message": "tenant_base_price and tenant_price_per_km cannot be negative",
+		})
+		return
+	}
 
 	svc := &models.Service{
 		ID: generateID(), TenantID: req.OwnerID, Name: req.Name, Category: req.Category,

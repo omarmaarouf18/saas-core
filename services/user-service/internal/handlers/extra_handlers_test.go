@@ -154,6 +154,35 @@ func TestCreateService_ExtraEdgeCases(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("Expected 400 Bad Request for invalid category, got %d. Body: %s", rec.Code, rec.Body.String())
 	}
+
+	// 4. Negative pricing -> 400 Bad Request
+	body = fmt.Sprintf(`{"owner_id":%q,"name":"Test","category":"shipping","tenant_base_price":-10.0,"tenant_price_per_km":2.0}`, ownerToken)
+	req = httptest.NewRequest("POST", "/users/services", bytes.NewReader([]byte(body)))
+	req.Header.Set("Authorization", "Bearer "+ownerToken)
+	rec = httptest.NewRecorder()
+	svc.CreateService(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request for negative base price, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	body = fmt.Sprintf(`{"owner_id":%q,"name":"Test","category":"shipping","tenant_base_price":10.0,"tenant_price_per_km":-2.0}`, ownerToken)
+	req = httptest.NewRequest("POST", "/users/services", bytes.NewReader([]byte(body)))
+	req.Header.Set("Authorization", "Bearer "+ownerToken)
+	rec = httptest.NewRecorder()
+	svc.CreateService(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request for negative price per km, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// 5. Zero pricing (free service) -> Allowed (passes pricing validation)
+	body = fmt.Sprintf(`{"owner_id":%q,"name":"Free Service","category":"shipping","tenant_base_price":0.0,"tenant_price_per_km":0.0}`, ownerToken)
+	req = httptest.NewRequest("POST", "/users/services", bytes.NewReader([]byte(body)))
+	req.Header.Set("Authorization", "Bearer "+ownerToken)
+	rec = httptest.NewRecorder()
+	svc.CreateService(rec, req)
+	if rec.Code == http.StatusBadRequest && strings.Contains(rec.Body.String(), "invalid_pricing") {
+		t.Errorf("Zero pricing should be allowed for free listings, got 400 invalid_pricing. Body: %s", rec.Body.String())
+	}
 }
 
 func TestWalletDeposit_ExtraEdgeCases(t *testing.T) {
