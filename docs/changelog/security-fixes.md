@@ -464,6 +464,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``9b61b343e1f39ef8e8e57ce432542b2ad7fdc680``
 - **Verification**: Verified via `go test ./services/user-service/... -run TestTrackJob_EscrowRollbackFailure_ReconciliationRequired -v` (asserting job survival, status change, failure notes, and 500 error response). ✅
 
+## TrackJob Request Idempotency via Idempotency-Key Header (Item #2)
+
+- **Implementation Detail**: Resolved deep-tester Item #2 (severity 6/10, priority 7/10). Added support for `Idempotency-Key` / `X-Idempotency-Key` headers and `idempotency_key` JSON field in `TrackJob`. `UserService` tracks request idempotency keys in a thread-safe map, returning the previously created job record (with HTTP 200 OK) on repeat requests rather than creating duplicate jobs or locking escrow twice.
+- **Commit SHA**: ``0d8c4a7eac56c0b2d1623c1e06c28c2eebfd07be``
+- **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestTrackJob_IdempotencyKey -v` (asserting initial 201 Created and subsequent 200 OK with identical job ID and single DB record). ✅
+
 
 
 
