@@ -1118,7 +1118,7 @@ func TestReconnectionCachingBehavior(t *testing.T) {
 	}
 	mu.Unlock()
 
-	// 2. Second verification within TTL (60s) -> should reuse cache and NOT call auth-service
+	// 2. Second verification within TTL (5s) -> should reuse cache and NOT call auth-service
 	active2, username2, err := c.verifyToken("user-cache-123")
 	if err != nil {
 		t.Fatalf("verifyToken 2 failed: %v", err)

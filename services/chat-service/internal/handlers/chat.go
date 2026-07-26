@@ -157,7 +157,7 @@ func (c *Chat) verifyToken(id string) (bool, string, error) {
 		if err := json.NewDecoder(resp.Body).Decode(&user); err == nil && user.ID != "" {
 			c.tokenCacheMu.Lock()
 			c.tokenCache[id] = cachedToken{
-				expiry:   time.Now().Add(60 * time.Second),
+				expiry:   time.Now().Add(5 * time.Second),
 				username: user.Username,
 			}
 			c.tokenCacheMu.Unlock()
