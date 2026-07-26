@@ -119,6 +119,12 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Commit SHA**: ``a81a75323978195cf3d22c40dbc2c9400adc89a7``
 - **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestResolveTokenWithRole -v` (asserting role matching, multi-role acceptance, and role mismatch rejection). ✅
 
+## Rating Summary Access Model for Authenticated Requesters (Item #5)
+
+- **Implementation Detail**: Resolved deep-tester Item #5 (severity 4/10, priority 5/10). Updated `GetRatings` (`GET /users/ratings`) to authenticate the caller via JWT token while allowing target `user_id` query parameter to specify any candidate employee/user ID. This enables business flows such as owners evaluating candidate employee rating summaries before hiring without requiring possession of the candidate's JWT token.
+- **Commit SHA**: ``0213d4674fbd411923b1511262417edecceda47d``
+- **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestUserServiceHandlers/GetRatings -v` (asserting authenticated owner query for target employee rating summary returns 200 OK). ✅
+
 
 
 
