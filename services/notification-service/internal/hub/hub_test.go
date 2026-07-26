@@ -206,4 +206,3 @@ func TestSSEHub_MultiInstanceRedisPubSubDelivery(t *testing.T) {
 		t.Errorf("c3OnHub2 on Hub 2 missed cross-instance global notification")
 	}
 }
-
