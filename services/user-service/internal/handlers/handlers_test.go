@@ -3978,3 +3978,41 @@ func TestTestPaymentBypass_Gating(t *testing.T) {
 		t.Fatalf("Expected 400 Bad Request for non-COD TrackJob when AllowTestPaymentBypass is false, got %d. Body: %s", recTrack.Code, recTrack.Body.String())
 	}
 }
+
+func TestRateJob_CommentSanitizationAndLengthLimit(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	cfg := &config.Config{AppEnv: "test"}
+	u := NewUserService(nil, cfg, rdb)
+
+	ratedByToken, _ := jwtutil.GenerateToken("usr-rater", "user", "owner-1", "rater@example.com")
+	ratedUserToken, _ := jwtutil.GenerateToken("usr-target", "user", "owner-1", "target@example.com")
+
+	// Case A: Comment > 1000 chars should fail with 400 Bad Request
+	longComment := strings.Repeat("a", 1001)
+	bodyLong, _ := json.Marshal(map[string]any{
+		"job_id":           "job-1",
+		"rated_by_token":   ratedByToken,
+		"rated_user_token": ratedUserToken,
+		"stars":            5,
+		"comment":          longComment,
+	})
+	reqLong := httptest.NewRequest("POST", "/users/jobs/rate", bytes.NewReader(bodyLong))
+	recLong := httptest.NewRecorder()
+	u.RateJob(recLong, reqLong)
+
+	if recLong.Code != http.StatusBadRequest {
+		t.Fatalf("Expected 400 Bad Request for comment > 1000 chars, got %d. Body: %s", recLong.Code, recLong.Body.String())
+	}
+	if !strings.Contains(recLong.Body.String(), "comment exceeds maximum length") {
+		t.Fatalf("Expected comment length error message, got %s", recLong.Body.String())
+	}
+}

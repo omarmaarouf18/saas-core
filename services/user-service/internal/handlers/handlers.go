@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"log"
 	"math"
@@ -1464,6 +1465,12 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "stars must be between 1 and 5"})
 		return
 	}
+
+	if len(req.Comment) > 1000 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "comment exceeds maximum length of 1000 characters"})
+		return
+	}
+	req.Comment = strings.TrimSpace(html.EscapeString(req.Comment))
 
 	resolvedRatedBy, err := resolveToken(req.RatedBy)
 	if err != nil {
