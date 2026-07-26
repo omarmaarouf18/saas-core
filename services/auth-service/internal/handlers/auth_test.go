@@ -1599,6 +1599,29 @@ func TestAuth_ExtraGaps(t *testing.T) {
 			a.limiter.Reset(email)
 		})
 
+		// B1: OTP valid but user record deleted -> 404 Not Found cleanly
+		t.Run("OTPUserDeletedClean404", func(t *testing.T) {
+			a.limiter.Reset(defaultIP)
+			deletedEmail := "deleted_user_otp@example.com"
+			a.limiter.Reset(deletedEmail)
+
+			s.SetOTP(ctx, deletedEmail, "333333")
+
+			reqBody := models.VerifyOTPRequest{Email: deletedEmail, OTP: "333333"}
+			b, _ := json.Marshal(reqBody)
+			req := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(b))
+			rec := httptest.NewRecorder()
+
+			a.VerifyOTP(rec, req)
+
+			if rec.Code != http.StatusNotFound {
+				t.Errorf("expected 404 Not Found when user deleted post-OTP, got %d. Body: %s", rec.Code, rec.Body.String())
+			}
+
+			a.limiter.Reset(defaultIP)
+			a.limiter.Reset(deletedEmail)
+		})
+
 		// B: OTP for wrong email is rejected
 		t.Run("OTPWrongEmailRejected", func(t *testing.T) {
 			a.limiter.Reset(defaultIP)

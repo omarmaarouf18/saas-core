@@ -563,6 +563,10 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	a.limiter.Reset(req.Email)
 
 	user := a.store.GetByEmail(ctx, req.Email)
+	if user == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "user associated with OTP not found"})
+		return
+	}
 
 	log.Printf("[AUTH] OTP verified: email=%s role=%s", user.Email, user.Role)
 
