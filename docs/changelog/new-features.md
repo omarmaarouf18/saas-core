@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **New Features Cha
 
 ---
 
+## Negotiable Transport Pricing Data Model Foundation
+
+- **Implementation Detail**: Added negotiable pricing fields to `Job` struct (`SuggestedPrice`, `ProposedPrice`, `ProposedBy`, `AgreedPrice`, `PriceProposalExpiresAt`), defined explicit `JobStatusAwaitingPriceResponse` enum state, and implemented `ValidPriceProposal` validation helper enforcing bounds $[0.5 \times P_{\text{system}}, 1.5 \times P_{\text{system}}]$.
+- **Commit SHA**: ``beac4e3030b1909cbc08ee6cdefe32923198b185``
+- **Verification**: Verified via `go test ./... -v -race -count=1` from `services/user-service` passing all table-driven unit tests. ✅
+
 ## Owner Employee Listing Endpoint (GET /auth/employees)
 
 - **Implementation Detail**: Added GET /auth/employees endpoint letting tenant owners list all employees registered under their account. Authenticated via JWT (Authorization Bearer header or owner_token query parameter), IDOR-protected by resolving owner ID directly from claims, returns employee ID, username, email, is_active status (including frozen accounts), and created_at while omitting sensitive fields. Protected by Redis-backed rate limiting (30 req/min per owner).
