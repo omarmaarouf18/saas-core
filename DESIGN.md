@@ -4,7 +4,7 @@ This document outlines the architectural and user interface design for the Flutt
 
 > [!NOTE]
 > **Planned vs. Current Architecture**: The directory structure and provider file tree detailed in Section 1 (such as `screens/shared/`, `screens/owner/`, `screens/employee/`, `screens/user/`, and `chat_provider.dart` / `sse_provider.dart`) represent the **target/planned architecture** for the production launch.
-> The actual current frontend implementation consists of a flat screens directory (containing `employee_screen.dart`, `home_screen.dart`, `login_screen.dart`, `otp_screen.dart`, `signup_screen.dart`, and `wallet_screen.dart`) and is documented in [docs/frontend/STATUS.md](docs/frontend/STATUS.md). Please consult it for the current state of development.
+> The actual current frontend implementation consists of a flat screens directory (containing 14 screens: `chat_screen.dart`, `customer_marketplace_screen.dart`, `employee_jobs_screen.dart`, `employee_screen.dart`, `home_screen.dart`, `job_status_screen.dart`, `login_screen.dart`, `notifications_screen.dart`, `otp_screen.dart`, `rating_screen.dart`, `service_screen.dart`, `signup_screen.dart`, `subscription_screen.dart`, and `wallet_screen.dart`) and is documented in [docs/frontend/STATUS.md](docs/frontend/STATUS.md). Please consult it for the current state of development.
 
 ---
 

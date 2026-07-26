@@ -26,7 +26,7 @@ We will proceed in the following order:
           provider: ^6.1.5
           http: ^1.6.0
           web_socket_channel: ^2.4.5
-          flutter_client_sse: ^1.0.0
+          flutter_client_sse: ^2.0.3
         ```
 
 2.  **Base Networking Client**:
