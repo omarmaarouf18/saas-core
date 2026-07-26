@@ -470,6 +470,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``0d8c4a7eac56c0b2d1623c1e06c28c2eebfd07be``
 - **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestTrackJob_IdempotencyKey -v` (asserting initial 201 Created and subsequent 200 OK with identical job ID and single DB record). ✅
 
+## Remediation: Explicit Token Role Enforcement in CreateService & TrackJob (Item #4 Remediation - Part 1)
+
+- **Implementation Detail**: Corrected an incomplete fix for Item #4 (original commit `a81a75323978195cf3d22c40dbc2c9400adc89a7`), where `resolveToken(x)` had been defined as a no-op pass-through `resolveTokenWithRole(x)` with zero role filters. Replaced bare `resolveToken` calls in `CreateService` (`req.OwnerID`) and `TrackJob` (`req.OwnerID`, `req.UserID`, `req.EmployeeID`) with explicit role requirements (`"owner"`, `"user"`/`"customer"`, `"employee"`), returning HTTP 401 Unauthorized on role mismatch.
+- **Commit SHA**: ``97a02c0dcf8220b86eec43daabe794d7aeda1460``
+- **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestRoleEnforcement_CreateServiceAndTrackJob -v` (asserting 401 Unauthorized with role mismatch error for employee/owner token role violations). ✅
+
 
 
 
