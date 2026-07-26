@@ -745,7 +745,7 @@ func (u *UserService) GetOwnerJobs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify owner role
-	if claims.Role != "" && claims.Role != "owner" {
+	if claims.Role != "owner" {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: owner role required"})
 		return
 	}
@@ -819,6 +819,12 @@ func (u *UserService) GetCustomerJobs(w http.ResponseWriter, r *http.Request) {
 		// #nosec G706 //nolint:gosec -- IDs are sanitized from claims/query, log injection not possible
 		log.Printf("[IDOR DETECTED] Requester %s tried to query customer jobs for %s", resolvedCustomerID, strings.ReplaceAll(strings.ReplaceAll(clientUserID, "\n", " "), "\r", " "))
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to view jobs for this user"})
+		return
+	}
+
+	// Verify customer role
+	if claims.Role != "user" {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: customer role required"})
 		return
 	}
 

@@ -3232,7 +3232,7 @@ func TestGetJobsByOwner(t *testing.T) {
 		}
 	})
 
-	// 3. Role Enforcement: non-owner role returns 403
+	// 3. Role Enforcement: non-owner or empty role returns 403
 	t.Run("Role Enforcement", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/users/jobs/owner", nil)
 		req.Header.Set("Authorization", "Bearer "+tokenNonOwner)
@@ -3241,6 +3241,17 @@ func TestGetJobsByOwner(t *testing.T) {
 
 		if rec.Code != http.StatusForbidden {
 			t.Errorf("Expected 403 Forbidden for employee role, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// Empty-role token test
+		tokenEmptyRole, _ := jwtutil.GenerateToken(ownerID1, "", ownerID1, "empty@example.com")
+		reqEmpty := httptest.NewRequest("GET", "/users/jobs/owner", nil)
+		reqEmpty.Header.Set("Authorization", "Bearer "+tokenEmptyRole)
+		recEmpty := httptest.NewRecorder()
+		u.GetOwnerJobs(recEmpty, reqEmpty)
+
+		if recEmpty.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for empty role token, got %d. Body: %s", recEmpty.Code, recEmpty.Body.String())
 		}
 	})
 
@@ -3398,7 +3409,29 @@ func TestGetJobsByCustomer(t *testing.T) {
 		}
 	})
 
-	// 3. Rate Limiting: 31st request receives 429
+	// 3. Role Enforcement: non-user or empty role returns 403
+	t.Run("Role Enforcement", func(t *testing.T) {
+		tokenOwnerRole, _ := jwtutil.GenerateToken(custID1, "owner", custID1, "owner@example.com")
+		reqOwner := httptest.NewRequest("GET", "/users/jobs/mine", nil)
+		reqOwner.Header.Set("Authorization", "Bearer "+tokenOwnerRole)
+		recOwner := httptest.NewRecorder()
+		u.GetCustomerJobs(recOwner, reqOwner)
+
+		if recOwner.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for owner role on customer jobs, got %d. Body: %s", recOwner.Code, recOwner.Body.String())
+		}
+
+		// Empty-role token test
+		tokenEmptyRole, _ := jwtutil.GenerateToken(custID1, "", custID1, "emptycust@example.com")
+		reqEmpty := httptest.NewRequest("GET", "/users/jobs/mine", nil)
+		reqEmpty.Header.Set("Authorization", "Bearer "+tokenEmptyRole)
+		recEmpty := httptest.NewRecorder()
+		u.GetCustomerJobs(recEmpty, reqEmpty)
+
+		if recEmpty.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for empty role token on customer jobs, got %d. Body: %s", recEmpty.Code, recEmpty.Body.String())
+		}
+	})
 	t.Run("Rate Limiting", func(t *testing.T) {
 		rateLimitCustID := "cust-ratelimit-300"
 		tokenRateLimit, _ := jwtutil.GenerateToken(rateLimitCustID, "user", rateLimitCustID, "custrate@example.com")
