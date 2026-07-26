@@ -2,6 +2,12 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## chat-service Redis Pub/Sub Horizontal Scaling
+
+- **Implementation Detail**: Implemented dynamic per-channel Redis Pub/Sub horizontal scaling in `chat-service` (`internal/chat/hub.go`). Hub dynamically subscribes to `chat:channel:<name>` on the first local client join and unsubscribes on the last local client leave. Published messages undergo immediate in-process delivery on the origin instance plus Redis `Publish()` for remote replica fan-out, using `OriginInstanceID` tagging to eliminate self-loopback de-duplication latency. Added multi-instance `miniredis` test coverage.
+- **Commit SHA**: ``203111290514c71a25de3ada16bd43a46fac8f68``
+- **Verification**: Verified via `go test -count=1 ./services/chat-service/...` passing all unit and multi-instance Pub/Sub delivery tests. ✅
+
 ## notification-service Redis Pub/Sub Horizontal Scaling
 
 - **Implementation Detail**: Added Redis Pub/Sub cross-instance fan-out to `notification-service` (`internal/hub/hub.go`). Broadcasts are published to Redis channels (`notify:tenant:<id>` and `notify:global`), allowing multi-replica deployments to fan out SSE notifications to connected clients on any instance. Added multi-instance `miniredis` test coverage.

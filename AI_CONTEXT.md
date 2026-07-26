@@ -99,7 +99,7 @@ The platform uses a microservices architecture coordinated via a reverse-proxy A
   * `shared/infra/jwtutil`: Cryptographically signed JSON Web Token (JWT) generation and validation helpers.
 
 * **Security Decisions & Architecture Records**: Refer to [docs/adr/README.md](docs/adr/README.md) as the source of truth for security-boundary decisions going forward. Numbered ADR files detail exact context, implementation decisions, and consequences. Future contributors must document significant design and security changes as ADRs.
-* **Realtime Hub Horizontal Scaling Architecture**: Real-time hubs (`chat-service` and `notification-service`) use Redis Pub/Sub for cross-replica event fan-out (see [ADR-0005](docs/adr/0005-realtime-hub-horizontal-scaling.md)). Phase 1 migration for `notification-service` is fully implemented, verified, and committed (`2794adc70d938df54f97fad003f210eadc9d115f`). If Redis is unreachable, `notification-service` degrades gracefully to local-only delivery.
+* **Realtime Hub Horizontal Scaling Architecture**: Real-time hubs (`chat-service` and `notification-service`) use Redis Pub/Sub for cross-replica event fan-out (see [ADR-0005](docs/adr/0005-realtime-hub-horizontal-scaling.md)). Phase 1 migration for `notification-service` (`2794adc70d938df54f97fad003f210eadc9d115f`) and Phase 2 migration for `chat-service` (`203111290514c71a25de3ada16bd43a46fac8f68`) are fully implemented, verified, and committed. Both services dynamically support Redis Pub/Sub cross-replica fan-out and degrade gracefully to local-only delivery if Redis is unreachable.
 
 ---
 
