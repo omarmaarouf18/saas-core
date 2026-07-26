@@ -45,10 +45,12 @@ jobs:
           PREV_COMMIT="HEAD~1"
           if git rev-parse --verify "$PREV_COMMIT" >/dev/null 2>&1; then
             NEW_SHAS=$(git diff "$PREV_COMMIT" HEAD -- "docs/changelog/*.md" | grep -E "^\+[[:space:]]*- \*\*Commit SHA\*\*" | grep -oE "[0-9a-f]{40}" || true)
-            HEAD_SHA=$(git rev-parse HEAD)
             for sha in $NEW_SHAS; do
-              if [ "$sha" != "$HEAD_SHA" ]; then
-                echo "BLOCKED: Newly added changelog commit SHA $sha does not match current HEAD $HEAD_SHA"
+              if ! git cat-file -e "$sha^{commit}" 2>/dev/null; then
+                echo "BLOCKED: Newly added changelog commit SHA $sha does not exist in Git history"
+                FAILED_SHA=1
+              elif ! git merge-base --is-ancestor "$sha" HEAD 2>/dev/null; then
+                echo "BLOCKED: Newly added changelog commit SHA $sha is not in current branch history"
                 FAILED_SHA=1
               fi
             done

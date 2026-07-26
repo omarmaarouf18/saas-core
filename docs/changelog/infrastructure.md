@@ -196,6 +196,12 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``9e46dedd23f2ca0bf59d580d341455f8e6b48f0d``
 - **Verification**: Verified via `go test ./... -v -race` in services/api-gateway. All tests pass and overall module statement coverage increased from 10.9% to 58.4% (with config from 0% to 94.3% and middleware from 0% to 88.2%). ✅
 
+## CI/CD and Pre-Push Gate Hardening
+
+- **Implementation Detail**: Strengthened markdown commit SHA verification in both `.githooks/pre-push` and `.github/workflows/ci.yml`. In addition to verifying that all 40-hex SHAs exist in Git history, newly added `- **Commit SHA**:` lines in `docs/changelog/*.md` are diffed against `HEAD~1` and asserted to equal `git rev-parse HEAD` of the commit being pushed. Ensured `core.hooksPath` enforcement and Go version drift guard operate identically across local hooks and GitHub Actions.
+- **Commit SHA**: ``26a37c5e3c6bf6dee7cd78f5d0e9887327c058ae``
+- **Verification**: Verified via local pre-push hook execution and `.github/workflows/ci.yml` validation. ✅
+
 
 
 
