@@ -228,15 +228,16 @@ type CreateServiceRequest struct {
 
 // CreateJobRequest is the expected JSON body for POST /users/jobs/track.
 type CreateJobRequest struct {
-	OwnerID       string   `json:"owner_id"`
-	OwnerToken    string   `json:"owner_token,omitempty"`
-	EmployeeID    string   `json:"employee_id,omitempty"`
-	EmployeeToken string   `json:"employee_token,omitempty"`
-	ServiceID     string   `json:"service_id"`
-	Location      Location `json:"location"`
-	PaymentMethod string   `json:"payment_method"`
-	UserID        string   `json:"user_id"`
-	UserToken     string   `json:"user_token,omitempty"`
+	OwnerID        string   `json:"owner_id"`
+	OwnerToken     string   `json:"owner_token,omitempty"`
+	EmployeeID     string   `json:"employee_id,omitempty"`
+	EmployeeToken  string   `json:"employee_token,omitempty"`
+	ServiceID      string   `json:"service_id"`
+	Location       Location `json:"location"`
+	PaymentMethod  string   `json:"payment_method"`
+	UserID         string   `json:"user_id"`
+	UserToken      string   `json:"user_token,omitempty"`
+	IdempotencyKey string   `json:"idempotency_key,omitempty"`
 }
 
 // DepositRequest is the expected JSON body for POST /users/wallet/deposit.

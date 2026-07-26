@@ -3638,3 +3638,142 @@ func TestTrackJob_EscrowRollbackFailure_ReconciliationRequired(t *testing.T) {
 		t.Error("Expected non-empty EscrowFailureReason")
 	}
 }
+
+func TestTrackJob_IdempotencyKey(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
+		return
+	}
+	defer func() {
+		_ = s.DropDatabase(context.Background())
+		s.Close(context.Background())
+	}()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		id := r.URL.Query().Get("id")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"id":         id,
+			"role":       "owner",
+			"kyc_status": "approved",
+			"is_active":  true,
+			"tenant_id":  id,
+		})
+	}))
+	defer mockAuthServer.Close()
+
+	cfg := &config.Config{
+		AuthServiceURL:       mockAuthServer.URL,
+		InternalServiceToken: "mock-internal-token",
+		AppEnv:               "test",
+	}
+
+	u := NewUserService(s, cfg, rdb)
+
+	ownerID := "idem-owner-1"
+	userID := "idem-user-1"
+	serviceID := "svc-idem-1"
+
+	mockSvc := &models.Service{
+		ID:               serviceID,
+		TenantID:         ownerID,
+		Name:             "Idempotency Service",
+		Category:         "delivery",
+		TenantBasePrice:  50.0,
+		TenantPricePerKM: 2.0,
+		Latitude:         30.0,
+		Longitude:        30.0,
+	}
+	s.CreateService(ctx, mockSvc)
+
+	if err := s.Deposit(ctx, ownerID, 500.0); err != nil {
+		t.Fatalf("Failed to deposit funds: %v", err)
+	}
+
+	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@example.com")
+	tokenUser, _ := jwtutil.GenerateToken(userID, "user", ownerID, "user@example.com")
+
+	idempotencyKey := "req-key-abc-123"
+
+	trackReqBody := map[string]any{
+		"owner_id":        tokenOwner,
+		"service_id":      serviceID,
+		"user_id":         tokenUser,
+		"payment_method":  "wallet",
+		"idempotency_key": idempotencyKey,
+		"location": models.Location{
+			Latitude:  30.0,
+			Longitude: 30.0,
+		},
+	}
+	trackBody, _ := json.Marshal(trackReqBody)
+
+	// First request: should create job (201 Created)
+	req1 := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(trackBody))
+	req1.Header.Set("Idempotency-Key", idempotencyKey)
+	rec1 := httptest.NewRecorder()
+
+	u.TrackJob(rec1, req1)
+
+	if rec1.Code != http.StatusCreated {
+		t.Fatalf("Expected status 201 Created on first request, got %d. Body: %s", rec1.Code, rec1.Body.String())
+	}
+
+	var resp1 map[string]any
+	json.Unmarshal(rec1.Body.Bytes(), &resp1)
+	jobObj1, _ := resp1["job"].(map[string]any)
+	jobID1, _ := jobObj1["id"].(string)
+
+	if jobID1 == "" {
+		t.Fatal("Expected job ID in response 1")
+	}
+
+	// Second request with SAME idempotency key: should return existing job (200 OK)
+	req2 := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(trackBody))
+	req2.Header.Set("Idempotency-Key", idempotencyKey)
+	rec2 := httptest.NewRecorder()
+
+	u.TrackJob(rec2, req2)
+
+	if rec2.Code != http.StatusOK {
+		t.Fatalf("Expected status 200 OK on duplicate request, got %d. Body: %s", rec2.Code, rec2.Body.String())
+	}
+
+	var resp2 map[string]any
+	json.Unmarshal(rec2.Body.Bytes(), &resp2)
+	jobObj2, _ := resp2["job"].(map[string]any)
+	jobID2, _ := jobObj2["id"].(string)
+
+	if jobID2 != jobID1 {
+		t.Fatalf("Expected duplicate request to return original job ID %q, got %q", jobID1, jobID2)
+	}
+
+	// Assert exactly 1 job exists for owner
+	jobs, err := s.GetJobsByOwner(ctx, ownerID)
+	if err != nil {
+		t.Fatalf("Failed to query jobs by owner: %v", err)
+	}
+	if len(jobs) != 1 {
+		t.Fatalf("Expected exactly 1 job in DB, got %d", len(jobs))
+	}
+}
