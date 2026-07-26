@@ -3777,3 +3777,71 @@ func TestTrackJob_IdempotencyKey(t *testing.T) {
 		t.Fatalf("Expected exactly 1 job in DB, got %d", len(jobs))
 	}
 }
+
+func TestRateJobAndGetRatings_RateLimiting(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
+		return
+	}
+	defer func() {
+		_ = s.DropDatabase(context.Background())
+		s.Close(context.Background())
+	}()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	cfg := &config.Config{AppEnv: "test"}
+	u := NewUserService(s, cfg, rdb)
+
+	// Rate limit is 5 requests per minute per IP
+	for i := 0; i < 5; i++ {
+		req := httptest.NewRequest("GET", "/users/ratings?user_id=usr-1", nil)
+		req.RemoteAddr = "192.168.1.100:12345"
+		rec := httptest.NewRecorder()
+		u.GetRatings(rec, req)
+	}
+
+	// 6th request should be rate-limited (429 Too Many Requests)
+	req6 := httptest.NewRequest("GET", "/users/ratings?user_id=usr-1", nil)
+	req6.RemoteAddr = "192.168.1.100:12345"
+	rec6 := httptest.NewRecorder()
+	u.GetRatings(rec6, req6)
+
+	if rec6.Code != http.StatusTooManyRequests {
+		t.Fatalf("Expected status 429 Too Many Requests for GetRatings rate limit, got %d. Body: %s", rec6.Code, rec6.Body.String())
+	}
+
+	// RateJob test for rate limiting
+	for i := 0; i < 5; i++ {
+		req := httptest.NewRequest("POST", "/users/jobs/rate", strings.NewReader(`{"job_id":"job-1","stars":5}`))
+		req.RemoteAddr = "192.168.1.200:12345"
+		rec := httptest.NewRecorder()
+		u.RateJob(rec, req)
+	}
+
+	reqRateLimited := httptest.NewRequest("POST", "/users/jobs/rate", strings.NewReader(`{"job_id":"job-1","stars":5}`))
+	reqRateLimited.RemoteAddr = "192.168.1.200:12345"
+	recRateLimited := httptest.NewRecorder()
+	u.RateJob(recRateLimited, reqRateLimited)
+
+	if recRateLimited.Code != http.StatusTooManyRequests {
+		t.Fatalf("Expected status 429 Too Many Requests for RateJob rate limit, got %d. Body: %s", recRateLimited.Code, recRateLimited.Body.String())
+	}
+}

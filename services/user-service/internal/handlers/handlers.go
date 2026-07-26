@@ -1390,6 +1390,14 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------------------
 
 func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
+	ip := handlerutil.GetIP(r)
+	if limited, remaining := u.limiter.CheckAndRecord("rate_job:" + ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
 		return
@@ -1484,6 +1492,14 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------------------
 
 func (u *UserService) GetRatings(w http.ResponseWriter, r *http.Request) {
+	ip := handlerutil.GetIP(r)
+	if limited, remaining := u.limiter.CheckAndRecord("get_ratings:" + ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
 	if r.Method != http.MethodGet {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
 		return
