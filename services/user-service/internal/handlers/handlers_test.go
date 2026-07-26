@@ -3498,3 +3498,143 @@ func (c *contextMock) Err() error {
 	}
 	return c.Context.Err()
 }
+
+func TestTrackJob_EscrowRollbackFailure_ReconciliationRequired(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
+		return
+	}
+	defer func() {
+		_ = s.DropDatabase(context.Background())
+		s.Close(context.Background())
+	}()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		id := r.URL.Query().Get("id")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"id":         id,
+			"role":       "owner",
+			"kyc_status": "approved",
+			"is_active":  true,
+			"tenant_id":  id,
+		})
+	}))
+	defer mockAuthServer.Close()
+
+	cfg := &config.Config{
+		AuthServiceURL:       mockAuthServer.URL,
+		InternalServiceToken: "mock-internal-token",
+		AppEnv:               "test",
+	}
+
+	u := NewUserService(s, cfg, rdb)
+
+	ownerID := "rec-owner-1"
+	userID := "rec-user-1"
+	serviceID := "svc-rec-1"
+
+	mockSvc := &models.Service{
+		ID:               serviceID,
+		TenantID:         ownerID,
+		Name:             "Reconciliation Service",
+		Category:         "delivery",
+		TenantBasePrice:  50.0,
+		TenantPricePerKM: 2.0,
+		Latitude:         30.0,
+		Longitude:        30.0,
+	}
+	s.CreateService(ctx, mockSvc)
+
+	if err := s.Deposit(ctx, ownerID, 500.0); err != nil {
+		t.Fatalf("Failed to deposit funds: %v", err)
+	}
+
+	// Stub RollbackEscrow to fail
+	u.rollbackEscrowHook = func(ctx context.Context, tenantID string, amount float64) error {
+		return fmt.Errorf("simulated rollback error")
+	}
+	defer func() { u.rollbackEscrowHook = nil }()
+
+	// Stub UpdateJobLockedEscrow to fail using contextMock
+	mockCtx := &contextMock{Context: context.Background()}
+
+	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@example.com")
+	tokenUser, _ := jwtutil.GenerateToken(userID, "user", ownerID, "user@example.com")
+
+	trackReqBody := map[string]any{
+		"owner_id":       tokenOwner,
+		"service_id":     serviceID,
+		"user_id":        tokenUser,
+		"payment_method": "wallet",
+		"location": models.Location{
+			Latitude:  30.0,
+			Longitude: 30.0,
+		},
+	}
+	trackBody, _ := json.Marshal(trackReqBody)
+	req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(trackBody))
+	req = req.WithContext(mockCtx)
+	rec := httptest.NewRecorder()
+
+	u.TrackJob(rec, req)
+
+	// Assert (c): Appropriate error response returned to client
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("Expected status 500, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+	var resp map[string]string
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("Failed to parse response body: %v", err)
+	}
+	if !strings.Contains(resp["error"], "reconciliation") {
+		t.Errorf("Expected error message to mention reconciliation, got: %s", resp["error"])
+	}
+
+	// Fetch job from store
+	jobs, err := s.GetJobsByOwner(context.Background(), ownerID)
+	if err != nil {
+		t.Fatalf("Failed to get jobs by owner: %v", err)
+	}
+
+	// Assert (a): Job is NOT deleted
+	if len(jobs) != 1 {
+		t.Fatalf("Expected 1 job preserved in DB, got %d", len(jobs))
+	}
+
+	stuckJob := jobs[0]
+	if stuckJob == nil {
+		t.Fatal("Expected non-nil job record in DB")
+	}
+
+	// Assert (b): Job's status and fields reflect reconciliation-needed state
+	if stuckJob.Status != models.JobStatusEscrowReconciliationRequired {
+		t.Errorf("Expected job status %q, got %q", models.JobStatusEscrowReconciliationRequired, stuckJob.Status)
+	}
+	if stuckJob.ReconciliationNote == "" {
+		t.Error("Expected non-empty ReconciliationNote")
+	}
+	if stuckJob.EscrowFailureReason == "" {
+		t.Error("Expected non-empty EscrowFailureReason")
+	}
+}

@@ -56,16 +56,17 @@ type ServiceWithPrice struct {
 type JobStatus string
 
 const (
-	JobStatusPending   JobStatus = "pending"
-	JobStatusActive    JobStatus = "active"
-	JobStatusCompleted JobStatus = "completed"
-	JobStatusCancelled JobStatus = "cancelled"
+	JobStatusPending                      JobStatus = "pending"
+	JobStatusActive                       JobStatus = "active"
+	JobStatusCompleted                    JobStatus = "completed"
+	JobStatusCancelled                    JobStatus = "cancelled"
+	JobStatusEscrowReconciliationRequired JobStatus = "escrow_reconciliation_required"
 )
 
 // ValidJobStatus returns true if the given status is a known value.
 func ValidJobStatus(s JobStatus) bool {
 	switch s {
-	case JobStatusPending, JobStatusActive, JobStatusCompleted, JobStatusCancelled:
+	case JobStatusPending, JobStatusActive, JobStatusCompleted, JobStatusCancelled, JobStatusEscrowReconciliationRequired:
 		return true
 	}
 	return false
@@ -79,34 +80,38 @@ type Location struct {
 
 // Job represents a trackable unit of work linking an owner, employee, and service.
 type Job struct {
-	ID                 string    `json:"id"                            bson:"_id"`
-	OwnerID            string    `json:"owner_id"                      bson:"owner_id"`
-	EmployeeID         string    `json:"employee_id,omitempty"         bson:"employee_id,omitempty"`
-	UserID             string    `json:"user_id"                       bson:"user_id"`
-	ServiceID          string    `json:"service_id"                    bson:"service_id"`
-	Status             JobStatus `json:"status"                        bson:"status"`
-	Location           Location  `json:"location"                      bson:"location"`
-	CurrentLocation    *Location `json:"current_location,omitempty"   bson:"current_location,omitempty"`
-	PaymentMethod      string    `json:"payment_method"                bson:"payment_method"`
-	CancellationReason string    `json:"cancellation_reason,omitempty" bson:"cancellation_reason,omitempty"`
-	LockedEscrowAmount float64   `json:"locked_escrow_amount,omitempty" bson:"locked_escrow_amount,omitempty"`
-	CreatedAt          time.Time `json:"created_at"                    bson:"created_at"`
-	UpdatedAt          time.Time `json:"updated_at"                    bson:"updated_at"`
+	ID                  string    `json:"id"                            bson:"_id"`
+	OwnerID             string    `json:"owner_id"                      bson:"owner_id"`
+	EmployeeID          string    `json:"employee_id,omitempty"         bson:"employee_id,omitempty"`
+	UserID              string    `json:"user_id"                       bson:"user_id"`
+	ServiceID           string    `json:"service_id"                    bson:"service_id"`
+	Status              JobStatus `json:"status"                        bson:"status"`
+	Location            Location  `json:"location"                      bson:"location"`
+	CurrentLocation     *Location `json:"current_location,omitempty"   bson:"current_location,omitempty"`
+	PaymentMethod       string    `json:"payment_method"                bson:"payment_method"`
+	CancellationReason  string    `json:"cancellation_reason,omitempty" bson:"cancellation_reason,omitempty"`
+	LockedEscrowAmount  float64   `json:"locked_escrow_amount,omitempty" bson:"locked_escrow_amount,omitempty"`
+	ReconciliationNote  string    `json:"reconciliation_note,omitempty" bson:"reconciliation_note,omitempty"`
+	EscrowFailureReason string    `json:"escrow_failure_reason,omitempty" bson:"escrow_failure_reason,omitempty"`
+	CreatedAt           time.Time `json:"created_at"                    bson:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"                    bson:"updated_at"`
 }
 
 // OwnerJobResponse provides full tenant job visibility for business owners.
 type OwnerJobResponse struct {
-	ID                 string    `json:"id"`
-	OwnerID            string    `json:"owner_id"`
-	ServiceID          string    `json:"service_id"`
-	UserID             string    `json:"user_id"`
-	EmployeeID         string    `json:"employee_id,omitempty"`
-	Status             JobStatus `json:"status"`
-	Location           Location  `json:"location"`
-	PaymentMethod      string    `json:"payment_method"`
-	LockedEscrowAmount float64   `json:"locked_escrow_amount,omitempty"`
-	CreatedAt          time.Time `json:"created_at"`
-	UpdatedAt          time.Time `json:"updated_at"`
+	ID                  string    `json:"id"`
+	OwnerID             string    `json:"owner_id"`
+	ServiceID           string    `json:"service_id"`
+	UserID              string    `json:"user_id"`
+	EmployeeID          string    `json:"employee_id,omitempty"`
+	Status              JobStatus `json:"status"`
+	Location            Location  `json:"location"`
+	PaymentMethod       string    `json:"payment_method"`
+	LockedEscrowAmount  float64   `json:"locked_escrow_amount,omitempty"`
+	ReconciliationNote  string    `json:"reconciliation_note,omitempty"`
+	EscrowFailureReason string    `json:"escrow_failure_reason,omitempty"`
+	CreatedAt           time.Time `json:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
 }
 
 // NewOwnerJobResponse maps a Job struct to an OwnerJobResponse DTO.
@@ -115,17 +120,19 @@ func NewOwnerJobResponse(j *Job) OwnerJobResponse {
 		return OwnerJobResponse{}
 	}
 	return OwnerJobResponse{
-		ID:                 j.ID,
-		OwnerID:            j.OwnerID,
-		ServiceID:          j.ServiceID,
-		UserID:             j.UserID,
-		EmployeeID:         j.EmployeeID,
-		Status:             j.Status,
-		Location:           j.Location,
-		PaymentMethod:      j.PaymentMethod,
-		LockedEscrowAmount: j.LockedEscrowAmount,
-		CreatedAt:          j.CreatedAt,
-		UpdatedAt:          j.UpdatedAt,
+		ID:                  j.ID,
+		OwnerID:             j.OwnerID,
+		ServiceID:           j.ServiceID,
+		UserID:              j.UserID,
+		EmployeeID:          j.EmployeeID,
+		Status:              j.Status,
+		Location:            j.Location,
+		PaymentMethod:       j.PaymentMethod,
+		LockedEscrowAmount:  j.LockedEscrowAmount,
+		ReconciliationNote:  j.ReconciliationNote,
+		EscrowFailureReason: j.EscrowFailureReason,
+		CreatedAt:           j.CreatedAt,
+		UpdatedAt:           j.UpdatedAt,
 	}
 }
 

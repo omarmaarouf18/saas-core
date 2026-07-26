@@ -20,6 +20,7 @@ func TestValidJobStatus(t *testing.T) {
 		JobStatusActive,
 		JobStatusCompleted,
 		JobStatusCancelled,
+		JobStatusEscrowReconciliationRequired,
 	}
 
 	for _, st := range validStatuses {

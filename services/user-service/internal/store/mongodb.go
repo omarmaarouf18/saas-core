@@ -329,6 +329,24 @@ func (s *MongoDB) UpdateJobLockedEscrow(ctx context.Context, id string, amount f
 	return nil
 }
 
+func (s *MongoDB) UpdateJobReconciliation(ctx context.Context, id string, status models.JobStatus, note string, failureReason string, lockedEscrow float64) error {
+	res, err := s.jobs.UpdateOne(ctx, bson.M{"_id": id},
+		bson.M{"$set": bson.M{
+			"status":                status,
+			"reconciliation_note":   note,
+			"escrow_failure_reason": failureReason,
+			"locked_escrow_amount":  lockedEscrow,
+			"updated_at":            time.Now().UTC(),
+		}})
+	if err != nil {
+		return fmt.Errorf("store: update job reconciliation: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("job %q not found", id)
+	}
+	return nil
+}
+
 func (s *MongoDB) GetServiceByID(ctx context.Context, id string) *models.Service {
 	var svc models.Service
 	if err := s.services.FindOne(ctx, bson.M{"_id": id}).Decode(&svc); err != nil {

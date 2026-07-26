@@ -58,6 +58,8 @@ type UserService struct {
 	appEnv               string
 	// Test hook to block UpdateJobLocation database write for deterministic testing
 	updateJobLocationBeforeWriteHook func(ctx context.Context)
+	// Test hook to force RollbackEscrow to fail for deterministic testing
+	rollbackEscrowHook func(ctx context.Context, tenantID string, amount float64) error
 }
 
 // NewUserService creates a new UserService handler group.
@@ -428,9 +430,25 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	if err := u.store.UpdateJobLockedEscrow(ctx, job.ID, escrowAmount); err != nil {
 		log.Printf("[ERROR] failed to persist locked escrow amount for job %s: %v. Rolling back escrow lock.", job.ID, err)
 		// Use context.Background() for rollback/cleanup to ensure it executes even if the request context was cancelled/timed out
-		if rollbackErr := u.store.RollbackEscrow(context.Background(), req.OwnerID, escrowAmount); rollbackErr != nil {
-			log.Printf("[CRITICAL ERROR] failed to rollback escrow lock for owner %s: %v", req.OwnerID, rollbackErr)
+		rollbackErr := u.performRollbackEscrow(context.Background(), req.OwnerID, escrowAmount)
+		if rollbackErr != nil {
+			log.Printf("[CRITICAL ERROR] initial escrow rollback attempt failed for owner %s (job %s): %v. Retrying rollback once...", req.OwnerID, job.ID, rollbackErr)
+			// Single retry attempt (Req #3)
+			rollbackErr = u.performRollbackEscrow(context.Background(), req.OwnerID, escrowAmount)
 		}
+
+		if rollbackErr != nil {
+			log.Printf("[CRITICAL ERROR] failed to rollback escrow lock for owner %s (job %s): %v. Marking job for reconciliation instead of deleting.", req.OwnerID, job.ID, rollbackErr)
+			note := fmt.Sprintf("Locked escrow amount: %.2f. Escrow lock rollback failed: %v", escrowAmount, rollbackErr)
+			if recErr := u.store.UpdateJobReconciliation(context.Background(), job.ID, models.JobStatusEscrowReconciliationRequired, note, rollbackErr.Error(), escrowAmount); recErr != nil {
+				log.Printf("[CRITICAL ERROR] failed to set reconciliation status on job %s: %v", job.ID, recErr)
+			}
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to persist locked escrow and escrow rollback failed; job preserved for reconciliation",
+			})
+			return
+		}
+
 		if deleteErr := u.store.DeleteJob(context.Background(), job.ID); deleteErr != nil {
 			log.Printf("[ERROR] failed to delete job %s after failure: %v", job.ID, deleteErr)
 		}
@@ -453,6 +471,13 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		"message": "job tracking record created", "lifecycle_note": "escrow locked, all up to date",
 		"job": job, "escrow_locked": escrowAmount,
 	})
+}
+
+func (u *UserService) performRollbackEscrow(ctx context.Context, tenantID string, amount float64) error {
+	if u.rollbackEscrowHook != nil {
+		return u.rollbackEscrowHook(ctx, tenantID, amount)
+	}
+	return u.store.RollbackEscrow(ctx, tenantID, amount)
 }
 
 // ---------------------------------------------------------------------------
