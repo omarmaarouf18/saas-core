@@ -204,7 +204,7 @@ This file is a persistent document tracking the real state of the repository.
 > **Dependency Drift Prevention**: Any change to shared/infra that adds a new external dependency must be followed by `go mod tidy && go build ./...` in every service that imports shared/infra, and a full `docker compose down && build --no-cache && up` verification, before considering the change complete — go.sum drift can pass CI's module resolution while still breaking local/production Docker builds.
 
 
-* **Immediate Next Step**: Corrected fabricated SHA in `docs/audit/shared-module-review.md` and widened commit SHA verification in `.githooks/pre-push` and `.github/workflows/ci.yml` to scan all repository markdown files. All pre-push gates, unit tests, and security scans pass cleanly.
+* **Verified Endpoint Map Regeneration & Role Description Alignment (Task 1)**: Regenerated `docs/APPLICATION_MAP.md` via `make docs` and updated `KnownEndpoints` in `shared/infra/docgen/generator.go` to reflect exact role requirements following Gap 1 remediation (`resolveTokenWithRole`). Verified via `make docs-check`.
 
 
 

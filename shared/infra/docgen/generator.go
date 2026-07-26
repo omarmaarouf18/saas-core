@@ -235,7 +235,7 @@ var KnownEndpoints = map[string]struct {
 		Targets:     "Downstream: calls `auth-service/auth/user`. Writes `jobs`.",
 	},
 	"GET /users/jobs/get": {
-		Permissions: "`X-Internal-Token` OR User JWT",
+		Permissions: "`X-Internal-Token` OR Owner, Employee, User, or Customer JWT",
 		Function:    "Resolves detailed job configuration (single job by ID) or lists jobs. Accepts id (legacy) or user_token (preferred), requester_id (legacy) or requester_token (preferred), and employee_id (legacy) or employee_token (preferred).",
 		Targets:     "Reads `jobs` collection. Enforces IDOR protection: if `employee_id` query param is provided, it must match the employee identity strictly resolved from the JWT token.",
 	},
@@ -245,7 +245,7 @@ var KnownEndpoints = map[string]struct {
 		Targets:     "Updates `jobs`, writes `wallets`, writes `ledger`.",
 	},
 	"POST /users/jobs/cancel": {
-		Permissions: "Owner JWT (KYC Approved)",
+		Permissions: "Owner or Customer JWT",
 		Function:    "Cancels an active job and processes escrow refunds. Accepts requester_id (legacy) or requester_token (preferred).",
 		Targets:     "Updates `jobs` collection. Updates `wallets` and `ledger` collections.",
 	},
@@ -275,17 +275,17 @@ var KnownEndpoints = map[string]struct {
 		Targets:     "Updates `subscriptions`, writes `wallets`, writes `ledger`.",
 	},
 	"POST /users/jobs/rate": {
-		Permissions: "Owner or Employee JWT",
+		Permissions: "Owner, Employee, User, or Customer JWT",
 		Function:    "Submits a double-blind rating. Accepts rated_by (legacy) or rated_by_token (preferred), and rated_user (legacy) or rated_user_token (preferred).",
 		Targets:     "Writes `ratings`, updates `jobs`.",
 	},
 	"GET /users/ratings": {
-		Permissions: "User JWT",
+		Permissions: "Owner, Employee, User, or Customer JWT",
 		Function:    "Returns ratings count and average. Accepts user_id (legacy) or user_token (preferred).",
 		Targets:     "Reads `ratings` collection.",
 	},
 	"POST /users/jobs/location/update": {
-		Permissions: "Employee JWT",
+		Permissions: "Employee or Owner JWT",
 		Function:    "Updates driver coordinates. Accepts requester_id (legacy) or requester_token (preferred).",
 		Targets:     "Reads `jobs`, updates `jobs`. Downstream: calls `chat-service/chat/internal/broadcast-location`.",
 	},
