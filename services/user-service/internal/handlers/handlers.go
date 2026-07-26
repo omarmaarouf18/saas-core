@@ -175,7 +175,7 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "owner_id, name, and category are required"})
 		return
 	}
-	resolvedOwnerID, err := resolveToken(req.OwnerID)
+	resolvedOwnerID, err := resolveTokenWithRole(req.OwnerID, "owner")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
 		return
@@ -304,7 +304,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	var hasOwnerToken bool
 	if req.OwnerID != "" {
 		var err error
-		resolvedOwnerID, err = resolveToken(req.OwnerID)
+		resolvedOwnerID, err = resolveTokenWithRole(req.OwnerID, "owner")
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
 			return
@@ -313,7 +313,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Verify customer user token
-	resolvedUserID, err := resolveToken(req.UserID)
+	resolvedUserID, err := resolveTokenWithRole(req.UserID, "user", "customer")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid user token: " + err.Error()})
 		return
@@ -336,7 +336,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 
 	// 4. Verify assigned employee is active, has employee role, and belongs to this owner's tenant
 	if req.EmployeeID != "" {
-		resolvedEmployeeID, err := resolveToken(req.EmployeeID)
+		resolvedEmployeeID, err := resolveTokenWithRole(req.EmployeeID, "employee")
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid employee token: " + err.Error()})
 			return

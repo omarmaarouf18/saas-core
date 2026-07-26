@@ -1394,8 +1394,8 @@ func TestUserServiceHandlers(t *testing.T) {
 		req = httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
 		rec = httptest.NewRecorder()
 		u.TrackJob(rec, req)
-		if rec.Code != http.StatusBadRequest {
-			t.Errorf("Expected 400 Bad Request for assigning owner as employee, got %d. Body: %s", rec.Code, rec.Body.String())
+		if rec.Code != http.StatusUnauthorized && rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 401 Unauthorized or 400 Bad Request for assigning owner as employee, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 
 		// 3. Assigning a "user" role account as employee_id -> rejected
@@ -1405,8 +1405,8 @@ func TestUserServiceHandlers(t *testing.T) {
 		req = httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
 		rec = httptest.NewRecorder()
 		u.TrackJob(rec, req)
-		if rec.Code != http.StatusBadRequest {
-			t.Errorf("Expected 400 Bad Request for assigning plain user as employee, got %d. Body: %s", rec.Code, rec.Body.String())
+		if rec.Code != http.StatusUnauthorized && rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 401 Unauthorized or 400 Bad Request for assigning plain user as employee, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 
 		// 4. Assigning an employee belonging to a DIFFERENT owner -> rejected
@@ -1480,8 +1480,8 @@ func TestUserServiceHandlers(t *testing.T) {
 		req = httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
 		rec = httptest.NewRecorder()
 		u.TrackJob(rec, req)
-		if rec.Code != http.StatusBadRequest {
-			t.Errorf("Expected 400 Bad Request for assigning owner as employee in customer TrackJob, got %d. Body: %s", rec.Code, rec.Body.String())
+		if rec.Code != http.StatusUnauthorized && rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 401 Unauthorized or 400 Bad Request for assigning owner as employee in customer TrackJob, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 
 		// 3. Assigning a "user" role account as employee_id -> rejected
@@ -1491,8 +1491,8 @@ func TestUserServiceHandlers(t *testing.T) {
 		req = httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
 		rec = httptest.NewRecorder()
 		u.TrackJob(rec, req)
-		if rec.Code != http.StatusBadRequest {
-			t.Errorf("Expected 400 Bad Request for assigning plain user as employee in customer TrackJob, got %d. Body: %s", rec.Code, rec.Body.String())
+		if rec.Code != http.StatusUnauthorized && rec.Code != http.StatusBadRequest {
+			t.Errorf("Expected 401 Unauthorized or 400 Bad Request for assigning plain user as employee in customer TrackJob, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 
 		// 4. Assigning an employee belonging to a DIFFERENT owner -> rejected
@@ -4014,5 +4014,67 @@ func TestRateJob_CommentSanitizationAndLengthLimit(t *testing.T) {
 	}
 	if !strings.Contains(recLong.Body.String(), "comment exceeds maximum length") {
 		t.Fatalf("Expected comment length error message, got %s", recLong.Body.String())
+	}
+}
+
+func TestRoleEnforcement_CreateServiceAndTrackJob(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	cfg := &config.Config{AppEnv: "test"}
+	u := NewUserService(nil, cfg, rdb)
+
+	employeeToken, _ := jwtutil.GenerateToken("emp-1", "employee", "owner-1", "emp@example.com")
+	userToken, _ := jwtutil.GenerateToken("usr-1", "user", "owner-1", "user@example.com")
+	ownerToken, _ := jwtutil.GenerateToken("owner-1", "owner", "owner-1", "owner@example.com")
+
+	// 1. CreateService with employee token as owner_id MUST fail with 401 Unauthorized
+	bodySvc, _ := json.Marshal(map[string]any{
+		"owner_id": employeeToken,
+		"name":     "Plumbing",
+		"category": "Home Repair",
+	})
+	reqSvc := httptest.NewRequest("POST", "/users/services", bytes.NewReader(bodySvc))
+	recSvc := httptest.NewRecorder()
+	u.CreateService(recSvc, reqSvc)
+	if recSvc.Code != http.StatusUnauthorized || !strings.Contains(recSvc.Body.String(), "role mismatch") {
+		t.Fatalf("Expected 401 Unauthorized with role mismatch for CreateService with employee token, got status %d, body: %s", recSvc.Code, recSvc.Body.String())
+	}
+
+	// 2. TrackJob with employee token as owner_id MUST fail with 401 Unauthorized
+	bodyTrack1, _ := json.Marshal(map[string]any{
+		"owner_id":       employeeToken,
+		"user_id":        userToken,
+		"service_id":     "svc-1",
+		"payment_method": "cod",
+		"location":       map[string]float64{"latitude": 30.0, "longitude": 30.0},
+	})
+	reqTrack1 := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(bodyTrack1))
+	recTrack1 := httptest.NewRecorder()
+	u.TrackJob(recTrack1, reqTrack1)
+	if recTrack1.Code != http.StatusUnauthorized || !strings.Contains(recTrack1.Body.String(), "role mismatch") {
+		t.Fatalf("Expected 401 Unauthorized with role mismatch for TrackJob with employee owner_id, got status %d, body: %s", recTrack1.Code, recTrack1.Body.String())
+	}
+
+	// 3. TrackJob with owner token as user_id MUST fail with 401 Unauthorized
+	bodyTrack2, _ := json.Marshal(map[string]any{
+		"owner_id":       ownerToken,
+		"user_id":        ownerToken,
+		"service_id":     "svc-1",
+		"payment_method": "cod",
+		"location":       map[string]float64{"latitude": 30.0, "longitude": 30.0},
+	})
+	reqTrack2 := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(bodyTrack2))
+	recTrack2 := httptest.NewRecorder()
+	u.TrackJob(recTrack2, reqTrack2)
+	if recTrack2.Code != http.StatusUnauthorized || !strings.Contains(recTrack2.Body.String(), "role mismatch") {
+		t.Fatalf("Expected 401 Unauthorized with role mismatch for TrackJob with owner user_id, got status %d, body: %s", recTrack2.Code, recTrack2.Body.String())
 	}
 }
