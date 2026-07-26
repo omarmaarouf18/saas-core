@@ -196,7 +196,7 @@ This file is a persistent document tracking the real state of the repository.
 > **Dependency Drift Prevention**: Any change to shared/infra that adds a new external dependency must be followed by `go mod tidy && go build ./...` in every service that imports shared/infra, and a full `docker compose down && build --no-cache && up` verification, before considering the change complete — go.sum drift can pass CI's module resolution while still breaking local/production Docker builds.
 
 
-* **Immediate Next Step**: Completed repository-wide test coverage expansion across all 5 microservices (`auth-service`, `user-service`, `chat-service`, `notification-service`, `api-gateway`) and `shared/infra`. Expanded statement coverage to >70% across core modules and automated mechanical push verification (`PUSH_VERIFIED` in `Makefile`). All unit, integration, security, and pre-push gate checks pass.
+* **Immediate Next Step**: Corrected fabricated SHA in `docs/audit/shared-module-review.md` and widened commit SHA verification in `.githooks/pre-push` and `.github/workflows/ci.yml` to scan all repository markdown files. All pre-push gates, unit tests, and security scans pass cleanly.
 
 
 

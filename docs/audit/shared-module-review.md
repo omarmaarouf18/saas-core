@@ -32,7 +32,7 @@ The following packages under `shared/` were audited file-by-file, function-by-fu
   2. Exit the loop on final failure. Since the caller received an `err != nil`, standard Go conventions dictate that they do not inspect or call `.Close()` on the returned response body.
   
   This resulted in connection/descriptor leaks on all intermediate retried attempts and final failures.
-* **Failing Test Commit**: `04a261c6b653065b796440539ecb13b71bf9e2c6` (introduced `TestResilienceClient_ConnectionLeak` which failed with 3 unclosed bodies).
+* **Failing Test Commit**: `04a261cfd29144894e94615d0a3d5676ba85f7b3` (introduced `TestResilienceClient_ConnectionLeak` which failed with 3 unclosed bodies).
 * **Fix Commit SHA**: `eb0ddb54b537358b46f00b82b9540d069b531705` (added explicit `lastResp.Body.Close()` checks on failure branches).
 * **Verifying Test Name**: `TestResilienceClient_ConnectionLeak` (in `shared/infra/resilience/resilience_test.go`). ✅
 

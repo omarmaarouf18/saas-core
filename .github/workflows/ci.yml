@@ -30,10 +30,10 @@ jobs:
             exit 1
           fi
 
-      - name: Verify Changelog Commit SHAs
+      - name: Verify Markdown Commit SHAs
         run: |
           FAILED_SHA=0
-          for file in docs/changelog/*.md; do
+          for file in $(find . -type f -name "*.md" -not -path "*/node_modules/*" -not -path "*/vendor/*" -not -path "*/.git/*"); do
             for sha in $(grep -oE "[0-9a-f]{40}" "$file"); do
               if ! git cat-file -e "$sha^{commit}" 2>/dev/null; then
                 echo "BLOCKED: fabricated/non-existent SHA $sha in $file"
