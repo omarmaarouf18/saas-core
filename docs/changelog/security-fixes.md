@@ -470,6 +470,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``0d8c4a7eac56c0b2d1623c1e06c28c2eebfd07be``
 - **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestTrackJob_IdempotencyKey -v` (asserting initial 201 Created and subsequent 200 OK with identical job ID and single DB record). ✅
 
+## Remediation: Redis-Backed TrackJob Request Idempotency & 24h TTL (Item #2 Remediation)
+
+- **Implementation Detail**: Corrected an incomplete fix for Item #2 (original commit `0d8c4a7eac56c0b2d1623c1e06c28c2eebfd07be`), which relied on a single-instance in-memory `idempotencyJobs` map (`map[string]string`) with no TTL. Replaced the in-memory map with Redis-backed key storage (`idempotency:job:<key> -> job_id`) with 24-hour TTL (`24 * time.Hour`). Removed `idempotencyMu` and `idempotencyJobs` fields from `UserService` struct.
+- **Commit SHA**: ``25d683cc39a59671c83e7c25277d8173bee5550f``
+- **Verification**: Verified via `go test ./services/user-service/internal/handlers -run TestTrackJob_RedisBackedIdempotency_MultiInstanceAndTTL -v` (asserting cross-replica duplicate detection between independent `UserService` instances sharing Redis, and 24-hour TTL expiration key setting in miniredis). ✅
+
 ## Remediation: Explicit Token Role Enforcement in CreateService & TrackJob (Item #4 Remediation - Part 1)
 
 - **Implementation Detail**: Corrected an incomplete fix for Item #4 (original commit `a81a75323978195cf3d22c40dbc2c9400adc89a7`), where `resolveToken(x)` had been defined as a no-op pass-through `resolveTokenWithRole(x)` with zero role filters. Replaced bare `resolveToken` calls in `CreateService` (`req.OwnerID`) and `TrackJob` (`req.OwnerID`, `req.UserID`, `req.EmployeeID`) with explicit role requirements (`"owner"`, `"user"`/`"customer"`, `"employee"`), returning HTTP 401 Unauthorized on role mismatch.

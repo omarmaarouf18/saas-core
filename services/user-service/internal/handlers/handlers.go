@@ -1146,6 +1146,7 @@ func (u *UserService) saveIdempotencyKey(ctx context.Context, key, jobID string)
 	if key != "" && u.rdb != nil {
 		redisKey := "idempotency:job:" + key
 		if err := u.rdb.Set(ctx, redisKey, jobID, 24*time.Hour).Err(); err != nil {
+			// #nosec G706 //nolint:gosec -- key comes from request header/body, used for failure diagnosis
 			log.Printf("[ERROR] failed to store idempotency key %s in Redis: %v", key, err)
 		}
 	}
