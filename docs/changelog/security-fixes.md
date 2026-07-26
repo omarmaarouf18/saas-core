@@ -454,9 +454,9 @@ This file tracks historical entries for the primary category: **Security Fixes C
 
 ## Collision-Resistant UUIDs for Chat Messages and Tickets (Item #8)
 
-- **Implementation Detail**: Replaced `fmt.Sprintf("msg-%d", time.Now().UnixNano())` and ticket ID `UnixNano()` generation with RFC 4122 v4 UUIDs via `jwtutil.GenerateUUID()`, and updated `readPump` to block live WS broadcasts if DB persistence fails.
-- **Commit SHA**: ``680aecfe61d2a209868fec9b0e9e474c74671605``
-- **Verification**: Verified via `go test ./services/chat-service/... -run TestMongoDB_ConcurrentPersistMessageNoCollision -v`. ✅
+- **Implementation Detail**: Completed a two-part fix for chat service ID collision risks: ticket ID generation was updated to RFC 4122 v4 UUIDs via `jwtutil.GenerateUUID()`, and `PersistMessage` message `_id` generation was updated to `msg-<uuid>` format (replacing `time.Now().UnixNano()`). `readPump` was also updated to block live WS broadcasts if DB persistence fails.
+- **Commit SHA**: ``3ee92f9861123c39255f5f55defb10c1581da2ea``
+- **Verification**: Verified via `go test ./services/chat-service/... -run TestMongoDB_ConcurrentPersistMessageNoCollision -v` (asserting 500 concurrent messages receive unique RFC 4122 `msg-<uuid>` IDs). ✅
 
 
 
