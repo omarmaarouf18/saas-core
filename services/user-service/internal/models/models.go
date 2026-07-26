@@ -53,10 +53,12 @@ type ServiceWithPrice struct {
 // ---------------------------------------------------------------------------
 
 // JobStatus represents the current state of a job.
+// JobStatusAwaitingPriceResponse represents a transport/ride job waiting for price proposal acceptance or decline.
 type JobStatus string
 
 const (
 	JobStatusPending                      JobStatus = "pending"
+	JobStatusAwaitingPriceResponse        JobStatus = "awaiting_price_response"
 	JobStatusActive                       JobStatus = "active"
 	JobStatusCompleted                    JobStatus = "completed"
 	JobStatusCancelled                    JobStatus = "cancelled"
@@ -66,10 +68,22 @@ const (
 // ValidJobStatus returns true if the given status is a known value.
 func ValidJobStatus(s JobStatus) bool {
 	switch s {
-	case JobStatusPending, JobStatusActive, JobStatusCompleted, JobStatusCancelled, JobStatusEscrowReconciliationRequired:
+	case JobStatusPending, JobStatusAwaitingPriceResponse, JobStatusActive, JobStatusCompleted, JobStatusCancelled, JobStatusEscrowReconciliationRequired:
 		return true
 	}
 	return false
+}
+
+// ValidPriceProposal checks if a proposed fare falls within the allowed [0.5 × P_system, 1.5 × P_system] bound.
+// Returns false if either suggested or proposed prices are non-positive (<= 0), preventing zero or negative fare manipulation.
+func ValidPriceProposal(suggested, proposed float64) bool {
+	if suggested <= 0 || proposed <= 0 {
+		return false
+	}
+	minPrice := 0.5 * suggested
+	maxPrice := 1.5 * suggested
+	const eps = 1e-9
+	return proposed >= (minPrice-eps) && proposed <= (maxPrice+eps)
 }
 
 // Location represents a geographic coordinate pair.
@@ -80,21 +94,26 @@ type Location struct {
 
 // Job represents a trackable unit of work linking an owner, employee, and service.
 type Job struct {
-	ID                  string    `json:"id"                            bson:"_id"`
-	OwnerID             string    `json:"owner_id"                      bson:"owner_id"`
-	EmployeeID          string    `json:"employee_id,omitempty"         bson:"employee_id,omitempty"`
-	UserID              string    `json:"user_id"                       bson:"user_id"`
-	ServiceID           string    `json:"service_id"                    bson:"service_id"`
-	Status              JobStatus `json:"status"                        bson:"status"`
-	Location            Location  `json:"location"                      bson:"location"`
-	CurrentLocation     *Location `json:"current_location,omitempty"   bson:"current_location,omitempty"`
-	PaymentMethod       string    `json:"payment_method"                bson:"payment_method"`
-	CancellationReason  string    `json:"cancellation_reason,omitempty" bson:"cancellation_reason,omitempty"`
-	LockedEscrowAmount  float64   `json:"locked_escrow_amount,omitempty" bson:"locked_escrow_amount,omitempty"`
-	ReconciliationNote  string    `json:"reconciliation_note,omitempty" bson:"reconciliation_note,omitempty"`
-	EscrowFailureReason string    `json:"escrow_failure_reason,omitempty" bson:"escrow_failure_reason,omitempty"`
-	CreatedAt           time.Time `json:"created_at"                    bson:"created_at"`
-	UpdatedAt           time.Time `json:"updated_at"                    bson:"updated_at"`
+	ID                     string     `json:"id"                            bson:"_id"`
+	OwnerID                string     `json:"owner_id"                      bson:"owner_id"`
+	EmployeeID             string     `json:"employee_id,omitempty"         bson:"employee_id,omitempty"`
+	UserID                 string     `json:"user_id"                       bson:"user_id"`
+	ServiceID              string     `json:"service_id"                    bson:"service_id"`
+	Status                 JobStatus  `json:"status"                        bson:"status"`
+	Location               Location   `json:"location"                      bson:"location"`
+	CurrentLocation        *Location  `json:"current_location,omitempty"   bson:"current_location,omitempty"`
+	PaymentMethod          string     `json:"payment_method"                bson:"payment_method"`
+	CancellationReason     string     `json:"cancellation_reason,omitempty" bson:"cancellation_reason,omitempty"`
+	LockedEscrowAmount     float64    `json:"locked_escrow_amount,omitempty" bson:"locked_escrow_amount,omitempty"`
+	ReconciliationNote     string     `json:"reconciliation_note,omitempty" bson:"reconciliation_note,omitempty"`
+	EscrowFailureReason    string     `json:"escrow_failure_reason,omitempty" bson:"escrow_failure_reason,omitempty"`
+	SuggestedPrice         float64    `json:"suggested_price,omitempty"           bson:"suggested_price,omitempty"`
+	ProposedPrice          *float64   `json:"proposed_price,omitempty"            bson:"proposed_price,omitempty"`
+	ProposedBy             string     `json:"proposed_by,omitempty"               bson:"proposed_by,omitempty"`
+	AgreedPrice            *float64   `json:"agreed_price,omitempty"              bson:"agreed_price,omitempty"`
+	PriceProposalExpiresAt *time.Time `json:"price_proposal_expires_at,omitempty" bson:"price_proposal_expires_at,omitempty"`
+	CreatedAt              time.Time  `json:"created_at"                    bson:"created_at"`
+	UpdatedAt              time.Time  `json:"updated_at"                    bson:"updated_at"`
 }
 
 // OwnerJobResponse provides full tenant job visibility for business owners.
