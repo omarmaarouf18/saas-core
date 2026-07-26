@@ -65,9 +65,12 @@ func main() {
 	// Connect to Redis.
 	redisClient, err := ratelimit.NewRedisClient(cfg.RedisURI)
 	if err != nil {
-		log.Fatalf("[CHAT] Failed to connect to Redis: %v", err)
+		log.Printf("[WARN] Redis Pub/Sub initialization failed (%v) - falling back to single-instance local hub mode", err)
+	} else {
+		jwtutil.SetRedisClient(redisClient)
+		hub.SetRedisClient(redisClient)
 	}
-	jwtutil.SetRedisClient(redisClient)
+	defer hub.Close()
 
 	// Create handler group and register routes.
 	chatHandlers := handlers.NewChat(hub, mongoStore, cfg, redisClient)
