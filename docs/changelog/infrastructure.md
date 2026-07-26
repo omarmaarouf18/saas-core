@@ -2,7 +2,11 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
----
+## notification-service Redis Pub/Sub Horizontal Scaling
+
+- **Implementation Detail**: Added Redis Pub/Sub cross-instance fan-out to `notification-service` (`internal/hub/hub.go`). Broadcasts are published to Redis channels (`notify:tenant:<id>` and `notify:global`), allowing multi-replica deployments to fan out SSE notifications to connected clients on any instance. Added multi-instance `miniredis` test coverage.
+- **Commit SHA**: ``2794adc70d938df54f97fad003f210eadc9d115f``
+- **Verification**: Verified via `go test -count=1 ./services/notification-service/...` passing all unit and multi-instance Pub/Sub delivery tests. ✅
 
 ## KYC Approval CLI Tool
 
