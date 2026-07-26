@@ -415,14 +415,15 @@ This file tracks historical entries for the primary category: **Security Fixes C
 ## Upgrade golang.org/x/crypto to v0.54.0 & Vulnerability Mitigation
 
 - **Implementation Detail**: Upgraded `golang.org/x/crypto` from `v0.33.0` to `v0.54.0` across all backend Go modules (`auth-service`, `chat-service`, `notification-service`, `user-service`, `api-gateway`, `shared/infra`). This resolved 17 vulnerabilities present in older releases (leaving only the uncalled, unmaintained upstream `openpgp` finding).
-- **Commit SHA**: `5006ba499dd6545455af3b3bc5cd67f5f178ead5`
+- **Commit SHA**: ``5006ba499dd6545455af3b3bc5cd67f5f178ead5``
 - **Verification**: Verified via `govulncheck ./...`, `go build ./...`, `go vet ./...`, and full test execution (`go test ./...`) across all backend modules. ✅
 
 ## CreateService Negative Pricing Validation
 
 - **Implementation Detail**: Added validation in `services/user-service/internal/handlers/handlers.go` (`CreateService`) rejecting negative `TenantBasePrice` or `TenantPricePerKM` (`< 0`) with HTTP 400 (`invalid_pricing`), while permitting zero (`0.0`) for free listings/services per business requirements.
-- **Commit SHA**: `1cb62d2d9bb3101e1f714319fe4d1f68727dfee1`
+- **Commit SHA**: ``1cb62d2d9bb3101e1f714319fe4d1f68727dfee1``
 - **Verification**: Verified via `go test ./services/user-service/... -run TestCreateService -v` (`TestCreateService_ExtraEdgeCases`). ✅
+
 
 
 
