@@ -2064,7 +2064,7 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 				log.Printf("[USER] Location broadcast error (call chat-service) for channel %s: %v", ch, err)
 				continue
 			}
-			resp.Body.Close()
+			_ = resp.Body.Close()
 
 			if resp.StatusCode != http.StatusOK {
 				log.Printf("[USER] Location broadcast failed for channel %s with status %d", ch, resp.StatusCode)
