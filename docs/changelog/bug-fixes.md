@@ -146,7 +146,7 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 ## E2E Integration Test Redis Port Resolution & Nil Safety Guards
 
 - **Implementation Detail**: Fixed hardcoded Redis port (`localhost:6380`) in `adr0006_e2e_integration_test.go` and `adr0007_e2e_integration_test.go` to dynamically parse `REDIS_URI` / `REDIS_ADDR` with fallback to default port `6379`, matching `ci.yml` runner configuration (`redis://localhost:6379`). Added Redis `Ping` connectivity checks to skip E2E integration tests gracefully when Redis is unreachable, and added explicit HTTP status code assertions and nil pointer safety guards across all test subtests to prevent test runner crashes. Updated documentation guidelines requiring explicit disclosure of local vs CI environment verification scope.
-- **Commit SHA**: `299bde89dafc32dc9478b613a3d0305df2246309`
+- **Commit SHA**: ``cd824bfc90427e18d5ccab9ddde5c441fdec93c7``
 - **Verification**: Verified via local Go test execution (`go test ./services/user-service/internal/handlers -run TestADR0006_E2E_NegotiableTransportPricing -v` and `TestADR0007_E2E_DeliveryGPSReconciliation -v`). Pending GitHub Actions CI runner verification. ✅
 
 
