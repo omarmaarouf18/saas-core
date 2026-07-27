@@ -211,6 +211,7 @@ This file is a persistent document tracking the real state of the repository.
 
 
 * **Verified Endpoint Map Regeneration & Role Description Alignment (Task 1)**: Regenerated `docs/APPLICATION_MAP.md` via `make docs` and updated `KnownEndpoints` in `shared/infra/docgen/generator.go` to reflect exact role requirements following Gap 1 remediation (`resolveTokenWithRole`). Verified via `make docs-check`.
+* **ADR-0007 Phase 1 Actual Distance Settlement & Reconciliation Review Flag**: Implemented GPS trail actual distance calculation, guaranteed floor payout `max(LockedEscrowAmount, A_actual)`, and under-distance manual review flag (`ActualDistance < 0.70 * BookedDistance`) transitioning jobs to `escrow_reconciliation_required` in `user-service` (`CompleteJob`). Verified via `TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation`. (Commit `63a7d6094af6a7f51a69d252e840133925ab7296`).
 
 
 

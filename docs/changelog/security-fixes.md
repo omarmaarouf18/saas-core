@@ -10,6 +10,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``12dd2f39b9c5e1293fa1a2f63e12c37a71fa015e``
 - **Verification**: Verified via unit tests (`TestUpdateJobLocation_SpeedCheck_CumulativeAndStep`) and `make docs-check`. ✅
 
+## Delivery and Shipping GPS Trail Settlement Reconciliation (ADR-0007 Phase 1)
+
+- **Implementation Detail**: Implemented ADR-0007 Phase 1 actual distance settlement and under-distance manual review flagging in `user-service` (`CompleteJob` in `services/user-service/internal/handlers/handlers.go`). For delivery and shipping category services, `CompleteJob` calculates `ActualDistance` from the cumulative Haversine distance across recorded `Job.Waypoints`. If `ActualDistance < 0.70 * BookedDistance`, completion is halted and the job transitions to `models.JobStatusEscrowReconciliationRequired` with note `"tracked_distance_mismatch: actual X km vs booked Y km"`. Otherwise, employee payout uses the guaranteed floor `max(LockedEscrowAmount, A_actual)`. Added test suite `TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation`.
+- **Commit SHA**: ``63a7d6094af6a7f51a69d252e840133925ab7296``
+- **Verification**: Verified via `go vet`, `go test ./... -count=1` (`TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation`), and `make docs-check`. ✅
+
 
 
 ## Bcrypt Password Hashing
