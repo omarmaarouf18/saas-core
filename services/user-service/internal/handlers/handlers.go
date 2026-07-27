@@ -699,6 +699,59 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 	dist := haversineKm(job.Location.Latitude, job.Location.Longitude, svc.Latitude, svc.Longitude)
 	amount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
 
+	if job.PaymentMethod != "cod" && job.LockedEscrowAmount == 0 {
+		log.Printf("[SECURITY WARNING] LockedEscrowAmount is 0 for non-COD job %s during CompleteJob. Payout aborted.", job.ID)
+		handlerutil.ShipSecurityEvent(ctx, "ESCROW_UNRECORDED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("CompleteJob aborted: LockedEscrowAmount is 0 for non-COD job %s", job.ID), handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "escrow_amount_unrecorded",
+			"message": "This job has no recorded locked escrow amount. Payout aborted for security.",
+		})
+		return
+	}
+
+	// Delivery and Shipping GPS Trail Settlement Reconciliation (ADR-0007 Phase 1)
+	if svc.Category == "delivery" || svc.Category == "shipping" {
+		bookedDist := dist
+		var actualDist float64
+		pts := make([]models.Location, 0, len(job.Waypoints)+1)
+		pts = append(pts, job.Location)
+		pts = append(pts, job.Waypoints...)
+
+		for i := 0; i < len(pts)-1; i++ {
+			actualDist += haversineKm(pts[i+1].Latitude, pts[i+1].Longitude, pts[i].Latitude, pts[i].Longitude)
+		}
+
+		// Under-distance review flag: if actual tracked distance < 70% of booked distance
+		if bookedDist > 0 && actualDist < 0.70*bookedDist {
+			log.Printf("[SECURITY WARNING] Tracked distance mismatch for job %s: actual %.2f km vs booked %.2f km (< 70%% threshold). Flagging for manual escrow reconciliation.", job.ID, actualDist, bookedDist)
+			handlerutil.ShipSecurityEvent(ctx, "TRACKED_DISTANCE_MISMATCH", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("tracked distance mismatch for job %s: actual %.2f km vs booked %.2f km", job.ID, actualDist, bookedDist), handlerutil.GetClientIP(r))
+
+			note := fmt.Sprintf("tracked_distance_mismatch: actual %.2f km vs booked %.2f km", actualDist, bookedDist)
+			if recErr := u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusEscrowReconciliationRequired, note, "under_distance_mismatch", job.LockedEscrowAmount); recErr != nil {
+				log.Printf("[ERROR] failed to update reconciliation status for job %s: %v", job.ID, recErr)
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to flag job for reconciliation: " + recErr.Error()})
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]any{
+				"message":             "job flagged for escrow reconciliation review due to tracked distance mismatch",
+				"job_id":              job.ID,
+				"status":              string(models.JobStatusEscrowReconciliationRequired),
+				"reconciliation_note": note,
+				"actual_distance_km":  actualDist,
+				"booked_distance_km":  bookedDist,
+			})
+			return
+		}
+
+		// Guaranteed floor payout calculation: max(LockedEscrowAmount, A_actual)
+		aActual := math.Round((svc.TenantBasePrice+(actualDist*svc.TenantPricePerKM))*100) / 100
+		if job.LockedEscrowAmount > 0 {
+			amount = math.Max(job.LockedEscrowAmount, aActual)
+		} else {
+			amount = math.Max(amount, aActual)
+		}
+	}
+
 	// Handle COD payment method
 	if job.PaymentMethod == "cod" {
 		if !req.CashCollected {
@@ -735,16 +788,6 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			"total_amount":     amount,
 			"platform_fee":     fee,
 			"platform_fee_pct": feePercent,
-		})
-		return
-	}
-
-	if job.LockedEscrowAmount == 0 {
-		log.Printf("[SECURITY WARNING] LockedEscrowAmount is 0 for non-COD job %s during CompleteJob. Payout aborted.", job.ID)
-		handlerutil.ShipSecurityEvent(ctx, "ESCROW_UNRECORDED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("CompleteJob aborted: LockedEscrowAmount is 0 for non-COD job %s", job.ID), handlerutil.GetClientIP(r))
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error":   "escrow_amount_unrecorded",
-			"message": "This job has no recorded locked escrow amount. Payout aborted for security.",
 		})
 		return
 	}

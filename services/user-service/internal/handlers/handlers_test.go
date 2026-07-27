@@ -5286,4 +5286,271 @@ func TestUpdateJobLocation_SpeedCheck_CumulativeAndStep(t *testing.T) {
 	})
 }
 
+func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
+		return
+	}
+	defer func() {
+		_ = s.DropDatabase(context.Background())
+		s.Close(context.Background())
+	}()
+
+	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		id := r.URL.Query().Get("id")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"id":         id,
+			"role":       "owner",
+			"kyc_status": "approved",
+			"is_active":  true,
+			"tenant_id":  id,
+		})
+	}))
+	defer mockAuthServer.Close()
+
+	cfg := &config.Config{
+		AuthServiceURL:         mockAuthServer.URL,
+		InternalServiceToken:   "mock-internal-token",
+		AppEnv:                 "test",
+		AllowTestPaymentBypass: true,
+	}
+
+	u := NewUserService(s, cfg, nil)
+
+	// Create Delivery Service (Base = $10, Rate = $2/km)
+	delivSvc := &models.Service{
+		ID:               "svc-deliv-adr7",
+		TenantID:         "owner-adr7-123",
+		Name:             "Express Delivery",
+		Category:         "delivery",
+		TenantBasePrice:  10.0,
+		TenantPricePerKM: 2.0,
+		Latitude:         30.0,
+		Longitude:        30.0,
+	}
+	s.CreateService(ctx, delivSvc)
+
+	// Create Transport Service (Base = $10, Rate = $2/km)
+	transSvc := &models.Service{
+		ID:               "svc-trans-adr7",
+		TenantID:         "owner-adr7-123",
+		Name:             "Taxi Transport",
+		Category:         "transport",
+		TenantBasePrice:  10.0,
+		TenantPricePerKM: 2.0,
+		Latitude:         30.0,
+		Longitude:        30.0,
+	}
+	s.CreateService(ctx, transSvc)
+
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		ID:        "sub-adr7-owner",
+		TenantID:  "owner-adr7-123",
+		Tier:      models.PlanPaid,
+		StartedAt: time.Now(),
+	})
+
+	tokenOwner, _ := jwtutil.GenerateToken("owner-adr7-123", "owner", "owner-adr7-123", "owner@example.com")
+
+	// (a) Actual distance close to booked distance — payout unchanged from current behavior
+	t.Run("Actual distance close to booked distance maintains expected payout", func(t *testing.T) {
+		jobA := &models.Job{
+			ID:                 "job-adr7-close",
+			OwnerID:            "owner-adr7-123",
+			EmployeeID:         "emp-adr7-123",
+			UserID:             "cust-adr7-123",
+			ServiceID:          delivSvc.ID,
+			Status:             models.JobStatusActive,
+			PaymentMethod:      "cod",
+			Location:           models.Location{Latitude: 30.09, Longitude: 30.0},
+			LockedEscrowAmount: 29.98,
+			Waypoints: []models.Location{
+				{Latitude: 30.05, Longitude: 30.0},
+				{Latitude: 30.09, Longitude: 30.0},
+			},
+			CreatedAt: time.Now().Add(-30 * time.Minute),
+		}
+		_ = s.CreateJob(ctx, jobA)
+
+		compReq := map[string]any{
+			"job_id":          jobA.ID,
+			"cash_collected":  true,
+			"requester_token": tokenOwner,
+		}
+		body, _ := json.Marshal(compReq)
+		req := httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		u.CompleteJob(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK on complete job, got %d: %s", rec.Code, rec.Body.String())
+		}
+		var resp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &resp)
+		totalAmount, _ := resp["total_amount"].(float64)
+		if totalAmount < 29.0 {
+			t.Errorf("Expected total amount close to ~29.98, got %.2f", totalAmount)
+		}
+	})
+
+	// (b) Actual distance longer than booked — employee receives higher A_actual, never less than LockedEscrowAmount
+	t.Run("Actual distance longer than booked yields higher A_actual floor", func(t *testing.T) {
+		jobB := &models.Job{
+			ID:                 "job-adr7-detour",
+			OwnerID:            "owner-adr7-123",
+			EmployeeID:         "emp-adr7-123",
+			UserID:             "cust-adr7-123",
+			ServiceID:          delivSvc.ID,
+			Status:             models.JobStatusActive,
+			PaymentMethod:      "cod",
+			Location:           models.Location{Latitude: 30.0, Longitude: 30.0},
+			LockedEscrowAmount: 21.10,
+			Waypoints: []models.Location{
+				{Latitude: 30.15, Longitude: 30.0},
+				{Latitude: 30.25, Longitude: 30.0},
+			},
+			CreatedAt: time.Now().Add(-30 * time.Minute),
+		}
+		_ = s.CreateJob(ctx, jobB)
+
+		compReq := map[string]any{
+			"job_id":          jobB.ID,
+			"cash_collected":  true,
+			"requester_token": tokenOwner,
+		}
+		body, _ := json.Marshal(compReq)
+		req := httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		u.CompleteJob(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK on complete job, got %d: %s", rec.Code, rec.Body.String())
+		}
+		var resp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &resp)
+		totalAmount, _ := resp["total_amount"].(float64)
+
+		if totalAmount < 50.0 {
+			t.Errorf("Expected higher A_actual payout (~65.5) for detour, got %.2f", totalAmount)
+		}
+		if totalAmount < jobB.LockedEscrowAmount {
+			t.Errorf("Payout %.2f must never be less than LockedEscrowAmount %.2f", totalAmount, jobB.LockedEscrowAmount)
+		}
+	})
+
+	// Create Long Delivery Service (Base = $10, Rate = $2/km, 100km away)
+	delivSvcLong := &models.Service{
+		ID:               "svc-deliv-long-adr7",
+		TenantID:         "owner-adr7-123",
+		Name:             "Long Delivery",
+		Category:         "delivery",
+		TenantBasePrice:  10.0,
+		TenantPricePerKM: 2.0,
+		Latitude:         30.9,
+		Longitude:        30.0,
+	}
+	s.CreateService(ctx, delivSvcLong)
+
+	// (c) Actual distance under 70% of booked — lands in escrow_reconciliation_required with note, NOT auto-completed
+	t.Run("Actual distance under 70% of booked flags job for reconciliation review", func(t *testing.T) {
+		jobC := &models.Job{
+			ID:                 "job-adr7-short",
+			OwnerID:            "owner-adr7-123",
+			EmployeeID:         "emp-adr7-123",
+			UserID:             "cust-adr7-123",
+			ServiceID:          delivSvcLong.ID,
+			Status:             models.JobStatusActive,
+			PaymentMethod:      "cod",
+			Location:           models.Location{Latitude: 30.0, Longitude: 30.0},
+			LockedEscrowAmount: 209.80,
+			Waypoints: []models.Location{
+				{Latitude: 30.045, Longitude: 30.0},
+			},
+			CreatedAt: time.Now().Add(-30 * time.Minute),
+		}
+		_ = s.CreateJob(ctx, jobC)
+
+		compReq := map[string]any{
+			"job_id":          jobC.ID,
+			"cash_collected":  true,
+			"requester_token": tokenOwner,
+		}
+		body, _ := json.Marshal(compReq)
+		req := httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		u.CompleteJob(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK response with reconciliation flag, got %d: %s", rec.Code, rec.Body.String())
+		}
+		var resp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &resp)
+
+		if resp["status"] != string(models.JobStatusEscrowReconciliationRequired) {
+			t.Errorf("Expected status %q, got %v", models.JobStatusEscrowReconciliationRequired, resp["status"])
+		}
+		note, _ := resp["reconciliation_note"].(string)
+		if !strings.Contains(note, "tracked_distance_mismatch") {
+			t.Errorf("Expected reconciliation_note to contain 'tracked_distance_mismatch', got %q", note)
+		}
+
+		updatedJob := s.GetJob(ctx, jobC.ID)
+		if updatedJob.Status != models.JobStatusEscrowReconciliationRequired {
+			t.Errorf("Expected DB job status to be escrow_reconciliation_required, got %s", updatedJob.Status)
+		}
+	})
+
+	// (d) Transport-category job with same distance mismatch pattern is completely unaffected
+	t.Run("Transport category job with short distance is completely unaffected", func(t *testing.T) {
+		jobD := &models.Job{
+			ID:                 "job-adr7-transport",
+			OwnerID:            "owner-adr7-123",
+			EmployeeID:         "emp-adr7-123",
+			UserID:             "cust-adr7-123",
+			ServiceID:          transSvc.ID,
+			Status:             models.JobStatusActive,
+			PaymentMethod:      "cod",
+			Location:           models.Location{Latitude: 30.9, Longitude: 30.0},
+			LockedEscrowAmount: 209.80,
+			Waypoints: []models.Location{
+				{Latitude: 30.045, Longitude: 30.0},
+			},
+			CreatedAt: time.Now().Add(-30 * time.Minute),
+		}
+		_ = s.CreateJob(ctx, jobD)
+
+		compReq := map[string]any{
+			"job_id":          jobD.ID,
+			"cash_collected":  true,
+			"requester_token": tokenOwner,
+		}
+		body, _ := json.Marshal(compReq)
+		req := httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		u.CompleteJob(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK on complete transport job, got %d: %s", rec.Code, rec.Body.String())
+		}
+
+		updatedJob := s.GetJob(ctx, jobD.ID)
+		if updatedJob.Status != models.JobStatusCompleted {
+			t.Errorf("Expected transport job status to be completed, got %s", updatedJob.Status)
+		}
+	})
+}
+
 func floatPtr(f float64) *float64 { return &f }
