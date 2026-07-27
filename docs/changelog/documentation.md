@@ -68,6 +68,13 @@ This file tracks historical entries for the primary category: **Documentation Ch
 - **Commit SHA**: ``47edf8498d1d294dc00a04845f50fb17ae423fe1``
 - **Verification**: Verified via `make docs-check` and `go test ./shared/infra/... -run TestChangelogCommitSHAs`. ✅
 
+## ADR-0007 Delivery & Shipping GPS Trail Settlement Reconciliation Design
+
+- **Implementation Detail**: Produced ADR-0007 (`docs/adr/0007-delivery-shipping-gps-reconciliation.md`) defining the two-phase GPS trail reconciliation architecture for Delivery and Shipping categories. Phase 0 hardens `UpdateJobLocation` to evaluate cumulative speed from job start alongside per-step speed checks (closing the slow-drip coordinate drift accumulation gap while inheriting single-instance in-memory throttle state). Phase 1 defines `CompleteJob` settlement reconciliation using cumulative Haversine waypoint distance with a guaranteed payout floor ($\max(LockedEscrowAmount, ActualAmount)$) and manual review flagging via `models.JobStatusEscrowReconciliationRequired`. Added index entry in `docs/adr/README.md`.
+- **Commit SHA**: ``e0c3ab014b45c2eafffd70b33b2bffd7fb2fc270``
+- **Verification**: Verified via `make docs-check` and `go test ./shared/infra/... -run TestChangelogCommitSHAs`. ✅
+
+
 
 
 

@@ -2,7 +2,7 @@
 
 - **Status**: Proposed (Phase 0 is a hard prerequisite for Phase 1)
 - **Date**: 2026-07-27
-- **Related Commit SHA**: TBD
+- **Related Commit SHA**: e0c3ab014b45c2eafffd70b33b2bffd7fb2fc270
 - **Related audit finding**: Delivery/Shipping Coordinate-Pricing Fraud & Employee GPS Reconciliation
 
 ## Context
