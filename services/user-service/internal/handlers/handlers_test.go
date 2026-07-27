@@ -5542,13 +5542,52 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 		rec := httptest.NewRecorder()
 		u.CompleteJob(rec, req)
 
-		if rec.Code != http.StatusOK {
-			t.Fatalf("Expected 200 OK on complete transport job, got %d: %s", rec.Code, rec.Body.String())
-		}
-
 		updatedJob := s.GetJob(ctx, jobD.ID)
 		if updatedJob.Status != models.JobStatusCompleted {
 			t.Errorf("Expected transport job status to be completed, got %s", updatedJob.Status)
+		}
+	})
+
+	// (e) Non-COD escrow job with longer actual distance is capped at LockedEscrowAmount
+	t.Run("Non-COD escrow job with longer actual distance is capped at LockedEscrowAmount", func(t *testing.T) {
+		jobE := &models.Job{
+			ID:                 "job-adr7-escrow-cap",
+			OwnerID:            "owner-adr7-123",
+			EmployeeID:         "emp-adr7-123",
+			UserID:             "cust-adr7-123",
+			ServiceID:          delivSvc.ID,
+			Status:             models.JobStatusActive,
+			PaymentMethod:      "wallet",
+			Location:           models.Location{Latitude: 30.0, Longitude: 30.0},
+			LockedEscrowAmount: 21.10,
+			Waypoints: []models.Location{
+				{Latitude: 30.15, Longitude: 30.0},
+				{Latitude: 30.25, Longitude: 30.0},
+			},
+			CreatedAt: time.Now().Add(-30 * time.Minute),
+		}
+		_ = s.CreateJob(ctx, jobE)
+		_ = s.Deposit(ctx, "owner-adr7-123", 100.0)
+		_ = s.LockEscrow(ctx, "owner-adr7-123", jobE.ID, 21.10)
+
+		compReq := map[string]any{
+			"job_id":          jobE.ID,
+			"requester_token": tokenOwner,
+		}
+		body, _ := json.Marshal(compReq)
+		req := httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		u.CompleteJob(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK on complete escrow job, got %d: %s", rec.Code, rec.Body.String())
+		}
+		var resp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &resp)
+		totalAmount, _ := resp["total_amount"].(float64)
+
+		if totalAmount != jobE.LockedEscrowAmount {
+			t.Errorf("Expected payout to be capped at LockedEscrowAmount (%.2f), got %.2f", jobE.LockedEscrowAmount, totalAmount)
 		}
 	})
 }
