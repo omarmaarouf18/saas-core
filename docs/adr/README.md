@@ -36,4 +36,6 @@ When adding a new ADR, use the following template:
 *   [ADR-0005: Realtime Hub Horizontal Scaling via Redis Pub/Sub](0005-realtime-hub-horizontal-scaling.md)
 *   [ADR-0006: Negotiable Transport Pricing Model](0006-negotiable-transport-pricing.md)
 *   [ADR-0007: Delivery and Shipping GPS Trail Settlement Reconciliation](0007-delivery-shipping-gps-reconciliation.md)
+*   [ADR-0008: Live Employee Map Tracking Architecture & Provider Selection](0008-live-employee-map-tracking.md)
+
 
