@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **New Features Cha
 
 ---
 
+## Frontend Owner Escrow Reconciliation Review Screen & Provider Implementation
+
+- **Implementation Detail**: Implemented Flutter frontend Owner Escrow Reconciliation Review screen and provider consuming backend endpoints `GET /users/jobs/reconciliation-queue` and `POST /users/jobs/reconciliation-resolve`. Created `ReconciliationJob` model (mapping `escrowFailureReason` to human-readable explanations like "Distance mismatch — under 70% of booked distance"), `ReconciliationProvider` (with queue fetching and resolution execution, surfacing 409 conflict and 429 rate-limit responses explicitly), and `OwnerReconciliationQueueScreen` (card list with detailed notes, locked escrow amounts, empty/loading states, and confirmation dialogs before fund movement). Wired provider in `main.dart` and added navigation entry points in `home_screen.dart` (AppBar icon & dashboard metric card).
+- **Commit SHA**: ``cd94f15851ca13b561f05aad65b424e598461f22``
+- **Verification**: Verified via `flutter analyze` (0 issues found), `flutter test test/reconciliation_queue_test.dart` (5/5 widget tests pass), `flutter test` (all pass), `make docs-check`, and `.githooks/pre-push` gate (exit code 0). ✅
+
 ## Admin/Owner Escrow Reconciliation Review Endpoints Implementation
 
 - **Implementation Detail**: Implemented owner/admin escrow reconciliation queue review and resolution endpoints in `user-service`. Added `GET /users/jobs/reconciliation-queue` for tenant owners to list jobs in status `escrow_reconciliation_required` with full context (`ReconciliationNote`, `EscrowFailureReason`, `LockedEscrowAmount`). Added `POST /users/jobs/reconciliation-resolve` accepting resolution decisions (`release_to_employee` or `refund_to_customer`), executing fund release/refund via existing wallet/escrow methods, updating job status and reconciliation fields, and shipping security audit events (`ESCROW_RECONCILIATION_RESOLVED`). Enforced strict owner role gating (`resolveTokenWithRole`), tenant isolation IDOR protection, identity-based rate limiting (30 req/min), and status idempotency (409 Conflict on double resolution). Added `{owner_id, status}` index to MongoDB store (`GetReconciliationQueueByOwner`). Updated ADR-0007 tradeoffs to reflect completed Redis throttle migration.

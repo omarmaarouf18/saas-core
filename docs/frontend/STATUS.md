@@ -39,6 +39,8 @@
     *   *Rating Summary Card*: **[VERIFIED]** Designed `RatingSummaryCard` showing verified average stars score and review count. Embedded inside owner reputation view and customer marketplace cards.
 *   **Phase 8: Live Employee Map Tracking (ADR-0008)** — **[100% COMPLETE & VERIFIED]**
     *   *Live Employee Map Tracking*: **[VERIFIED]** Implemented `flutter_map` OpenStreetMap raster tile rendering with custom User-Agent policy header `QuickDeliveryApp/1.0` and configurable tile URL constant (`MAP_TILE_URL`). Created `OwnerFleetMapScreen` for tenant owners (subscribing to `fleet:<owner_id>` WebSocket stream with hydration via `GET /users/jobs/owner`) and `CustomerJobMapScreen` for active customer job tracking (subscribing to `job:<job_id>` WebSocket stream with hydration via `GET /users/jobs/get`). Backend extended in `chat-service` (`canAccessChannel` for `fleet:<owner_id>`) and `user-service` (`UpdateJobLocation` dual broadcast to `job:<id>` and `fleet:<owner_id>`). Verified end-to-end via non-mocked integration test `TestADR0008_E2E_LiveEmployeeMapTracking` connecting real WebSockets to `chat-service` Hub and executing `UpdateJobLocation`.
+*   **Phase 9: Owner Escrow Reconciliation Review** — **[100% COMPLETE & VERIFIED]**
+    *   *Owner Escrow Reconciliation Review*: **[VERIFIED]** Implemented `ReconciliationProvider`, `ReconciliationJob` model, and `OwnerReconciliationQueueScreen`. Consumes `GET /users/jobs/reconciliation-queue` and `POST /users/jobs/reconciliation-resolve`. Renders human-readable failure reasons (e.g. mapping `under_distance_mismatch` to "Distance mismatch — under 70% of booked distance"), detailed reconciliation notes, and locked escrow amounts. Enforces confirmation dialogs before executing release/refund fund movements, handles empty/loading queue states, surfaces specific 409 "already resolved" and 429 rate-limiting responses, and updates queue list dynamically. Verified via widget tests (`test/reconciliation_queue_test.dart` 5/5 pass) and backend unit/integration tests.
 
  ---
 
@@ -54,6 +56,7 @@
  *   **Real-Time Chat & History Sync**: Fetches message history on load, establishes WebSocket connection, supports dual-direction message broadcasts, handles reconnection backoff, and restricts channel access securely.
  *   **SSE Notifications Stream**: Establishes Server-Sent Events subscription, decodes real-time JSON alert payloads, manages local message history, filters by category, groups alerts chronologically, and integrates unread notification badges in dashboard AppBars.
  *   **Live Employee Map Tracking**: Hydrates employee locations from HTTP API endpoints, connects to chat-service WebSocket hub channels (`fleet:<owner_id>` / `job:<job_id>`), updates employee marker positions in real time, and displays reconnection banners gracefully. Verified end-to-end with real backend WebSocket connections and broadcasts (`TestADR0008_E2E_LiveEmployeeMapTracking`).
+ *   **Owner Escrow Reconciliation Review**: Lists jobs in status `escrow_reconciliation_required` for tenant owners via `GET /users/jobs/reconciliation-queue`, displays human-readable failure descriptions and locked escrow details, requires interactive confirmation dialogs before executing release/refund fund movements via `POST /users/jobs/reconciliation-resolve`, handles empty/loading states, and handles 409 conflict and 429 rate-limit responses gracefully.
 
  ## File Tracking Index
 
@@ -65,6 +68,7 @@
    * `chat_message.dart`
    * `notification_model.dart`
    * `employee_marker.dart`
+   * `reconciliation_job.dart`
  * **Theme**:
    * `theme.dart`
  * **Providers**:
@@ -75,6 +79,7 @@
    * `chat_provider.dart`
    * `notifications_provider.dart`
    * `map_tracking_provider.dart`
+   * `reconciliation_provider.dart`
  * **Screens**:
    * `employee_jobs_screen.dart`
    * `employee_screen.dart`
@@ -92,6 +97,7 @@
    * `rating_screen.dart`
    * `owner_fleet_map_screen.dart`
    * `customer_job_map_screen.dart`
+   * `owner_reconciliation_queue_screen.dart`
  * **Widgets**:
    * `rating_summary_card.dart`
    * `primary_button.dart`
