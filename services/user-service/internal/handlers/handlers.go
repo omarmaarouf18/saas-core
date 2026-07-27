@@ -43,6 +43,35 @@ const MinLocationUpdateInterval = 3 * time.Second
 // MaxReasonableSpeedKmh defines the maximum plausible speed for location updates in km/h.
 const MaxReasonableSpeedKmh = 150.0
 
+const checkLocationThrottleScript = `
+local inflightKey = KEYS[1]
+local lastupdateKey = KEYS[2]
+
+local minIntervalMs = tonumber(ARGV[1])
+local inflightTTLSec = tonumber(ARGV[2])
+local nowMs = tonumber(ARGV[3])
+
+-- 1. Check in-flight lock
+if redis.call('EXISTS', inflightKey) == 1 then
+    return {1, 0}
+end
+
+-- 2. Check last update timestamp
+local lastUpdateMsStr = redis.call('GET', lastupdateKey)
+local lastUpdateMs = 0
+if lastUpdateMsStr then
+    lastUpdateMs = tonumber(lastUpdateMsStr) or 0
+    if lastUpdateMs > 0 and (nowMs - lastUpdateMs) < minIntervalMs then
+        return {2, lastUpdateMs}
+    end
+end
+
+-- 3. Set in-flight key atomically
+redis.call('SET', inflightKey, '1', 'EX', inflightTTLSec)
+
+return {0, lastUpdateMs}
+`
+
 // UserService holds dependencies for the user-service handlers.
 type UserService struct {
 	store                  *store.MongoDB
@@ -63,6 +92,32 @@ type UserService struct {
 	updateJobLocationBeforeWriteHook func(ctx context.Context)
 	// Test hook to force RollbackEscrow to fail for deterministic testing
 	rollbackEscrowHook func(ctx context.Context, tenantID string, amount float64) error
+}
+
+func (u *UserService) clearLocationThrottleState(jobID string) {
+	u.locationThrottleMu.Lock()
+	delete(u.locationLastUpdate, jobID)
+	delete(u.locationInFlight, jobID)
+	u.locationThrottleMu.Unlock()
+
+	if u.rdb != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		_ = u.rdb.Del(ctx, fmt.Sprintf("loc:inflight:%s", jobID), fmt.Sprintf("loc:lastupdate:%s", jobID)).Err()
+	}
+}
+
+func (u *UserService) setTestLocationLastUpdate(jobID string, t time.Time) {
+	u.locationThrottleMu.Lock()
+	u.locationLastUpdate[jobID] = t
+	u.locationThrottleMu.Unlock()
+
+	if u.rdb != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		nowMs := t.UnixNano() / int64(time.Millisecond)
+		_ = u.rdb.Set(ctx, fmt.Sprintf("loc:lastupdate:%s", jobID), fmt.Sprintf("%d", nowMs), 300*time.Second).Err()
+	}
 }
 
 // NewUserService creates a new UserService handler group.
@@ -1740,28 +1795,100 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Per-job minimum interval throttling
-	u.locationThrottleMu.Lock()
-	if u.locationInFlight[job.ID] {
-		u.locationThrottleMu.Unlock()
-		writeJSON(w, http.StatusTooManyRequests, map[string]string{
-			"error":   "too_many_requests",
-			"message": "Location update is already in progress for this job.",
-		})
-		return
+	var lastTime time.Time
+	var exists bool
+	now := time.Now()
+	nowMs := now.UnixNano() / int64(time.Millisecond)
+
+	clearInFlight := func() {
+		if u.rdb != nil {
+			bgCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			_ = u.rdb.Del(bgCtx, fmt.Sprintf("loc:inflight:%s", job.ID)).Err()
+			cancel()
+		} else {
+			u.locationThrottleMu.Lock()
+			delete(u.locationInFlight, job.ID)
+			u.locationThrottleMu.Unlock()
+		}
 	}
 
-	lastUpdate, exists := u.locationLastUpdate[job.ID]
-	now := time.Now()
-	if exists && now.Sub(lastUpdate) < MinLocationUpdateInterval {
+	if u.rdb != nil {
+		inflightKey := fmt.Sprintf("loc:inflight:%s", job.ID)
+		lastupdateKey := fmt.Sprintf("loc:lastupdate:%s", job.ID)
+
+		evalCtx, cancelEval := context.WithTimeout(r.Context(), 2*time.Second)
+		res, err := u.rdb.Eval(evalCtx, checkLocationThrottleScript, []string{inflightKey, lastupdateKey}, MinLocationUpdateInterval.Milliseconds(), 15, nowMs).Result()
+		cancelEval()
+		if err != nil {
+			log.Printf("[SECURITY CRITICAL] Redis error in UpdateJobLocation throttle check (FAIL CLOSED): %v for job %s", err, job.ID)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error":   "internal_error",
+				"message": "failed to process location update throttle check",
+			})
+			return
+		}
+
+		resSlice, ok := res.([]interface{})
+		if !ok || len(resSlice) < 2 {
+			log.Printf("[SECURITY CRITICAL] Unexpected response format from location throttle script: %v for job %s", res, job.ID)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error":   "internal_error",
+				"message": "failed to process location update throttle check",
+			})
+			return
+		}
+
+		code := resSlice[0].(int64)
+		lastUpdateMs := resSlice[1].(int64)
+
+		if code == 1 {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error":   "too_many_requests",
+				"message": "Location update is already in progress for this job.",
+			})
+			return
+		}
+		if code == 2 {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error":   "too_many_requests",
+				"message": fmt.Sprintf("Too many location updates. Minimum interval is %.0f seconds.", MinLocationUpdateInterval.Seconds()),
+			})
+			return
+		}
+
+		if lastUpdateMs > 0 {
+			exists = true
+			lastTime = time.Unix(0, lastUpdateMs*int64(time.Millisecond))
+		}
+	} else {
+		// Fallback to in-memory maps when Redis client is nil (e.g. unit tests without Redis)
+		u.locationThrottleMu.Lock()
+		if u.locationInFlight[job.ID] {
+			u.locationThrottleMu.Unlock()
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error":   "too_many_requests",
+				"message": "Location update is already in progress for this job.",
+			})
+			return
+		}
+
+		lastUpdate, ex := u.locationLastUpdate[job.ID]
+		if ex && now.Sub(lastUpdate) < MinLocationUpdateInterval {
+			u.locationThrottleMu.Unlock()
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error":   "too_many_requests",
+				"message": fmt.Sprintf("Too many location updates. Minimum interval is %.0f seconds.", MinLocationUpdateInterval.Seconds()),
+			})
+			return
+		}
+		u.locationInFlight[job.ID] = true
 		u.locationThrottleMu.Unlock()
-		writeJSON(w, http.StatusTooManyRequests, map[string]string{
-			"error":   "too_many_requests",
-			"message": fmt.Sprintf("Too many location updates. Minimum interval is %.0f seconds.", MinLocationUpdateInterval.Seconds()),
-		})
-		return
+
+		exists = ex
+		if ex {
+			lastTime = lastUpdate
+		}
 	}
-	u.locationInFlight[job.ID] = true
-	u.locationThrottleMu.Unlock()
 
 	// Speed/plausibility check
 	prevLat := job.Location.Latitude
@@ -1772,10 +1899,7 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 	}
 
 	dist := haversineKm(req.Latitude, req.Longitude, prevLat, prevLon)
-	var lastTime time.Time
-	if exists {
-		lastTime = lastUpdate
-	} else {
+	if !exists {
 		lastTime = job.CreatedAt
 	}
 	timeDiff := now.Sub(lastTime)
@@ -1783,9 +1907,7 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 	if hours > 0 {
 		speed := dist / hours
 		if speed > MaxReasonableSpeedKmh {
-			u.locationThrottleMu.Lock()
-			delete(u.locationInFlight, job.ID)
-			u.locationThrottleMu.Unlock()
+			clearInFlight()
 
 			log.Printf("[SECURITY WARNING] Implausible speed detected for job %s: %.2f km/h", job.ID, speed)
 			handlerutil.ShipSecurityEvent(ctx, "IMPLAUSIBLE_SPEED_DETECTED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("location update rejected for job %s: speed %.2f km/h exceeds limit", job.ID, speed), handlerutil.GetClientIP(r))
@@ -1804,9 +1926,7 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 
 	// Update in the store
 	if err := u.store.UpdateJobLocation(ctx, req.JobID, req.Latitude, req.Longitude); err != nil {
-		u.locationThrottleMu.Lock()
-		delete(u.locationInFlight, job.ID)
-		u.locationThrottleMu.Unlock()
+		clearInFlight()
 
 		log.Printf("[USER] Failed to update location for job %s: %v", req.JobID, err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
@@ -1817,10 +1937,19 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Commit the real timestamp and release the reservation
-	u.locationThrottleMu.Lock()
-	u.locationLastUpdate[job.ID] = time.Now()
-	delete(u.locationInFlight, job.ID)
-	u.locationThrottleMu.Unlock()
+	if u.rdb != nil {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		pipe := u.rdb.Pipeline()
+		pipe.Del(bgCtx, fmt.Sprintf("loc:inflight:%s", job.ID))
+		pipe.Set(bgCtx, fmt.Sprintf("loc:lastupdate:%s", job.ID), fmt.Sprintf("%d", nowMs), 300*time.Second)
+		_, _ = pipe.Exec(bgCtx)
+		cancel()
+	} else {
+		u.locationThrottleMu.Lock()
+		u.locationLastUpdate[job.ID] = time.Now()
+		delete(u.locationInFlight, job.ID)
+		u.locationThrottleMu.Unlock()
+	}
 
 	// Call chat-service to broadcast
 	go func() {

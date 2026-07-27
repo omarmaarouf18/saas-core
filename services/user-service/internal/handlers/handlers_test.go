@@ -693,10 +693,7 @@ func TestUserServiceHandlers(t *testing.T) {
 	// Test 11: Location Throttle Error Rollback and Race Handling
 	t.Run("UpdateJobLocation Throttle Error Rollback", func(t *testing.T) {
 		// Clean up throttle state first
-		u.locationThrottleMu.Lock()
-		delete(u.locationLastUpdate, "active-job-777")
-		delete(u.locationInFlight, "active-job-777")
-		u.locationThrottleMu.Unlock()
+		u.clearLocationThrottleState("active-job-777")
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -779,10 +776,7 @@ func TestUserServiceHandlers(t *testing.T) {
 
 	t.Run("UpdateJobLocation Throttle Concurrent Race Handling", func(t *testing.T) {
 		// Clean up throttle state first
-		u.locationThrottleMu.Lock()
-		delete(u.locationLastUpdate, "active-job-777")
-		delete(u.locationInFlight, "active-job-777")
-		u.locationThrottleMu.Unlock()
+		u.clearLocationThrottleState("active-job-777")
 
 		tokenEmployee, _ := jwtutil.GenerateToken("employee-777", "employee", "owner-777", "employee@example.com")
 
@@ -831,10 +825,7 @@ func TestUserServiceHandlers(t *testing.T) {
 	// Test 13: Live Location Tracking Gated Rejection with Enabled CloudWatch Event Shipping
 	t.Run("UpdateJobLocation Gated Rejection with CloudWatch Shipping", func(t *testing.T) {
 		// Clean up throttle state first
-		u.locationThrottleMu.Lock()
-		delete(u.locationLastUpdate, "job-free")
-		delete(u.locationInFlight, "job-free")
-		u.locationThrottleMu.Unlock()
+		u.clearLocationThrottleState("job-free")
 
 		// Enable shipping with invalid/unreachable config
 		handlerutil.CwLogGroup = "test-group"
@@ -1655,9 +1646,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		_ = s.CreateJob(ctx, jobC)
 
 		// Set last update time to 1 hour ago
-		u.locationThrottleMu.Lock()
-		u.locationLastUpdate[jobC.ID] = time.Now().Add(-1 * time.Hour)
-		u.locationThrottleMu.Unlock()
+		u.setTestLocationLastUpdate(jobC.ID, time.Now().Add(-1*time.Hour))
 
 		// Attempt to update location 500 km away (implausible speed for 1 hour)
 		locReqBody := map[string]any{
@@ -2242,10 +2231,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		for i, tc := range updateLocCases {
 			t.Run("UpdateLoc - "+tc.name, func(t *testing.T) {
 				// Clear location throttle and inflight state for each run
-				u.locationThrottleMu.Lock()
-				delete(u.locationInFlight, "job-coords-validation")
-				delete(u.locationLastUpdate, "job-coords-validation")
-				u.locationThrottleMu.Unlock()
+				u.clearLocationThrottleState("job-coords-validation")
 
 				reqBody := map[string]any{
 					"job_id":       "job-coords-validation",
@@ -2474,10 +2460,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			{30.003, 30.0},
 		}
 
-		u.locationThrottleMu.Lock()
-		delete(u.locationInFlight, activeJob.ID)
-		delete(u.locationLastUpdate, activeJob.ID)
-		u.locationThrottleMu.Unlock()
+		u.clearLocationThrottleState(activeJob.ID)
 
 		for i, step := range steps {
 			reqBody := map[string]any{
@@ -2493,9 +2476,7 @@ func TestUserServiceHandlers(t *testing.T) {
 
 			// Manually mock locationLastUpdate to simulate the exact passage of 3.1 seconds
 			if i > 0 {
-				u.locationThrottleMu.Lock()
-				u.locationLastUpdate[activeJob.ID] = time.Now().Add(-3100 * time.Millisecond)
-				u.locationThrottleMu.Unlock()
+				u.setTestLocationLastUpdate(activeJob.ID, time.Now().Add(-3100*time.Millisecond))
 			}
 
 			u.UpdateJobLocation(rec, req)
@@ -2567,13 +2548,13 @@ func TestUserServiceHandlers(t *testing.T) {
 			t.Errorf("Expected 429 Too Many Requests on u1 retry, got %d", rec2.Code)
 		}
 
-		// 5. Immediately make next update on u2 -> succeeds (200 OK), confirming state is not shared between instances
+		// 5. Immediately make next update on u2 -> throttled (429 Too Many Requests), confirming state IS now shared across instances via Redis
 		req3 := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
 		req3.Header.Set("X-Real-IP", "192.168.100.22")
 		rec3 := httptest.NewRecorder()
 		u2.UpdateJobLocation(rec3, req3)
-		if rec3.Code != http.StatusOK {
-			t.Errorf("Expected 200 OK on u2 instance, got %d. Body: %s", rec3.Code, rec3.Body.String())
+		if rec3.Code != http.StatusTooManyRequests {
+			t.Errorf("Expected 429 Too Many Requests on u2 instance due to shared Redis throttle state, got %d. Body: %s", rec3.Code, rec3.Body.String())
 		}
 	})
 
@@ -4983,6 +4964,151 @@ func TestNegotiableTransportPricing(t *testing.T) {
 			t.Errorf("Expected invalid_category error, got %s", rec.Body.String())
 		}
 	})
+}
+
+func TestUpdateJobLocation_RedisBackedThrottle_MultiInstance(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
+		return
+	}
+	defer func() {
+		_ = s.DropDatabase(context.Background())
+		s.Close(context.Background())
+	}()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+
+	rdb1 := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb1.Close()
+
+	rdb2 := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb2.Close()
+
+	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		id := r.URL.Query().Get("id")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"id":         id,
+			"role":       "owner",
+			"kyc_status": "approved",
+			"is_active":  true,
+			"tenant_id":  id,
+		})
+	}))
+	defer mockAuthServer.Close()
+
+	cfg := &config.Config{
+		AuthServiceURL:         mockAuthServer.URL,
+		InternalServiceToken:   "mock-internal-token",
+		AppEnv:                 "test",
+		AllowTestPaymentBypass: true,
+	}
+
+	u1 := NewUserService(s, cfg, rdb1)
+	u2 := NewUserService(s, cfg, rdb2)
+
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		ID:        "sub-multi-owner",
+		TenantID:  "multi-owner-123",
+		Tier:      models.PlanPaid,
+		StartedAt: time.Now(),
+	})
+
+	activeJob := &models.Job{
+		ID:            "job-multi-instance-throttle",
+		OwnerID:       "multi-owner-123",
+		EmployeeID:    "emp-multi-123",
+		UserID:        "cust-multi-123",
+		Status:        models.JobStatusActive,
+		PaymentMethod: "cod",
+		Location:      models.Location{Latitude: 30.0, Longitude: 30.0},
+	}
+	_ = s.CreateJob(ctx, activeJob)
+	tokenEmp, _ := jwtutil.GenerateToken("emp-multi-123", "employee", "multi-owner-123", "emp@example.com")
+
+	reqBody := map[string]any{
+		"job_id":       activeJob.ID,
+		"requester_id": tokenEmp,
+		"latitude":     30.001,
+		"longitude":    30.001,
+	}
+	body, _ := json.Marshal(reqBody)
+
+	// 1. In-flight cross-instance locking test
+	writeStartCh := make(chan struct{})
+	writeProceedCh := make(chan struct{})
+
+	u1.updateJobLocationBeforeWriteHook = func(hookCtx context.Context) {
+		close(writeStartCh)
+		<-writeProceedCh
+	}
+	defer func() {
+		u1.updateJobLocationBeforeWriteHook = nil
+	}()
+
+	rec1 := httptest.NewRecorder()
+	req1 := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+	req1.Header.Set("X-Real-IP", "10.0.0.1")
+
+	u1Done := make(chan struct{})
+	go func() {
+		u1.UpdateJobLocation(rec1, req1)
+		close(u1Done)
+	}()
+
+	// Wait until u1 is in-flight (holding Redis lock loc:inflight:job-multi-instance-throttle)
+	<-writeStartCh
+
+	// Make concurrent update on u2 -> must be rejected as in-flight (429) across instances
+	rec2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+	req2.Header.Set("X-Real-IP", "10.0.0.2")
+	u2.UpdateJobLocation(rec2, req2)
+
+	if rec2.Code != http.StatusTooManyRequests {
+		t.Errorf("Expected 429 Too Many Requests on u2 while u1 is in-flight, got %d. Body: %s", rec2.Code, rec2.Body.String())
+	}
+	if !strings.Contains(rec2.Body.String(), "already in progress") {
+		t.Errorf("Expected 'already in progress' error message on u2, got %s", rec2.Body.String())
+	}
+
+	// Unblock u1 to finish write
+	close(writeProceedCh)
+	<-u1Done
+
+	if rec1.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK on u1, got %d: %s", rec1.Code, rec1.Body.String())
+	}
+
+	// 2. Minimum interval cross-instance throttle test
+	// Immediate next update on u2 -> must be rejected for minimum interval throttle (429)
+	rec3 := httptest.NewRecorder()
+	req3 := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+	req3.Header.Set("X-Real-IP", "10.0.0.3")
+	u2.UpdateJobLocation(rec3, req3)
+
+	if rec3.Code != http.StatusTooManyRequests {
+		t.Errorf("Expected 429 Too Many Requests on u2 for minimum interval, got %d. Body: %s", rec3.Code, rec3.Body.String())
+	}
+	if !strings.Contains(rec3.Body.String(), "Minimum interval") {
+		t.Errorf("Expected 'Minimum interval' error message on u2, got %s", rec3.Body.String())
+	}
 }
 
 func floatPtr(f float64) *float64 { return &f }
