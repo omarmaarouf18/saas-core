@@ -126,6 +126,7 @@ type OwnerJobResponse struct {
 	EmployeeID             string     `json:"employee_id,omitempty"`
 	Status                 JobStatus  `json:"status"`
 	Location               Location   `json:"location"`
+	CurrentLocation        *Location  `json:"current_location,omitempty"`
 	PaymentMethod          string     `json:"payment_method"`
 	LockedEscrowAmount     float64    `json:"locked_escrow_amount,omitempty"`
 	ReconciliationNote     string     `json:"reconciliation_note,omitempty"`
@@ -152,6 +153,7 @@ func NewOwnerJobResponse(j *Job) OwnerJobResponse {
 		EmployeeID:             j.EmployeeID,
 		Status:                 j.Status,
 		Location:               j.Location,
+		CurrentLocation:        j.CurrentLocation,
 		PaymentMethod:          j.PaymentMethod,
 		LockedEscrowAmount:     j.LockedEscrowAmount,
 		ReconciliationNote:     j.ReconciliationNote,

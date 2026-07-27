@@ -1,6 +1,6 @@
 # ADR-0008: Live Employee Map Tracking Architecture & Provider Selection
 
-- **Status**: Proposed
+- **Status**: Accepted
 - **Date**: 2026-07-27
 - **Related Commit SHA**: c14e7e8e82b69715ffae7b5fca4d941d3410ae43
 - **Related audit finding**: Live Employee Map Tracking & Fleet Visualization Provider Selection

@@ -979,8 +979,17 @@ func (u *UserService) GetOwnerJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	activeOnly := r.URL.Query().Get("active_only") == "true" || r.URL.Query().Get("filter") == "active"
 	resps := make([]models.OwnerJobResponse, 0, len(jobs))
+	now := time.Now()
 	for _, j := range jobs {
+		if activeOnly {
+			isActiveStatus := j.Status == models.JobStatusActive
+			isRecentlyUpdated := !j.UpdatedAt.IsZero() && now.Sub(j.UpdatedAt) <= 15*time.Minute
+			if !isActiveStatus && !isRecentlyUpdated {
+				continue
+			}
+		}
 		resps = append(resps, models.NewOwnerJobResponse(j))
 	}
 	writeJSON(w, http.StatusOK, resps)
@@ -2020,38 +2029,46 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 		u.locationThrottleMu.Unlock()
 	}
 
-	// Call chat-service to broadcast
+	// Call chat-service to broadcast to BOTH job and fleet channels
 	go func() {
-		payload := map[string]any{
-			"channel":     "job:" + job.ID,
-			"latitude":    req.Latitude,
-			"longitude":   req.Longitude,
-			"employee_id": job.EmployeeID,
-		}
-		bodyBytes, err := json.Marshal(payload)
-		if err != nil {
-			log.Printf("[USER] Location broadcast error (marshal): %v", err)
-			return
+		channels := []string{"job:" + job.ID}
+		if job.OwnerID != "" {
+			channels = append(channels, "fleet:"+job.OwnerID)
 		}
 
 		broadcastURL := fmt.Sprintf("%s/chat/internal/broadcast-location", u.chatServiceURL)
-		broadcastReq, err := http.NewRequest("POST", broadcastURL, bytes.NewReader(bodyBytes))
-		if err != nil {
-			log.Printf("[USER] Location broadcast error (request build): %v", err)
-			return
-		}
-		broadcastReq.Header.Set("Content-Type", "application/json")
-		broadcastReq.Header.Set("X-Internal-Token", u.internalServiceToken)
+		for _, ch := range channels {
+			payload := map[string]any{
+				"channel":     ch,
+				"latitude":    req.Latitude,
+				"longitude":   req.Longitude,
+				"employee_id": job.EmployeeID,
+			}
+			bodyBytes, err := json.Marshal(payload)
+			if err != nil {
+				log.Printf("[USER] Location broadcast error (marshal) for channel %s: %v", ch, err)
+				continue
+			}
 
-		resp, err := u.chatClient.Do(broadcastReq)
-		if err != nil {
-			log.Printf("[USER] Location broadcast error (call chat-service): %v", err)
-			return
-		}
-		defer resp.Body.Close()
+			// #nosec G704 //nolint:gosec -- broadcastURL is constructed from internal service config
+			broadcastReq, err := http.NewRequest("POST", broadcastURL, bytes.NewReader(bodyBytes))
+			if err != nil {
+				log.Printf("[USER] Location broadcast error (request build) for channel %s: %v", ch, err)
+				continue
+			}
+			broadcastReq.Header.Set("Content-Type", "application/json")
+			broadcastReq.Header.Set("X-Internal-Token", u.internalServiceToken)
 
-		if resp.StatusCode != http.StatusOK {
-			log.Printf("[USER] Location broadcast failed with status %d", resp.StatusCode)
+			resp, err := u.chatClient.Do(broadcastReq)
+			if err != nil {
+				log.Printf("[USER] Location broadcast error (call chat-service) for channel %s: %v", ch, err)
+				continue
+			}
+			resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				log.Printf("[USER] Location broadcast failed for channel %s with status %d", ch, resp.StatusCode)
+			}
 		}
 	}()
 

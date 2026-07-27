@@ -38,7 +38,7 @@
     *   *Blind Rating Screen*: **[VERIFIED]** Implemented `RatingScreen` supporting 1-5 star selection and text comment inputs. Connects to POST `/users/jobs/rate` using `MarketplaceProvider`. Features live progress checks querying GET `/users/ratings` to render partner rating status dynamically.
     *   *Rating Summary Card*: **[VERIFIED]** Designed `RatingSummaryCard` showing verified average stars score and review count. Embedded inside owner reputation view and customer marketplace cards.
 *   **Phase 8: Live Employee Map Tracking (ADR-0008)** — **[100% COMPLETE & VERIFIED]**
-    *   *Live Employee Map Tracking*: **[VERIFIED]** Implemented flutter_map OpenStreetMap raster tile rendering with custom User-Agent policy header `QuickDeliveryApp/1.0` and configurable tile URL constant (`MAP_TILE_URL`). Created `OwnerFleetMapScreen` for tenant owners (subscribing to `fleet:<owner_id>` WebSocket stream with hydration via `GET /users/jobs/owner`) and `CustomerJobMapScreen` for active customer job tracking (subscribing to `job:<job_id>` WebSocket stream with hydration via `GET /users/jobs/get`). Verified via widget tests in `map_tracking_test.dart`.
+    *   *Live Employee Map Tracking*: **[VERIFIED]** Implemented `flutter_map` OpenStreetMap raster tile rendering with custom User-Agent policy header `QuickDeliveryApp/1.0` and configurable tile URL constant (`MAP_TILE_URL`). Created `OwnerFleetMapScreen` for tenant owners (subscribing to `fleet:<owner_id>` WebSocket stream with hydration via `GET /users/jobs/owner`) and `CustomerJobMapScreen` for active customer job tracking (subscribing to `job:<job_id>` WebSocket stream with hydration via `GET /users/jobs/get`). Backend extended in `chat-service` (`canAccessChannel` for `fleet:<owner_id>`) and `user-service` (`UpdateJobLocation` dual broadcast to `job:<id>` and `fleet:<owner_id>`). Verified end-to-end via non-mocked integration test `TestADR0008_E2E_LiveEmployeeMapTracking` connecting real WebSockets to `chat-service` Hub and executing `UpdateJobLocation`.
 
  ---
 
@@ -53,7 +53,7 @@
  *   **Username Propagation & Chat Snapshot**: Propagates registered usernames to dashboard welcome messages and profile detail panels, and displays `senderUsername` in the chat UI including fallback support and Agent display name resolution.
  *   **Real-Time Chat & History Sync**: Fetches message history on load, establishes WebSocket connection, supports dual-direction message broadcasts, handles reconnection backoff, and restricts channel access securely.
  *   **SSE Notifications Stream**: Establishes Server-Sent Events subscription, decodes real-time JSON alert payloads, manages local message history, filters by category, groups alerts chronologically, and integrates unread notification badges in dashboard AppBars.
- *   **Live Employee Map Tracking**: Hydrates employee locations from HTTP API endpoints, connects to chat-service WebSocket hub channels (`fleet:<owner_id>` / `job:<job_id>`), updates employee marker positions in real time, and displays reconnection banners gracefully.
+ *   **Live Employee Map Tracking**: Hydrates employee locations from HTTP API endpoints, connects to chat-service WebSocket hub channels (`fleet:<owner_id>` / `job:<job_id>`), updates employee marker positions in real time, and displays reconnection banners gracefully. Verified end-to-end with real backend WebSocket connections and broadcasts (`TestADR0008_E2E_LiveEmployeeMapTracking`).
 
  ## File Tracking Index
 

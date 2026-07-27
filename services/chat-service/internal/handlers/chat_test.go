@@ -62,8 +62,41 @@ func TestCanAccessChannel(t *testing.T) {
 	}))
 	defer mockUserServer.Close()
 
+	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		if r.Header.Get("X-Internal-Token") != "mock-internal-token" {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+			return
+		}
+
+		uid := r.URL.Query().Get("id")
+		if uid == "owner-fleet-123" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]any{
+				"id":   "owner-fleet-123",
+				"role": "owner",
+			})
+			return
+		}
+		if uid == "user-fleet-456" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]any{
+				"id":   "user-fleet-456",
+				"role": "user",
+			})
+			return
+		}
+
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "user not found"})
+	}))
+	defer mockAuthServer.Close()
+
 	// Instantiate Chat handler group (we can pass nil hub and store as they aren't used in canAccessChannel)
 	cfg := &config.Config{
+		AuthServiceURL:       mockAuthServer.URL,
 		UserServiceURL:       mockUserServer.URL,
 		InternalServiceToken: "mock-internal-token",
 		AllowedOrigin:        "http://localhost:3000",
@@ -101,6 +134,24 @@ func TestCanAccessChannel(t *testing.T) {
 			userID:     "job-user-id",
 			channel:    "job:valid-job-123",
 			expectAuth: true,
+		},
+		{
+			name:       "Fleet Owner Authorized",
+			userID:     "owner-fleet-123",
+			channel:    "fleet:owner-fleet-123",
+			expectAuth: true,
+		},
+		{
+			name:       "Fleet Non-Owner Role Gated",
+			userID:     "user-fleet-456",
+			channel:    "fleet:user-fleet-456",
+			expectAuth: false,
+		},
+		{
+			name:       "Fleet Mismatched Owner ID Gated",
+			userID:     "owner-fleet-123",
+			channel:    "fleet:other-owner-789",
+			expectAuth: false,
 		},
 		{
 			name:       "Unauthorized User",

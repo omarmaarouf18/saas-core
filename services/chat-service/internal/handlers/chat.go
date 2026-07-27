@@ -177,6 +177,41 @@ func (c *Chat) canAccessChannel(userID, channel string) (bool, error) {
 		return userID == ticket.CustomerID || (ticket.AssignedAgentID != "" && userID == ticket.AssignedAgentID), nil
 	}
 
+	if strings.HasPrefix(channel, "fleet:") {
+		ownerID := strings.TrimPrefix(channel, "fleet:")
+		if ownerID == "" || userID != ownerID {
+			return false, nil
+		}
+
+		url := fmt.Sprintf("%s/auth/user?id=%s", c.authServiceURL, userID)
+		// #nosec G704 //nolint:gosec -- target is internal service URL, userID is validated
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return false, err
+		}
+		req.Header.Set("X-Internal-Token", c.internalServiceToken)
+
+		resp, err := c.authClient.Do(req)
+		if err != nil {
+			return false, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return false, fmt.Errorf("unexpected status code from auth-service: %d", resp.StatusCode)
+		}
+
+		var user struct {
+			ID   string `json:"id"`
+			Role string `json:"role"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+			return false, err
+		}
+
+		return user.ID == userID && user.Role == "owner", nil
+	}
+
 	if !strings.HasPrefix(channel, "job:") {
 		return false, nil
 	}
