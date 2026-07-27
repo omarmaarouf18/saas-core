@@ -16,6 +16,7 @@ import 'subscription_screen.dart';
 
 import 'employee_jobs_screen.dart';
 import 'customer_marketplace_screen.dart';
+import 'owner_reconciliation_queue_screen.dart';
 import '../providers/marketplace_provider.dart';
 import '../widgets/rating_summary_card.dart';
 
@@ -188,6 +189,17 @@ class _HomeScreenState extends State<HomeScreen> {
         foregroundColor: AppColors.onPrimary,
         actions: [
           IconButton(
+            icon: const Icon(Icons.gavel_outlined),
+            tooltip: "Escrow Reconciliation",
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const OwnerReconciliationQueueScreen(),
+                ),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: "Refresh Data",
             onPressed: _refreshData,
@@ -356,6 +368,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   subtitle: "N/A (No List API)",
                   icon: Icons.people_outline,
                   color: AppColors.outline,
+                ),
+                _buildMetricCard(
+                  title: "Escrow Review",
+                  value: "Queue",
+                  subtitle: "Flagged Jobs",
+                  icon: Icons.gavel_outlined,
+                  color: AppColors.secondary,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const OwnerReconciliationQueueScreen(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
