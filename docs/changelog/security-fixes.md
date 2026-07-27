@@ -12,8 +12,8 @@ This file tracks historical entries for the primary category: **Security Fixes C
 
 ## Delivery and Shipping GPS Trail Settlement Reconciliation (ADR-0007 Phase 1)
 
-- **Implementation Detail**: Implemented ADR-0007 Phase 1 actual distance settlement and under-distance manual review flagging in `user-service` (`CompleteJob` in `services/user-service/internal/handlers/handlers.go`). For delivery and shipping category services, `CompleteJob` calculates `ActualDistance` from the cumulative Haversine distance across recorded `Job.Waypoints`. If `ActualDistance < 0.70 * BookedDistance`, completion is halted and the job transitions to `models.JobStatusEscrowReconciliationRequired` with note `"tracked_distance_mismatch: actual X km vs booked Y km"`. Otherwise, employee payout uses the guaranteed floor `max(LockedEscrowAmount, A_actual)`. Added test suite `TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation`.
-- **Commit SHA**: ``63a7d6094af6a7f51a69d252e840133925ab7296``
+- **Implementation Detail**: Implemented ADR-0007 Phase 1 actual distance settlement and under-distance manual review flagging in `user-service` (`CompleteJob` in `services/user-service/internal/handlers/handlers.go`). For delivery and shipping category services, `CompleteJob` calculates `ActualDistance` from the cumulative Haversine distance across recorded `Job.Waypoints`. If `ActualDistance < 0.70 * BookedDistance`, completion is halted and the job transitions to `models.JobStatusEscrowReconciliationRequired` with note `"tracked_distance_mismatch: actual X km vs booked Y km"`. Otherwise, employee payout uses the guaranteed floor `max(LockedEscrowAmount, A_actual)`. For non-COD escrow jobs, payouts exceeding `LockedEscrowAmount` are capped at `LockedEscrowAmount` per ADR-0002 to preserve wallet isolation and emit `ESCROW_LIMIT_EXCEEDED` audit logs. Added test suite `TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation`.
+- **Commit SHA**: ``44e51b2efdc925c6862df04658b73429a9680154``
 - **Verification**: Verified via `go vet`, `go test ./... -count=1` (`TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation`), and `make docs-check`. ✅
 
 
