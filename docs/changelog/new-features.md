@@ -7,7 +7,7 @@ This file tracks historical entries for the primary category: **New Features Cha
 ## ADR-0008 Live Employee Map Tracking Backend & End-to-End Verification
 
 - **Implementation Detail**: Implemented backend support for ADR-0008 Live Employee Map Tracking across microservices. Extended `canAccessChannel` in `services/chat-service/internal/handlers/chat.go` to authorize `"fleet:<owner_id>"` channel subscriptions for users with the `"owner"` role. Wired `UpdateJobLocation` in `services/user-service/internal/handlers/handlers.go` to send background HTTP location broadcast POST requests to `chat-service` for BOTH `"job:<job.ID>"` and `"fleet:<job.OwnerID>"`. Added `active_only=true` query filtering to `GET /users/jobs/owner` for initial fleet hydration. Added `CurrentLocation` field to `OwnerJobResponse` DTO and `NewOwnerJobResponse` mapping. Built `TestADR0008_E2E_LiveEmployeeMapTracking` non-mocked integration test verifying real WebSockets connections, `"fleet:<owner_id>"` channel subscription authorization, and real-time location update broadcasts. Updated ADR-0008 status to Accepted.
-- **Commit SHA**: ``936adb2bd75f1cf59d77c2ca2c61c57c8b612a12``
+- **Commit SHA**: ``17ebd52e1d88246c5141f793abfd08c5515cc133``
 - **Verification**: Verified via `go test ./services/chat-service/...` (`TestCanAccessChannel` 11/11 subtests pass), `go test ./services/user-service/...` (`TestADR0008_E2E_LiveEmployeeMapTracking` passes cleanly), `gofmt -l .`, `make docs-check`, `flutter analyze` (0 issues), and `flutter test` (10/10 tests pass). ✅
 
 ## ADR-0008 Live Employee Map Tracking Frontend Implementation
