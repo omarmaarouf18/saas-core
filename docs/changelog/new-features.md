@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **New Features Cha
 
 ---
 
+## Admin/Owner Escrow Reconciliation Review Endpoints Implementation
+
+- **Implementation Detail**: Implemented owner/admin escrow reconciliation queue review and resolution endpoints in `user-service`. Added `GET /users/jobs/reconciliation-queue` for tenant owners to list jobs in status `escrow_reconciliation_required` with full context (`ReconciliationNote`, `EscrowFailureReason`, `LockedEscrowAmount`). Added `POST /users/jobs/reconciliation-resolve` accepting resolution decisions (`release_to_employee` or `refund_to_customer`), executing fund release/refund via existing wallet/escrow methods, updating job status and reconciliation fields, and shipping security audit events (`ESCROW_RECONCILIATION_RESOLVED`). Enforced strict owner role gating (`resolveTokenWithRole`), tenant isolation IDOR protection, identity-based rate limiting (30 req/min), and status idempotency (409 Conflict on double resolution). Added `{owner_id, status}` index to MongoDB store (`GetReconciliationQueueByOwner`). Updated ADR-0007 tradeoffs to reflect completed Redis throttle migration.
+- **Commit SHA**: ``cba5f6c82dcd85cd4192261f5c9d973b12faaf21``
+- **Verification**: Verified via `go test ./services/user-service/internal/handlers -run "TestGetReconciliationQueue|TestResolveReconciliation"` (8/8 subtests pass), `go test ./services/user-service/internal/handlers/...` (all pass), `make docs-check`, `gofmt -l .`, and `.githooks/pre-push` gate (exit code 0). ✅
+
 ## ADR-0008 Live Employee Map Tracking Backend & End-to-End Verification
 
 - **Implementation Detail**: Implemented backend support for ADR-0008 Live Employee Map Tracking across microservices. Extended `canAccessChannel` in `services/chat-service/internal/handlers/chat.go` to authorize `"fleet:<owner_id>"` channel subscriptions for users with the `"owner"` role. Wired `UpdateJobLocation` in `services/user-service/internal/handlers/handlers.go` to send background HTTP location broadcast POST requests to `chat-service` for BOTH `"job:<job.ID>"` and `"fleet:<job.OwnerID>"`. Added `active_only=true` query filtering to `GET /users/jobs/owner` for initial fleet hydration. Added `CurrentLocation` field to `OwnerJobResponse` DTO and `NewOwnerJobResponse` mapping. Built `TestADR0008_E2E_LiveEmployeeMapTracking` non-mocked integration test verifying real WebSockets connections, `"fleet:<owner_id>"` channel subscription authorization, and real-time location update broadcasts. Updated ADR-0008 status to Accepted.
