@@ -32,7 +32,8 @@ class EmployeeMarkerData {
   factory EmployeeMarkerData.fromJson(Map<String, dynamic> json) {
     return EmployeeMarkerData(
       employeeId: json['employee_id'] ?? json['sender_id'] ?? 'unknown',
-      jobId: json['job_id'] ?? json['channel']?.toString().replaceFirst('job:', ''),
+      jobId: json['job_id'] ??
+          json['channel']?.toString().replaceFirst('job:', ''),
       latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
       longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
       updatedAt: json['updated_at'] != null

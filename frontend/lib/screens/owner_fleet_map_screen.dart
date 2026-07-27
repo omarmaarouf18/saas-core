@@ -60,7 +60,8 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
           }
 
           final markers = provider.markersList;
-          LatLng centerPoint = const LatLng(30.0444, 31.2357); // Default Cairo / center
+          LatLng centerPoint =
+              const LatLng(30.0444, 31.2357); // Default Cairo / center
 
           if (markers.isNotEmpty) {
             double avgLat = 0;
@@ -69,7 +70,8 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
               avgLat += m.latitude;
               avgLon += m.longitude;
             }
-            centerPoint = LatLng(avgLat / markers.length, avgLon / markers.length);
+            centerPoint =
+                LatLng(avgLat / markers.length, avgLon / markers.length);
           }
 
           return Stack(

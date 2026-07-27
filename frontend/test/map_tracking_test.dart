@@ -125,7 +125,8 @@ void main() {
       expect(find.byIcon(Icons.location_on), findsOneWidget);
     });
 
-    testWidgets('(b) Marker position update on simulated location_update message',
+    testWidgets(
+        '(b) Marker position update on simulated location_update message',
         (WidgetTester tester) async {
       final mockProvider = MockMapTrackingProvider(
         apiClient: apiClient,
@@ -249,7 +250,8 @@ void main() {
       expect(find.byIcon(Icons.flag), findsOneWidget);
     });
 
-    testWidgets('(b) Marker position update on simulated location_update message',
+    testWidgets(
+        '(b) Marker position update on simulated location_update message',
         (WidgetTester tester) async {
       final mockProvider = MockMapTrackingProvider(
         apiClient: apiClient,

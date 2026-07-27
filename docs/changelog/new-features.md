@@ -7,7 +7,7 @@ This file tracks historical entries for the primary category: **New Features Cha
 ## ADR-0008 Live Employee Map Tracking Frontend Implementation
 
 - **Implementation Detail**: Implemented ADR-0008 Flutter frontend screens, provider, and models for live employee map tracking using `flutter_map` (v7.0.2) and OpenStreetMap raster tiles with required custom `User-Agent` header (`QuickDeliveryApp/1.0`) and configurable compile-time tile URL template (`MAP_TILE_URL`). Created `OwnerFleetMapScreen` for tenant owners (subscribing to `fleet:<owner_id>` WebSocket stream with initial state hydration via `GET /users/jobs/owner`) and `CustomerJobMapScreen` for customer active job tracking (subscribing to `job:<job_id>` WebSocket stream with initial state hydration via `GET /users/jobs/get`). Added `MapTrackingProvider` with initial HTTP hydration and WebSocket streaming, exponential backoff reconnection, and connection status banners.
-- **Commit SHA**: `<PENDING_SHA>`
+- **Commit SHA**: ``7e3c3eb59faaab14f1d576ac217a50e221e3e116``
 - **Verification**: Verified via `flutter analyze` (0 issues) and `flutter test` (6 new widget unit tests in `map_tracking_test.dart` passing cleanly). ✅
 
 ## Negotiable Transport Pricing Handler Wiring & Endpoints
