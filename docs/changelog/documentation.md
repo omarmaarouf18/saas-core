@@ -74,6 +74,13 @@ This file tracks historical entries for the primary category: **Documentation Ch
 - **Commit SHA**: ``e0c3ab014b45c2eafffd70b33b2bffd7fb2fc270``
 - **Verification**: Verified via `make docs-check` and `go test ./shared/infra/... -run TestChangelogCommitSHAs`. ✅
 
+## ADR-0008 Live Employee Map Tracking Architecture & Provider Selection
+
+- **Implementation Detail**: Produced ADR-0008 (`docs/adr/0008-live-employee-map-tracking.md`) defining the live employee map tracking architecture. Selected `flutter_map` with OpenStreetMap / Carto raster tiles to guarantee zero financial cost and avoid GCP billing account requirements. Reused `chat-service` WebSocket channels (`job:<job_id>` and `fleet:<owner_id>`) for real-time location streaming leveraging pre-existing `location_update` payload fields in `chat/hub.go`, paired with HTTP GET initial state hydration. Defined tenant-isolated authorization boundaries (owner fleet view vs single-job customer view) and established explicit non-goals (geocoding, routing/OSRM, place search). Added index entry in `docs/adr/README.md`.
+- **Commit SHA**: ``c14e7e8e82b69715ffae7b5fca4d941d3410ae43``
+- **Verification**: Verified via `make docs-check` and `go test ./shared/infra/... -run TestChangelogCommitSHAs`. ✅
+
+
 
 
 
