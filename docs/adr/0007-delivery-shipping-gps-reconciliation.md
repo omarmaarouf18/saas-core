@@ -121,7 +121,7 @@ Rather than introducing a new job status or schema entity, Phase 1 standardizes 
 
 ### Tradeoffs & Known Limitations
 * **Operator Workload**: Jobs flagged for significant under-distance mismatches require human review in the admin queue.
-* **In-Memory Throttle State**: Phase 0 inherits single-instance in-memory location tracking throttle state, requiring a future Redis migration for multi-replica deployments.
+* **Redis-Backed Throttle State**: Location tracking throttle state (`loc:inflight:`, `loc:lastupdate:`) is fully migrated to Redis, supporting multi-replica deployments without in-memory state leakage.
 
 ---
 

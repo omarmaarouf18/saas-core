@@ -299,6 +299,16 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Lists all jobs booked by the authenticated customer (DTO: CustomerJobResponse). Supports optional user_id parameter matching for IDOR validation.",
 		Targets:     "Reads `jobs` collection. Rate-limited per customer identity (30 req/min).",
 	},
+	"GET /users/jobs/reconciliation-queue": {
+		Permissions: "Owner JWT",
+		Function:    "Lists all jobs in escrow_reconciliation_required status for the authenticated tenant owner.",
+		Targets:     "Reads `jobs` collection. Scoped to authenticated owner ID with IDOR validation and rate-limiting (30 req/min).",
+	},
+	"POST /users/jobs/reconciliation-resolve": {
+		Permissions: "Owner JWT",
+		Function:    "Resolves job in escrow_reconciliation_required status ('release_to_employee' or 'refund_to_customer').",
+		Targets:     "Updates `jobs` status and reconciliation fields, writes `wallets` and `ledger`, ships security audit event.",
+	},
 }
 
 // HandlerFuncInfo parses a file's AST to gather functions and their comments

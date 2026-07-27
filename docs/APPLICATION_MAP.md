@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`ad9b29c`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`e48c4a2`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -191,6 +191,8 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`GET /users/jobs/owner`** | `user-service` | Owner JWT | Lists all jobs owned by the authenticated tenant owner (DTO: OwnerJobResponse). Supports optional owner_id parameter matching for IDOR validation. | Reads `jobs` collection. Rate-limited per owner identity (30 req/min). |
 | **`POST /users/jobs/propose-price`** | `user-service` | Public | <!-- TODO: verify manually --> | <!-- TODO: verify manually --> |
 | **`POST /users/jobs/rate`** | `user-service` | Owner, Employee, User, or Customer JWT | Submits a double-blind rating. Accepts rated_by (legacy) or rated_by_token (preferred), and rated_user (legacy) or rated_user_token (preferred). | Writes `ratings`, updates `jobs`. |
+| **`GET /users/jobs/reconciliation-queue`** | `user-service` | Owner JWT | Lists all jobs in escrow_reconciliation_required status for the authenticated tenant owner. | Reads `jobs` collection. Scoped to authenticated owner ID with IDOR validation and rate-limiting (30 req/min). |
+| **`POST /users/jobs/reconciliation-resolve`** | `user-service` | Owner JWT | Resolves job in escrow_reconciliation_required status ('release_to_employee' or 'refund_to_customer'). | Updates `jobs` status and reconciliation fields, writes `wallets` and `ledger`, ships security audit event. |
 | **`POST /users/jobs/respond-price`** | `user-service` | Public | <!-- TODO: verify manually --> | <!-- TODO: verify manually --> |
 | **`POST /users/jobs/track`** | `user-service` | Owner/Employee JWT (legacy tracking) OR Customer JWT + service_id (owner resolved server-side; supports optional employee pre-assignment) | Books job with coordinate validation. Accepts user_id (legacy) or user_token (preferred), owner_id (legacy) or owner_token (preferred), and employee_id (legacy) or employee_token (preferred). | Downstream: calls `auth-service/auth/user`. Writes `jobs`. |
 | **`GET /users/ledger`** | `user-service` | Owner JWT | Lists financial ledger records. Accepts tenant_id (legacy) or tenant_token (preferred). | Reads `ledger` collection. |

@@ -101,6 +101,11 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 	}); err != nil {
 		return fmt.Errorf("jobs service_id index: %w", err)
 	}
+	if _, err := s.jobs.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "owner_id", Value: 1}, {Key: "status", Value: 1}},
+	}); err != nil {
+		return fmt.Errorf("jobs owner_id_status index: %w", err)
+	}
 	if _, err := s.wallets.Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.D{{Key: "tenant_id", Value: 1}}, Options: options.Index().SetUnique(true),
 	}); err != nil {
@@ -511,7 +516,7 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 		resJob, err := s.jobs.UpdateOne(sc,
 			bson.M{
 				"_id":                  jobID,
-				"status":               models.JobStatusActive,
+				"status":               bson.M{"$in": []models.JobStatus{models.JobStatusActive, models.JobStatusEscrowReconciliationRequired}},
 				"locked_escrow_amount": bson.M{"$gte": amount},
 			},
 			bson.M{
@@ -894,7 +899,7 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 		resJob, err := s.jobs.UpdateOne(sc,
 			bson.M{
 				"_id":                  jobID,
-				"status":               bson.M{"$in": []models.JobStatus{models.JobStatusActive, models.JobStatusPending}},
+				"status":               bson.M{"$in": []models.JobStatus{models.JobStatusActive, models.JobStatusPending, models.JobStatusEscrowReconciliationRequired}},
 				"locked_escrow_amount": bson.M{"$gte": amount},
 			},
 			bson.M{
@@ -988,4 +993,26 @@ func (s *MongoDB) DeleteJob(ctx context.Context, id string) error {
 func (s *MongoDB) CountJobsByOwner(ctx context.Context, ownerID string) (int, error) {
 	count, err := s.jobs.CountDocuments(ctx, bson.M{"owner_id": ownerID})
 	return int(count), err
+}
+
+// GetReconciliationQueueByOwner returns all jobs for an owner currently in status escrow_reconciliation_required.
+func (s *MongoDB) GetReconciliationQueueByOwner(ctx context.Context, ownerID string) ([]*models.Job, error) {
+	var jobs []*models.Job
+	filter := bson.M{
+		"owner_id": ownerID,
+		"status":   models.JobStatusEscrowReconciliationRequired,
+	}
+	opts := options.Find().SetSort(bson.D{{Key: "updated_at", Value: -1}}).SetLimit(100)
+	cursor, err := s.jobs.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, fmt.Errorf("store: get reconciliation queue by owner: %w", err)
+	}
+	defer cursor.Close(ctx)
+	if err := cursor.All(ctx, &jobs); err != nil {
+		return nil, fmt.Errorf("store: decode reconciliation queue by owner: %w", err)
+	}
+	if jobs == nil {
+		jobs = make([]*models.Job, 0)
+	}
+	return jobs, nil
 }
