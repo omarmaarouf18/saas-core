@@ -1890,7 +1890,19 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	// Speed/plausibility check
+	// Shared rejection helper for implausible speed check failures
+	rejectImplausibleSpeed := func(speed float64, checkType string) {
+		clearInFlight()
+
+		log.Printf("[SECURITY WARNING] Implausible %s speed detected for job %s: %.2f km/h", checkType, job.ID, speed)
+		handlerutil.ShipSecurityEvent(ctx, "IMPLAUSIBLE_SPEED_DETECTED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("location update rejected for job %s: %s speed %.2f km/h exceeds limit", job.ID, checkType, speed), handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "implausible_speed",
+			"message": "Location update rejected: implausible speed detected.",
+		})
+	}
+
+	// 1. Per-step speed/plausibility check
 	prevLat := job.Location.Latitude
 	prevLon := job.Location.Longitude
 	if job.CurrentLocation != nil {
@@ -1907,14 +1919,28 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 	if hours > 0 {
 		speed := dist / hours
 		if speed > MaxReasonableSpeedKmh {
-			clearInFlight()
+			rejectImplausibleSpeed(speed, "step")
+			return
+		}
+	}
 
-			log.Printf("[SECURITY WARNING] Implausible speed detected for job %s: %.2f km/h", job.ID, speed)
-			handlerutil.ShipSecurityEvent(ctx, "IMPLAUSIBLE_SPEED_DETECTED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("location update rejected for job %s: speed %.2f km/h exceeds limit", job.ID, speed), handlerutil.GetClientIP(r))
-			writeJSON(w, http.StatusBadRequest, map[string]string{
-				"error":   "implausible_speed",
-				"message": "Location update rejected: implausible speed detected.",
-			})
+	// 2. Cumulative route speed check (sum of Haversine distances across all waypoints)
+	var cumDist float64
+	pts := make([]models.Location, 0, len(job.Waypoints)+2)
+	pts = append(pts, job.Location)
+	pts = append(pts, job.Waypoints...)
+	pts = append(pts, models.Location{Latitude: req.Latitude, Longitude: req.Longitude})
+
+	for i := 0; i < len(pts)-1; i++ {
+		cumDist += haversineKm(pts[i+1].Latitude, pts[i+1].Longitude, pts[i].Latitude, pts[i].Longitude)
+	}
+
+	totalTimeDiff := now.Sub(job.CreatedAt)
+	totalHours := totalTimeDiff.Hours()
+	if totalHours > 0 {
+		cumSpeed := cumDist / totalHours
+		if cumSpeed > MaxReasonableSpeedKmh {
+			rejectImplausibleSpeed(cumSpeed, "cumulative")
 			return
 		}
 	}

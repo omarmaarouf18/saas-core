@@ -5111,4 +5111,179 @@ func TestUpdateJobLocation_RedisBackedThrottle_MultiInstance(t *testing.T) {
 	}
 }
 
+func TestUpdateJobLocation_SpeedCheck_CumulativeAndStep(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
+		return
+	}
+	defer func() {
+		_ = s.DropDatabase(context.Background())
+		s.Close(context.Background())
+	}()
+
+	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		id := r.URL.Query().Get("id")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"id":         id,
+			"role":       "owner",
+			"kyc_status": "approved",
+			"is_active":  true,
+			"tenant_id":  id,
+		})
+	}))
+	defer mockAuthServer.Close()
+
+	cfg := &config.Config{
+		AuthServiceURL:         mockAuthServer.URL,
+		InternalServiceToken:   "mock-internal-token",
+		AppEnv:                 "test",
+		AllowTestPaymentBypass: true,
+	}
+
+	u := NewUserService(s, cfg, nil)
+
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		ID:        "sub-speed-owner",
+		TenantID:  "speed-owner-123",
+		Tier:      models.PlanPaid,
+		StartedAt: time.Now(),
+	})
+
+	tokenEmp, _ := jwtutil.GenerateToken("emp-speed-123", "employee", "speed-owner-123", "emp@example.com")
+
+	// Subtest A: Cumulative speed check rejects sequence of small plausible jumps that cumulatively exceed MaxReasonableSpeedKmh
+	t.Run("Cumulative speed check rejects sequence exceeding average threshold", func(t *testing.T) {
+		jobCum := &models.Job{
+			ID:            "job-speed-cum",
+			OwnerID:       "speed-owner-123",
+			EmployeeID:    "emp-speed-123",
+			UserID:        "cust-speed-123",
+			Status:        models.JobStatusActive,
+			PaymentMethod: "cod",
+			Location:      models.Location{Latitude: 30.0, Longitude: 30.0},
+			CreatedAt:     time.Now().Add(-10 * time.Minute),
+			Waypoints: []models.Location{
+				{Latitude: 30.05, Longitude: 30.0},
+				{Latitude: 30.10, Longitude: 30.0},
+				{Latitude: 30.15, Longitude: 30.0},
+				{Latitude: 30.20, Longitude: 30.0},
+				{Latitude: 30.25, Longitude: 30.0},
+			},
+			CurrentLocation: &models.Location{Latitude: 30.25, Longitude: 30.0},
+		}
+		_ = s.CreateJob(ctx, jobCum)
+
+		reqBody := map[string]any{
+			"job_id":       jobCum.ID,
+			"requester_id": tokenEmp,
+			"latitude":     30.27,
+			"longitude":    30.0,
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", "10.0.0.1")
+		rec := httptest.NewRecorder()
+
+		u.setTestLocationLastUpdate(jobCum.ID, time.Now().Add(-5*time.Minute))
+		u.UpdateJobLocation(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("Expected 400 Bad Request for cumulative speed violation, got %d: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "implausible_speed") {
+			t.Errorf("Expected implausible_speed error code, got %s", rec.Body.String())
+		}
+	})
+
+	// Subtest B: Genuinely slow, plausible route over many waypoints is accepted
+	t.Run("Slow plausible route over many waypoints is accepted", func(t *testing.T) {
+		jobSlow := &models.Job{
+			ID:            "job-speed-slow",
+			OwnerID:       "speed-owner-123",
+			EmployeeID:    "emp-speed-123",
+			UserID:        "cust-speed-123",
+			Status:        models.JobStatusActive,
+			PaymentMethod: "cod",
+			Location:      models.Location{Latitude: 30.0, Longitude: 30.0},
+			CreatedAt:     time.Now().Add(-60 * time.Minute),
+			Waypoints: []models.Location{
+				{Latitude: 30.001, Longitude: 30.0},
+				{Latitude: 30.002, Longitude: 30.0},
+				{Latitude: 30.003, Longitude: 30.0},
+				{Latitude: 30.004, Longitude: 30.0},
+			},
+			CurrentLocation: &models.Location{Latitude: 30.004, Longitude: 30.0},
+		}
+		_ = s.CreateJob(ctx, jobSlow)
+
+		reqBody := map[string]any{
+			"job_id":       jobSlow.ID,
+			"requester_id": tokenEmp,
+			"latitude":     30.005,
+			"longitude":    30.0,
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", "10.0.0.2")
+		rec := httptest.NewRecorder()
+
+		u.setTestLocationLastUpdate(jobSlow.ID, time.Now().Add(-5*time.Minute))
+		u.UpdateJobLocation(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK for slow plausible route update, got %d: %s", rec.Code, rec.Body.String())
+		}
+	})
+
+	// Subtest C: Per-step check independently catches single large jump (no regression)
+	t.Run("Per-step check independently catches single large jump", func(t *testing.T) {
+		jobStep := &models.Job{
+			ID:              "job-speed-step",
+			OwnerID:         "speed-owner-123",
+			EmployeeID:      "emp-speed-123",
+			UserID:          "cust-speed-123",
+			Status:          models.JobStatusActive,
+			PaymentMethod:   "cod",
+			Location:        models.Location{Latitude: 30.0, Longitude: 30.0},
+			CurrentLocation: &models.Location{Latitude: 30.0, Longitude: 30.0},
+			CreatedAt:       time.Now().Add(-60 * time.Minute),
+		}
+		_ = s.CreateJob(ctx, jobStep)
+
+		reqBody := map[string]any{
+			"job_id":       jobStep.ID,
+			"requester_id": tokenEmp,
+			"latitude":     32.7,
+			"longitude":    30.0,
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", "10.0.0.3")
+		rec := httptest.NewRecorder()
+
+		u.setTestLocationLastUpdate(jobStep.ID, time.Now().Add(-10*time.Second))
+		u.UpdateJobLocation(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("Expected 400 Bad Request for per-step speed violation, got %d: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "implausible_speed") {
+			t.Errorf("Expected implausible_speed error code, got %s", rec.Body.String())
+		}
+	})
+}
+
 func floatPtr(f float64) *float64 { return &f }

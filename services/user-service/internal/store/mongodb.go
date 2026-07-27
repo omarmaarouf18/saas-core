@@ -840,13 +840,18 @@ func (s *MongoDB) GetRatingsForUser(ctx context.Context, userID string) ([]*mode
 	return ratings, nil
 }
 
-// UpdateJobLocation updates the current live location of the employee for a job.
+// UpdateJobLocation updates the current live location of the employee for a job and appends to waypoints.
 func (s *MongoDB) UpdateJobLocation(ctx context.Context, id string, lat, lon float64) error {
 	res, err := s.jobs.UpdateOne(ctx, bson.M{"_id": id},
-		bson.M{"$set": bson.M{
-			"current_location": models.Location{Latitude: lat, Longitude: lon},
-			"updated_at":       time.Now().UTC(),
-		}})
+		bson.M{
+			"$set": bson.M{
+				"current_location": models.Location{Latitude: lat, Longitude: lon},
+				"updated_at":       time.Now().UTC(),
+			},
+			"$push": bson.M{
+				"waypoints": models.Location{Latitude: lat, Longitude: lon},
+			},
+		})
 	if err != nil {
 		return fmt.Errorf("store: update job location: %w", err)
 	}

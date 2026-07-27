@@ -4,6 +4,14 @@ This file tracks historical entries for the primary category: **Security Fixes C
 
 ---
 
+## Cumulative Route Speed Check (ADR-0007 Phase 0)
+
+- **Implementation Detail**: Added a cumulative route speed check in `user-service` (`UpdateJobLocation` in `services/user-service/internal/handlers/handlers.go`). Evaluates average velocity across the full route of validated waypoints (`Job.Waypoints` persisted via `$push` in `UpdateJobLocation` in `services/user-service/internal/store/mongodb.go`). If average speed from `CreatedAt` exceeds `MaxReasonableSpeedKmh` (150 km/h), the update is rejected with `implausible_speed` and `IMPLAUSIBLE_SPEED_DETECTED` security event shipping. Added regression test suite `TestUpdateJobLocation_SpeedCheck_CumulativeAndStep`.
+- **Commit SHA**: ``fc880b7d2052b7b50c98d38766df825a4486a64b``
+- **Verification**: Verified via unit tests (`TestUpdateJobLocation_SpeedCheck_CumulativeAndStep`) and `make docs-check`. ✅
+
+
+
 ## Bcrypt Password Hashing
 
 - **Implementation Detail**: Replaced plaintext comparison in auth-service with bcrypt password hashing.
