@@ -79,8 +79,29 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 	}))
 	defer mockAuthServer.Close()
 
-	rdb := redis.NewClient(&redis.Options{Addr: "localhost:6380"})
+	redisURI := os.Getenv("REDIS_URI")
+	var rdbOpts *redis.Options
+	if redisURI != "" {
+		if opts, err := redis.ParseURL(redisURI); err == nil {
+			rdbOpts = opts
+		}
+	}
+	if rdbOpts == nil {
+		redisAddr := os.Getenv("REDIS_ADDR")
+		if redisAddr == "" {
+			redisAddr = "localhost:6379"
+		}
+		rdbOpts = &redis.Options{Addr: redisAddr}
+	}
+	rdb := redis.NewClient(rdbOpts)
 	defer rdb.Close()
+
+	pingCtx, pingCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer pingCancel()
+	if err := rdb.Ping(pingCtx).Err(); err != nil {
+		t.Skipf("Skipping E2E test: Redis not reachable at %s (%v)", rdbOpts.Addr, err)
+		return
+	}
 
 	cfg := &config.Config{
 		AuthServiceURL:         mockAuthServer.URL,
@@ -151,7 +172,13 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 		var trackResp map[string]any
 		json.Unmarshal(rec.Body.Bytes(), &trackResp)
 		jobData, _ := trackResp["job"].(map[string]any)
+		if jobData == nil {
+			t.Fatalf("jobData is nil in TrackJob response: %s", rec.Body.String())
+		}
 		jobID, _ := jobData["id"].(string)
+		if jobID == "" {
+			t.Fatalf("jobID is empty in TrackJob response: %s", rec.Body.String())
+		}
 
 		t.Logf("[RAW RESPONSE TrackJob]: %s", rec.Body.String())
 		if jobData["status"] != string(models.JobStatusAwaitingPriceResponse) {
@@ -184,6 +211,9 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 		var respResp map[string]any
 		json.Unmarshal(rec.Body.Bytes(), &respResp)
 		updatedJob, _ := respResp["job"].(map[string]any)
+		if updatedJob == nil {
+			t.Fatalf("updatedJob is nil in RespondPrice response: %s", rec.Body.String())
+		}
 		if updatedJob["status"] != string(models.JobStatusActive) {
 			t.Errorf("Expected status active, got %v", updatedJob["status"])
 		}
@@ -212,10 +242,19 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 		rec := httptest.NewRecorder()
 		u.TrackJob(rec, req)
 
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("Expected 201 Created on TrackJob Step 3B, got %d: %s", rec.Code, rec.Body.String())
+		}
 		var trackResp map[string]any
 		json.Unmarshal(rec.Body.Bytes(), &trackResp)
 		jobData, _ := trackResp["job"].(map[string]any)
+		if jobData == nil {
+			t.Fatalf("jobData is nil in TrackJob Step 3B response: %s", rec.Body.String())
+		}
 		jobID, _ := jobData["id"].(string)
+		if jobID == "" {
+			t.Fatalf("jobID is empty in TrackJob Step 3B response: %s", rec.Body.String())
+		}
 
 		// Artificially expire proposal in store
 		expiredAt := time.Now().UTC().Add(-10 * time.Minute)
@@ -243,6 +282,9 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 
 		// Verify job is now cancelled in DB with reason price_proposal_expired
 		dbJob := s.GetJob(ctx, jobID)
+		if dbJob == nil {
+			t.Fatalf("dbJob is nil for jobID %s in Step 3B", jobID)
+		}
 		if dbJob.Status != models.JobStatusCancelled {
 			t.Errorf("Expected DB job status to be cancelled, got %s", dbJob.Status)
 		}
@@ -272,11 +314,14 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 
 		t.Logf("[RAW RESPONSE Delivery TrackJob]: status=%d body=%s", rec.Code, rec.Body.String())
 		if rec.Code != http.StatusCreated {
-			t.Fatalf("Expected 201 Created on delivery TrackJob, got %d", rec.Code)
+			t.Fatalf("Expected 201 Created on delivery TrackJob, got %d: %s", rec.Code, rec.Body.String())
 		}
 		var trackResp map[string]any
 		json.Unmarshal(rec.Body.Bytes(), &trackResp)
 		jobData, _ := trackResp["job"].(map[string]any)
+		if jobData == nil {
+			t.Fatalf("jobData is nil in delivery TrackJob response: %s", rec.Body.String())
+		}
 
 		if jobData["status"] != string(models.JobStatusActive) {
 			t.Errorf("Expected delivery job status to immediately be 'active', got %v", jobData["status"])
@@ -309,14 +354,26 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 		rec := httptest.NewRecorder()
 		u.TrackJob(rec, req)
 
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("Expected 201 Created on TrackJob Step 4, got %d: %s", rec.Code, rec.Body.String())
+		}
 		var trackResp map[string]any
 		json.Unmarshal(rec.Body.Bytes(), &trackResp)
 		t.Logf("[RAW TrackJob Step 4]: code=%d body=%s", rec.Code, rec.Body.String())
 		jobData, _ := trackResp["job"].(map[string]any)
+		if jobData == nil {
+			t.Fatalf("jobData is nil in TrackJob Step 4 response: %s", rec.Body.String())
+		}
 		jobID, _ := jobData["id"].(string)
+		if jobID == "" {
+			t.Fatalf("jobID is empty in TrackJob Step 4 response: %s", rec.Body.String())
+		}
 
 		// Before acceptance: escrow balance should still be untouched (no escrow locked during TrackJob for transport)
 		ownerWalletBefore := s.GetWallet(ctx, ownerID)
+		if ownerWalletBefore == nil {
+			t.Fatalf("ownerWalletBefore is nil for ownerID %s", ownerID)
+		}
 		t.Logf("[WALLET BEFORE ACCEPTANCE]: total=%.2f escrow=%.2f", ownerWalletBefore.TotalBalance, ownerWalletBefore.EscrowBalance)
 		if ownerWalletBefore.EscrowBalance != 0.0 {
 			t.Errorf("Expected 0 locked escrow during TrackJob for transport, got %.2f", ownerWalletBefore.EscrowBalance)
@@ -335,9 +392,15 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 		u.RespondPrice(rec, req)
 
 		t.Logf("[RAW RESPONSE Non-COD RespondPrice Accept]: status=%d body=%s", rec.Code, rec.Body.String())
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK on respond-price accept Step 4, got %d: %s", rec.Code, rec.Body.String())
+		}
 
 		// Verify agreed price is $100.00
 		dbJob := s.GetJob(ctx, jobID)
+		if dbJob == nil {
+			t.Fatalf("dbJob is nil for jobID %s in Step 4", jobID)
+		}
 		if dbJob.AgreedPrice == nil || *dbJob.AgreedPrice != 100.0 {
 			t.Errorf("Expected agreed_price 100.0, got %v", dbJob.AgreedPrice)
 		}

@@ -79,8 +79,29 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 	}))
 	defer mockAuthServer.Close()
 
-	rdb := redis.NewClient(&redis.Options{Addr: "localhost:6380"})
+	redisURI := os.Getenv("REDIS_URI")
+	var rdbOpts *redis.Options
+	if redisURI != "" {
+		if opts, err := redis.ParseURL(redisURI); err == nil {
+			rdbOpts = opts
+		}
+	}
+	if rdbOpts == nil {
+		redisAddr := os.Getenv("REDIS_ADDR")
+		if redisAddr == "" {
+			redisAddr = "localhost:6379"
+		}
+		rdbOpts = &redis.Options{Addr: redisAddr}
+	}
+	rdb := redis.NewClient(rdbOpts)
 	defer rdb.Close()
+
+	pingCtx, pingCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer pingCancel()
+	if err := rdb.Ping(pingCtx).Err(); err != nil {
+		t.Skipf("Skipping E2E test: Redis not reachable at %s (%v)", rdbOpts.Addr, err)
+		return
+	}
 
 	cfg := &config.Config{
 		AuthServiceURL:         mockAuthServer.URL,
@@ -153,10 +174,19 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 		rec := httptest.NewRecorder()
 		u.TrackJob(rec, req)
 
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("Expected 201 Created on TrackJob Step 3, got %d: %s", rec.Code, rec.Body.String())
+		}
 		var trackResp map[string]any
 		json.Unmarshal(rec.Body.Bytes(), &trackResp)
 		jobData, _ := trackResp["job"].(map[string]any)
+		if jobData == nil {
+			t.Fatalf("jobData is nil in TrackJob Step 3 response: %s", rec.Body.String())
+		}
 		jobID, _ := jobData["id"].(string)
+		if jobID == "" {
+			t.Fatalf("jobID is empty in TrackJob Step 3 response: %s", rec.Body.String())
+		}
 
 		// Simulate employee recording waypoints total ~5 km (far less than booked 100 km)
 		_ = s.UpdateJobLocation(ctx, jobID, 30.045, 30.0)
@@ -190,6 +220,9 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 
 		// Confirm DB status is escrow_reconciliation_required (not auto-completed)
 		dbJob := s.GetJob(ctx, jobID)
+		if dbJob == nil {
+			t.Fatalf("dbJob is nil for jobID %s in Step 3", jobID)
+		}
 		if dbJob.Status != models.JobStatusEscrowReconciliationRequired {
 			t.Errorf("Expected DB job status escrow_reconciliation_required, got %s", dbJob.Status)
 		}
@@ -217,10 +250,19 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 		rec := httptest.NewRecorder()
 		u.TrackJob(rec, req)
 
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("Expected 201 Created on TrackJob Step 4, got %d: %s", rec.Code, rec.Body.String())
+		}
 		var trackResp map[string]any
 		json.Unmarshal(rec.Body.Bytes(), &trackResp)
 		jobData, _ := trackResp["job"].(map[string]any)
+		if jobData == nil {
+			t.Fatalf("jobData is nil in TrackJob Step 4 response: %s", rec.Body.String())
+		}
 		jobID, _ := jobData["id"].(string)
+		if jobID == "" {
+			t.Fatalf("jobID is empty in TrackJob Step 4 response: %s", rec.Body.String())
+		}
 		lockedEscrow, _ := jobData["locked_escrow_amount"].(float64)
 
 		// Simulate driver taking a detour (waypoints adding ~27 km -> A_actual ~$65.60)
@@ -271,10 +313,19 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 		rec := httptest.NewRecorder()
 		u.TrackJob(rec, req)
 
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("Expected 201 Created on TrackJob Step 5, got %d: %s", rec.Code, rec.Body.String())
+		}
 		var trackResp map[string]any
 		json.Unmarshal(rec.Body.Bytes(), &trackResp)
 		jobData, _ := trackResp["job"].(map[string]any)
+		if jobData == nil {
+			t.Fatalf("jobData is nil in TrackJob Step 5 response: %s", rec.Body.String())
+		}
 		jobID, _ := jobData["id"].(string)
+		if jobID == "" {
+			t.Fatalf("jobID is empty in TrackJob Step 5 response: %s", rec.Body.String())
+		}
 
 		// Submit instantaneous jump: (30.0, 30.0) -> (40.0, 40.0) = ~1400 km jump in 1 second
 		locReq := map[string]any{
