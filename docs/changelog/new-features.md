@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **New Features Cha
 
 ---
 
+## ADR-0008 Live Employee Map Tracking Frontend Implementation
+
+- **Implementation Detail**: Implemented ADR-0008 Flutter frontend screens, provider, and models for live employee map tracking using `flutter_map` (v7.0.2) and OpenStreetMap raster tiles with required custom `User-Agent` header (`QuickDeliveryApp/1.0`) and configurable compile-time tile URL template (`MAP_TILE_URL`). Created `OwnerFleetMapScreen` for tenant owners (subscribing to `fleet:<owner_id>` WebSocket stream with initial state hydration via `GET /users/jobs/owner`) and `CustomerJobMapScreen` for customer active job tracking (subscribing to `job:<job_id>` WebSocket stream with initial state hydration via `GET /users/jobs/get`). Added `MapTrackingProvider` with initial HTTP hydration and WebSocket streaming, exponential backoff reconnection, and connection status banners.
+- **Commit SHA**: `<PENDING_SHA>`
+- **Verification**: Verified via `flutter analyze` (0 issues) and `flutter test` (6 new widget unit tests in `map_tracking_test.dart` passing cleanly). ✅
+
 ## Negotiable Transport Pricing Handler Wiring & Endpoints
 
 - **Implementation Detail**: Updated `TrackJob` for `transport` category services to initialize `JobStatusAwaitingPriceResponse`, compute `SuggestedPrice`, validate optional customer initial proposal, and defer escrow locking. Added endpoints `POST /users/jobs/propose-price` (single-shot proposal enforcement, ±50% bound check, 5m expiry timer) and `POST /users/jobs/respond-price` (accept sets `AgreedPrice` and activates job; decline cancels with `price_disagreement`). Implemented lazy proposal expiry in `GetJob` and proposal endpoints. Added unit test suite `TestNegotiableTransportPricing`.

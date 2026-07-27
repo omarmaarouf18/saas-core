@@ -37,9 +37,11 @@
     *   *Subscription Screen*: **[VERIFIED]** Created `SubscriptionScreen` enabling owners to select subscription tiers. Integrates with the backend POST `/users/subscription` endpoint via `OwnerProvider`. Supports manual activation warnings for Professional plan and instant downgrade to Free plan. Styled completely using `Theme.of(context)` color roles.
     *   *Blind Rating Screen*: **[VERIFIED]** Implemented `RatingScreen` supporting 1-5 star selection and text comment inputs. Connects to POST `/users/jobs/rate` using `MarketplaceProvider`. Features live progress checks querying GET `/users/ratings` to render partner rating status dynamically.
     *   *Rating Summary Card*: **[VERIFIED]** Designed `RatingSummaryCard` showing verified average stars score and review count. Embedded inside owner reputation view and customer marketplace cards.
- 
+*   **Phase 8: Live Employee Map Tracking (ADR-0008)** — **[100% COMPLETE & VERIFIED]**
+    *   *Live Employee Map Tracking*: **[VERIFIED]** Implemented flutter_map OpenStreetMap raster tile rendering with custom User-Agent policy header `QuickDeliveryApp/1.0` and configurable tile URL constant (`MAP_TILE_URL`). Created `OwnerFleetMapScreen` for tenant owners (subscribing to `fleet:<owner_id>` WebSocket stream with hydration via `GET /users/jobs/owner`) and `CustomerJobMapScreen` for active customer job tracking (subscribing to `job:<job_id>` WebSocket stream with hydration via `GET /users/jobs/get`). Verified via widget tests in `map_tracking_test.dart`.
+
  ---
- 
+
  ## Verified Capabilities
  *   **Owner/Customer Signup**: Sends email/password/role parameters to backend. Returns `dev_otp` in development.
  *   **2FA OTP Verification**: Validates 6-digit code and securely stores signed JWT session details.
@@ -51,9 +53,10 @@
  *   **Username Propagation & Chat Snapshot**: Propagates registered usernames to dashboard welcome messages and profile detail panels, and displays `senderUsername` in the chat UI including fallback support and Agent display name resolution.
  *   **Real-Time Chat & History Sync**: Fetches message history on load, establishes WebSocket connection, supports dual-direction message broadcasts, handles reconnection backoff, and restricts channel access securely.
  *   **SSE Notifications Stream**: Establishes Server-Sent Events subscription, decodes real-time JSON alert payloads, manages local message history, filters by category, groups alerts chronologically, and integrates unread notification badges in dashboard AppBars.
- 
+ *   **Live Employee Map Tracking**: Hydrates employee locations from HTTP API endpoints, connects to chat-service WebSocket hub channels (`fleet:<owner_id>` / `job:<job_id>`), updates employee marker positions in real time, and displays reconnection banners gracefully.
+
  ## File Tracking Index
- 
+
  The following Dart implementation files are currently active in the codebase and tracked by the structural drift check:
  * **Models**:
    * `user_profile.dart`
@@ -61,6 +64,7 @@
    * `marketplace_service.dart`
    * `chat_message.dart`
    * `notification_model.dart`
+   * `employee_marker.dart`
  * **Theme**:
    * `theme.dart`
  * **Providers**:
@@ -70,6 +74,7 @@
    * `marketplace_provider.dart`
    * `chat_provider.dart`
    * `notifications_provider.dart`
+   * `map_tracking_provider.dart`
  * **Screens**:
    * `employee_jobs_screen.dart`
    * `employee_screen.dart`
@@ -85,6 +90,8 @@
    * `notifications_screen.dart`
    * `subscription_screen.dart`
    * `rating_screen.dart`
+   * `owner_fleet_map_screen.dart`
+   * `customer_job_map_screen.dart`
  * **Widgets**:
    * `rating_summary_card.dart`
    * `primary_button.dart`

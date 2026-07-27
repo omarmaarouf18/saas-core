@@ -11,6 +11,7 @@ import 'providers/employee_jobs_provider.dart';
 import 'providers/marketplace_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/notifications_provider.dart';
+import 'providers/map_tracking_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -39,6 +40,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => MarketplaceProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => ChatProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => NotificationsProvider(apiClient)),
+        ChangeNotifierProvider(create: (_) => MapTrackingProvider(apiClient)),
       ],
       child: const MyApp(),
     ),
