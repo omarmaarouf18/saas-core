@@ -13,6 +13,9 @@ When running multiple service replicas behind `api-gateway`, a client connected 
 
 All other core microservices (`api-gateway`, `auth-service`, `user-service`) are already horizontally scale-safe via Redis-backed rate limiting/idempotency, stateless JWT authentication, and pooled database connections.
 
+> [!NOTE]
+> **Correction Note (2026-07-27)**: The statement above asserting that `user-service` was fully horizontally scale-safe at the time this ADR was written was partially inaccurate. While `TrackJob`'s idempotency key handling was indeed Redis-backed, `UpdateJobLocation`'s per-job location update throttle state (`locationInFlight` and `locationLastUpdate`) relied on in-process Go maps (`map[string]bool` / `map[string]time.Time`). This in-memory throttle state has been migrated to Redis-backed atomic key evaluation with TTLs in `user-service` (`services/user-service/internal/handlers/handlers.go`, commit `24b10339f37342e4280bdc9d32099bb44e5a7fba`).
+
 ## Decision
 We decided to implement horizontal scale safety for both real-time hubs using **Redis Pub/Sub** via `github.com/redis/go-redis/v9` (reusing `shared/infra/ratelimit.NewRedisClient`).
 

@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## user-service Redis-Backed Location Update Throttle
+
+- **Implementation Detail**: Replaced in-process Go maps (`locationInFlight` and `locationLastUpdate`) in `user-service` (`UpdateJobLocation` in `services/user-service/internal/handlers/handlers.go`) with Redis-backed atomic key evaluation (`loc:inflight:<job_id>` with 15s TTL and `loc:lastupdate:<job_id>` with 300s TTL) executed via an atomic Lua script. Added fail-closed logging (`[SECURITY CRITICAL]`) on Redis errors, preserved in-memory fallback for nil-Redis environments, updated ADR-0005 with a dated correction note, and added multi-instance test coverage (`TestUpdateJobLocation_RedisBackedThrottle_MultiInstance`).
+- **Commit SHA**: ``24b10339f37342e4280bdc9d32099bb44e5a7fba``
+- **Verification**: Verified via `go test ./services/user-service/... -v -race -count=1` passing all 100+ tests including `UpdateJobLocation Throttle Error Rollback` and `TestUpdateJobLocation_RedisBackedThrottle_MultiInstance`. ✅
+
+
 ## chat-service Redis Pub/Sub Horizontal Scaling
 
 - **Implementation Detail**: Implemented dynamic per-channel Redis Pub/Sub horizontal scaling in `chat-service` (`internal/chat/hub.go`). Hub dynamically subscribes to `chat:channel:<name>` on the first local client join and unsubscribes on the last local client leave. Published messages undergo immediate in-process delivery on the origin instance plus Redis `Publish()` for remote replica fan-out, using `OriginInstanceID` tagging to eliminate self-loopback de-duplication latency. Added multi-instance `miniredis` test coverage.
