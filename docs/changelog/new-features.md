@@ -222,6 +222,12 @@ This file tracks historical entries for the primary category: **New Features Cha
 - **Commit SHA**: ``a95e5254d6b58706f6174a67187b0b722c43f711``
 - **Verification**: Verified via unit tests (`TestResendDispatcher_Dispatch_Success`, `TestResendDispatcher_Dispatch_APIErrorResponse`, `TestResendDispatcher_Dispatch_NetworkError`, `TestResendDispatcher_Dispatch_InputSanitizationAndValidation`) using an `httptest.Server` mock, and full-scope gosec scanning. ✅
 
+## Forgot Password & Reset Password Endpoints
+
+- **Implementation Detail**: Implemented `POST /auth/forgot-password` and `POST /auth/reset-password` in `auth-service` reusing the existing AES-256-GCM encrypted OTP infrastructure (`SetOTP` / `VerifyOTP` in `mongodb.go`). `POST /auth/forgot-password` returns an anti-enumeration generic 200 OK response regardless of email existence, rate limits per IP and per email, generates/encrypts a 5-minute OTP code, and dispatches it via `a.dispatcher.Dispatch`. `POST /auth/reset-password` validates `email`, `otp`, and `new_password`, enforces IP/email rate-limiting lockouts, calls `store.VerifyOTP`, bcrypt-hashes the new password, updates the user password, and clears OTP fields (`otp_code`, `otp_verified`, `otp_expires_at`) to prevent replay attacks. Added unit test suite covering (a) identical anti-enumeration response for existing vs non-existent emails, (b) forgot-password rate limiting, (c) reset-password password update and old password failure, (d) invalid/expired OTP rejection with generic error & rate-limit recording, (e) missing password policy validation, and (f) OTP reuse prevention. Updated API map documentation via `make docs`.
+- **Commit SHA**: ``ee443e39358b7f4c06fe7eb2f2a57b2f4e4c8d79``
+- **Verification**: Verified via `go test -v ./internal/handlers -run "TestForgotPassword_|TestResetPassword_"` (6/6 pass) and `make docs`. ✅
+
 
 
 
