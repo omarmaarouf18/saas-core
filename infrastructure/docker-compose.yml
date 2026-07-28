@@ -164,6 +164,8 @@ services:
       TLS_KEY_PATH: /app/certs/auth-service.key
       TLS_CA_PATH: /app/certs/ca.crt
       USER_SERVICE_URL: ${USER_SERVICE_URL}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
     depends_on:
       mongo:
         condition: service_healthy
