@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -348,5 +349,139 @@ func TestProposePrice_ConcurrencyRace_OverwrittenProposalPrevention(t *testing.T
 	updatedJob := s.GetJob(ctx, jobID)
 	if updatedJob.ProposedPrice == nil {
 		t.Fatalf("Expected ProposedPrice to be set on job")
+	}
+}
+
+// TestRespondPrice_JobStateChanged_RollbackFailure_ReconciliationFallback verifies that when
+// UpdateJobAgreedPrice fails with job_state_changed after escrow lock and RollbackEscrow fails twice,
+// the job is marked as escrow_reconciliation_required with reconciliation notes, and HTTP 409 is returned.
+func TestRespondPrice_JobStateChanged_RollbackFailure_ReconciliationFallback(t *testing.T) {
+	jwtSecret := "NrrYbDqT4bRD/ADvJ5U2VKmLqXr8nk21IRVAbrzVI1mqEhuMhII3IO26PPa4qJtR"
+	os.Setenv("JWT_SECRET", jwtSecret)
+	jwtutil.Init(jwtSecret)
+
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("saas_platform_rollback_fail_%d", time.Now().UnixNano())
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping rollback failure test: MongoDB not available at %s (%v)", mongoURI, err)
+		return
+	}
+	defer func() {
+		_ = s.DropDatabase(context.Background())
+		s.Close(context.Background())
+	}()
+
+	ownerID := "owner-rollback-fail"
+	empID := "emp-rollback-fail"
+	custID := "cust-rollback-fail"
+	svcID := "svc-rollback-fail"
+
+	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		id := r.URL.Query().Get("id")
+
+		if id == ownerID {
+			json.NewEncoder(w).Encode(map[string]any{"id": id, "role": "owner", "kyc_status": "approved", "is_active": true, "tenant_id": id})
+			return
+		}
+		if id == empID {
+			json.NewEncoder(w).Encode(map[string]any{"id": id, "role": "employee", "owner_id": ownerID, "tenant_id": ownerID, "is_active": true})
+			return
+		}
+		if id == custID {
+			json.NewEncoder(w).Encode(map[string]any{"id": id, "role": "customer", "tenant_id": ownerID, "is_active": true})
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer mockAuthServer.Close()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	cfg := &config.Config{AuthServiceURL: mockAuthServer.URL}
+	u := NewUserService(s, cfg, rdb)
+
+	svc := &models.Service{ID: svcID, TenantID: ownerID, Name: "Ride", Category: "transport", BasePrice: 50.0}
+	s.CreateService(ctx, svc)
+	_ = s.Deposit(ctx, ownerID, 500.0)
+
+	jobID := "job-rollback-fail-1"
+	job := &models.Job{
+		ID:             jobID,
+		OwnerID:        ownerID,
+		EmployeeID:     empID,
+		UserID:         custID,
+		ServiceID:      svcID,
+		Status:         models.JobStatusAwaitingPriceResponse,
+		PaymentMethod:  "card",
+		SuggestedPrice: 100.0,
+		CreatedAt:      time.Now().UTC(),
+		UpdatedAt:      time.Now().UTC(),
+	}
+	_ = s.CreateJob(ctx, job)
+
+	empToken, _ := jwtutil.GenerateToken(empID, "employee", ownerID, "emp@example.com")
+
+	// Hook 1: Right before UpdateJobAgreedPrice write, simulate concurrent status change in DB
+	u.updateJobAgreedPriceBeforeWriteHook = func(ctx context.Context) {
+		_ = s.UpdateJobCancellation(ctx, jobID, models.JobStatusCancelled, "concurrent_cancel_race")
+	}
+	defer func() { u.updateJobAgreedPriceBeforeWriteHook = nil }()
+
+	// Hook 2: Force RollbackEscrow to fail twice
+	rollbackCallCount := 0
+	u.rollbackEscrowHook = func(ctx context.Context, tenantID string, amount float64) error {
+		rollbackCallCount++
+		return fmt.Errorf("simulated rollback failure on attempt %d", rollbackCallCount)
+	}
+	defer func() { u.rollbackEscrowHook = nil }()
+
+	reqBody := fmt.Sprintf(`{"job_id":%q,"decision":"accept"}`, jobID)
+	req := httptest.NewRequest("POST", "/users/jobs/respond-price", bytes.NewBufferString(reqBody))
+	req.Header.Set("Authorization", "Bearer "+empToken)
+	rec := httptest.NewRecorder()
+
+	u.RespondPrice(rec, req)
+
+	// 1. Client receives HTTP 409 Conflict with error "job_state_changed"
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("Expected 409 Conflict, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte("job_state_changed")) {
+		t.Errorf("Expected response body to contain job_state_changed, got %s", rec.Body.String())
+	}
+
+	// 2. Rollback was attempted twice (initial + 1 retry)
+	if rollbackCallCount != 2 {
+		t.Errorf("Expected RollbackEscrow to be called twice, got %d", rollbackCallCount)
+	}
+
+	// 3. Database job status updated to escrow_reconciliation_required
+	updatedJob := s.GetJob(ctx, jobID)
+	if updatedJob.Status != models.JobStatusEscrowReconciliationRequired {
+		t.Errorf("Expected job status to be %s, got %s", models.JobStatusEscrowReconciliationRequired, updatedJob.Status)
+	}
+	if !strings.Contains(updatedJob.ReconciliationNote, "Job state changed concurrently during RespondPrice accept") {
+		t.Errorf("Expected ReconciliationNote to describe race + rollback failure, got %q", updatedJob.ReconciliationNote)
+	}
+	if !strings.Contains(updatedJob.EscrowFailureReason, "simulated rollback failure") {
+		t.Errorf("Expected EscrowFailureReason to be set, got %q", updatedJob.EscrowFailureReason)
+	}
+	if updatedJob.LockedEscrowAmount != 100.0 {
+		t.Errorf("Expected LockedEscrowAmount to be 100.0, got %.2f", updatedJob.LockedEscrowAmount)
 	}
 }

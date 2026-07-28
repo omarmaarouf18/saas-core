@@ -92,6 +92,8 @@ type UserService struct {
 	updateJobLocationBeforeWriteHook func(ctx context.Context)
 	// Test hook to force RollbackEscrow to fail for deterministic testing
 	rollbackEscrowHook func(ctx context.Context, tenantID string, amount float64) error
+	// Test hook to simulate concurrent job status change before UpdateJobAgreedPrice
+	updateJobAgreedPriceBeforeWriteHook func(ctx context.Context)
 }
 
 func (u *UserService) clearLocationThrottleState(jobID string) {
@@ -2595,13 +2597,25 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 		job.Status = models.JobStatusActive
 		job.UpdatedAt = now
 
+		if u.updateJobAgreedPriceBeforeWriteHook != nil {
+			u.updateJobAgreedPriceBeforeWriteHook(ctx)
+		}
+
 		if err := u.store.UpdateJobAgreedPrice(ctx, job.ID, &activePrice, models.JobStatusActive); err != nil {
 			if strings.Contains(err.Error(), "job_state_changed") {
 				if job.PaymentMethod != "cod" {
 					log.Printf("[USER] Job state changed concurrently for job %s during RespondPrice accept. Rolling back escrow lock.", job.ID)
 					rollbackErr := u.performRollbackEscrow(context.Background(), job.OwnerID, activePrice)
 					if rollbackErr != nil {
-						log.Printf("[CRITICAL ERROR] failed to rollback escrow lock on job_state_changed for owner %s (job %s): %v", job.OwnerID, job.ID, rollbackErr)
+						log.Printf("[CRITICAL ERROR] initial escrow rollback attempt failed on job_state_changed for owner %s (job %s): %v. Retrying rollback once...", job.OwnerID, job.ID, rollbackErr)
+						rollbackErr = u.performRollbackEscrow(context.Background(), job.OwnerID, activePrice)
+					}
+					if rollbackErr != nil {
+						log.Printf("[CRITICAL ERROR] failed to rollback escrow lock on job_state_changed for owner %s (job %s): %v. Marking job for reconciliation.", job.OwnerID, job.ID, rollbackErr)
+						note := fmt.Sprintf("Job state changed concurrently during RespondPrice accept. Locked escrow amount: %.2f. Escrow lock rollback failed: %v", activePrice, rollbackErr)
+						if recErr := u.store.UpdateJobReconciliation(context.Background(), job.ID, models.JobStatusEscrowReconciliationRequired, note, rollbackErr.Error(), activePrice); recErr != nil {
+							log.Printf("[CRITICAL ERROR] failed to set reconciliation status on job %s: %v", job.ID, recErr)
+						}
 					}
 				}
 				writeJSON(w, http.StatusConflict, map[string]string{
