@@ -22,6 +22,8 @@ This directory contains the Flutter frontend application for the Quick Delivery 
 The client points to the API gateway URL. By default, it targets:
 `https://localhost:8080/api/v1`
 
+For detailed per-platform networking setup (including physical Android devices via `adb reverse`, iOS simulators, physical iOS devices, and clean rebuild steps), consult [CONNECTING_TO_BACKEND.md](CONNECTING_TO_BACKEND.md).
+
 ### Method 1: Using compile-time environment definitions (Recommended)
 You can customize the base URL at run/build time using the `--dart-define` flag:
 ```bash

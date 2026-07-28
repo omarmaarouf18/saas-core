@@ -14,6 +14,8 @@ This sets `core.hooksPath` to `.githooks/` in your local git config. The hook
 lives at `.githooks/pre-push` and is tracked in the repo so it stays up to date
 with pulls. You can also run the same checks manually at any time via `make ci`.
 
+For instructions on connecting Flutter apps running on physical devices, Android emulators, or iOS simulators to the local Docker Compose backend, consult [frontend/CONNECTING_TO_BACKEND.md](frontend/CONNECTING_TO_BACKEND.md).
+
 ## Manual KYC Approval Process (Ops Runbook)
 
 To maintain security and avoid exposing administrative endpoints that could be targeted by attackers, Know Your Customer (KYC) approval for tenant owners is deliberately **not** automated or exposed via in-app API endpoints.
@@ -189,6 +191,7 @@ The following documentation resources map the Quick Delivery platform architectu
 
 ### Frontend (Flutter Client)
 *   **[frontend/README.md](frontend/README.md)** — Practical developer-facing setup, run instructions, and target platform build scripts.
+*   **[frontend/CONNECTING_TO_BACKEND.md](frontend/CONNECTING_TO_BACKEND.md)** — Per-platform network setup guide for connecting emulators and physical devices to the local backend.
 *   **[docs/frontend/STATUS.md](docs/frontend/STATUS.md)** — Current frontend phase completion progress and verified client capabilities.
 *   **[docs/frontend/ARCHITECTURE.md](docs/frontend/ARCHITECTURE.md)** — Technical design specifications of the client, state managers, directory layouts, and socket subscribers.
 
