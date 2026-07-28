@@ -783,8 +783,8 @@ func TestUserServiceHandlers(t *testing.T) {
 		reqBody := map[string]any{
 			"job_id":       "active-job-777",
 			"requester_id": tokenEmployee,
-			"latitude":     12.34,
-			"longitude":    56.78,
+			"latitude":     30.0,
+			"longitude":    30.0,
 		}
 		body, _ := json.Marshal(reqBody)
 

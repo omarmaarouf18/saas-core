@@ -700,6 +700,9 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 	}
 	dist := haversineKm(job.Location.Latitude, job.Location.Longitude, svc.Latitude, svc.Longitude)
 	amount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
+	if job.AgreedPrice != nil && *job.AgreedPrice > 0 {
+		amount = *job.AgreedPrice
+	}
 
 	if job.PaymentMethod != "cod" && job.LockedEscrowAmount == 0 {
 		log.Printf("[SECURITY WARNING] LockedEscrowAmount is 0 for non-COD job %s during CompleteJob. Payout aborted.", job.ID)
@@ -1970,7 +1973,7 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 	}
 	timeDiff := now.Sub(lastTime)
 	hours := timeDiff.Hours()
-	if hours > 0 {
+	if hours > 0 && dist > 0.001 {
 		speed := dist / hours
 		if speed > MaxReasonableSpeedKmh {
 			rejectImplausibleSpeed(speed, "step")
@@ -1991,7 +1994,7 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 
 	totalTimeDiff := now.Sub(job.CreatedAt)
 	totalHours := totalTimeDiff.Hours()
-	if totalHours > 0 {
+	if totalHours > 0 && cumDist > 0.001 {
 		cumSpeed := cumDist / totalHours
 		if cumSpeed > MaxReasonableSpeedKmh {
 			rejectImplausibleSpeed(cumSpeed, "cumulative")
