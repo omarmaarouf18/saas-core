@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../core/api_client.dart';
+import '../core/error_messages.dart';
 import '../models/employee_marker.dart';
 import '../models/job.dart';
 
@@ -83,7 +84,8 @@ class MapTrackingProvider extends ChangeNotifier {
         }
       }
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error hydrating owner fleet: $e');
+      _error = friendlyErrorMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -130,7 +132,8 @@ class MapTrackingProvider extends ChangeNotifier {
         }
       }
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error hydrating customer job: $e');
+      _error = friendlyErrorMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -215,9 +218,10 @@ class MapTrackingProvider extends ChangeNotifier {
         },
       );
     } catch (e) {
+      debugPrint('Error establishing map WebSocket: $e');
       _isConnecting = false;
       _isConnected = false;
-      _error = e.toString();
+      _error = friendlyErrorMessage(e);
       notifyListeners();
       _scheduleReconnect();
     }

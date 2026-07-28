@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/api_client.dart';
+import '../core/error_messages.dart';
 
 class OwnerProvider extends ChangeNotifier {
   final ApiClient apiClient;
@@ -46,7 +47,8 @@ class OwnerProvider extends ChangeNotifier {
           .get('/users/ledger', queryParams: {'tenant_id': tenantId});
       _ledgerEntries = ledgerRes['entries'] as List<dynamic>? ?? [];
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error fetching owner dashboard data: $e');
+      _error = friendlyErrorMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -66,7 +68,8 @@ class OwnerProvider extends ChangeNotifier {
       // Re-fetch wallet and ledger data on success
       await fetchDashboardData(token);
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error processing owner deposit: $e');
+      _error = friendlyErrorMessage(e);
       rethrow;
     } finally {
       _isLoading = false;
@@ -102,7 +105,8 @@ class OwnerProvider extends ChangeNotifier {
       });
       return res;
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error registering employee: $e');
+      _error = friendlyErrorMessage(e);
       rethrow;
     } finally {
       _isLoading = false;
@@ -134,7 +138,8 @@ class OwnerProvider extends ChangeNotifier {
       });
       return res;
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error toggling employee status: $e');
+      _error = friendlyErrorMessage(e);
       rethrow;
     } finally {
       _isLoading = false;
@@ -162,7 +167,8 @@ class OwnerProvider extends ChangeNotifier {
       });
       _auditLogEntries = res['entries'] as List<dynamic>? ?? [];
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error fetching audit log: $e');
+      _error = friendlyErrorMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -184,7 +190,8 @@ class OwnerProvider extends ChangeNotifier {
       final res = await apiClient.get('/users/services');
       _services = res['services'] as List<dynamic>? ?? [];
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error fetching services: $e');
+      _error = friendlyErrorMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -220,7 +227,8 @@ class OwnerProvider extends ChangeNotifier {
       await fetchServices();
       return res;
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error creating service: $e');
+      _error = friendlyErrorMessage(e);
       rethrow;
     } finally {
       _isLoading = false;
@@ -255,7 +263,8 @@ class OwnerProvider extends ChangeNotifier {
       }
       return Map<String, dynamic>.from(res);
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error updating subscription: $e');
+      _error = friendlyErrorMessage(e);
       rethrow;
     } finally {
       _isLoading = false;

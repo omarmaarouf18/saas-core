@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/api_client.dart';
+import '../core/error_messages.dart';
 import '../models/user_profile.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -72,7 +73,8 @@ class AuthProvider extends ChangeNotifier {
       });
       return res['dev_otp'] as String?;
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Signup error: $e');
+      _error = friendlyErrorMessage(e);
       return null;
     } finally {
       _isLoading = false;
@@ -103,7 +105,8 @@ class AuthProvider extends ChangeNotifier {
       }
       return res['dev_otp'] as String?;
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Login error: $e');
+      _error = friendlyErrorMessage(e);
       return null;
     } finally {
       _isLoading = false;
@@ -135,7 +138,8 @@ class AuthProvider extends ChangeNotifier {
       }
       return false;
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Verify OTP error: $e');
+      _error = friendlyErrorMessage(e);
       return false;
     } finally {
       _isLoading = false;
@@ -154,7 +158,8 @@ class AuthProvider extends ChangeNotifier {
       });
       return res['dev_otp'] as String?;
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Resend OTP error: $e');
+      _error = friendlyErrorMessage(e);
       return null;
     } finally {
       _isLoading = false;

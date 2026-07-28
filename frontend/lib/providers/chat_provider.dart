@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/io.dart';
 import '../core/api_client.dart';
+import '../core/error_messages.dart';
 import '../models/chat_message.dart';
 
 class ChatProvider extends ChangeNotifier {
@@ -52,8 +53,10 @@ class ChatProvider extends ChangeNotifier {
             .toList();
       }
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
-      if (_error!.contains("not authorized")) {
+      debugPrint('Error fetching chat history: $e');
+      _error = friendlyErrorMessage(e);
+      if (e is ApiClientException &&
+          (e.statusCode == 401 || e.statusCode == 403)) {
         _subscriptionError = "not authorized for this channel";
       }
     } finally {
@@ -100,9 +103,10 @@ class ChatProvider extends ChangeNotifier {
           _handleIncomingData(data);
         },
         onError: (err) {
+          debugPrint('Chat WebSocket error: $err');
           _isConnected = false;
           _isConnecting = false;
-          _error = err.toString();
+          _error = friendlyErrorMessage(err);
           notifyListeners();
           _scheduleReconnect();
         },
@@ -114,9 +118,10 @@ class ChatProvider extends ChangeNotifier {
         },
       );
     } catch (e) {
+      debugPrint('Chat WebSocket connection failed: $e');
       _isConnecting = false;
       _isConnected = false;
-      _error = e.toString();
+      _error = friendlyErrorMessage(e);
       notifyListeners();
       _scheduleReconnect();
     }

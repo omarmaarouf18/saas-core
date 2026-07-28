@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_client_sse/flutter_client_sse.dart';
 import 'package:flutter_client_sse/constants/sse_request_type_enum.dart';
 import '../core/api_client.dart';
+import '../core/error_messages.dart';
 import '../models/notification_model.dart';
 
 class NotificationsProvider extends ChangeNotifier {
@@ -58,14 +59,16 @@ class NotificationsProvider extends ChangeNotifier {
           }
         },
         onError: (e) {
+          debugPrint('SSE stream error: $e');
           _isConnected = false;
-          _error = e.toString();
+          _error = friendlyErrorMessage(e);
           notifyListeners();
         },
       );
     } catch (e) {
+      debugPrint('SSE connection error: $e');
       _isConnected = false;
-      _error = e.toString();
+      _error = friendlyErrorMessage(e);
       notifyListeners();
     }
   }

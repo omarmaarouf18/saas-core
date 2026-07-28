@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/api_client.dart';
+import '../core/error_messages.dart';
 import '../models/reconciliation_job.dart';
 
 class ReconciliationProvider extends ChangeNotifier {
@@ -29,16 +30,9 @@ class ReconciliationProvider extends ChangeNotifier {
       } else {
         _queue = [];
       }
-    } on ApiClientException catch (e) {
-      if (e.statusCode == 401 || e.statusCode == 403) {
-        _error = "Access denied: owner authorization required (${e.message})";
-      } else if (e.statusCode == 429) {
-        _error = e.message;
-      } else {
-        _error = e.message;
-      }
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error fetching reconciliation queue: $e');
+      _error = friendlyErrorMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -61,19 +55,9 @@ class ReconciliationProvider extends ChangeNotifier {
 
       _queue.removeWhere((j) => j.id == jobId);
       return true;
-    } on ApiClientException catch (e) {
-      if (e.statusCode == 409) {
-        _error = "Job already resolved";
-      } else if (e.statusCode == 429) {
-        _error = e.message;
-      } else if (e.statusCode == 401 || e.statusCode == 403) {
-        _error = "Access denied: ${e.message}";
-      } else {
-        _error = e.message;
-      }
-      return false;
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error resolving job: $e');
+      _error = friendlyErrorMessage(e);
       return false;
     } finally {
       _isLoading = false;

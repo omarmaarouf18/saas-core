@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/api_client.dart';
+import '../core/error_messages.dart';
 import '../models/job.dart';
 
 class EmployeeJobsProvider extends ChangeNotifier {
@@ -40,7 +41,8 @@ class EmployeeJobsProvider extends ChangeNotifier {
         _jobs = [];
       }
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error fetching assigned jobs: $e');
+      _error = friendlyErrorMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -61,7 +63,8 @@ class EmployeeJobsProvider extends ChangeNotifier {
         'action': action,
       });
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error simulating employee action: $e');
+      _error = friendlyErrorMessage(e);
       rethrow;
     } finally {
       _isLoading = false;

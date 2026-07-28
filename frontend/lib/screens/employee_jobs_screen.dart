@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
@@ -79,80 +80,20 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
         );
       }
     } catch (e) {
+      debugPrint('Error simulating action: $e');
       if (mounted) {
-        final errorMsg = e.toString();
-        if (errorMsg.contains("employee account is frozen")) {
-          _showErrorDialog(
-            title: "Account Frozen",
-            message:
-                "Operation Denied: Your employee account has been frozen by the tenant administrator. Please contact your manager to resolve this issue.",
-          );
-        } else if (errorMsg.contains("owner KYC approval is pending")) {
-          _showErrorDialog(
-            title: "KYC Approval Pending",
-            message:
-                "Operation Denied: The business owner's KYC verification is still pending. All simulated field operations are blocked until the owner is approved by a super administrator.",
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Simulation Failed: $errorMsg"),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(friendlyErrorMessage(e)),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
     } finally {
       if (mounted) {
         setState(() => _isSimulating = false);
       }
     }
-  }
-
-  void _showErrorDialog({required String title, required String message}) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          title: Row(
-            children: [
-              const Icon(Icons.error_outline, color: AppColors.error),
-              const SizedBox(width: AppSpacing.base),
-              Text(
-                title,
-                style: AppTypography.titleMd.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            message,
-            style: AppTypography.bodyMd.copyWith(
-              color: AppColors.onSurfaceVariant,
-              height: 1.4,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                "Dismiss",
-                style: AppTypography.bodyMd.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   Widget _buildNotificationBell(BuildContext context) {

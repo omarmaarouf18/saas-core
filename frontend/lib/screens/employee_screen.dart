@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
@@ -257,10 +258,11 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                                   );
                                 }
                               } catch (e) {
+                                debugPrint('Error registering worker: $e');
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text(e.toString()),
+                                      content: Text(friendlyErrorMessage(e)),
                                       backgroundColor: AppColors.error,
                                     ),
                                   );
@@ -397,10 +399,11 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                                   );
                                 }
                               } catch (e) {
+                                debugPrint('Error toggling worker status: $e');
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text(e.toString()),
+                                      content: Text(friendlyErrorMessage(e)),
                                       backgroundColor: AppColors.error,
                                     ),
                                   );

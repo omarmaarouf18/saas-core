@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
@@ -419,16 +420,10 @@ class _WalletScreenState extends State<WalletScreen> {
                                 );
                               }
                             } catch (e) {
+                              debugPrint('Error making deposit: $e');
                               setDialogState(() {
                                 isSubmitting = false;
-                                final errMsg = e.toString();
-                                if (errMsg.contains(
-                                    "payment gateway not yet integrated")) {
-                                  dialogError =
-                                      "Deposits aren't available yet — payment gateway integration pending";
-                                } else {
-                                  dialogError = errMsg;
-                                }
+                                dialogError = friendlyErrorMessage(e);
                               });
                             }
                           }

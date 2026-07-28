@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/api_client.dart';
+import '../core/error_messages.dart';
 import '../models/marketplace_service.dart';
 import '../models/job.dart';
 
@@ -50,7 +51,8 @@ class MarketplaceProvider extends ChangeNotifier {
         _services = [];
       }
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error fetching marketplace services: $e');
+      _error = friendlyErrorMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -86,7 +88,8 @@ class MarketplaceProvider extends ChangeNotifier {
       }
       return null;
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error booking job: $e');
+      _error = friendlyErrorMessage(e);
       rethrow;
     } finally {
       _isLoading = false;
@@ -110,7 +113,8 @@ class MarketplaceProvider extends ChangeNotifier {
       }
       return null;
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error fetching job status: $e');
+      _error = friendlyErrorMessage(e);
       return null;
     }
   }
@@ -136,7 +140,8 @@ class MarketplaceProvider extends ChangeNotifier {
       });
       return Map<String, dynamic>.from(res);
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error rating job: $e');
+      _error = friendlyErrorMessage(e);
       rethrow;
     } finally {
       _isLoading = false;
@@ -155,7 +160,8 @@ class MarketplaceProvider extends ChangeNotifier {
       });
       return Map<String, dynamic>.from(res);
     } catch (e) {
-      _error = e.toString().replaceFirst("ApiClientException: ", "");
+      debugPrint('Error fetching ratings: $e');
+      _error = friendlyErrorMessage(e);
       rethrow;
     } finally {
       _isLoading = false;
