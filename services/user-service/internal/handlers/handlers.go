@@ -2537,6 +2537,50 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 		if job.ProposedPrice != nil {
 			activePrice = *job.ProposedPrice
 		}
+
+		// Lock escrow for non-COD negotiable transport jobs
+		if job.PaymentMethod != "cod" {
+			if err := u.store.LockEscrow(ctx, job.OwnerID, job.ID, activePrice); err != nil {
+				log.Printf("[USER] Escrow lock failed for negotiable transport job %s: %v", job.ID, err)
+				writeJSON(w, http.StatusBadRequest, map[string]any{
+					"error":         "escrow_lock_failed",
+					"message":       "price proposal acceptance failed — insufficient wallet funds for escrow lock",
+					"warning":       err.Error(),
+					"job":           job,
+					"escrow_amount": activePrice,
+				})
+				return
+			}
+
+			// Persist the locked escrow amount on the job record
+			if err := u.store.UpdateJobLockedEscrow(ctx, job.ID, activePrice); err != nil {
+				log.Printf("[ERROR] failed to persist locked escrow amount for job %s: %v. Rolling back escrow lock.", job.ID, err)
+				rollbackErr := u.performRollbackEscrow(context.Background(), job.OwnerID, activePrice)
+				if rollbackErr != nil {
+					log.Printf("[CRITICAL ERROR] initial escrow rollback attempt failed for owner %s (job %s): %v. Retrying rollback once...", job.OwnerID, job.ID, rollbackErr)
+					rollbackErr = u.performRollbackEscrow(context.Background(), job.OwnerID, activePrice)
+				}
+
+				if rollbackErr != nil {
+					log.Printf("[CRITICAL ERROR] failed to rollback escrow lock for owner %s (job %s): %v. Marking job for reconciliation instead of completing.", job.OwnerID, job.ID, rollbackErr)
+					note := fmt.Sprintf("Locked escrow amount: %.2f. Escrow lock rollback failed: %v", activePrice, rollbackErr)
+					if recErr := u.store.UpdateJobReconciliation(context.Background(), job.ID, models.JobStatusEscrowReconciliationRequired, note, rollbackErr.Error(), activePrice); recErr != nil {
+						log.Printf("[CRITICAL ERROR] failed to set reconciliation status on job %s: %v", job.ID, recErr)
+					}
+					writeJSON(w, http.StatusInternalServerError, map[string]string{
+						"error": "failed to persist locked escrow and escrow rollback failed; job preserved for reconciliation",
+					})
+					return
+				}
+
+				writeJSON(w, http.StatusInternalServerError, map[string]string{
+					"error": "failed to persist locked escrow, escrow lock rolled back",
+				})
+				return
+			}
+			job.LockedEscrowAmount = activePrice
+		}
+
 		job.AgreedPrice = &activePrice
 		job.Status = models.JobStatusActive
 		job.UpdatedAt = now

@@ -5592,4 +5592,462 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 	})
 }
 
+func TestRespondPrice_EscrowLockingAndReconciliationFallback(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
+		return
+	}
+	defer func() {
+		_ = s.DropDatabase(context.Background())
+		s.Close(context.Background())
+	}()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		id := r.URL.Query().Get("id")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"id":         id,
+			"role":       "owner",
+			"kyc_status": "approved",
+			"is_active":  true,
+			"tenant_id":  id,
+		})
+	}))
+	defer mockAuthServer.Close()
+
+	cfg := &config.Config{
+		AuthServiceURL:         mockAuthServer.URL,
+		InternalServiceToken:   "mock-internal-token",
+		AppEnv:                 "test",
+		AllowTestPaymentBypass: true,
+	}
+
+	u := NewUserService(s, cfg, rdb)
+
+	ownerID := "owner-respond-escrow"
+	_, _ = jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@example.com")
+	_, _ = jwtutil.GenerateToken("cust-respond-escrow", "customer", ownerID, "cust@example.com")
+	tokenEmp, _ := jwtutil.GenerateToken("emp-respond-escrow", "employee", ownerID, "emp@example.com")
+
+	var ipCounter int
+	nextIP := func() string {
+		ipCounter++
+		return fmt.Sprintf("192.168.1.%d", ipCounter)
+	}
+
+	transSvc := &models.Service{
+		ID:               "svc-trans-respond-test",
+		TenantID:         ownerID,
+		Name:             "Transport Service Test",
+		Category:         "transport",
+		TenantBasePrice:  50.0,
+		TenantPricePerKM: 2.0,
+		Latitude:         30.0,
+		Longitude:        30.0,
+	}
+	s.CreateService(ctx, transSvc)
+
+	// 1. Non-COD accept with successful escrow lock
+	t.Run("Non-COD Accept with Successful Escrow Lock", func(t *testing.T) {
+		_ = s.Deposit(ctx, ownerID, 300.0)
+
+		job1 := &models.Job{
+			ID:            "job-respond-wallet-success",
+			OwnerID:       ownerID,
+			UserID:        "cust-respond-escrow",
+			EmployeeID:    "emp-respond-escrow",
+			ServiceID:     transSvc.ID,
+			Status:        models.JobStatusAwaitingPriceResponse,
+			PaymentMethod: "wallet",
+			ProposedPrice: floatPtr(100.0),
+			ProposedBy:    "customer",
+			CreatedAt:     time.Now().UTC(),
+			UpdatedAt:     time.Now().UTC(),
+		}
+		_ = s.CreateJob(ctx, job1)
+
+		respReq := map[string]any{
+			"job_id":          job1.ID,
+			"decision":        "accept",
+			"requester_token": tokenEmp,
+		}
+		body, _ := json.Marshal(respReq)
+		req := httptest.NewRequest("POST", "/users/jobs/respond-price", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec := httptest.NewRecorder()
+		u.RespondPrice(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK on RespondPrice accept, got %d: %s", rec.Code, rec.Body.String())
+		}
+
+		dbJob := s.GetJob(ctx, job1.ID)
+		if dbJob.Status != models.JobStatusActive {
+			t.Errorf("Expected status active, got %s", dbJob.Status)
+		}
+		if dbJob.AgreedPrice == nil || *dbJob.AgreedPrice != 100.0 {
+			t.Errorf("Expected agreed_price 100.0, got %v", dbJob.AgreedPrice)
+		}
+		if dbJob.LockedEscrowAmount != 100.0 {
+			t.Errorf("Expected LockedEscrowAmount 100.0, got %.2f", dbJob.LockedEscrowAmount)
+		}
+
+		wallet, _ := s.GetOrCreateWallet(ctx, ownerID)
+		if wallet.EscrowBalance != 100.0 {
+			t.Errorf("Expected wallet EscrowBalance 100.0, got %.2f", wallet.EscrowBalance)
+		}
+	})
+
+	// 2. COD Accept (No escrow lock attempted)
+	t.Run("COD Accept does not lock escrow", func(t *testing.T) {
+		job2 := &models.Job{
+			ID:            "job-respond-cod-success",
+			OwnerID:       ownerID,
+			UserID:        "cust-respond-escrow",
+			EmployeeID:    "emp-respond-escrow",
+			ServiceID:     transSvc.ID,
+			Status:        models.JobStatusAwaitingPriceResponse,
+			PaymentMethod: "cod",
+			ProposedPrice: floatPtr(80.0),
+			ProposedBy:    "customer",
+			CreatedAt:     time.Now().UTC(),
+			UpdatedAt:     time.Now().UTC(),
+		}
+		_ = s.CreateJob(ctx, job2)
+
+		walletBefore, _ := s.GetOrCreateWallet(ctx, ownerID)
+
+		respReq := map[string]any{
+			"job_id":          job2.ID,
+			"decision":        "accept",
+			"requester_token": tokenEmp,
+		}
+		body, _ := json.Marshal(respReq)
+		req := httptest.NewRequest("POST", "/users/jobs/respond-price", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec := httptest.NewRecorder()
+		u.RespondPrice(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK on COD RespondPrice accept, got %d: %s", rec.Code, rec.Body.String())
+		}
+
+		dbJob := s.GetJob(ctx, job2.ID)
+		if dbJob.Status != models.JobStatusActive {
+			t.Errorf("Expected status active, got %s", dbJob.Status)
+		}
+		if dbJob.LockedEscrowAmount != 0.0 {
+			t.Errorf("Expected LockedEscrowAmount 0.0 for COD, got %.2f", dbJob.LockedEscrowAmount)
+		}
+
+		walletAfter, _ := s.GetOrCreateWallet(ctx, ownerID)
+		if walletAfter.EscrowBalance != walletBefore.EscrowBalance {
+			t.Errorf("Expected EscrowBalance unchanged at %.2f, got %.2f", walletBefore.EscrowBalance, walletAfter.EscrowBalance)
+		}
+	})
+
+	// 3. Escrow Lock Failure (Insufficient Funds)
+	t.Run("Escrow Lock Failure when funds insufficient", func(t *testing.T) {
+		poorOwnerID := "owner-poor-respond"
+		_, _ = jwtutil.GenerateToken(poorOwnerID, "owner", poorOwnerID, "poor@example.com")
+		tokenPoorEmp, _ := jwtutil.GenerateToken("emp-poor-respond", "employee", poorOwnerID, "pooremp@example.com")
+
+		poorSvc := &models.Service{
+			ID:        "svc-poor-1",
+			TenantID:  poorOwnerID,
+			Name:      "Poor Service",
+			Category:  "transport",
+			Latitude:  30.0,
+			Longitude: 30.0,
+		}
+		s.CreateService(ctx, poorSvc)
+
+		job3 := &models.Job{
+			ID:            "job-respond-insufficient-funds",
+			OwnerID:       poorOwnerID,
+			UserID:        "cust-respond-escrow",
+			EmployeeID:    "emp-poor-respond",
+			ServiceID:     poorSvc.ID,
+			Status:        models.JobStatusAwaitingPriceResponse,
+			PaymentMethod: "wallet",
+			ProposedPrice: floatPtr(500.0),
+			ProposedBy:    "customer",
+			CreatedAt:     time.Now().UTC(),
+			UpdatedAt:     time.Now().UTC(),
+		}
+		_ = s.CreateJob(ctx, job3)
+
+		respReq := map[string]any{
+			"job_id":          job3.ID,
+			"decision":        "accept",
+			"requester_token": tokenPoorEmp,
+		}
+		body, _ := json.Marshal(respReq)
+		req := httptest.NewRequest("POST", "/users/jobs/respond-price", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec := httptest.NewRecorder()
+		u.RespondPrice(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("Expected 400 Bad Request on insufficient funds, got %d: %s", rec.Code, rec.Body.String())
+		}
+		var resp map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &resp)
+		if resp["error"] != "escrow_lock_failed" {
+			t.Errorf("Expected error 'escrow_lock_failed', got %v", resp["error"])
+		}
+
+		dbJob := s.GetJob(ctx, job3.ID)
+		if dbJob.Status != models.JobStatusAwaitingPriceResponse {
+			t.Errorf("Expected status to remain awaiting_price_response, got %s", dbJob.Status)
+		}
+	})
+
+	// 4. UpdateJobLockedEscrow Failure with Successful Rollback
+	t.Run("UpdateJobLockedEscrow failure with successful rollback", func(t *testing.T) {
+		ownerIDRollback := "owner-rollback-succ"
+		_, _ = jwtutil.GenerateToken(ownerIDRollback, "owner", ownerIDRollback, "rb@example.com")
+		tokenEmpRB, _ := jwtutil.GenerateToken("emp-rollback-succ", "employee", ownerIDRollback, "rbemp@example.com")
+
+		svcRB := &models.Service{
+			ID:        "svc-rb-1",
+			TenantID:  ownerIDRollback,
+			Name:      "RB Service",
+			Category:  "transport",
+			Latitude:  30.0,
+			Longitude: 30.0,
+		}
+		s.CreateService(ctx, svcRB)
+		_ = s.Deposit(ctx, ownerIDRollback, 500.0)
+
+		job4 := &models.Job{
+			ID:            "job-respond-rollback-success",
+			OwnerID:       ownerIDRollback,
+			UserID:        "cust-respond-escrow",
+			EmployeeID:    "emp-rollback-succ",
+			ServiceID:     svcRB.ID,
+			Status:        models.JobStatusAwaitingPriceResponse,
+			PaymentMethod: "wallet",
+			ProposedPrice: floatPtr(120.0),
+			ProposedBy:    "customer",
+			CreatedAt:     time.Now().UTC(),
+			UpdatedAt:     time.Now().UTC(),
+		}
+		_ = s.CreateJob(ctx, job4)
+
+		mockCtx := &contextMock{Context: context.Background()}
+		respReq := map[string]any{
+			"job_id":          job4.ID,
+			"decision":        "accept",
+			"requester_token": tokenEmpRB,
+		}
+		body, _ := json.Marshal(respReq)
+		req := httptest.NewRequest("POST", "/users/jobs/respond-price", bytes.NewReader(body))
+		req = req.WithContext(mockCtx)
+		req.Header.Set("X-Real-IP", nextIP())
+		rec := httptest.NewRecorder()
+		u.RespondPrice(rec, req)
+
+		if rec.Code != http.StatusInternalServerError {
+			t.Fatalf("Expected 500 Internal Server Error, got %d: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "escrow lock rolled back") {
+			t.Errorf("Expected error message 'escrow lock rolled back', got %s", rec.Body.String())
+		}
+
+		wallet, _ := s.GetOrCreateWallet(ctx, ownerIDRollback)
+		if wallet.EscrowBalance != 0.0 {
+			t.Errorf("Expected wallet EscrowBalance to be rolled back to 0.0, got %.2f", wallet.EscrowBalance)
+		}
+	})
+
+	// 5. UpdateJobLockedEscrow Failure with Failed Rollback (Regression Test)
+	t.Run("UpdateJobLockedEscrow failure with failed rollback routes job to reconciliation queue", func(t *testing.T) {
+		ownerIDRec := "owner-rec-fallback"
+		tokenOwnerRec, _ := jwtutil.GenerateToken(ownerIDRec, "owner", ownerIDRec, "rec@example.com")
+		tokenEmpRec, _ := jwtutil.GenerateToken("emp-rec-fallback", "employee", ownerIDRec, "recemp@example.com")
+
+		svcRec := &models.Service{
+			ID:        "svc-rec-fallback-1",
+			TenantID:  ownerIDRec,
+			Name:      "Rec Fallback Service",
+			Category:  "transport",
+			Latitude:  30.0,
+			Longitude: 30.0,
+		}
+		s.CreateService(ctx, svcRec)
+		_ = s.Deposit(ctx, ownerIDRec, 500.0)
+
+		job5 := &models.Job{
+			ID:            "job-respond-reconciliation-fallback",
+			OwnerID:       ownerIDRec,
+			UserID:        "cust-respond-escrow",
+			EmployeeID:    "emp-rec-fallback",
+			ServiceID:     svcRec.ID,
+			Status:        models.JobStatusAwaitingPriceResponse,
+			PaymentMethod: "wallet",
+			ProposedPrice: floatPtr(140.0),
+			ProposedBy:    "customer",
+			CreatedAt:     time.Now().UTC(),
+			UpdatedAt:     time.Now().UTC(),
+		}
+		_ = s.CreateJob(ctx, job5)
+
+		u.rollbackEscrowHook = func(ctx context.Context, tenantID string, amount float64) error {
+			return fmt.Errorf("simulated rollback failure")
+		}
+		defer func() { u.rollbackEscrowHook = nil }()
+
+		mockCtx := &contextMock{Context: context.Background()}
+		respReq := map[string]any{
+			"job_id":          job5.ID,
+			"decision":        "accept",
+			"requester_token": tokenEmpRec,
+		}
+		body, _ := json.Marshal(respReq)
+		req := httptest.NewRequest("POST", "/users/jobs/respond-price", bytes.NewReader(body))
+		req = req.WithContext(mockCtx)
+		req.Header.Set("X-Real-IP", nextIP())
+		rec := httptest.NewRecorder()
+		u.RespondPrice(rec, req)
+
+		if rec.Code != http.StatusInternalServerError {
+			t.Fatalf("Expected 500 Internal Server Error, got %d: %s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "reconciliation") {
+			t.Errorf("Expected error to mention reconciliation, got %s", rec.Body.String())
+		}
+
+		dbJob := s.GetJob(ctx, job5.ID)
+		if dbJob.Status != models.JobStatusEscrowReconciliationRequired {
+			t.Fatalf("Expected job status %s, got %s", models.JobStatusEscrowReconciliationRequired, dbJob.Status)
+		}
+		if dbJob.ReconciliationNote == "" {
+			t.Errorf("Expected ReconciliationNote to be non-empty")
+		}
+
+		// Verify job appears in reconciliation queue endpoint for owner
+		qReq := httptest.NewRequest("GET", "/users/jobs/reconciliation-queue?requester_token="+tokenOwnerRec, nil)
+		qReq.Header.Set("X-Real-IP", nextIP())
+		qRec := httptest.NewRecorder()
+		u.GetReconciliationQueue(qRec, qReq)
+
+		if qRec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK on reconciliation-queue, got %d: %s", qRec.Code, qRec.Body.String())
+		}
+		var qJobs []map[string]any
+		json.Unmarshal(qRec.Body.Bytes(), &qJobs)
+		if len(qJobs) != 1 {
+			t.Fatalf("Expected 1 job in reconciliation queue for owner, got %d", len(qJobs))
+		}
+		if qJobs[0]["id"] != job5.ID {
+			t.Errorf("Expected queued job ID %s, got %v", job5.ID, qJobs[0]["id"])
+		}
+	})
+
+	// 6. Full End-to-End Chain: RespondPrice Accept -> CompleteJob
+	t.Run("Full End-to-End Chain: RespondPrice Accept then CompleteJob succeeds", func(t *testing.T) {
+		ownerIDE2E := "owner-e2e-complete"
+		_, _ = jwtutil.GenerateToken(ownerIDE2E, "owner", ownerIDE2E, "e2eowner@example.com")
+		tokenEmpE2E, _ := jwtutil.GenerateToken("emp-e2e-complete", "employee", ownerIDE2E, "e2eemp@example.com")
+
+		svcE2E := &models.Service{
+			ID:               "svc-e2e-chain-1",
+			TenantID:         ownerIDE2E,
+			Name:             "E2E Chain Service",
+			Category:         "transport",
+			TenantBasePrice:  50.0,
+			TenantPricePerKM: 2.0,
+			Latitude:         30.0,
+			Longitude:        30.0,
+		}
+		s.CreateService(ctx, svcE2E)
+		_ = s.Deposit(ctx, ownerIDE2E, 400.0)
+
+		job6 := &models.Job{
+			ID:            "job-respond-e2e-full-chain",
+			OwnerID:       ownerIDE2E,
+			UserID:        "cust-respond-escrow",
+			EmployeeID:    "emp-e2e-complete",
+			ServiceID:     svcE2E.ID,
+			Status:        models.JobStatusAwaitingPriceResponse,
+			PaymentMethod: "wallet",
+			ProposedPrice: floatPtr(150.0),
+			ProposedBy:    "customer",
+			CreatedAt:     time.Now().UTC(),
+			UpdatedAt:     time.Now().UTC(),
+		}
+		_ = s.CreateJob(ctx, job6)
+
+		// 1. RespondPrice Accept
+		respReq := map[string]any{
+			"job_id":          job6.ID,
+			"decision":        "accept",
+			"requester_token": tokenEmpE2E,
+		}
+		body, _ := json.Marshal(respReq)
+		req := httptest.NewRequest("POST", "/users/jobs/respond-price", bytes.NewReader(body))
+		req.Header.Set("X-Real-IP", nextIP())
+		rec := httptest.NewRecorder()
+		u.RespondPrice(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK on RespondPrice accept, got %d: %s", rec.Code, rec.Body.String())
+		}
+
+		dbJob := s.GetJob(ctx, job6.ID)
+		if dbJob.Status != models.JobStatusActive {
+			t.Fatalf("Expected job status active, got %s", dbJob.Status)
+		}
+		if dbJob.LockedEscrowAmount != 150.0 {
+			t.Fatalf("Expected LockedEscrowAmount 150.0, got %.2f", dbJob.LockedEscrowAmount)
+		}
+
+		// 2. CompleteJob
+		compReq := map[string]any{
+			"job_id":          job6.ID,
+			"requester_token": tokenEmpE2E,
+		}
+		cBody, _ := json.Marshal(compReq)
+		cReq := httptest.NewRequest("POST", "/users/jobs/complete", bytes.NewReader(cBody))
+		cReq.Header.Set("X-Real-IP", nextIP())
+		cRec := httptest.NewRecorder()
+		u.CompleteJob(cRec, cReq)
+
+		if cRec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK on CompleteJob after RespondPrice accept, got %d: %s", cRec.Code, cRec.Body.String())
+		}
+
+		dbJobFinal := s.GetJob(ctx, job6.ID)
+		if dbJobFinal.Status != models.JobStatusCompleted {
+			t.Errorf("Expected final job status completed, got %s", dbJobFinal.Status)
+		}
+
+		walletFinal, _ := s.GetOrCreateWallet(ctx, ownerIDE2E)
+		if walletFinal.EscrowBalance != 0.0 {
+			t.Errorf("Expected final wallet EscrowBalance 0.0 after completion, got %.2f", walletFinal.EscrowBalance)
+		}
+	})
+}
+
 func floatPtr(f float64) *float64 { return &f }

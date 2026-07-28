@@ -151,9 +151,12 @@ func TestADR0008_E2E_LiveEmployeeMapTracking(t *testing.T) {
 		clients = append(clients, client)
 		clientMu.Unlock()
 
+		var writeMu sync.Mutex
 		go func() {
 			for msg := range client.send {
+				writeMu.Lock()
 				_ = conn.WriteMessage(websocket.TextMessage, msg)
+				writeMu.Unlock()
 			}
 		}()
 
@@ -168,14 +171,18 @@ func TestADR0008_E2E_LiveEmployeeMapTracking(t *testing.T) {
 				if strings.HasPrefix(ch, "fleet:") {
 					fleetOwner := strings.TrimPrefix(ch, "fleet:")
 					if claims.UserID != fleetOwner || claims.Role != "owner" {
+						writeMu.Lock()
 						_ = conn.WriteJSON(map[string]string{"type": "error", "error": "not authorized"})
+						writeMu.Unlock()
 						continue
 					}
 				}
 				clientMu.Lock()
 				client.channels[ch] = true
 				clientMu.Unlock()
+				writeMu.Lock()
 				_ = conn.WriteJSON(map[string]string{"type": "subscribed", "channel": ch})
+				writeMu.Unlock()
 			}
 		}
 	})
