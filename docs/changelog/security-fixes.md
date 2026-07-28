@@ -520,6 +520,13 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``60e8939ace375df1240e08e35a7efeddd77630aa``
 - **Verification**: Verified via `grep -rn "resolveToken(" services/` returning zero caller sites, and full `user-service` build, vet, and test suite passing. ✅
 
+## Remediation: Centralized Friendly Error Messages Utility & Raw Error Leakage Prevention
+
+- **Implementation Detail**: Created `frontend/lib/core/error_messages.dart` (`friendlyErrorMessage(Object? error)`) mapping `ApiClientException` status codes (400, 401, 403, 404, 409, 429, 5xx) to clear, user-facing English error messages without branching on backend raw error strings or leaking internal validation codes. Connectivity errors (`SocketException`, `TimeoutException`, etc.) map to a connection issue message, and unrecognized errors fall back safely. Replaced raw error string display (`e.toString().replaceFirst(...)` / `e.message`) across all frontend providers and screens while preserving developer debug logging via `debugPrint`. Added table-driven unit test suite in `frontend/test/error_messages_test.dart` asserting zero raw string or status code leaks.
+- **Commit SHA**: ``fc4456efed1f6f86787943ad15133a7b9f0845e1``
+- **Verification**: Verified via `dart format --set-exit-if-changed lib/`, `flutter analyze` (0 issues), and `flutter test` (all tests passed including 4 new friendly error mapping unit tests). ✅
+
+
 
 
 
