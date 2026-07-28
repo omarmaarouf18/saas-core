@@ -8,6 +8,7 @@ import '../providers/employee_jobs_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
+import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
@@ -320,24 +321,6 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   }
 
   Widget _buildJobCard(Job job) {
-    Color statusColor;
-    switch (job.status.toLowerCase()) {
-      case 'completed':
-        statusColor = AppColors.success;
-        break;
-      case 'active':
-        statusColor = AppColors.warning;
-        break;
-      case 'cancelled':
-        statusColor =
-            const Color(0xFFFF1744); // kStatusDanger (Distinct danger red)
-        break;
-      case 'pending':
-      default:
-        statusColor = AppColors.outline;
-        break;
-    }
-
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: ThemedCard(
@@ -360,22 +343,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: statusColor, width: 1),
-                  ),
-                  child: Text(
-                    job.status.toUpperCase(),
-                    style: AppTypography.labelMd.copyWith(
-                      color: statusColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+                StatusBadge(status: job.status),
               ],
             ),
             const Divider(

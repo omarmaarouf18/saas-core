@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
+import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
 import 'chat_screen.dart';
@@ -140,26 +141,11 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     }
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'pending':
-        return AppColors.warning;
-      case 'active':
-        return AppColors.primary;
-      case 'completed':
-        return AppColors.success;
-      case 'cancelled':
-        return AppColors.error;
-      default:
-        return AppColors.outline;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final step = _getStatusStep(_currentJob.status);
     final isCancelled = _currentJob.status == 'cancelled';
-    final statusColor = _getStatusColor(_currentJob.status);
+    final statusColor = StatusBadge.getStatusColor(_currentJob.status);
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,

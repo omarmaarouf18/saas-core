@@ -4,8 +4,10 @@ import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/info_list_tile.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
+import '../widgets/stat_card.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
@@ -144,35 +146,11 @@ class _WalletScreenState extends State<WalletScreen> {
     required IconData icon,
     required Color color,
   }) {
-    return ThemedCard(
-      borderRadius: AppRadius.md,
-      padding: AppSpacing.md,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: AppTypography.bodyMd.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.onSurfaceVariant,
-                ),
-              ),
-              Icon(icon, color: color, size: 24),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            "${value.toStringAsFixed(2)} Credits",
-            style: AppTypography.headlineLgMobile.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.onSurface,
-            ),
-          ),
-        ],
-      ),
+    return StatCard(
+      label: title,
+      value: "${value.toStringAsFixed(2)} Credits",
+      icon: icon,
+      iconColor: color,
     );
   }
 
@@ -223,85 +201,62 @@ class _WalletScreenState extends State<WalletScreen> {
         ? "${timestamp.year}-${_twoDigits(timestamp.month)}-${_twoDigits(timestamp.day)} ${_twoDigits(timestamp.hour)}:${_twoDigits(timestamp.minute)}"
         : "";
 
-    return ThemedCard(
-      borderRadius: AppRadius.defaultValue,
-      padding: AppSpacing.md,
-      child: Row(
+    final isPositive =
+        type == 'deposit' || type == 'refund' || type == 'escrow_release';
+
+    return InfoListTile(
+      leadingIcon: icon,
+      leadingIconColor: color,
+      leadingBackgroundColor: color.withValues(alpha: 0.1),
+      title: description.isNotEmpty ? description : type.toUpperCase(),
+      subtitleWidget: Row(
         children: [
-          CircleAvatar(
-            backgroundColor: color.withValues(alpha: 0.1),
-            radius: 20,
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  description.isNotEmpty ? description : type.toUpperCase(),
-                  style: AppTypography.bodyMd.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.onSurface,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Row(
-                  children: [
-                    Text(
-                      dateStr,
-                      style: AppTypography.labelMd.copyWith(
-                        color: AppColors.outline,
-                      ),
-                    ),
-                    if (jobId.isNotEmpty) ...[
-                      const SizedBox(width: AppSpacing.base),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        child: Text(
-                          "Job: ${jobId.substring(0, jobId.length > 8 ? 8 : jobId.length)}",
-                          style: AppTypography.labelMd.copyWith(
-                            fontSize: 10,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
+          Text(
+            dateStr,
+            style: AppTypography.labelMd.copyWith(
+              color: AppColors.outline,
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                "${type == 'deposit' || type == 'refund' || type == 'escrow_release' ? '+' : '-'}${amount.toStringAsFixed(2)}",
-                style: AppTypography.bodyLg.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: type == 'deposit' ||
-                          type == 'refund' ||
-                          type == 'escrow_release'
-                      ? AppColors.success
-                      : AppColors.error,
-                ),
+          if (jobId.isNotEmpty) ...[
+            const SizedBox(width: AppSpacing.base),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 2,
               ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                "Bal: ${balanceAfter.toStringAsFixed(2)}",
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: Text(
+                "Job: ${jobId.substring(0, jobId.length > 8 ? 8 : jobId.length)}",
                 style: AppTypography.labelMd.copyWith(
-                  color: AppColors.onSurfaceVariant,
+                  fontSize: 10,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
+            ),
+          ],
+        ],
+      ),
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            "${isPositive ? '+' : '-'}${amount.toStringAsFixed(2)}",
+            style: AppTypography.bodyLg.copyWith(
+              fontWeight: FontWeight.bold,
+              color: isPositive ? AppColors.success : AppColors.error,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            "Bal: ${balanceAfter.toStringAsFixed(2)}",
+            style: AppTypography.labelMd.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
           ),
         ],
       ),

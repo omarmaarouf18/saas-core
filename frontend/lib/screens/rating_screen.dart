@@ -4,6 +4,7 @@ import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
+import '../widgets/entity_avatar.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_loading_indicator.dart';
@@ -282,17 +283,10 @@ class _RatingScreenState extends State<RatingScreen> {
         // Driver info row
         Row(
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              child: Icon(
-                Icons.local_shipping,
-                color: colorScheme.onPrimaryContainer,
-              ),
+            EntityAvatar(
+              name: _otherPartyName,
+              radius: 24,
+              defaultIcon: Icons.local_shipping,
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(

@@ -61,3 +61,16 @@ To build production bundles, ensure your local environment contains the required
 To support local development against self-signed HTTPS certificates, the application overrides Flutter's default HTTP trust validation in debug mode:
 *   **Safety**: Self-signed certificates are overridden using `DevHttpOverrides` which redirects `badCertificateCallback` to return `true` **only** if `kDebugMode` is active.
 *   **Release Isolation**: The bypass is entirely compiled out in profile/release builds, ensuring zero bypasses in production.
+
+## Foundational Shared Widget Library (`lib/widgets/`)
+
+All UI components must be built exclusively from the design system tokens defined in `lib/core/theme.dart` (`AppColors`, `AppSpacing`, `AppRadius`, `AppShadows`, `AppTypography`). Avoid hardcoded hex colors or raw `EdgeInsets`.
+
+| Shared Widget | File Path | When to Use |
+|---|---|---|
+| `StatusBadge` | `lib/widgets/status_badge.dart` | Renders a canonical status badge with consistent color, label, and icon across all 6 job status types (`pending`, `awaiting_price_response`, `active`, `completed`, `cancelled`, `escrow_reconciliation_required`). Replaces all ad-hoc status color mappings. |
+| `EntityAvatar` | `lib/widgets/entity_avatar.dart` | Renders a circular avatar or user initials for users, employees, or customers. Handles missing/invalid images gracefully by falling back to name initials or a default icon. |
+| `InfoListTile` | `lib/widgets/info_list_tile.dart` | Standard list-row component with leading avatar/icon, title, subtitle/custom subtitle widget, and trailing action/status widgets. Used for notifications, ratings, job lists, and ledger entries. |
+| `StatCard` | `lib/widgets/stat_card.dart` | Metric display card showing a metric label, value, icon, and optional trend/subtitle badge. Used for dashboard overview cards (wallet balances, active job counts, rating averages). |
+| `ConfirmActionDialog` | `lib/widgets/confirm_action_dialog.dart` | Reusable modal confirmation dialog wrapper supporting title, message, confirm/cancel buttons, and destructive (`AppColors.error`) vs. standard (`AppColors.primary`) action styling. |
+

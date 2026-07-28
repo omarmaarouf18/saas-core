@@ -7,6 +7,7 @@ import '../providers/notifications_provider.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_empty_state.dart';
+import '../widgets/stat_card.dart';
 import 'login_screen.dart';
 import 'wallet_screen.dart';
 import 'employee_screen.dart';
@@ -456,56 +457,13 @@ class _HomeScreenState extends State<HomeScreen> {
     required Color color,
     VoidCallback? onTap,
   }) {
-    return ThemedCard(
-      borderRadius: AppRadius.md,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.mdBorder,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: AppTypography.bodyMd.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Icon(icon, color: color),
-              ],
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: AppTypography.titleMd.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    subtitle,
-                    style: AppTypography.labelMd.copyWith(
-                      color: AppColors.outline,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
-        ),
-      ),
+    return StatCard(
+      label: title,
+      value: value,
+      trend: subtitle,
+      icon: icon,
+      iconColor: color,
+      onTap: onTap,
     );
   }
 

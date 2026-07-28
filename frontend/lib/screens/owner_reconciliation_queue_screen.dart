@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../models/reconciliation_job.dart';
 import '../providers/reconciliation_provider.dart';
+import '../widgets/confirm_action_dialog.dart';
+import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 
@@ -34,36 +36,14 @@ class _OwnerReconciliationQueueScreenState
         isRelease ? 'Release to Employee' : 'Refund to Customer';
     final targetRole = isRelease ? 'employee/tenant' : 'customer';
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          'Confirm $actionLabel',
-          style: AppTypography.headlineLgMobile.copyWith(
-            color: AppColors.primary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          'Are you sure you want to $actionLabel for Job #${job.id}?\n\n'
+    final confirmed = await ConfirmActionDialog.show(
+      context,
+      title: 'Confirm $actionLabel',
+      message: 'Are you sure you want to $actionLabel for Job #${job.id}?\n\n'
           'This will transfer ${job.lockedEscrowAmount.toStringAsFixed(2)} Credits back to the $targetRole. Real funds will be moved.',
-          style: AppTypography.bodyMd,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isRelease ? AppColors.primary : AppColors.error,
-              foregroundColor: AppColors.onPrimary,
-            ),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('Confirm $actionLabel'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Confirm $actionLabel',
+      cancelLabel: 'Cancel',
+      isDestructive: !isRelease,
     );
 
     if (confirmed == true && context.mounted) {
@@ -214,24 +194,9 @@ class _OwnerReconciliationQueueScreenState
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.xs,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.warning.withValues(alpha: 0.15),
-                    borderRadius: AppRadius.smBorder,
-                    border: Border.all(color: AppColors.warning),
-                  ),
-                  child: Text(
-                    'RECONCILIATION REQUIRED',
-                    style: AppTypography.labelMd.copyWith(
-                      color: AppColors.warning,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
-                    ),
-                  ),
+                const StatusBadge(
+                  status: 'escrow_reconciliation_required',
+                  compact: true,
                 ),
               ],
             ),
