@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Resend Email OTP Delivery End-to-End Verification
+
+- **Implementation Detail**: Configured and verified real end-to-end email OTP dispatching via `ResendDispatcher` (`github.com/resend/resend-go/v3`) using live Resend API infrastructure and sending domain `logiklinkeg.tech`. Updated `infrastructure/docker-compose.yml` to inject `RESEND_API_KEY` and `RESEND_FROM_EMAIL` into `auth-service`. Verified full lifecycle: signup (`POST /api/v1/auth/signup`) dispatched live email via Resend API, suppressed `dev_otp` in non-local environment (`APP_ENV=production`), stored AES-256-GCM encrypted OTP ciphertext at rest in MongoDB (`otp_code`), delivered email OTP, completed 2FA authentication via `POST /api/v1/auth/verify-otp` (HTTP 200 OK + JWT issued), and confirmed graceful error logging on invalid API key (`[RESEND] Error dispatching OTP email ... API key is invalid`) without crashing `auth-service`.
+- **Commit SHA**: ``544b2c2df67be3df06dfb8c297e0f5f09a0007a2``
+- **Verification**: Verified end-to-end via `curl` requests against local `docker-compose` stack (`api-gateway` + `auth-service`), Mongo ciphertext inspection, AES-256-GCM OTP decryption, and successful 2FA JWT issuance. ✅
+
+
 ## user-service Redis-Backed Location Update Throttle
 
 - **Implementation Detail**: Replaced in-process Go maps (`locationInFlight` and `locationLastUpdate`) in `user-service` (`UpdateJobLocation` in `services/user-service/internal/handlers/handlers.go`) with Redis-backed atomic key evaluation (`loc:inflight:<job_id>` with 15s TTL and `loc:lastupdate:<job_id>` with 300s TTL) executed via an atomic Lua script. Added fail-closed logging (`[SECURITY CRITICAL]`) on Redis errors, preserved in-memory fallback for nil-Redis environments, updated ADR-0005 with a dated correction note, and added multi-instance test coverage (`TestUpdateJobLocation_RedisBackedThrottle_MultiInstance`).
