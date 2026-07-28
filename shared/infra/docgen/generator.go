@@ -83,6 +83,16 @@ var KnownEndpoints = map[string]struct {
 		Function:    "ResendOTP handles resending a fresh OTP for unconfirmed accounts.",
 		Targets:     "Reads `users` collection by email, updates `otp_code` and `otp_expires_at` fields.",
 	},
+	"POST /auth/forgot-password": {
+		Permissions: "Public",
+		Function:    "Dispatches password reset OTP code if account exists.",
+		Targets:     "Reads `users` collection by email, updates `otp_code` and `otp_expires_at` fields.",
+	},
+	"POST /auth/reset-password": {
+		Permissions: "Public",
+		Function:    "Verifies OTP code and updates user password.",
+		Targets:     "Reads `users` collection by email, updates `password` hash and clears OTP fields.",
+	},
 	"POST /auth/logout": {
 		Permissions: "Bearer JWT",
 		Function:    "Logs out user, revokes JWT session.",

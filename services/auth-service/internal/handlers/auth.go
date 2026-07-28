@@ -90,6 +90,8 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/login", a.Login)
 	mux.HandleFunc("/auth/resend-otp", a.ResendOTP)
 	mux.HandleFunc("/auth/verify-otp", a.VerifyOTP)
+	mux.HandleFunc("/auth/forgot-password", a.ForgotPassword)
+	mux.HandleFunc("/auth/reset-password", a.ResetPassword)
 	mux.HandleFunc("/auth/refresh", a.Refresh)
 	mux.HandleFunc("/auth/employee/toggle", a.ToggleEmployee)
 	mux.HandleFunc("/auth/employee/action", a.SimulateEmployeeAction)
@@ -1674,6 +1676,198 @@ func (a *Auth) ResendOTP(w http.ResponseWriter, r *http.Request) {
 	a.limiter.RecordFailure(user.Email)
 
 	writeJSON(w, http.StatusOK, genericResponse)
+}
+
+// ---------------------------------------------------------------------------
+// POST /auth/forgot-password
+// ---------------------------------------------------------------------------
+
+// ForgotPassword dispatches a 6-digit password reset OTP to the specified email if registered.
+// Regardless of whether the email exists or OTP generation fails, it returns an identical 200 OK
+// response to prevent identity enumeration.
+func (a *Auth) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "method not allowed, use POST",
+		})
+		return
+	}
+
+	var req models.ForgotPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid JSON body: " + err.Error(),
+		})
+		return
+	}
+
+	if req.Email == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "email is required",
+		})
+		return
+	}
+
+	clientIP := a.getClientIP(r)
+
+	// Rate limiting check on client IP
+	if locked, remaining := a.limiter.IsLocked(clientIP); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many attempts from this IP. Please try again in %.0f seconds.", remaining.Seconds()),
+		})
+		return
+	}
+
+	// Rate limiting check on Email
+	if locked, remaining := a.limiter.IsLocked(req.Email); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many attempts for this email. Please try again in %.0f seconds.", remaining.Seconds()),
+		})
+		return
+	}
+
+	ctx := r.Context()
+	user := a.store.GetByEmail(ctx, req.Email)
+
+	// Base response payload identical for all cases to prevent account enumeration.
+	resp := map[string]any{
+		"status":  "success",
+		"message": "If an account exists for this email, a reset code has been sent.",
+	}
+
+	if user == nil {
+		a.limiter.RecordFailure(clientIP)
+		a.limiter.RecordFailure(req.Email)
+		writeJSON(w, http.StatusOK, resp)
+		return
+	}
+
+	// User exists: generate OTP, encrypt & store in MongoDB, and dispatch.
+	otpCode := generate6DigitOTP()
+
+	if err := a.store.SetOTP(ctx, user.Email, otpCode); err != nil {
+		log.Printf("[AUTH] Failed to set password reset OTP for %s: %v", user.Email, err)
+		writeJSON(w, http.StatusOK, resp)
+		return
+	}
+
+	if err := a.dispatcher.Dispatch(user.Email, otpCode); err != nil {
+		log.Printf("[AUTH] Password reset OTP dispatch error for %s via %s: %v", user.Email, a.dispatcher.Name(), err)
+	}
+
+	if a.isLocal {
+		log.Printf("[AUTH] Password reset OTP generated: email=%s code=%s dispatcher=%s",
+			user.Email, otpCode, a.dispatcher.Name())
+		resp["dev_otp"] = otpCode
+	} else {
+		log.Printf("[AUTH] Password reset OTP generated: email=%s dispatcher=%s",
+			user.Email, a.dispatcher.Name())
+	}
+
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// ---------------------------------------------------------------------------
+// POST /auth/reset-password
+// ---------------------------------------------------------------------------
+
+// ResetPassword validates the reset OTP code and updates the user's password.
+func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "method not allowed, use POST",
+		})
+		return
+	}
+
+	var req models.ResetPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid JSON body: " + err.Error(),
+		})
+		return
+	}
+
+	if req.Email == "" || req.OTP == "" || req.NewPassword == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "email, otp, and new_password are required",
+		})
+		return
+	}
+
+	clientIP := a.getClientIP(r)
+
+	// Rate limiting check on client IP
+	if locked, remaining := a.limiter.IsLocked(clientIP); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many attempts from this IP. Please try again in %.0f seconds.", remaining.Seconds()),
+		})
+		return
+	}
+
+	// Rate limiting check on Email
+	if locked, remaining := a.limiter.IsLocked(req.Email); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many attempts for this email. Please try again in %.0f seconds.", remaining.Seconds()),
+		})
+		return
+	}
+
+	ctx := r.Context()
+
+	// Validate OTP against MongoDB via store.VerifyOTP
+	if err := a.store.VerifyOTP(ctx, req.Email, req.OTP); err != nil {
+		a.limiter.RecordFailure(clientIP)
+		a.limiter.RecordFailure(req.Email)
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "invalid or expired OTP code",
+		})
+		return
+	}
+
+	// Reset limiter on successful OTP verification
+	a.limiter.Reset(clientIP)
+	a.limiter.Reset(req.Email)
+
+	user := a.store.GetByEmail(ctx, req.Email)
+	if user == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error": "user not found",
+		})
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to hash password: " + err.Error(),
+		})
+		return
+	}
+
+	// Update password and ensure OTP fields are cleared so OTP cannot be reused
+	update := bson.M{
+		"$set": bson.M{
+			"password":       string(hashedPassword),
+			"otp_code":       "",
+			"otp_verified":   false,
+			"otp_expires_at": time.Time{},
+		},
+	}
+
+	if err := a.store.UpdateUser(ctx, user.ID, update); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to update password: " + err.Error(),
+		})
+		return
+	}
+
+	log.Printf("[AUTH] Password reset successfully for email=%s user_id=%s", user.Email, user.ID)
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":  "success",
+		"message": "password reset successfully",
+	})
 }
 
 // GET /auth/user/public-profile?id=<target_id>&requester_id=<token>

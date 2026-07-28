@@ -2812,3 +2812,274 @@ func TestSimulateEmployeeAction_ExtraCoverage(t *testing.T) {
 		t.Errorf("Expected 403 Forbidden for frozen employee action, got %d. Body: %s", rec.Code, rec.Body.String())
 	}
 }
+
+// TestForgotPassword_AntiEnumeration verifies that forgot-password returns an identical generic response for existing vs non-existent email
+func TestForgotPassword_AntiEnumeration(t *testing.T) {
+	a, mongoStore, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+
+	// Register an existing user
+	existingEmail := "existinguser@example.com"
+	user := &models.User{
+		ID:          "user-exist-1",
+		Email:       existingEmail,
+		Username:    "existinguser",
+		Password:    "hashedpass",
+		Role:        models.RoleUser,
+		IsActive:    true,
+		IsConfirmed: true,
+		CreatedAt:   time.Now().UTC(),
+	}
+	if err := mongoStore.CreateUser(ctx, user); err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	// 1. Call ForgotPassword for EXISTING email
+	bodyExist := fmt.Sprintf(`{"email":%q}`, existingEmail)
+	req1 := httptest.NewRequest("POST", "/auth/forgot-password", strings.NewReader(bodyExist))
+	rec1 := httptest.NewRecorder()
+	a.ForgotPassword(rec1, req1)
+
+	if rec1.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for existing email, got %d. Body: %s", rec1.Code, rec1.Body.String())
+	}
+
+	var resp1 map[string]any
+	if err := json.Unmarshal(rec1.Body.Bytes(), &resp1); err != nil {
+		t.Fatalf("Failed to decode response 1: %v", err)
+	}
+
+	// 2. Call ForgotPassword for NON-EXISTENT email
+	bodyNonExist := `{"email":"nonexistentuser@example.com"}`
+	req2 := httptest.NewRequest("POST", "/auth/forgot-password", strings.NewReader(bodyNonExist))
+	rec2 := httptest.NewRecorder()
+	a.ForgotPassword(rec2, req2)
+
+	if rec2.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for non-existent email, got %d. Body: %s", rec2.Code, rec2.Body.String())
+	}
+
+	var resp2 map[string]any
+	if err := json.Unmarshal(rec2.Body.Bytes(), &resp2); err != nil {
+		t.Fatalf("Failed to decode response 2: %v", err)
+	}
+
+	// Verify status and message are identical to prevent account enumeration
+	if resp1["status"] != resp2["status"] || resp1["message"] != resp2["message"] {
+		t.Errorf("Expected identical status and message for existing vs non-existent email. Got: %v vs %v", resp1, resp2)
+	}
+	if resp1["message"] != "If an account exists for this email, a reset code has been sent." {
+		t.Errorf("Unexpected message string: %v", resp1["message"])
+	}
+}
+
+// TestForgotPassword_RateLimiting verifies that excessive forgot-password attempts trigger 429 Too Many Requests
+func TestForgotPassword_RateLimiting(t *testing.T) {
+	a, _, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	email := "ratelimitforgot@example.com"
+	clientIP := "192.168.1.100"
+
+	// Trigger 5 rate limiter failures
+	for i := 0; i < 5; i++ {
+		a.limiter.RecordFailure(email)
+	}
+
+	body := fmt.Sprintf(`{"email":%q}`, email)
+	req := httptest.NewRequest("POST", "/auth/forgot-password", strings.NewReader(body))
+	req.RemoteAddr = clientIP + ":12345"
+	rec := httptest.NewRecorder()
+	a.ForgotPassword(rec, req)
+
+	if rec.Code != http.StatusTooManyRequests {
+		t.Errorf("Expected 429 Too Many Requests for rate limited email, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+}
+
+// TestResetPassword_Success verifies reset-password updates password and old password no longer works
+func TestResetPassword_Success(t *testing.T) {
+	a, mongoStore, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	email := "resetpassuser@example.com"
+	oldPassword := "OldPassword123"
+	newPassword := "NewPassword456"
+
+	hashedOld, _ := bcrypt.GenerateFromPassword([]byte(oldPassword), bcrypt.DefaultCost)
+	user := &models.User{
+		ID:          "user-reset-1",
+		Email:       email,
+		Username:    "resetpassuser",
+		Password:    string(hashedOld),
+		Role:        models.RoleUser,
+		IsActive:    true,
+		IsConfirmed: true,
+		CreatedAt:   time.Now().UTC(),
+	}
+	if err := mongoStore.CreateUser(ctx, user); err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	// Set OTP
+	otpCode := "654321"
+	if err := mongoStore.SetOTP(ctx, email, otpCode); err != nil {
+		t.Fatalf("Failed to set OTP: %v", err)
+	}
+
+	// Execute ResetPassword
+	resetBody := fmt.Sprintf(`{"email":%q,"otp":%q,"new_password":%q}`, email, otpCode, newPassword)
+	req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
+	rec := httptest.NewRecorder()
+	a.ResetPassword(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK on reset password, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// Verify updated user record
+	updatedUser := mongoStore.GetByEmail(ctx, email)
+	if updatedUser == nil {
+		t.Fatalf("Failed to retrieve updated user")
+	}
+
+	// Verify old password fails
+	if err := bcrypt.CompareHashAndPassword([]byte(updatedUser.Password), []byte(oldPassword)); err == nil {
+		t.Errorf("Expected old password to fail bcrypt check after reset")
+	}
+
+	// Verify new password succeeds
+	if err := bcrypt.CompareHashAndPassword([]byte(updatedUser.Password), []byte(newPassword)); err != nil {
+		t.Errorf("Expected new password to succeed bcrypt check after reset, got: %v", err)
+	}
+}
+
+// TestResetPassword_InvalidOrExpiredOTP_RateLimiting verifies invalid OTP is rejected with generic error and records failure
+func TestResetPassword_InvalidOrExpiredOTP_RateLimiting(t *testing.T) {
+	a, mongoStore, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	email := "wrongotpreset@example.com"
+	user := &models.User{
+		ID:          "user-reset-2",
+		Email:       email,
+		Username:    "wrongotpuser",
+		Password:    "somepass",
+		Role:        models.RoleUser,
+		IsActive:    true,
+		IsConfirmed: true,
+		CreatedAt:   time.Now().UTC(),
+	}
+	_ = mongoStore.CreateUser(ctx, user)
+	_ = mongoStore.SetOTP(ctx, email, "123456")
+
+	// Call ResetPassword with WRONG OTP
+	resetBody := fmt.Sprintf(`{"email":%q,"otp":"000000","new_password":"NewPassword123"}`, email)
+	req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
+	rec := httptest.NewRecorder()
+	a.ResetPassword(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("Expected 401 Unauthorized for wrong OTP, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	var resp map[string]string
+	_ = json.Unmarshal(rec.Body.Bytes(), &resp)
+	if resp["error"] != "invalid or expired OTP code" {
+		t.Errorf("Expected generic 'invalid or expired OTP code' error message, got %q", resp["error"])
+	}
+
+	// Verify rate limiter recorded failure on email
+	locked, _ := a.limiter.IsLocked(email)
+	// Recording 1 failure shouldn't lock out immediately (threshold is 5), but failure count should be incremented
+	// Record 4 more failures to verify it triggers lockout
+	for i := 0; i < 4; i++ {
+		a.limiter.RecordFailure(email)
+	}
+	locked, _ = a.limiter.IsLocked(email)
+	if !locked {
+		t.Errorf("Expected email to be locked out after 5 failures including the reset failure")
+	}
+}
+
+// TestResetPassword_PasswordPolicyCheck verifies reset-password rejects missing/empty new_password
+func TestResetPassword_PasswordPolicyCheck(t *testing.T) {
+	a, _, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	body := `{"email":"test@example.com","otp":"123456","new_password":""}`
+	req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(body))
+	rec := httptest.NewRecorder()
+	a.ResetPassword(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request for empty new_password, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	var resp map[string]string
+	_ = json.Unmarshal(rec.Body.Bytes(), &resp)
+	if resp["error"] != "email, otp, and new_password are required" {
+		t.Errorf("Expected 'email, otp, and new_password are required' error, got %q", resp["error"])
+	}
+}
+
+// TestResetPassword_OTPReusePrevention verifies an OTP cannot be reused for a second reset-password call
+func TestResetPassword_OTPReusePrevention(t *testing.T) {
+	a, mongoStore, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	email := "reuseotp@example.com"
+	user := &models.User{
+		ID:          "user-reset-reuse",
+		Email:       email,
+		Username:    "reuseuser",
+		Password:    "OldPassword1",
+		Role:        models.RoleUser,
+		IsActive:    true,
+		IsConfirmed: true,
+		CreatedAt:   time.Now().UTC(),
+	}
+	_ = mongoStore.CreateUser(ctx, user)
+	_ = mongoStore.SetOTP(ctx, email, "888999")
+
+	resetBody := fmt.Sprintf(`{"email":%q,"otp":"888999","new_password":"NewPassword1"}`, email)
+
+	// Call 1: First attempt -> 200 OK
+	req1 := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
+	rec1 := httptest.NewRecorder()
+	a.ResetPassword(rec1, req1)
+	if rec1.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for first reset attempt, got %d. Body: %s", rec1.Code, rec1.Body.String())
+	}
+
+	// Call 2: Second attempt with SAME OTP -> 401 Unauthorized
+	req2 := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
+	rec2 := httptest.NewRecorder()
+	a.ResetPassword(rec2, req2)
+	if rec2.Code != http.StatusUnauthorized {
+		t.Fatalf("Expected 401 Unauthorized for reused OTP, got %d. Body: %s", rec2.Code, rec2.Body.String())
+	}
+}

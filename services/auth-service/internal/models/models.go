@@ -79,6 +79,18 @@ type VerifyOTPRequest struct {
 	OTP   string `json:"otp"`
 }
 
+// ForgotPasswordRequest is the expected JSON body for POST /auth/forgot-password.
+type ForgotPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+// ResetPasswordRequest is the expected JSON body for POST /auth/reset-password.
+type ResetPasswordRequest struct {
+	Email       string `json:"email"`
+	OTP         string `json:"otp"`
+	NewPassword string `json:"new_password"`
+}
+
 // LoginResponse is returned on successful credential validation.
 type LoginResponse struct {
 	Message     string `json:"message"`
