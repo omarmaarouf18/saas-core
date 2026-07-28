@@ -88,6 +88,34 @@ class ApiClient {
     }
   }
 
+  Future<dynamic> postMultipart(
+    String path, {
+    required String fieldName,
+    required List<int> fileBytes,
+    required String filename,
+  }) async {
+    try {
+      final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
+      if (_jwtToken != null) {
+        request.headers['Authorization'] = 'Bearer $_jwtToken';
+      }
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          fieldName,
+          fileBytes,
+          filename: filename,
+        ),
+      );
+      final streamedResponse = await _client.send(request);
+      final response = await http.Response.fromStream(streamedResponse);
+      return _handleResponse(response);
+    } catch (e) {
+      if (e is ApiClientException) rethrow;
+      throw ApiClientException(
+          "Network error: Please check your internet connection.");
+    }
+  }
+
   dynamic _handleResponse(http.Response response) {
     dynamic body;
     try {

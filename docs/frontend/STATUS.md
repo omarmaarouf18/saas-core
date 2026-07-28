@@ -41,6 +41,8 @@
     *   *Live Employee Map Tracking*: **[VERIFIED]** Implemented `flutter_map` OpenStreetMap raster tile rendering with custom User-Agent policy header `QuickDeliveryApp/1.0` and configurable tile URL constant (`MAP_TILE_URL`). Created `OwnerFleetMapScreen` for tenant owners (subscribing to `fleet:<owner_id>` WebSocket stream with hydration via `GET /users/jobs/owner`) and `CustomerJobMapScreen` for active customer job tracking (subscribing to `job:<job_id>` WebSocket stream with hydration via `GET /users/jobs/get`). Backend extended in `chat-service` (`canAccessChannel` for `fleet:<owner_id>`) and `user-service` (`UpdateJobLocation` dual broadcast to `job:<id>` and `fleet:<owner_id>`). Verified end-to-end via non-mocked integration test `TestADR0008_E2E_LiveEmployeeMapTracking` connecting real WebSockets to `chat-service` Hub and executing `UpdateJobLocation`.
 *   **Phase 9: Owner Escrow Reconciliation Review** — **[100% COMPLETE & VERIFIED]**
     *   *Owner Escrow Reconciliation Review*: **[VERIFIED]** Implemented `ReconciliationProvider`, `ReconciliationJob` model, and `OwnerReconciliationQueueScreen`. Consumes `GET /users/jobs/reconciliation-queue` and `POST /users/jobs/reconciliation-resolve`. Renders human-readable failure reasons (e.g. mapping `under_distance_mismatch` to "Distance mismatch — under 70% of booked distance"), detailed reconciliation notes, and locked escrow amounts. Enforces confirmation dialogs before executing release/refund fund movements, handles empty/loading queue states, surfaces specific 409 "already resolved" and 429 rate-limiting responses, and updates queue list dynamically. Verified via widget tests (`test/reconciliation_queue_test.dart` 5/5 pass) and backend unit/integration tests.
+*   **Phase 10: KYB/KYE Document Upload Screen** — **[100% COMPLETE & VERIFIED]**
+    *   *KYB/KYE Document Upload Screen*: **[VERIFIED]** Implemented `KycDocumentUploadScreen` (`frontend/lib/screens/kyc_document_upload_screen.dart`), updated `UserProfile` (`frontend/lib/models/user_profile.dart`), extended `AuthProvider` (`frontend/lib/providers/auth_provider.dart`), and wired banner prompt + AppBar action in `home_screen.dart`. Renders role-conditional document upload slots (4 slots for owner: `id_front`, `id_back`, `selfie`, `business_proof`; 3 slots for employee: `id_front`, `id_back`, `selfie`). Integrates `StatusBadge` for KYC statuses, displays prominent rejection reason banner when status is `rejected`, enforces client-side file size ($\le 10$MB) and MIME format rules prior to network calls, handles per-slot upload loading and error states independently, and locks/disables upload actions when status is `approved`. Verified via widget tests (`test/kyc_document_upload_screen_test.dart` 5/5 pass).
 
  ---
 
@@ -101,6 +103,7 @@
    * `owner_fleet_map_screen.dart`
    * `customer_job_map_screen.dart`
    * `owner_reconciliation_queue_screen.dart`
+   * `kyc_document_upload_screen.dart`
  * **Widgets**:
    * `rating_summary_card.dart`
    * `primary_button.dart`

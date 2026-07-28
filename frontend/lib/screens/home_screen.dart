@@ -16,6 +16,7 @@ import 'notifications_screen.dart';
 import 'subscription_screen.dart';
 
 import 'employee_jobs_screen.dart';
+import 'kyc_document_upload_screen.dart';
 import 'customer_marketplace_screen.dart';
 import 'owner_reconciliation_queue_screen.dart';
 import '../providers/marketplace_provider.dart';
@@ -41,6 +42,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _refreshData() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
+    await auth.fetchUserProfile();
+    if (!mounted) return;
     if (auth.user?.role == 'owner') {
       await Provider.of<OwnerProvider>(context, listen: false)
           .fetchDashboardData(auth.token!);
@@ -105,8 +108,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final isOwner = user.role == "owner";
-    final isKycPending =
-        isOwner && user.kycStatus == "pending_super_admin_approval";
+    final status = user.effectiveKycStatus;
+    final isKycPending = status == "pending_super_admin_approval";
+    final isKycRejected = status == "rejected";
+    final isKycUnverified =
+        status.isEmpty || status == "none" || status == "unverified";
 
     if (!isOwner) {
       if (user.role == 'employee') {
@@ -190,6 +196,17 @@ class _HomeScreenState extends State<HomeScreen> {
         foregroundColor: AppColors.onPrimary,
         actions: [
           IconButton(
+            icon: const Icon(Icons.verified_user_outlined),
+            tooltip: "Verification Documents",
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const KycDocumentUploadScreen(),
+                ),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.gavel_outlined),
             tooltip: "Escrow Reconciliation",
             onPressed: () {
@@ -224,27 +241,80 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (isKycPending)
-            Container(
-              color: AppColors.warning,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.warning_amber_rounded,
-                      color: AppColors.onPrimary, size: 28),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      "KYC Pending Approval: Your account documents are being reviewed. Some actions (e.g. creating services, deposits) are restricted.",
-                      style: AppTypography.bodyMd.copyWith(
-                        color: AppColors.onPrimary,
-                        fontWeight: FontWeight.w600,
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const KycDocumentUploadScreen(),
+                  ),
+                );
+              },
+              child: Container(
+                color: AppColors.warning,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        color: AppColors.onPrimary, size: 28),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        "KYC Pending Approval: Your account documents are being reviewed. Click to view submitted files.",
+                        style: AppTypography.bodyMd.copyWith(
+                          color: AppColors.onPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
+                    const Icon(Icons.arrow_forward_ios,
+                        color: AppColors.onPrimary, size: 16),
+                  ],
+                ),
+              ),
+            )
+          else if (isKycUnverified || isKycRejected)
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const KycDocumentUploadScreen(),
                   ),
-                ],
+                );
+              },
+              child: Container(
+                color: isKycRejected ? AppColors.error : AppColors.secondary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      isKycRejected
+                          ? Icons.error_outline
+                          : Icons.shield_outlined,
+                      color: AppColors.onPrimary,
+                      size: 28,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        isKycRejected
+                            ? "Verification Rejected: Please tap here to re-upload your verification documents."
+                            : "Account Unverified: Upload your KYB verification documents to activate your account.",
+                        style: AppTypography.bodyMd.copyWith(
+                          color: AppColors.onPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios,
+                        color: AppColors.onPrimary, size: 16),
+                  ],
+                ),
               ),
             ),
           Expanded(

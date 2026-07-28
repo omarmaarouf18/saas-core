@@ -61,6 +61,31 @@ class StatusBadge extends StatelessWidget {
           label: 'Cancelled',
           icon: Icons.cancel_outlined,
         );
+      case 'pending_super_admin_approval':
+        return const StatusBadgeConfig(
+          color: AppColors.warning,
+          label: 'Pending Approval',
+          icon: Icons.hourglass_empty_rounded,
+        );
+      case 'approved':
+        return const StatusBadgeConfig(
+          color: AppColors.success,
+          label: 'Approved',
+          icon: Icons.verified_user_outlined,
+        );
+      case 'rejected':
+        return const StatusBadgeConfig(
+          color: AppColors.error,
+          label: 'Rejected',
+          icon: Icons.gavel_outlined,
+        );
+      case 'unverified':
+      case 'none':
+        return const StatusBadgeConfig(
+          color: AppColors.outline,
+          label: 'Unverified',
+          icon: Icons.shield_outlined,
+        );
       case 'escrow_reconciliation_required':
       case 'reconciliation_required':
       case 'reconciliation required':

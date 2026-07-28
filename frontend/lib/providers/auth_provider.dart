@@ -44,6 +44,8 @@ class AuthProvider extends ChangeNotifier {
           kycStatus: kyc,
         );
         apiClient.setToken(_token);
+        // Refresh full user profile asynchronously on auto-login
+        fetchUserProfile();
       }
     } catch (_) {
       // Silent fail on load
@@ -51,6 +53,59 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> fetchUserProfile() async {
+    if (_token == null) return;
+    try {
+      final res = await apiClient
+          .get('/auth/user', queryParams: {'user_token': _token!});
+      if (res is Map<String, dynamic>) {
+        _user = UserProfile.fromJson(res);
+        if (_user!.effectiveKycStatus.isNotEmpty) {
+          await _secureStorage.write(
+              key: 'user_kyc', value: _user!.effectiveKycStatus);
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Fetch user profile error: $e');
+    }
+  }
+
+  Future<bool> uploadDocument({
+    required String docType,
+    required List<int> fileBytes,
+    required String filename,
+  }) async {
+    if (_token == null || _user == null) {
+      throw ApiClientException('User is not authenticated');
+    }
+
+    final isOwner = _user!.role == 'owner';
+    final isEmployee = _user!.role == 'employee';
+
+    if (!isOwner && !isEmployee) {
+      throw ApiClientException(
+          'Only owners and employees can upload verification documents');
+    }
+
+    final path = isOwner
+        ? '/auth/kyb/upload?type=$docType'
+        : '/auth/kye/upload?type=$docType';
+
+    final res = await apiClient.postMultipart(
+      path,
+      fieldName: 'file',
+      fileBytes: fileBytes,
+      filename: filename,
+    );
+
+    if (res is Map && res['status'] == 'uploaded') {
+      await fetchUserProfile();
+      return true;
+    }
+    return false;
   }
 
   void clearError() {

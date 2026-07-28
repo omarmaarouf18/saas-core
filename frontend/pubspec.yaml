@@ -17,6 +17,8 @@ dependencies:
   google_fonts: ^8.1.0
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
+  image_picker: ^1.1.2
+  file_picker: ^8.0.0
 
 dev_dependencies:
   flutter_test:
