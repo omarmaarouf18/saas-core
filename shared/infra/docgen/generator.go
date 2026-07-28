@@ -309,6 +309,16 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Resolves job in escrow_reconciliation_required status ('release_to_employee' or 'refund_to_customer').",
 		Targets:     "Updates `jobs` status and reconciliation fields, writes `wallets` and `ledger`, ships security audit event.",
 	},
+	"POST /users/jobs/propose-price": {
+		Permissions: "Customer or Employee JWT",
+		Function:    "ProposePrice proposes a custom price for a negotiable transport job.",
+		Targets:     "Reads services and jobs, updates proposed_price, proposed_by, proposal_expires_at, and job status.",
+	},
+	"POST /users/jobs/respond-price": {
+		Permissions: "Customer or Employee JWT",
+		Function:    "RespondPrice accepts or declines a price proposal for a transport job.",
+		Targets:     "Updates jobs agreed_price, status (active or cancelled), and cancellation_reason.",
+	},
 }
 
 // HandlerFuncInfo parses a file's AST to gather functions and their comments
