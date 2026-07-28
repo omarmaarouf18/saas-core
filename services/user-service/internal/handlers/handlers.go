@@ -204,11 +204,25 @@ func (u *UserService) ListServices(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	sortBy := q.Get("sort_by")
 	nearBy := q.Get("near_by") == "true"
+	hasLat := q.Get("lat") != ""
+	hasLon := q.Get("lon") != ""
 	refLat := parseFloat(q.Get("lat"), 30.0444)
 	refLon := parseFloat(q.Get("lon"), 31.2357)
 	radius := parseFloat(q.Get("radius"), 50)
 
 	ctx := r.Context()
+	if nearBy || hasLat || hasLon {
+		if !isValidCoordinate(refLat, refLon) {
+			log.Printf("[SECURITY WARNING] Invalid coordinates detected for ListServices: lat=%.6f, lon=%.6f", refLat, refLon)
+			handlerutil.ShipSecurityEvent(ctx, "INVALID_COORDINATES_DETECTED", "user-service", "anonymous", "", fmt.Sprintf("ListServices rejected: coordinates out of range (lat=%.6f, lon=%.6f)", refLat, refLon), handlerutil.GetClientIP(r))
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error":   "invalid_coordinates",
+				"message": "Latitude must be between -90 and 90, and Longitude must be between -180 and 180",
+			})
+			return
+		}
+	}
+
 	services := u.store.ListServices(ctx, sortBy, nearBy, refLat, refLon, radius)
 	// #nosec G706 //nolint:gosec -- sortBy is validated query parameter, log injection not possible
 	log.Printf("[USER] ListServices: sort_by=%s near_by=%v results=%d", sortBy, nearBy, len(services))
