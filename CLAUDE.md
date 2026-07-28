@@ -21,6 +21,7 @@ After completing any change, you must verify it before committing or pushing:
 3. `go test ./...` must succeed for every module touched (including running `shared/infra` tests whenever a changelog file is edited).
 4. The Commit SHA in any changelog entry must be written AFTER running `git commit` (never before), captured directly via `git rev-parse HEAD`, and then verified with `git cat-file -e <sha>^{commit}` to confirm it actually exists before the entry is considered final.
 5. Do not fabricate, guess, or approximate a commit SHA under any circumstances. If the real SHA can't be determined, mark the entry as unverified and flag it instead of writing a placeholder.
+6. Never run `git commit --amend` on a commit whose hash has already been cited elsewhere in the repo (a changelog entry, AI_CONTEXT.md, an ADR, etc.) — amending changes the hash, orphaning the cited reference and breaking CI's SHA validation. If a commit needs correcting after its hash may have been cited anywhere, create a NEW commit instead, even for a trivial fix. Only amend a commit that has not yet been pushed and is not yet referenced anywhere in committed documentation.
 
 Before performing `git add`, every commit and push sequence must explicitly execute:
 ```bash

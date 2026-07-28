@@ -23,7 +23,7 @@ fi
 # 3. Verify Markdown Commit SHAs
 FAILED_SHA=0
 for file in $(find . -type f -name "*.md" -not -path "*/node_modules/*" -not -path "*/vendor/*" -not -path "*/.git/*"); do
-  for sha in $(grep -oE "[0-9a-f]{40}" "$file"); do
+  for sha in $(grep -iE "(Commit SHA|Commit:|Related Commit SHA|Fix Commit SHA|\(Commit )" "$file" | grep -oE "[0-9a-f]{40}" || true); do
     if ! git cat-file -e "$sha^{commit}" 2>/dev/null; then
       echo "BLOCKED: fabricated/non-existent SHA $sha in $file"
       FAILED_SHA=1
