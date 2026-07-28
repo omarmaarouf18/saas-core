@@ -92,10 +92,10 @@ This file tracks historical entries for the primary category: **Documentation Ch
 - **Commit SHA**: ``3a032f138f47d0a9b140f12518e9ee59fe4ce266``
 - **Verification**: Verified via whole-repository markdown SHA scan script (0 BLOCKED lines) and `make docs-check`. ✅
 
+## Markdown Commit SHA Non-Blocking Warning Pass
 
-
-
-
-
+- **Implementation Detail**: Added a second, non-blocking verification pass to `.githooks/pre-push` and `.github/workflows/ci.yml` scanning markdown files for non-citation 40-character hex strings. Prints a `WARNING:` line for unlinked hashes without blocking push or CI.
+- **Commit SHA**: ``ea9f52add3561df24d008699ee24187139a56bde``
+- **Verification**: Verified via regression and warning unit tests and `make docs-check`. ✅
 
 
