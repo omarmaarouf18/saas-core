@@ -92,10 +92,10 @@ This file tracks historical entries for the primary category: **Documentation Ch
 - **Commit SHA**: ``3a032f138f47d0a9b140f12518e9ee59fe4ce266``
 - **Verification**: Verified via whole-repository markdown SHA scan script (0 BLOCKED lines) and `make docs-check`. ✅
 
-## Markdown Commit SHA Non-Blocking Warning Pass
+## Restored Full-Coverage Markdown Commit SHA Validation & Non-Citation Truncation Rule
 
-- **Implementation Detail**: Added a second, non-blocking verification pass to `.githooks/pre-push` and `.github/workflows/ci.yml` scanning markdown files for non-citation 40-character hex strings. Prints a `WARNING:` line for unlinked hashes without blocking push or CI.
-- **Commit SHA**: ``ea9f52add3561df24d008699ee24187139a56bde``
-- **Verification**: Verified via regression and warning unit tests and `make docs-check`. ✅
+- **Implementation Detail**: Superseded the citation-marker narrowing and two-tier warning pass by restoring strict repo-wide 40-character hex SHA scanning (blocking with exit 1 on any unresolvable 40-char SHA) in `.githooks/pre-push` and `.github/workflows/ci.yml`. This addresses the coverage gap where non-standard citation phrasing could bypass blocking checks. In addition, added rule #7 to `CLAUDE.md` requiring non-authoritative historical or orphaned commit references in prose to be written in truncated form (`05b5ca7...`).
+- **Commit SHA**: ``c14bac58208173e914b376cf0bb8c89b4f90f433``
+- **Verification**: Verified via repo-wide markdown SHA check (0 BLOCKED lines), fabricated hash regression test (BLOCKED, exit 1), and `make docs-check`. ✅
 
 
