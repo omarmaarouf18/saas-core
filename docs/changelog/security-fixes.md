@@ -538,6 +538,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``42e5843b3471bb272f1deef9846ad14b79414e35``
 - **Verification**: Verified via `gofmt`, `go build ./...`, `go vet ./...`, and `go test ./...` in `user-service` (100% passing). ✅
 
+## ListServices Spatial Coordinate Bounds Validation Hardening
+
+- **Implementation Detail**: Resolved "Flagged for Next Pass" item 3 in `docs/audit/shared-module-review.md`. Added `isValidCoordinate(refLat, refLon)` bounds validation (`-90 <= lat <= 90`, `-180 <= lon <= 180`) to the `ListServices` handler in `user-service` when `near_by=true` or when explicit `lat`/`lon` query parameters are supplied. On out-of-range inputs, the handler logs a `[SECURITY WARNING]`, ships a `handlerutil.ShipSecurityEvent` (`INVALID_COORDINATES_DETECTED`), and returns HTTP `400 Bad Request` (`{"error": "invalid_coordinates"}`). Added 4 unit tests in `list_services_test.go`.
+- **Commit SHA**: ``679667f9c994edd582d5c6d79226e78d1b277320``
+- **Verification**: Verified via `gofmt`, `go build ./...`, `go vet ./...`, and `go test ./...` in `user-service` (100% passing). ✅
+
 
 
 

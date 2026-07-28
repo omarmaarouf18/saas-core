@@ -77,7 +77,7 @@ The following packages under `shared/` were audited file-by-file, function-by-fu
 During import tracing, the following items under `services/` were flagged as requiring close inspection in future service audits:
 1. **`auth-service/internal/handlers/auth.go`**: Verify why token expiry is compared against a hardcoded `7*24*time.Hour` refresh window. Check if this value is configurable or documented.
 2. **`chat-service/internal/handlers/chat.go`**: Verify that query-parameter authentication tokens (`?token=`) for WebSocket connections are securely cleared/redacted on client handshake errors before logging.
-3. **`user-service/internal/handlers/handlers.go`**: Ensure spatial coordinate bounds checking is consistent across all service directory queries and is not vulnerable to out-of-bounds input bypasses. **[RESOLVED]** — Added `isValidCoordinate(refLat, refLon)` bounds validation to `ListServices` in `user-service`, rejecting out-of-bounds inputs with `400 Bad Request` (`invalid_coordinates`), security event logging, and audit tracking. Verified via `list_services_test.go`. (Commit `<sha>`).
+3. **`user-service/internal/handlers/handlers.go`**: Ensure spatial coordinate bounds checking is consistent across all service directory queries and is not vulnerable to out-of-bounds input bypasses. **[RESOLVED]** — Added `isValidCoordinate(refLat, refLon)` bounds validation to `ListServices` in `user-service`, rejecting out-of-bounds inputs with `400 Bad Request` (`invalid_coordinates`), security event logging, and audit tracking. Verified via `list_services_test.go`. (Commit `679667f9c994edd582d5c6d79226e78d1b277320`).
 
 ---
 
