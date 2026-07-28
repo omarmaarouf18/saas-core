@@ -89,7 +89,7 @@ This file tracks historical entries for the primary category: **Documentation Ch
 ## AI_CONTEXT.md Orphaned Commit SHA Prose Formatting Mitigation
 
 - **Implementation Detail**: Updated narrative text in `docs/changelog/bug-fixes.md` explaining the `AI_CONTEXT.md` orphaned commit SHA correction. Truncated the full 40-character hex string to short ref `05b5ca7...` to prevent global CI markdown SHA validation regex (`grep -oE '[0-9a-f]{40}'`) from matching historical reflog narratives as live commit citations.
-- **Commit SHA**: ``b9664728156221fe8c6dd3851e02b72f36f14a1a``
+- **Commit SHA**: ``3a032f138f47d0a9b140f12518e9ee59fe4ce266``
 - **Verification**: Verified via whole-repository markdown SHA scan script (0 BLOCKED lines) and `make docs-check`. ✅
 
 
