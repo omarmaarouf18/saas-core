@@ -2,7 +2,7 @@
 
 - **Status**: Accepted
 - **Date**: 2026-07-28
-- **Related Commit SHA**: <sha>
+- **Related Commit SHA**: ffb75f989bd25ed0ac5bb54f46094a66ecad0080
 - **Related audit finding**: Negotiable Transport Pricing TOCTOU Race Audit (Gap 1 & Gap 2)
 
 ## Context

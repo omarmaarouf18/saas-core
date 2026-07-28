@@ -526,6 +526,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``fc4456efed1f6f86787943ad15133a7b9f0845e1``
 - **Verification**: Verified via `dart format --set-exit-if-changed lib/`, `flutter analyze` (0 issues), and `flutter test` (all tests passed including 4 new friendly error mapping unit tests). ✅
 
+## Negotiable Transport Pricing Atomic Compare-and-Swap TOCTOU Hardening (ADR-0009)
+
+- **Implementation Detail**: Remediated TOCTOU race conditions in the negotiable transport pricing flow (`RespondPrice` and `ProposePrice` in `user-service`). Conditioned `UpdateJobAgreedPrice` and `UpdateJobCancellation` MongoDB updates on `status == AwaitingPriceResponse`, returning `job_state_changed` on zero matched documents. Conditioned `UpdateJobPriceProposal` updates on `status == AwaitingPriceResponse` and `proposed_price == nil` (or matching current proposal). If `RespondPrice` encounters `job_state_changed` post-escrow lock, it automatically executes compensating `performRollbackEscrow` to refund locked funds and returns `409 Conflict`. Added concurrent race test suites (`TestRespondPrice_ConcurrencyRace_DoubleEscrowPrevention` and `TestProposePrice_ConcurrencyRace_OverwrittenProposalPrevention`). Authored ADR-0009.
+- **Commit SHA**: ``ffb75f989bd25ed0ac5bb54f46094a66ecad0080``
+- **Verification**: Verified via `gofmt`, `go build ./...`, `go vet ./...`, and `go test ./...` in `user-service` (100% passing). ✅
+
 
 
 
