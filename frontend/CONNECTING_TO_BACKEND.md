@@ -97,6 +97,9 @@ In profile or release builds (`kDebugMode == false`), `HttpOverrides.global` is 
 
 When changing `--dart-define=API_BASE_URL=...` parameters, stale build artifacts or cached app state can retain old configuration values. Use this clean rebuild sequence to ensure a fresh state:
 
+> [!NOTE]
+> Stale `--dart-define` values represent a runtime configuration caching issue, whereas Gradle `compileSdk` mismatches (`checkDebugAarMetadata... requires... compile against version 36`) are build-time compilation failures resolved by pinning `compileSdk = 36` in `frontend/android/app/build.gradle.kts`.
+
 ```bash
 # 1. Uninstall stale app from target device or emulator (Application ID / Bundle ID: com.saascore.frontend):
 adb uninstall com.saascore.frontend                # Android (Device or Emulator)
@@ -141,3 +144,5 @@ cd frontend && flutter logs
 | `HandshakeException` or `CERTIFICATE_VERIFY_FAILED` | Target host (e.g. LAN IP `192.168.x.x`) is not in `bypassBadCertificate` whitelist, or package bypasses `HttpOverrides` | Use `adb reverse` with `localhost` on Android, or check third-party packages like `flutter_client_sse` (see Section 4). |
 | `curl -k https://localhost:8080/health` succeeds on host, but app cannot connect | Host machine network path mismatch from emulator/device | Confirm platform IP / port forwarding configuration in Section 3. |
 | App continues targeting old URL after updating `--dart-define` | Stale compiled binary or cached application state | Execute full clean rebuild sequence in Section 5. |
+| `checkDebugAarMetadata... requires... compile against version 36` | `flutter.compileSdkVersion` resolved below pinned AAR dependency floor (`flutter_plugin_android_lifecycle`) | Pin `compileSdk = 36` in `frontend/android/app/build.gradle.kts` instead of relying on default `flutter.compileSdkVersion`. |
+
