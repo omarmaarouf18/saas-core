@@ -532,6 +532,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``ffb75f989bd25ed0ac5bb54f46094a66ecad0080``
 - **Verification**: Verified via `gofmt`, `go build ./...`, `go vet ./...`, and `go test ./...` in `user-service` (100% passing). ✅
 
+## ADR-0009 Hardening: Job State Changed Escrow Lock Rollback Retry & Operator Reconciliation Fallback (Gap 3)
+
+- **Implementation Detail**: Remediated a financial leakage risk in `RespondPrice` (`user-service`). When `UpdateJobAgreedPrice` returns `job_state_changed` post-escrow lock, if the initial `performRollbackEscrow` call fails, the handler now retries `performRollbackEscrow` once. If the retry also fails, the handler invokes `u.store.UpdateJobReconciliation` to mark the job as `models.JobStatusEscrowReconciliationRequired` with durable diagnostic details in `ReconciliationNote` and `EscrowFailureReason`, while still returning HTTP `409 Conflict` (`"error": "job_state_changed"`) to the client. Added unit test `TestRespondPrice_JobStateChanged_RollbackFailure_ReconciliationFallback` in `negotiation_concurrency_test.go`. Updated ADR-0009.
+- **Commit SHA**: ``42e5843b3471bb272f1deef9846ad14b79414e35``
+- **Verification**: Verified via `gofmt`, `go build ./...`, `go vet ./...`, and `go test ./...` in `user-service` (100% passing). ✅
+
 
 
 
