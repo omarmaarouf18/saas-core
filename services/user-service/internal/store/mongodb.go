@@ -353,7 +353,16 @@ func (s *MongoDB) UpdateJobReconciliation(ctx context.Context, id string, status
 }
 
 func (s *MongoDB) UpdateJobPriceProposal(ctx context.Context, id string, proposedPrice *float64, proposedBy string, expiresAt *time.Time) error {
-	res, err := s.jobs.UpdateOne(ctx, bson.M{"_id": id},
+	var priceMatch any = nil
+	if proposedPrice != nil {
+		priceMatch = bson.M{"$in": []any{nil, *proposedPrice}}
+	}
+	filter := bson.M{
+		"_id":            id,
+		"status":         models.JobStatusAwaitingPriceResponse,
+		"proposed_price": priceMatch,
+	}
+	res, err := s.jobs.UpdateOne(ctx, filter,
 		bson.M{"$set": bson.M{
 			"proposed_price":            proposedPrice,
 			"proposed_by":               proposedBy,
@@ -364,13 +373,17 @@ func (s *MongoDB) UpdateJobPriceProposal(ctx context.Context, id string, propose
 		return fmt.Errorf("store: update job price proposal: %w", err)
 	}
 	if res.MatchedCount == 0 {
-		return fmt.Errorf("job %q not found", id)
+		return fmt.Errorf("job_state_changed: job %q not in status awaiting_price_response or price proposal already exists", id)
 	}
 	return nil
 }
 
 func (s *MongoDB) UpdateJobAgreedPrice(ctx context.Context, id string, agreedPrice *float64, status models.JobStatus) error {
-	res, err := s.jobs.UpdateOne(ctx, bson.M{"_id": id},
+	filter := bson.M{
+		"_id":    id,
+		"status": models.JobStatusAwaitingPriceResponse,
+	}
+	res, err := s.jobs.UpdateOne(ctx, filter,
 		bson.M{"$set": bson.M{
 			"agreed_price": agreedPrice,
 			"status":       status,
@@ -380,13 +393,17 @@ func (s *MongoDB) UpdateJobAgreedPrice(ctx context.Context, id string, agreedPri
 		return fmt.Errorf("store: update job agreed price: %w", err)
 	}
 	if res.MatchedCount == 0 {
-		return fmt.Errorf("job %q not found", id)
+		return fmt.Errorf("job_state_changed: job %q not in status awaiting_price_response", id)
 	}
 	return nil
 }
 
 func (s *MongoDB) UpdateJobCancellation(ctx context.Context, id string, status models.JobStatus, reason string) error {
-	res, err := s.jobs.UpdateOne(ctx, bson.M{"_id": id},
+	filter := bson.M{
+		"_id":    id,
+		"status": models.JobStatusAwaitingPriceResponse,
+	}
+	res, err := s.jobs.UpdateOne(ctx, filter,
 		bson.M{"$set": bson.M{
 			"status":              status,
 			"cancellation_reason": reason,
@@ -396,7 +413,7 @@ func (s *MongoDB) UpdateJobCancellation(ctx context.Context, id string, status m
 		return fmt.Errorf("store: update job cancellation: %w", err)
 	}
 	if res.MatchedCount == 0 {
-		return fmt.Errorf("job %q not found", id)
+		return fmt.Errorf("job_state_changed: job %q not in status awaiting_price_response", id)
 	}
 	return nil
 }

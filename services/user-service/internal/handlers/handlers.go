@@ -2390,6 +2390,13 @@ func (u *UserService) ProposePrice(w http.ResponseWriter, r *http.Request) {
 	job.UpdatedAt = now
 
 	if err := u.store.UpdateJobPriceProposal(ctx, job.ID, &req.ProposedPrice, proposerRole, &exp); err != nil {
+		if strings.Contains(err.Error(), "job_state_changed") {
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error":   "job_state_changed",
+				"message": "job status has changed or a price proposal has already been submitted",
+			})
+			return
+		}
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to persist price proposal: " + err.Error()})
 		return
 	}
@@ -2589,6 +2596,20 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 		job.UpdatedAt = now
 
 		if err := u.store.UpdateJobAgreedPrice(ctx, job.ID, &activePrice, models.JobStatusActive); err != nil {
+			if strings.Contains(err.Error(), "job_state_changed") {
+				if job.PaymentMethod != "cod" {
+					log.Printf("[USER] Job state changed concurrently for job %s during RespondPrice accept. Rolling back escrow lock.", job.ID)
+					rollbackErr := u.performRollbackEscrow(context.Background(), job.OwnerID, activePrice)
+					if rollbackErr != nil {
+						log.Printf("[CRITICAL ERROR] failed to rollback escrow lock on job_state_changed for owner %s (job %s): %v", job.OwnerID, job.ID, rollbackErr)
+					}
+				}
+				writeJSON(w, http.StatusConflict, map[string]string{
+					"error":   "job_state_changed",
+					"message": "job status is no longer awaiting price response",
+				})
+				return
+			}
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to accept price proposal: " + err.Error()})
 			return
 		}
@@ -2605,6 +2626,13 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 	job.UpdatedAt = now
 
 	if err := u.store.UpdateJobCancellation(ctx, job.ID, models.JobStatusCancelled, "price_disagreement"); err != nil {
+		if strings.Contains(err.Error(), "job_state_changed") {
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error":   "job_state_changed",
+				"message": "job status is no longer awaiting price response",
+			})
+			return
+		}
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to decline price proposal: " + err.Error()})
 		return
 	}
