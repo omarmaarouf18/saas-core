@@ -80,6 +80,13 @@ This file tracks historical entries for the primary category: **Documentation Ch
 - **Commit SHA**: ``c14e7e8e82b69715ffae7b5fca4d941d3410ae43``
 - **Verification**: Verified via `make docs-check` and `go test ./shared/infra/... -run TestChangelogCommitSHAs`. ✅
 
+## Flutter Client Backend Connectivity Developer Setup Guide (CONNECTING_TO_BACKEND.md)
+
+- **Implementation Detail**: Created `frontend/CONNECTING_TO_BACKEND.md` detailing per-platform networking setups for Android Emulators (`10.0.2.2`), physical Android devices (`adb reverse tcp:8080 tcp:8080`), iOS Simulators (`localhost`), and physical iOS devices (`192.168.x.x`). Documented backend health checks (`/health`), `API_BASE_URL` resolution via `--dart-define`, dev-mode HTTPS certificate overrides (`DevHttpOverrides` and `bypassBadCertificate`), clean rebuild steps using exact Application ID / Bundle ID (`com.saascore.frontend`), real-time log streaming commands, and a troubleshooting matrix. Added cross-references in `README.md` and `frontend/README.md`.
+- **Commit SHA**: ``c054907795e113e7d47edbd4776e6a52536032f1``
+- **Verification**: Verified via `make docs-check` (all docgen freshness and structural drift tests passing). ✅
+
+
 
 
 
