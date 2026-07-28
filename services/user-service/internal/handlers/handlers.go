@@ -213,6 +213,7 @@ func (u *UserService) ListServices(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if nearBy || hasLat || hasLon {
 		if !isValidCoordinate(refLat, refLon) {
+			// #nosec G706 //nolint:gosec -- floats formatted via %.6f, log injection not possible
 			log.Printf("[SECURITY WARNING] Invalid coordinates detected for ListServices: lat=%.6f, lon=%.6f", refLat, refLon)
 			handlerutil.ShipSecurityEvent(ctx, "INVALID_COORDINATES_DETECTED", "user-service", "anonymous", "", fmt.Sprintf("ListServices rejected: coordinates out of range (lat=%.6f, lon=%.6f)", refLat, refLon), handlerutil.GetClientIP(r))
 			writeJSON(w, http.StatusBadRequest, map[string]string{
