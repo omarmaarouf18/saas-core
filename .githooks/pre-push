@@ -2,6 +2,10 @@
 set -e
 echo "== pre-push gate: running checks =="
 
+# Set default authenticated Mongo & Redis URIs for host-level unit/integration tests
+export MONGO_URI="${MONGO_URI:-mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin}"
+export REDIS_URI="${REDIS_URI:-redis://:devpassword123@localhost:6380}"
+
 # 1. Verify Go formatting
 UNFORMATTED=$(gofmt -l . 2>&1)
 if [ -n "$UNFORMATTED" ]; then
