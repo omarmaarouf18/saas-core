@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/project/notification-service/internal/config"
+	"github.com/project/notification-service/internal/fcm"
 	"github.com/project/notification-service/internal/handlers"
 	"github.com/project/notification-service/internal/hub"
 	"github.com/project/shared/infra/jwtutil"
@@ -39,6 +40,9 @@ func main() {
 	}
 
 	sseHub := hub.NewSSEHub()
+	fcmClient := fcm.NewClient(cfg.FCMServiceAccountJSON, cfg.FCMProjectID, cfg.FCMEndpointURL, cfg.AuthServiceURL, cfg.InternalServiceToken, nil)
+	tokenFetcher := hub.NewHTTPDeviceTokenFetcher(cfg.AuthServiceURL, cfg.InternalServiceToken, nil)
+	sseHub.SetPushDispatcher(fcmClient, tokenFetcher)
 
 	// Connect to Redis.
 	redisClient, err := ratelimit.NewRedisClient(cfg.RedisURI)

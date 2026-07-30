@@ -1,6 +1,8 @@
 package hub
 
 import (
+	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -204,5 +206,144 @@ func TestSSEHub_MultiInstanceRedisPubSubDelivery(t *testing.T) {
 		}
 	default:
 		t.Errorf("c3OnHub2 on Hub 2 missed cross-instance global notification")
+	}
+}
+
+type mockFCMDispatcher struct {
+	sendPushFunc func(ctx context.Context, token, title, body string, data map[string]string) (bool, error)
+	enabled      bool
+}
+
+func (m *mockFCMDispatcher) SendPush(ctx context.Context, token, title, body string, data map[string]string) (bool, error) {
+	if m.sendPushFunc != nil {
+		return m.sendPushFunc(ctx, token, title, body, data)
+	}
+	return false, nil
+}
+
+func (m *mockFCMDispatcher) IsEnabled() bool {
+	return m.enabled
+}
+
+type mockDeviceTokenFetcher struct {
+	tokensFunc           func(ctx context.Context, userID string) ([]string, error)
+	unregisterCalledWith []string
+	unregisterFunc       func(ctx context.Context, userID, token string) error
+}
+
+func (m *mockDeviceTokenFetcher) GetUserDeviceTokens(ctx context.Context, userID string) ([]string, error) {
+	if m.tokensFunc != nil {
+		return m.tokensFunc(ctx, userID)
+	}
+	return nil, nil
+}
+
+func (m *mockDeviceTokenFetcher) UnregisterStaleToken(ctx context.Context, userID, token string) error {
+	m.unregisterCalledWith = append(m.unregisterCalledWith, userID+":"+token)
+	if m.unregisterFunc != nil {
+		return m.unregisterFunc(ctx, userID, token)
+	}
+	return nil
+}
+
+func TestSSEHub_FCMPushParallelDeliveryAndStaleTokenCleanup(t *testing.T) {
+	h := NewSSEHub()
+
+	client1 := &SSEClient{ID: "c1", TenantID: "tenant-A", Role: RoleOwner, Send: make(chan []byte, 5)}
+	h.Register(client1)
+
+	var pushedTokens []string
+	fcmDisp := &mockFCMDispatcher{
+		enabled: true,
+		sendPushFunc: func(ctx context.Context, token, title, body string, data map[string]string) (bool, error) {
+			pushedTokens = append(pushedTokens, token)
+			if token == "stale-token-99" {
+				return true, fmt.Errorf("token expired")
+			}
+			return false, nil
+		},
+	}
+
+	fetcher := &mockDeviceTokenFetcher{
+		tokensFunc: func(ctx context.Context, userID string) ([]string, error) {
+			if userID == "user-1" {
+				return []string{"valid-token-1", "stale-token-99"}, nil
+			}
+			return nil, nil
+		},
+	}
+
+	h.SetPushDispatcher(fcmDisp, fetcher)
+
+	// Broadcast notification targeting user-1
+	h.Broadcast(Notification{
+		ID:        "notif-test-fcm",
+		Type:      "job_alert",
+		TenantID:  "tenant-A",
+		UserID:    "user-1",
+		Title:     "New Job",
+		Body:      "Details...",
+		Timestamp: time.Now(),
+	})
+
+	// 1. Confirm SSE delivery succeeded immediately
+	select {
+	case msg := <-client1.Send:
+		if len(msg) == 0 {
+			t.Errorf("Expected SSE message for client1")
+		}
+	default:
+		t.Errorf("client1 missed SSE notification")
+	}
+
+	// Wait for async FCM push dispatch goroutine
+	time.Sleep(100 * time.Millisecond)
+
+	if len(pushedTokens) != 2 {
+		t.Fatalf("Expected 2 tokens pushed, got %d", len(pushedTokens))
+	}
+
+	// Verify stale token cleanup call
+	if len(fetcher.unregisterCalledWith) != 1 || fetcher.unregisterCalledWith[0] != "user-1:stale-token-99" {
+		t.Errorf("Expected stale token 'user-1:stale-token-99' to be unregistered, got %v", fetcher.unregisterCalledWith)
+	}
+}
+
+func TestSSEHub_FCMFailureDoesNotFailSSEBroadcast(t *testing.T) {
+	h := NewSSEHub()
+	client1 := &SSEClient{ID: "c1", TenantID: "tenant-A", Role: RoleOwner, Send: make(chan []byte, 5)}
+	h.Register(client1)
+
+	// Broken FCM dispatcher that returns errors or panics
+	fcmDisp := &mockFCMDispatcher{
+		enabled: true,
+		sendPushFunc: func(ctx context.Context, token, title, body string, data map[string]string) (bool, error) {
+			return false, fmt.Errorf("FCM server 500 internal server error")
+		},
+	}
+	fetcher := &mockDeviceTokenFetcher{
+		tokensFunc: func(ctx context.Context, userID string) ([]string, error) {
+			return []string{"token-1"}, nil
+		},
+	}
+
+	h.SetPushDispatcher(fcmDisp, fetcher)
+
+	h.Broadcast(Notification{
+		ID:       "notif-err-test",
+		TenantID: "tenant-A",
+		UserID:   "user-1",
+		Title:    "Title",
+		Body:     "Body",
+	})
+
+	// SSE broadcast must still succeed cleanly
+	select {
+	case msg := <-client1.Send:
+		if len(msg) == 0 {
+			t.Errorf("Expected SSE message despite FCM failure")
+		}
+	default:
+		t.Errorf("SSE broadcast failed due to FCM error")
 	}
 }

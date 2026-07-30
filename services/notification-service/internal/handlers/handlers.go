@@ -227,6 +227,8 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool, e
 type sendRequest struct {
 	Type     string     `json:"type"`
 	TenantID string     `json:"tenant_id"`
+	UserID   string     `json:"user_id,omitempty"`
+	UserIDs  []string   `json:"user_ids,omitempty"`
 	Global   bool       `json:"global,omitempty"`
 	Title    string     `json:"title"`
 	Body     string     `json:"body"`
@@ -272,6 +274,8 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 		ID:        fmt.Sprintf("notif-%d", time.Now().UnixNano()),
 		Type:      req.Type,
 		TenantID:  req.TenantID,
+		UserID:    req.UserID,
+		UserIDs:   req.UserIDs,
 		Global:    req.Global,
 		Title:     req.Title,
 		Body:      req.Body,

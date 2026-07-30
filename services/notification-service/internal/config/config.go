@@ -6,15 +6,18 @@ import (
 )
 
 type Config struct {
-	Port                 string
-	JWTSecret            string
-	InternalServiceToken string
-	AuthServiceURL       string
-	AllowedOrigin        string
-	TLSCertPath          string
-	TLSKeyPath           string
-	TLSCAPath            string
-	RedisURI             string
+	Port                  string
+	JWTSecret             string
+	InternalServiceToken  string
+	AuthServiceURL        string
+	AllowedOrigin         string
+	TLSCertPath           string
+	TLSKeyPath            string
+	TLSCAPath             string
+	RedisURI              string
+	FCMServiceAccountJSON string
+	FCMProjectID          string
+	FCMEndpointURL        string
 }
 
 func Load() (*Config, error) {
@@ -63,15 +66,25 @@ func Load() (*Config, error) {
 		allowedOrigin = "http://localhost:3000"
 	}
 
+	fcmServiceAccountJSON := os.Getenv("FCM_SERVICE_ACCOUNT_JSON")
+	if fcmServiceAccountJSON == "" {
+		fcmServiceAccountJSON = os.Getenv("FCM_CREDENTIALS_JSON")
+	}
+	fcmProjectID := os.Getenv("FCM_PROJECT_ID")
+	fcmEndpointURL := os.Getenv("FCM_ENDPOINT_URL")
+
 	return &Config{
-		Port:                 port,
-		JWTSecret:            jwtSecret,
-		InternalServiceToken: internalServiceToken,
-		AuthServiceURL:       authServiceURL,
-		AllowedOrigin:        allowedOrigin,
-		TLSCertPath:          tlsCertPath,
-		TLSKeyPath:           tlsKeyPath,
-		TLSCAPath:            tlsCAPath,
-		RedisURI:             redisURI,
+		Port:                  port,
+		JWTSecret:             jwtSecret,
+		InternalServiceToken:  internalServiceToken,
+		AuthServiceURL:        authServiceURL,
+		AllowedOrigin:         allowedOrigin,
+		TLSCertPath:           tlsCertPath,
+		TLSKeyPath:            tlsKeyPath,
+		TLSCAPath:             tlsCAPath,
+		RedisURI:              redisURI,
+		FCMServiceAccountJSON: fcmServiceAccountJSON,
+		FCMProjectID:          fcmProjectID,
+		FCMEndpointURL:        fcmEndpointURL,
 	}, nil
 }

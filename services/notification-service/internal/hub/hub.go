@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/project/notification-service/internal/fcm"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -27,9 +28,11 @@ const (
 // Notification is the payload broadcast to connected clients.
 type Notification struct {
 	ID        string    `json:"id"`
-	Type      string    `json:"type"`      // "job_alert", "status_update", "system", "popup"
-	TenantID  string    `json:"tenant_id"` // scope to tenant
-	Global    bool      `json:"global"`    // explicit opt-in for platform-wide global broadcast
+	Type      string    `json:"type"`               // "job_alert", "status_update", "system", "popup"
+	TenantID  string    `json:"tenant_id"`          // scope to tenant
+	UserID    string    `json:"user_id,omitempty"`  // target user ID if single recipient
+	UserIDs   []string  `json:"user_ids,omitempty"` // target user IDs if multiple recipients
+	Global    bool      `json:"global"`             // explicit opt-in for platform-wide global broadcast
 	Title     string    `json:"title"`
 	Body      string    `json:"body"`
 	Roles     []Role    `json:"roles"` // target roles (empty = broadcast all)
@@ -44,14 +47,22 @@ type SSEClient struct {
 	Send     chan []byte
 }
 
+// DeviceTokenFetcher defines interface for cross-service token lookup and stale token unregistration.
+type DeviceTokenFetcher interface {
+	GetUserDeviceTokens(ctx context.Context, userID string) ([]string, error)
+	UnregisterStaleToken(ctx context.Context, userID, token string) error
+}
+
 // SSEHub manages SSE client pools organized by role and tenant.
 type SSEHub struct {
-	mu       sync.RWMutex
-	clients  map[*SSEClient]bool
-	rdb      *redis.Client
-	pubsub   *redis.PubSub
-	cancel   context.CancelFunc
-	stopOnce sync.Once
+	mu                 sync.RWMutex
+	clients            map[*SSEClient]bool
+	rdb                *redis.Client
+	pubsub             *redis.PubSub
+	cancel             context.CancelFunc
+	stopOnce           sync.Once
+	fcmDispatcher      fcm.Dispatcher
+	deviceTokenFetcher DeviceTokenFetcher
 }
 
 // NewSSEHub creates a new hub.
@@ -178,6 +189,80 @@ func (h *SSEHub) Broadcast(n Notification) {
 		}
 	} else {
 		h.deliverLocal(n)
+	}
+
+	// Parallel non-blocking FCM push delivery
+	go h.dispatchPush(n)
+}
+
+// SetPushDispatcher configures parallel FCM push notification delivery.
+func (h *SSEHub) SetPushDispatcher(dispatcher fcm.Dispatcher, fetcher DeviceTokenFetcher) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.fcmDispatcher = dispatcher
+	h.deviceTokenFetcher = fetcher
+}
+
+func (h *SSEHub) dispatchPush(n Notification) {
+	h.mu.RLock()
+	fcmDisp := h.fcmDispatcher
+	fetcher := h.deviceTokenFetcher
+	h.mu.RUnlock()
+
+	if fcmDisp == nil || !fcmDisp.IsEnabled() || fetcher == nil {
+		return
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[FCM-PUSH] Recovered from panic in push dispatch: %v", r)
+		}
+	}()
+
+	var targetUserIDs []string
+	if n.UserID != "" {
+		targetUserIDs = append(targetUserIDs, n.UserID)
+	}
+	for _, uid := range n.UserIDs {
+		if uid != "" && uid != n.UserID {
+			targetUserIDs = append(targetUserIDs, uid)
+		}
+	}
+
+	if len(targetUserIDs) == 0 {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	dataMap := map[string]string{
+		"id":        n.ID,
+		"type":      n.Type,
+		"tenant_id": n.TenantID,
+	}
+
+	for _, userID := range targetUserIDs {
+		tokens, err := fetcher.GetUserDeviceTokens(ctx, userID)
+		if err != nil {
+			log.Printf("[FCM-PUSH] Failed to fetch device tokens for user %s: %v", userID, err)
+			continue
+		}
+
+		if len(tokens) == 0 {
+			log.Printf("[FCM-PUSH] Debug: user %s has no registered device tokens (silent no-op)", userID)
+			continue
+		}
+
+		for _, token := range tokens {
+			isStale, err := fcmDisp.SendPush(ctx, token, n.Title, n.Body, dataMap)
+			if isStale {
+				log.Printf("[FCM-PUSH] Cleaning up stale token for user %s", userID)
+				_ = fetcher.UnregisterStaleToken(ctx, userID, token)
+			} else if err != nil {
+				log.Printf("[FCM-PUSH] Push to user %s failed: %v", userID, err)
+			}
+		}
 	}
 }
 
