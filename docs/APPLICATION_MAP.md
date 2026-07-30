@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`05cbbc7`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`6dba855`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -159,6 +159,7 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`GET /health`** | `api-gateway` | Public | Public gateway health status. | None. |
 | **`GET /health/internal`** | `api-gateway` | `X-Internal-Token` | Returns circuit breaker metrics. | Reads breaker memory. |
 | **`GET /auth/audit-log`** | `auth-service` | Tenant Owner JWT | Fetches tenant security audit logs. Accepts requester_id (legacy) or requester_token (preferred). | Reads `audit_logs` collection. |
+| **`DELETE /auth/device-token`** | `auth-service` | User JWT | DeviceToken handles registration, update, and removal of client device tokens. | <!-- TODO: verify manually --> |
 | **`GET /auth/documents/view`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Validates signed URL token and streams/serves the uploaded document file. | Streams file content. |
 | **`POST /auth/employee/action`** | `auth-service` | Target Employee JWT | Records a simulated worker activity. | Writes `audit_logs` collection. |
 | **`POST /auth/employee/toggle`** | `auth-service` | Owner JWT (KYC Approved) | Activates/deactivates employee account. | Reads `users` (owner/employee), updates `users`. |

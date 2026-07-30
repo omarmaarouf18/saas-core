@@ -3083,3 +3083,127 @@ func TestResetPassword_OTPReusePrevention(t *testing.T) {
 		t.Fatalf("Expected 401 Unauthorized for reused OTP, got %d. Body: %s", rec2.Code, rec2.Body.String())
 	}
 }
+
+// TestDeviceToken_RegistrationAndUpsert tests registering, updating, and deduplicating FCM device tokens
+func TestDeviceToken_RegistrationAndUpsert(t *testing.T) {
+	a, mongoStore, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	user := &models.User{
+		ID:          "user-device-token-1",
+		Email:       "devicetoken@example.com",
+		Username:    "devicetokenuser",
+		Password:    "Password123!",
+		Role:        models.RoleUser,
+		IsActive:    true,
+		IsConfirmed: true,
+		CreatedAt:   time.Now().UTC(),
+	}
+	_ = mongoStore.CreateUser(ctx, user)
+
+	tokenStr, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email)
+	if err != nil {
+		t.Fatalf("failed to generate token: %v", err)
+	}
+
+	// 1. Register first device token
+	body1 := `{"token":"fcm-token-android-123","platform":"android"}`
+	req1 := httptest.NewRequest("POST", "/auth/device-token", strings.NewReader(body1))
+	req1.Header.Set("Authorization", "Bearer "+tokenStr)
+	rec1 := httptest.NewRecorder()
+	a.DeviceToken(rec1, req1)
+
+	if rec1.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for token registration, got %d. Body: %s", rec1.Code, rec1.Body.String())
+	}
+
+	u1 := mongoStore.GetByID(ctx, user.ID)
+	if len(u1.DeviceTokens) != 1 || u1.DeviceTokens[0].Token != "fcm-token-android-123" {
+		t.Fatalf("Expected 1 device token 'fcm-token-android-123', got %+v", u1.DeviceTokens)
+	}
+
+	// 2. Re-register SAME token (upsert, should update and NOT create duplicate)
+	body2 := `{"token":"fcm-token-android-123","platform":"android"}`
+	req2 := httptest.NewRequest("POST", "/auth/device-token", strings.NewReader(body2))
+	req2.Header.Set("Authorization", "Bearer "+tokenStr)
+	rec2 := httptest.NewRecorder()
+	a.DeviceToken(rec2, req2)
+
+	if rec2.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for token re-registration, got %d", rec2.Code)
+	}
+
+	u2 := mongoStore.GetByID(ctx, user.ID)
+	if len(u2.DeviceTokens) != 1 {
+		t.Fatalf("Expected no duplicate tokens (len=1), got len=%d", len(u2.DeviceTokens))
+	}
+
+	// 3. Register second device token (multiple devices support)
+	body3 := `{"token":"fcm-token-ios-456","platform":"ios"}`
+	req3 := httptest.NewRequest("POST", "/auth/device-token", strings.NewReader(body3))
+	req3.Header.Set("Authorization", "Bearer "+tokenStr)
+	rec3 := httptest.NewRecorder()
+	a.DeviceToken(rec3, req3)
+
+	if rec3.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for second token registration, got %d", rec3.Code)
+	}
+
+	u3 := mongoStore.GetByID(ctx, user.ID)
+	if len(u3.DeviceTokens) != 2 {
+		t.Fatalf("Expected 2 device tokens for multi-device support, got len=%d", len(u3.DeviceTokens))
+	}
+
+	// 4. Unregister first token via DELETE
+	body4 := `{"token":"fcm-token-android-123"}`
+	req4 := httptest.NewRequest("DELETE", "/auth/device-token", strings.NewReader(body4))
+	req4.Header.Set("Authorization", "Bearer "+tokenStr)
+	rec4 := httptest.NewRecorder()
+	a.DeviceToken(rec4, req4)
+
+	if rec4.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for token unregistration, got %d", rec4.Code)
+	}
+
+	u4 := mongoStore.GetByID(ctx, user.ID)
+	if len(u4.DeviceTokens) != 1 || u4.DeviceTokens[0].Token != "fcm-token-ios-456" {
+		t.Fatalf("Expected only ios token remaining, got %+v", u4.DeviceTokens)
+	}
+
+	// 5. Unregister second token via POST action="unregister"
+	body5 := `{"token":"fcm-token-ios-456","action":"unregister"}`
+	req5 := httptest.NewRequest("POST", "/auth/device-token", strings.NewReader(body5))
+	req5.Header.Set("Authorization", "Bearer "+tokenStr)
+	rec5 := httptest.NewRecorder()
+	a.DeviceToken(rec5, req5)
+
+	if rec5.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for action=unregister, got %d", rec5.Code)
+	}
+
+	u5 := mongoStore.GetByID(ctx, user.ID)
+	if len(u5.DeviceTokens) != 0 {
+		t.Fatalf("Expected 0 device tokens remaining, got len=%d", len(u5.DeviceTokens))
+	}
+}
+
+// TestDeviceToken_Unauthorized verifies unauthenticated requests are rejected
+func TestDeviceToken_Unauthorized(t *testing.T) {
+	a, _, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	req := httptest.NewRequest("POST", "/auth/device-token", strings.NewReader(`{"token":"abc"}`))
+	rec := httptest.NewRecorder()
+	a.DeviceToken(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized for unauthenticated device-token request, got %d", rec.Code)
+	}
+}

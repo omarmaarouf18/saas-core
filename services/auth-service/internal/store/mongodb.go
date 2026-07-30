@@ -503,3 +503,63 @@ func (s *MongoDB) GetReviewerByToken(ctx context.Context, token string) (*models
 	}
 	return &rev, nil
 }
+
+// ---------------------------------------------------------------------------
+// Device Token Operations (FCM Push Notifications)
+// ---------------------------------------------------------------------------
+
+// UpsertDeviceToken adds or updates a device token on a user record without duplicates.
+func (s *MongoDB) UpsertDeviceToken(ctx context.Context, userID, tokenStr, platform string) error {
+	if strings.TrimSpace(tokenStr) == "" {
+		return fmt.Errorf("device token cannot be empty")
+	}
+	if platform == "" {
+		platform = "android"
+	}
+
+	// First pull any existing token with the same token string to avoid duplicate array items
+	_, err := s.users.UpdateOne(ctx,
+		bson.M{"_id": userID},
+		bson.M{"$pull": bson.M{"device_tokens": bson.M{"token": tokenStr}}},
+	)
+	if err != nil {
+		return fmt.Errorf("store: pull existing device token: %w", err)
+	}
+
+	// Push the fresh device token
+	entry := models.DeviceToken{
+		Token:     tokenStr,
+		Platform:  platform,
+		UpdatedAt: time.Now(),
+	}
+	res, err := s.users.UpdateOne(ctx,
+		bson.M{"_id": userID},
+		bson.M{"$push": bson.M{"device_tokens": entry}},
+	)
+	if err != nil {
+		return fmt.Errorf("store: push device token: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("user %q not found", userID)
+	}
+	return nil
+}
+
+// RemoveDeviceToken unregisters a specific device token (or all tokens if tokenStr is empty) from a user record.
+func (s *MongoDB) RemoveDeviceToken(ctx context.Context, userID, tokenStr string) error {
+	var update bson.M
+	if strings.TrimSpace(tokenStr) == "" {
+		update = bson.M{"$set": bson.M{"device_tokens": []models.DeviceToken{}}}
+	} else {
+		update = bson.M{"$pull": bson.M{"device_tokens": bson.M{"token": tokenStr}}}
+	}
+
+	res, err := s.users.UpdateOne(ctx, bson.M{"_id": userID}, update)
+	if err != nil {
+		return fmt.Errorf("store: remove device token: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("user %q not found", userID)
+	}
+	return nil
+}

@@ -104,6 +104,7 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/kyb-kye/pending", a.GetPendingKYBKYESubmissions)
 	mux.HandleFunc("/auth/kyb-kye/review", a.ReviewKYBKYESubmissions)
 	mux.HandleFunc("/auth/documents/view", a.ViewDocument)
+	mux.HandleFunc("/auth/device-token", a.DeviceToken)
 	mux.HandleFunc("/auth/logout", a.Logout)
 }
 
@@ -1998,4 +1999,87 @@ func (a *Auth) GetEmployees(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, res)
+}
+
+// ---------------------------------------------------------------------------
+// POST /auth/device-token & DELETE /auth/device-token
+// ---------------------------------------------------------------------------
+
+// DeviceToken handles registration, update, and removal of client device tokens.
+//
+// Accepts:
+// POST: { "token": "...", "platform": "android|ios|web", "action": "register|unregister"? }
+// DELETE: { "token": "..." } or ?token=...
+func (a *Auth) DeviceToken(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost && r.Method != http.MethodDelete {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "use POST or DELETE",
+		})
+		return
+	}
+
+	claims, err := a.authenticateUser(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "unauthorized: " + err.Error(),
+		})
+		return
+	}
+
+	ctx := r.Context()
+
+	if r.Method == http.MethodDelete {
+		var req models.DeviceTokenRequest
+		if r.Body != nil {
+			_ = json.NewDecoder(r.Body).Decode(&req)
+		}
+		if req.Token == "" {
+			req.Token = r.URL.Query().Get("token")
+		}
+
+		if err := a.store.RemoveDeviceToken(ctx, claims.UserID, req.Token); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to unregister device token: " + err.Error(),
+			})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{
+			"message": "device token unregistered successfully",
+		})
+		return
+	}
+
+	// POST method
+	var req models.DeviceTokenRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid request body",
+		})
+		return
+	}
+
+	if req.Action == "unregister" || req.Token == "" {
+		if err := a.store.RemoveDeviceToken(ctx, claims.UserID, req.Token); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to unregister device token: " + err.Error(),
+			})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{
+			"message": "device token unregistered successfully",
+		})
+		return
+	}
+
+	// Upsert token
+	if err := a.store.UpsertDeviceToken(ctx, claims.UserID, req.Token, req.Platform); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to register device token: " + err.Error(),
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"message": "device token registered successfully",
+	})
 }
