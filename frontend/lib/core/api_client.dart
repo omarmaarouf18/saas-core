@@ -142,6 +142,25 @@ class ApiClient {
     });
   }
 
+  Future<dynamic> registerDeviceToken({
+    required String token,
+    String platform = 'android',
+    String? action,
+  }) async {
+    return post('/auth/device-token', {
+      'token': token,
+      'platform': platform,
+      if (action != null) 'action': action,
+    });
+  }
+
+  Future<dynamic> unregisterDeviceToken({String? token}) async {
+    return post('/auth/device-token', {
+      'token': token ?? '',
+      'action': 'unregister',
+    });
+  }
+
   dynamic _handleResponse(http.Response response) {
     dynamic body;
     try {

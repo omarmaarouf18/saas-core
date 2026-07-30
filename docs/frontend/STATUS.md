@@ -44,7 +44,12 @@
 *   **Phase 10: KYB/KYE Document Upload Screen** — **[100% COMPLETE & VERIFIED]**
     *   *KYB/KYE Document Upload Screen*: **[VERIFIED]** Implemented `KycDocumentUploadScreen` (`frontend/lib/screens/kyc_document_upload_screen.dart`), updated `UserProfile` (`frontend/lib/models/user_profile.dart`), extended `AuthProvider` (`frontend/lib/providers/auth_provider.dart`), and wired banner prompt + AppBar action in `home_screen.dart`. Renders role-conditional document upload slots (4 slots for owner: `id_front`, `id_back`, `selfie`, `business_proof`; 3 slots for employee: `id_front`, `id_back`, `selfie`). Integrates `StatusBadge` for KYC statuses, displays prominent rejection reason banner when status is `rejected`, enforces client-side file size ($\le 10$MB) and MIME format rules prior to network calls, handles per-slot upload loading and error states independently, and locks/disables upload actions when status is `approved`. Verified via widget tests (`test/kyc_document_upload_screen_test.dart` 5/5 pass).
 *   **Phase 11: Negotiable Transport Pricing UI (ADR-0006)** — **[100% COMPLETE & VERIFIED]**
-    *   *Negotiable Transport Pricing UI*: **[VERIFIED]** Added API client methods `proposePrice` (`POST /users/jobs/propose-price`) and `respondPrice` (`POST /users/jobs/respond-price`). Integrated counter-offer submission UI with $[0.5 \times P_{\text{suggested}}, 1.5 \times P_{\text{suggested}}]$ validation in `JobStatusScreen` for transport-category jobs in `awaiting_price_response` state. Added incoming proposal decision card rendering proposer role, proposed fare, original system fare, and percentage difference comparison. Handles 409 `job_state_changed` conflict responses with informative error banner and status refresh. Implemented 5-minute negotiation window timer with live ticker and explicit expired banner. Verified via widget tests (`test/negotiable_transport_pricing_test.dart` 5/5 pass).
+    *   *Negotiation UI*: **[VERIFIED]** Integrated counter-offer submission UI with $[0.5 \times P_{\text{suggested}}, 1.5 \times P_{\text{suggested}}]$ validation in `JobStatusScreen` for transport jobs in `awaiting_price_response` state. Added incoming proposal card comparing proposer, proposed fare, original system fare, and percentage difference. Handled 409 `job_state_changed` conflict responses with auto-refresh and user notification. Added 5-minute countdown ticker + explicit expired banner.
+    *   *Unit/Widget Tests*: **[VERIFIED]** Added 5 comprehensive widget tests in `frontend/test/negotiable_transport_pricing_test.dart` (5/5 pass, full suite 44/44 pass). Clean `flutter analyze` (0 issues).
+* **Phase 12: Real Push Notification Delivery (Firebase Cloud Messaging)** — **[100% COMPLETE & VERIFIED]**
+    *   *FCM Device Token Storage (Commit 1)*: **[VERIFIED]** Added `DeviceToken` struct and array to `models.User` in `auth-service`. Built `POST /auth/device-token` and `DELETE /auth/device-token` endpoints for token registration, update, multi-device registration, and unregistration. Verified via unit tests (`TestDeviceToken_RegistrationAndUpsert`, `TestDeviceToken_Unauthorized`).
+    *   *FCM Dispatcher in Notification Service (Commit 2)*: **[VERIFIED]** Added lightweight FCM HTTP v1 REST client (`fcm.Client`) in `notification-service` with fail-safe no-op mode on missing config. Integrated non-blocking parallel `PushDispatcher` into `SSEHub` (`go dispatchPush`) that delivers FCM push notifications alongside SSE broadcasts without blocking real-time streams. Added automatic stale token cleanup (`UNREGISTERED` / 404 responses trigger `DELETE /auth/device-token` on `auth-service`). Verified via unit tests in `fcm_test.go` and `hub_test.go`.
+    *   *Frontend FCM Registration (Commit 3)*: **[VERIFIED]** Added `firebase_messaging` to `pubspec.yaml`. Added `registerDeviceToken` and `unregisterDeviceToken` methods to `ApiClient`. Built `PushNotificationService` with `PushMessagingAdapter` for managing token registration, unregistration, and foreground notifications. Wired `PushNotificationService` into `AuthProvider` auto-login, login/signup success, and logout flows. Built 4 unit and widget tests in `test/fcm_push_registration_test.dart` (44/44 full suite pass). Clean `flutter analyze` (0 issues).
 
  ---
 
@@ -79,6 +84,8 @@
    * `reconciliation_job.dart`
  * **Theme**:
    * `theme.dart`
+ * **Services**:
+   * `push_notification_service.dart`
  * **Providers**:
    * `auth_provider.dart`
    * `owner_provider.dart`

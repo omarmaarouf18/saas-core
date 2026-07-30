@@ -3,9 +3,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/api_client.dart';
 import '../core/error_messages.dart';
 import '../models/user_profile.dart';
+import '../services/push_notification_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiClient apiClient;
+  final PushNotificationService pushService;
   final _secureStorage = const FlutterSecureStorage();
 
   UserProfile? _user;
@@ -19,7 +21,9 @@ class AuthProvider extends ChangeNotifier {
   String? get error => _error;
   bool get isAuthenticated => _token != null;
 
-  AuthProvider(this.apiClient) {
+  AuthProvider(this.apiClient, {PushNotificationService? pushService})
+      : pushService =
+            pushService ?? PushNotificationService(apiClient: apiClient) {
     _tryAutoLogin();
   }
 
@@ -44,6 +48,8 @@ class AuthProvider extends ChangeNotifier {
           kycStatus: kyc,
         );
         apiClient.setToken(_token);
+        // Register FCM device token on auto-login startup
+        pushService.registerDeviceToken();
         // Refresh full user profile asynchronously on auto-login
         fetchUserProfile();
       }
@@ -244,11 +250,17 @@ class AuthProvider extends ChangeNotifier {
     } else {
       await _secureStorage.delete(key: 'user_kyc');
     }
+
+    // Register FCM device token on login/signup success
+    await pushService.registerDeviceToken();
   }
 
   Future<void> logout() async {
     _isLoading = true;
     notifyListeners();
+
+    // Unregister FCM device token on logout
+    await pushService.unregisterDeviceToken();
 
     _token = null;
     _user = null;
