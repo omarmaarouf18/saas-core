@@ -189,6 +189,7 @@ The following documentation resources map the Quick Delivery platform architectu
 *   **[docs/APPLICATION_MAP.md](docs/APPLICATION_MAP.md)** — Detailed API endpoints, inter-service HTTP routes, and user/system interaction flowcharts.
 *   **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — Production deployment guide, VPS requirements, reverse proxy setup, and two-repo architecture.
 *   **[docs/CI_CD_AND_HOOKS.md](docs/CI_CD_AND_HOOKS.md)** — Comprehensive breakdown of local Git hooks, GitHub Actions CI, and GHCR build/publish workflows.
+*   **[docs/RUNBOOK.md](docs/RUNBOOK.md)** — Release and server deployment runbook for merging, CI/CD triggering, VPS setup, and rollback procedures.
 *   **[docs/changelog/README.md](docs/changelog/README.md)** — Index of categorized changelogs (Security Fixes, New Features, Infrastructure, Bug Fixes, and Documentation updates).
 
 ### Frontend (Flutter Client)
