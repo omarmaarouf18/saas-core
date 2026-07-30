@@ -544,6 +544,12 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Commit SHA**: ``679667f9c994edd582d5c6d79226e78d1b277320``
 - **Verification**: Verified via `gofmt`, `go build ./...`, `go vet ./...`, and `go test ./...` in `user-service` (100% passing). ✅
 
+## Production Infrastructure & Database Authentication Hardening
+
+- **Implementation Detail**: Remediated critical public database vulnerability where MongoDB (27017) and Redis (6380) had zero authentication and published open ports to `0.0.0.0` on host machines. Enforced MongoDB root credentials (`MONGO_INITDB_ROOT_USERNAME` / `MONGO_INITDB_ROOT_PASSWORD`) and Redis authentication (`REDIS_PASSWORD` / `--requirepass`). Updated all microservice `MONGO_URI` and `REDIS_URI` strings. Restricted host port bindings for `mongo` (`127.0.0.1:27017:27017`) and `redis` (`127.0.0.1:6380:6379`) to localhost, preventing public internet database access while preserving inter-service communication across internal Docker bridge `saas-net`. Audited environment secrets in `infrastructure/.env.example`. Authored `docs/DEPLOYMENT.md` for generic Docker cloud VPS deployment.
+- **Commit SHA**: ``49572882a98844de0f688fa97275c9a835dc93ce``
+- **Verification**: Verified via `docker compose -f infrastructure/docker-compose.yml config` (syntactically valid), local Docker Compose startup (`saas-mongo` and `saas-redis` reporting `healthy`, all 5 microservices running), `curl -k https://localhost:8080/health` (`{"status":"ok"}`), and `.githooks/pre-push` gate passing 100%. ✅
+
 
 
 
