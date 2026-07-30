@@ -116,6 +116,32 @@ class ApiClient {
     }
   }
 
+  Future<dynamic> proposePrice({
+    required String jobId,
+    required double proposedPrice,
+    String? requesterToken,
+  }) async {
+    return post('/users/jobs/propose-price', {
+      'job_id': jobId,
+      'proposed_price': proposedPrice,
+      if (requesterToken != null && requesterToken.isNotEmpty)
+        'requester_token': requesterToken,
+    });
+  }
+
+  Future<dynamic> respondPrice({
+    required String jobId,
+    required String decision,
+    String? requesterToken,
+  }) async {
+    return post('/users/jobs/respond-price', {
+      'job_id': jobId,
+      'decision': decision,
+      if (requesterToken != null && requesterToken.isNotEmpty)
+        'requester_token': requesterToken,
+    });
+  }
+
   dynamic _handleResponse(http.Response response) {
     dynamic body;
     try {

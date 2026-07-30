@@ -29,6 +29,11 @@ class Job {
   final String paymentMethod;
   final String? cancellationReason;
   final double? lockedEscrowAmount;
+  final double? suggestedPrice;
+  final double? proposedPrice;
+  final String? proposedBy;
+  final double? agreedPrice;
+  final DateTime? priceProposalExpiresAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -44,6 +49,11 @@ class Job {
     required this.paymentMethod,
     this.cancellationReason,
     this.lockedEscrowAmount,
+    this.suggestedPrice,
+    this.proposedPrice,
+    this.proposedBy,
+    this.agreedPrice,
+    this.priceProposalExpiresAt,
     this.createdAt,
     this.updatedAt,
   });
@@ -63,6 +73,13 @@ class Job {
       paymentMethod: json['payment_method'] ?? '',
       cancellationReason: json['cancellation_reason'],
       lockedEscrowAmount: (json['locked_escrow_amount'] as num?)?.toDouble(),
+      suggestedPrice: (json['suggested_price'] as num?)?.toDouble(),
+      proposedPrice: (json['proposed_price'] as num?)?.toDouble(),
+      proposedBy: json['proposed_by'],
+      agreedPrice: (json['agreed_price'] as num?)?.toDouble(),
+      priceProposalExpiresAt: json['price_proposal_expires_at'] != null
+          ? DateTime.tryParse(json['price_proposal_expires_at'])
+          : null,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'])
           : null,

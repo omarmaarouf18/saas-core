@@ -169,6 +169,68 @@ class MarketplaceProvider extends ChangeNotifier {
     }
   }
 
+  Future<Job?> proposePrice({
+    required String jobId,
+    required double proposedPrice,
+    required String userToken,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.proposePrice(
+        jobId: jobId,
+        proposedPrice: proposedPrice,
+        requesterToken: userToken,
+      );
+
+      if (res is Map && res.containsKey('job')) {
+        _bookedJob = Job.fromJson(res['job'] as Map<String, dynamic>);
+        return _bookedJob;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error proposing price: $e');
+      _error = friendlyErrorMessage(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<Job?> respondPrice({
+    required String jobId,
+    required String decision,
+    required String userToken,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.respondPrice(
+        jobId: jobId,
+        decision: decision,
+        requesterToken: userToken,
+      );
+
+      if (res is Map && res.containsKey('job')) {
+        _bookedJob = Job.fromJson(res['job'] as Map<String, dynamic>);
+        return _bookedJob;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error responding to price proposal: $e');
+      _error = friendlyErrorMessage(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();
