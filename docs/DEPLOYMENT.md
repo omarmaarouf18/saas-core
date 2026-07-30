@@ -32,16 +32,45 @@ The SaaS platform uses a clean two-repository deployment model to separate sourc
 
 ---
 
-## 3. Server Provisioning & Initial Deployment
+## 3. GHCR Image Registry Authentication & Package Visibility
 
-### Step 3.1: Clone Deployment Repository
+By default, Docker images published to GitHub Container Registry (`ghcr.io`) from a private repository inherit private visibility.
+
+### Option A (RECOMMENDED): Make GHCR Packages Public
+Because compiled production binaries contain **zero baked-in secrets** (all database URIs, passwords, JWT secrets, and mTLS certificates are supplied dynamically at runtime via `.env` and volume mounts), changing package visibility to **Public** is the simplest and recommended approach for single-operator deployments:
+
+1. **Benefit**: Eliminates token rotation and host-side authentication on the production VPS.
+2. **Setup**: After the initial image publishing workflow runs on `main`, navigate to GitHub Package Settings for each package (`https://github.com/users/omarmaarouf18/packages?repo_name=saas-core`), click **Package Settings** -> **Change Visibility** -> set to **Public**.
+3. **CLI Alternative**:
+   ```bash
+   for pkg in saas-core-api-gateway saas-core-auth-service saas-core-chat-service saas-core-notification-service saas-core-user-service; do
+     gh api -X PATCH /user/packages/container/$pkg/visibility -f visibility=public
+   done
+   ```
+
+### Option B: Keep Packages Private (Requires Host Authentication)
+If package visibility remains Private, the production server must authenticate to `ghcr.io` before pulling:
+
+1. **Create Host Read PAT**: In GitHub Settings -> Developer Settings -> Personal Access Tokens, generate a token with the `read:packages` scope (e.g. `GHCR_READ_TOKEN`).
+   > [!NOTE]
+   > `DEPLOY_REPO_PAT` (used by GitHub Actions with `repo` scope to update `saas-core-deploy`) is distinct from `GHCR_READ_TOKEN`. While a single PAT with both `repo` and `read:packages` scopes *can* be reused, using a dedicated read-only PAT on the production host is best security practice.
+2. **Authenticate on Host**:
+   ```bash
+   echo "<GHCR_READ_TOKEN>" | docker login ghcr.io -u <github-username> --password-stdin
+   ```
+
+---
+
+## 4. Server Provisioning & Initial Deployment
+
+### Step 4.1: Clone Deployment Repository
 On the production VPS host, clone the dedicated deployment repository:
 ```bash
 git clone https://github.com/omarmaarouf18/saas-core-deploy.git /opt/saas-platform
 cd /opt/saas-platform
 ```
 
-### Step 3.2: Configure Environment Variables & Secrets
+### Step 4.2: Configure Environment Variables & Secrets
 Copy the template environment file:
 ```bash
 cp .env.example .env
@@ -97,13 +126,12 @@ RESEND_API_KEY=re_your_live_key_here
 RESEND_FROM_EMAIL=Quick Delivery <noreply@yourdomain.com>
 ```
 
-### Step 3.3: Generate Internal mTLS Certificates
+### Step 4.3: Generate Internal mTLS Certificates
 Inter-service communications inside `saas-net` are secured via mutual TLS (mTLS). Generate fresh production certificates on the target host prior to startup:
 
 ```bash
 mkdir -p certs
 cd certs
-# Generate root CA and service mTLS certs using OpenSSL
 openssl genrsa -out ca.key 4096
 openssl req -x509 -new -nodes -key ca.key -sha256 -days 3650 -out ca.crt -subj "/CN=SaaS-Platform-Prod-Root-CA"
 
@@ -129,20 +157,20 @@ cd ..
 
 ---
 
-## 4. Running the Production Stack
+## 5. Running the Production Stack
 
-### Step 4.1: Authenticate & Pull Images
-Log in to GitHub Container Registry (if pulling private packages) and pull pre-built images:
+### Step 5.1: Pull Images
+If using Option B (private packages), perform `docker login ghcr.io` first. Then pull pre-built images:
 ```bash
 docker compose pull
 ```
 
-### Step 4.2: Start Stack in Detached Mode
+### Step 5.2: Start Stack in Detached Mode
 ```bash
 docker compose up -d
 ```
 
-### Step 4.3: Verify Health
+### Step 5.3: Verify Health
 Check container status (confirm MongoDB and Redis report `healthy`):
 ```bash
 docker compose ps
@@ -156,7 +184,7 @@ Output: `{"status":"ok"}`
 
 ---
 
-## 5. Automated Upgrades & Continuous Deployment
+## 6. Automated Upgrades & Continuous Deployment
 
 When developer changes are pushed to `main` in `saas-core`:
 1. GitHub Actions builds and pushes updated images tagged with the commit SHA and `latest` to GHCR.
@@ -171,9 +199,9 @@ When developer changes are pushed to `main` in `saas-core`:
 
 ---
 
-## 6. Public Reverse Proxy (Caddy) & Firewall (UFW)
+## 7. Public Reverse Proxy (Caddy) & Firewall (UFW)
 
-### Step 6.1: Caddy Reverse Proxy
+### Step 7.1: Caddy Reverse Proxy
 Install Caddy to terminate public HTTPS (Let's Encrypt ACME) on ports 80/443:
 ```bash
 sudo apt update && sudo apt install -y caddy
@@ -191,7 +219,7 @@ api.yourdomain.com {
 ```
 Reload Caddy: `sudo systemctl reload caddy`
 
-### Step 6.2: Firewall Rules (UFW)
+### Step 7.2: Firewall Rules (UFW)
 ```bash
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
@@ -206,7 +234,7 @@ sudo ufw enable
 
 ---
 
-## 7. Logging & Database Backups
+## 8. Logging & Database Backups
 
 ### Live Logs
 ```bash
