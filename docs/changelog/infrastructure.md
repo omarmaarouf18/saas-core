@@ -226,6 +226,12 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``26a37c5e3c6bf6dee7cd78f5d0e9887327c058ae``
 - **Verification**: Verified via local pre-push hook execution and `.github/workflows/ci.yml` validation. ✅
 
+## Two-Repo Deployment Pipeline & GHCR Build/Publish Workflow Setup
+
+- **Implementation Detail**: Created separate private production deployment repository `omarmaarouf18/saas-core-deploy` containing image-based `docker-compose.yml`, production `.env.example`, `Caddyfile`, and README. Created `.github/workflows/build-and-publish.yml` in primary repo (`saas-core`) triggering on push to `main` to build all 5 microservices' `prod` stage Docker images, publish them to GitHub Container Registry (`ghcr.io/omarmaarouf18/saas-core-<service>:${SHA}` and `:latest`), and update `saas-core-deploy` image references using `DEPLOY_REPO_PAT`. Updated service Dockerfiles (`api-gateway`, `auth-service`, `chat-service`, `notification-service`, `user-service`) for root-context compilation resolving `shared/infra`. Updated `docs/DEPLOYMENT.md` with two-repo architecture and production setup commands.
+- **Commit SHA**: ``bbdaaa6b508061e9300e154b8a347358898e064d``
+- **Verification**: Verified via local Docker `prod` stage builds, successful creation and initial commit push to `omarmaarouf18/saas-core-deploy` (`main` branch), `make docs-check`, and `.githooks/pre-push` gate passing 100%. ✅
+
 
 
 
