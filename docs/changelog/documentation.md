@@ -98,4 +98,10 @@ This file tracks historical entries for the primary category: **Documentation Ch
 - **Commit SHA**: ``c14bac58208173e914b376cf0bb8c89b4f90f433``
 - **Verification**: Verified via repo-wide markdown SHA check (0 BLOCKED lines), fabricated hash regression test (BLOCKED, exit 1), and `make docs-check`. ✅
 
+## End-to-End CI/CD Pipeline & Git Hooks Technical Reference (CI_CD_AND_HOOKS.md)
+
+- **Implementation Detail**: Authored `docs/CI_CD_AND_HOOKS.md` detailing the mechanics, execution order, and verification rules of the local pre-push hook (`.githooks/pre-push`), GitHub Actions CI (`.github/workflows/ci.yml`), build-and-publish workflow (`.github/workflows/build-and-publish.yml`), two-repo deployment architecture (`omarmaarouf18/saas-core-deploy`), and known limitations (such as pre-push hook bypass on unconfigured fresh clones and GHCR package authentication). Updated `README.md` documentation index.
+- **Commit SHA**: ``4b78b2c51ce7350952c8c6a684cb83821a64fb2b``
+- **Verification**: Verified via `make docs-check` and `.githooks/pre-push` gate (100% pass). ✅
+
 
