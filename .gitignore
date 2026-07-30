@@ -1,7 +1,33 @@
 .build/
 *.exe
 *.bin
+/cmd
 .env
 .env.local
 **/tmp/
+docs/local/
 
+# Generated certificates
+infrastructure/certs/*.key
+infrastructure/certs/*.crt
+infrastructure/certs/*.srl
+
+# Flutter Client Ignores
+/frontend/.dart_tool/
+/frontend/.flutter-plugins-dependencies
+/frontend/.pub-cache/
+/frontend/.pub/
+/frontend/build/
+/frontend/android/app/debug/
+/frontend/android/app/profile/
+/frontend/android/app/release/
+
+# Service certificates and keys
+services/*/certs/
+
+# Uploaded documents
+services/*/data/documents/
+
+# Temp/debug files
+dummy.png
+.last_push_verified

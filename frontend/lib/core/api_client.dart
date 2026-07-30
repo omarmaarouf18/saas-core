@@ -1,0 +1,185 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart' as io_client;
+
+class ApiClientException implements Exception {
+  final int? statusCode;
+  final String message;
+
+  ApiClientException(this.message, {this.statusCode});
+
+  @override
+  String toString() => "ApiClientException: $message (status: $statusCode)";
+}
+
+bool bypassBadCertificate(X509Certificate cert, String host, int port) {
+  // Strictly gate self-signed trust to local development / debug builds
+  return kDebugMode &&
+      (host == 'localhost' ||
+          host == '127.0.0.1' ||
+          host == '10.0.2.2' ||
+          host == '10.0.3.2');
+}
+
+class ApiClient {
+  final String baseUrl;
+  late final http.Client _client;
+  String? _jwtToken;
+
+  ApiClient({
+    this.baseUrl = const String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'https://localhost:8080/api/v1',
+    ),
+  }) {
+    // Setup security overrides for local developer self-signed certificates.
+    final httpClient = HttpClient();
+    httpClient.badCertificateCallback = bypassBadCertificate;
+    _client = io_client.IOClient(httpClient);
+  }
+
+  void setToken(String? token) {
+    _jwtToken = token;
+  }
+
+  Map<String, String> _getHeaders() {
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    if (_jwtToken != null) {
+      headers['Authorization'] = 'Bearer $_jwtToken';
+    }
+    return headers;
+  }
+
+  Future<dynamic> post(String path, Map<String, dynamic> body) async {
+    try {
+      final response = await _client.post(
+        Uri.parse('$baseUrl$path'),
+        headers: _getHeaders(),
+        body: jsonEncode(body),
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      if (e is ApiClientException) rethrow;
+      throw ApiClientException(
+          "Network error: Please check your internet connection.");
+    }
+  }
+
+  Future<dynamic> get(String path, {Map<String, String>? queryParams}) async {
+    try {
+      var uri = Uri.parse('$baseUrl$path');
+      if (queryParams != null) {
+        uri = uri.replace(queryParameters: queryParams);
+      }
+      final response = await _client.get(
+        uri,
+        headers: _getHeaders(),
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      if (e is ApiClientException) rethrow;
+      throw ApiClientException(
+          "Network error: Please check your internet connection.");
+    }
+  }
+
+  Future<dynamic> postMultipart(
+    String path, {
+    required String fieldName,
+    required List<int> fileBytes,
+    required String filename,
+  }) async {
+    try {
+      final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
+      if (_jwtToken != null) {
+        request.headers['Authorization'] = 'Bearer $_jwtToken';
+      }
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          fieldName,
+          fileBytes,
+          filename: filename,
+        ),
+      );
+      final streamedResponse = await _client.send(request);
+      final response = await http.Response.fromStream(streamedResponse);
+      return _handleResponse(response);
+    } catch (e) {
+      if (e is ApiClientException) rethrow;
+      throw ApiClientException(
+          "Network error: Please check your internet connection.");
+    }
+  }
+
+  Future<dynamic> proposePrice({
+    required String jobId,
+    required double proposedPrice,
+    String? requesterToken,
+  }) async {
+    return post('/users/jobs/propose-price', {
+      'job_id': jobId,
+      'proposed_price': proposedPrice,
+      if (requesterToken != null && requesterToken.isNotEmpty)
+        'requester_token': requesterToken,
+    });
+  }
+
+  Future<dynamic> respondPrice({
+    required String jobId,
+    required String decision,
+    String? requesterToken,
+  }) async {
+    return post('/users/jobs/respond-price', {
+      'job_id': jobId,
+      'decision': decision,
+      if (requesterToken != null && requesterToken.isNotEmpty)
+        'requester_token': requesterToken,
+    });
+  }
+
+  Future<dynamic> registerDeviceToken({
+    required String token,
+    String platform = 'android',
+    String? action,
+  }) async {
+    return post('/auth/device-token', {
+      'token': token,
+      'platform': platform,
+      if (action != null) 'action': action,
+    });
+  }
+
+  Future<dynamic> unregisterDeviceToken({String? token}) async {
+    return post('/auth/device-token', {
+      'token': token ?? '',
+      'action': 'unregister',
+    });
+  }
+
+  dynamic _handleResponse(http.Response response) {
+    dynamic body;
+    try {
+      if (response.body.isNotEmpty) {
+        body = jsonDecode(response.body);
+      }
+    } catch (_) {
+      // Body not decodable
+    }
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return body;
+    } else {
+      String? errorMsg;
+      if (body is Map) {
+        errorMsg = body['error'] ?? body['message'];
+      }
+      throw ApiClientException(errorMsg ?? 'Request failed',
+          statusCode: response.statusCode);
+    }
+  }
+}

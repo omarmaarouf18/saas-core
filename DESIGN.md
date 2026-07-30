@@ -1,6 +1,10 @@
-# Frontend Design Document: saas-core Marketplace
+# Frontend Design Document: Quick Delivery Marketplace
 
-This document outlines the architectural and user interface design for the Flutter frontend client of the `saas-core` marketplace services platform. The frontend coordinates with the Go microservices backend exposed via the API Gateway.
+This document outlines the architectural and user interface design for the Flutter frontend client of the Quick Delivery marketplace services platform. The frontend coordinates with the Go microservices backend exposed via the API Gateway.
+
+> [!NOTE]
+> **Planned vs. Current Architecture**: The directory structure and provider file tree detailed in Section 1 (such as `screens/shared/`, `screens/owner/`, `screens/employee/`, `screens/user/`, and `chat_provider.dart` / `sse_provider.dart`) represent the **target/planned architecture** for the production launch.
+> The actual current frontend implementation consists of a flat screens directory (containing 14 screens: `chat_screen.dart`, `customer_marketplace_screen.dart`, `employee_jobs_screen.dart`, `employee_screen.dart`, `home_screen.dart`, `job_status_screen.dart`, `login_screen.dart`, `notifications_screen.dart`, `otp_screen.dart`, `rating_screen.dart`, `service_screen.dart`, `signup_screen.dart`, `subscription_screen.dart`, and `wallet_screen.dart`) and is documented in [docs/frontend/STATUS.md](docs/frontend/STATUS.md). Please consult it for the current state of development.
 
 ---
 
@@ -13,7 +17,7 @@ frontend/
 ├── lib/
 │   ├── main.dart                  # App initialization, routing setup, global providers
 │   ├── core/                      # Global constants, theme, networking clients, utilities
-│   │   ├── api_client.dart        # Base HTTP client supporting raw user_id auth injection
+│   │   ├── api_client.dart        # Base HTTP client supporting JWT token auth injection
 │   │   ├── theme.dart             # Material 3 dark/light responsive design system tokens
 │   │   └── constants.dart         # Backend gateway URLs and SSE/WebSocket endpoints
 │   ├── models/                    # Data serialization classes matching Go models
@@ -39,21 +43,23 @@ frontend/
 
 1. **Framework**: Flutter (Dart) targeting cross-platform Web/Mobile.
 2. **State Management**: `provider` (`^6.1.5`) for scoping authentication state, job lifecycle states, real-time chats, and notifications streams.
-3. **HTTP Client**: `http` (`^1.6.0`) with custom request interceptors that inject the `Authorization` header containing the user's ID as the raw authentication token.
-4. **WebSocket Protocol**: `web_socket_channel` (`^2.4.5`) for connecting to the real-time chat gateway (`ws://<gateway>:8080/api/v1/chat/ws`).
-5. **SSE Stream Client**: `flutter_client_sse` (`^1.0.0`) for subscribing to real-time status alerts and job notifications via SSE (`http://<gateway>:8080/api/v1/notifications/stream`).
+3. **HTTP Client**: `http` (`^1.6.0`) with custom request interceptors that inject the `Authorization` header containing the signed JWT token.
+4. **WebSocket Protocol**: `web_socket_channel` (`^2.4.5`) for connecting to the real-time chat gateway (`ws://<gateway>:8080/api/v1/chat/ws?token=<jwt_token>`).
+5. **SSE Stream Client**: `flutter_client_sse` (`^2.0.3`) for subscribing to real-time status alerts and job notifications via SSE (`http://<gateway>:8080/api/v1/notifications/stream?token=<jwt_token>`).
 
 ---
 
 ## 2. Visual Design & Theme System
 
-To deliver a premium, modern experience, the app will feature a curated, high-contrast visual system aligned with Material 3.
+To deliver a premium, modern experience, the app features a curated, high-contrast visual system aligned with Material 3 for the "Quick Delivery" (qd) brand identity.
 
-*   **Primary Palette**: Deep Indigo (`#3F51B5`) and Electric Violet (`#7C4DFF`).
-*   **Backgrounds (Dark Mode)**: Pure Charcoal Black (`#121212`) and Sleek Slate (`#1E1E2C`) with glassmorphism card overlays.
-*   **Alert Status**: Success Emerald (`#00E676`), Danger Coral (`#FF1744`), Warning Amber (`#FFC400`).
-*   **Typography**: Google Font "Outfit" or "Inter" as the default font family for dynamic, clean header presentation.
+*   **Primary Palette**: Deep Navy (`#0D1321`) as the primary dark/brand color, Amber Gold (`#FFC107`) as the primary accent/action color.
+*   **Neutral Palette**: Light Gray (`#E5E7EB`) for backgrounds/dividers, White (`#FFFFFF`) for cards/surfaces.
+*   **Typography**: Poppins (Bold / SemiBold / Regular / Medium weights) as the app-wide font family (replacing older placeholders like "Outfit" or "Inter").
+*   **Logo/App Icon**: The "qd" wordmark with motion/speed lines preceding the letters, on a rounded-square dark navy background for the app icon.
+*   **Alert Status**: Success Emerald (`#00E676`), Danger Coral (`#FF1744`), and Warning Orange (`#FF7A00`) — chosen to remain visually distinct and avoid clashing with the Amber Gold (`#FFC107`) brand accent.
 *   **Micro-Animations**: Custom page transitions, hero elements on services/jobs, and fade/slide alert indicators using standard Flutter animation components (`AnimatedSwitcher`, `SlideTransition`).
+
 
 ---
 
@@ -96,23 +102,84 @@ graph TD
 The Flutter client interacts with backend microservices routed through the Gateway (`http://localhost:8080`).
 
 ### 1. Authentication Flow
-- **Signup**: Calls [Signup handler](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go#L70) (`POST /api/v1/auth/signup`). Accepts `email`, `password`, `role`. If `employee`, requires `owner_id` (KYE binding).
-- **Login**: Calls [Login handler](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go#L223) (`POST /api/v1/auth/login`). Returns `dev_otp` in development.
-- **Verify OTP**: Calls [VerifyOTP handler](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go#L351) (`POST /api/v1/auth/verify-otp`). Authenticates the user and fetches user parameters.
-- **Header Structure**: All authenticated service endpoints require `Authorization: Bearer <user_id>` (which uses the Go backend's query param / header lookup mapping).
+- **Signup**: Calls [Signup handler](services/auth-service/internal/handlers/auth.go#L120) (`POST /api/v1/auth/signup`). Accepts `email`, `password`, `role`. Gated by signup-time anti-spam OTP; accounts are unconfirmed (`is_confirmed = false`) until the OTP is verified.
+- **Login**: Calls [Login handler](services/auth-service/internal/handlers/auth.go#L359) (`POST /api/v1/auth/login`). Initiates authentication, sends/mocks a 6-digit OTP, and returns `dev_otp` in local development mode.
+- **Verify OTP**: Calls [VerifyOTP handler](services/auth-service/internal/handlers/auth.go#L509) (`POST /api/v1/auth/verify-otp`). Activates the account and returns a signed HS256 JWT token.
+- **Refresh Token**: Calls [Refresh handler](services/auth-service/internal/handlers/auth.go#L950) (`POST /api/v1/auth/refresh`). Reissues a new JWT token, validating that the old one expired no more than 7 days ago.
+- **Header Structure**: All authenticated service endpoints require `Authorization: Bearer <JWT_TOKEN>`. The backend validates the HS256 signature and expiry locally using the shared `JWT_SECRET`.
 
 ### 2. Jobs & Services Flow
-- **Browse**: Calls [ListServices](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L65) (`GET /api/v1/users/services?sort_by=price&near_by=true&lat=30&lon=31`).
-- **Create Service**: Calls [CreateService](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L86) (`POST /api/v1/users/services`). Gated by [checkKYC](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L535) (Owner KYC must be approved).
-- **Track/Book Job**: Calls [TrackJob](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L133) (`POST /api/v1/users/jobs/track`). Requires `payment_method: "cod"`. Other payment methods are blocked client-side.
-- **Complete Job**: Calls [CompleteJob](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L250) (`POST /api/v1/users/jobs/complete`). For COD, requires `cash_collected: true`. Triggering completion automatically deducts the platform fee from the owner's e-wallet via [DeductCODFee](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/memory.go#L295).
+- **Browse**: Calls [ListServices](services/user-service/internal/handlers/handlers.go#L133) (`GET /api/v1/users/services?sort_by=price&near_by=true&lat=30&lon=31`).
+- **Create Service**: Calls [CreateService](services/user-service/internal/handlers/handlers.go#L155) (`POST /api/v1/users/services`). Gated by [checkKYC](services/user-service/internal/handlers/handlers.go#L919) (Owner KYC must be approved).
+- **Track/Book Job**: Calls [TrackJob](services/user-service/internal/handlers/handlers.go#L220) (`POST /api/v1/users/jobs/track`). Requires `payment_method: "cod"`. Other payment methods are blocked client-side.
+- **Complete Job**: Calls [CompleteJob](services/user-service/internal/handlers/handlers.go#L453) (`POST /api/v1/users/jobs/complete`). For COD, requires `cash_collected: true`. Triggering completion automatically deducts the platform fee from the owner's e-wallet via [DeductCODFee](services/user-service/internal/store/mongodb.go#L492).
+- **Cancel Job**: Calls `POST /api/v1/users/jobs/cancel`. Pending jobs can be cancelled by the owner or customer. Active jobs can only be cancelled by the owner; active cancellation by a customer is rejected with `403 Forbidden` (directing them to the complaint ticket flow). Cancellation of completed or already cancelled jobs is rejected with `409 Conflict`. For non-COD jobs, cancellation refunds the escrow amount back to the owner's withdrawable balance.
 
 ### 3. Subscription Flow
-- **Upgrade**: Calls [Subscription POST](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L588) (`POST /api/v1/users/subscription`) with `tier: "paid"`. Returns `202 Accepted` and transitions to `pending_payment` status. The UI displays "upgrade pending, contact support" status.
+- **Upgrade**: Calls [Subscription POST](services/user-service/internal/handlers/handlers.go#L1011) (`POST /api/v1/users/subscription`) with `tier: "paid"`. Returns `202 Accepted` and transitions to `pending_payment` status. The UI displays "upgrade pending, contact support" status.
 
 ### 4. Real-time Communications Flow
-- **SSE Stream**: Subscribes to [Stream](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/notification-service/internal/handlers/handlers.go#L47) (`GET /api/v1/notifications/stream?token=<user_id>`). Pushes alerts client-side.
-- **Chat WebSockets**: Connects to [HandleWebSocket](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/chat-service/internal/handlers/chat.go#L149) (`ws://localhost:8080/api/v1/chat/ws?token=<user_id>`).
+- **SSE Stream**: Subscribes to [Stream](services/notification-service/internal/handlers/handlers.go#L76) (`GET /api/v1/notifications/stream?token=<jwt_token>`). Pushes alerts client-side.
+- **Chat WebSockets**: Connects to [HandleWebSocket](services/chat-service/internal/handlers/chat.go#L204) (`ws://localhost:8080/api/v1/chat/ws?token=<jwt_token>`).
   1. Sends subscription frame: `{"action":"subscribe", "channel":"job:<job_id>"}`.
-  2. History fetch fallback: calls [GetHistory](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/chat-service/internal/handlers/chat.go#L203) (`GET /api/v1/chat/history?channel=job:<job_id>&limit=50`).
+  2. History fetch fallback: calls [GetHistory](services/chat-service/internal/handlers/chat.go#L288) (`GET /api/v1/chat/history?channel=job:<job_id>&limit=50`), which verifies channel access permissions.
   3. Sends messages: `{"action":"message", "channel":"job:<job_id>", "content":"..."}`.
+
+---
+
+## 5. Security & Rate Limiting
+
+The application implements defense-in-depth across the API Gateway and microservices.
+
+### 1. Rate Limiting & Lockout
+- **Edge Rate Limiting**: The `api-gateway` enforces a sliding window rate limit of 100 requests per minute per client IP. IP addresses are extracted directly from `r.RemoteAddr` (rejecting external `X-Forwarded-For` and `X-Real-IP` at the edge to prevent IP spoofing). Lockout uses exponential backoff starting at 30 seconds, capping at 5 minutes.
+- **Dual-Key Auth Lockout**: The `auth-service` implements dual-key rate limiting (on IP and Email) with exponential backoff starting at 30 seconds and capping at 5 minutes after 5 consecutive failures.
+- **WebSocket Message Limiting**: The `chat-service` WebSocket connection rate limits incoming chat frames to 5 frames per minute per IP to prevent spamming.
+
+### 2. Trust Boundaries & Authentication
+- **Gateway Trust Validation**: The `auth-service` only trusts `X-Forwarded-For` headers from the API Gateway if the Gateway passes a verified, dynamically configured `GATEWAY_SECRET` header.
+- **Internal Service Auth**: Communication between internal services is authenticated using a shared `X-Internal-Token` header containing `INTERNAL_SERVICE_TOKEN` values. Direct external calls using this header are stripped at the `api-gateway`.
+- **Gating Policies**:
+  - **KYC Gating**: Operations like service creation, wallet deposits, and job tracking are restricted to owners whose KYC status is explicitly `"approved"`.
+  - **Tier-Based Gating**: Real-time employee location tracking is gated behind a Paid Subscription tier check (`plan: "paid"`) on the job owner. Location updates are throttled to a minimum 3-second interval per Job ID.
+  - **Deactivated Employee Gating**: Assigning an employee to a new job (via TrackJob) verifies that their account is active (`is_active = true`) by querying auth-service. If deactivated, assignment is blocked with `400 Bad Request`. Deactivated employees are allowed to complete existing active jobs assigned to them before deactivation, allowing graceful completion of in-progress work without abrupt interruption.
+
+---
+
+## 6. Customer Service Outbound Chat Routing
+
+This feature introduces a customer-service complaint channel reusing the existing `chat-service` WebSocket/channel infrastructure. It routes requests to available customer-service support agents instead of a specific employee, without adding a 4th role to the core authentication matrix.
+
+### 1. Database Model & Collections
+- **`complaint_tickets`**: Tracks individual complaints.
+  - `ticket_id` (string/`_id`): Unique ID (`tkt-<unixnano>`).
+  - `customer_id` (string): Customer who filed the complaint.
+  - `context_id` (string): The job/context identifier associated with the complaint.
+  - `status` (string): `"pending"` (queued), `"assigned"`, `"resolved"`, or `"closed"`.
+  - `assigned_agent_id` (string): The ID of the assigned support agent.
+  - `created_at` / `assigned_at` (timestamps).
+- **`support_agents`**: Tracks support agent states and tokens.
+  - `agent_id` (string/`_id`): The unique support agent identifier.
+  - `status` (string): `"available"`, `"busy"`, or `"offline"`.
+  - `token` (string): Scoped agent-specific credential for authentication (verified in the database).
+  - `current_ticket_id` (string): The ticket ID currently assigned to the agent.
+
+### 2. Atomic Agent Assignment Design
+To prevent concurrency issues where two concurrent tickets are assigned to the same agent, the assignment is executed in a **single atomic database operation** using MongoDB's `FindOneAndUpdate`:
+- It searches for an agent with `status: "available"`.
+- It atomically sets their `status` to `"busy"` and associates the `current_ticket_id`.
+- If no agent is found (`mongo.ErrNoDocuments`), the ticket remains in `"pending"` (queued) status.
+
+> [!IMPORTANT]
+> **Timeout-Based Mitigations Rejected**: Timing-based solutions (such as a 2-second timeout between tickets) were explicitly rejected as insufficient because they do not protect against deliberate race-condition attacks. The single atomic database update guarantees mutual exclusion by design.
+
+### 3. Authentication & Scoping (IDOR Protection)
+- **Scoped Identity**: Support agents authenticate using distinct tokens (passed via `?token=` parameter) matched directly against the `support_agents` collection, separate from the customer JWT flow.
+- **Access Scoping**: Channels for complaints use the prefix `ticket:<ticket_id>`. In `canAccessChannel`, a user is authorized *only* if they are the ticket's `customer_id` or the `assigned_agent_id`. This prevents support agents or other customers from accessing tickets they are not assigned/related to, mitigating IDOR threats.
+
+### 4. Out-of-Band Agent Onboarding
+To maintain a minimized attack surface on the running services, onboarding a support agent is deliberately designed as a **standalone out-of-band CLI tool** rather than an HTTP application endpoint.
+- **Zero Running Attack Surface**: Because the `chat-service` only ever reads from the `support_agents` collection (and never needs to create/onboard agents at runtime), there is no code path or endpoint in the running application for registering support agents.
+- **Secure Token Generation**: The tool runs operations locally/administratively, connecting directly to MongoDB. It generates a cryptographically secure token, writes it to the database, and prints it once to stdout.
+
+

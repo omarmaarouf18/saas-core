@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LogisticsPro | Notifications Center</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Font: Poppins -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#f0f1f1",
+                        "primary-container": "#151b2a",
+                        "inverse-surface": "#2f3131",
+                        "on-primary-fixed": "#151b2a",
+                        "surface-container": "#eeeeee",
+                        "secondary": "#785900",
+                        "on-tertiary-container": "#818488",
+                        "tertiary-container": "#191c1f",
+                        "outline-variant": "#c6c6cc",
+                        "outline": "#76777d",
+                        "surface-dim": "#dadada",
+                        "on-surface-variant": "#45464c",
+                        "primary": "#000000",
+                        "on-primary-fixed-variant": "#414657",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#c4c7ca",
+                        "secondary-fixed-dim": "#fabd00",
+                        "surface-tint": "#585e6f",
+                        "surface-container-highest": "#e2e2e2",
+                        "tertiary-fixed": "#e0e2e6",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#191c1f",
+                        "on-primary": "#ffffff",
+                        "primary-fixed": "#dde2f6",
+                        "on-secondary-fixed": "#261a00",
+                        "background": "#f9f9f9",
+                        "on-background": "#1a1c1c",
+                        "on-tertiary-fixed-variant": "#44474a",
+                        "surface-variant": "#e2e2e2",
+                        "surface": "#f9f9f9",
+                        "surface-bright": "#f9f9f9",
+                        "tertiary": "#000000",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "on-secondary-container": "#6c5000",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#c1c6da",
+                        "secondary-fixed": "#ffdf9e",
+                        "inverse-primary": "#c1c6da",
+                        "secondary-container": "#fdc003",
+                        "on-primary-container": "#7e8395",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-high": "#e8e8e8",
+                        "surface-container-low": "#f3f3f4",
+                        "error-container": "#ffdad6",
+                        "on-surface": "#1a1c1c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "lg": "24px",
+                        "margin-desktop": "48px",
+                        "margin-mobile": "16px",
+                        "md": "16px",
+                        "sm": "12px",
+                        "base": "8px",
+                        "gutter": "16px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Poppins"],
+                        "title-md": ["Poppins"],
+                        "headline-lg-mobile": ["Poppins"],
+                        "label-lg": ["Poppins"],
+                        "display-lg": ["Poppins"],
+                        "headline-lg": ["Poppins"],
+                        "label-md": ["Poppins"],
+                        "body-md": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "title-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "label-lg": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "label-md": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f9f9f9;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .toast-entrance {
+            animation: slideInRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen text-on-surface">
+<!-- Top Navigation Anchor (As per JSON) -->
+<header class="bg-primary-container dark:bg-primary-container text-on-primary-fixed dark:text-primary-fixed w-full top-0 sticky z-40 flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined cursor-pointer hover:bg-on-primary-fixed/10 p-2 rounded-full transition-colors">menu</span>
+<span class="font-headline-lg text-headline-lg font-bold text-on-primary-fixed">LogisticsPro</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative cursor-pointer hover:bg-on-primary-fixed/10 p-2 rounded-full transition-colors" onclick="toggleToast()">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1 right-1 w-2.5 h-2.5 bg-secondary-container rounded-full border-2 border-primary-container"></span>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a logistics fleet manager, mid-40s, wearing a clean charcoal polo shirt, set against a blurred background of a high-tech control room with digital screens showing maps. The lighting is crisp and cool, maintaining a high-contrast corporate aesthetic with deep navy and amber gold accents nearby." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_cVjoalBMJDeZjF1EbsaAvoHZpWkYlHrdmWuDnzKdCIB92mHNdrNI9EizyOVgk-4pESTeAub0vVNgyZndW5eKGU5lTPv7ST3m-RkiV-mfLWi4t5TqATvY6whVZ2wlm4ya3x06eqnpphpd38_oXg8fO_xse-DZmQUxv7N5iCxkl77ISSRFZ5WuuWIFmOxoV7c2IjVy72r_lh0bpkgPmBRrLc6NztrscQkMoh8mlncskkB3YcBM7lGurSAzlO9R_3-mwBiJ1wENYWNl"/>
+</div>
+</div>
+</header>
+<main class="max-w-4xl mx-auto py-lg px-margin-mobile md:px-margin-desktop mb-24">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-xl">
+<div>
+<h1 class="font-headline-lg text-headline-lg font-bold text-primary-container mb-2">Notifications Center</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Manage your real-time logistics alerts and platform updates.</p>
+</div>
+<div class="flex gap-sm">
+<button class="bg-secondary-container text-on-secondary-container px-lg py-2 rounded-lg font-label-lg text-label-lg hover:opacity-90 transition-opacity flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">done_all</span>
+                    Mark all as read
+                </button>
+<button class="border border-outline text-on-surface px-lg py-2 rounded-lg font-label-lg text-label-lg hover:bg-surface-variant transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+                    Settings
+                </button>
+</div>
+</div>
+<!-- Filter Tabs -->
+<div class="flex gap-base mb-lg overflow-x-auto pb-2 no-scrollbar">
+<button class="bg-primary-container text-on-primary px-lg py-2 rounded-full font-label-md text-label-md whitespace-nowrap">All Notifications</button>
+<button class="bg-surface-container-high text-on-surface-variant px-lg py-2 rounded-full font-label-md text-label-md whitespace-nowrap hover:bg-surface-variant transition-colors">Job Status</button>
+<button class="bg-surface-container-high text-on-surface-variant px-lg py-2 rounded-full font-label-md text-label-md whitespace-nowrap hover:bg-surface-variant transition-colors">Payments</button>
+<button class="bg-surface-container-high text-on-surface-variant px-lg py-2 rounded-full font-label-md text-label-md whitespace-nowrap hover:bg-surface-variant transition-colors">Messages</button>
+</div>
+<!-- Notifications List - High Contrast Professional Style -->
+<div class="space-y-sm">
+<!-- Unread Notification: Job Status -->
+<div class="bg-white p-md rounded-xl shadow-[0px_2px_8px_rgba(13,19,33,0.08)] border-l-4 border-secondary-container flex gap-md items-start transition-transform active:scale-[0.99] cursor-pointer group">
+<div class="w-12 h-12 rounded-lg bg-secondary-container/10 flex items-center justify-center flex-shrink-0 text-secondary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-title-md text-title-md text-primary-container">Job #LX-9902 Dispatched</h3>
+<span class="font-label-md text-label-md text-secondary-container font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-secondary-container rounded-full"></span>
+                            NEW
+                        </span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-2">Driver Michael S. has started the route for the Enterprise Steel shipment. Estimated arrival at destination: 14:45 PM.</p>
+<span class="font-label-md text-label-md text-outline">Today, 09:24 AM</span>
+</div>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary">more_vert</span>
+</div>
+</div>
+<!-- Unread Notification: Payment -->
+<div class="bg-white p-md rounded-xl shadow-[0px_2px_8px_rgba(13,19,33,0.08)] border-l-4 border-secondary-container flex gap-md items-start transition-transform active:scale-[0.99] cursor-pointer group">
+<div class="w-12 h-12 rounded-lg bg-secondary-container/10 flex items-center justify-center flex-shrink-0 text-secondary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">payments</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-title-md text-title-md text-primary-container">Payment Received</h3>
+<span class="font-label-md text-label-md text-secondary-container font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-secondary-container rounded-full"></span>
+                            NEW
+                        </span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-2">Invoice #INV-2024-001 for $4,250.00 has been successfully settled by Global Logistics Partners.</p>
+<span class="font-label-md text-label-md text-outline">Today, 08:15 AM</span>
+</div>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary">more_vert</span>
+</div>
+</div>
+<!-- Read Notification: Message -->
+<div class="bg-surface-container-low p-md rounded-xl flex gap-md items-start opacity-80 hover:opacity-100 transition-opacity group cursor-pointer">
+<div class="w-12 h-12 rounded-lg bg-outline/10 flex items-center justify-center flex-shrink-0 text-outline">
+<span class="material-symbols-outlined">chat_bubble</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-title-md text-title-md text-on-surface">New Message from Sarah W.</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-2">"Can we adjust the loading dock schedule for the Friday shipment?"</p>
+<span class="font-label-md text-label-md text-outline">Yesterday, 04:30 PM</span>
+</div>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary">more_vert</span>
+</div>
+</div>
+<!-- Read Notification: Job Status -->
+<div class="bg-surface-container-low p-md rounded-xl flex gap-md items-start opacity-80 hover:opacity-100 transition-opacity group cursor-pointer">
+<div class="w-12 h-12 rounded-lg bg-outline/10 flex items-center justify-center flex-shrink-0 text-outline">
+<span class="material-symbols-outlined">inventory_2</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-title-md text-title-md text-on-surface">Inventory Alert: Low Stock</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-2">Warehouse A reports stock level for 'Standard Pallets' below threshold (12 units remaining).</p>
+<span class="font-label-md text-label-md text-outline">Yesterday, 11:05 AM</span>
+</div>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary">more_vert</span>
+</div>
+</div>
+<!-- Date Separator -->
+<div class="py-sm">
+<p class="font-label-lg text-label-lg text-outline uppercase tracking-wider">Older Notifications</p>
+</div>
+<!-- Read Notification: Job Status -->
+<div class="bg-surface-container-low p-md rounded-xl flex gap-md items-start opacity-80 hover:opacity-100 transition-opacity group cursor-pointer">
+<div class="w-12 h-12 rounded-lg bg-outline/10 flex items-center justify-center flex-shrink-0 text-outline">
+<span class="material-symbols-outlined">verified</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-title-md text-title-md text-on-surface">Carrier Background Check Verified</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-2">The background check for new carrier 'SwiftWay Transport' has been completed successfully.</p>
+<span class="font-label-md text-label-md text-outline">Oct 24, 2023</span>
+</div>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary">more_vert</span>
+</div>
+</div>
+</div>
+<!-- Empty State Illustration Placeholder (Invisible if content exists) -->
+<div class="hidden flex-col items-center justify-center py-24 text-center">
+<span class="material-symbols-outlined text-[64px] text-outline-variant mb-md">notifications_off</span>
+<h2 class="font-title-md text-title-md text-primary-container mb-2">All caught up!</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">You don't have any new notifications at the moment.</p>
+</div>
+</main>
+<!-- Real-time Alert Toast Overlay -->
+<div class="fixed top-20 right-4 z-[60] flex flex-col gap-sm pointer-events-none" id="toast-container">
+<!-- Template for Toast -->
+<div class="toast-entrance hidden pointer-events-auto bg-primary-container text-on-primary w-80 p-md rounded-xl shadow-xl flex items-start gap-md border-b-4 border-secondary-container" id="active-toast">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-on-secondary-container" style="font-variation-settings: 'FILL' 1;">priority_high</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start">
+<h4 class="font-label-lg text-label-lg text-secondary-container uppercase font-bold">Urgent Alert</h4>
+<button class="text-on-primary-container hover:text-white" onclick="hideToast()"><span class="material-symbols-outlined text-[18px]">close</span></button>
+</div>
+<p class="font-body-md text-body-md">Shipment #LX-441 delayed due to severe weather in Route North.</p>
+</div>
+</div>
+</div>
+<!-- Navigation Shells (From JSON Context) -->
+<!-- Mobile Bottom Nav -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center h-20 pb-safe px-2 bg-primary-container dark:bg-primary-container text-on-primary-fixed z-50">
+<div class="flex flex-col items-center justify-center text-on-primary-container opacity-60">
+<span class="material-symbols-outlined">local_shipping</span>
+<span class="font-label-md text-label-md">Market</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-primary-container opacity-60">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-md text-label-md">Orders</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-primary-container opacity-60">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-label-md text-label-md">Fleet</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-2xl px-5 py-1">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label-md text-label-md">Profile</span>
+</div>
+</nav>
+<!-- Desktop Drawer (Visible on md) -->
+<aside class="hidden md:flex fixed left-0 top-16 h-[calc(100vh-64px)] w-64 bg-surface dark:bg-inverse-surface flex-col py-lg shadow-lg z-30 transition-all duration-300">
+<div class="px-md mb-lg">
+<div class="flex items-center gap-3 mb-1">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold">LM</div>
+<div>
+<p class="font-title-md text-[14px] font-bold text-primary">Logistics Manager</p>
+<p class="text-[12px] text-on-surface-variant">Enterprise Account</p>
+</div>
+</div>
+</div>
+<div class="flex-grow space-y-1">
+<div class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-variant/50 rounded-full mx-2 px-4 py-3 cursor-pointer transition-colors">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-variant/50 rounded-full mx-2 px-4 py-3 cursor-pointer transition-colors">
+<span class="material-symbols-outlined">trolley</span>
+<span class="font-body-md text-body-md">Shipments</span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-variant/50 rounded-full mx-2 px-4 py-3 cursor-pointer transition-colors">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-body-md text-body-md">Invoices</span>
+</div>
+<div class="flex items-center gap-3 bg-secondary-container text-on-secondary-container font-semibold rounded-full mx-2 px-4 py-3 cursor-pointer shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">notifications</span>
+<span class="font-body-md text-body-md">Notifications</span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-variant/50 rounded-full mx-2 px-4 py-3 cursor-pointer transition-colors">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</div>
+</div>
+<div class="mt-auto px-md py-md border-t border-outline-variant">
+<div class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-variant/50 rounded-full px-4 py-3 cursor-pointer transition-colors">
+<span class="material-symbols-outlined">help</span>
+<span class="font-body-md text-body-md">Support</span>
+</div>
+</div>
+</aside>
+<script>
+        function toggleToast() {
+            const toast = document.getElementById('active-toast');
+            toast.classList.toggle('hidden');
+            if (!toast.classList.contains('hidden')) {
+                setTimeout(() => {
+                    hideToast();
+                }, 6000);
+            }
+        }
+
+        function hideToast() {
+            const toast = document.getElementById('active-toast');
+            toast.classList.add('hidden');
+        }
+
+        // Simulating a real-time alert after 2 seconds
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const toast = document.getElementById('active-toast');
+                toast.classList.remove('hidden');
+            }, 2500);
+        });
+    </script>
+</body></html>

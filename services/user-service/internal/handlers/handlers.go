@@ -3,37 +3,164 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"html"
 	"io"
 	"log"
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
-	"github.com/project/user-service/internal/jwtutil"
+	"github.com/project/shared/infra/handlerutil"
+	"github.com/project/shared/infra/jwtutil"
+	"github.com/project/shared/infra/ratelimit"
+	"github.com/project/shared/infra/resilience"
+	"github.com/project/shared/infra/tlsutil"
+	"github.com/project/user-service/internal/config"
 	"github.com/project/user-service/internal/models"
 	"github.com/project/user-service/internal/store"
+	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/mongo"
 )
+
+var ErrServiceUnavailable = errors.New("service_unavailable")
+
+// ErrUpgradeRequired is returned when a tenant's subscription tier is insufficient for a gated feature.
+var ErrUpgradeRequired = errors.New("upgrade_required")
+
+// MinLocationUpdateInterval defines the minimum wait time between consecutive location updates per job.
+const MinLocationUpdateInterval = 3 * time.Second
+
+// MaxReasonableSpeedKmh defines the maximum plausible speed for location updates in km/h.
+const MaxReasonableSpeedKmh = 150.0
+
+const checkLocationThrottleScript = `
+local inflightKey = KEYS[1]
+local lastupdateKey = KEYS[2]
+
+local minIntervalMs = tonumber(ARGV[1])
+local inflightTTLSec = tonumber(ARGV[2])
+local nowMs = tonumber(ARGV[3])
+
+-- 1. Check in-flight lock
+if redis.call('EXISTS', inflightKey) == 1 then
+    return {1, 0}
+end
+
+-- 2. Check last update timestamp
+local lastUpdateMsStr = redis.call('GET', lastupdateKey)
+local lastUpdateMs = 0
+if lastUpdateMsStr then
+    lastUpdateMs = tonumber(lastUpdateMsStr) or 0
+    if lastUpdateMs > 0 and (nowMs - lastUpdateMs) < minIntervalMs then
+        return {2, lastUpdateMs}
+    end
+end
+
+-- 3. Set in-flight key atomically
+redis.call('SET', inflightKey, '1', 'EX', inflightTTLSec)
+
+return {0, lastUpdateMs}
+`
 
 // UserService holds dependencies for the user-service handlers.
 type UserService struct {
-	store                *store.MongoDB
-	authServiceURL       string
-	limiter              *RateLimiter
-	internalServiceToken string
+	store                  *store.MongoDB
+	authServiceURL         string
+	chatServiceURL         string
+	limiter                *handlerutil.RateLimiter
+	internalServiceToken   string
+	locationThrottleMu     sync.Mutex
+	locationLastUpdate     map[string]time.Time
+	locationInFlight       map[string]bool
+	authClient             *resilience.ResilienceClient
+	chatClient             *resilience.ResilienceClient
+	httpClient             *http.Client
+	appEnv                 string
+	allowTestPaymentBypass bool
+	rdb                    *redis.Client
+	// Test hook to block UpdateJobLocation database write for deterministic testing
+	updateJobLocationBeforeWriteHook func(ctx context.Context)
+	// Test hook to force RollbackEscrow to fail for deterministic testing
+	rollbackEscrowHook func(ctx context.Context, tenantID string, amount float64) error
+	// Test hook to simulate concurrent job status change before UpdateJobAgreedPrice
+	updateJobAgreedPriceBeforeWriteHook func(ctx context.Context)
 }
 
-// NewUserService creates a new handler group.
-func NewUserService(s *store.MongoDB, authServiceURL string, internalServiceToken string) *UserService {
+func (u *UserService) clearLocationThrottleState(jobID string) {
+	u.locationThrottleMu.Lock()
+	delete(u.locationLastUpdate, jobID)
+	delete(u.locationInFlight, jobID)
+	u.locationThrottleMu.Unlock()
+
+	if u.rdb != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		_ = u.rdb.Del(ctx, fmt.Sprintf("loc:inflight:%s", jobID), fmt.Sprintf("loc:lastupdate:%s", jobID)).Err()
+	}
+}
+
+func (u *UserService) setTestLocationLastUpdate(jobID string, t time.Time) {
+	u.locationThrottleMu.Lock()
+	u.locationLastUpdate[jobID] = t
+	u.locationThrottleMu.Unlock()
+
+	if u.rdb != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		nowMs := t.UnixNano() / int64(time.Millisecond)
+		_ = u.rdb.Set(ctx, fmt.Sprintf("loc:lastupdate:%s", jobID), fmt.Sprintf("%d", nowMs), 300*time.Second).Err()
+	}
+}
+
+// NewUserService creates a new UserService handler group.
+func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *UserService {
+	handlerutil.InitCloudWatch(cfg.CloudWatchLogGroup)
+
+	chatServiceURL := cfg.ChatServiceURL
+	if chatServiceURL == "" {
+		chatServiceURL = "http://localhost:3001"
+	}
+
+	var client *http.Client
+	if cfg.TLSCertPath != "" && cfg.TLSKeyPath != "" && cfg.TLSCAPath != "" {
+		var err error
+		client, err = tlsutil.NewClient(cfg.TLSCertPath, cfg.TLSKeyPath, cfg.TLSCAPath)
+		if err != nil {
+			log.Fatalf("[USER] Failed to initialize TLS http client: %v", err)
+		}
+	} else {
+		client = http.DefaultClient
+	}
+
+	rl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Minute, "user")
+
+	authClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
+	chatClient := resilience.NewClient(client, "chat-service", 2, 5*time.Second)
+
 	return &UserService{
-		store:                s,
-		authServiceURL:       authServiceURL,
-		limiter:              NewRateLimiter(5, 1*time.Minute),
-		internalServiceToken: internalServiceToken,
+		store:                  s,
+		authServiceURL:         cfg.AuthServiceURL,
+		chatServiceURL:         chatServiceURL,
+		limiter:                handlerutil.NewRateLimiter(rl),
+		internalServiceToken:   cfg.InternalServiceToken,
+		locationLastUpdate:     make(map[string]time.Time),
+		locationInFlight:       make(map[string]bool),
+		rdb:                    rdb,
+		authClient:             authClient,
+		chatClient:             chatClient,
+		httpClient:             client,
+		appEnv:                 cfg.AppEnv,
+		allowTestPaymentBypass: cfg.AllowTestPaymentBypass,
 	}
 }
 
@@ -51,7 +178,12 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	})
 	mux.HandleFunc("/users/jobs/track", u.TrackJob)
 	mux.HandleFunc("/users/jobs/get", u.GetJob)
+	mux.HandleFunc("/users/jobs/owner", u.GetOwnerJobs)
+	mux.HandleFunc("/users/jobs/mine", u.GetCustomerJobs)
 	mux.HandleFunc("/users/jobs/complete", u.CompleteJob)
+	mux.HandleFunc("/users/jobs/cancel", u.CancelJob)
+	mux.HandleFunc("/users/jobs/propose-price", u.ProposePrice)
+	mux.HandleFunc("/users/jobs/respond-price", u.RespondPrice)
 	mux.HandleFunc("/users/wallet", u.GetWallet)
 	mux.HandleFunc("/users/wallet/deposit", u.WalletDeposit)
 	mux.HandleFunc("/users/ledger", u.GetLedger)
@@ -59,6 +191,9 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users/subscription", u.Subscription)
 	mux.HandleFunc("/users/jobs/rate", u.RateJob)
 	mux.HandleFunc("/users/ratings", u.GetRatings)
+	mux.HandleFunc("/users/jobs/location/update", u.UpdateJobLocation)
+	mux.HandleFunc("/users/jobs/reconciliation-queue", u.GetReconciliationQueue)
+	mux.HandleFunc("/users/jobs/reconciliation-resolve", u.ResolveReconciliation)
 }
 
 // ---------------------------------------------------------------------------
@@ -69,12 +204,28 @@ func (u *UserService) ListServices(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	sortBy := q.Get("sort_by")
 	nearBy := q.Get("near_by") == "true"
+	hasLat := q.Get("lat") != ""
+	hasLon := q.Get("lon") != ""
 	refLat := parseFloat(q.Get("lat"), 30.0444)
 	refLon := parseFloat(q.Get("lon"), 31.2357)
 	radius := parseFloat(q.Get("radius"), 50)
 
 	ctx := r.Context()
+	if nearBy || hasLat || hasLon {
+		if !isValidCoordinate(refLat, refLon) {
+			// #nosec G706 //nolint:gosec -- floats formatted via %.6f, log injection not possible
+			log.Printf("[SECURITY WARNING] Invalid coordinates detected for ListServices: lat=%.6f, lon=%.6f", refLat, refLon)
+			handlerutil.ShipSecurityEvent(ctx, "INVALID_COORDINATES_DETECTED", "user-service", "anonymous", "", fmt.Sprintf("ListServices rejected: coordinates out of range (lat=%.6f, lon=%.6f)", refLat, refLon), handlerutil.GetClientIP(r))
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error":   "invalid_coordinates",
+				"message": "Latitude must be between -90 and 90, and Longitude must be between -180 and 180",
+			})
+			return
+		}
+	}
+
 	services := u.store.ListServices(ctx, sortBy, nearBy, refLat, refLon, radius)
+	// #nosec G706 //nolint:gosec -- sortBy is validated query parameter, log injection not possible
 	log.Printf("[USER] ListServices: sort_by=%s near_by=%v results=%d", sortBy, nearBy, len(services))
 
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -92,12 +243,14 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
 	}
+	if req.OwnerToken != "" {
+		req.OwnerID = req.OwnerToken
+	}
 	if req.OwnerID == "" || req.Name == "" || req.Category == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "owner_id, name, and category are required"})
 		return
 	}
-
-	resolvedOwnerID, err := resolveToken(req.OwnerID)
+	resolvedOwnerID, err := resolveTokenWithRole(req.OwnerID, "owner")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
 		return
@@ -108,6 +261,14 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 	kycStatus, err := u.checkKYC(req.OwnerID)
 	if err != nil {
 		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.OwnerID, err)
+		if errors.Is(err, ErrServiceUnavailable) {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
+				"error":   "service_unavailable",
+				"message": "Authentication service is temporarily unavailable. Please try again later.",
+			})
+			return
+		}
+		handlerutil.ShipSecurityEvent(r.Context(), "KYC_BLOCKED_ERROR", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("failed KYC check: %v", err), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: unable to verify owner KYC status",
 		})
@@ -115,6 +276,7 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 	}
 	if kycStatus != "approved" {
 		log.Printf("[KYC BLOCKED] Owner %s attempted to create service, but KYC status is %q", req.OwnerID, kycStatus)
+		handlerutil.ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("attempted to create service, KYC status is %s", kycStatus), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: owner KYC approval is pending",
 		})
@@ -122,6 +284,13 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Category != "shipping" && req.Category != "delivery" && req.Category != "transport" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid category, must be: shipping, delivery, transport"})
+		return
+	}
+	if req.TenantBasePrice < 0 || req.TenantPricePerKM < 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_pricing",
+			"message": "tenant_base_price and tenant_price_per_km cannot be negative",
+		})
 		return
 	}
 
@@ -141,7 +310,7 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------------------
 
 func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
-	ip := getIP(r)
+	ip := handlerutil.GetIP(r)
 	if limited, remaining := u.limiter.CheckAndRecord(ip); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
@@ -158,38 +327,131 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
 	}
-	if req.OwnerID == "" || req.ServiceID == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "owner_id and service_id are required"})
+	if req.OwnerToken != "" {
+		req.OwnerID = req.OwnerToken
+	}
+	if req.EmployeeToken != "" {
+		req.EmployeeID = req.EmployeeToken
+	}
+	if req.UserToken != "" {
+		req.UserID = req.UserToken
+	}
+	if req.ServiceID == "" || req.UserID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service_id and user_id are required"})
 		return
 	}
 
-	resolvedOwnerID, err := resolveToken(req.OwnerID)
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
+	idempotencyKey := r.Header.Get("Idempotency-Key")
+	if idempotencyKey == "" {
+		idempotencyKey = r.Header.Get("X-Idempotency-Key")
+	}
+	if idempotencyKey == "" {
+		idempotencyKey = req.IdempotencyKey
+	}
+
+	if idempotencyKey != "" && u.rdb != nil {
+		redisKey := "idempotency:job:" + idempotencyKey
+		existingJobID, err := u.rdb.Get(r.Context(), redisKey).Result()
+		if err == nil && existingJobID != "" {
+			existingJob := u.store.GetJob(r.Context(), existingJobID)
+			if existingJob != nil {
+				writeJSON(w, http.StatusOK, map[string]any{
+					"message":         "job tracking record already created (idempotent response)",
+					"job":             existingJob,
+					"idempotency_key": idempotencyKey,
+				})
+				return
+			}
+		}
+	}
+
+	if !isValidCoordinate(req.Location.Latitude, req.Location.Longitude) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_coordinates",
+			"message": "Latitude must be between -90 and 90, and Longitude must be between -180 and 180",
+		})
 		return
+	}
+
+	// 1. Resolve owner token if provided
+	var resolvedOwnerID string
+	var hasOwnerToken bool
+	if req.OwnerID != "" {
+		var err error
+		resolvedOwnerID, err = resolveTokenWithRole(req.OwnerID, "owner")
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
+			return
+		}
+		hasOwnerToken = true
+	}
+
+	// 2. Verify customer user token
+	resolvedUserID, err := resolveTokenWithRole(req.UserID, "user", "customer")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid user token: " + err.Error()})
+		return
+	}
+	req.UserID = resolvedUserID
+
+	ctx := r.Context()
+	var svc *models.Service
+
+	// 3. Securely look up the service from database if owner token was not provided
+	if !hasOwnerToken {
+		svc = u.store.GetServiceByID(ctx, req.ServiceID)
+		if svc == nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service not found"})
+			return
+		}
+		resolvedOwnerID = svc.TenantID
 	}
 	req.OwnerID = resolvedOwnerID
 
+	// 4. Verify assigned employee is active, has employee role, and belongs to this owner's tenant
 	if req.EmployeeID != "" {
-		resolvedEmployeeID, err := resolveToken(req.EmployeeID)
+		resolvedEmployeeID, err := resolveTokenWithRole(req.EmployeeID, "employee")
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid employee token: " + err.Error()})
 			return
 		}
 		req.EmployeeID = resolvedEmployeeID
+
+		// Verify assigned employee is active, has employee role, and belongs to this owner's tenant
+		ok, err := u.verifyEmployeeAssignment(req.EmployeeID, resolvedOwnerID)
+		if err != nil {
+			if errors.Is(err, ErrServiceUnavailable) {
+				writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "auth service unavailable"})
+				return
+			}
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "employee not found or status lookup failed"})
+			return
+		}
+		if !ok {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "employee is not active, not an employee, or does not belong to this owner's tenant"})
+			return
+		}
 	}
 
-	if req.PaymentMethod != "cod" {
+	if req.PaymentMethod != "cod" && (!u.allowTestPaymentBypass || (u.appEnv != "test" && u.appEnv != "local")) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "invalid payment_method: only 'cod' is currently supported",
 		})
 		return
 	}
 
-	// Verify owner exists and has approved KYC
+	// 5. Verify owner exists and has approved KYC
 	kycStatus, err := u.checkKYC(req.OwnerID)
 	if err != nil {
 		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.OwnerID, err)
+		if errors.Is(err, ErrServiceUnavailable) {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
+				"error":   "service_unavailable",
+				"message": "Authentication service is temporarily unavailable. Please try again later.",
+			})
+			return
+		}
+		handlerutil.ShipSecurityEvent(ctx, "KYC_BLOCKED_ERROR", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("failed KYC check: %v", err), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: unable to verify owner KYC status",
 		})
@@ -197,18 +459,25 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	}
 	if kycStatus != "approved" {
 		log.Printf("[KYC BLOCKED] Owner %s attempted to track job, but KYC status is %q", req.OwnerID, kycStatus)
+		handlerutil.ShipSecurityEvent(ctx, "KYC_BLOCKED", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("attempted to track job, KYC status is %s", kycStatus), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: owner KYC approval is pending",
 		})
 		return
 	}
 
-	ctx := r.Context()
-
-	// Look up service to calculate escrow amount.
-	svc := u.store.GetServiceByID(ctx, req.ServiceID)
+	// 6. Look up service if not already loaded (when owner token was provided)
 	if svc == nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service not found"})
+		svc = u.store.GetServiceByID(ctx, req.ServiceID)
+		if svc == nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service not found"})
+			return
+		}
+	}
+
+	// 7. Security cross-check: the verified owner must own the service being booked
+	if hasOwnerToken && resolvedOwnerID != svc.TenantID {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "action blocked: owner ID does not match service tenant"})
 		return
 	}
 
@@ -216,12 +485,48 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	dist := haversineKm(req.Location.Latitude, req.Location.Longitude, svc.Latitude, svc.Longitude)
 	escrowAmount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
 
+	isTransport := svc.Category == "transport"
 	now := time.Now().UTC()
+
+	var suggestedPrice float64
+	var proposedPrice *float64
+	var proposedBy string
+	var expiresAt *time.Time
+
+	initialStatus := models.JobStatusPending
+
+	if isTransport {
+		suggestedPrice = escrowAmount
+		initialStatus = models.JobStatusAwaitingPriceResponse
+
+		if req.ProposedPrice != nil {
+			if !models.ValidPriceProposal(suggestedPrice, *req.ProposedPrice) {
+				writeJSON(w, http.StatusBadRequest, map[string]string{
+					"error":   "invalid_proposed_price",
+					"message": "proposed_price must be between 50% and 150% of the suggested price",
+				})
+				return
+			}
+			proposedPrice = req.ProposedPrice
+			proposedBy = "customer"
+			exp := now.Add(5 * time.Minute)
+			expiresAt = &exp
+		}
+	}
+
 	job := &models.Job{
 		ID: generateID(), OwnerID: req.OwnerID, EmployeeID: req.EmployeeID,
-		ServiceID: req.ServiceID, Status: models.JobStatusPending,
+		UserID:    req.UserID,
+		ServiceID: req.ServiceID, Status: initialStatus,
 		Location: req.Location, PaymentMethod: req.PaymentMethod,
 		CreatedAt: now, UpdatedAt: now,
+	}
+
+	if isTransport {
+		job.SuggestedPrice = suggestedPrice
+		job.ProposedPrice = proposedPrice
+		job.ProposedBy = proposedBy
+		job.PriceProposalExpiresAt = expiresAt
 	}
 
 	if err := u.store.CreateJob(ctx, job); err != nil {
@@ -229,13 +534,29 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// For transport category jobs, skip escrow locking entirely during TrackJob regardless of payment method.
+	if isTransport {
+		log.Printf("[USER] Transport Job %s created awaiting price proposal response (suggested=%.2f)", job.ID, suggestedPrice)
+		u.saveIdempotencyKey(r.Context(), idempotencyKey, job.ID)
+		writeJSON(w, http.StatusCreated, map[string]any{
+			"message": "job tracking record created",
+			"job":     job,
+		})
+		return
+	}
+
 	// Lock escrow only for non-COD (or skip for COD jobs)
 	if req.PaymentMethod == "cod" {
 		log.Printf("[USER] Job %s created (COD payment method)", job.ID)
 		// Progress to active.
-		u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive)
+		if err := u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to activate job: " + err.Error()})
+			return
+		}
 		job.Status = models.JobStatusActive
 		job.UpdatedAt = time.Now().UTC()
+
+		u.saveIdempotencyKey(r.Context(), idempotencyKey, job.ID)
 
 		writeJSON(w, http.StatusCreated, map[string]any{
 			"message":        "job tracking record created",
@@ -249,6 +570,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	if err := u.store.LockEscrow(ctx, req.OwnerID, job.ID, escrowAmount); err != nil {
 		log.Printf("[USER] Escrow lock failed for job %s: %v", job.ID, err)
 		// Job created but unfunded — still report it.
+		u.saveIdempotencyKey(r.Context(), idempotencyKey, job.ID)
 		writeJSON(w, http.StatusCreated, map[string]any{
 			"message": "job created but escrow lock failed — deposit funds first",
 			"warning": err.Error(), "job": job, "escrow_amount": escrowAmount,
@@ -258,15 +580,60 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[USER] Job %s created with escrow %.2f locked", job.ID, escrowAmount)
 
+	// Persist the locked escrow amount on the job record
+	if err := u.store.UpdateJobLockedEscrow(ctx, job.ID, escrowAmount); err != nil {
+		log.Printf("[ERROR] failed to persist locked escrow amount for job %s: %v. Rolling back escrow lock.", job.ID, err)
+		// Use context.Background() for rollback/cleanup to ensure it executes even if the request context was cancelled/timed out
+		rollbackErr := u.performRollbackEscrow(context.Background(), req.OwnerID, escrowAmount)
+		if rollbackErr != nil {
+			log.Printf("[CRITICAL ERROR] initial escrow rollback attempt failed for owner %s (job %s): %v. Retrying rollback once...", req.OwnerID, job.ID, rollbackErr)
+			// Single retry attempt (Req #3)
+			rollbackErr = u.performRollbackEscrow(context.Background(), req.OwnerID, escrowAmount)
+		}
+
+		if rollbackErr != nil {
+			log.Printf("[CRITICAL ERROR] failed to rollback escrow lock for owner %s (job %s): %v. Marking job for reconciliation instead of deleting.", req.OwnerID, job.ID, rollbackErr)
+			note := fmt.Sprintf("Locked escrow amount: %.2f. Escrow lock rollback failed: %v", escrowAmount, rollbackErr)
+			if recErr := u.store.UpdateJobReconciliation(context.Background(), job.ID, models.JobStatusEscrowReconciliationRequired, note, rollbackErr.Error(), escrowAmount); recErr != nil {
+				log.Printf("[CRITICAL ERROR] failed to set reconciliation status on job %s: %v", job.ID, recErr)
+			}
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to persist locked escrow and escrow rollback failed; job preserved for reconciliation",
+			})
+			return
+		}
+
+		if deleteErr := u.store.DeleteJob(context.Background(), job.ID); deleteErr != nil {
+			log.Printf("[ERROR] failed to delete job %s after failure: %v", job.ID, deleteErr)
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to persist locked escrow, escrow lock rolled back",
+		})
+		return
+	}
+	job.LockedEscrowAmount = escrowAmount
+
 	// Progress to active.
-	u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive)
+	if err := u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to activate job: " + err.Error()})
+		return
+	}
 	job.Status = models.JobStatusActive
 	job.UpdatedAt = time.Now().UTC()
+
+	u.saveIdempotencyKey(r.Context(), idempotencyKey, job.ID)
 
 	writeJSON(w, http.StatusCreated, map[string]any{
 		"message": "job tracking record created", "lifecycle_note": "escrow locked, all up to date",
 		"job": job, "escrow_locked": escrowAmount,
 	})
+}
+
+func (u *UserService) performRollbackEscrow(ctx context.Context, tenantID string, amount float64) error {
+	if u.rollbackEscrowHook != nil {
+		return u.rollbackEscrowHook(ctx, tenantID, amount)
+	}
+	return u.store.RollbackEscrow(ctx, tenantID, amount)
 }
 
 // ---------------------------------------------------------------------------
@@ -296,9 +663,16 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Authorization check
-	isInternal := r.Header.Get("X-Internal-Token") == u.internalServiceToken
+	resolvedRequester := "internal_service"
+	isInternal := subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
 	if !isInternal {
-		requesterToken := r.URL.Query().Get("requester_id")
+		if req.RequesterToken != "" {
+			req.RequesterID = req.RequesterToken
+		}
+		requesterToken := r.URL.Query().Get("requester_token")
+		if requesterToken == "" {
+			requesterToken = r.URL.Query().Get("requester_id")
+		}
 		if requesterToken == "" {
 			requesterToken = req.RequesterID
 		}
@@ -306,14 +680,17 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester_id parameter is required"})
 			return
 		}
-		resolvedRequester, err := resolveToken(requesterToken)
+		var err error
+		resolvedRequester, err = resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 			return
 		}
 
 		if resolvedRequester != job.OwnerID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
+			// #nosec G706 //nolint:gosec -- IDs are from verified JWT tokens and database, log injection not possible
 			log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to complete job %s owned by owner %s and employee %s", resolvedRequester, job.ID, job.OwnerID, job.EmployeeID)
+			handlerutil.ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to complete job %s", job.ID), handlerutil.GetClientIP(r))
 			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to complete this job"})
 			return
 		}
@@ -321,6 +698,14 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 
 	if job.Status == models.JobStatusCompleted {
 		writeJSON(w, http.StatusConflict, map[string]string{"error": "job already completed"})
+		return
+	}
+	if job.Status == models.JobStatusCancelled {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "job already cancelled"})
+		return
+	}
+	if job.Status != models.JobStatusActive {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "job must be active to be completed"})
 		return
 	}
 
@@ -332,6 +717,62 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 	}
 	dist := haversineKm(job.Location.Latitude, job.Location.Longitude, svc.Latitude, svc.Longitude)
 	amount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
+	if job.AgreedPrice != nil && *job.AgreedPrice > 0 {
+		amount = *job.AgreedPrice
+	}
+
+	if job.PaymentMethod != "cod" && job.LockedEscrowAmount == 0 {
+		log.Printf("[SECURITY WARNING] LockedEscrowAmount is 0 for non-COD job %s during CompleteJob. Payout aborted.", job.ID)
+		handlerutil.ShipSecurityEvent(ctx, "ESCROW_UNRECORDED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("CompleteJob aborted: LockedEscrowAmount is 0 for non-COD job %s", job.ID), handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "escrow_amount_unrecorded",
+			"message": "This job has no recorded locked escrow amount. Payout aborted for security.",
+		})
+		return
+	}
+
+	// Delivery and Shipping GPS Trail Settlement Reconciliation (ADR-0007 Phase 1)
+	if svc.Category == "delivery" || svc.Category == "shipping" {
+		bookedDist := dist
+		var actualDist float64
+		pts := make([]models.Location, 0, len(job.Waypoints)+1)
+		pts = append(pts, job.Location)
+		pts = append(pts, job.Waypoints...)
+
+		for i := 0; i < len(pts)-1; i++ {
+			actualDist += haversineKm(pts[i+1].Latitude, pts[i+1].Longitude, pts[i].Latitude, pts[i].Longitude)
+		}
+
+		// Under-distance review flag: if actual tracked distance < 70% of booked distance
+		if bookedDist > 0 && actualDist < 0.70*bookedDist {
+			log.Printf("[SECURITY WARNING] Tracked distance mismatch for job %s: actual %.2f km vs booked %.2f km (< 70%% threshold). Flagging for manual escrow reconciliation.", job.ID, actualDist, bookedDist)
+			handlerutil.ShipSecurityEvent(ctx, "TRACKED_DISTANCE_MISMATCH", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("tracked distance mismatch for job %s: actual %.2f km vs booked %.2f km", job.ID, actualDist, bookedDist), handlerutil.GetClientIP(r))
+
+			note := fmt.Sprintf("tracked_distance_mismatch: actual %.2f km vs booked %.2f km", actualDist, bookedDist)
+			if recErr := u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusEscrowReconciliationRequired, note, "under_distance_mismatch", job.LockedEscrowAmount); recErr != nil {
+				log.Printf("[ERROR] failed to update reconciliation status for job %s: %v", job.ID, recErr)
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to flag job for reconciliation: " + recErr.Error()})
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]any{
+				"message":             "job flagged for escrow reconciliation review due to tracked distance mismatch",
+				"job_id":              job.ID,
+				"status":              string(models.JobStatusEscrowReconciliationRequired),
+				"reconciliation_note": note,
+				"actual_distance_km":  actualDist,
+				"booked_distance_km":  bookedDist,
+			})
+			return
+		}
+
+		// Guaranteed floor payout calculation: max(LockedEscrowAmount, A_actual)
+		aActual := math.Round((svc.TenantBasePrice+(actualDist*svc.TenantPricePerKM))*100) / 100
+		if job.LockedEscrowAmount > 0 {
+			amount = math.Max(job.LockedEscrowAmount, aActual)
+		} else {
+			amount = math.Max(amount, aActual)
+		}
+	}
 
 	// Handle COD payment method
 	if job.PaymentMethod == "cod" {
@@ -344,11 +785,14 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 
 		// Deduct platform fee directly from owner's wallet (allows negative balance)
 		if err := u.store.DeductCODFee(ctx, job.OwnerID, job.ID, amount); err != nil {
+			if strings.Contains(err.Error(), "not active") {
+				writeJSON(w, http.StatusConflict, map[string]string{"error": "job already completed or not active: " + err.Error()})
+				return
+			}
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to deduct platform fee: " + err.Error()})
 			return
 		}
 
-		u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusCompleted)
 		job.Status = models.JobStatusCompleted
 		job.UpdatedAt = time.Now().UTC()
 
@@ -370,13 +814,23 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Cap the release amount at LockedEscrowAmount to prevent drawing down other jobs' escrow
+	if amount > job.LockedEscrowAmount {
+		log.Printf("[SECURITY WARNING] Recomputed completion amount %.2f exceeds locked escrow amount %.2f for job %s. Capping to locked amount.", amount, job.LockedEscrowAmount, job.ID)
+		handlerutil.ShipSecurityEvent(ctx, "ESCROW_LIMIT_EXCEEDED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("CompleteJob amount %.2f exceeds locked escrow %.2f, capped", amount, job.LockedEscrowAmount), handlerutil.GetClientIP(r))
+		amount = job.LockedEscrowAmount
+	}
+
 	// Release escrow with profit splitting (Non-COD flow)
 	if err := u.store.ReleaseEscrowWithSplit(ctx, job.OwnerID, job.ID, amount); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "escrow release failed: " + err.Error()})
 		return
 	}
 
-	u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusCompleted)
+	if err := u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusCompleted); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to complete job: " + err.Error()})
+		return
+	}
 
 	cfg := u.store.GetPlatformConfig(ctx)
 	feePercent := 15.0
@@ -389,7 +843,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[USER] Job %s completed: total=%.2f fee=%.2f net=%.2f", job.ID, amount, fee, net)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"message": "job completed — profit split executed",
-		"job_id": job.ID, "total_amount": amount,
+		"job_id":  job.ID, "total_amount": amount,
 		"platform_fee": fee, "platform_fee_pct": feePercent,
 		"net_to_tenant": net,
 	})
@@ -404,9 +858,38 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 		return
 	}
-	id := r.URL.Query().Get("id")
+	id := r.URL.Query().Get("user_token")
 	if id == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "id parameter is required"})
+		id = r.URL.Query().Get("id")
+	}
+	if id == "" {
+		requesterToken := r.URL.Query().Get("requester_token")
+		if requesterToken == "" {
+			requesterToken = r.URL.Query().Get("requester_id")
+		}
+		if requesterToken == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "id or requester_id parameter is required"})
+			return
+		}
+		resolvedRequester, err := resolveTokenWithRole(requesterToken, "employee")
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+			return
+		}
+		// Check if a client-supplied employee_id query param exists, and validate it matches resolvedRequester
+		clientEmployeeID := r.URL.Query().Get("employee_id")
+		if clientEmployeeID != "" && clientEmployeeID != resolvedRequester {
+			// #nosec G706 //nolint:gosec -- employee ID is sanitized, resolvedRequester is from verified JWT claims, log injection not possible
+			log.Printf("[IDOR DETECTED] Requester %s tried to query jobs for employee %s", resolvedRequester, strings.ReplaceAll(strings.ReplaceAll(clientEmployeeID, "\n", " "), "\r", " "))
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to view jobs for this employee"})
+			return
+		}
+		jobs, err := u.store.GetJobsByEmployee(r.Context(), resolvedRequester)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, jobs)
 		return
 	}
 	ctx := r.Context()
@@ -416,31 +899,200 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	u.checkLazyPriceProposalExpiry(ctx, job)
+
 	// 1. Internal trusted token check
-	if r.Header.Get("X-Internal-Token") == u.internalServiceToken {
+	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1 {
 		writeJSON(w, http.StatusOK, job)
 		return
 	}
 
 	// 2. External client check: require requester_id query param
-	requesterToken := r.URL.Query().Get("requester_id")
+	requesterToken := r.URL.Query().Get("requester_token")
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_id")
+	}
 	if requesterToken == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester_id parameter is required"})
 		return
 	}
-	resolvedRequester, err := resolveToken(requesterToken)
+	resolvedRequester, err := resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 		return
 	}
 
-	if resolvedRequester != job.OwnerID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
-		log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to access job %s owned by owner %s and employee %s", resolvedRequester, job.ID, job.OwnerID, job.EmployeeID)
+	if resolvedRequester != job.OwnerID && resolvedRequester != job.UserID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
+		// #nosec G706 //nolint:gosec -- IDs are from verified JWT tokens and database, log injection not possible
+		log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to access job %s owned by owner %s, employee %s, user %s", resolvedRequester, job.ID, job.OwnerID, job.EmployeeID, job.UserID)
+		handlerutil.ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to access job %s", job.ID), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to view this job"})
 		return
 	}
 
 	writeJSON(w, http.StatusOK, job)
+}
+
+// ---------------------------------------------------------------------------
+// GET /users/jobs/owner
+// ---------------------------------------------------------------------------
+
+func (u *UserService) GetOwnerJobs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") {
+		requesterToken = strings.TrimPrefix(requesterToken, "Bearer ")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("owner_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_id")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("owner_id")
+	}
+	if requesterToken == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "owner token required"})
+		return
+	}
+
+	claims, err := resolveClaims(requesterToken)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+	resolvedOwnerID := claims.UserID
+
+	// Enforce IDOR matching if client explicitly provided an owner_id parameter
+	clientOwnerID := r.URL.Query().Get("owner_id")
+	if clientOwnerID != "" && clientOwnerID != resolvedOwnerID {
+		// #nosec G706 //nolint:gosec -- IDs are sanitized from claims/query, log injection not possible
+		log.Printf("[IDOR DETECTED] Requester %s tried to query owner jobs for %s", resolvedOwnerID, strings.ReplaceAll(strings.ReplaceAll(clientOwnerID, "\n", " "), "\r", " "))
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to view jobs for this owner"})
+		return
+	}
+
+	// Verify owner role
+	if claims.Role != "owner" {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: owner role required"})
+		return
+	}
+
+	// Identity-based rate limiting (30 req/min)
+	rateKey := "jobs_owner:" + resolvedOwnerID
+	if limited, remaining := u.limiter.CheckAndRecord(rateKey); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
+	jobs, err := u.store.GetJobsByOwner(r.Context(), resolvedOwnerID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	activeOnly := r.URL.Query().Get("active_only") == "true" || r.URL.Query().Get("filter") == "active"
+	resps := make([]models.OwnerJobResponse, 0, len(jobs))
+	now := time.Now()
+	for _, j := range jobs {
+		if activeOnly {
+			isActiveStatus := j.Status == models.JobStatusActive
+			isRecentlyUpdated := !j.UpdatedAt.IsZero() && now.Sub(j.UpdatedAt) <= 15*time.Minute
+			if !isActiveStatus && !isRecentlyUpdated {
+				continue
+			}
+		}
+		resps = append(resps, models.NewOwnerJobResponse(j))
+	}
+	writeJSON(w, http.StatusOK, resps)
+}
+
+// ---------------------------------------------------------------------------
+// GET /users/jobs/mine
+// ---------------------------------------------------------------------------
+
+func (u *UserService) GetCustomerJobs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") {
+		requesterToken = strings.TrimPrefix(requesterToken, "Bearer ")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("customer_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("user_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_id")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("user_id")
+	}
+	if requesterToken == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "user token required"})
+		return
+	}
+
+	claims, err := resolveClaims(requesterToken)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+	resolvedCustomerID := claims.UserID
+
+	// Enforce IDOR matching if client explicitly provided a user_id parameter
+	clientUserID := r.URL.Query().Get("user_id")
+	if clientUserID != "" && clientUserID != resolvedCustomerID {
+		// #nosec G706 //nolint:gosec -- IDs are sanitized from claims/query, log injection not possible
+		log.Printf("[IDOR DETECTED] Requester %s tried to query customer jobs for %s", resolvedCustomerID, strings.ReplaceAll(strings.ReplaceAll(clientUserID, "\n", " "), "\r", " "))
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to view jobs for this user"})
+		return
+	}
+
+	// Verify customer role
+	if claims.Role != "user" {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: customer role required"})
+		return
+	}
+
+	// Identity-based rate limiting (30 req/min)
+	rateKey := "jobs_customer:" + resolvedCustomerID
+	if limited, remaining := u.limiter.CheckAndRecord(rateKey); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
+	jobs, err := u.store.GetJobsByCustomer(r.Context(), resolvedCustomerID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	resps := make([]models.CustomerJobResponse, 0, len(jobs))
+	for _, j := range jobs {
+		resps = append(resps, models.NewCustomerJobResponse(j))
+	}
+	writeJSON(w, http.StatusOK, resps)
 }
 
 // ---------------------------------------------------------------------------
@@ -452,12 +1104,15 @@ func (u *UserService) GetWallet(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
 		return
 	}
-	tenantID := r.URL.Query().Get("tenant_id")
+	tenantID := r.URL.Query().Get("tenant_token")
+	if tenantID == "" {
+		tenantID = r.URL.Query().Get("tenant_id")
+	}
 	if tenantID == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
 		return
 	}
-	resolvedTenantID, err := resolveToken(tenantID)
+	resolvedTenantID, err := resolveTokenWithRole(tenantID, "owner")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
 		return
@@ -476,7 +1131,7 @@ func (u *UserService) GetWallet(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------------------
 
 func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
-	ip := getIP(r)
+	ip := handlerutil.GetIP(r)
 	if limited, remaining := u.limiter.CheckAndRecord(ip); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
@@ -486,6 +1141,13 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	if !u.allowTestPaymentBypass || (u.appEnv != "local" && u.appEnv != "test") {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "payment gateway not yet integrated",
+		})
 		return
 	}
 
@@ -503,6 +1165,9 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
 	}
+	if req.TenantToken != "" {
+		req.TenantID = req.TenantToken
+	}
 	const maxDepositAmount = 1_000_000
 	if req.TenantID == "" || req.Amount <= 0 || req.Amount > maxDepositAmount {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
@@ -511,7 +1176,7 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resolvedTenantID, err := resolveToken(req.TenantID)
+	resolvedTenantID, err := resolveTokenWithRole(req.TenantID, "owner")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
 		return
@@ -533,6 +1198,14 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 	kycStatus, err := u.checkKYC(req.TenantID)
 	if err != nil {
 		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.TenantID, err)
+		if errors.Is(err, ErrServiceUnavailable) {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
+				"error":   "service_unavailable",
+				"message": "Authentication service is temporarily unavailable. Please try again later.",
+			})
+			return
+		}
+		handlerutil.ShipSecurityEvent(r.Context(), "KYC_BLOCKED_ERROR", "user-service", req.TenantID, req.TenantID, fmt.Sprintf("failed KYC check: %v", err), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: unable to verify owner KYC status",
 		})
@@ -540,6 +1213,7 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 	}
 	if kycStatus != "approved" {
 		log.Printf("[KYC BLOCKED] Owner %s attempted to deposit to wallet, but KYC status is %q", req.TenantID, kycStatus)
+		handlerutil.ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "user-service", req.TenantID, req.TenantID, fmt.Sprintf("attempted to deposit, KYC status is %s", kycStatus), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: owner KYC approval is pending",
 		})
@@ -558,21 +1232,41 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------------------
 
 func (u *UserService) GetLedger(w http.ResponseWriter, r *http.Request) {
+	ip := handlerutil.GetIP(r)
+	if limited, remaining := u.limiter.CheckAndRecord("get_ledger_ip:" + ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
 	if r.Method != http.MethodGet {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
 		return
 	}
-	tenantID := r.URL.Query().Get("tenant_id")
+	tenantID := r.URL.Query().Get("tenant_token")
+	if tenantID == "" {
+		tenantID = r.URL.Query().Get("tenant_id")
+	}
 	if tenantID == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
 		return
 	}
-	resolvedTenantID, err := resolveToken(tenantID)
+	resolvedTenantID, err := resolveTokenWithRole(tenantID, "owner")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
 		return
 	}
 	tenantID = resolvedTenantID
+
+	tenantKey := "ledger_tenant:" + tenantID
+	if limited, remaining := u.limiter.CheckAndRecord(tenantKey); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many ledger requests for this tenant, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
 	entries := u.store.GetLedger(r.Context(), tenantID)
 	writeJSON(w, http.StatusOK, map[string]any{"count": len(entries), "entries": entries})
 }
@@ -595,18 +1289,46 @@ func (u *UserService) GetPlatformConfig(w http.ResponseWriter, r *http.Request) 
 // Helpers
 // ---------------------------------------------------------------------------
 
-func resolveToken(tokenStr string) (string, error) {
+func resolveClaims(tokenStr string) (*jwtutil.Claims, error) {
 	claims, err := jwtutil.ValidateToken(tokenStr)
 	if err != nil {
-		return "", fmt.Errorf("invalid or missing token: %w", err)
+		return nil, fmt.Errorf("invalid or missing token: %w", err)
+	}
+	return claims, nil
+}
+
+func resolveTokenWithRole(tokenStr string, allowedRoles ...string) (string, error) {
+	claims, err := resolveClaims(tokenStr)
+	if err != nil {
+		return "", err
+	}
+	if len(allowedRoles) > 0 {
+		matched := false
+		for _, role := range allowedRoles {
+			if claims.Role == role {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return "", fmt.Errorf("role mismatch: claim role %q not in allowed roles %v", claims.Role, allowedRoles)
+		}
 	}
 	return claims.UserID, nil
 }
 
+func (u *UserService) saveIdempotencyKey(ctx context.Context, key, jobID string) {
+	if key != "" && u.rdb != nil {
+		redisKey := "idempotency:job:" + key
+		if err := u.rdb.Set(ctx, redisKey, jobID, 24*time.Hour).Err(); err != nil {
+			// #nosec G706 //nolint:gosec -- key comes from request header/body, used for failure diagnosis
+			log.Printf("[ERROR] failed to store idempotency key %s in Redis: %v", key, err)
+		}
+	}
+}
+
 func writeJSON(w http.ResponseWriter, status int, data any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	handlerutil.WriteJSON(w, status, data)
 }
 
 func generateID() string {
@@ -645,9 +1367,9 @@ func (u *UserService) checkKYC(ownerID string) (string, error) {
 		return "", err
 	}
 	req.Header.Set("X-Internal-Token", u.internalServiceToken)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := u.authClient.Do(req)
 	if err != nil {
-		return "", err
+		return "", ErrServiceUnavailable
 	}
 	defer resp.Body.Close()
 
@@ -655,7 +1377,7 @@ func (u *UserService) checkKYC(ownerID string) (string, error) {
 		return "", fmt.Errorf("owner not found")
 	}
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected auth service status: %d", resp.StatusCode)
+		return "", ErrServiceUnavailable
 	}
 
 	var user struct {
@@ -673,6 +1395,58 @@ func (u *UserService) checkKYC(ownerID string) (string, error) {
 	return user.KYCStatus, nil
 }
 
+func (u *UserService) verifyEmployeeAssignment(employeeID, ownerID string) (bool, error) {
+	url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, employeeID)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return false, err
+	}
+	req.Header.Set("X-Internal-Token", u.internalServiceToken)
+	resp, err := u.authClient.Do(req)
+	if err != nil {
+		return false, ErrServiceUnavailable
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return false, fmt.Errorf("employee not found")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return false, ErrServiceUnavailable
+	}
+
+	var user struct {
+		Role     string `json:"role"`
+		TenantID string `json:"tenant_id"`
+		IsActive bool   `json:"is_active"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return false, err
+	}
+
+	if user.Role != "employee" || user.TenantID != ownerID || !user.IsActive {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+// requireTier enforces that a tenant has at least the minimum subscription tier.
+func (u *UserService) requireTier(ctx context.Context, tenantID string, min models.PlanTier) error {
+	sub := u.store.GetSubscription(ctx, tenantID)
+	var currentTier models.PlanTier = models.PlanFree
+	if sub != nil {
+		currentTier = sub.Tier
+	}
+
+	if min == models.PlanPaid {
+		if currentTier != models.PlanPaid {
+			return ErrUpgradeRequired
+		}
+	}
+	return nil
+}
+
 // ---------------------------------------------------------------------------
 // GET /users/subscription?tenant_id=xxx
 // POST /users/subscription
@@ -681,12 +1455,15 @@ func (u *UserService) checkKYC(ownerID string) (string, error) {
 func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		tenantID := r.URL.Query().Get("tenant_id")
+		tenantID := r.URL.Query().Get("tenant_token")
+		if tenantID == "" {
+			tenantID = r.URL.Query().Get("tenant_id")
+		}
 		if tenantID == "" {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
 			return
 		}
-		resolvedTenantID, err := resolveToken(tenantID)
+		resolvedTenantID, err := resolveTokenWithRole(tenantID, "owner")
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
 			return
@@ -704,13 +1481,21 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, sub)
 	case http.MethodPost:
 		var req struct {
-			TenantID    string          `json:"tenant_id"`
-			Tier        models.PlanTier `json:"tier"`
-			RequesterID string          `json:"requester_id"`
+			TenantID       string          `json:"tenant_id"`
+			TenantToken    string          `json:"tenant_token"`
+			Tier           models.PlanTier `json:"tier"`
+			RequesterID    string          `json:"requester_id"`
+			RequesterToken string          `json:"requester_token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 			return
+		}
+		if req.TenantToken != "" {
+			req.TenantID = req.TenantToken
+		}
+		if req.RequesterToken != "" {
+			req.RequesterID = req.RequesterToken
 		}
 		if req.TenantID == "" {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id is required"})
@@ -721,14 +1506,14 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		resolvedTenantID, err := resolveToken(req.TenantID)
+		resolvedTenantID, err := resolveTokenWithRole(req.TenantID, "owner")
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
 			return
 		}
 		req.TenantID = resolvedTenantID
 
-		resolvedRequesterID, err := resolveToken(req.RequesterID)
+		resolvedRequesterID, err := resolveTokenWithRole(req.RequesterID, "owner")
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 			return
@@ -748,9 +1533,12 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		authReq.Header.Set("X-Internal-Token", u.internalServiceToken)
-		resp, err := http.DefaultClient.Do(authReq)
+		resp, err := u.authClient.Do(authReq)
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "auth service connection error: " + err.Error()})
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
+				"error":   "service_unavailable",
+				"message": "Authentication service is temporarily unavailable. Please try again later.",
+			})
 			return
 		}
 		defer resp.Body.Close()
@@ -809,17 +1597,27 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------------------
 
 func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
+	ip := handlerutil.GetIP(r)
+	if limited, remaining := u.limiter.CheckAndRecord("rate_job:" + ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
 		return
 	}
 
 	var req struct {
-		JobID     string `json:"job_id"`
-		RatedBy   string `json:"rated_by"`
-		RatedUser string `json:"rated_user"`
-		Stars     int    `json:"stars"`
-		Comment   string `json:"comment"`
+		JobID          string `json:"job_id"`
+		RatedBy        string `json:"rated_by"`
+		RatedByToken   string `json:"rated_by_token"`
+		RatedUser      string `json:"rated_user"`
+		RatedUserToken string `json:"rated_user_token"`
+		Stars          int    `json:"stars"`
+		Comment        string `json:"comment"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -827,24 +1625,35 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.RatedByToken != "" {
+		req.RatedBy = req.RatedByToken
+	}
+	if req.RatedUserToken != "" {
+		req.RatedUser = req.RatedUserToken
+	}
+
 	if req.Stars < 1 || req.Stars > 5 {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "stars must be between 1 and 5"})
 		return
 	}
 
-	resolvedRatedBy, err := resolveToken(req.RatedBy)
+	if len(req.Comment) > 1000 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "comment exceeds maximum length of 1000 characters"})
+		return
+	}
+	req.Comment = strings.TrimSpace(html.EscapeString(req.Comment))
+
+	resolvedRatedBy, err := resolveTokenWithRole(req.RatedBy, "owner", "employee", "user", "customer")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid rated_by token: " + err.Error()})
 		return
 	}
 	req.RatedBy = resolvedRatedBy
 
-	resolvedRatedUser, err := resolveToken(req.RatedUser)
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid rated_user token: " + err.Error()})
-		return
-	}
-	req.RatedUser = resolvedRatedUser
+	resolvedRatedUser, err := resolveTokenWithRole(req.RatedUser, "owner", "employee", "user", "customer")
+	if err == nil {
+		req.RatedUser = resolvedRatedUser
+	} // Fallback: if token resolution fails, treat req.RatedUser as the raw user ID directly
 
 	ctx := r.Context()
 	job := u.store.GetJob(ctx, req.JobID)
@@ -877,6 +1686,13 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := u.store.CreateRating(ctx, rating); err != nil {
+		if mongo.IsDuplicateKeyError(err) || strings.Contains(err.Error(), "11000") || strings.Contains(err.Error(), "duplicate key") {
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error":   "conflict",
+				"message": "you have already rated this job",
+			})
+			return
+		}
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
@@ -889,25 +1705,60 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------------------
 
 func (u *UserService) GetRatings(w http.ResponseWriter, r *http.Request) {
+	ip := handlerutil.GetIP(r)
+	if limited, remaining := u.limiter.CheckAndRecord("get_ratings:" + ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
 	if r.Method != http.MethodGet {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
 		return
 	}
 
-	userID := r.URL.Query().Get("user_id")
-	if userID == "" {
+	// Authenticate requester
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") {
+		requesterToken = strings.TrimPrefix(requesterToken, "Bearer ")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_id")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("user_token")
+	}
+	if requesterToken == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "requester authorization token required"})
+		return
+	}
+
+	_, err := resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
+	// Target user ID to query (can be raw ID or JWT token)
+	targetUserID := r.URL.Query().Get("user_id")
+	if targetUserID == "" {
+		targetUserID = r.URL.Query().Get("user_token")
+	}
+	if targetUserID == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "user_id required"})
 		return
 	}
 
-	resolvedUserID, err := resolveToken(userID)
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid user token: " + err.Error()})
-		return
+	resolvedTarget, err := resolveTokenWithRole(targetUserID, "owner", "employee", "user", "customer")
+	if err == nil {
+		targetUserID = resolvedTarget
 	}
-	userID = resolvedUserID
 
-	ratings, err := u.store.GetRatingsForUser(r.Context(), userID)
+	ratings, err := u.store.GetRatingsForUser(r.Context(), targetUserID)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -924,9 +1775,1109 @@ func (u *UserService) GetRatings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"user_id":        userID,
+		"user_id":        targetUserID,
 		"ratings":        ratings,
 		"average_rating": avg,
 		"count":          len(ratings),
 	})
+}
+
+// POST /users/jobs/location/update
+// ---------------------------------------------------------------------------
+
+func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	var req struct {
+		JobID          string  `json:"job_id"`
+		RequesterID    string  `json:"requester_id"`
+		RequesterToken string  `json:"requester_token"`
+		Latitude       float64 `json:"latitude"`
+		Longitude      float64 `json:"longitude"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+
+	if req.RequesterToken != "" {
+		req.RequesterID = req.RequesterToken
+	}
+
+	if req.JobID == "" || req.RequesterID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id and requester_id are required"})
+		return
+	}
+
+	resolvedRequester, err := resolveTokenWithRole(req.RequesterID, "employee", "owner")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
+	if !isValidCoordinate(req.Latitude, req.Longitude) {
+		log.Printf("[SECURITY WARNING] Invalid coordinates detected for job %s: lat=%.6f, lon=%.6f", req.JobID, req.Latitude, req.Longitude)
+		ctx := r.Context()
+		var ownerID string
+		if job := u.store.GetJob(ctx, req.JobID); job != nil {
+			ownerID = job.OwnerID
+		}
+		handlerutil.ShipSecurityEvent(ctx, "INVALID_COORDINATES_DETECTED", "user-service", resolvedRequester, ownerID, fmt.Sprintf("location update rejected for job %s: coordinates out of range (lat=%.6f, lon=%.6f)", req.JobID, req.Latitude, req.Longitude), handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_coordinates",
+			"message": "Latitude must be between -90 and 90, and Longitude must be between -180 and 180",
+		})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	if job.EmployeeID == "" || resolvedRequester != job.EmployeeID {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: only the assigned employee can push location updates"})
+		return
+	}
+
+	if job.Status != models.JobStatusActive {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "action blocked: job is not active"})
+		return
+	}
+
+	// Membership tier gating
+	if err := u.requireTier(ctx, job.OwnerID, models.PlanPaid); err != nil {
+		if errors.Is(err, ErrUpgradeRequired) {
+			handlerutil.ShipSecurityEvent(ctx, "UPGRADE_REQUIRED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("location update rejected for job %s, paid subscription required", job.ID), handlerutil.GetClientIP(r))
+			writeJSON(w, http.StatusPaymentRequired, map[string]string{
+				"error":   "upgrade_required",
+				"message": "Live location tracking requires a paid subscription.",
+			})
+			return
+		}
+		log.Printf("[USER] Subscription verification failed for owner %s: %v", job.OwnerID, err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error":   "internal_error",
+			"message": "could not verify subscription status",
+		})
+		return
+	}
+
+	// Per-job minimum interval throttling
+	var lastTime time.Time
+	var exists bool
+	now := time.Now()
+	nowMs := now.UnixNano() / int64(time.Millisecond)
+
+	clearInFlight := func() {
+		if u.rdb != nil {
+			bgCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			_ = u.rdb.Del(bgCtx, fmt.Sprintf("loc:inflight:%s", job.ID)).Err()
+			cancel()
+		} else {
+			u.locationThrottleMu.Lock()
+			delete(u.locationInFlight, job.ID)
+			u.locationThrottleMu.Unlock()
+		}
+	}
+
+	if u.rdb != nil {
+		inflightKey := fmt.Sprintf("loc:inflight:%s", job.ID)
+		lastupdateKey := fmt.Sprintf("loc:lastupdate:%s", job.ID)
+
+		evalCtx, cancelEval := context.WithTimeout(r.Context(), 2*time.Second)
+		res, err := u.rdb.Eval(evalCtx, checkLocationThrottleScript, []string{inflightKey, lastupdateKey}, MinLocationUpdateInterval.Milliseconds(), 15, nowMs).Result()
+		cancelEval()
+		if err != nil {
+			log.Printf("[SECURITY CRITICAL] Redis error in UpdateJobLocation throttle check (FAIL CLOSED): %v for job %s", err, job.ID)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error":   "internal_error",
+				"message": "failed to process location update throttle check",
+			})
+			return
+		}
+
+		resSlice, ok := res.([]interface{})
+		if !ok || len(resSlice) < 2 {
+			log.Printf("[SECURITY CRITICAL] Unexpected response format from location throttle script: %v for job %s", res, job.ID)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error":   "internal_error",
+				"message": "failed to process location update throttle check",
+			})
+			return
+		}
+
+		code := resSlice[0].(int64)
+		lastUpdateMs := resSlice[1].(int64)
+
+		if code == 1 {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error":   "too_many_requests",
+				"message": "Location update is already in progress for this job.",
+			})
+			return
+		}
+		if code == 2 {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error":   "too_many_requests",
+				"message": fmt.Sprintf("Too many location updates. Minimum interval is %.0f seconds.", MinLocationUpdateInterval.Seconds()),
+			})
+			return
+		}
+
+		if lastUpdateMs > 0 {
+			exists = true
+			lastTime = time.Unix(0, lastUpdateMs*int64(time.Millisecond))
+		}
+	} else {
+		// Fallback to in-memory maps when Redis client is nil (e.g. unit tests without Redis)
+		u.locationThrottleMu.Lock()
+		if u.locationInFlight[job.ID] {
+			u.locationThrottleMu.Unlock()
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error":   "too_many_requests",
+				"message": "Location update is already in progress for this job.",
+			})
+			return
+		}
+
+		lastUpdate, ex := u.locationLastUpdate[job.ID]
+		if ex && now.Sub(lastUpdate) < MinLocationUpdateInterval {
+			u.locationThrottleMu.Unlock()
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error":   "too_many_requests",
+				"message": fmt.Sprintf("Too many location updates. Minimum interval is %.0f seconds.", MinLocationUpdateInterval.Seconds()),
+			})
+			return
+		}
+		u.locationInFlight[job.ID] = true
+		u.locationThrottleMu.Unlock()
+
+		exists = ex
+		if ex {
+			lastTime = lastUpdate
+		}
+	}
+
+	// Shared rejection helper for implausible speed check failures
+	rejectImplausibleSpeed := func(speed float64, checkType string) {
+		clearInFlight()
+
+		log.Printf("[SECURITY WARNING] Implausible %s speed detected for job %s: %.2f km/h", checkType, job.ID, speed)
+		handlerutil.ShipSecurityEvent(ctx, "IMPLAUSIBLE_SPEED_DETECTED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("location update rejected for job %s: %s speed %.2f km/h exceeds limit", job.ID, checkType, speed), handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "implausible_speed",
+			"message": "Location update rejected: implausible speed detected.",
+		})
+	}
+
+	// 1. Per-step speed/plausibility check
+	prevLat := job.Location.Latitude
+	prevLon := job.Location.Longitude
+	if job.CurrentLocation != nil {
+		prevLat = job.CurrentLocation.Latitude
+		prevLon = job.CurrentLocation.Longitude
+	}
+
+	dist := haversineKm(req.Latitude, req.Longitude, prevLat, prevLon)
+	if !exists {
+		lastTime = job.CreatedAt
+	}
+	timeDiff := now.Sub(lastTime)
+	hours := timeDiff.Hours()
+	if hours > 0 && dist > 0.001 {
+		speed := dist / hours
+		if speed > MaxReasonableSpeedKmh {
+			rejectImplausibleSpeed(speed, "step")
+			return
+		}
+	}
+
+	// 2. Cumulative route speed check (sum of Haversine distances across all waypoints)
+	var cumDist float64
+	pts := make([]models.Location, 0, len(job.Waypoints)+2)
+	pts = append(pts, job.Location)
+	pts = append(pts, job.Waypoints...)
+	pts = append(pts, models.Location{Latitude: req.Latitude, Longitude: req.Longitude})
+
+	for i := 0; i < len(pts)-1; i++ {
+		cumDist += haversineKm(pts[i+1].Latitude, pts[i+1].Longitude, pts[i].Latitude, pts[i].Longitude)
+	}
+
+	totalTimeDiff := now.Sub(job.CreatedAt)
+	totalHours := totalTimeDiff.Hours()
+	if totalHours > 0 && cumDist > 0.001 {
+		cumSpeed := cumDist / totalHours
+		if cumSpeed > MaxReasonableSpeedKmh {
+			rejectImplausibleSpeed(cumSpeed, "cumulative")
+			return
+		}
+	}
+
+	// Call the test hook if configured
+	if u.updateJobLocationBeforeWriteHook != nil {
+		u.updateJobLocationBeforeWriteHook(ctx)
+	}
+
+	// Update in the store
+	if err := u.store.UpdateJobLocation(ctx, req.JobID, req.Latitude, req.Longitude); err != nil {
+		clearInFlight()
+
+		log.Printf("[USER] Failed to update location for job %s: %v", req.JobID, err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error":   "internal_error",
+			"message": "failed to update location",
+		})
+		return
+	}
+
+	// Commit the real timestamp and release the reservation
+	if u.rdb != nil {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		pipe := u.rdb.Pipeline()
+		pipe.Del(bgCtx, fmt.Sprintf("loc:inflight:%s", job.ID))
+		pipe.Set(bgCtx, fmt.Sprintf("loc:lastupdate:%s", job.ID), fmt.Sprintf("%d", nowMs), 300*time.Second)
+		_, _ = pipe.Exec(bgCtx)
+		cancel()
+	} else {
+		u.locationThrottleMu.Lock()
+		u.locationLastUpdate[job.ID] = time.Now()
+		delete(u.locationInFlight, job.ID)
+		u.locationThrottleMu.Unlock()
+	}
+
+	// Call chat-service to broadcast to BOTH job and fleet channels
+	go func() {
+		channels := []string{"job:" + job.ID}
+		if job.OwnerID != "" {
+			channels = append(channels, "fleet:"+job.OwnerID)
+		}
+
+		broadcastURL := fmt.Sprintf("%s/chat/internal/broadcast-location", u.chatServiceURL)
+		for _, ch := range channels {
+			payload := map[string]any{
+				"channel":     ch,
+				"latitude":    req.Latitude,
+				"longitude":   req.Longitude,
+				"employee_id": job.EmployeeID,
+			}
+			bodyBytes, err := json.Marshal(payload)
+			if err != nil {
+				log.Printf("[USER] Location broadcast error (marshal) for channel %s: %v", ch, err)
+				continue
+			}
+
+			// #nosec G704 //nolint:gosec -- broadcastURL is constructed from internal service config
+			broadcastReq, err := http.NewRequest("POST", broadcastURL, bytes.NewReader(bodyBytes))
+			if err != nil {
+				log.Printf("[USER] Location broadcast error (request build) for channel %s: %v", ch, err)
+				continue
+			}
+			broadcastReq.Header.Set("Content-Type", "application/json")
+			broadcastReq.Header.Set("X-Internal-Token", u.internalServiceToken)
+
+			resp, err := u.chatClient.Do(broadcastReq)
+			if err != nil {
+				log.Printf("[USER] Location broadcast error (call chat-service) for channel %s: %v", ch, err)
+				continue
+			}
+			_ = resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				log.Printf("[USER] Location broadcast failed for channel %s with status %d", ch, resp.StatusCode)
+			}
+		}
+	}()
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "location updated"})
+}
+
+// POST /users/jobs/cancel
+func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
+	ip := handlerutil.GetIP(r)
+	if limited, remaining := u.limiter.CheckAndRecord(ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	var req struct {
+		JobID          string `json:"job_id"`
+		RequesterID    string `json:"requester_id"`
+		RequesterToken string `json:"requester_token"`
+		Reason         string `json:"reason"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+
+	if req.RequesterToken != "" {
+		req.RequesterID = req.RequesterToken
+	}
+
+	if req.JobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		return
+	}
+
+	if strings.TrimSpace(req.Reason) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason is required"})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	// Resolve requester
+	var requesterToken string
+	isInternal := subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
+	if isInternal {
+		// For internal calls, use the requester_id passed in JSON
+		requesterToken = req.RequesterID
+	} else {
+		// For external/client calls, resolve from token or query param
+		requesterToken = r.URL.Query().Get("requester_id")
+		if requesterToken == "" {
+			requesterToken = req.RequesterID
+		}
+	}
+
+	if requesterToken == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester_id parameter is required"})
+		return
+	}
+
+	resolvedRequester, err := resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
+	// Check if requester is authorized (must be owner or customer/user of the job)
+	isOwner := resolvedRequester == job.OwnerID
+	isCustomer := resolvedRequester == job.UserID
+
+	if !isOwner && !isCustomer {
+		// #nosec G706 //nolint:gosec -- IDs are from verified JWT tokens and database, log injection not possible
+		log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to cancel job %s owned by owner %s and user %s", resolvedRequester, job.ID, job.OwnerID, job.UserID)
+		handlerutil.ShipSecurityEvent(ctx, "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to cancel job %s", job.ID), handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to cancel this job"})
+		return
+	}
+
+	// State-specific cancellation rules
+	switch job.Status {
+	case models.JobStatusCompleted:
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "job already completed"})
+		return
+	case models.JobStatusCancelled:
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "job already cancelled"})
+		return
+	case models.JobStatusActive:
+		// Active jobs can only be cancelled by the owner
+		if !isOwner {
+			// FLAGGED: Customers cannot directly cancel active/in-progress jobs. This prevents them from cancelling
+			// out from under an employee who is already working. They must go through a complaint ticket.
+			writeJSON(w, http.StatusForbidden, map[string]string{
+				"error": "customer-initiated cancellation of active jobs is not allowed. Please open a complaint ticket.",
+			})
+			return
+		}
+	case models.JobStatusPending:
+		// Both owner and customer can cancel pending jobs.
+	}
+
+	// Refund escrow if not COD (since escrow was locked during TrackJob)
+	if job.PaymentMethod != "cod" {
+		svc := u.store.GetServiceByID(ctx, job.ServiceID)
+		if svc == nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "service not found for job"})
+			return
+		}
+		dist := haversineKm(job.Location.Latitude, job.Location.Longitude, svc.Latitude, svc.Longitude)
+		amount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
+
+		if job.LockedEscrowAmount == 0 {
+			log.Printf("[SECURITY WARNING] LockedEscrowAmount is 0 for non-COD job %s during CancelJob. Refund aborted.", job.ID)
+			handlerutil.ShipSecurityEvent(ctx, "ESCROW_UNRECORDED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("CancelJob aborted: LockedEscrowAmount is 0 for non-COD job %s", job.ID), handlerutil.GetClientIP(r))
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error":   "escrow_amount_unrecorded",
+				"message": "This job has no recorded locked escrow amount. Refund aborted for security.",
+			})
+			return
+		}
+
+		// Cap the refund amount at LockedEscrowAmount to prevent drawing down other jobs' escrow
+		if amount > job.LockedEscrowAmount {
+			log.Printf("[SECURITY WARNING] Recomputed refund amount %.2f exceeds locked escrow amount %.2f for job %s. Capping to locked amount.", amount, job.LockedEscrowAmount, job.ID)
+			handlerutil.ShipSecurityEvent(ctx, "ESCROW_LIMIT_EXCEEDED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("CancelJob refund %.2f exceeds locked escrow %.2f, capped", amount, job.LockedEscrowAmount), handlerutil.GetClientIP(r))
+			amount = job.LockedEscrowAmount
+		}
+
+		if err := u.store.RefundEscrow(ctx, job.OwnerID, job.ID, amount); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to refund escrow: " + err.Error()})
+			return
+		}
+	}
+
+	// Perform cancellation in DB
+	if err := u.store.CancelJob(ctx, job.ID, req.Reason); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to cancel job: " + err.Error()})
+		return
+	}
+
+	// Audit-log job cancellation
+	handlerutil.ShipSecurityEvent(ctx, "JOB_CANCELLED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("cancelled job %s, reason: %s", job.ID, req.Reason), handlerutil.GetClientIP(r))
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"message": "job cancelled successfully",
+		"job_id":  job.ID,
+		"status":  models.JobStatusCancelled,
+	})
+}
+
+func isValidCoordinate(lat, lon float64) bool {
+	return lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180
+}
+
+func (u *UserService) checkLazyPriceProposalExpiry(ctx context.Context, job *models.Job) bool {
+	if job == nil {
+		return false
+	}
+	if job.Status == models.JobStatusCancelled && job.CancellationReason == "price_proposal_expired" {
+		return true
+	}
+	if job.Status != models.JobStatusAwaitingPriceResponse {
+		return false
+	}
+	if job.PriceProposalExpiresAt != nil && time.Now().UTC().After(*job.PriceProposalExpiresAt) {
+		job.Status = models.JobStatusCancelled
+		job.CancellationReason = "price_proposal_expired"
+		job.UpdatedAt = time.Now().UTC()
+		if err := u.store.UpdateJobCancellation(ctx, job.ID, models.JobStatusCancelled, "price_proposal_expired"); err != nil {
+			// #nosec G706 //nolint:gosec -- job.ID is system-generated UUID, log injection not possible
+			log.Printf("[ERROR] Failed to persist lazy price proposal cancellation for job %s: %v", job.ID, err)
+		}
+		return true
+	}
+	return false
+}
+
+// ---------------------------------------------------------------------------
+// POST /users/jobs/propose-price
+// ---------------------------------------------------------------------------
+
+type proposePriceRequest struct {
+	JobID          string  `json:"job_id"`
+	ProposedPrice  float64 `json:"proposed_price"`
+	RequesterID    string  `json:"requester_id,omitempty"`
+	RequesterToken string  `json:"requester_token,omitempty"`
+}
+
+func (u *UserService) ProposePrice(w http.ResponseWriter, r *http.Request) {
+	ip := handlerutil.GetIP(r)
+	if limited, remaining := u.limiter.CheckAndRecord(ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	var req proposePriceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+	if req.JobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") {
+		requesterToken = strings.TrimPrefix(requesterToken, "Bearer ")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_id")
+	}
+	if requesterToken == "" {
+		requesterToken = req.RequesterToken
+	}
+	if requesterToken == "" {
+		requesterToken = req.RequesterID
+	}
+	if requesterToken == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester token is required"})
+		return
+	}
+
+	resolvedRequester, err := resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
+	if resolvedRequester != job.UserID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: only the assigned customer or employee can propose a price"})
+		return
+	}
+
+	svc := u.store.GetServiceByID(ctx, job.ServiceID)
+	if svc == nil || svc.Category != "transport" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_category",
+			"message": "price negotiation is only supported for transport category jobs",
+		})
+		return
+	}
+
+	if u.checkLazyPriceProposalExpiry(ctx, job) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "proposal_expired",
+			"message": "price proposal window has expired",
+		})
+		return
+	}
+
+	if job.Status != models.JobStatusAwaitingPriceResponse {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_job_status",
+			"message": "job is not awaiting a price proposal",
+		})
+		return
+	}
+
+	if job.ProposedPrice != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "proposal_already_submitted",
+			"message": "a price proposal has already been submitted for this job",
+		})
+		return
+	}
+
+	proposerRole := "customer"
+	if resolvedRequester == job.EmployeeID {
+		proposerRole = "employee"
+	}
+
+	if !models.ValidPriceProposal(job.SuggestedPrice, req.ProposedPrice) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_proposed_price",
+			"message": "proposed price must be between 50% and 150% of the suggested price",
+		})
+		return
+	}
+
+	now := time.Now().UTC()
+	exp := now.Add(5 * time.Minute)
+	job.ProposedPrice = &req.ProposedPrice
+	job.ProposedBy = proposerRole
+	job.PriceProposalExpiresAt = &exp
+	job.UpdatedAt = now
+
+	if err := u.store.UpdateJobPriceProposal(ctx, job.ID, &req.ProposedPrice, proposerRole, &exp); err != nil {
+		if strings.Contains(err.Error(), "job_state_changed") {
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error":   "job_state_changed",
+				"message": "job status has changed or a price proposal has already been submitted",
+			})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to persist price proposal: " + err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"message": "price proposal submitted successfully",
+		"job":     job,
+	})
+}
+
+// ---------------------------------------------------------------------------
+// POST /users/jobs/respond-price
+// ---------------------------------------------------------------------------
+
+// DESIGN NOTE: Accept with no prior proposal (employee accepting SuggestedPrice directly).
+// If the customer creates a transport job without an initial price proposal, the baseline P_system stands
+// as the implied offer. Allowing the employee to call respond-price directly with decision: "accept" sets
+// AgreedPrice = SuggestedPrice and activates the job. Forcing a propose-price call first with the exact
+// same P_system would add an unnecessary round-trip for standard, un-negotiated rides.
+
+type respondPriceRequest struct {
+	JobID          string `json:"job_id"`
+	Decision       string `json:"decision"` // "accept" or "decline"
+	RequesterID    string `json:"requester_id,omitempty"`
+	RequesterToken string `json:"requester_token,omitempty"`
+}
+
+func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
+	ip := handlerutil.GetIP(r)
+	if limited, remaining := u.limiter.CheckAndRecord(ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	var req respondPriceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+	if req.JobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		return
+	}
+
+	decision := strings.ToLower(strings.TrimSpace(req.Decision))
+	if decision != "accept" && decision != "decline" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_decision",
+			"message": "decision must be 'accept' or 'decline'",
+		})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") {
+		requesterToken = strings.TrimPrefix(requesterToken, "Bearer ")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_id")
+	}
+	if requesterToken == "" {
+		requesterToken = req.RequesterToken
+	}
+	if requesterToken == "" {
+		requesterToken = req.RequesterID
+	}
+	if requesterToken == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester token is required"})
+		return
+	}
+
+	resolvedRequester, err := resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
+	if resolvedRequester != job.UserID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: only the assigned customer or employee can respond to a price proposal"})
+		return
+	}
+
+	svc := u.store.GetServiceByID(ctx, job.ServiceID)
+	if svc == nil || svc.Category != "transport" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_category",
+			"message": "price negotiation is only supported for transport category jobs",
+		})
+		return
+	}
+
+	if u.checkLazyPriceProposalExpiry(ctx, job) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "proposal_expired",
+			"message": "price proposal window has expired",
+		})
+		return
+	}
+
+	if job.Status != models.JobStatusAwaitingPriceResponse {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_job_status",
+			"message": "job is not awaiting a price proposal response",
+		})
+		return
+	}
+
+	if job.ProposedPrice != nil {
+		isCustomer := resolvedRequester == job.UserID
+		isEmployee := resolvedRequester == job.EmployeeID
+		if (job.ProposedBy == "customer" && isCustomer) || (job.ProposedBy == "employee" && isEmployee) {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error":   "cannot_respond_to_own_proposal",
+				"message": "you cannot accept or decline your own price proposal",
+			})
+			return
+		}
+	} else {
+		if resolvedRequester == job.UserID {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error":   "cannot_respond_to_own_proposal",
+				"message": "no active proposal from driver to respond to",
+			})
+			return
+		}
+	}
+
+	now := time.Now().UTC()
+	if decision == "accept" {
+		activePrice := job.SuggestedPrice
+		if job.ProposedPrice != nil {
+			activePrice = *job.ProposedPrice
+		}
+
+		// Lock escrow for non-COD negotiable transport jobs
+		if job.PaymentMethod != "cod" {
+			if err := u.store.LockEscrow(ctx, job.OwnerID, job.ID, activePrice); err != nil {
+				log.Printf("[USER] Escrow lock failed for negotiable transport job %s: %v", job.ID, err)
+				writeJSON(w, http.StatusBadRequest, map[string]any{
+					"error":         "escrow_lock_failed",
+					"message":       "price proposal acceptance failed — insufficient wallet funds for escrow lock",
+					"warning":       err.Error(),
+					"job":           job,
+					"escrow_amount": activePrice,
+				})
+				return
+			}
+
+			// Persist the locked escrow amount on the job record
+			if err := u.store.UpdateJobLockedEscrow(ctx, job.ID, activePrice); err != nil {
+				log.Printf("[ERROR] failed to persist locked escrow amount for job %s: %v. Rolling back escrow lock.", job.ID, err)
+				rollbackErr := u.performRollbackEscrow(context.Background(), job.OwnerID, activePrice)
+				if rollbackErr != nil {
+					log.Printf("[CRITICAL ERROR] initial escrow rollback attempt failed for owner %s (job %s): %v. Retrying rollback once...", job.OwnerID, job.ID, rollbackErr)
+					rollbackErr = u.performRollbackEscrow(context.Background(), job.OwnerID, activePrice)
+				}
+
+				if rollbackErr != nil {
+					log.Printf("[CRITICAL ERROR] failed to rollback escrow lock for owner %s (job %s): %v. Marking job for reconciliation instead of completing.", job.OwnerID, job.ID, rollbackErr)
+					note := fmt.Sprintf("Locked escrow amount: %.2f. Escrow lock rollback failed: %v", activePrice, rollbackErr)
+					if recErr := u.store.UpdateJobReconciliation(context.Background(), job.ID, models.JobStatusEscrowReconciliationRequired, note, rollbackErr.Error(), activePrice); recErr != nil {
+						log.Printf("[CRITICAL ERROR] failed to set reconciliation status on job %s: %v", job.ID, recErr)
+					}
+					writeJSON(w, http.StatusInternalServerError, map[string]string{
+						"error": "failed to persist locked escrow and escrow rollback failed; job preserved for reconciliation",
+					})
+					return
+				}
+
+				writeJSON(w, http.StatusInternalServerError, map[string]string{
+					"error": "failed to persist locked escrow, escrow lock rolled back",
+				})
+				return
+			}
+			job.LockedEscrowAmount = activePrice
+		}
+
+		job.AgreedPrice = &activePrice
+		job.Status = models.JobStatusActive
+		job.UpdatedAt = now
+
+		if u.updateJobAgreedPriceBeforeWriteHook != nil {
+			u.updateJobAgreedPriceBeforeWriteHook(ctx)
+		}
+
+		if err := u.store.UpdateJobAgreedPrice(ctx, job.ID, &activePrice, models.JobStatusActive); err != nil {
+			if strings.Contains(err.Error(), "job_state_changed") {
+				if job.PaymentMethod != "cod" {
+					log.Printf("[USER] Job state changed concurrently for job %s during RespondPrice accept. Rolling back escrow lock.", job.ID)
+					rollbackErr := u.performRollbackEscrow(context.Background(), job.OwnerID, activePrice)
+					if rollbackErr != nil {
+						log.Printf("[CRITICAL ERROR] initial escrow rollback attempt failed on job_state_changed for owner %s (job %s): %v. Retrying rollback once...", job.OwnerID, job.ID, rollbackErr)
+						rollbackErr = u.performRollbackEscrow(context.Background(), job.OwnerID, activePrice)
+					}
+					if rollbackErr != nil {
+						log.Printf("[CRITICAL ERROR] failed to rollback escrow lock on job_state_changed for owner %s (job %s): %v. Marking job for reconciliation.", job.OwnerID, job.ID, rollbackErr)
+						note := fmt.Sprintf("Job state changed concurrently during RespondPrice accept. Locked escrow amount: %.2f. Escrow lock rollback failed: %v", activePrice, rollbackErr)
+						if recErr := u.store.UpdateJobReconciliation(context.Background(), job.ID, models.JobStatusEscrowReconciliationRequired, note, rollbackErr.Error(), activePrice); recErr != nil {
+							log.Printf("[CRITICAL ERROR] failed to set reconciliation status on job %s: %v", job.ID, recErr)
+						}
+					}
+				}
+				writeJSON(w, http.StatusConflict, map[string]string{
+					"error":   "job_state_changed",
+					"message": "job status is no longer awaiting price response",
+				})
+				return
+			}
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to accept price proposal: " + err.Error()})
+			return
+		}
+
+		writeJSON(w, http.StatusOK, map[string]any{
+			"message": "price proposal accepted — job is now active",
+			"job":     job,
+		})
+		return
+	}
+
+	job.Status = models.JobStatusCancelled
+	job.CancellationReason = "price_disagreement"
+	job.UpdatedAt = now
+
+	if err := u.store.UpdateJobCancellation(ctx, job.ID, models.JobStatusCancelled, "price_disagreement"); err != nil {
+		if strings.Contains(err.Error(), "job_state_changed") {
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error":   "job_state_changed",
+				"message": "job status is no longer awaiting price response",
+			})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to decline price proposal: " + err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"message": "price proposal declined — job cancelled",
+		"job":     job,
+	})
+}
+
+// ---------------------------------------------------------------------------
+// GET /users/jobs/reconciliation-queue
+// ---------------------------------------------------------------------------
+
+func (u *UserService) GetReconciliationQueue(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") {
+		requesterToken = strings.TrimPrefix(requesterToken, "Bearer ")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("owner_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "owner token required"})
+		return
+	}
+
+	resolvedOwnerID, err := resolveTokenWithRole(requesterToken, "owner")
+	if err != nil {
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: owner role required"})
+			return
+		}
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
+	// Enforce IDOR matching if client explicitly provided an owner_id parameter
+	clientOwnerID := r.URL.Query().Get("owner_id")
+	if clientOwnerID != "" && clientOwnerID != resolvedOwnerID {
+		// #nosec G706 //nolint:gosec -- IDs are sanitized from claims/query, log injection not possible
+		log.Printf("[IDOR DETECTED] Requester %s tried to query reconciliation queue for %s", resolvedOwnerID, strings.ReplaceAll(strings.ReplaceAll(clientOwnerID, "\n", " "), "\r", " "))
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to view jobs for this owner"})
+		return
+	}
+
+	// Identity-based rate limiting (30 req/min)
+	rateKey := "jobs_reconciliation_queue:" + resolvedOwnerID
+	if limited, remaining := u.limiter.CheckAndRecord(rateKey); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
+	jobs, err := u.store.GetReconciliationQueueByOwner(r.Context(), resolvedOwnerID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	resps := make([]models.OwnerJobResponse, 0, len(jobs))
+	for _, j := range jobs {
+		resps = append(resps, models.NewOwnerJobResponse(j))
+	}
+	writeJSON(w, http.StatusOK, resps)
+}
+
+// ---------------------------------------------------------------------------
+// POST /users/jobs/reconciliation-resolve
+// ---------------------------------------------------------------------------
+
+type ResolveReconciliationRequest struct {
+	JobID          string `json:"job_id"`
+	RequesterID    string `json:"requester_id"`
+	RequesterToken string `json:"requester_token"`
+	Decision       string `json:"decision"` // "release_to_employee" or "refund_to_customer"
+}
+
+func (u *UserService) ResolveReconciliation(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	var req ResolveReconciliationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+
+	if req.JobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		return
+	}
+
+	if req.Decision != "release_to_employee" && req.Decision != "refund_to_customer" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid decision: must be 'release_to_employee' or 'refund_to_customer'"})
+		return
+	}
+
+	// Resolve requester token
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") {
+		requesterToken = strings.TrimPrefix(requesterToken, "Bearer ")
+	}
+	if requesterToken == "" {
+		requesterToken = req.RequesterToken
+	}
+	if requesterToken == "" {
+		requesterToken = req.RequesterID
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("owner_token")
+	}
+	if requesterToken == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "owner token required"})
+		return
+	}
+
+	resolvedOwnerID, err := resolveTokenWithRole(requesterToken, "owner")
+	if err != nil {
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: owner role required"})
+			return
+		}
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	// Tenant isolation check
+	if job.OwnerID != resolvedOwnerID {
+		// #nosec G706 //nolint:gosec -- IDs are sanitized from claims/DB, log injection not possible
+		log.Printf("[TENANT SCOPE BLOCKED] Requester %s attempted to resolve reconciliation for job %s owned by %s", resolvedOwnerID, job.ID, job.OwnerID)
+		handlerutil.ShipSecurityEvent(ctx, "TENANT_SCOPE_BLOCKED", "user-service", resolvedOwnerID, job.OwnerID, fmt.Sprintf("attempted to resolve reconciliation for job %s", job.ID), handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to resolve reconciliation for this job"})
+		return
+	}
+
+	// Idempotency check: job must be in escrow_reconciliation_required status
+	if job.Status != models.JobStatusEscrowReconciliationRequired {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "job is not pending escrow reconciliation review"})
+		return
+	}
+
+	amount := job.LockedEscrowAmount
+
+	switch req.Decision {
+	case "release_to_employee":
+		if job.PaymentMethod == "cod" {
+			if err := u.store.DeductCODFee(ctx, job.OwnerID, job.ID, amount); err != nil && !strings.Contains(err.Error(), "not active") {
+				log.Printf("[ERROR] Failed to deduct COD fee on reconciliation release for job %s: %v", job.ID, err)
+			}
+		} else if amount > 0 {
+			if err := u.store.ReleaseEscrowWithSplit(ctx, job.OwnerID, job.ID, amount); err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "escrow release failed: " + err.Error()})
+				return
+			}
+		}
+
+		note := fmt.Sprintf("reconciliation_resolved: release_to_employee by owner %s", resolvedOwnerID)
+		if err := u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCompleted, note, "", amount); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update job reconciliation status: " + err.Error()})
+			return
+		}
+
+		handlerutil.ShipSecurityEvent(ctx, "ESCROW_RECONCILIATION_RESOLVED", "user-service", resolvedOwnerID, job.OwnerID, fmt.Sprintf("resolved escrow reconciliation for job %s: decision=release_to_employee, amount=%.2f", job.ID, amount), handlerutil.GetClientIP(r))
+
+		writeJSON(w, http.StatusOK, map[string]any{
+			"message":             "escrow reconciliation resolved: funds released to employee/tenant",
+			"job_id":              job.ID,
+			"status":              models.JobStatusCompleted,
+			"decision":            "release_to_employee",
+			"reconciliation_note": note,
+		})
+
+	case "refund_to_customer":
+		if job.PaymentMethod != "cod" && amount > 0 {
+			if err := u.store.RefundEscrow(ctx, job.OwnerID, job.ID, amount); err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "escrow refund failed: " + err.Error()})
+				return
+			}
+		}
+
+		note := fmt.Sprintf("reconciliation_resolved: refund_to_customer by owner %s", resolvedOwnerID)
+		if err := u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCancelled, note, "", 0); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update job reconciliation status: " + err.Error()})
+			return
+		}
+
+		handlerutil.ShipSecurityEvent(ctx, "ESCROW_RECONCILIATION_RESOLVED", "user-service", resolvedOwnerID, job.OwnerID, fmt.Sprintf("resolved escrow reconciliation for job %s: decision=refund_to_customer, amount=%.2f", job.ID, amount), handlerutil.GetClientIP(r))
+
+		writeJSON(w, http.StatusOK, map[string]any{
+			"message":             "escrow reconciliation resolved: funds refunded to customer",
+			"job_id":              job.ID,
+			"status":              models.JobStatusCancelled,
+			"decision":            "refund_to_customer",
+			"reconciliation_note": note,
+		})
+	}
 }

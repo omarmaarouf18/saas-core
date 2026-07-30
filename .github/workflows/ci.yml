@@ -1,0 +1,202 @@
+name: CI Gate
+
+on:
+  push:
+    branches: [ main, logic-exploitation ]
+  pull_request:
+    branches: [ main, logic-exploitation ]
+
+jobs:
+  lint-formatting:
+    name: Lint & Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: false
+
+      - name: Verify Formatting
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "The following files are not formatted properly:"
+            gofmt -l .
+            exit 1
+          fi
+
+      - name: Verify Markdown Commit SHAs
+        run: |
+          FAILED_SHA=0
+
+          for file in $(find . -type f -name "*.md" -not -path "*/node_modules/*" -not -path "*/vendor/*" -not -path "*/.git/*"); do
+            for sha in $(grep -oE "[0-9a-f]{40}" "$file" || true); do
+              if ! git cat-file -e "$sha^{commit}" 2>/dev/null; then
+                echo "BLOCKED: fabricated/non-existent SHA $sha in $file"
+                FAILED_SHA=1
+              fi
+            done
+          done
+
+          PREV_COMMIT="HEAD~1"
+          if git rev-parse --verify "$PREV_COMMIT" >/dev/null 2>&1; then
+            NEW_SHAS=$(git diff "$PREV_COMMIT" HEAD -- "docs/changelog/*.md" | grep -E "^\+[[:space:]]*- \*\*Commit SHA\*\*" | grep -oE "[0-9a-f]{40}" || true)
+            for sha in $NEW_SHAS; do
+              if ! git cat-file -e "$sha^{commit}" 2>/dev/null; then
+                echo "BLOCKED: Newly added changelog commit SHA $sha does not exist in Git history"
+                FAILED_SHA=1
+              elif ! git merge-base --is-ancestor "$sha" HEAD 2>/dev/null; then
+                echo "BLOCKED: Newly added changelog commit SHA $sha is not in current branch history"
+                FAILED_SHA=1
+              fi
+            done
+          fi
+
+          if [ "$FAILED_SHA" -eq 1 ]; then
+            exit 1
+          fi
+
+      - name: Verify Go Version Consistency (Drift Guard)
+        run: |
+          CANONICAL_GO_VERSION="1.26"
+          DRIFT_FAILED=0
+          for f in go.work services/*/go.mod shared/infra/go.mod tools/docgen/go.mod; do
+            if [ -f "$f" ]; then
+              v=$(grep -E '^go [0-9]+\.[0-9]+' "$f" | head -n 1 | awk '{print $2}')
+              if [ "$v" != "$CANONICAL_GO_VERSION" ]; then
+                echo "BLOCKED: Go version drift in $f: expected $CANONICAL_GO_VERSION, found '${v:-NONE}'"
+                DRIFT_FAILED=1
+              fi
+            fi
+          done
+          for v in $(grep -oE "go-version: '[0-9]+\.[0-9]+'" .github/workflows/ci.yml | grep -oE "[0-9]+\.[0-9]+"); do
+            if [ "$v" != "$CANONICAL_GO_VERSION" ]; then
+              echo "BLOCKED: Go version drift in .github/workflows/ci.yml: expected $CANONICAL_GO_VERSION, found '$v'"
+              DRIFT_FAILED=1
+            fi
+          done
+          for d in services/*/Dockerfile; do
+            if [ -f "$d" ]; then
+              for v in $(grep -oE "FROM golang:[0-9]+\.[0-9]+" "$d" | grep -oE "[0-9]+\.[0-9]+"); do
+                if [ "$v" != "$CANONICAL_GO_VERSION" ]; then
+                  echo "BLOCKED: Go version drift in $d: expected $CANONICAL_GO_VERSION, found '$v'"
+                  DRIFT_FAILED=1
+                fi
+              done
+            fi
+          done
+          if [ "$DRIFT_FAILED" -eq 1 ]; then
+            exit 1
+          fi
+
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - { path: services/api-gateway, name: api-gateway }
+          - { path: services/auth-service, name: auth-service }
+          - { path: services/chat-service, name: chat-service }
+          - { path: services/notification-service, name: notification-service }
+          - { path: services/user-service, name: user-service }
+          - { path: shared/infra, name: shared-infra }
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache-dependency-path: ${{ matrix.service.path }}/go.sum
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.service.path }}
+        run: go mod download
+
+      - name: Build Service
+        working-directory: ${{ matrix.service.path }}
+        run: go build ./...
+
+      - name: Vet Service
+        working-directory: ${{ matrix.service.path }}
+        run: go vet ./...
+
+      - name: Test Service
+        working-directory: ${{ matrix.service.path }}
+        env:
+          MONGO_URI: mongodb://localhost:27017
+          REDIS_URI: redis://localhost:6379
+          MONGO_INITDB_DATABASE: saas_platform_test
+        run: go test ./... -count=1
+
+      - name: Run govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          work-dir: ${{ matrix.service.path }}
+          cache: false
+
+      - name: Run gosec
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          gosec ./...
+        working-directory: ${{ matrix.service.path }}
+
+  flutter-test:
+    name: Flutter Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: flutter pub get
+
+      - name: Verify Formatting
+        working-directory: frontend
+        run: dart format --set-exit-if-changed lib/
+
+      - name: Flutter Analyze
+        working-directory: frontend
+        run: flutter analyze
+
+      - name: Flutter Test
+        working-directory: frontend
+        run: flutter test
+

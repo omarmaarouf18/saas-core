@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -37,37 +36,36 @@ func (sr *statusRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 //
 // This fulfills the Traffic API monitoring requirement.
 // Logging is a global middleware that logs every request and provides CORS.
-func Logging(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		allowedOrigin := os.Getenv("ALLOWED_ORIGIN")
-		if allowedOrigin == "" {
-			allowedOrigin = "http://localhost:3000" // local dev default
-		}
-		w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Forwarded-For")
+func Logging(allowedOrigin string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Forwarded-For")
 
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
 
-		start := time.Now()
+			start := time.Now()
 
-		rec := &statusRecorder{
-			ResponseWriter: w,
-			statusCode:     http.StatusOK,
-		}
+			rec := &statusRecorder{
+				ResponseWriter: w,
+				statusCode:     http.StatusOK,
+			}
 
-		next.ServeHTTP(rec, r)
+			next.ServeHTTP(rec, r)
 
-		duration := time.Since(start)
+			duration := time.Since(start)
 
-		log.Printf("[TRAFFIC] %s %s → %d (%s)",
-			r.Method,
-			r.URL.Path,
-			rec.statusCode,
-			duration.Round(time.Microsecond),
-		)
-	})
+			// #nosec G706 //nolint:gosec -- log statement contains HTTP method and request path, log injection not possible here
+			log.Printf("[TRAFFIC] %s %s → %d (%s)",
+				r.Method,
+				r.URL.Path,
+				rec.statusCode,
+				duration.Round(time.Microsecond),
+			)
+		})
+	}
 }

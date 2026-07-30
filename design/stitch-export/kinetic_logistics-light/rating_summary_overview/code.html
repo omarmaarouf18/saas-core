@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#f0f1f1",
+                        "primary-container": "#151b2a",
+                        "inverse-surface": "#2f3131",
+                        "on-primary-fixed": "#151b2a",
+                        "surface-container": "#eeeeee",
+                        "secondary": "#785900",
+                        "on-tertiary-container": "#818488",
+                        "tertiary-container": "#191c1f",
+                        "outline-variant": "#c6c6cc",
+                        "outline": "#76777d",
+                        "surface-dim": "#dadada",
+                        "on-surface-variant": "#45464c",
+                        "primary": "#000000",
+                        "on-primary-fixed-variant": "#414657",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#c4c7ca",
+                        "secondary-fixed-dim": "#fabd00",
+                        "surface-tint": "#585e6f",
+                        "surface-container-highest": "#e2e2e2",
+                        "tertiary-fixed": "#e0e2e6",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#191c1f",
+                        "on-primary": "#ffffff",
+                        "primary-fixed": "#dde2f6",
+                        "on-secondary-fixed": "#261a00",
+                        "background": "#f9f9f9",
+                        "on-background": "#1a1c1c",
+                        "on-tertiary-fixed-variant": "#44474a",
+                        "surface-variant": "#e2e2e2",
+                        "surface": "#f9f9f9",
+                        "surface-bright": "#f9f9f9",
+                        "tertiary": "#000000",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "on-secondary-container": "#6c5000",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#c1c6da",
+                        "secondary-fixed": "#ffdf9e",
+                        "inverse-primary": "#c1c6da",
+                        "secondary-container": "#fdc003",
+                        "on-primary-container": "#7e8395",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-high": "#e8e8e8",
+                        "surface-container-low": "#f3f3f4",
+                        "error-container": "#ffdad6",
+                        "on-surface": "#1a1c1c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "lg": "24px",
+                        "margin-desktop": "48px",
+                        "margin-mobile": "16px",
+                        "md": "16px",
+                        "sm": "12px",
+                        "base": "8px",
+                        "gutter": "16px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Poppins"],
+                        "title-md": ["Poppins"],
+                        "headline-lg-mobile": ["Poppins"],
+                        "label-lg": ["Poppins"],
+                        "display-lg": ["Poppins"],
+                        "headline-lg": ["Poppins"],
+                        "label-md": ["Poppins"],
+                        "body-md": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "title-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "label-lg": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "label-md": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .fill-gold {
+            font-variation-settings: 'FILL' 1;
+            color: #fdc003; /* Amber Gold from secondary-container */
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen">
+<!-- Top Navigation Bar (Shared Component Execution) -->
+<header class="w-full top-0 bg-primary-container dark:bg-primary-container flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 z-50 sticky">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-primary-fixed dark:text-primary-fixed">menu</span>
+<h1 class="font-headline-lg text-headline-lg font-bold text-on-primary-fixed dark:text-primary-fixed">LogisticsPro</h1>
+</div>
+<div class="flex items-center gap-md">
+<nav class="hidden md:flex gap-lg">
+<a class="font-title-md text-title-md text-on-primary-container dark:text-on-primary-fixed-variant hover:bg-on-primary-fixed/10 transition-colors px-2 py-1 rounded" href="#">Market</a>
+<a class="font-title-md text-title-md text-on-primary-container dark:text-on-primary-fixed-variant hover:bg-on-primary-fixed/10 transition-colors px-2 py-1 rounded" href="#">Orders</a>
+<a class="font-title-md text-title-md text-secondary-container dark:text-secondary-fixed font-bold px-2 py-1 rounded" href="#">Fleet</a>
+<a class="font-title-md text-title-md text-on-primary-container dark:text-on-primary-fixed-variant hover:bg-on-primary-fixed/10 transition-colors px-2 py-1 rounded" href="#">Profile</a>
+</nav>
+<div class="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden border-2 border-secondary-container">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a logistics fleet manager, mid-40s, wearing a crisp dark navy polo shirt. The background is a blurred high-tech logistics control center with large digital screens showing global maps. The lighting is bright and corporate, with a clean and authoritative atmosphere that aligns with the Deep Navy and Amber Gold brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA99rxxfd5xWluGP_oX_fswSyiGHG-QD2vLsjnN-HvFyh__IkZrJ-jjbDsPMXdaxxqh2XYklwMqiCGix2glryFZd45Z1EsU3SEbJR1YBDumcuCzBLcUoKIc9afjBToPstTLMBd2dN0SHn7ZBMjWEXKW71YjygtinMMMiautdjgZUD8zV9gAt_KjmaPOiKodWLLjnH_auEOkW5TdfHalSoPxPYxOdEVRpFxeqyyX9kGHR1zfn5kcqhj0eYLHP1j_B7glyWbY7AMHoXq3"/>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-xl">
+<!-- Dashboard Header -->
+<section class="mb-xl">
+<h2 class="font-headline-lg text-headline-lg text-primary mb-xs">Fleet Performance Overview</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Real-time carrier reliability and service quality metrics.</p>
+</section>
+<!-- Main Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-lg">
+<!-- Profile Card with Ratings Summary -->
+<div class="md:col-span-4 bg-surface-container-lowest rounded-xl p-lg shadow-[0px_2px_8px_rgba(13,19,33,0.08)] border border-outline-variant flex flex-col items-center">
+<div class="w-24 h-24 rounded-2xl bg-primary-container mb-md overflow-hidden relative group">
+<img class="w-full h-full object-cover" data-alt="A macro close-up of a high-end logistics vehicle emblem, polished chrome reflecting a modern industrial warehouse at sunset. The lighting is warm and dramatic, highlighting the sleek curves and precision engineering of the transport equipment. The color palette features deep shadows and amber highlights, conveying speed and reliability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWvSEdUOYYQ1qltiq8iraMxzzWxTBru7PXR4ajdXEA6gDr2GGybw782JM3BA0IeezkXsbxhKLWKjjWApwH4_4ol0OnIavudq9sQwZLpsLzjfj16env9fSoK2x9shAfJ0WTXlLX7frfHyBcLpFIIT5L-myyChV_DwV_zmk9iYQ1yojliC_YJeFxmIQeF43ZE1LtGiU0nJlx46CBrv18R-nMBpxSaXQ1wbOas7G-zJe6endiDRGIwHdOPF6eW58XU_QW1QVNciwuK2BZ"/>
+<div class="absolute inset-0 bg-primary/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-on-primary">edit</span>
+</div>
+</div>
+<h3 class="font-title-md text-title-md text-primary text-center">Pacific Express Fleet</h3>
+<p class="font-label-lg text-label-lg text-on-surface-variant mb-md">PREMIUM CARRIER • SINCE 2018</p>
+<!-- REQUESTED COMPONENT: Ratings Summary Display -->
+<div class="bg-surface-container-low w-full rounded-lg p-md flex flex-col items-center gap-xs border border-surface-variant/50">
+<div class="flex items-center gap-sm">
+<span class="font-display-lg text-display-lg text-primary leading-none">4.8</span>
+<div class="flex flex-col">
+<div class="flex">
+<span class="material-symbols-outlined fill-gold text-[20px]">star</span>
+<span class="material-symbols-outlined fill-gold text-[20px]">star</span>
+<span class="material-symbols-outlined fill-gold text-[20px]">star</span>
+<span class="material-symbols-outlined fill-gold text-[20px]">star</span>
+<span class="material-symbols-outlined fill-gold text-[20px]" style="font-variation-settings: 'FILL' 0;">star_half</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Verified Service Score</span>
+</div>
+</div>
+<div class="h-[1px] w-full bg-outline-variant/30 my-xs"></div>
+<p class="font-body-md text-body-md text-on-surface-variant">Based on <span class="font-semibold text-primary">120 ratings</span></p>
+</div>
+<!-- End of Requested Component -->
+<div class="w-full mt-lg space-y-sm">
+<button class="w-full py-sm bg-primary text-on-primary font-title-md text-title-md rounded-lg flex items-center justify-center gap-sm hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[20px]">local_shipping</span>
+                        Book Shipment
+                    </button>
+<button class="w-full py-sm border border-primary text-primary font-title-md text-title-md rounded-lg hover:bg-primary/5 transition-colors">
+                        View Detailed Audit
+                    </button>
+</div>
+</div>
+<!-- Service Listings & Detailed Metrics -->
+<div class="md:col-span-8 space-y-lg">
+<!-- Service Listing Item 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-[0px_2px_8px_rgba(13,19,33,0.08)] border border-outline-variant flex flex-col md:flex-row gap-lg items-center">
+<div class="w-full md:w-32 h-32 rounded-lg bg-surface-container-high overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="A modern electric semi-truck parked in a futuristic, brilliantly lit cargo bay. The truck is white with deep navy accents, reflecting the cold, clean industrial lighting. Large glass windows in the background reveal a busy port at twilight. The image uses a sharp, high-contrast professional photography style to emphasize technological advancement." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9WYvq-QhR4D2HJUDoo9BG-S_frCfaFZ0aTYUTr0CBXfIY2TfIBlLQuEpOglcfibztTcfdbCSR7UKcQM-aAXNkzLhmZ6I8PGxnnk1iPnDDGiePRnnofd8NWeYjDzPcSh9gPgLAbSB0Bcmd0agwdmcU2xEOMdNIUmiyTsKL3ITReLMXo2IHE3GmeJf_frEiOTPwUq_lSqJhAx_sa2s4McAJrY3KDswyXRN67AjflnwyO2qlmJhABWPEDuws4E-mt9L87ALwX54rsScU"/>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-xs">
+<h4 class="font-title-md text-title-md text-primary">Priority Cold-Chain Transport</h4>
+<!-- Ratings integrated into listing -->
+<div class="flex items-center gap-xs bg-secondary-container/10 px-2 py-1 rounded-full">
+<span class="material-symbols-outlined fill-gold text-[16px]">star</span>
+<span class="font-label-lg text-label-lg text-on-secondary-container">4.9 (42)</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">Specialized temperature-controlled transit for pharmaceutical and perishable goods across the West Coast corridor.</p>
+<div class="flex flex-wrap gap-sm">
+<span class="bg-surface-container px-sm py-xs rounded text-label-md font-label-md text-on-surface">GPS TRACKING</span>
+<span class="bg-surface-container px-sm py-xs rounded text-label-md font-label-md text-on-surface">INSURED $2M</span>
+<span class="bg-surface-container px-sm py-xs rounded text-label-md font-label-md text-on-surface">24/7 SUPPORT</span>
+</div>
+</div>
+<div class="shrink-0 flex flex-col items-end">
+<span class="font-headline-lg text-headline-lg text-primary">$1,240</span>
+<span class="font-label-md text-label-md text-on-surface-variant">AVG. PRICE / 500 MI</span>
+</div>
+</div>
+<!-- Service Listing Item 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-[0px_2px_8px_rgba(13,19,33,0.08)] border border-outline-variant flex flex-col md:flex-row gap-lg items-center">
+<div class="w-full md:w-32 h-32 rounded-lg bg-surface-container-high overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="A birds-eye view of a vast, organized shipping container terminal during the golden hour. The containers are stacked in geometric patterns of blue, gray, and gold. The sunlight casts long, dramatic shadows across the asphalt. The aesthetic is clean, industrial, and highly structured, representing logistical efficiency and massive scale." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMXP6CkzXv_XQxG-HOuW84VcL8cxs6lDa1YWb3s2lUfriDvpaiQlpX6Lawe0a4BsMGSa_C8_01FXjov7zaUfUbRJ8YktsWrsG08mIqEN7AYHU22zkjsB62W0f2DS527GxGQpnG_PmZERzxq4SIDleTKfuFunlnqPNO0frNUkWAQ-rrAjotbh3mLwdzhMzMHFqhvC51_1YicYK8b4lXkJlacCXCgoYG_8EGqFB6E9sVn7TUB3Yc49DvKYg3In6sjUgtEqgWEGRu3MLV"/>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-xs">
+<h4 class="font-title-md text-title-md text-primary">Intermodal Heavy-Lift Logistics</h4>
+<!-- Ratings integrated into listing -->
+<div class="flex items-center gap-xs bg-secondary-container/10 px-2 py-1 rounded-full">
+<span class="material-symbols-outlined fill-gold text-[16px]">star</span>
+<span class="font-label-lg text-label-lg text-on-secondary-container">4.7 (78)</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">Heavy industrial equipment relocation and sea-to-rail intermodal coordination for enterprise clients.</p>
+<div class="flex flex-wrap gap-sm">
+<span class="bg-surface-container px-sm py-xs rounded text-label-md font-label-md text-on-surface">OVERSIZE PERMITS</span>
+<span class="bg-surface-container px-sm py-xs rounded text-label-md font-label-md text-on-surface">HAZMAT CERTIFIED</span>
+</div>
+</div>
+<div class="shrink-0 flex flex-col items-end">
+<span class="font-headline-lg text-headline-lg text-primary">$3,850</span>
+<span class="font-label-md text-label-md text-on-surface-variant">QUOTED BY WEIGHT</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Action Button (Shared Component Logic) -->
+<button class="fixed bottom-24 right-margin-mobile md:right-margin-desktop bg-secondary-container text-on-secondary-container w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-40">
+<span class="material-symbols-outlined text-[28px]">add</span>
+</button>
+</main>
+<!-- Bottom Navigation Bar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center h-20 bg-primary-container text-on-primary-fixed pb-safe px-2 z-50">
+<div class="flex flex-col items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined">local_shipping</span>
+<span class="font-label-md text-label-md">Market</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-md text-label-md">Orders</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-2xl px-5 py-1">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-label-md text-label-md">Fleet</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-md text-label-md">Profile</span>
+</div>
+</nav>
+<script>
+        // Simple micro-interaction for ratings
+        document.querySelectorAll('.material-symbols-outlined.fill-gold').forEach(star => {
+            star.addEventListener('mouseenter', () => {
+                star.classList.add('scale-110');
+            });
+            star.addEventListener('mouseleave', () => {
+                star.classList.remove('scale-110');
+            });
+        });
+    </script>
+</body></html>

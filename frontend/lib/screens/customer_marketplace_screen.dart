@@ -1,0 +1,765 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../core/constants.dart';
+import '../core/theme.dart';
+import '../models/marketplace_service.dart';
+import '../providers/auth_provider.dart';
+import '../providers/marketplace_provider.dart';
+import '../providers/notifications_provider.dart';
+import '../widgets/primary_button.dart';
+import '../widgets/secondary_button.dart';
+import '../widgets/themed_card.dart';
+import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_loading_indicator.dart';
+import '../widgets/themed_section_header.dart';
+import '../widgets/themed_text_field.dart';
+import 'job_status_screen.dart';
+import 'notifications_screen.dart';
+
+class CustomerMarketplaceScreen extends StatefulWidget {
+  const CustomerMarketplaceScreen({super.key});
+
+  @override
+  State<CustomerMarketplaceScreen> createState() =>
+      _CustomerMarketplaceScreenState();
+}
+
+class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
+  final _latController =
+      TextEditingController(text: "30.0444"); // default Cairo lat
+  final _lonController =
+      TextEditingController(text: "31.2357"); // default Cairo lon
+  final _radiusController = TextEditingController(text: "50"); // default radius
+
+  String _selectedCategory =
+      'all'; // 'all', 'delivery', 'transport', 'shipping'
+  String _sortBy = 'price'; // 'price' or 'none'
+  final bool _nearBy = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadServices();
+    });
+  }
+
+  @override
+  void dispose() {
+    _latController.dispose();
+    _lonController.dispose();
+    _radiusController.dispose();
+    super.dispose();
+  }
+
+  void _loadServices() {
+    final lat = double.tryParse(_latController.text.trim()) ?? 30.0444;
+    final lon = double.tryParse(_lonController.text.trim()) ?? 31.2357;
+    final radius = double.tryParse(_radiusController.text.trim()) ?? 50.0;
+
+    Provider.of<MarketplaceProvider>(context, listen: false).fetchServices(
+      nearBy: _nearBy,
+      lat: lat,
+      lon: lon,
+      radius: radius,
+      sortBy: _sortBy,
+    );
+  }
+
+  Widget _buildNotificationBell(BuildContext context) {
+    return Consumer<NotificationsProvider>(
+      builder: (context, provider, child) {
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications),
+              tooltip: 'Notifications',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsScreen(),
+                  ),
+                );
+              },
+            ),
+            if (provider.unreadCount > 0)
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: AppColors.error,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    '${provider.unreadCount}',
+                    style: AppTypography.labelMd.copyWith(
+                      color: AppColors.onPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'delivery':
+        return Icons.delivery_dining;
+      case 'transport':
+        return Icons.directions_car;
+      case 'shipping':
+        return Icons.local_shipping;
+      default:
+        return Icons.business;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+    final marketplace = Provider.of<MarketplaceProvider>(context);
+
+    // Filter services client-side by category if not 'all'
+    final filteredServices = _selectedCategory == 'all'
+        ? marketplace.services
+        : marketplace.services
+            .where((s) => s.category == _selectedCategory)
+            .toList();
+
+    return Scaffold(
+      backgroundColor: AppColors.scaffoldBackground,
+      appBar: AppBar(
+        title: const Text("Marketplace"),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
+        actions: [
+          _buildNotificationBell(context),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: "Logout",
+            onPressed: () async {
+              await auth.logout();
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Filter & Coordinates Control Panel
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: ThemedCard(
+              borderRadius: AppRadius.md,
+              padding: AppSpacing.md,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Location Coordinates row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: ThemedTextField(
+                          controller: _latController,
+                          labelText: "Latitude",
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: ThemedTextField(
+                          controller: _lonController,
+                          labelText: "Longitude",
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: ThemedTextField(
+                          controller: _radiusController,
+                          labelText: "Radius (KM)",
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  // Filters row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _selectedCategory,
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.onSurface,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: "Category",
+                            labelStyle: AppTypography.labelLg.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                            filled: true,
+                            fillColor: AppColors.surface,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.md,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: AppRadius.defaultBorder,
+                              borderSide: const BorderSide(
+                                color: AppColors.outlineVariant,
+                                width: 1,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: AppRadius.defaultBorder,
+                              borderSide: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                          items: [
+                            const DropdownMenuItem(
+                                value: 'all', child: Text("All Categories")),
+                            ...serviceCategoryLabels.entries.map(
+                              (entry) => DropdownMenuItem(
+                                value: entry.key,
+                                child: Text(entry.value),
+                              ),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _selectedCategory = val;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        flex: 2,
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _sortBy,
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.onSurface,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: "Sort By",
+                            labelStyle: AppTypography.labelLg.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                            filled: true,
+                            fillColor: AppColors.surface,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.md,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: AppRadius.defaultBorder,
+                              borderSide: const BorderSide(
+                                color: AppColors.outlineVariant,
+                                width: 1,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: AppRadius.defaultBorder,
+                              borderSide: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                                value: 'price', child: Text("Price")),
+                            DropdownMenuItem(
+                                value: 'none', child: Text("None")),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _sortBy = val;
+                              });
+                              _loadServices();
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      ElevatedButton(
+                        onPressed: _loadServices,
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(52, 52),
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.onPrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadius.defaultBorder,
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Icon(Icons.search),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Services Listing
+          Expanded(
+            child: marketplace.isLoading
+                ? const ThemedLoadingIndicator(message: "Searching services...")
+                : filteredServices.isEmpty
+                    ? const Padding(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                        child: ThemedCard(
+                          borderRadius: AppRadius.md,
+                          padding: AppSpacing.lg,
+                          child: ThemedEmptyState(
+                            icon: Icons.search_off,
+                            title: "No services found nearby.",
+                            description:
+                                "Try broadening your search radius or changing your coordinates.",
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md),
+                        itemCount: filteredServices.length,
+                        itemBuilder: (context, index) {
+                          final service = filteredServices[index];
+                          final categoryLabel =
+                              serviceCategoryLabels[service.category] ??
+                                  service.category;
+
+                          return Padding(
+                            padding:
+                                const EdgeInsets.only(bottom: AppSpacing.sm),
+                            child: ThemedCard(
+                              borderRadius: AppRadius.md,
+                              padding: AppSpacing.md,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: AppColors.secondary
+                                        .withValues(alpha: 0.2),
+                                    foregroundColor: AppColors.primary,
+                                    child: Icon(
+                                        _getCategoryIcon(service.category)),
+                                  ),
+                                  const SizedBox(width: AppSpacing.md),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          service.name,
+                                          style: AppTypography.titleMd.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: AppSpacing.xs),
+                                        Row(
+                                          children: [
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.primary
+                                                    .withValues(alpha: 0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        AppRadius.sm),
+                                              ),
+                                              child: Text(
+                                                categoryLabel,
+                                                style: AppTypography.labelMd
+                                                    .copyWith(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppColors.primary,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(
+                                                width: AppSpacing.base),
+                                            Text(
+                                              "${service.distanceKM} km away",
+                                              style:
+                                                  AppTypography.bodyMd.copyWith(
+                                                color:
+                                                    AppColors.onSurfaceVariant,
+                                              ),
+                                            ),
+                                            const SizedBox(
+                                                width: AppSpacing.base),
+                                            ServiceRatingWidget(
+                                                tenantId: service.tenantId),
+                                          ],
+                                        ),
+                                        const SizedBox(height: AppSpacing.base),
+                                        Text(
+                                          "Base: \$${service.tenantBasePrice} + \$${service.tenantPricePerKM}/km",
+                                          style: AppTypography.bodyMd.copyWith(
+                                            color: AppColors.onSurfaceVariant,
+                                          ),
+                                        ),
+                                        const SizedBox(height: AppSpacing.xs),
+                                        Text(
+                                          "Est. Price: \$${service.finalPrice}",
+                                          style: AppTypography.titleMd.copyWith(
+                                            color: AppColors.secondary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  SizedBox(
+                                    width: 80,
+                                    child: PrimaryButton(
+                                      text: "Book",
+                                      onPressed: () => _showBookingDialog(
+                                          context, service, auth.token!),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBookingDialog(
+      BuildContext context, MarketplaceService service, String userToken) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) {
+        return _BookingDialog(
+          service: service,
+          userToken: userToken,
+          customerLat: double.tryParse(_latController.text.trim()) ?? 30.0444,
+          customerLon: double.tryParse(_lonController.text.trim()) ?? 31.2357,
+        );
+      },
+    );
+  }
+}
+
+class _BookingDialog extends StatefulWidget {
+  final MarketplaceService service;
+  final String userToken;
+  final double customerLat;
+  final double customerLon;
+
+  const _BookingDialog({
+    required this.service,
+    required this.userToken,
+    required this.customerLat,
+    required this.customerLon,
+  });
+
+  @override
+  State<_BookingDialog> createState() => _BookingDialogState();
+}
+
+class _BookingDialogState extends State<_BookingDialog> {
+  bool _isSubmitting = false;
+
+  Future<void> _confirmBooking() async {
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    final provider = Provider.of<MarketplaceProvider>(context, listen: false);
+    try {
+      final job = await provider.bookJob(
+        serviceId: widget.service.id,
+        userId: widget.userToken,
+        latitude: widget.customerLat,
+        longitude: widget.customerLon,
+        paymentMethod: "cod", // forced COD only
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).pop(); // close dialog
+
+      if (job != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => JobStatusScreen(job: job),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Booking Failed: $e"),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categoryLabel = serviceCategoryLabels[widget.service.category] ??
+        widget.service.category;
+    return AlertDialog(
+      backgroundColor: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      title: Text(
+        "Confirm Booking",
+        style: AppTypography.titleMd.copyWith(
+          color: AppColors.primary,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              widget.service.name,
+              style: AppTypography.headlineLgMobile.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.onSurface,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              "Category: $categoryLabel",
+              style: AppTypography.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            const Divider(color: AppColors.outlineVariant),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Pickup Distance:",
+                  style: AppTypography.bodyMd.copyWith(
+                    color: AppColors.onSurface,
+                  ),
+                ),
+                Text(
+                  "${widget.service.distanceKM} km",
+                  style: AppTypography.bodyMd.copyWith(
+                    color: AppColors.onSurface,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Estimated Total:",
+                  style: AppTypography.bodyMd.copyWith(
+                    color: AppColors.onSurface,
+                  ),
+                ),
+                Text(
+                  "\$${widget.service.finalPrice}",
+                  style: AppTypography.titleMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            const ThemedSectionHeader(
+              title: "Payment Method",
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            // Forced Option: Cash on Delivery (COD)
+            ListTile(
+              leading: const Icon(
+                Icons.radio_button_checked,
+                color: AppColors.primary,
+              ),
+              title: Text(
+                "Cash on Delivery (COD)",
+                style: AppTypography.bodyMd.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Text(
+                "Pay in cash directly to the driver upon arrival",
+                style: AppTypography.labelMd.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            // Inline note explaining escrow/other methods are deferred
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.1),
+                border: Border.all(
+                  color: AppColors.warning.withValues(alpha: 0.3),
+                ),
+                borderRadius: AppRadius.defaultBorder,
+              ),
+              child: Text(
+                "Note: Escrow payments and wallet deductions are currently deferred for this beta launch.",
+                style: AppTypography.labelMd.copyWith(
+                  color: AppColors.warning,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actionsPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      actions: [
+        Row(
+          children: [
+            Expanded(
+              child: SecondaryButton(
+                text: "Cancel",
+                isOutlined: true,
+                onPressed:
+                    _isSubmitting ? null : () => Navigator.of(context).pop(),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: PrimaryButton(
+                text: "Confirm & Request",
+                isLoading: _isSubmitting,
+                onPressed: _confirmBooking,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class ServiceRatingWidget extends StatefulWidget {
+  final String tenantId;
+
+  const ServiceRatingWidget({super.key, required this.tenantId});
+
+  @override
+  State<ServiceRatingWidget> createState() => _ServiceRatingWidgetState();
+}
+
+class _ServiceRatingWidgetState extends State<ServiceRatingWidget> {
+  double? _avg;
+  int? _count;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRating();
+  }
+
+  Future<void> _loadRating() async {
+    final provider = Provider.of<MarketplaceProvider>(context, listen: false);
+    try {
+      final res = await provider.fetchRatings(widget.tenantId);
+      if (mounted) {
+        setState(() {
+          _avg = (res['average_rating'] as num?)?.toDouble() ?? 0.0;
+          _count = (res['count'] as num?)?.toInt() ?? 0;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const SizedBox(
+        width: 12,
+        height: 12,
+        child: CircularProgressIndicator(strokeWidth: 1.5),
+      );
+    }
+    if (_count == null || _count == 0) {
+      return Text(
+        "No ratings",
+        style: AppTypography.labelMd.copyWith(color: AppColors.outline),
+      );
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.star, color: AppColors.secondary, size: 16),
+        const SizedBox(width: 4),
+        Text(
+          "${_avg!.toStringAsFixed(1)} ($_count)",
+          style: AppTypography.labelMd.copyWith(
+            fontWeight: FontWeight.bold,
+            color: AppColors.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
+}

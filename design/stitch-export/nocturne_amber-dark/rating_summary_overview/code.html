@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Rating Summary Overview - Quick Delivery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;family=Poppins:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#ffdf9e", // This is the 'Gold' tint from config, but I will use #FFC107 for primary actions as requested
+                    "brand-gold": "#FFC107",
+                    "brand-navy": "#0D1321",
+                    "surface-bright": "#37393b",
+                    "error-container": "#93000a",
+                    "error": "#ffb4ab",
+                    "inverse-surface": "#e2e2e4",
+                    "outline": "#909096",
+                    "tertiary": "#abcae8",
+                    "primary-container": "#0d1321",
+                    "secondary-container": "#fabd00",
+                    "background": "#121415",
+                    "surface": "#121415",
+                    "surface-container": "#1e2021",
+                    "on-surface": "#e2e2e4",
+                    "on-surface-variant": "#c6c6cc",
+                    "on-secondary-container": "#6a4e00",
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "sm": "8px",
+                    "base": "4px",
+                    "margin-desktop": "64px",
+                    "gutter": "24px",
+                    "md": "16px",
+                    "xs": "4px",
+                    "xl": "40px",
+                    "lg": "24px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Poppins", "sans-serif"],
+                    "label-md": ["JetBrains Mono", "monospace"],
+                    "body-lg": ["Poppins", "sans-serif"],
+                    "body-md": ["Poppins", "sans-serif"],
+                    "headline-lg": ["Poppins", "sans-serif"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #121415;
+            color: #e2e2e4;
+            font-family: 'Poppins', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .glass-panel {
+            background: rgba(26, 28, 29, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(144, 144, 150, 0.1);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0D1321;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #FFC107;
+            border-radius: 2px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="overflow-x-hidden">
+<!-- Top AppBar (from Shared Components) -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 bg-primary-container text-secondary">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-brand-gold text-2xl" data-icon="local_shipping">local_shipping</span>
+<h1 class="font-headline-md text-headline-md font-bold tracking-tight">Quick Delivery</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined p-2 hover:opacity-80 transition-opacity" data-icon="search">search</button>
+<div class="w-10 h-10 rounded-full border-2 border-brand-gold overflow-hidden active:scale-95 transition-transform cursor-pointer">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a logistics manager in a dark navy uniform, high-contrast lighting, sharp focus, set against a blurred background of a modern industrial terminal, corporate photography style with warm gold highlights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9H5b9jY7bXaB_U_KWnDUVHbqVMRugfPaee7Dtyg1Ry-5-nFzgxNCGMhyYwclget4SmO45db89UA04pLR_zikHbQVLiNeAjocf8aut3XhzWnAiYyjXUQ50iylqHe8KFDWF45yWFImg_lie3M1qviLC8-8eqKEMNJweWOVGtbuV7CwXsMPjDMYs1U57sJiomHhOGLpTdXLlxaxe2ZrYMUgtfiFmRARb0H1WLr42TuUSD-5niP-nxnvkqsH006Qif5-e3F-PMQ0E1910"/>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-margin-mobile max-w-[1280px] mx-auto min-h-screen">
+<!-- Page Title -->
+<div class="mb-lg">
+<p class="font-label-md text-label-md text-brand-gold uppercase tracking-widest mb-xs">Performance Metrics</p>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Rating Summary</h2>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-lg">
+<!-- Main Rating Card (Average Score + Count) -->
+<div class="md:col-span-4 glass-panel p-lg flex flex-col justify-center items-center text-center rounded-lg border-l-4 border-brand-gold">
+<div class="mb-md">
+<span class="text-7xl font-extrabold text-on-surface">4.8</span>
+<div class="flex justify-center gap-1 text-brand-gold mt-sm">
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" data-icon="star_half" style="font-variation-settings: 'FILL' 0.5;">star_half</span>
+</div>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Based on <span class="text-brand-gold font-bold">12,482</span> ratings</p>
+<div class="mt-lg w-full space-y-3">
+<div class="flex items-center gap-4">
+<span class="font-label-md text-label-md w-4">5</span>
+<div class="flex-1 h-2 bg-brand-navy rounded-full overflow-hidden">
+<div class="h-full bg-brand-gold w-[82%]"></div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-label-md text-label-md w-4">4</span>
+<div class="flex-1 h-2 bg-brand-navy rounded-full overflow-hidden">
+<div class="h-full bg-brand-gold w-[12%]"></div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-label-md text-label-md w-4">3</span>
+<div class="flex-1 h-2 bg-brand-navy rounded-full overflow-hidden">
+<div class="h-full bg-brand-gold w-[4%]"></div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-label-md text-label-md w-4">2</span>
+<div class="flex-1 h-2 bg-brand-navy rounded-full overflow-hidden">
+<div class="h-full bg-brand-gold w-[1%]"></div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-label-md text-label-md w-4">1</span>
+<div class="flex-1 h-2 bg-brand-navy rounded-full overflow-hidden">
+<div class="h-full bg-brand-gold w-[1%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Detailed Metrics Cards -->
+<div class="md:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-lg">
+<!-- Delivery Speed -->
+<div class="glass-panel p-md rounded-lg flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<span class="material-symbols-outlined text-brand-gold mb-sm bg-brand-navy p-3 rounded-lg" data-icon="bolt">bolt</span>
+<h3 class="font-headline-md text-[20px] text-on-surface">Fleet Velocity</h3>
+</div>
+<span class="font-label-md text-label-md bg-green-900/30 text-green-400 px-3 py-1 rounded-full border border-green-500/20 uppercase">+4.2%</span>
+</div>
+<div class="mt-md">
+<p class="font-body-md text-on-surface-variant mb-base">Avg. Completion Time</p>
+<p class="text-3xl font-bold text-on-surface tracking-tight">24.5 <span class="text-sm font-normal text-outline">min</span></p>
+</div>
+</div>
+<!-- Cargo Integrity -->
+<div class="glass-panel p-md rounded-lg flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<span class="material-symbols-outlined text-brand-gold mb-sm bg-brand-navy p-3 rounded-lg" data-icon="inventory_2">inventory_2</span>
+<h3 class="font-headline-md text-[20px] text-on-surface">Cargo Integrity</h3>
+</div>
+<span class="font-label-md text-label-md bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full uppercase">Stable</span>
+</div>
+<div class="mt-md">
+<p class="font-body-md text-on-surface-variant mb-base">Successful Handovers</p>
+<p class="text-3xl font-bold text-on-surface tracking-tight">99.8%</p>
+</div>
+</div>
+<!-- Logistics Efficiency -->
+<div class="glass-panel p-md rounded-lg flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<span class="material-symbols-outlined text-brand-gold mb-sm bg-brand-navy p-3 rounded-lg" data-icon="route">route</span>
+<h3 class="font-headline-md text-[20px] text-on-surface">Route Optimization</h3>
+</div>
+<span class="font-label-md text-label-md bg-brand-gold/10 text-brand-gold px-3 py-1 rounded-full border border-brand-gold/20 uppercase">Optimal</span>
+</div>
+<div class="mt-md">
+<p class="font-body-md text-on-surface-variant mb-base">Fuel/Energy Savings</p>
+<p class="text-3xl font-bold text-on-surface tracking-tight">18.4%</p>
+</div>
+</div>
+<!-- Reliability Score -->
+<div class="glass-panel p-md rounded-lg flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<span class="material-symbols-outlined text-brand-gold mb-sm bg-brand-navy p-3 rounded-lg" data-icon="verified">verified</span>
+<h3 class="font-headline-md text-[20px] text-on-surface">Service Reliability</h3>
+</div>
+<span class="font-label-md text-label-md bg-brand-gold text-brand-navy px-3 py-1 rounded-full font-bold uppercase">Elite</span>
+</div>
+<div class="mt-md">
+<p class="font-body-md text-on-surface-variant mb-base">Reliability Index</p>
+<p class="text-3xl font-bold text-on-surface tracking-tight">94.2</p>
+</div>
+</div>
+</div>
+<!-- Recent Feedback Section -->
+<div class="md:col-span-12 glass-panel p-lg rounded-lg">
+<div class="flex justify-between items-center mb-lg">
+<h3 class="font-headline-md text-headline-md text-on-surface">Client Feedback</h3>
+<button class="font-label-md text-label-md text-brand-gold flex items-center gap-2 hover:underline">
+                        View All <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<!-- Feedback Item 1 -->
+<div class="bg-brand-navy/30 p-md rounded-lg border border-outline-variant hover:border-brand-gold transition-colors">
+<div class="flex items-center gap-3 mb-sm">
+<div class="w-8 h-8 rounded-full bg-brand-gold/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-brand-gold text-sm" data-icon="person">person</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Global Logistics Co.</p>
+<p class="text-xs text-outline">2 hours ago</p>
+</div>
+</div>
+<p class="text-sm text-on-surface-variant italic">"Outstanding precision in maritime cargo handling. The fleet updates are incredibly accurate."</p>
+<div class="flex gap-1 mt-md text-brand-gold scale-75 origin-left">
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</div>
+<!-- Feedback Item 2 -->
+<div class="bg-brand-navy/30 p-md rounded-lg border border-outline-variant hover:border-brand-gold transition-colors">
+<div class="flex items-center gap-3 mb-sm">
+<div class="w-8 h-8 rounded-full bg-brand-gold/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-brand-gold text-sm" data-icon="person">person</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">TechPort Hub</p>
+<p class="text-xs text-outline">5 hours ago</p>
+</div>
+</div>
+<p class="text-sm text-on-surface-variant italic">"Consistent delivery times and excellent condition of fragile components upon arrival."</p>
+<div class="flex gap-1 mt-md text-brand-gold scale-75 origin-left">
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</div>
+<!-- Feedback Item 3 -->
+<div class="bg-brand-navy/30 p-md rounded-lg border border-outline-variant hover:border-brand-gold transition-colors">
+<div class="flex items-center gap-3 mb-sm">
+<div class="w-8 h-8 rounded-full bg-brand-gold/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-brand-gold text-sm" data-icon="person">person</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">SwiftRetail Inc.</p>
+<p class="text-xs text-outline">Yesterday</p>
+</div>
+</div>
+<p class="text-sm text-on-surface-variant italic">"Very reliable service during peak holiday hours. App interface is sleek and responsive."</p>
+<div class="flex gap-1 mt-md text-brand-gold scale-75 origin-left">
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 0;">star</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar (from Shared Components) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-sm py-base bg-surface-container text-secondary-fixed-dim">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-bright transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+<span class="font-label-md text-label-md">Market</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-bright transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="font-label-md text-label-md">Orders</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-bright transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="font-label-md text-label-md">Fleet</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="person" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label-md text-label-md">Profile</span>
+</a>
+</nav>
+<!-- Simple Interactivity -->
+<script>
+        document.querySelectorAll('nav a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (!this.classList.contains('bg-secondary-container')) {
+                    document.querySelector('nav a.bg-secondary-container').classList.add('text-on-surface-variant');
+                    document.querySelector('nav a.bg-secondary-container').classList.remove('bg-secondary-container', 'text-on-secondary-container', 'rounded-full');
+                    this.classList.remove('text-on-surface-variant');
+                    this.classList.add('bg-secondary-container', 'text-on-secondary-container', 'rounded-full');
+                }
+            });
+        });
+    </script>
+</body></html>

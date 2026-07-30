@@ -3,7 +3,7 @@
 # ===========================================================================
 
 # ---- Development Stage ---------------------------------------------------
-FROM golang:1.23-alpine AS dev
+FROM golang:1.26-alpine AS dev
 
 RUN apk add --no-cache git \
     && go install github.com/air-verse/air@v1.52.2
@@ -20,14 +20,15 @@ EXPOSE 3002
 CMD ["air", "-c", ".air.toml"]
 
 # ---- Build Stage ---------------------------------------------------------
-FROM golang:1.23-alpine AS build
+FROM golang:1.26-alpine AS build
 
-WORKDIR /app
+WORKDIR /app/services/auth-service
 
-COPY go.mod go.sum* ./
+COPY shared/infra /app/shared/infra
+COPY services/auth-service/go.mod services/auth-service/go.sum* ./
 RUN go mod download 2>/dev/null || true
 
-COPY . .
+COPY services/auth-service/ .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/service ./cmd/main.go
 

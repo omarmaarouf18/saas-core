@@ -1,20 +1,20 @@
 // User Service — Service discovery, job lifecycle, and financial operations.
 //
 // Endpoints:
-//   GET  /users/services           — List & filter services (spatial index)
-//   POST /users/services           — Create a service
-//   POST /users/jobs/track         — Create job with escrow lock
-//   POST /users/jobs/complete      — Complete job with profit split
-//   GET  /users/wallet             — Get tenant wallet
-//   POST /users/wallet/deposit     — Deposit funds
-//   GET  /users/ledger             — Transaction ledger
-//   GET  /users/platform/config    — Platform fee config
-//   GET  /health                   — Health check
+//
+//	GET  /users/services           — List & filter services (spatial index)
+//	POST /users/services           — Create a service
+//	POST /users/jobs/track         — Create job with escrow lock
+//	POST /users/jobs/complete      — Complete job with profit split
+//	GET  /users/wallet             — Get tenant wallet
+//	POST /users/wallet/deposit     — Deposit funds
+//	GET  /users/ledger             — Transaction ledger
+//	GET  /users/platform/config    — Platform fee config
+//	GET  /health                   — Health check
 package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -22,52 +22,56 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/project/shared/infra/handlerutil"
+	"github.com/project/shared/infra/jwtutil"
+	"github.com/project/shared/infra/ratelimit"
+	"github.com/project/shared/infra/resilience"
+	"github.com/project/shared/infra/tlsutil"
+	"github.com/project/user-service/internal/config"
 	"github.com/project/user-service/internal/handlers"
 	"github.com/project/user-service/internal/store"
 )
 
 func main() {
-	if os.Getenv("JWT_SECRET") == "" {
-		log.Fatal("JWT_SECRET environment variable is required and must not be empty")
-	}
-	if os.Getenv("INTERNAL_SERVICE_TOKEN") == "" {
-		log.Fatal("INTERNAL_SERVICE_TOKEN environment variable is required and must not be empty")
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("[USER] Failed to load configuration: %v", err)
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3003"
-	}
-	mongoURI := os.Getenv("MONGO_URI")
-	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27017/saas_platform"
-	}
-	dbName := os.Getenv("MONGO_INITDB_DATABASE")
-	if dbName == "" {
-		dbName = "saas_platform"
+	// Initialize JWT utility package.
+	jwtutil.Init(cfg.JWTSecret)
+
+	// Initialize TLS configuration to fail fast if missing/unreadable.
+	tlsConfig, err := tlsutil.LoadServerTLSConfig(cfg.TLSCertPath, cfg.TLSKeyPath, cfg.TLSCAPath)
+	if err != nil {
+		log.Fatalf("[USER] Failed to load TLS configuration: %v", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	mongoStore, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	mongoStore, err := store.NewMongoDB(ctx, cfg.MongoURI, cfg.MongoDatabase)
 	if err != nil {
 		log.Fatalf("[USER] Failed to initialize MongoDB store: %v", err)
 	}
 
-	authServiceURL := os.Getenv("AUTH_SERVICE_URL")
-	if authServiceURL == "" {
-		authServiceURL = "http://localhost:3002"
+	// Connect to Redis.
+	redisClient, err := ratelimit.NewRedisClient(cfg.RedisURI)
+	if err != nil {
+		log.Fatalf("[USER] Failed to connect to Redis: %v", err)
 	}
+	jwtutil.SetRedisClient(redisClient)
 
-	userHandlers := handlers.NewUserService(mongoStore, authServiceURL, os.Getenv("INTERNAL_SERVICE_TOKEN"))
+	userHandlers := handlers.NewUserService(mongoStore, cfg, redisClient)
 	mux := http.NewServeMux()
 	userHandlers.RegisterRoutes(mux)
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok", "storage": "mongodb"})
+		handlerutil.WriteJSON(w, http.StatusOK, map[string]any{
+			"status":       "ok",
+			"storage":      "mongodb",
+			"dependencies": resilience.GetBreakerStats(),
+		})
 	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -75,15 +79,18 @@ func main() {
 			http.NotFound(w, r)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{
+		handlerutil.WriteJSON(w, http.StatusOK, map[string]string{
 			"service": "user-service", "version": "0.2.0", "storage": "mongodb",
 		})
 	})
 
-	addr := ":" + port
-	server := &http.Server{Addr: addr, Handler: mux}
+	addr := ":" + cfg.Port
+	server := &http.Server{
+		Addr:              addr,
+		Handler:           mux,
+		TLSConfig:         tlsConfig,
+		ReadHeaderTimeout: 3 * time.Second,
+	}
 
 	go func() {
 		sigCh := make(chan os.Signal, 1)
@@ -92,12 +99,16 @@ func main() {
 		log.Println("[USER] Shutting down...")
 		shutdownCtx, sc := context.WithTimeout(context.Background(), 10*time.Second)
 		defer sc()
-		server.Shutdown(shutdownCtx)
-		mongoStore.Close(shutdownCtx)
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("[ERROR] server shutdown error: %v", err)
+		}
+		if err := mongoStore.Close(shutdownCtx); err != nil {
+			log.Printf("[ERROR] mongo store close error: %v", err)
+		}
 	}()
 
-	log.Printf("User Service listening on %s (MongoDB-backed)", addr)
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	log.Printf("User Service listening on %s (HTTPS, MongoDB-backed)", addr)
+	if err := server.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}
 }

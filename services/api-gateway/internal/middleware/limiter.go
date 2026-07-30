@@ -4,72 +4,21 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
+
+	"github.com/project/shared/infra/ratelimit"
 )
 
-type RequestRecord struct {
-	Count       int
-	LockedUntil time.Time
-	LastRequest time.Time
-}
-
 type RateLimiter struct {
-	mu      sync.Mutex
-	records map[string]*RequestRecord
-	limit   int
-	window  time.Duration
-	cap     int
+	rl *ratelimit.RateLimiter
 }
 
-func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
-	return &RateLimiter{
-		records: make(map[string]*RequestRecord),
-		limit:   limit,
-		window:  window,
-		cap:     300,
-	}
+func NewRateLimiter(rl *ratelimit.RateLimiter) *RateLimiter {
+	return &RateLimiter{rl: rl}
 }
 
 func (rl *RateLimiter) CheckAndRecord(key string) (bool, time.Duration) {
-	if key == "" {
-		return false, 0
-	}
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-
-	now := time.Now()
-	rec, exists := rl.records[key]
-	if !exists {
-		rec = &RequestRecord{
-			Count:       1,
-			LastRequest: now,
-		}
-		rl.records[key] = rec
-		return false, 0
-	}
-
-	if now.Before(rec.LockedUntil) {
-		return true, rec.LockedUntil.Sub(now)
-	}
-
-	if now.Sub(rec.LastRequest) > rl.window {
-		rec.Count = 0
-	}
-
-	rec.Count++
-	rec.LastRequest = now
-
-	if rec.Count > rl.limit {
-		backoffSeconds := 30 << (rec.Count - rl.limit - 1)
-		if backoffSeconds > rl.cap {
-			backoffSeconds = rl.cap
-		}
-		rec.LockedUntil = now.Add(time.Duration(backoffSeconds) * time.Second)
-		return true, time.Duration(backoffSeconds) * time.Second
-	}
-
-	return false, 0
+	return rl.rl.CheckAndRecord(key)
 }
 
 // getIP extracts the client IP from r.RemoteAddr only.
@@ -103,6 +52,7 @@ func RateLimit(limiter *RateLimiter) func(http.Handler) http.Handler {
 			if limited, remaining := limiter.CheckAndRecord(ip); limited {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusTooManyRequests)
+				// #nosec G705 //nolint:gosec -- raw JSON response does not contain user-provided HTML, XSS not possible
 				fmt.Fprintf(w, `{"error":"too many requests, locked out for %.0f seconds"}`, remaining.Seconds())
 				return
 			}

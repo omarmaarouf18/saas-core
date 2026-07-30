@@ -5,8 +5,7 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
+	"crypto/subtle"
 	"log"
 	"net/http"
 	"time"
@@ -14,6 +13,10 @@ import (
 	"github.com/project/gateway/internal/config"
 	"github.com/project/gateway/internal/middleware"
 	"github.com/project/gateway/internal/proxy"
+	"github.com/project/shared/infra/handlerutil"
+	"github.com/project/shared/infra/ratelimit"
+	"github.com/project/shared/infra/resilience"
+	"github.com/project/shared/infra/tlsutil"
 )
 
 func main() {
@@ -23,13 +26,45 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
+	// ---- Initialize Redis rate limiter client ----
+	redisClient, err := ratelimit.NewRedisClient(cfg.RedisURI)
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
+
+	var clientTransport http.RoundTripper
+	if cfg.TLSCertPath != "" && cfg.TLSKeyPath != "" && cfg.TLSCAPath != "" {
+		tlsConfig, err := tlsutil.LoadClientTLSConfig(cfg.TLSCertPath, cfg.TLSKeyPath, cfg.TLSCAPath)
+		if err != nil {
+			log.Fatalf("Failed to load gateway client TLS config: %v", err)
+		}
+		clientTransport = &http.Transport{
+			TLSClientConfig: tlsConfig,
+		}
+	} else {
+		clientTransport = http.DefaultTransport
+	}
+
 	mux := http.NewServeMux()
 
 	// ---- Health check endpoint ----
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, `{"status": "ok"}`)
+		handlerutil.WriteJSON(w, http.StatusOK, map[string]any{
+			"status": "ok",
+		})
+	})
+
+	// ---- Internal Health check endpoint ----
+	mux.HandleFunc("/health/internal", func(w http.ResponseWriter, r *http.Request) {
+		gotToken := r.Header.Get("X-Internal-Token")
+		if subtle.ConstantTimeCompare([]byte(gotToken), []byte(cfg.InternalServiceToken)) != 1 {
+			handlerutil.WriteJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: invalid internal token"})
+			return
+		}
+		handlerutil.WriteJSON(w, http.StatusOK, map[string]any{
+			"status":       "ok",
+			"dependencies": resilience.GetBreakerStats(),
+		})
 	})
 
 	// ---- Service info endpoint ----
@@ -39,26 +74,17 @@ func main() {
 			http.NotFound(w, r)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-
 		info := map[string]any{
 			"service": "api-gateway",
 			"version": "0.1.0",
-			"routes":  make([]map[string]string, 0, len(cfg.Routes)),
 		}
-		for _, route := range cfg.Routes {
-			info["routes"] = append(info["routes"].([]map[string]string), map[string]string{
-				"prefix": route.Prefix,
-				"target": route.Target,
-			})
-		}
-		json.NewEncoder(w).Encode(info)
+		handlerutil.WriteJSON(w, http.StatusOK, info)
 	})
 
 	// ---- Register reverse proxy routes ----
 	for _, route := range cfg.Routes {
-		handler, err := proxy.New(route, cfg.GatewaySecret)
+		resilientTransport := resilience.NewRoundTripper(clientTransport, route.Prefix, 2, 5*time.Second)
+		handler, err := proxy.New(route, cfg.GatewaySecret, resilientTransport)
 		if err != nil {
 			log.Fatalf("Failed to create proxy for %s: %v", route.Prefix, err)
 		}
@@ -67,15 +93,21 @@ func main() {
 	}
 
 	// ---- Wrap with global rate limiting and logging middleware ----
-	limiter := middleware.NewRateLimiter(100, 1*time.Minute)
+	rl := ratelimit.NewRateLimiter(redisClient, 100, 1*time.Minute, "gateway")
+	limiter := middleware.NewRateLimiter(rl)
 	rateLimited := middleware.RateLimit(limiter)(mux)
-	logged := middleware.Logging(rateLimited)
+	logged := middleware.Logging(cfg.AllowedOrigin)(rateLimited)
 
 	// ---- Start server ----
 	addr := ":" + cfg.Port
-	log.Printf("API Gateway listening on %s", addr)
+	log.Printf("API Gateway listening on HTTPS %s", addr)
 	log.Printf("Routes active: %d", len(cfg.Routes))
-	if err := http.ListenAndServe(addr, logged); err != nil {
+	server := &http.Server{
+		Addr:              addr,
+		Handler:           logged,
+		ReadHeaderTimeout: 3 * time.Second,
+	}
+	if err := server.ListenAndServeTLS(cfg.ExternalTLSCertPath, cfg.ExternalTLSKeyPath); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}
 }

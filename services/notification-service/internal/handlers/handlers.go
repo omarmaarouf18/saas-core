@@ -2,14 +2,21 @@
 package handlers
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/project/notification-service/internal/config"
 	"github.com/project/notification-service/internal/hub"
-	"github.com/project/notification-service/internal/jwtutil"
+	"github.com/project/shared/infra/handlerutil"
+	"github.com/project/shared/infra/jwtutil"
+	"github.com/project/shared/infra/ratelimit"
+	"github.com/project/shared/infra/resilience"
+	"github.com/project/shared/infra/tlsutil"
+	"github.com/redis/go-redis/v9"
 )
 
 // Notification holds dependencies for notification handlers.
@@ -17,21 +24,40 @@ type Notification struct {
 	hub                  *hub.SSEHub
 	authServiceURL       string
 	allowedOrigin        string
-	limiter              *RateLimiter
+	limiter              *handlerutil.RateLimiter
 	internalServiceToken string
+	resilienceClient     *resilience.ResilienceClient
 }
 
 // NewNotification creates a new handler group.
-func NewNotification(h *hub.SSEHub, authServiceURL string, allowedOrigin string, internalServiceToken string) *Notification {
+func NewNotification(h *hub.SSEHub, cfg *config.Config, rdb *redis.Client) *Notification {
+	allowedOrigin := cfg.AllowedOrigin
 	if allowedOrigin == "" {
 		allowedOrigin = "http://localhost:3000"
 	}
+
+	var client *http.Client
+	if cfg.TLSCertPath != "" && cfg.TLSKeyPath != "" && cfg.TLSCAPath != "" {
+		var err error
+		client, err = tlsutil.NewClient(cfg.TLSCertPath, cfg.TLSKeyPath, cfg.TLSCAPath)
+		if err != nil {
+			log.Fatalf("[NOTIF] Failed to initialize TLS http client: %v", err)
+		}
+	} else {
+		client = http.DefaultClient
+	}
+
+	rl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Minute, "notification")
+
+	resClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
+
 	return &Notification{
 		hub:                  h,
-		authServiceURL:       authServiceURL,
+		authServiceURL:       cfg.AuthServiceURL,
 		allowedOrigin:        allowedOrigin,
-		limiter:              NewRateLimiter(5, 1*time.Minute),
-		internalServiceToken: internalServiceToken,
+		limiter:              handlerutil.NewRateLimiter(rl),
+		internalServiceToken: cfg.InternalServiceToken,
+		resilienceClient:     resClient,
 	}
 }
 
@@ -48,22 +74,34 @@ func (n *Notification) RegisterRoutes(mux *http.ServeMux) {
 
 // Stream establishes an SSE connection for real-time notifications.
 func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", n.allowedOrigin)
+
 	if r.Method != http.MethodGet {
-		http.Error(w, `{"error":"use GET"}`, http.StatusMethodNotAllowed)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		writeBytes(w, []byte(`{"error":"use GET"}`))
 		return
 	}
 
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		http.Error(w, `{"error":"token required"}`, http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		writeBytes(w, []byte(`{"error":"token required"}`))
 		return
 	}
 
-	tenantID, role, ok := n.verifyAndResolve(token)
+	tenantID, role, ok, err := n.verifyAndResolve(token)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		writeBytes(w, []byte(`{"error": "service_unavailable", "message": "Authentication service is temporarily unavailable. Please try again later."}`))
+		return
+	}
 	if !ok {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error": "invalid or inactive token"}`))
+		writeBytes(w, []byte(`{"error": "invalid or inactive token"}`))
 		return
 	}
 
@@ -71,7 +109,6 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", n.allowedOrigin)
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -84,65 +121,70 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 		TenantID: tenantID,
 		Role:     role,
 		Send:     make(chan []byte, 64),
-		Done:     make(chan struct{}),
 	}
 
 	n.hub.Register(client)
 	defer n.hub.Unregister(client)
 
 	// Send initial connection event.
+	// #nosec G705 -- token and role are checked/resolved server-side and do not contain HTML/XSS payloads
 	fmt.Fprintf(w, "event: connected\ndata: {\"client_id\":%q,\"role\":%q}\n\n", token, role)
 	flusher.Flush()
 
-	log.Printf("[NOTIF] SSE stream opened: token=%s tenant=%s role=%s", token, tenantID, role)
+	log.Printf("[NOTIF] SSE stream opened: tenant_id=%s role=%s", tenantID, role)
 
 	// Stream loop.
 	ctx := r.Context()
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("[NOTIF] SSE stream closed (client disconnect): %s", token)
+			log.Printf("[NOTIF] SSE stream closed (client disconnect) tenant_id=%s", tenantID)
 			return
 		case msg, ok := <-client.Send:
 			if !ok {
 				return
 			}
-			w.Write(msg)
+			if _, err := w.Write(msg); err != nil {
+				log.Printf("[ERROR] failed to write stream chunk: %v", err)
+				return
+			}
 			flusher.Flush()
 		}
 	}
 }
 
-func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool) {
+func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool, error) {
 	if token == "" {
-		return "", "", false
+		return "", "", false, nil
 	}
 
 	// 1. Primary trust boundary: Validate JWT token signature and expiry locally
 	claims, err := jwtutil.ValidateToken(token)
 	if err != nil {
 		log.Printf("[NOTIF] JWT validation failed: %v", err)
-		return "", "", false
+		return "", "", false, nil
 	}
 
 	// 2. Secondary trust boundary: verify against auth-service using extracted user ID (internal call)
 	authURL := fmt.Sprintf("%s/auth/user?id=%s", n.authServiceURL, claims.UserID)
+	// #nosec G704 -- authServiceURL is config-controlled and claims.UserID is cryptographically verified from JWT
 	req, err := http.NewRequest("GET", authURL, nil)
 	if err != nil {
 		log.Printf("[NOTIF] Error building auth-service request: %v", err)
-		return "", "", false
+		return "", "", false, err
 	}
 	req.Header.Set("X-Internal-Token", n.internalServiceToken)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := n.resilienceClient.Do(req)
 	if err != nil {
 		log.Printf("[NOTIF] Error calling auth-service: %v", err)
-		return "", "", false
+		return "", "", false, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		// #nosec G706 -- claims.UserID is validated and sourced from cryptographically signed JWT token
 		log.Printf("[NOTIF] Auth service returned status %d for user ID %s", resp.StatusCode, claims.UserID)
-		return "", "", false
+		return "", "", false, nil
 	}
 
 	var user struct {
@@ -154,12 +196,12 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool) {
 
 	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
 		log.Printf("[NOTIF] Failed to decode user from auth-service: %v", err)
-		return "", "", false
+		return "", "", false, err
 	}
 
 	if !user.IsActive {
 		log.Printf("[NOTIF] User %s is not active", user.ID)
-		return "", "", false
+		return "", "", false, nil
 	}
 
 	var r hub.Role
@@ -174,7 +216,7 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool) {
 		r = hub.RoleClient
 	}
 
-	return user.TenantID, r, true
+	return user.TenantID, r, true, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -185,6 +227,9 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool) {
 type sendRequest struct {
 	Type     string     `json:"type"`
 	TenantID string     `json:"tenant_id"`
+	UserID   string     `json:"user_id,omitempty"`
+	UserIDs  []string   `json:"user_ids,omitempty"`
+	Global   bool       `json:"global,omitempty"`
 	Title    string     `json:"title"`
 	Body     string     `json:"body"`
 	Roles    []hub.Role `json:"roles,omitempty"` // empty = broadcast to all roles
@@ -192,21 +237,22 @@ type sendRequest struct {
 
 // Send pushes a notification to matching connected clients.
 func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("X-Internal-Token") != n.internalServiceToken {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	gotToken := r.Header.Get("X-Internal-Token")
+	if subtle.ConstantTimeCompare([]byte(gotToken), []byte(n.internalServiceToken)) != 1 {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: internal token required"})
 		return
 	}
 
-	ip := getIP(r)
+	ip := handlerutil.GetIP(r)
 	if limited, remaining := n.limiter.CheckAndRecord(ip); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})
-		return
-	}
-
-	if r.Method != http.MethodPost {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
 		return
 	}
 
@@ -219,11 +265,18 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "title and body required"})
 		return
 	}
+	if req.TenantID == "" && !req.Global {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id is required unless global is true"})
+		return
+	}
 
 	notif := hub.Notification{
 		ID:        fmt.Sprintf("notif-%d", time.Now().UnixNano()),
 		Type:      req.Type,
 		TenantID:  req.TenantID,
+		UserID:    req.UserID,
+		UserIDs:   req.UserIDs,
+		Global:    req.Global,
 		Title:     req.Title,
 		Body:      req.Body,
 		Roles:     req.Roles,
@@ -236,8 +289,8 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 	n.hub.Broadcast(notif)
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"message":      "notification dispatched",
-		"notification": notif,
+		"message":        "notification dispatched",
+		"notification":   notif,
 		"active_clients": n.hub.ClientCount(),
 	})
 }
@@ -255,13 +308,14 @@ type jobAlertRequest struct {
 
 // BroadcastJobAlert sends a New Job Alert to all role pools for a tenant.
 func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("X-Internal-Token") != n.internalServiceToken {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: internal token required"})
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
 		return
 	}
 
-	if r.Method != http.MethodPost {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+	gotToken := r.Header.Get("X-Internal-Token")
+	if subtle.ConstantTimeCompare([]byte(gotToken), []byte(n.internalServiceToken)) != 1 {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: internal token required"})
 		return
 	}
 
@@ -288,15 +342,17 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 	n.hub.Broadcast(notif)
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"message":        "job alert broadcast sent",
-		"notification":   notif,
-		"active_clients": n.hub.ClientCount(),
+		"message":         "job alert broadcast sent",
+		"notification":    notif,
+		"active_clients":  n.hub.ClientCount(),
 		"clients_by_role": n.hub.ClientsByRole(),
 	})
 }
 
+func writeBytes(w http.ResponseWriter, data []byte) {
+	handlerutil.WriteBytes(w, data)
+}
+
 func writeJSON(w http.ResponseWriter, status int, data any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	handlerutil.WriteJSON(w, status, data)
 }

@@ -69,4 +69,4 @@ func (e *MockEmailDispatcher) Name() string { return "MockEmail" }
 type NoopDispatcher struct{}
 
 func (n *NoopDispatcher) Dispatch(_, _ string) error { return nil }
-func (n *NoopDispatcher) Name() string                { return "Noop" }
+func (n *NoopDispatcher) Name() string               { return "Noop" }

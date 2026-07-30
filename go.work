@@ -1,9 +1,11 @@
-go 1.23.0
+go 1.26
 
 use (
 	./services/api-gateway
-	./services/chat-service
 	./services/auth-service
-	./services/user-service
+	./services/chat-service
 	./services/notification-service
+	./services/user-service
+	./shared/infra
+	./tools/docgen
 )

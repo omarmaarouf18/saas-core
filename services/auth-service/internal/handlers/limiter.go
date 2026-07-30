@@ -1,24 +1,45 @@
 package handlers
 
 import (
-	"sync"
+	"strings"
 	"time"
+
+	"github.com/project/shared/infra/ratelimit"
+	"github.com/redis/go-redis/v9"
 )
 
-type FailureRecord struct {
-	Count       int
-	LockedUntil time.Time
-}
-
 type RateLimiter struct {
-	mu       sync.Mutex
-	failures map[string]*FailureRecord
+	ipLimiter      *ratelimit.AuthRateLimiter
+	emailLimiter   *ratelimit.AuthRateLimiter
+	generalLimiter *ratelimit.RateLimiter
 }
 
-func NewRateLimiter() *RateLimiter {
-	return &RateLimiter{
-		failures: make(map[string]*FailureRecord),
+func NewRateLimiter(client *redis.Client) *RateLimiter {
+	var gen *ratelimit.RateLimiter
+	if client != nil {
+		gen = ratelimit.NewRateLimiter(client, 30, 1*time.Minute, "auth:employees")
 	}
+	return &RateLimiter{
+		ipLimiter:      ratelimit.NewAuthRateLimiter(client, "auth:ip"),
+		emailLimiter:   ratelimit.NewAuthRateLimiter(client, "auth:email"),
+		generalLimiter: gen,
+	}
+}
+
+// CheckAndRecord checks and records a hit against the sliding window rate limiter for general endpoint keys.
+// Returns true and remaining lockout duration if limited.
+func (rl *RateLimiter) CheckAndRecord(key string) (bool, time.Duration) {
+	if key == "" || rl == nil || rl.generalLimiter == nil {
+		return false, 0
+	}
+	return rl.generalLimiter.CheckAndRecord(key)
+}
+
+func (rl *RateLimiter) getLimiter(key string) *ratelimit.AuthRateLimiter {
+	if strings.Contains(key, "@") {
+		return rl.emailLimiter
+	}
+	return rl.ipLimiter
 }
 
 // IsLocked checks if a key (email or IP) is currently locked out.
@@ -27,20 +48,7 @@ func (rl *RateLimiter) IsLocked(key string) (bool, time.Duration) {
 	if key == "" {
 		return false, 0
 	}
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-
-	rec, exists := rl.failures[key]
-	if !exists {
-		return false, 0
-	}
-
-	now := time.Now()
-	if now.Before(rec.LockedUntil) {
-		return true, rec.LockedUntil.Sub(now)
-	}
-
-	return false, 0
+	return rl.getLimiter(key).IsLocked(key)
 }
 
 // RecordFailure records a failure for a key and returns the lockout duration if locked.
@@ -48,27 +56,7 @@ func (rl *RateLimiter) RecordFailure(key string) time.Duration {
 	if key == "" {
 		return 0
 	}
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-
-	rec, exists := rl.failures[key]
-	if !exists {
-		rec = &FailureRecord{}
-		rl.failures[key] = rec
-	}
-
-	rec.Count++
-	if rec.Count >= 5 {
-		// Exponential backoff starting at 30 seconds: 30s * 2^(count - 5)
-		backoffSeconds := 30 << (rec.Count - 5)
-		if backoffSeconds > 300 { // Cap at 5 minutes
-			backoffSeconds = 300
-		}
-		rec.LockedUntil = time.Now().Add(time.Duration(backoffSeconds) * time.Second)
-		return time.Duration(backoffSeconds) * time.Second
-	}
-
-	return 0
+	return rl.getLimiter(key).RecordFailure(key)
 }
 
 // Reset resets the failure record for a key upon successful auth.
@@ -76,7 +64,5 @@ func (rl *RateLimiter) Reset(key string) {
 	if key == "" {
 		return
 	}
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-	delete(rl.failures, key)
+	rl.getLimiter(key).Reset(key)
 }
