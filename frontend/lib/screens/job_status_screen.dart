@@ -152,7 +152,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       if (mounted) {
         String msg;
         if (e is ApiClientException && e.statusCode == 409) {
-          msg = "Job state changed — the other party already acted or status changed.";
+          msg =
+              "Job state changed — the other party already acted or status changed.";
         } else {
           msg = friendlyErrorMessage(e);
         }
@@ -202,7 +203,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       if (mounted) {
         String msg;
         if (e is ApiClientException && e.statusCode == 409) {
-          msg = "Job state changed — the other party already acted or status changed.";
+          msg =
+              "Job state changed — the other party already acted or status changed.";
         } else {
           msg = friendlyErrorMessage(e);
         }
@@ -635,8 +637,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.08),
                 borderRadius: AppRadius.smBorder,
-                border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.3)),
+                border:
+                    Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -694,9 +696,10 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-
-            if ((proposedBy == 'customer' && currentUserId == _currentJob.userId) ||
-                (proposedBy == 'employee' && currentUserId == _currentJob.employeeId))
+            if ((proposedBy == 'customer' &&
+                    currentUserId == _currentJob.userId) ||
+                (proposedBy == 'employee' &&
+                    currentUserId == _currentJob.employeeId))
               Text(
                 "Waiting for response to your proposal...",
                 style: AppTypography.bodyMd.copyWith(
@@ -845,34 +848,34 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           ],
         ),
         const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTypography.bodyMd.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isDone || isCurrent
-                          ? AppColors.onSurface
-                          : AppColors.outline,
-                    ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTypography.bodyMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isDone || isCurrent
+                        ? AppColors.onSurface
+                        : AppColors.outline,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: AppTypography.labelMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                    ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: AppTypography.labelMd.copyWith(
+                    color: AppColors.onSurfaceVariant,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ],
-      );
+        ),
+      ],
+    );
   }
 
   Widget _buildInfoRow(String label, String value) {
