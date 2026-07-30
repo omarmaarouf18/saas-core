@@ -22,12 +22,13 @@ CMD ["air", "-c", ".air.toml"]
 # ---- Build Stage ---------------------------------------------------------
 FROM golang:1.26-alpine AS build
 
-WORKDIR /app
+WORKDIR /app/services/chat-service
 
-COPY go.mod go.sum* ./
+COPY shared/infra /app/shared/infra
+COPY services/chat-service/go.mod services/chat-service/go.sum* ./
 RUN go mod download 2>/dev/null || true
 
-COPY . .
+COPY services/chat-service/ .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/service ./cmd/main.go
 

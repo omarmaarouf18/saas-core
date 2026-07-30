@@ -4,7 +4,21 @@ This guide provides step-by-step instructions for deploying the Quick Delivery S
 
 ---
 
-## 1. Prerequisites & Minimum Specs
+## 1. Architecture Overview (Two-Repo Pipeline)
+
+The SaaS platform uses a clean two-repository deployment model to separate source code development from production cloud host execution:
+
+1. **Development Repository (`omarmaarouf18/saas-core`)**:
+   - Contains all microservice source code, tests, database migrations, and CI workflows.
+   - Merging changes into the `main` branch automatically triggers GitHub Actions to build production Docker images (`prod` stage) for all 5 microservices, publish them to GitHub Container Registry (`ghcr.io`), and update the deployment repository with new image tags.
+
+2. **Deployment Repository (`omarmaarouf18/saas-core-deploy`)**:
+   - Lightweight, deploy-only repository containing production `docker-compose.yml`, `.env.example`, `Caddyfile`, and certificate generation tooling.
+   - The production cloud host **only pulls from this repository**. No source code, Go compilers, or Flutter SDKs are present or required on the production host.
+
+---
+
+## 2. Prerequisites & Minimum Specs
 
 ### Software Requirements
 * **OS**: Linux host (Ubuntu 22.04 LTS, Debian 12, RHEL 9, or similar)
@@ -18,25 +32,26 @@ This guide provides step-by-step instructions for deploying the Quick Delivery S
 
 ---
 
-## 2. Security Hardening & Pre-Flight Configuration
+## 3. Server Provisioning & Initial Deployment
 
-### Step 2.1: Clone Repository
+### Step 3.1: Clone Deployment Repository
+On the production VPS host, clone the dedicated deployment repository:
 ```bash
-git clone https://github.com/omarmaarouf18/saas-core.git /opt/saas-platform
+git clone https://github.com/omarmaarouf18/saas-core-deploy.git /opt/saas-platform
 cd /opt/saas-platform
 ```
 
-### Step 2.2: Configure Environment Variables & Production Secrets
-Copy the template configuration file:
+### Step 3.2: Configure Environment Variables & Secrets
+Copy the template environment file:
 ```bash
-cp infrastructure/.env.example infrastructure/.env
+cp .env.example .env
 ```
 
-Edit `infrastructure/.env` using your preferred editor (`nano` or `vim`). Every parameter marked as a production secret **MUST** be generated using a cryptographically secure random generator (never reuse development values):
+Edit `.env` using `nano` or `vim`. Every parameter marked as a production secret **MUST** be set to a strong, unique, randomly-generated string (never reuse local dev values):
 
 ```env
 # -----------------------------------------------------------------------------
-# Database Credentials & URIs (Phase 1 Security Hardening)
+# Database Credentials & URIs
 # -----------------------------------------------------------------------------
 MONGO_INITDB_DATABASE=saas_platform
 MONGO_INITDB_ROOT_USERNAME=root
@@ -82,48 +97,58 @@ RESEND_API_KEY=re_your_live_key_here
 RESEND_FROM_EMAIL=Quick Delivery <noreply@yourdomain.com>
 ```
 
-### Step 2.3: Generate Fresh Internal mTLS Certificates
-Inter-service communications inside the Docker network (`saas-net`) are secured via mutual TLS (mTLS). Generate fresh production certificates on the target host prior to startup:
+### Step 3.3: Generate Internal mTLS Certificates
+Inter-service communications inside `saas-net` are secured via mutual TLS (mTLS). Generate fresh production certificates on the target host prior to startup:
 
 ```bash
-cd /opt/saas-platform/infrastructure/certs
-chmod +x generate-certs.sh
-./generate-certs.sh
-cd /opt/saas-platform
-```
+mkdir -p certs
+cd certs
+# Generate root CA and service mTLS certs using OpenSSL
+openssl genrsa -out ca.key 4096
+openssl req -x509 -new -nodes -key ca.key -sha256 -days 3650 -out ca.crt -subj "/CN=SaaS-Platform-Prod-Root-CA"
 
-> [!IMPORTANT]
-> The default certificates in `infrastructure/certs/` are for development purposes only. Running `./generate-certs.sh` ensures your production deployment operates on fresh, uncompromised keys.
+SERVICES=("api-gateway" "auth-service" "chat-service" "notification-service" "user-service")
+for service in "${SERVICES[@]}"; do
+  openssl genrsa -out "${service}.key" 2048
+  openssl req -new -key "${service}.key" -out "${service}.csr" -subj "/CN=${service}" -addext "subjectAltName = DNS:${service}, DNS:localhost, IP:127.0.0.1"
+  cat <<EOF > "${service}.ext"
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = DNS:${service}, DNS:localhost, IP:127.0.0.1
+EOF
+  openssl x509 -req -in "${service}.csr" -CA ca.crt -CAkey ca.key -CAcreateserial -out "${service}.crt" -days 3650 -sha256 -extfile "${service}.ext"
+  rm -f "${service}.csr" "${service}.ext"
+done
+
+openssl req -x509 -newkey rsa:2048 -nodes -keyout api-gateway-external.key -out api-gateway-external.crt -days 3650 -subj "/CN=localhost" -addext "subjectAltName = DNS:localhost, IP:127.0.0.1"
+chmod 600 *.key
+chmod 644 *.crt
+cd ..
+```
 
 ---
 
-## 3. Running the Stack & Health Verification
+## 4. Running the Production Stack
 
-### Step 3.1: Start Containers
-Run Docker Compose in detached mode:
+### Step 4.1: Authenticate & Pull Images
+Log in to GitHub Container Registry (if pulling private packages) and pull pre-built images:
 ```bash
-docker compose -f infrastructure/docker-compose.yml --env-file infrastructure/.env up -d --build
+docker compose pull
 ```
 
-### Step 3.2: Verify Container Health
-Check the container status to ensure MongoDB and Redis health checks report `healthy`:
+### Step 4.2: Start Stack in Detached Mode
 ```bash
-docker compose -f infrastructure/docker-compose.yml ps
+docker compose up -d
 ```
 
-Expected output snippet:
-```text
-NAME                           STATUS                   PORTS
-saas-api-gateway               Up 30 seconds            127.0.0.1:8080->8080/tcp
-saas-auth-service              Up 30 seconds            3002/tcp
-saas-chat-service              Up 30 seconds            3001/tcp
-saas-mongo                     Up 30 seconds (healthy)  127.0.0.1:27017->27017/tcp
-saas-notification-service      Up 30 seconds            3004/tcp
-saas-redis                      Up 30 seconds (healthy)  127.0.0.1:6380->6379/tcp
-saas-user-service              Up 30 seconds            3003/tcp
+### Step 4.3: Verify Health
+Check container status (confirm MongoDB and Redis report `healthy`):
+```bash
+docker compose ps
 ```
 
-Test the internal API Gateway health check endpoint:
+Test internal gateway health endpoint:
 ```bash
 curl -k https://localhost:8080/health
 ```
@@ -131,20 +156,30 @@ Output: `{"status":"ok"}`
 
 ---
 
-## 4. Public Reverse Proxy & TLS Termination (Caddy)
+## 5. Automated Upgrades & Continuous Deployment
 
-Do **NOT** expose `api-gateway` port 8080 directly to the public internet. Instead, run a reverse proxy (e.g. Caddy) on the host machine to terminate public TLS (Let's Encrypt / ACME) on standard ports 80/443 and proxy traffic internally to `api-gateway`.
+When developer changes are pushed to `main` in `saas-core`:
+1. GitHub Actions builds and pushes updated images tagged with the commit SHA and `latest` to GHCR.
+2. The workflow automatically updates `docker-compose.yml` in `saas-core-deploy` with the new commit SHA tag.
+3. On the production server, update the deployment with zero downtime:
+   ```bash
+   cd /opt/saas-platform
+   git pull
+   docker compose pull
+   docker compose up -d --remove-orphans
+   ```
 
-### Step 4.1: Install Caddy
-On Ubuntu / Debian:
+---
+
+## 6. Public Reverse Proxy (Caddy) & Firewall (UFW)
+
+### Step 6.1: Caddy Reverse Proxy
+Install Caddy to terminate public HTTPS (Let's Encrypt ACME) on ports 80/443:
 ```bash
-sudo apt update
-sudo apt install -y caddy
+sudo apt update && sudo apt install -y caddy
 ```
 
-### Step 4.2: Configure Caddyfile
-Create or edit `/etc/caddy/Caddyfile`:
-
+Edit `/etc/caddy/Caddyfile`:
 ```caddy
 api.yourdomain.com {
     reverse_proxy https://127.0.0.1:8080 {
@@ -154,88 +189,38 @@ api.yourdomain.com {
     }
 }
 ```
+Reload Caddy: `sudo systemctl reload caddy`
 
-> [!NOTE]
-> `tls_insecure_skip_verify` tells Caddy to accept the internal gateway self-signed certificate while serving a valid public Let's Encrypt certificate to external users.
-
-### Step 4.3: Start & Reload Caddy
+### Step 6.2: Firewall Rules (UFW)
 ```bash
-sudo systemctl enable --now caddy
-sudo systemctl reload caddy
-```
-
----
-
-## 5. Host Firewall Configuration (UFW)
-
-Enforce strict host-level firewall rules using UFW (Uncomplicated Firewall) to block external access to internal service ports, MongoDB, and Redis.
-
-```bash
-# Set default policies
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
-
-# Allow SSH management
 sudo ufw allow 22/tcp
-
-# Allow public web traffic (Caddy reverse proxy)
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
-
-# Enable firewall
 sudo ufw enable
 ```
 
 > [!WARNING]
-> Database ports (`27017`, `6380`), internal microservice ports (`3001`-`3004`), and the gateway port (`8080`) are bound only to `127.0.0.1` and protected by UFW. They MUST NOT be exposed to `0.0.0.0/0`.
+> Database ports (`27017`, `6380`) and internal microservice ports (`3001`-`3004`, `8080`) are bound to `127.0.0.1` and MUST NOT be opened in UFW.
 
 ---
 
-## 6. Maintenance, Logging & Troubleshooting
+## 7. Logging & Database Backups
 
-### View Live Container Logs
+### Live Logs
 ```bash
-# View logs across all services
-docker compose -f infrastructure/docker-compose.yml logs -f
-
-# View logs for a specific service (e.g. auth-service)
-docker compose -f infrastructure/docker-compose.yml logs -f auth-service
+docker compose logs -f
+docker compose logs -f auth-service
 ```
-
-### Restart a Specific Microservice
-```bash
-docker compose -f infrastructure/docker-compose.yml restart user-service
-```
-
-### Graceful Full Stack Shutdown
-```bash
-docker compose -f infrastructure/docker-compose.yml down
-```
-
----
-
-## 7. Database Backup & Disaster Recovery
 
 ### Manual MongoDB Backup (`mongodump`)
-Execute `mongodump` directly within the `mongo` container to create a compressed backup archive:
-
 ```bash
-docker compose -f infrastructure/docker-compose.yml exec mongo mongodump \
+docker compose exec mongo mongodump \
   -u root -p "<MONGO_INITDB_ROOT_PASSWORD>" \
   --authenticationDatabase admin \
   --db saas_platform \
   --archive=/data/db/backup_$(date +%F).archive --gzip
-```
 
-Copy the backup archive out of the container to host storage or offsite backup location:
-```bash
 docker cp saas-mongo:/data/db/backup_$(date +%F).archive /opt/backups/
-```
-
-### Manual MongoDB Restore (`mongorestore`)
-```bash
-docker compose -f infrastructure/docker-compose.yml exec -T mongo mongorestore \
-  -u root -p "<MONGO_INITDB_ROOT_PASSWORD>" \
-  --authenticationDatabase admin \
-  --archive=/data/db/backup_2026-07-30.archive --gzip
 ```
