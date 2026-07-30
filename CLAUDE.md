@@ -41,5 +41,13 @@ Do not batch multiple unrelated changes into one commit, and do not wait until a
 ### Proactive Commit Disclosure Rule
 At the start of EVERY response to the user (not just when asked), if any commits exist that were not already reported in a previous response, the agent MUST proactively list them before doing anything else — run `git log --oneline <last-reported-SHA>..HEAD` (or `make since-last-report SINCE=<last-reported-SHA>`) and paste the full list, even if the user's current message is about something unrelated. The agent must track (e.g., in a comment or scratch note) which SHA was last reported to the user, so this check is always relative to the true last-disclosed state, not just 'since I last checked.' Silence about intervening commits is not acceptable, even if the work was correct and tests passed — the user must always have visibility into everything that changed, not just what they asked about.
 
+## No Illustrative or Reconstructed Output
+
+When presenting command output (test results, build logs, hook output, etc.) in a chat response, you must paste the EXACT text that was actually captured from the tool call — character for character. You must NEVER write lines that "represent" or "illustrate" what output would typically look like, even if you believe the real output would have been similar or identical. This applies even to trivial, low-risk lines.
+
+If you did not directly capture a piece of output (e.g., you're summarizing from memory, or reconstructing what a log likely said), you must say so explicitly — e.g., "I did not capture the literal text of this line; based on the script's logic, no output would print here" — rather than writing a plausible-looking log line as if it were real.
+
+This rule exists because a fabricated-but-plausible log line is functionally indistinguishable from a hallucinated one to anyone reading the report, even when the underlying work was done correctly. "Illustrative" output defeats the entire purpose of raw-output verification.
+
 
 
