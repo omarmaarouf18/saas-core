@@ -186,8 +186,9 @@ The following documentation resources map the Quick Delivery platform architectu
 *   **[CLAUDE.md](CLAUDE.md)** — Core development policies and guides, including this project's auto-commit policy.
 *   **[DESIGN.md](DESIGN.md)** — High-level system design, data schema models, and microservice communication patterns.
 *   **[IMPLEMENTATION.md](IMPLEMENTATION.md)** — Tech stack specifications, checklists, and manual verification procedures.
-*   **[docs/APPLICATION_MAP.md](docs/APPLICATION_MAP.md)** — Detailed API endpoints, inter-service HTTP routes, and user/system interaction flowcharts.
-*   **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — Production deployment guide, VPS requirements, reverse proxy setup, and two-repo architecture.
+*   [docs/APPLICATION_MAP.md](docs/APPLICATION_MAP.md) — Detailed API endpoints, inter-service HTTP routes, and user/system interaction flowcharts.
+*   [docs/REPOSITORY_MAP.md](docs/REPOSITORY_MAP.md) — Dedicated onboarding map of the 4-repository ecosystem, pipeline triggers, PAT secret scopes, and operational runbooks.
+*   [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Production deployment guide, VPS requirements, reverse proxy setup, and two-repo architecture.
 *   **[docs/CI_CD_AND_HOOKS.md](docs/CI_CD_AND_HOOKS.md)** — Comprehensive breakdown of local Git hooks, GitHub Actions CI, and GHCR build/publish workflows.
 *   **[docs/RUNBOOK.md](docs/RUNBOOK.md)** — Release and server deployment runbook for merging, CI/CD triggering, VPS setup, and rollback procedures.
 *   **[docs/changelog/README.md](docs/changelog/README.md)** — Index of categorized changelogs (Security Fixes, New Features, Infrastructure, Bug Fixes, and Documentation updates).

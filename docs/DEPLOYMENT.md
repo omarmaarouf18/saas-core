@@ -364,12 +364,50 @@ docker cp saas-mongo:/data/db/backup_$(date +%F).archive /opt/backups/
   docker compose --env-file .env down
   ```
 
-### 10.3 `curl: (35) OpenSSL SSL_connect: Connection reset by peer`
-* **Symptom**: Executing `curl -k https://localhost:8080/health` immediately after `docker compose up -d` fails with `curl: (35) OpenSSL SSL_connect: Connection reset by peer` or `Connection refused`.
-* **Cause**: Containers configured with `air` (Go live reload compiler) or cold startup compilation start up immediately, but the Go service binary inside is still compiling before binding to its assigned TLS port. Initial TLS handshake attempts during compilation trigger an immediate TCP reset.
-* **Resolution**: Do not assume the service container has crashed. Poll process activity inside the container to monitor compilation progress:
+### 10.3 Transient Connection Resets or Startup Delays During Service Initialization
+* **Symptom**: Executing `curl -k https://localhost:8080/health` immediately after `docker compose up -d` returns `curl: (35) OpenSSL SSL_connect: Connection reset by peer` or `Connection refused`.
+* **Cause**: Production containers run static precompiled Go binaries (`/bin/service` compiled during multi-stage Docker builds from `golang:1.26-alpine`). Initial connection resets or startup delays occur because microservices wait for database container healthchecks (`saas-mongo` and `saas-redis`) or internal mTLS certificate initialization and TCP listener setup, not runtime binary compilation (which is used only in local development mode via `air`).
+* **Resolution**: Inspect container startup logs to confirm database connection establishment and TLS listener readiness:
   ```bash
-  docker compose exec <service-name> ps aux
+  docker compose logs -f api-gateway
   ```
-  Watch for active `compile` or `go build` processes. Once compilation finishes and `air` outputs server startup logs (`Server listening on port ...`), re-issue the health check request.
+  Look for log lines indicating successful MongoDB/Redis initialization and server startup (`Server listening on port 8080`).
+
+### 10.4 MongoDB Authentication Failure (`storedKey mismatch`) After Password Change
+* **Symptom**: Executing `docker compose up -d` fails with `dependency failed to start: container saas-mongo is unhealthy`, and container logs (`docker compose logs mongo`) display error `AuthenticationFailed: SCRAM authentication failed, storedKey mismatch`.
+* **Cause**: MongoDB processes environment variables `MONGO_INITDB_ROOT_USERNAME` and `MONGO_INITDB_ROOT_PASSWORD` exclusively during initial database initialization when the volume is created. Modifying `MONGO_INITDB_ROOT_PASSWORD` in `.env` after the persistent volume (`mongo_data`) already exists does not update the internal credentials stored inside MongoDB's `admin` database.
+* **Resolution**: Select one of the following remediation options depending on whether existing data must be preserved:
+  * **Option A: Re-initialize Volume (Non-Production / Dev Environments Only)**:
+    > [!WARNING]
+    > This operation permanently deletes all persistent database records stored in `mongo_data`.
+    ```bash
+    docker compose down -v
+    docker compose up -d
+    ```
+  * **Option B: In-Place Password Update via `mongosh` (Recommended for Existing Data)**:
+    1. Temporarily revert `MONGO_INITDB_ROOT_PASSWORD` in `.env` to the old working password.
+    2. Start the MongoDB container:
+       ```bash
+       docker compose up -d mongo
+       ```
+    3. Update the root password directly inside MongoDB using `mongosh`:
+       ```bash
+       docker compose exec mongo mongosh -u root -p "<OLD_PASSWORD>" --authenticationDatabase admin --eval 'db.getSiblingDB("admin").changeUserPassword("root", "<NEW_PASSWORD>")'
+       ```
+    4. Update `MONGO_INITDB_ROOT_PASSWORD` (and dependent `MONGO_URI` strings) in `.env` to `<NEW_PASSWORD>` and restart the application stack:
+       ```bash
+       docker compose up -d
+       ```
+
+### 10.5 Missing or Orphaned `saas-caddy` Container Causing Public Domain Outage
+* **Symptom**: Requests to the public domain (e.g. `curl https://api.logiclinkeg.tech/`) fail with `Could not connect to server` or `Connection refused`, even though direct requests to the API Gateway (`curl -k https://<VM_IP>:8080/health`) succeed. `docker compose ps` shows no `saas-caddy` container running or running without published port bindings (`80`/`443`).
+* **Cause**: Caddy was historically executed outside Docker Compose via an un-orchestrated `docker run` command (see ADR-0011). Manual containers are orphaned by `docker compose down` and are not automatically managed or recreated by Docker Compose commands if removed or stopped.
+* **Resolution**: Caddy is now fully integrated as a first-class service (`caddy`) in `docker-compose.yml` (per ADR-0011). Re-align the stack by executing:
+  ```bash
+  cd /opt/saas-platform
+  docker compose ps caddy
+  docker compose up -d --remove-orphans
+  ```
+  Confirm `saas-caddy` status shows `Up` with published ports `0.0.0.0:80->80/tcp` and `0.0.0.0:443->443/tcp`.
+
 
