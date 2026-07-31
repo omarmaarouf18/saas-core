@@ -4,17 +4,27 @@ This guide provides step-by-step instructions for deploying the Quick Delivery S
 
 ---
 
-## 1. Architecture Overview (Two-Repo Pipeline)
+## 1. Architecture Overview (Four-Repo Multi-Artifact Pipeline)
 
-The SaaS platform uses a clean two-repository deployment model to separate source code development from production cloud host execution:
+The SaaS platform uses a decoupled four-repository architecture to isolate source code development from production cloud deployment, mobile application distribution, and static marketing website publishing:
 
-1. **Development Repository (`omarmaarouf18/saas-core`)**:
-   - Contains all microservice source code, tests, database migrations, and CI workflows.
-   - Merging changes into the `main` branch automatically triggers GitHub Actions to build production Docker images (`prod` stage) for all 5 microservices, publish them to GitHub Container Registry (`ghcr.io`), and update the deployment repository with new image tags.
+1. **Monorepo / Source Repository (`omarmaarouf18/saas-core`)**:
+   - Primary monorepo containing all Go microservice source code, Flutter mobile app source code (`frontend/`), database migrations, test suites, and core CI/CD workflows.
+   - Merging changes into the `main` branch automatically triggers GitHub Actions to:
+     - Build production Docker images for all 5 microservices (`ghcr.io`) and update `saas-core-deploy`.
+     - Extract `frontend/` via `git subtree split` and force-push to `quick-delivery-mobile`.
 
-2. **Deployment Repository (`omarmaarouf18/saas-core-deploy`)**:
-   - Lightweight, deploy-only repository containing production `docker-compose.yml`, `.env.example`, `Caddyfile`, and certificate generation tooling.
-   - The production cloud host **only pulls from this repository**. No source code, Go compilers, or Flutter SDKs are present or required on the production host.
+2. **Backend VPS Deployment Repository (`omarmaarouf18/saas-core-deploy`)**:
+   - Deploy-only repository containing production `docker-compose.yml`, `.env.example`, `Caddyfile`, and certificate generation tooling.
+   - The production cloud host **only pulls from this repository**. No application source code, Go compilers, or Flutter SDKs are present or required on the production VPS host.
+
+3. **Mobile Application Repository (`omarmaarouf18/quick-delivery-mobile`)**:
+   - Standalone repository containing the extracted Flutter mobile codebase and APK release workflow (`build-apk.yml`).
+   - Receives automatic subtree sync pushes from `saas-core`. Pushing to `main` triggers automated Flutter release APK builds and GitHub Release creation.
+
+4. **Marketing Web Site Repository (`omarmaarouf18/logiclinc`)**:
+   - Company website repository deployed on Vercel (`logiclinkeg.tech`).
+   - Automatically receives release metadata updates (`app-release.json`) from `quick-delivery-mobile`'s APK release pipeline to present live download links to end users.
 
 ---
 

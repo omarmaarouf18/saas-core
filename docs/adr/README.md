@@ -38,5 +38,7 @@ When adding a new ADR, use the following template:
 *   [ADR-0007: Delivery and Shipping GPS Trail Settlement Reconciliation](0007-delivery-shipping-gps-reconciliation.md)
 *   [ADR-0008: Live Employee Map Tracking Architecture & Provider Selection](0008-live-employee-map-tracking.md)
 *   [ADR-0009: Atomic Compare-and-Swap Filter Guards for Negotiable Transport Pricing](0009-atomic-compare-and-swap-transport-pricing.md)
+*   [ADR-0010: Separate Repositories vs. Branches for Deployment Artifacts](0010-separate-repos-for-deployment-artifacts.md)
+
 
 

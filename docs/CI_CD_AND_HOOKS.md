@@ -102,36 +102,119 @@ The workflow contains two sequential jobs:
 
 ---
 
-## 4. End-to-End Operational Lifecycle
+## 4. Mobile Frontend Subtree Sync (`.github/workflows/sync-mobile-frontend.yml`)
+
+### Workflow Overview & Purpose
+`sync-mobile-frontend.yml` decouples the Flutter mobile application from the primary Go monorepo (`omarmaarouf18/saas-core`) by extracting the `frontend/` directory into a standalone repository (`omarmaarouf18/quick-delivery-mobile`).
+
+### Execution & Triggering
+- **Automatic Trigger**: Fires on `push` to `main` whenever changes touch `frontend/**` paths.
+- **Manual Trigger**: Can be manually executed anytime via `workflow_dispatch` on `main`.
+
+### Subtree Split Mechanism & Authentication
+1. **Checkout Repository**: Checks out `saas-core` with `fetch-depth: 0` (full history required for subtree splitting) and explicit `persist-credentials: false`.
+2. **Subtree Split**: Runs `git subtree split --prefix=frontend` to isolate `frontend/` history into a clean commit SHA.
+3. **Remote Force-Push**: Force-pushes the split SHA to `omarmaarouf18/quick-delivery-mobile:main` using:
+   ```bash
+   git push "https://x-access-token:${MOBILE_REPO_PAT}@github.com/omarmaarouf18/quick-delivery-mobile.git" "${SPLIT_SHA}:refs/heads/main" --force
+   ```
+
+### Consumed Secret & Required Scopes
+- **Secret Name**: `MOBILE_REPO_PAT`
+- **Repository Location**: Stored in `omarmaarouf18/saas-core` Actions secrets.
+- **Required Token Scopes**:
+  - **`Contents: Read and write`**: Required to force-push repository commits and branches to `quick-delivery-mobile`.
+  - **`Workflows: Read and write`**: **CRITICAL**. Required because `frontend/` contains `.github/workflows/build-apk.yml`. Pushing changes that modify files under `.github/workflows/` is rejected by GitHub API if the PAT lacks explicit workflow scope.
+
+---
+
+## 5. Standalone Mobile Build & Release Pipeline (`build-apk.yml`)
+
+### Workflow Location & Synchronization
+- **Source Location**: [frontend/.github/workflows/build-apk.yml](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/.github/workflows/build-apk.yml) in `saas-core`.
+- **Target Location**: Root `.github/workflows/build-apk.yml` in `omarmaarouf18/quick-delivery-mobile` (propagated automatically via `sync-mobile-frontend.yml`).
+
+### Pipeline Execution Steps
+1. **Trigger**: Fires on `push` to `main` (or `workflow_dispatch`) inside `quick-delivery-mobile`.
+2. **Toolchain Setup**: Configures Java JDK 17 (Temurin) and Flutter stable channel.
+3. **Build Release APK**: Executes `flutter build apk --release --dart-define=API_BASE_URL="${API_BASE_URL}"`.
+4. **Artifact Upload**: Uploads built APK as a run artifact (`app-release-<short_sha>`).
+5. **Create GitHub Release**: Uses `gh release create` to publish tag `app-release-<short_sha>` attached to `quick-delivery-mobile` with `app-release.apk`. Requires job permission `permissions: contents: write`.
+6. **Publish Release Info to Website**: Clones `omarmaarouf18/logiclinc` marketing website, updates `app-release.json` with version, live release URL, timestamp, and size in MB, then commits and pushes to `logiclinc:main`.
+
+### Consumed Secret
+- **Secret Name**: `LOGICLINC_REPO_PAT`
+- **Repository Location**: Stored in `omarmaarouf18/quick-delivery-mobile` Actions secrets (NOT `saas-core`).
+- **Required Token Scope**: `Contents: Read and write` on `omarmaarouf18/logiclinc`.
+
+---
+
+## 6. Secrets Inventory
+
+The platform relies on 3 dedicated Personal Access Tokens (PATs) across 4 repositories to enforce least-privilege scoping:
+
+| Secret Name | Repository Stored In | Consuming Workflow | Required Scopes / Permissions | Purpose & Target |
+| :--- | :--- | :--- | :--- | :--- |
+| `DEPLOY_REPO_PAT` | `omarmaarouf18/saas-core` | `.github/workflows/build-and-publish.yml` | `Contents: Read and write` on `saas-core-deploy` | Pushes updated microservice image tag references in `docker-compose.yml` to `saas-core-deploy:main`. |
+| `MOBILE_REPO_PAT` | `omarmaarouf18/saas-core` | `.github/workflows/sync-mobile-frontend.yml` | `Contents: Read and write`<br>`Workflows: Read and write` on `quick-delivery-mobile` | Force-pushes `frontend/` subtree to `quick-delivery-mobile:main`, including `.github/workflows/build-apk.yml`. |
+| `LOGICLINC_REPO_PAT` | `omarmaarouf18/quick-delivery-mobile` | `.github/workflows/build-apk.yml` (in `quick-delivery-mobile`) | `Contents: Read and write` on `logiclinc` | Updates `app-release.json` on `logiclinc:main` to publish live download links to Vercel site. |
+
+---
+
+## 7. End-to-End Operational Lifecycle
+
+The entire 4-repository trigger and data flow operates as follows:
 
 ```text
-[Developer Work]
-       │
-       ▼
-Push to 'logic-exploitation'  ──► Local Hook (.githooks/pre-push) runs (if make used)
-       │                                     │
-       ▼                                     ▼
-GitHub Actions CI (.github/workflows/ci.yml) validates build/vet/test/lint
-       │
-       ▼
-Pull Request / Merge to 'main'
-       │
-       ▼
-Push to 'main'  ──► Triggers .github/workflows/build-and-publish.yml
-                          │
-                          ├─► Builds 'prod' Docker images for 5 services
-                          ├─► Pushes images to ghcr.io (tagged by SHA & latest)
-                          └─► Updates docker-compose.yml in saas-core-deploy
-                                        │
-                                        ▼
-Production VPS Host  ──► cd /opt/saas-platform && git pull
-                          docker compose pull && docker compose up -d
+                     [ Developer Work ]
+                             │
+                             ▼
+              Push to 'logic-exploitation'
+                             │
+            (Local Pre-Push Hook: .githooks/pre-push)
+                             │
+                             ▼
+       GitHub Actions CI (.github/workflows/ci.yml)
+           (Lint, Go Mod Build/Test/Sec, Flutter)
+                             │
+                             ▼
+               Pull Request / Merge to 'main'
+                             │
+           ┌─────────────────┴─────────────────┐
+           ▼                                   ▼
+.github/workflows/build-and-publish.yml    .github/workflows/sync-mobile-frontend.yml
+  ├─► Build 5 GHCR Docker Images             ├─► `git subtree split --prefix=frontend`
+  └─► Update `docker-compose.yml`            └─► Force-push to `quick-delivery-mobile:main`
+      in `saas-core-deploy`                       (using MOBILE_REPO_PAT)
+           │                                           │
+           ▼                                           ▼
+   Production VPS Host                    .github/workflows/build-apk.yml
+   `git pull` &&                          (in `quick-delivery-mobile`)
+   `docker compose up -d`                             │
+                                                      ├─► Flutter Release APK Build
+                                                      ├─► `gh release create app-release-<sha>`
+                                                      └─► Push `app-release.json` update
+                                                          to `logiclinc:main`
+                                                          (using LOGICLINC_REPO_PAT)
+                                                               │
+                                                               ▼
+                                                      Vercel Production Web Site
+                                                      (logiclinkeg.tech auto-deploy)
 ```
 
 ---
 
-## 5. Known Limitations & Gotchas
+## 8. Known Limitations, Failure Modes & Gotchas
 
 1. **Local Hook Bypass Risk**: Fresh clones do not execute local hooks until `make setup`, `make ci`, or another make target invoking `ensure-hooks` is run.
 2. **GHCR Package Visibility & Host Auth**: Private GHCR images require `docker login ghcr.io -u <user> -p <PAT>` with `read:packages` scope on the production host. Setting GHCR package visibility to Public eliminates host authentication requirements.
 3. **Govulncheck Standard Library Warnings**: `.githooks/pre-push` prints warning messages for standard library vulnerabilities while blocking strictly on uncalled third-party package vulnerabilities.
+4. **Git Checkout Persisted Credentials Override (`sync-mobile-frontend.yml`)**:
+   - *Failure Mode*: `actions/checkout@v4` defaults to `persist-credentials: true`, injecting `GITHUB_TOKEN` into global git config (`http.extraheader`). This silently overrides embedded PAT credentials in `git push` URLs, resulting in `Permission denied to github-actions[bot]`.
+   - *Resolution*: Always include `persist-credentials: false` in `actions/checkout@v4` steps when performing cross-repo PAT authentication, and format push URLs as `https://x-access-token:${PAT}@github.com/owner/repo.git`.
+5. **Workflow Scope Rejection on Subtree Push (`MOBILE_REPO_PAT`)**:
+   - *Failure Mode*: Subtree pushing `frontend/` to `quick-delivery-mobile` updates `.github/workflows/build-apk.yml`. GitHub API rejects the push with `refusing to allow a Personal Access Token to create or update workflow ... without workflow scope` if `MOBILE_REPO_PAT` lacks `Workflows: Read and write` scope.
+   - *Resolution*: `MOBILE_REPO_PAT` must explicitly include both **`Contents: Read and write`** AND **`Workflows: Read and write`** scopes.
+6. **GitHub Release Creation Permission (`build-apk.yml`)**:
+   - *Failure Mode*: `gh release create` fails with `HTTP 403: Resource not accessible by integration` if the workflow job lacks write permissions for repository releases.
+   - *Resolution*: Include `permissions: contents: write` in the `build-apk` job definition.
