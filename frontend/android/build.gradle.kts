@@ -22,3 +22,16 @@ subprojects {
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
+
+subprojects {
+    val configureAndroid: Project.() -> Unit = {
+        extensions.findByType<com.android.build.gradle.BaseExtension>()?.let { android ->
+            android.compileSdkVersion(36)
+        }
+    }
+    if (state.executed) {
+        configureAndroid()
+    } else {
+        afterEvaluate { configureAndroid() }
+    }
+}
