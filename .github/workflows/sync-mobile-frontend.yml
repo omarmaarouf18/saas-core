@@ -53,7 +53,7 @@ jobs:
             exit 1
           fi
           echo "Force-pushing $SPLIT_SHA to omarmaarouf18/quick-delivery-mobile:main..."
-          git push "https://${MOBILE_REPO_PAT}@github.com/omarmaarouf18/quick-delivery-mobile.git" "${SPLIT_SHA}:refs/heads/main" --force || {
+          git push "https://x-access-token:${MOBILE_REPO_PAT}@github.com/omarmaarouf18/quick-delivery-mobile.git" "${SPLIT_SHA}:refs/heads/main" --force || {
             echo "Error: Failed to push subtree to quick-delivery-mobile."
             exit 1
           }
