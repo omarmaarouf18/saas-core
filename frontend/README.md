@@ -1,76 +1,103 @@
-# Quick Delivery Client — Flutter Frontend
+# Quick Delivery Platform — Flutter Mobile Client
 
-This directory contains the Flutter frontend application for the Quick Delivery platform.
+This repository contains the standalone Flutter mobile frontend for the Quick Delivery multi-tenant SaaS platform.
 
-## Prerequisites
-*   **Flutter SDK**: `>=3.0.0 <4.0.0`
-*   **Platform Toolchains**:
-    *   **Android**: Android Studio, Android SDK Build-Tools, and virtual emulator or physical device.
-    *   **iOS**: Xcode (macOS only) and CocoaPods for iOS build dependencies.
+> [!IMPORTANT]
+> **Source of Truth Note**:
+> This repository (`quick-delivery-mobile`) is automatically synced from the `frontend/` directory of the primary development repository ([omarmaarouf18/saas-core](https://github.com/omarmaarouf18/saas-core)) via an automated one-way push mirror workflow (`.github/workflows/sync-mobile-frontend.yml`).
+> **Do not make manual commits directly in this repository's `main` branch** — any direct commits will be overwritten during the next automated sync. All mobile application source code changes, bug fixes, and feature developments must be submitted inside `saas-core`'s `frontend/` directory.
 
-## Setup & Running
-1.  **Install dependencies**:
-    ```bash
-    flutter pub get
-    ```
-2.  **Run the application**:
-    Ensure you have an active emulator, device, or browser connected (check available devices via `flutter devices`), then run:
-    ```bash
-    flutter run
-    ```
-## Targeting Different Backend URLs
-The client points to the API gateway URL. By default, it targets:
-`https://localhost:8080/api/v1`
+---
 
-For detailed per-platform networking setup (including physical Android devices via `adb reverse`, iOS simulators, physical iOS devices, and clean rebuild steps), consult [CONNECTING_TO_BACKEND.md](CONNECTING_TO_BACKEND.md).
+## 1. Backend Connectivity & System Context
 
-### Method 1: Using compile-time environment definitions (Recommended)
-You can customize the base URL at run/build time using the `--dart-define` flag:
+This repository is **mobile-app-only**. All backend microservices, Go source code, MongoDB schemas, and infrastructure definitions live in external repositories:
+* **Backend Source Code**: [omarmaarouf18/saas-core](https://github.com/omarmaarouf18/saas-core) (contains `api-gateway`, `auth-service`, `chat-service`, `notification-service`, `user-service`).
+* **Production Deployment Infrastructure**: [omarmaarouf18/saas-core-deploy](https://github.com/omarmaarouf18/saas-core-deploy) (Docker Compose, Caddy TLS reverse proxy).
+
+The application communicates with the backend via the API Gateway REST and WebSocket endpoints. By default, production release builds target `https://api.logiclinkeg.tech/api/v1`.
+
+---
+
+## 2. Local Development Setup
+
+### Prerequisites
+* **Flutter SDK**: `>=3.0.0 <4.0.0` (Recommended: Flutter stable channel)
+* **Java JDK**: JDK 17 (e.g. Eclipse Temurin 17)
+* **Android Development**: Android Studio with Android SDK Platform 36 and Android SDK Command-line Tools installed.
+* **iOS Development**: macOS with Xcode and CocoaPods (for iOS targets).
+
+### Installation & Execution
+1. **Install dependencies**:
+   ```bash
+   flutter pub get
+   ```
+
+2. **Run the application**:
+   Ensure a connected device or active emulator is running (`flutter devices`), then run:
+   ```bash
+   flutter run
+   ```
+
+### Pointing at Custom Backend Environments
+The mobile client uses compile-time environment configuration (`String.fromEnvironment('API_BASE_URL', ...)`) defined in `lib/core/api_client.dart`. Customize the target API endpoint using `--dart-define`:
+
 ```bash
-# Android Studio AVD (Default Android emulator loopback)
+# Android Emulator (Default Android AVD loopback)
 flutter run --dart-define=API_BASE_URL=https://10.0.2.2:8080/api/v1
 
-# Genymotion emulator loopback
+# Genymotion Emulator loopback
 flutter run --dart-define=API_BASE_URL=https://10.0.3.2:8080/api/v1
+
+# Physical Device on local network
+flutter run --dart-define=API_BASE_URL=https://192.168.1.50:8080/api/v1
+
+# Custom Staging Environment
+flutter run --dart-define=API_BASE_URL=https://staging.yourdomain.com/api/v1
 ```
 
-### Method 2: Customizing construction argument
-Alternatively, customize the `baseUrl` parameter passed to `ApiClient` inside `lib/main.dart` or during initialization:
-```dart
-// Example targeting Genymotion loopback:
-final apiClient = ApiClient(baseUrl: 'https://10.0.3.2:8080/api/v1');
-```
+For detailed per-platform networking setups (including `adb reverse` port forwarding, iOS simulator loops, and dev-mode HTTPS certificate overrides), consult [CONNECTING_TO_BACKEND.md](CONNECTING_TO_BACKEND.md).
 
-## Platform Building
-To build production bundles, ensure your local environment contains the required platform-specific toolchains:
-*   **Android**: Compile the APK using `flutter build apk` (or `flutter build apk --debug` for development). Requires:
-    *   **JDK Version**: Java 17 JDK (e.g. Eclipse Temurin 17). Newer versions (like Java 25/26) can trigger compatibility issues during NDK linking.
-    *   **Android SDK**: `ANDROID_HOME` environment variable configured. Recommended setup:
-        *   Android SDK Command-line Tools: `14742923`
-        *   Build-tools version: `34.0.0`
-        *   Platform SDK version: `android-36` (required by Flutter Gradle Plugin defaults)
-        *   NDK version: `28.2.13676358` (automatically resolved)
-        *   CMake version: `3.22.1` (automatically resolved)
-    *   *Note*: The SDK path must not contain space characters, as it will break Gradle task compilation.
-*   **iOS**: Compile the IPA using `flutter build ipa` (or `flutter build ios --no-codesign` for simulator targets). Requires a macOS environment with Xcode and CocoaPods configured.
-*   **Web**: Compile a web production bundle using `flutter build web`.
+---
 
+## 3. Automated CI/CD & Release APKs
 
+This repository includes a continuous integration workflow (`.github/workflows/build-apk.yml`) that automatically compiles release APKs:
 
-## Development Security Overrides
-To support local development against self-signed HTTPS certificates, the application overrides Flutter's default HTTP trust validation in debug mode:
-*   **Safety**: Self-signed certificates are overridden using `DevHttpOverrides` which redirects `badCertificateCallback` to return `true` **only** if `kDebugMode` is active.
-*   **Release Isolation**: The bypass is entirely compiled out in profile/release builds, ensuring zero bypasses in production.
+1. **Trigger**: Executes automatically whenever new commits land on `main` (via automated sync from `saas-core`).
+2. **Build Configuration**: Compiles a release APK (`flutter build apk --release`) injecting `API_BASE_URL` from the GitHub repository variable `vars.API_BASE_URL` (defaulting to `https://api.logiclinkeg.tech/api/v1`).
+3. **Downloading Built APKs**:
+   - Navigate to the **Actions** tab in this GitHub repository.
+   - Click on the latest **Build Android APK** workflow run.
+   - Scroll down to the **Artifacts** section to download `app-release-<short_sha>.apk`.
+   - Production tagged releases are also published under **Releases**.
 
-## Foundational Shared Widget Library (`lib/widgets/`)
+Detailed CI/CD pipeline mechanics and sync architecture are documented in [docs/CI_CD.md](docs/CI_CD.md).
 
-All UI components must be built exclusively from the design system tokens defined in `lib/core/theme.dart` (`AppColors`, `AppSpacing`, `AppRadius`, `AppShadows`, `AppTypography`). Avoid hardcoded hex colors or raw `EdgeInsets`.
+---
 
-| Shared Widget | File Path | When to Use |
-|---|---|---|
-| `StatusBadge` | `lib/widgets/status_badge.dart` | Renders a canonical status badge with consistent color, label, and icon across all 6 job status types (`pending`, `awaiting_price_response`, `active`, `completed`, `cancelled`, `escrow_reconciliation_required`). Replaces all ad-hoc status color mappings. |
-| `EntityAvatar` | `lib/widgets/entity_avatar.dart` | Renders a circular avatar or user initials for users, employees, or customers. Handles missing/invalid images gracefully by falling back to name initials or a default icon. |
-| `InfoListTile` | `lib/widgets/info_list_tile.dart` | Standard list-row component with leading avatar/icon, title, subtitle/custom subtitle widget, and trailing action/status widgets. Used for notifications, ratings, job lists, and ledger entries. |
-| `StatCard` | `lib/widgets/stat_card.dart` | Metric display card showing a metric label, value, icon, and optional trend/subtitle badge. Used for dashboard overview cards (wallet balances, active job counts, rating averages). |
-| `ConfirmActionDialog` | `lib/widgets/confirm_action_dialog.dart` | Reusable modal confirmation dialog wrapper supporting title, message, confirm/cancel buttons, and destructive (`AppColors.error`) vs. standard (`AppColors.primary`) action styling. |
+## 4. Building Production Bundles Manually
 
+* **Android Release APK**:
+  ```bash
+  flutter build apk --release --dart-define=API_BASE_URL=https://api.yourdomain.com/api/v1
+  ```
+* **Android App Bundle (AAB for Google Play)**:
+  ```bash
+  flutter build appbundle --release
+  ```
+* **iOS IPA (macOS only)**:
+  ```bash
+  flutter build ipa --release
+  ```
+
+---
+
+## 5. UI Architecture & Design System
+
+All UI components adhere strictly to the design tokens declared in `lib/core/theme.dart` (`AppColors`, `AppSpacing`, `AppRadius`, `AppShadows`, `AppTypography`). Shared UI components reside under `lib/widgets/`:
+* `StatusBadge`: Renders canonical badge styling across all 6 job status types (`pending`, `awaiting_price_response`, `active`, `completed`, `cancelled`, `escrow_reconciliation_required`).
+* `EntityAvatar`: Fallback-safe user avatar rendering.
+* `InfoListTile`: Standardized list-row widget for notifications, ratings, and job entries.
+* `StatCard`: Dashboard metric card.
+* `ConfirmActionDialog`: Standard modal confirmation dialogs.
