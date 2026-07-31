@@ -101,3 +101,6 @@ All UI components adhere strictly to the design tokens declared in `lib/core/the
 * `InfoListTile`: Standardized list-row widget for notifications, ratings, and job entries.
 * `StatCard`: Dashboard metric card.
 * `ConfirmActionDialog`: Standard modal confirmation dialogs.
+
+<!-- Trigger sync workflow verification -->
+
