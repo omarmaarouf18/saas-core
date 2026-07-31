@@ -110,5 +110,12 @@ This file tracks historical entries for the primary category: **Documentation Ch
 - **Commit SHA**: ``43b2d35929350b5ca17fc897c73c363921a92480``
 - **Verification**: Verified via `make docs-check` passing all freshness and drift-catching tests cleanly. ✅
 
+## Four-Repository Ecosystem Onboarding Map & Production Troubleshooting Hardening
+
+- **Implementation Detail**: Authored `docs/REPOSITORY_MAP.md` providing a comprehensive onboarding map of the 4-repo architecture (`omarmaarouf18/saas-core`, `omarmaarouf18/saas-core-deploy`, `omarmaarouf18/quick-delivery-mobile`, `omarmaarouf18/logiclinc`) and production VM target (`quickdelivery-vm`). Includes a Mermaid pipeline trigger flowchart, PAT secret scope security matrix (`DEPLOY_REPO_PAT`, `MOBILE_REPO_PAT`, `LOGICLINC_REPO_PAT`), explicit branch deployment rules (`main` vs `logic-exploitation`), and an operator triage runbook. Updated `docs/DEPLOYMENT.md` §10 troubleshooting (correcting §10.3 to reflect static Go binary runtime, adding §10.4 MongoDB `storedKey mismatch` password change resolution, and §10.5 orphaned `saas-caddy` realign procedure). Updated `README.md` documentation index.
+- **Commit SHA**: ``fd751f5dc833511329360d6411265450781807b4``
+- **Verification**: Verified via `make ci` gate and `make docs-check`. ✅
+
+
 
 
