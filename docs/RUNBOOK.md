@@ -94,6 +94,25 @@ docker compose ps
 
 That's the entire loop: branch → CI green → merge to `main` → `build-and-publish` runs → `saas-core-deploy` updates → `git pull && docker compose pull && docker compose up -d` on the server.
 
+## 4.1 Optional: Mobile App Sync & Build (if `frontend/` changed)
+
+If the merge into `main` touched anything under `frontend/`, a separate
+pipeline handles the Flutter mobile client independently of the backend
+services above:
+
+1. `.github/workflows/sync-mobile-frontend.yml` (in `saas-core`) automatically
+   extracts `frontend/` via `git subtree split` and force-pushes it to the
+   standalone `omarmaarouf18/quick-delivery-mobile` repo.
+2. That push triggers `build-apk.yml` (in `quick-delivery-mobile`), which
+   compiles a release APK against `API_BASE_URL` and attaches it as a
+   downloadable artifact on the run.
+
+Full architecture, manual re-trigger instructions, and a troubleshooting table
+for common failures (missing `MOBILE_REPO_PAT` secret, missing target repo,
+permission errors) live in **[frontend/docs/CI_CD.md](../frontend/docs/CI_CD.md)**.
+This stage is independent of the server deployment above — a backend release
+and a mobile sync/build can succeed or fail on their own.
+
 ---
 
 ## 5. Rollback

@@ -197,6 +197,7 @@ The following documentation resources map the Quick Delivery platform architectu
 *   **[frontend/CONNECTING_TO_BACKEND.md](frontend/CONNECTING_TO_BACKEND.md)** — Per-platform network setup guide for connecting emulators and physical devices to the local backend.
 *   **[docs/frontend/STATUS.md](docs/frontend/STATUS.md)** — Current frontend phase completion progress and verified client capabilities.
 *   **[docs/frontend/ARCHITECTURE.md](docs/frontend/ARCHITECTURE.md)** — Technical design specifications of the client, state managers, directory layouts, and socket subscribers.
+*   **[frontend/docs/CI_CD.md](frontend/docs/CI_CD.md)** — Hot-swap sync pipeline mirroring `frontend/` to the standalone `quick-delivery-mobile` repo and its automated APK build/artifact workflow, including troubleshooting for common sync/build failures.
 
 
 
