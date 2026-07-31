@@ -241,7 +241,7 @@ This file tracks historical entries for the primary category: **Infrastructure &
 ## Containerized Caddy TLS Reverse Proxy Integration in Docker Compose Stack
 
 - **Implementation Detail**: Resolved the "Production Caddy Orphan Container Incident" where Caddy was running outside Docker Compose via an un-orchestrated manual `docker run` command on the production VM (`quickdelivery-vm`) and suffered proxy failures from loopback address targeting (`127.0.0.1:8080`). Added a `caddy` service block (`image: caddy:2-alpine`, `container_name: saas-caddy`, `restart: unless-stopped`, ports `80:80`/`443:443`/`443:443/udp`) to `infrastructure/docker-compose.yml` on `saas-net` network with `api-gateway:8080` upstream target and volume mounts (`./Caddyfile:/etc/caddy/Caddyfile:ro`, `caddy_data:/data`, `caddy_config:/config`). Updated `docs/DEPLOYMENT.md` to remove manual `docker run` instructions in favor of unified `docker compose up -d` stack management. Authored `docs/adr/0011-containerized-caddy-in-compose-stack.md`.
-- **Commit SHA**: `ef4bd21b7a0c2d1e721027c5d1852b77cf7b42c7`
+- **Commit SHA**: ``ef4bd21b7a0c2d1e721027c5d1852b77cf7b42c7``
 - **Verification**: Verified via `make ci` gate, `make docs-check`, and `docker compose config` syntax validation. ✅
 
 
