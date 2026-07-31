@@ -47,6 +47,44 @@ jobs:
           name: app-release-${{ steps.vars.outputs.short_sha }}
           path: build/app/outputs/flutter-apk/app-release.apk
 
+      - name: Create GitHub Release with APK
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="app-release-${{ steps.vars.outputs.short_sha }}"
+          gh release create "$TAG" build/app/outputs/flutter-apk/app-release.apk \
+            --repo omarmaarouf18/quick-delivery-mobile \
+            --title "App Release ${{ steps.vars.outputs.short_sha }}" \
+            --notes "Automated release built from commit ${{ steps.vars.outputs.short_sha }}"
+          echo "apk_url=https://github.com/omarmaarouf18/quick-delivery-mobile/releases/download/${TAG}/app-release.apk" >> "$GITHUB_OUTPUT"
+          SIZE_MB=$(du -m build/app/outputs/flutter-apk/app-release.apk | cut -f1)
+          echo "size_mb=${SIZE_MB}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish release info to logiclinkeg.tech website
+        env:
+          LOGICLINC_REPO_PAT: ${{ secrets.LOGICLINC_REPO_PAT }}
+        run: |
+          if [ -z "$LOGICLINC_REPO_PAT" ]; then
+            echo "Error: LOGICLINC_REPO_PAT secret is missing or empty."
+            exit 1
+          fi
+          git clone "https://x-access-token:${LOGICLINC_REPO_PAT}@github.com/omarmaarouf18/logiclinc.git" /tmp/logiclinc
+          cd /tmp/logiclinc
+          cat > app-release.json <<EOF
+          {
+            "version": "${{ steps.vars.outputs.short_sha }}",
+            "apk_url": "${{ steps.release.outputs.apk_url }}",
+            "build_date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "size_mb": "${{ steps.release.outputs.size_mb }}"
+          }
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add app-release.json
+          git commit -m "chore: update latest APK release info to ${{ steps.vars.outputs.short_sha }}" || echo "No changes to commit, skipping."
+          git push origin main
+
       - name: Add Job Summary
         run: |
           echo "### 📱 Android APK Build Complete" >> $GITHUB_STEP_SUMMARY
