@@ -26,8 +26,9 @@ jobs:
 
       - name: Install git-subtree
         run: |
-          curl -sSL https://raw.githubusercontent.com/git/git/master/contrib/subtree/git-subtree.sh | sudo tee /usr/libexec/git-core/git-subtree > /dev/null
-          sudo chmod +x /usr/libexec/git-core/git-subtree
+          GIT_EXEC_PATH=$(git --exec-path)
+          curl -sSL https://raw.githubusercontent.com/git/git/master/contrib/subtree/git-subtree.sh | sudo tee "${GIT_EXEC_PATH}/git-subtree" > /dev/null
+          sudo chmod +x "${GIT_EXEC_PATH}/git-subtree"
 
       - name: Perform Subtree Split
         id: subtree_split
