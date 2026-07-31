@@ -232,6 +232,13 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``bbdaaa6b508061e9300e154b8a347358898e064d``
 - **Verification**: Verified via local Docker `prod` stage builds, successful creation and initial commit push to `omarmaarouf18/saas-core-deploy` (`main` branch), `make docs-check`, and `.githooks/pre-push` gate passing 100%. ✅
 
+## Standalone Mobile Frontend Repository & Hot-Swap Auto-Sync Pipeline
+
+- **Implementation Detail**: Created dedicated private GitHub repository `omarmaarouf18/quick-delivery-mobile` for the Flutter mobile client, extracted from `frontend/` via `git subtree split --prefix=frontend` while preserving full commit history and authorship. Authored `frontend/README.md`, `frontend/docs/CI_CD.md`, and `frontend/.github/workflows/build-apk.yml` in `saas-core` (mapping to root files in `quick-delivery-mobile`). Added `.github/workflows/sync-mobile-frontend.yml` in `saas-core` triggering on push to `main` and `logic-exploitation` branches touching `frontend/**` to extract subtree split and force-push to `quick-delivery-mobile`'s `main` branch using secret `MOBILE_REPO_PAT`. Added `build-apk.yml` in `quick-delivery-mobile` compiling release APKs using `subosito/flutter-action` with `API_BASE_URL` variable injection (`vars.API_BASE_URL`) and attaching `app-release-<short_sha>.apk` build artifacts.
+- **Commit SHA**: ``21e98385dcfde99a14b0208427f4233560cf0e76``
+- **Verification**: Verified via `git subtree split`, initial remote push to `quick-delivery-mobile`, `make docs-check`, and `.githooks/pre-push` gate passing 100%. ✅
+
+
 
 
 

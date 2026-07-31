@@ -104,4 +104,11 @@ This file tracks historical entries for the primary category: **Documentation Ch
 - **Commit SHA**: ``4b78b2c51ce7350952c8c6a684cb83821a64fb2b``
 - **Verification**: Verified via `make docs-check` and `.githooks/pre-push` gate (100% pass). ✅
 
+## Azure VM Production Deployment & Reverse Proxy Setup (DEPLOYMENT.md)
+
+- **Implementation Detail**: Updated `docs/DEPLOYMENT.md` to reflect real production deployment on Azure VM with a custom domain using the two-repo pipeline model. Added Microsoft Azure cloud-specific provisioning section (`Standard_B2s_v2` SKU sizing, NSG inbound rules for SSH/HTTP/HTTPS/API Gateway, Azure Policy region assignment discovery), containerized Caddy Docker Compose sibling option (`docker-compose.caddy.yml`, `network_mode: host`), Custom Domain & DNS configuration notes (Vercel DNS panel distinction vs platform domain assignment, 1-2h propagation verification with `nslookup`/dnschecker.org), and a dedicated Troubleshooting section (stale container name conflicts, missing `--env-file .env`, `curl` (35) connection resets during `air` cold compilation).
+- **Commit SHA**: ``43b2d35929350b5ca17fc897c73c363921a92480``
+- **Verification**: Verified via `make docs-check` passing all freshness and drift-catching tests cleanly. ✅
+
+
 

@@ -1,0 +1,58 @@
+name: Sync Mobile Frontend
+
+on:
+  push:
+    branches:
+      - main
+      - logic-exploitation
+    paths:
+      - 'frontend/**'
+  workflow_dispatch:
+
+jobs:
+  sync-frontend:
+    name: Sync Frontend to quick-delivery-mobile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git Identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install git-subtree
+        run: |
+          curl -sSL https://raw.githubusercontent.com/git/git/master/contrib/subtree/git-subtree.sh | sudo tee /usr/libexec/git-core/git-subtree > /dev/null
+          sudo chmod +x /usr/libexec/git-core/git-subtree
+
+      - name: Perform Subtree Split
+        id: subtree_split
+        run: |
+          echo "Extracting frontend subtree..."
+          SPLIT_SHA=$(git subtree split --prefix=frontend)
+          if [ -z "$SPLIT_SHA" ]; then
+            echo "Error: git subtree split produced an empty commit SHA."
+            exit 1
+          fi
+          echo "Subtree split successful: $SPLIT_SHA"
+          echo "SPLIT_SHA=$SPLIT_SHA" >> $GITHUB_OUTPUT
+
+      - name: Push to quick-delivery-mobile
+        env:
+          MOBILE_REPO_PAT: ${{ secrets.MOBILE_REPO_PAT }}
+          SPLIT_SHA: ${{ steps.subtree_split.outputs.SPLIT_SHA }}
+        run: |
+          if [ -z "$MOBILE_REPO_PAT" ]; then
+            echo "Error: MOBILE_REPO_PAT secret is missing or empty."
+            exit 1
+          fi
+          echo "Force-pushing $SPLIT_SHA to omarmaarouf18/quick-delivery-mobile:main..."
+          git push "https://${MOBILE_REPO_PAT}@github.com/omarmaarouf18/quick-delivery-mobile.git" "${SPLIT_SHA}:refs/heads/main" --force || {
+            echo "Error: Failed to push subtree to quick-delivery-mobile."
+            exit 1
+          }
+          echo "Successfully synced frontend to quick-delivery-mobile main branch."

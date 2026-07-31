@@ -1,0 +1,57 @@
+name: Build Release APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Release APK
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL || 'https://api.logiclinkeg.tech/api/v1' }}
+        run: |
+          flutter build apk --release --dart-define=API_BASE_URL="${API_BASE_URL}"
+
+      - name: Determine Short SHA
+        id: vars
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-${{ steps.vars.outputs.short_sha }}
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Add Job Summary
+        run: |
+          echo "### 📱 Android APK Build Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact Name**: \`app-release-${{ steps.vars.outputs.short_sha }}.apk\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${{ steps.vars.outputs.short_sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **API Base URL**: \`${{ vars.API_BASE_URL || 'https://api.logiclinkeg.tech/api/v1' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download the APK artifact directly from the **Artifacts** section at the bottom of this workflow run page." >> $GITHUB_STEP_SUMMARY
