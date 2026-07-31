@@ -254,6 +254,27 @@ services:
     networks:
       - saas-net
 
+  # ---------------------------------------------------------------------------
+  # TLS Reverse Proxy (Caddy)
+  # ---------------------------------------------------------------------------
+  caddy:
+    image: caddy:2-alpine
+    container_name: saas-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - saas-net
+    depends_on:
+      api-gateway:
+        condition: service_started
+
 
 # ---------------------------------------------------------------------------
 # Persistent Volumes
@@ -263,6 +284,10 @@ volumes:
     driver: local
   redis_data:
     driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
 
 # ---------------------------------------------------------------------------
 # Network
@@ -270,3 +295,4 @@ volumes:
 networks:
   saas-net:
     driver: bridge
+

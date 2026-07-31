@@ -248,53 +248,16 @@ When developer changes are pushed to `main` in `saas-core`:
 
 Production HTTPS traffic should be terminated via Caddy, which automatically obtains and renews TLS certificates via Let's Encrypt / ACME HTTP-01 challenges.
 
-### Step 8.1: Reverse Proxy (Caddy) Options
+### Step 8.1: Reverse Proxy (Caddy) Architecture
 
-#### Option A: Host-Native Caddy Package
-Install Caddy natively on the Linux host system:
-```bash
-sudo apt update && sudo apt install -y caddy
-```
+Caddy is integrated directly into `docker-compose.yml` as a first-class service (`saas-caddy`). It runs on the internal `saas-net` Docker network alongside `api-gateway`, exposing public ports 80 and 443 (and 443/udp for HTTP/3).
 
-Configure `/etc/caddy/Caddyfile`:
+#### 1. Deployment `Caddyfile` Configuration
+Place the production `Caddyfile` in the root of the deployment directory (`/opt/saas-platform/Caddyfile`):
+
 ```caddy
-api.yourdomain.com {
-    reverse_proxy https://127.0.0.1:8080 {
-        transport http {
-            tls_insecure_skip_verify
-        }
-    }
-}
-```
-Reload Caddy service: `sudo systemctl reload caddy`
-
-#### Option B: Containerized Caddy via Docker Compose (Sibling Container)
-Alternatively, run Caddy as a containerized sibling service using `docker-compose.caddy.yml` with host networking mode (`network_mode: host`):
-
-1. **`docker-compose.caddy.yml`**:
-```yaml
-version: '3.8'
-
-services:
-  caddy:
-    image: caddy:2-alpine
-    container_name: saas-caddy
-    restart: always
-    network_mode: host
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
-
-volumes:
-  caddy_data:
-  caddy_config:
-```
-
-2. **`Caddyfile`** (placed in the root of the deployment directory):
-```caddy
-api.yourdomain.com {
-    reverse_proxy https://127.0.0.1:8080 {
+api.logiclinkeg.tech {
+    reverse_proxy https://api-gateway:8080 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -302,13 +265,12 @@ api.yourdomain.com {
 }
 ```
 
-3. **Start Caddy Stack**:
-```bash
-docker compose -f docker-compose.yml -f docker-compose.caddy.yml --env-file .env up -d
-```
+> [!IMPORTANT]
+> **Internal Service Name Resolution**:
+> The `reverse_proxy` target must be set to `https://api-gateway:8080` (not `127.0.0.1:8080`). Over the `saas-net` bridge network, `127.0.0.1` resolves to the `saas-caddy` container itself rather than the `api-gateway` container, leading to routing failures.
 
-> [!NOTE]
-> When using `network_mode: host`, specifying explicit `ports:` mappings (e.g. `- "80:80"`, `- "443:443"`) inside `docker-compose.caddy.yml` causes Docker Compose to ignore the `ports:` block and output a harmless warning: `published port can't be established in host networking mode`. In host network mode, Caddy binds directly to host interfaces on ports 80 and 443.
+#### 2. Automatic Lifecycle Management
+Because Caddy is defined as a service in `docker-compose.yml`, running `docker compose up -d` handles container creation, networking, port binding, and automatic restart (`restart: unless-stopped`). ACME certificates issued by Let's Encrypt are persisted across container restarts using the named volume `caddy_data:/data`.
 
 ---
 
