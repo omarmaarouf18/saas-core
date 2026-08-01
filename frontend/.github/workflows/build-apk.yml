@@ -64,15 +64,24 @@ jobs:
           SIZE_MB=$(du -m build/app/outputs/flutter-apk/app-release.apk | cut -f1)
           echo "size_mb=${SIZE_MB}" >> "$GITHUB_OUTPUT"
 
+      - name: Generate GitHub App token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: omarmaarouf18
+          repositories: logiclinc
+
       - name: Publish release info to logiclinkeg.tech website
         env:
-          LOGICLINC_REPO_PAT: ${{ secrets.LOGICLINC_REPO_PAT }}
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          if [ -z "$LOGICLINC_REPO_PAT" ]; then
-            echo "Error: LOGICLINC_REPO_PAT secret is missing or empty."
+          if [ -z "$APP_TOKEN" ]; then
+            echo "Error: APP_TOKEN is missing or empty."
             exit 1
           fi
-          git clone "https://x-access-token:${LOGICLINC_REPO_PAT}@github.com/omarmaarouf18/logiclinc.git" /tmp/logiclinc
+          git clone "https://x-access-token:${APP_TOKEN}@github.com/omarmaarouf18/logiclinc.git" /tmp/logiclinc
           cd /tmp/logiclinc
           cat > app-release.json <<EOF
           {

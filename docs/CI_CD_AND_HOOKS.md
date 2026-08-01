@@ -92,7 +92,8 @@ The workflow contains two sequential jobs:
 
 2. **`update-deployment-repo` Job**:
    - Runs after `build-and-publish` completes.
-   - Checks out the private deployment repository `omarmaarouf18/saas-core-deploy` using secret token `DEPLOY_REPO_PAT`.
+   - Generates a short-lived GitHub App installation token via `actions/create-github-app-token@v1` (using secrets `APP_ID` and `APP_PRIVATE_KEY`) scoped strictly to `saas-core-deploy`.
+   - Checks out the private deployment repository `omarmaarouf18/saas-core-deploy` using the generated installation token.
    - Replaces image tag references in `saas-core-deploy`'s `docker-compose.yml` with the current commit SHA.
    - Commits and pushes the updated `docker-compose.yml` to `saas-core-deploy` `main` branch.
 
@@ -109,22 +110,22 @@ The workflow contains two sequential jobs:
 
 ### Execution & Triggering
 - **Automatic Trigger**: Fires on `push` to `main` whenever changes touch `frontend/**` paths.
-- **Manual Trigger**: Can be manually executed anytime via `workflow_dispatch` on `main`.
+- **Manual Trigger**: Can be manually executed anytime via `workflow_dispatch` on `main` or `logic-exploitation`.
 
 ### Subtree Split Mechanism & Authentication
 1. **Checkout Repository**: Checks out `saas-core` with `fetch-depth: 0` (full history required for subtree splitting) and explicit `persist-credentials: false`.
 2. **Subtree Split**: Runs `git subtree split --prefix=frontend` to isolate `frontend/` history into a clean commit SHA.
-3. **Remote Force-Push**: Force-pushes the split SHA to `omarmaarouf18/quick-delivery-mobile:main` using:
+3. **App Token Generation & Remote Force-Push**: Generates a short-lived GitHub App installation token via `actions/create-github-app-token@v1` scoped strictly to `quick-delivery-mobile`, and force-pushes the split SHA to `omarmaarouf18/quick-delivery-mobile:main` using:
    ```bash
-   git push "https://x-access-token:${MOBILE_REPO_PAT}@github.com/omarmaarouf18/quick-delivery-mobile.git" "${SPLIT_SHA}:refs/heads/main" --force
+   git push "https://x-access-token:${APP_TOKEN}@github.com/omarmaarouf18/quick-delivery-mobile.git" "${SPLIT_SHA}:refs/heads/main" --force
    ```
 
-### Consumed Secret & Required Scopes
-- **Secret Name**: `MOBILE_REPO_PAT`
+### Consumed Secrets & Required Scopes
+- **Primary Secrets**: `APP_ID` and `APP_PRIVATE_KEY` (GitHub App `quick-delivery-automation`).
 - **Repository Location**: Stored in `omarmaarouf18/saas-core` Actions secrets.
-- **Required Token Scopes**:
+- **Required App Installation Permissions**:
   - **`Contents: Read and write`**: Required to force-push repository commits and branches to `quick-delivery-mobile`.
-  - **`Workflows: Read and write`**: **CRITICAL**. Required because `frontend/` contains `.github/workflows/build-apk.yml`. Pushing changes that modify files under `.github/workflows/` is rejected by GitHub API if the PAT lacks explicit workflow scope.
+  - **`Workflows: Read and write`**: **CRITICAL**. Required because `frontend/` contains `.github/workflows/build-apk.yml`. Pushing changes that modify files under `.github/workflows/` is rejected by GitHub API if the installation token lacks explicit workflow permissions.
 
 ---
 
@@ -140,24 +141,26 @@ The workflow contains two sequential jobs:
 3. **Build Release APK**: Executes `flutter build apk --release --dart-define=API_BASE_URL="${API_BASE_URL}"`.
 4. **Artifact Upload**: Uploads built APK as a run artifact (`app-release-<short_sha>`).
 5. **Create GitHub Release**: Uses `gh release create` to publish tag `app-release-<short_sha>` attached to `quick-delivery-mobile` with `app-release.apk`. Requires job permission `permissions: contents: write`.
-6. **Publish Release Info to Website**: Clones `omarmaarouf18/logiclinc` marketing website, updates `app-release.json` with version, live release URL, timestamp, and size in MB, then commits and pushes to `logiclinc:main`.
+6. **Publish Release Info to Website**: Generates a short-lived GitHub App installation token via `actions/create-github-app-token@v1` (scoped to `logiclinc`), clones `omarmaarouf18/logiclinc` marketing website, updates `app-release.json` with version, live release URL, timestamp, and size in MB, then commits and pushes to `logiclinc:main`.
 
-### Consumed Secret
-- **Secret Name**: `LOGICLINC_REPO_PAT`
-- **Repository Location**: Stored in `omarmaarouf18/quick-delivery-mobile` Actions secrets (NOT `saas-core`).
-- **Required Token Scope**: `Contents: Read and write` on `omarmaarouf18/logiclinc`.
+### Consumed Secrets
+- **Primary Secrets**: `APP_ID` and `APP_PRIVATE_KEY` (GitHub App `quick-delivery-automation`).
+- **Repository Location**: Stored in `omarmaarouf18/quick-delivery-mobile` Actions secrets (and `saas-core`).
+- **Required App Installation Scope**: `Contents: Read and write` on `omarmaarouf18/logiclinc`.
 
 ---
 
 ## 6. Secrets Inventory
 
-The platform relies on 3 dedicated Personal Access Tokens (PATs) across 4 repositories to enforce least-privilege scoping:
+The platform uses GitHub App installation tokens generated on-the-fly via `actions/create-github-app-token@v1` using App ID and Private Key secrets across repositories:
 
-| Secret Name | Repository Stored In | Consuming Workflow | Required Scopes / Permissions | Purpose & Target |
+| Secret Name | Repository Stored In | Consuming Workflows | Purpose & Scopes | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| `DEPLOY_REPO_PAT` | `omarmaarouf18/saas-core` | `.github/workflows/build-and-publish.yml` | `Contents: Read and write` on `saas-core-deploy` | Pushes updated microservice image tag references in `docker-compose.yml` to `saas-core-deploy:main`. |
-| `MOBILE_REPO_PAT` | `omarmaarouf18/saas-core` | `.github/workflows/sync-mobile-frontend.yml` | `Contents: Read and write`<br>`Workflows: Read and write` on `quick-delivery-mobile` | Force-pushes `frontend/` subtree to `quick-delivery-mobile:main`, including `.github/workflows/build-apk.yml`. |
-| `LOGICLINC_REPO_PAT` | `omarmaarouf18/quick-delivery-mobile` | `.github/workflows/build-apk.yml` (in `quick-delivery-mobile`) | `Contents: Read and write` on `logiclinc` | Updates `app-release.json` on `logiclinc:main` to publish live download links to Vercel site. |
+| `APP_ID` | `omarmaarouf18/saas-core`<br>`omarmaarouf18/quick-delivery-mobile` | All workflows (`build-and-publish`, `sync-mobile-frontend`, `build-apk`) | GitHub App ID for `quick-delivery-automation`. Used to mint short-lived installation tokens. | **Active (Primary)** |
+| `APP_PRIVATE_KEY` | `omarmaarouf18/saas-core`<br>`omarmaarouf18/quick-delivery-mobile` | All workflows (`build-and-publish`, `sync-mobile-frontend`, `build-apk`) | RSA Private Key for `quick-delivery-automation`. Used to mint short-lived installation tokens. | **Active (Primary)** |
+| `DEPLOY_REPO_PAT` | `omarmaarouf18/saas-core` | `.github/workflows/build-and-publish.yml` | `Contents: Read and write` on `saas-core-deploy` | *Deprecated fallback, scheduled for removal.* |
+| `MOBILE_REPO_PAT` | `omarmaarouf18/saas-core` | `.github/workflows/sync-mobile-frontend.yml` | `Contents: Read and write`, `Workflows: Read and write` on `quick-delivery-mobile` | *Deprecated fallback, scheduled for removal.* |
+| `LOGICLINC_REPO_PAT` | `omarmaarouf18/quick-delivery-mobile` | `.github/workflows/build-apk.yml` | `Contents: Read and write` on `logiclinc` | *Deprecated fallback, scheduled for removal.* |
 
 ---
 

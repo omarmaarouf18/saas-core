@@ -51,3 +51,14 @@ We formally adopted a decoupled **Four-Repository Multi-Artifact Deployment Arch
 - **Increased Credential Management Overhead**: Requires managing and periodically rotating 3 separate Personal Access Tokens (`DEPLOY_REPO_PAT`, `MOBILE_REPO_PAT`, `LOGICLINC_REPO_PAT`) across 4 repositories.
 - **Risk of Silent Workflow Drift**: Upstream sync workflows can silently fail or drift out of date if PAT permissions expire or fail silently, leaving consumer repositories running stale workflow definitions until audited.
 - **Increased Debugging Complexity**: Tracing cross-repository deployment failures requires inspecting logs across multiple GitHub Actions runners across distinct repositories.
+
+---
+
+### Follow-Up Note (2026-08-01): Migration from Long-Lived PATs to GitHub App Installation Tokens
+
+To resolve the credential management overhead and blast-radius risks of long-lived Personal Access Tokens (highlighted during the secret exposure incident referenced above), we migrated all multi-repository workflows (`build-and-publish.yml`, `sync-mobile-frontend.yml`, and `build-apk.yml`) to GitHub App authentication using `quick-delivery-automation`.
+
+1. **Short-Lived Installation Tokens**: Instead of storing static PATs, workflows use `actions/create-github-app-token@v1` with repository secrets `APP_ID` and `APP_PRIVATE_KEY` to mint short-lived (1 hour expiry) installation tokens on demand.
+2. **Repository & Permission Scoping**: Each installation token is strictly scoped to the exact target repository needed by that step (`saas-core-deploy`, `quick-delivery-mobile`, or `logiclinc`), preventing a leak in one workflow step from compromising other organization resources.
+3. **Account Decoupling**: Tokens are tied to the GitHub App `quick-delivery-automation` rather than a personal developer account, ensuring automation remains functional regardless of individual developer account changes.
+4. **Fallback & Deprecation Policy**: Legacy secrets (`DEPLOY_REPO_PAT`, `MOBILE_REPO_PAT`, `LOGICLINC_REPO_PAT`) are retained temporarily as deprecated fallbacks until live App-token workflow executions are verified, at which point they will be removed.

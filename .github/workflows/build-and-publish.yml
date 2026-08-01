@@ -59,11 +59,20 @@ jobs:
     needs: build-and-publish
     runs-on: ubuntu-latest
     steps:
+      - name: Generate GitHub App token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: omarmaarouf18
+          repositories: saas-core-deploy
+
       - name: Checkout Deployment Repository
         uses: actions/checkout@v4
         with:
           repository: ${{ github.repository_owner }}/saas-core-deploy
-          token: ${{ secrets.DEPLOY_REPO_PAT }}
+          token: ${{ steps.app-token.outputs.token }}
           ref: main
 
       - name: Update Service Image Tags in docker-compose.yml

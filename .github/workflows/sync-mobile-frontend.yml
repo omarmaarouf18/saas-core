@@ -43,17 +43,26 @@ jobs:
           echo "Subtree split successful: $SPLIT_SHA"
           echo "SPLIT_SHA=$SPLIT_SHA" >> $GITHUB_OUTPUT
 
+      - name: Generate GitHub App token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: omarmaarouf18
+          repositories: quick-delivery-mobile
+
       - name: Push to quick-delivery-mobile
         env:
-          MOBILE_REPO_PAT: ${{ secrets.MOBILE_REPO_PAT }}
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
           SPLIT_SHA: ${{ steps.subtree_split.outputs.SPLIT_SHA }}
         run: |
-          if [ -z "$MOBILE_REPO_PAT" ]; then
-            echo "Error: MOBILE_REPO_PAT secret is missing or empty."
+          if [ -z "$APP_TOKEN" ]; then
+            echo "Error: APP_TOKEN is missing or empty."
             exit 1
           fi
           echo "Force-pushing $SPLIT_SHA to omarmaarouf18/quick-delivery-mobile:main..."
-          git push "https://x-access-token:${MOBILE_REPO_PAT}@github.com/omarmaarouf18/quick-delivery-mobile.git" "${SPLIT_SHA}:refs/heads/main" --force || {
+          git push "https://x-access-token:${APP_TOKEN}@github.com/omarmaarouf18/quick-delivery-mobile.git" "${SPLIT_SHA}:refs/heads/main" --force || {
             echo "Error: Failed to push subtree to quick-delivery-mobile."
             exit 1
           }
