@@ -6,6 +6,7 @@ import '../providers/owner_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
+import '../utils/logout_helper.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/stat_card.dart';
 import 'login_screen.dart';
@@ -134,13 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(Icons.logout),
               tooltip: "Logout",
               onPressed: () async {
-                await auth.logout();
-                if (context.mounted) {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                        builder: (context) => const LoginScreen()),
-                  );
-                }
+                await logoutAndClearProviders(context);
               },
             ),
           ],
@@ -227,12 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.logout),
             tooltip: "Logout",
             onPressed: () async {
-              await auth.logout();
-              if (context.mounted) {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              }
+              await logoutAndClearProviders(context);
             },
           ),
         ],

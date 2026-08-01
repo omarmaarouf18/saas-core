@@ -8,6 +8,7 @@ import '../widgets/themed_text_field.dart';
 import 'signup_screen.dart';
 import 'otp_screen.dart';
 import 'home_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -136,7 +137,28 @@ class _LoginScreenState extends State<LoginScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: AppSpacing.lg),
+                        const SizedBox(height: AppSpacing.xs),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const ForgotPasswordScreen(),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              "Forgot password?",
+                              style: AppTypography.bodyMd.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
                         PrimaryButton(
                           text: "LOG IN",
                           isLoading: auth.isLoading,

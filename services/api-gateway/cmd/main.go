@@ -84,7 +84,7 @@ func main() {
 	// ---- Register reverse proxy routes ----
 	for _, route := range cfg.Routes {
 		resilientTransport := resilience.NewRoundTripper(clientTransport, route.Prefix, 2, 5*time.Second)
-		handler, err := proxy.New(route, cfg.GatewaySecret, resilientTransport)
+		handler, err := proxy.New(route, cfg.GatewaySecret, cfg.TrustedProxyIPs, resilientTransport)
 		if err != nil {
 			log.Fatalf("Failed to create proxy for %s: %v", route.Prefix, err)
 		}
@@ -94,7 +94,7 @@ func main() {
 
 	// ---- Wrap with global rate limiting and logging middleware ----
 	rl := ratelimit.NewRateLimiter(redisClient, 100, 1*time.Minute, "gateway")
-	limiter := middleware.NewRateLimiter(rl)
+	limiter := middleware.NewRateLimiter(rl, cfg.TrustedProxyIPs)
 	rateLimited := middleware.RateLimit(limiter)(mux)
 	logged := middleware.Logging(cfg.AllowedOrigin)(rateLimited)
 

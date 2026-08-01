@@ -10,19 +10,12 @@ import (
 	"strings"
 
 	"github.com/project/gateway/internal/config"
+	"github.com/project/gateway/internal/iputil"
 )
 
 // New creates an http.Handler that reverse-proxies requests matching
 // the given ServiceRoute to its target backend.
-//
-// Path rewriting: only the API version prefix (StripPrefix) is removed,
-// preserving each service's domain namespace:
-//
-//   - Gateway receives:  /api/v1/auth/signup
-//   - Backend receives:  /auth/signup
-//
-// This lets each backend service own its own URL namespace cleanly.
-func New(route config.ServiceRoute, gatewaySecret string, transport http.RoundTripper) (http.Handler, error) {
+func New(route config.ServiceRoute, gatewaySecret string, trustedProxies []string, transport http.RoundTripper) (http.Handler, error) {
 	target, err := url.Parse(route.Target)
 	if err != nil {
 		return nil, fmt.Errorf("proxy: invalid target URL %q for %s: %w",
@@ -47,7 +40,24 @@ func New(route config.ServiceRoute, gatewaySecret string, transport http.RoundTr
 
 			// Preserve the original path in a header for backend observability.
 			req.Header.Set("X-Forwarded-Prefix", route.Prefix)
-			req.Header.Set("X-Forwarded-For", req.RemoteAddr)
+
+			// Trust Chain Hop 1 (Caddy -> api-gateway):
+			// api-gateway only trusts X-Forwarded-For if the immediate connection (req.RemoteAddr)
+			// comes from a trusted proxy IP/CIDR in TRUSTED_PROXY_IPS (default 127.0.0.1, ::1).
+			// If untrusted (direct client bypass/spoof), api-gateway overwrites X-Forwarded-For
+			// with req.RemoteAddr to prevent client IP spoofing attacks.
+			immediateIP := iputil.ExtractIP(req.RemoteAddr)
+			existingXFF := req.Header.Get("X-Forwarded-For")
+
+			if iputil.IsTrustedProxy(immediateIP, trustedProxies) && existingXFF != "" {
+				// Trusted proxy with existing XFF chain: preserve existing XFF chain.
+				// Note: httputil.ReverseProxy automatically appends immediateIP onto X-Forwarded-For.
+				req.Header.Set("X-Forwarded-For", existingXFF)
+			} else {
+				// Untrusted connection or missing XFF: overwrite with RemoteAddr (hardened behavior)
+				req.Header.Set("X-Forwarded-For", req.RemoteAddr)
+			}
+
 			req.Header.Set("X-Gateway-Secret", gatewaySecret)
 		},
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {

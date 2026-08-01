@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -28,6 +29,15 @@ class ApiClient {
   late final http.Client _client;
   String? _jwtToken;
 
+  /// Callback fired when a token is successfully refreshed during HTTP 401 retry.
+  Future<void> Function(String newToken)? onTokenRefreshed;
+
+  /// Callback fired when token refresh fails or session is expired (>7 days / frozen).
+  Future<void> Function()? onAuthFailed;
+
+  bool _isRefreshing = false;
+  Completer<String?>? _refreshCompleter;
+
   ApiClient({
     this.baseUrl = const String.fromEnvironment(
       'API_BASE_URL',
@@ -44,25 +54,36 @@ class ApiClient {
     _jwtToken = token;
   }
 
-  Map<String, String> _getHeaders() {
+  String? get currentToken => _jwtToken;
+
+  Map<String, String> _getHeaders({String? overrideToken}) {
     final headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
-    if (_jwtToken != null) {
-      headers['Authorization'] = 'Bearer $_jwtToken';
+    final tokenToUse = overrideToken ?? _jwtToken;
+    if (tokenToUse != null && tokenToUse.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $tokenToUse';
     }
     return headers;
   }
 
-  Future<dynamic> post(String path, Map<String, dynamic> body) async {
+  Future<dynamic> post(
+    String path,
+    Map<String, dynamic> body, {
+    bool isRetry = false,
+  }) async {
     try {
       final response = await _client.post(
         Uri.parse('$baseUrl$path'),
         headers: _getHeaders(),
         body: jsonEncode(body),
       );
-      return _handleResponse(response);
+      return await _handleResponse(
+        response,
+        onRetry: isRetry ? null : () => post(path, body, isRetry: true),
+        path: path,
+      );
     } catch (e) {
       if (e is ApiClientException) rethrow;
       throw ApiClientException(
@@ -70,7 +91,11 @@ class ApiClient {
     }
   }
 
-  Future<dynamic> get(String path, {Map<String, String>? queryParams}) async {
+  Future<dynamic> get(
+    String path, {
+    Map<String, String>? queryParams,
+    bool isRetry = false,
+  }) async {
     try {
       var uri = Uri.parse('$baseUrl$path');
       if (queryParams != null) {
@@ -80,7 +105,13 @@ class ApiClient {
         uri,
         headers: _getHeaders(),
       );
-      return _handleResponse(response);
+      return await _handleResponse(
+        response,
+        onRetry: isRetry
+            ? null
+            : () => get(path, queryParams: queryParams, isRetry: true),
+        path: path,
+      );
     } catch (e) {
       if (e is ApiClientException) rethrow;
       throw ApiClientException(
@@ -93,12 +124,12 @@ class ApiClient {
     required String fieldName,
     required List<int> fileBytes,
     required String filename,
+    bool isRetry = false,
   }) async {
     try {
       final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
-      if (_jwtToken != null) {
-        request.headers['Authorization'] = 'Bearer $_jwtToken';
-      }
+      final headers = _getHeaders();
+      request.headers.addAll(headers);
       request.files.add(
         http.MultipartFile.fromBytes(
           fieldName,
@@ -108,12 +139,116 @@ class ApiClient {
       );
       final streamedResponse = await _client.send(request);
       final response = await http.Response.fromStream(streamedResponse);
-      return _handleResponse(response);
+      return await _handleResponse(
+        response,
+        onRetry: isRetry
+            ? null
+            : () => postMultipart(
+                  path,
+                  fieldName: fieldName,
+                  fileBytes: fileBytes,
+                  filename: filename,
+                  isRetry: true,
+                ),
+        path: path,
+      );
     } catch (e) {
       if (e is ApiClientException) rethrow;
       throw ApiClientException(
           "Network error: Please check your internet connection.");
     }
+  }
+
+  /// Internal response handler with HTTP 401 token refresh interception logic.
+  Future<dynamic> _handleResponse(
+    http.Response response, {
+    Future<dynamic> Function()? onRetry,
+    required String path,
+  }) async {
+    dynamic body;
+    try {
+      if (response.body.isNotEmpty) {
+        body = jsonDecode(response.body);
+      }
+    } catch (_) {
+      // Body not decodable
+    }
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return body;
+    }
+
+    // Intercept HTTP 401 Unauthorized for silent token refresh
+    final isAuthEndpoint = path.startsWith('/auth/login') ||
+        path.startsWith('/auth/signup') ||
+        path.startsWith('/auth/refresh') ||
+        path.startsWith('/auth/logout') ||
+        path.startsWith('/auth/forgot-password') ||
+        path.startsWith('/auth/reset-password');
+
+    if (response.statusCode == 401 && !isAuthEndpoint && onRetry != null) {
+      final refreshedToken = await _attemptTokenRefresh();
+      if (refreshedToken != null) {
+        return await onRetry();
+      } else {
+        // Refresh failed -> trigger auth failure callback
+        onAuthFailed?.call();
+      }
+    }
+
+    String? errorMsg;
+    if (body is Map) {
+      errorMsg = body['error'] ?? body['message'];
+    }
+    throw ApiClientException(
+      errorMsg ?? 'Request failed',
+      statusCode: response.statusCode,
+    );
+  }
+
+  /// Thread-safe / concurrency-locked token refresh call to POST /auth/refresh.
+  Future<String?> _attemptTokenRefresh() async {
+    if (_isRefreshing) {
+      return await _refreshCompleter?.future;
+    }
+
+    _isRefreshing = true;
+    _refreshCompleter = Completer<String?>();
+
+    try {
+      if (_jwtToken == null || _jwtToken!.isEmpty) {
+        _isRefreshing = false;
+        _refreshCompleter?.complete(null);
+        return null;
+      }
+
+      final refreshUri = Uri.parse('$baseUrl/auth/refresh');
+      final response = await _client.post(
+        refreshUri,
+        headers: _getHeaders(),
+        body: jsonEncode({'token': _jwtToken}),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body is Map && body['token'] is String) {
+          final newToken = body['token'] as String;
+          setToken(newToken);
+          if (onTokenRefreshed != null) {
+            await onTokenRefreshed!(newToken);
+          }
+          _refreshCompleter?.complete(newToken);
+          _isRefreshing = false;
+          return newToken;
+        }
+      }
+    } catch (e) {
+      debugPrint('[ApiClient] Token refresh attempt error: $e');
+    }
+
+    _refreshCompleter?.complete(null);
+    _isRefreshing = false;
+    return null;
   }
 
   Future<dynamic> proposePrice({
@@ -159,27 +294,5 @@ class ApiClient {
       'token': token ?? '',
       'action': 'unregister',
     });
-  }
-
-  dynamic _handleResponse(http.Response response) {
-    dynamic body;
-    try {
-      if (response.body.isNotEmpty) {
-        body = jsonDecode(response.body);
-      }
-    } catch (_) {
-      // Body not decodable
-    }
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return body;
-    } else {
-      String? errorMsg;
-      if (body is Map) {
-        errorMsg = body['error'] ?? body['message'];
-      }
-      throw ApiClientException(errorMsg ?? 'Request failed',
-          statusCode: response.statusCode);
-    }
   }
 }

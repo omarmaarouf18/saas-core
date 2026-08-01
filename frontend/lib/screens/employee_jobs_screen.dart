@@ -15,8 +15,8 @@ import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
-import 'login_screen.dart';
 import 'notifications_screen.dart';
+import '../utils/logout_helper.dart';
 
 class EmployeeJobsScreen extends StatefulWidget {
   const EmployeeJobsScreen({super.key});
@@ -167,12 +167,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             icon: const Icon(Icons.logout),
             tooltip: "Logout",
             onPressed: () async {
-              await auth.logout();
-              if (context.mounted) {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              }
+              await logoutAndClearProviders(context);
             },
           ),
         ],

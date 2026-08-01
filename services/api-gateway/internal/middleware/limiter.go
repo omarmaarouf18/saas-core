@@ -3,52 +3,42 @@ package middleware
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
+	"github.com/project/gateway/internal/iputil"
 	"github.com/project/shared/infra/ratelimit"
 )
 
 type RateLimiter struct {
-	rl *ratelimit.RateLimiter
+	rl             *ratelimit.RateLimiter
+	trustedProxies []string
 }
 
-func NewRateLimiter(rl *ratelimit.RateLimiter) *RateLimiter {
-	return &RateLimiter{rl: rl}
+func NewRateLimiter(rl *ratelimit.RateLimiter, trustedProxies ...[]string) *RateLimiter {
+	var tp []string
+	if len(trustedProxies) > 0 {
+		tp = trustedProxies[0]
+	}
+	return &RateLimiter{rl: rl, trustedProxies: tp}
 }
 
 func (rl *RateLimiter) CheckAndRecord(key string) (bool, time.Duration) {
 	return rl.rl.CheckAndRecord(key)
 }
 
-// getIP extracts the client IP from r.RemoteAddr only.
-// At the gateway edge there is no trusted upstream proxy, so
-// X-Forwarded-For and X-Real-IP are fully client-controlled and
-// MUST NOT be used for rate-limit keying — an attacker can spoof a
-// different value on every request to get a fresh bucket each time.
-func getIP(r *http.Request) string {
-	ip := r.RemoteAddr
-
-	if strings.Contains(ip, "]") {
-		if idx := strings.LastIndex(ip, ":"); idx != -1 {
-			ip = ip[:idx]
-		}
-		ip = strings.Trim(ip, "[]")
-	} else {
-		if count := strings.Count(ip, ":"); count == 1 {
-			if idx := strings.LastIndex(ip, ":"); idx != -1 {
-				ip = ip[:idx]
-			}
-		}
-	}
-	return ip
+// getIP extracts the client IP for rate limiting using trusted proxy aware resolution.
+// Trust Chain Hop 1 (Caddy -> api-gateway):
+// X-Forwarded-For is trusted ONLY when r.RemoteAddr comes from a trusted proxy in trustedProxies.
+// Otherwise, r.RemoteAddr is used directly to prevent IP spoofing attacks.
+func (rl *RateLimiter) getIP(r *http.Request) string {
+	return iputil.ResolveClientIP(r, rl.trustedProxies)
 }
 
 // RateLimit is a middleware that enforces rate limiting on all incoming requests.
 func RateLimit(limiter *RateLimiter) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ip := getIP(r)
+			ip := limiter.getIP(r)
 			if limited, remaining := limiter.CheckAndRecord(ip); limited {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusTooManyRequests)
