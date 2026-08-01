@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -861,23 +862,55 @@ func TestUserServiceHandlers(t *testing.T) {
 
 	// Test 13b: UpdateJobLocation RequireTier InternalError Regression Guard
 	t.Run("UpdateJobLocation RequireTier InternalError Regression Guard", func(t *testing.T) {
-		uDisabled := NewUserService(nil, cfg, rdb)
-		tokenEmployee, _ := jwtutil.GenerateToken("employee-777", "employee", "owner-777", "employee@example.com")
+		jobID := "job-require-tier-err"
+		ownerID := "owner-require-tier-err"
+		empID := "emp-require-tier-err"
+
+		_ = s.CreateJob(context.Background(), &models.Job{
+			ID:         jobID,
+			OwnerID:    ownerID,
+			EmployeeID: empID,
+			Status:     models.JobStatusActive,
+			Location:   models.Location{Latitude: 30.0, Longitude: 30.0},
+			CreatedAt:  time.Now(),
+		})
+
+		tokenEmp, _ := jwtutil.GenerateToken(empID, "employee", ownerID, "emp@example.com")
+
+		u.clearLocationThrottleState(jobID)
+
+		var dbWriteCalled bool
+		u.requireTierHook = func(ctx context.Context, tenantID string, min models.PlanTier) error {
+			return errors.New("simulated database failure during subscription lookup")
+		}
+		u.updateJobLocationBeforeWriteHook = func(ctx context.Context) {
+			dbWriteCalled = true
+		}
+		defer func() {
+			u.requireTierHook = nil
+			u.updateJobLocationBeforeWriteHook = nil
+		}()
 
 		reqBody := map[string]any{
-			"job_id":       "active-job-777",
-			"requester_id": tokenEmployee,
-			"latitude":     30.0,
-			"longitude":    30.0,
+			"job_id":       jobID,
+			"requester_id": tokenEmp,
+			"latitude":     30.001,
+			"longitude":    30.001,
 		}
 		body, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
 		rec := httptest.NewRecorder()
 
-		uDisabled.UpdateJobLocation(rec, req)
+		u.UpdateJobLocation(rec, req)
 
+		// 1. Must return 500 Internal Server Error
 		if rec.Code != http.StatusInternalServerError {
 			t.Errorf("Expected 500 Internal Server Error, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		// 2. Must NEVER call u.store.UpdateJobLocation after 500 error response (no fallthrough)
+		if dbWriteCalled {
+			t.Errorf("u.store.UpdateJobLocation was called despite 500 Internal Server Error (control-flow fallthrough detected)")
 		}
 	})
 

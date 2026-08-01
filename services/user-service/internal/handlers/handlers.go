@@ -94,6 +94,8 @@ type UserService struct {
 	rollbackEscrowHook func(ctx context.Context, tenantID string, amount float64) error
 	// Test hook to simulate concurrent job status change before UpdateJobAgreedPrice
 	updateJobAgreedPriceBeforeWriteHook func(ctx context.Context)
+	// Test hook to simulate generic requireTier error for deterministic testing
+	requireTierHook func(ctx context.Context, tenantID string, min models.PlanTier) error
 }
 
 func (u *UserService) clearLocationThrottleState(jobID string) {
@@ -1452,6 +1454,11 @@ func (u *UserService) verifyEmployeeAssignment(employeeID, ownerID string) (bool
 
 // requireTier enforces that a tenant has at least the minimum subscription tier.
 func (u *UserService) requireTier(ctx context.Context, tenantID string, min models.PlanTier) error {
+	if u.requireTierHook != nil {
+		if err := u.requireTierHook(ctx, tenantID, min); err != nil {
+			return err
+		}
+	}
 	sub := u.store.GetSubscription(ctx, tenantID)
 	var currentTier models.PlanTier = models.PlanFree
 	if sub != nil {
