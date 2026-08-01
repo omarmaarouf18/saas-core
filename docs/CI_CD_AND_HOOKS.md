@@ -78,8 +78,12 @@ In the project's history, a fabricated commit SHA was pushed on a fresh environm
 
 ## 3. Build-and-Publish Pipeline (`.github/workflows/build-and-publish.yml`)
 
-### Workflow Trigger
+### Workflow Trigger & Security Policy
 `build-and-publish.yml` triggers **only on push to `main`**. Pushes to `logic-exploitation` or other development branches do not trigger image builds or deployment repository syncs.
+
+> [!CAUTION]
+> **Strict Trigger Policy & Incident Record**:
+> `workflow_dispatch` is strictly prohibited on `build-and-publish.yml` to prevent un-reviewed dev branch commits from overwriting production deployment tags. During GitHub App token testing, `workflow_dispatch` was temporarily added to `build-and-publish.yml` and dispatched on `logic-exploitation` (Run ID `30684940738`), causing `update-deployment-repo` to push out-of-policy image tags (`375a017`) to `saas-core-deploy:main`. The deployment repo was immediately rolled back to `main` HEAD (`efbe55b` via commit `c0b3f6a`), and `workflow_dispatch` was permanently removed from `build-and-publish.yml` to enforce push-to-main-only governance.
 
 ### Pipeline Structure
 The workflow contains two sequential jobs:
