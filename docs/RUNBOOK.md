@@ -100,6 +100,13 @@ docker compose ps
 
 That's the entire automated loop: branch → CI green → merge to `main` → `build-and-publish` runs → `saas-core-deploy` updates → self-hosted runner `deploy.yml` auto-deploys & verifies health on the production VM.
 
+> **Note:** As of the CD pipeline in `saas-core-deploy/.github/workflows/deploy.yml`,
+> the steps above under "Every subsequent release" now run automatically via a
+> self-hosted GitHub Actions runner on the production VM — manual SSH is only needed
+> for first-time server setup, disaster recovery, or manual troubleshooting. See
+> `saas-core-deploy/README.md` for the automated pipeline's exact behavior and the
+> volume-naming fix that prevents MongoDB re-initialization mismatches.
+
 ## 4.1 Optional: Mobile App Sync & Build (if `frontend/` changed)
 
 If the merge into `main` touched anything under `frontend/`, a separate
