@@ -229,18 +229,41 @@ Output: `{"status":"ok"}`
 
 ---
 
-## 7. Automated Upgrades & Continuous Deployment
+## 7. Automated Upgrades & Continuous Deployment (Self-Hosted Runner CD)
 
-When developer changes are pushed to `main` in `saas-core`:
-1. GitHub Actions builds and pushes updated images tagged with the commit SHA and `latest` to GHCR.
-2. The workflow automatically updates `docker-compose.yml` in `saas-core-deploy` with the new commit SHA tag.
-3. On the production server, update the deployment with zero downtime:
+Production deployments on `omarmaarouf18/saas-core-deploy` are automatically executed via a repository-scoped GitHub Actions self-hosted runner (`[self-hosted, saas-vm]`) running on the production VM under the low-privilege `deploybot` system user.
+
+### 7.1 Automated Deployment Flow
+1. When developer changes are pushed to `main` in `saas-core`, `build-and-publish.yml` builds microservice images, pushes them to GHCR, and updates image tag SHAs in `saas-core-deploy`'s `docker-compose.yml`.
+2. The push to `saas-core-deploy`'s `main` branch automatically triggers `.github/workflows/deploy.yml` on the self-hosted runner.
+3. The runner executes `docker compose config --quiet` to validate syntax, `docker compose pull` to download new images, `docker compose up -d --remove-orphans` to apply updates, and performs a 5-attempt health check against `http://localhost:8080/health`.
+
+### 7.2 Security Boundary & Privilege Model
+> [!NOTE]
+> **`docker` Group Security Tradeoff**:
+> The `deploybot` user has no `sudo` privileges and no interactive SSH shell access. However, `deploybot` is a member of the `docker` group to permit `docker compose` execution. On Linux hosts, access to `/var/run/docker.sock` is effectively root-equivalent. This is a known, explicit architecture tradeoff accepted for this single-VM setup to avoid SSH-from-GitHub security risks or long-lived SSH key storage in GitHub.
+
+### 7.3 Manual Deployment & Emergency Fallback
+If the self-hosted runner is offline or undergoing maintenance, operator deployment can be executed manually on the VM host:
+```bash
+cd /opt/saas-platform
+git pull origin main
+docker compose pull
+docker compose up -d --remove-orphans
+docker compose ps
+curl -k https://localhost:8080/health
+```
+
+### 7.4 Manual Rollback Procedure
+If a deployment fails the automated health check or exhibits runtime regressions:
+1. `deploy.yml` will fail loudly, stop execution, and print the last 50 lines of container logs without auto-reverting.
+2. To roll back, operator reverts the offending commit in `saas-core-deploy`:
    ```bash
    cd /opt/saas-platform
-   git pull
-   docker compose pull
-   docker compose up -d --remove-orphans
+   git revert HEAD -m "revert: rollback failed deployment"
+   git push origin main
    ```
+   Or manually check out the previous compose file tag on the host and run `docker compose up -d --remove-orphans`.
 
 ---
 
