@@ -109,6 +109,25 @@ func (u *UserService) clearLocationThrottleState(jobID string) {
 	}
 }
 
+func (u *UserService) tryReserveLocationThrottleInMemory(jobID string, now time.Time) (code int, errMessage string) {
+	u.locationThrottleMu.Lock()
+	defer u.locationThrottleMu.Unlock()
+
+	if u.locationInFlight[jobID] {
+		return 1, "Location update is already in progress for this job."
+	}
+
+	if lastUpdate, ex := u.locationLastUpdate[jobID]; ex {
+		elapsed := now.Sub(lastUpdate)
+		if elapsed < MinLocationUpdateInterval {
+			return 2, fmt.Sprintf("Too many location updates. Minimum interval is %.0f seconds.", MinLocationUpdateInterval.Seconds())
+		}
+	}
+
+	u.locationInFlight[jobID] = true
+	return 0, ""
+}
+
 func (u *UserService) setTestLocationLastUpdate(jobID string, t time.Time) {
 	u.locationThrottleMu.Lock()
 	u.locationLastUpdate[jobID] = t
@@ -1812,89 +1831,34 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	resolvedRequester, err := resolveTokenWithRole(req.RequesterID, "employee", "owner")
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
-		return
-	}
-
-	if !isValidCoordinate(req.Latitude, req.Longitude) {
-		log.Printf("[SECURITY WARNING] Invalid coordinates detected for job %s: lat=%.6f, lon=%.6f", req.JobID, req.Latitude, req.Longitude)
-		ctx := r.Context()
-		var ownerID string
-		if job := u.store.GetJob(ctx, req.JobID); job != nil {
-			ownerID = job.OwnerID
-		}
-		handlerutil.ShipSecurityEvent(ctx, "INVALID_COORDINATES_DETECTED", "user-service", resolvedRequester, ownerID, fmt.Sprintf("location update rejected for job %s: coordinates out of range (lat=%.6f, lon=%.6f)", req.JobID, req.Latitude, req.Longitude), handlerutil.GetClientIP(r))
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error":   "invalid_coordinates",
-			"message": "Latitude must be between -90 and 90, and Longitude must be between -180 and 180",
-		})
-		return
-	}
-
-	ctx := r.Context()
-	job := u.store.GetJob(ctx, req.JobID)
-	if job == nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
-		return
-	}
-
-	if job.EmployeeID == "" || resolvedRequester != job.EmployeeID {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: only the assigned employee can push location updates"})
-		return
-	}
-
-	if job.Status != models.JobStatusActive {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "action blocked: job is not active"})
-		return
-	}
-
-	// Membership tier gating
-	if err := u.requireTier(ctx, job.OwnerID, models.PlanPaid); err != nil {
-		if errors.Is(err, ErrUpgradeRequired) {
-			handlerutil.ShipSecurityEvent(ctx, "UPGRADE_REQUIRED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("location update rejected for job %s, paid subscription required", job.ID), handlerutil.GetClientIP(r))
-			writeJSON(w, http.StatusPaymentRequired, map[string]string{
-				"error":   "upgrade_required",
-				"message": "Live location tracking requires a paid subscription.",
-			})
-			return
-		}
-		log.Printf("[USER] Subscription verification failed for owner %s: %v", job.OwnerID, err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{
-			"error":   "internal_error",
-			"message": "could not verify subscription status",
-		})
-		return
-	}
-
-	// Per-job minimum interval throttling
-	var lastTime time.Time
-	var exists bool
+	// --- ATOMIC THROTTLE RESERVATION (ENTRY GUARD) ---
 	now := time.Now()
 	nowMs := now.UnixNano() / int64(time.Millisecond)
 
 	clearInFlight := func() {
 		if u.rdb != nil {
 			bgCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-			_ = u.rdb.Del(bgCtx, fmt.Sprintf("loc:inflight:%s", job.ID)).Err()
+			_ = u.rdb.Del(bgCtx, fmt.Sprintf("loc:inflight:%s", req.JobID)).Err()
 			cancel()
 		} else {
 			u.locationThrottleMu.Lock()
-			delete(u.locationInFlight, job.ID)
+			delete(u.locationInFlight, req.JobID)
 			u.locationThrottleMu.Unlock()
 		}
 	}
 
+	var lastTime time.Time
+	var exists bool
+
 	if u.rdb != nil {
-		inflightKey := fmt.Sprintf("loc:inflight:%s", job.ID)
-		lastupdateKey := fmt.Sprintf("loc:lastupdate:%s", job.ID)
+		inflightKey := fmt.Sprintf("loc:inflight:%s", req.JobID)
+		lastupdateKey := fmt.Sprintf("loc:lastupdate:%s", req.JobID)
 
 		evalCtx, cancelEval := context.WithTimeout(r.Context(), 2*time.Second)
 		res, err := u.rdb.Eval(evalCtx, checkLocationThrottleScript, []string{inflightKey, lastupdateKey}, MinLocationUpdateInterval.Milliseconds(), 15, nowMs).Result()
 		cancelEval()
 		if err != nil {
-			log.Printf("[SECURITY CRITICAL] Redis error in UpdateJobLocation throttle check (FAIL CLOSED): %v for job %s", err, job.ID)
+			log.Printf("[SECURITY CRITICAL] Redis error in UpdateJobLocation throttle check (FAIL CLOSED): %v for job %s", err, req.JobID)
 			writeJSON(w, http.StatusInternalServerError, map[string]string{
 				"error":   "internal_error",
 				"message": "failed to process location update throttle check",
@@ -1904,7 +1868,7 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 
 		resSlice, ok := res.([]interface{})
 		if !ok || len(resSlice) < 2 {
-			log.Printf("[SECURITY CRITICAL] Unexpected response format from location throttle script: %v for job %s", res, job.ID)
+			log.Printf("[SECURITY CRITICAL] Unexpected response format from location throttle script: %v for job %s", res, req.JobID)
 			writeJSON(w, http.StatusInternalServerError, map[string]string{
 				"error":   "internal_error",
 				"message": "failed to process location update throttle check",
@@ -1935,33 +1899,84 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 			lastTime = time.Unix(0, lastUpdateMs*int64(time.Millisecond))
 		}
 	} else {
-		// Fallback to in-memory maps when Redis client is nil (e.g. unit tests without Redis)
+		// Fallback to in-memory maps when Redis client is nil
+		code, errMsg := u.tryReserveLocationThrottleInMemory(req.JobID, now)
+		if code != 0 {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error":   "too_many_requests",
+				"message": errMsg,
+			})
+			return
+		}
+
 		u.locationThrottleMu.Lock()
-		if u.locationInFlight[job.ID] {
-			u.locationThrottleMu.Unlock()
-			writeJSON(w, http.StatusTooManyRequests, map[string]string{
-				"error":   "too_many_requests",
-				"message": "Location update is already in progress for this job.",
-			})
-			return
-		}
-
-		lastUpdate, ex := u.locationLastUpdate[job.ID]
-		if ex && now.Sub(lastUpdate) < MinLocationUpdateInterval {
-			u.locationThrottleMu.Unlock()
-			writeJSON(w, http.StatusTooManyRequests, map[string]string{
-				"error":   "too_many_requests",
-				"message": fmt.Sprintf("Too many location updates. Minimum interval is %.0f seconds.", MinLocationUpdateInterval.Seconds()),
-			})
-			return
-		}
-		u.locationInFlight[job.ID] = true
-		u.locationThrottleMu.Unlock()
-
+		lastUpdate, ex := u.locationLastUpdate[req.JobID]
 		exists = ex
 		if ex {
 			lastTime = lastUpdate
 		}
+		u.locationThrottleMu.Unlock()
+	}
+
+	resolvedRequester, err := resolveTokenWithRole(req.RequesterID, "employee", "owner")
+	if err != nil {
+		clearInFlight()
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
+	if !isValidCoordinate(req.Latitude, req.Longitude) {
+		clearInFlight()
+		log.Printf("[SECURITY WARNING] Invalid coordinates detected for job %s: lat=%.6f, lon=%.6f", req.JobID, req.Latitude, req.Longitude)
+		ctx := r.Context()
+		var ownerID string
+		if job := u.store.GetJob(ctx, req.JobID); job != nil {
+			ownerID = job.OwnerID
+		}
+		handlerutil.ShipSecurityEvent(ctx, "INVALID_COORDINATES_DETECTED", "user-service", resolvedRequester, ownerID, fmt.Sprintf("location update rejected for job %s: coordinates out of range (lat=%.6f, lon=%.6f)", req.JobID, req.Latitude, req.Longitude), handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_coordinates",
+			"message": "Latitude must be between -90 and 90, and Longitude must be between -180 and 180",
+		})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		clearInFlight()
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	if job.EmployeeID == "" || resolvedRequester != job.EmployeeID {
+		clearInFlight()
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: only the assigned employee can push location updates"})
+		return
+	}
+
+	if job.Status != models.JobStatusActive {
+		clearInFlight()
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "action blocked: job is not active"})
+		return
+	}
+
+	// Membership tier gating
+	if err := u.requireTier(ctx, job.OwnerID, models.PlanPaid); err != nil {
+		clearInFlight()
+		if errors.Is(err, ErrUpgradeRequired) {
+			handlerutil.ShipSecurityEvent(ctx, "UPGRADE_REQUIRED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("location update rejected for job %s, paid subscription required", job.ID), handlerutil.GetClientIP(r))
+			writeJSON(w, http.StatusPaymentRequired, map[string]string{
+				"error":   "upgrade_required",
+				"message": "Live location tracking requires a paid subscription.",
+			})
+			return
+		}
+		log.Printf("[USER] Subscription verification failed for owner %s: %v", job.OwnerID, err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error":   "internal_error",
+			"message": "could not verify subscription status",
+		})
 	}
 
 	// Shared rejection helper for implausible speed check failures
