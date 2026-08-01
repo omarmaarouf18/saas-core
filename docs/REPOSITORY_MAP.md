@@ -73,13 +73,15 @@ flowchart TD
 
 ## 2. GitHub Actions Secret & Security Matrix
 
-The cross-repository push pipelines rely on 3 dedicated Personal Access Tokens (PATs). Each secret is stored in the initiating repository's **Settings -> Secrets and variables -> Actions** panel and operates under least-privilege scoping rules (refer to [ADR-0010](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/adr/0010-separate-repos-for-deployment-artifacts.md)):
+The cross-repository push pipelines rely on GitHub App `quick-delivery-automation` installation tokens generated via `actions/create-github-app-token@v1`. Each secret (`APP_ID` and `APP_PRIVATE_KEY`) is stored in the initiating repository's **Settings -> Secrets and variables -> Actions** panel and operates under least-privilege scoping rules (refer to [ADR-0010](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/adr/0010-separate-repos-for-deployment-artifacts.md)):
 
-| Secret Name | Stored In | Consuming Workflow | Target Repository | Required GitHub Scopes | Operational Rationale |
+| Secret Name | Stored In | Consuming Workflows | Target Repository | Scopes / Permissions | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`DEPLOY_REPO_PAT`** | `omarmaarouf18/saas-core` | `.github/workflows/build-and-publish.yml` | `omarmaarouf18/saas-core-deploy` | `Contents: Read and write` | Pushes updated microservice image tag references in `docker-compose.yml` upon successful `main` build. |
-| **`MOBILE_REPO_PAT`** | `omarmaarouf18/saas-core` | `.github/workflows/sync-mobile-frontend.yml` | `omarmaarouf18/quick-delivery-mobile` | **`Contents: Read and write` AND `Workflows: Read and write`** | Force-pushes extracted `frontend/` subtree to `quick-delivery-mobile:main`. Requires `Workflows` scope because `frontend/` contains `.github/workflows/build-apk.yml`. |
-| **`LOGICLINC_REPO_PAT`** | `omarmaarouf18/quick-delivery-mobile` | `.github/workflows/build-apk.yml` | `omarmaarouf18/logiclinc` | `Contents: Read and write` | Updates `app-release.json` with live APK download URLs and release metadata on the Vercel marketing site. |
+| **`APP_ID`** | `omarmaarouf18/saas-core`<br>`omarmaarouf18/quick-delivery-mobile` | `build-and-publish`, `sync-mobile-frontend`, `build-apk` | All target repos | Mint installation tokens | **Active** |
+| **`APP_PRIVATE_KEY`** | `omarmaarouf18/saas-core`<br>`omarmaarouf18/quick-delivery-mobile` | `build-and-publish`, `sync-mobile-frontend`, `build-apk` | All target repos | RSA signing key | **Active** |
+| **`DEPLOY_REPO_PAT`** | `omarmaarouf18/saas-core` | None | `saas-core-deploy` | `Contents: Read and write` | **Decommissioned & Revoked** |
+| **`MOBILE_REPO_PAT`** | `omarmaarouf18/saas-core` | None | `quick-delivery-mobile` | `Contents: Read and write`, `Workflows: Read and write` | **Decommissioned & Revoked** |
+| **`LOGICLINC_REPO_PAT`** | `omarmaarouf18/quick-delivery-mobile` | None | `logiclinc` | `Contents: Read and write` | **Decommissioned & Revoked** |
 
 ---
 

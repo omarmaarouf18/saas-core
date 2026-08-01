@@ -158,9 +158,9 @@ The platform uses GitHub App installation tokens generated on-the-fly via `actio
 | :--- | :--- | :--- | :--- | :--- |
 | `APP_ID` | `omarmaarouf18/saas-core`<br>`omarmaarouf18/quick-delivery-mobile` | All workflows (`build-and-publish`, `sync-mobile-frontend`, `build-apk`) | GitHub App ID for `quick-delivery-automation`. Used to mint short-lived installation tokens. | **Active (Primary)** |
 | `APP_PRIVATE_KEY` | `omarmaarouf18/saas-core`<br>`omarmaarouf18/quick-delivery-mobile` | All workflows (`build-and-publish`, `sync-mobile-frontend`, `build-apk`) | RSA Private Key for `quick-delivery-automation`. Used to mint short-lived installation tokens. | **Active (Primary)** |
-| `DEPLOY_REPO_PAT` | `omarmaarouf18/saas-core` | `.github/workflows/build-and-publish.yml` | `Contents: Read and write` on `saas-core-deploy` | *Deprecated fallback, scheduled for removal.* |
-| `MOBILE_REPO_PAT` | `omarmaarouf18/saas-core` | `.github/workflows/sync-mobile-frontend.yml` | `Contents: Read and write`, `Workflows: Read and write` on `quick-delivery-mobile` | *Deprecated fallback, scheduled for removal.* |
-| `LOGICLINC_REPO_PAT` | `omarmaarouf18/quick-delivery-mobile` | `.github/workflows/build-apk.yml` | `Contents: Read and write` on `logiclinc` | *Deprecated fallback, scheduled for removal.* |
+| `DEPLOY_REPO_PAT` | `omarmaarouf18/saas-core` | None | Formerly `Contents: Read and write` on `saas-core-deploy` | **Decommissioned & Revoked** |
+| `MOBILE_REPO_PAT` | `omarmaarouf18/saas-core` | None | Formerly `Contents: Read and write`, `Workflows: Read and write` on `quick-delivery-mobile` | **Decommissioned & Revoked** |
+| `LOGICLINC_REPO_PAT` | `omarmaarouf18/quick-delivery-mobile` | None | Formerly `Contents: Read and write` on `logiclinc` | **Decommissioned & Revoked** |
 
 ---
 
