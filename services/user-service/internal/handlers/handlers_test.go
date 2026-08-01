@@ -859,6 +859,28 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 	})
 
+	// Test 13b: UpdateJobLocation RequireTier InternalError Regression Guard
+	t.Run("UpdateJobLocation RequireTier InternalError Regression Guard", func(t *testing.T) {
+		uDisabled := NewUserService(nil, cfg, rdb)
+		tokenEmployee, _ := jwtutil.GenerateToken("employee-777", "employee", "owner-777", "employee@example.com")
+
+		reqBody := map[string]any{
+			"job_id":       "active-job-777",
+			"requester_id": tokenEmployee,
+			"latitude":     30.0,
+			"longitude":    30.0,
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+
+		uDisabled.UpdateJobLocation(rec, req)
+
+		if rec.Code != http.StatusInternalServerError {
+			t.Errorf("Expected 500 Internal Server Error, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+	})
+
 	// Test 14: Prevent Duplicate Ratings
 	t.Run("Prevent Duplicate Ratings", func(t *testing.T) {
 		// Seed a completed job

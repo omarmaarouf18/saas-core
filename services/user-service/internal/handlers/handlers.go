@@ -1977,6 +1977,7 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 			"error":   "internal_error",
 			"message": "could not verify subscription status",
 		})
+		return
 	}
 
 	// Shared rejection helper for implausible speed check failures
