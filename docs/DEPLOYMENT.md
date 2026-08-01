@@ -236,7 +236,7 @@ Production deployments on `omarmaarouf18/saas-core-deploy` are automatically exe
 ### 7.1 Automated Deployment Flow
 1. When developer changes are pushed to `main` in `saas-core`, `build-and-publish.yml` builds microservice images, pushes them to GHCR, and updates image tag SHAs in `saas-core-deploy`'s `docker-compose.yml`.
 2. The push to `saas-core-deploy`'s `main` branch automatically triggers `.github/workflows/deploy.yml` on the self-hosted runner.
-3. The runner executes `docker compose config --quiet` to validate syntax, `docker compose pull` to download new images, `docker compose up -d --remove-orphans` to apply updates, and performs a 5-attempt health check against `http://localhost:8080/health`.
+3. The runner executes `docker compose config --quiet` to validate syntax, `docker compose pull` to download new images, `docker compose up -d --remove-orphans` to apply updates, and performs a 12-attempt health check against `http://localhost:8080/health`.
 
 ### 7.2 Security Boundary & Privilege Model
 > [!NOTE]

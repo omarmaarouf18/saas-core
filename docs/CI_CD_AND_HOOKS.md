@@ -111,7 +111,7 @@ When `build-and-publish.yml` pushes an updated `docker-compose.yml` to `saas-cor
    - `docker compose config --quiet`: Validates compose file syntax (fails job immediately if malformed).
    - `docker compose pull`: Downloads updated production container images from GHCR.
    - `docker compose up -d --remove-orphans`: Applies container updates in detached mode.
-   - Health Check: Performs a 5-attempt loop (5 seconds apart) calling `http://localhost:8080/health`. Fails job if non-200.
+   - Health Check: Performs a 12-attempt loop (5 seconds apart) calling `http://localhost:8080/health`. Fails job if non-200.
    - Failure Diagnostics: On failure, prints the last 50 lines of logs (`docker compose logs --tail=50`) directly into GitHub Actions run output.
 
 ### Security Model & Privilege Boundary
