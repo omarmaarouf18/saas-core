@@ -7,9 +7,10 @@ This runbook describes the exact operational sequence to take a change from a fe
 ## 0. Prerequisites (one-time)
 
 * Push access to `omarmaarouf18/saas-core`.
-* `DEPLOY_REPO_PAT` secret already configured on `saas-core` (`repo` scope, used by `build-and-publish.yml` to push into `saas-core-deploy`).
+* GitHub App `quick-delivery-automation` secrets (`APP_ID` and `APP_PRIVATE_KEY`) configured across `saas-core` and `quick-delivery-mobile` (used by workflows to generate dynamic short-lived installation tokens).
 * GHCR packages set to **Public** (recommended) — see Option A in [docs/DEPLOYMENT.md](DEPLOYMENT.md) §3 — or a `GHCR_READ_TOKEN` ready for the server.
 * SSH access to the target VPS (e.g. `quickdelivery-vm`, Ubuntu 22.04).
+* Internal mTLS certificates generated with `-copy_extensions copy` flag during `openssl x509 -req` execution to preserve SANs (see [DEPLOYMENT.md §5.3](DEPLOYMENT.md#53-generate-internal-mtls-certificates)).
 
 ---
 

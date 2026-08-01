@@ -2,7 +2,7 @@
 
 > [!NOTE]
 > **Documentation Freshness Pinning**:
-> This document maps the architecture, cross-repository push pipelines, PAT secret scopes, and operational runbooks for the Quick Delivery multi-repository ecosystem as of Git commit `f762259`. This document must be updated whenever GitHub Action workflow triggers, repository structures, or secret scopes are modified.
+> This document maps the architecture, cross-repository push pipelines, PAT secret scopes, and operational runbooks for the Quick Delivery multi-repository ecosystem as of Git commit `15b6559`. This document must be updated whenever GitHub Action workflow triggers, repository structures, or secret scopes are modified.
 
 ---
 
@@ -113,15 +113,19 @@ git push origin main
 git checkout logic-exploitation
 ```
 
-### 4.2 Updating the Production VPS Stack (`quickdelivery-vm`)
-After `build-and-publish.yml` completes successfully on GitHub Actions:
+### 4.2 Production VM Stack Deployment (`quickdelivery-vm`)
+Deployment is **automated** via the self-hosted GitHub Actions runner (`saas-vm-runner`) on `quickdelivery-vm`. When `saas-core` pushes to `main`, `build-and-publish.yml` updates `saas-core-deploy:main`, triggering `deploy.yml` on the production VM to execute `docker compose pull`, `docker compose up -d --remove-orphans`, and `/health` verification.
+
+#### Manual Fallback (if runner is offline or undergoing maintenance)
 ```bash
-ssh user@quickdelivery-vm
-cd /opt/saas-platform
+ssh deploybot@quickdelivery-vm
+cd /home/deploybot/actions-runner/_work/saas-core-deploy/saas-core-deploy
 git pull origin main
 docker compose pull
 docker compose up -d --remove-orphans
 ```
+
+*Note: For internal mTLS certificate regeneration, ensure `openssl x509 -req` includes `-copy_extensions copy` to preserve Subject Alternative Name (SAN) extensions (see [DEPLOYMENT.md §5.3](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/DEPLOYMENT.md#53-generate-internal-mtls-certificates)).*
 
 ### 4.3 Verifying Currently Deployed Image & Commit SHA
 To inspect the exact container image tag active on the server:
