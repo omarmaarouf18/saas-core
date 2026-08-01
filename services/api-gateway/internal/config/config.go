@@ -28,6 +28,7 @@ type Config struct {
 	ExternalTLSKeyPath   string
 	InternalServiceToken string
 	RedisURI             string
+	TrustedProxyIPs      []string
 }
 
 // Load reads configuration from environment variables.
@@ -73,6 +74,15 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("config: required env var REDIS_URI is empty")
 	}
 
+	trustedProxyRaw := envOrDefault("TRUSTED_PROXY_IPS", "127.0.0.1,::1")
+	var trustedProxyIPs []string
+	for _, ip := range strings.Split(trustedProxyRaw, ",") {
+		ip = strings.TrimSpace(ip)
+		if ip != "" {
+			trustedProxyIPs = append(trustedProxyIPs, ip)
+		}
+	}
+
 	cfg := &Config{
 		Port:                 envOrDefault("PORT", "8080"),
 		GatewaySecret:        gatewaySecret,
@@ -84,6 +94,7 @@ func Load() (*Config, error) {
 		ExternalTLSKeyPath:   externalTLSKeyPath,
 		InternalServiceToken: internalServiceToken,
 		RedisURI:             redisURI,
+		TrustedProxyIPs:      trustedProxyIPs,
 	}
 
 	// Each route is defined by: path prefix → env var → default address.

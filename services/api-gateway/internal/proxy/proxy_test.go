@@ -52,8 +52,10 @@ func TestGatewayProxyAndSecurity(t *testing.T) {
 		StripPrefix: "/api/v1",
 	}
 
+	trustedProxies := []string{"127.0.0.1", "::1"}
+
 	// 3. Create reverse proxy
-	proxyHandler, err := New(route, gatewaySecret, http.DefaultTransport)
+	proxyHandler, err := New(route, gatewaySecret, trustedProxies, http.DefaultTransport)
 	if err != nil {
 		t.Fatalf("failed to create proxy: %v", err)
 	}
@@ -72,8 +74,8 @@ func TestGatewayProxyAndSecurity(t *testing.T) {
 		_, _ = w.Write([]byte("gateway root"))
 	})
 
-	// 5. Test Route matching & Security Header Stripping/Injection
-	// A request with client-spoofed X-Internal-Token and X-Forwarded-For
+	// 5. Test Untrusted Direct Connection (Spoofed X-Forwarded-For)
+	// A request with client-spoofed X-Internal-Token and X-Forwarded-For from untrusted RemoteAddr
 	req := httptest.NewRequest("POST", "/api/v1/auth/signup", nil)
 	req.Header.Set("X-Internal-Token", "spoofed-internal-token")
 	req.Header.Set("X-Forwarded-For", "1.1.1.1")
@@ -111,7 +113,48 @@ func TestGatewayProxyAndSecurity(t *testing.T) {
 		t.Errorf("expected X-Forwarded-For to start with '2.2.2.2:12345', got %q", resInfo.ForwardedFor)
 	}
 
-	// 6. Test Unknown Route returns 404
+	// 6. Test Trusted Proxy Connection with legitimate X-Forwarded-For header
+	reqTrusted := httptest.NewRequest("POST", "/api/v1/auth/signup", nil)
+	reqTrusted.Header.Set("X-Forwarded-For", "203.0.113.195")
+	reqTrusted.RemoteAddr = "127.0.0.1:54321"
+
+	recTrusted := httptest.NewRecorder()
+	mux.ServeHTTP(recTrusted, reqTrusted)
+
+	if recTrusted.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recTrusted.Code)
+	}
+
+	var resTrustedInfo backendRequestInfo
+	if err := json.Unmarshal(recTrusted.Body.Bytes(), &resTrustedInfo); err != nil {
+		t.Fatalf("failed to parse backend response: %v", err)
+	}
+
+	if resTrustedInfo.ForwardedFor != "203.0.113.195, 127.0.0.1" {
+		t.Errorf("expected X-Forwarded-For to be '203.0.113.195, 127.0.0.1', got %q", resTrustedInfo.ForwardedFor)
+	}
+
+	// 7. Test Trusted Proxy Connection with NO X-Forwarded-For header (fallback)
+	reqTrustedNoXFF := httptest.NewRequest("POST", "/api/v1/auth/signup", nil)
+	reqTrustedNoXFF.RemoteAddr = "127.0.0.1:54321"
+
+	recTrustedNoXFF := httptest.NewRecorder()
+	mux.ServeHTTP(recTrustedNoXFF, reqTrustedNoXFF)
+
+	if recTrustedNoXFF.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recTrustedNoXFF.Code)
+	}
+
+	var resTrustedNoXFFInfo backendRequestInfo
+	if err := json.Unmarshal(recTrustedNoXFF.Body.Bytes(), &resTrustedNoXFFInfo); err != nil {
+		t.Fatalf("failed to parse backend response: %v", err)
+	}
+
+	if !strings.HasPrefix(resTrustedNoXFFInfo.ForwardedFor, "127.0.0.1:54321") {
+		t.Errorf("expected X-Forwarded-For to start with '127.0.0.1:54321', got %q", resTrustedNoXFFInfo.ForwardedFor)
+	}
+
+	// 8. Test Unknown Route returns 404
 	req404 := httptest.NewRequest("GET", "/api/v1/unknown-service/foo", nil)
 	rec404 := httptest.NewRecorder()
 	mux.ServeHTTP(rec404, req404)
@@ -352,7 +395,7 @@ func TestProxyOversizedAndMalformedBodyForwarded(t *testing.T) {
 		StripPrefix: "/test",
 	}
 
-	proxyHandler, err := New(route, "secret", http.DefaultTransport)
+	proxyHandler, err := New(route, "secret", []string{"127.0.0.1"}, http.DefaultTransport)
 	if err != nil {
 		t.Fatalf("failed to create proxy: %v", err)
 	}

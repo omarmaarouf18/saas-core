@@ -292,6 +292,10 @@ api.logiclinkeg.tech {
 > **Internal Service Name Resolution**:
 > The `reverse_proxy` target must be set to `https://api-gateway:8080` (not `127.0.0.1:8080`). Over the `saas-net` bridge network, `127.0.0.1` resolves to the `saas-caddy` container itself rather than the `api-gateway` container, leading to routing failures.
 
+> [!NOTE]
+> **Trusted Proxy IP Configuration (`TRUSTED_PROXY_IPS`)**:
+> The `api-gateway` service uses `TRUSTED_PROXY_IPS` (comma-separated IP addresses or CIDR subnets, defaulting to `127.0.0.1,::1`) to determine which upstream connections are authorized reverse proxies. `api-gateway` only trusts incoming `X-Forwarded-For` headers when the immediate connection IP (`r.RemoteAddr`) matches an entry in `TRUSTED_PROXY_IPS`. For trusted proxies, the original client IP in the `X-Forwarded-For` chain is preserved and forwarded downstream to `auth-service` and other services. Direct untrusted connections have their `X-Forwarded-For` header overwritten with `r.RemoteAddr` to prevent IP spoofing attacks. Ensure `TRUSTED_PROXY_IPS` includes whatever IP or CIDR range the reverse proxy connects from in your deployment topology (e.g. `127.0.0.1,::1,172.16.0.0/12` for Docker bridge or host mode).
+
 #### 2. Automatic Lifecycle Management
 Because Caddy is defined as a service in `docker-compose.yml`, running `docker compose up -d` handles container creation, networking, port binding, and automatic restart (`restart: unless-stopped`). ACME certificates issued by Let's Encrypt are persisted across container restarts using the named volume `caddy_data:/data`.
 

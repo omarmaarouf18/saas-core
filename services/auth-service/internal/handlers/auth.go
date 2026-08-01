@@ -1046,6 +1046,11 @@ func generate6DigitOTP() string {
 }
 
 // getClientIP extracts the user's real IP from the request headers or RemoteAddr.
+// Trust Chain Hop 2 (api-gateway -> auth-service):
+// auth-service trusts X-Forwarded-For ONLY if the request contains a valid X-Gateway-Secret
+// header injected exclusively by api-gateway. When valid, auth-service parses the first IP
+// in the X-Forwarded-For chain (the original client IP preserved by api-gateway).
+// If X-Gateway-Secret is missing/invalid, auth-service falls back to r.RemoteAddr.
 func (a *Auth) getClientIP(r *http.Request) string {
 	var ip string
 	if r.Header.Get("X-Gateway-Secret") == a.gatewaySecret {
