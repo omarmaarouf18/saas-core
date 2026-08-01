@@ -15,6 +15,7 @@ import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
 import 'job_status_screen.dart';
 import 'notifications_screen.dart';
+import '../utils/logout_helper.dart';
 
 class CustomerMarketplaceScreen extends StatefulWidget {
   const CustomerMarketplaceScreen({super.key});
@@ -151,7 +152,7 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
             icon: const Icon(Icons.logout),
             tooltip: "Logout",
             onPressed: () async {
-              await auth.logout();
+              await logoutAndClearProviders(context);
             },
           ),
         ],

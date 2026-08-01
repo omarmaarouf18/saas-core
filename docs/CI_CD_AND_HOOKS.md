@@ -101,9 +101,24 @@ The workflow contains two sequential jobs:
    - Replaces image tag references in `saas-core-deploy`'s `docker-compose.yml` with the current commit SHA.
    - Commits and pushes the updated `docker-compose.yml` to `saas-core-deploy` `main` branch.
 
-### Two-Repository Architecture Rationale
-- **Development Repository (`saas-core`)**: Source code, tests, CI/CD, Go and Flutter toolchains.
-- **Deployment Repository (`saas-core-deploy`)**: Image-based `docker-compose.yml`, production `.env.example`, `Caddyfile`, README. Production cloud hosts clone only `saas-core-deploy`. No application source code or build toolchains are stored on or required by the production VPS.
+### Deployment Repository CD Pipeline (`saas-core-deploy/.github/workflows/deploy.yml`)
+When `build-and-publish.yml` pushes an updated `docker-compose.yml` to `saas-core-deploy:main`:
+1. **Trigger**: `.github/workflows/deploy.yml` fires automatically on push to `main` in `omarmaarouf18/saas-core-deploy`.
+2. **Runner Execution**: Runs on a dedicated repository-scoped GitHub Actions self-hosted runner (`[self-hosted, saas-vm]`) installed on the production VM under low-privilege system user `deploybot`.
+3. **Execution Steps**:
+   - `docker compose config --quiet`: Validates compose file syntax (fails job immediately if malformed).
+   - `docker compose pull`: Downloads updated production container images from GHCR.
+   - `docker compose up -d --remove-orphans`: Applies container updates in detached mode.
+   - Health Check: Performs a 5-attempt loop (5 seconds apart) calling `http://localhost:8080/health`. Fails job if non-200.
+   - Failure Diagnostics: On failure, prints the last 50 lines of logs (`docker compose logs --tail=50`) directly into GitHub Actions run output.
+
+### Security Model & Privilege Boundary
+- **Outbound Polling Only**: The self-hosted runner polls GitHub via HTTPS outbound; zero inbound network ports are opened on the VM for CD.
+- **`docker` Group Access**: The `deploybot` user has no `sudo` privileges or interactive SSH shell, but belongs to the `docker` group to interact with `/var/run/docker.sock`. On Linux systems, Docker socket access is effectively root-equivalent. This is an explicit, accepted tradeoff for single-VM deployments to eliminate SSH credential sharing.
+
+> [!IMPORTANT]
+> **Known Limitation — Single-VM Scope**:
+> This self-hosted runner CD pipeline is strictly designed and scoped for single-VM deployments. Multi-node clusters, auto-scaling groups, or Kubernetes orchestrators are out of scope for this architecture and will require a distinct deployment design decision if ever revisited.
 
 ---
 

@@ -190,7 +190,7 @@ basicConstraints=CA:FALSE
 keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
 subjectAltName = DNS:${service}, DNS:localhost, IP:127.0.0.1
 EOF
-  openssl x509 -req -in "${service}.csr" -CA ca.crt -CAkey ca.key -CAcreateserial -out "${service}.crt" -days 3650 -sha256 -extfile "${service}.ext"
+  openssl x509 -req -in "${service}.csr" -CA ca.crt -CAkey ca.key -CAcreateserial -out "${service}.crt" -days 3650 -sha256 -extfile "${service}.ext" -copy_extensions copy
   rm -f "${service}.csr" "${service}.ext"
 done
 
@@ -229,18 +229,41 @@ Output: `{"status":"ok"}`
 
 ---
 
-## 7. Automated Upgrades & Continuous Deployment
+## 7. Automated Upgrades & Continuous Deployment (Self-Hosted Runner CD)
 
-When developer changes are pushed to `main` in `saas-core`:
-1. GitHub Actions builds and pushes updated images tagged with the commit SHA and `latest` to GHCR.
-2. The workflow automatically updates `docker-compose.yml` in `saas-core-deploy` with the new commit SHA tag.
-3. On the production server, update the deployment with zero downtime:
+Production deployments on `omarmaarouf18/saas-core-deploy` are automatically executed via a repository-scoped GitHub Actions self-hosted runner (`[self-hosted, saas-vm]`) running on the production VM under the low-privilege `deploybot` system user.
+
+### 7.1 Automated Deployment Flow
+1. When developer changes are pushed to `main` in `saas-core`, `build-and-publish.yml` builds microservice images, pushes them to GHCR, and updates image tag SHAs in `saas-core-deploy`'s `docker-compose.yml`.
+2. The push to `saas-core-deploy`'s `main` branch automatically triggers `.github/workflows/deploy.yml` on the self-hosted runner.
+3. The runner executes `docker compose config --quiet` to validate syntax, `docker compose pull` to download new images, `docker compose up -d --remove-orphans` to apply updates, and performs a 5-attempt health check against `http://localhost:8080/health`.
+
+### 7.2 Security Boundary & Privilege Model
+> [!NOTE]
+> **`docker` Group Security Tradeoff**:
+> The `deploybot` user has no `sudo` privileges and no interactive SSH shell access. However, `deploybot` is a member of the `docker` group to permit `docker compose` execution. On Linux hosts, access to `/var/run/docker.sock` is effectively root-equivalent. This is a known, explicit architecture tradeoff accepted for this single-VM setup to avoid SSH-from-GitHub security risks or long-lived SSH key storage in GitHub.
+
+### 7.3 Manual Deployment & Emergency Fallback
+If the self-hosted runner is offline or undergoing maintenance, operator deployment can be executed manually on the VM host:
+```bash
+cd /opt/saas-platform
+git pull origin main
+docker compose pull
+docker compose up -d --remove-orphans
+docker compose ps
+curl -k https://localhost:8080/health
+```
+
+### 7.4 Manual Rollback Procedure
+If a deployment fails the automated health check or exhibits runtime regressions:
+1. `deploy.yml` will fail loudly, stop execution, and print the last 50 lines of container logs without auto-reverting.
+2. To roll back, operator reverts the offending commit in `saas-core-deploy`:
    ```bash
    cd /opt/saas-platform
-   git pull
-   docker compose pull
-   docker compose up -d --remove-orphans
+   git revert HEAD -m "revert: rollback failed deployment"
+   git push origin main
    ```
+   Or manually check out the previous compose file tag on the host and run `docker compose up -d --remove-orphans`.
 
 ---
 
@@ -409,5 +432,27 @@ docker cp saas-mongo:/data/db/backup_$(date +%F).archive /opt/backups/
   docker compose up -d --remove-orphans
   ```
   Confirm `saas-caddy` status shows `Up` with published ports `0.0.0.0:80->80/tcp` and `0.0.0.0:443->443/tcp`.
+
+### 10.6 Legacy Common Name mTLS Certificate Error (`x509: certificate relies on legacy Common Name field`)
+* **Symptom**: `[PROXY ERROR] POST /auth/signup → https://auth-service:3002: tls: failed to verify certificate: x509: certificate relies on legacy Common Name field, use SANs instead` followed by `502 Bad Gateway` on any api-gateway route that proxies to an internal service (auth-service, user-service, chat-service, notification-service).
+* **Cause**: The mTLS certificate generation commands in Section 4.3 ("Generate Internal mTLS Certificates") sign each service's CSR using `openssl x509 -req ... -extfile "${service}.ext"` without the `-copy_extensions copy` flag. Depending on the OpenSSL version on the host, this can silently produce a signed certificate whose `subjectAltName` (SAN) extension does not make it into the final `.crt`, even though the CSR and `.ext` file both correctly specify it. Go's TLS client (used by all 5 microservices) has rejected certificates lacking a SAN — falling back to the legacy Common Name field — since Go 1.15, so any internal service-to-service call fails at the TLS handshake stage while simple health-check endpoints (`GET /`, `GET /health`) that don't proxy to another service continue to return 200, making the certificate defect easy to miss during initial smoke testing.
+* **Resolution**: Regenerate all internal certificates with `-copy_extensions copy` added to the signing command:
+  ```bash
+  openssl x509 -req -in "${service}.csr" -CA ca.crt -CAkey ca.key -CAcreateserial -out "${service}.crt" -days 3650 -sha256 -extfile "${service}.ext" -copy_extensions copy
+  ```
+  Then restart all containers so they pick up the regenerated certificate files from disk (they only read the mounted `.crt`/`.key` files at process startup, not on change):
+  ```bash
+  docker compose down && docker compose up -d
+  ```
+
+* **Verification**: Confirm the SAN extension is actually present in the signed certificate before restarting containers:
+  ```bash
+  openssl x509 -in certs/auth-service.crt -noout -text | grep -A 2 "Subject Alternative Name"
+  ```
+  Expected output: `DNS:auth-service, DNS:localhost, IP Address:127.0.0.1`. If this is empty, the certificate is defective regardless of what the CSR/`.ext` file specify.
+
+> [!WARNING]
+> Because `GET /` and `GET /health` do not exercise the inter-service mTLS path, a "successful" health check does NOT confirm certificates are valid. Always test at least one real cross-service route (e.g. `POST /api/v1/auth/signup`) before considering a deployment verified.
+
 
 

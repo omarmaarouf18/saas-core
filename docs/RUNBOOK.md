@@ -85,7 +85,10 @@ docker compose ps      # confirm mongo & redis report "healthy"
 curl -k https://localhost:8080/health   # expect {"status":"ok"}
 ```
 
-### Every subsequent release (server already set up)
+### Every subsequent release (Automated via Self-Hosted Runner CD)
+Once `saas-core` merges into `main` and `build-and-publish.yml` updates `saas-core-deploy:main`, deployment to production happens **automatically** via the self-hosted GitHub Actions runner (`deploy.yml`). No manual SSH command is required in the normal path.
+
+#### Manual Fallback (if runner is offline or undergoing maintenance)
 ```bash
 ssh <user>@<server-ip>
 cd /opt/saas-platform
@@ -95,7 +98,14 @@ docker compose up -d --remove-orphans
 docker compose ps
 ```
 
-That's the entire loop: branch → CI green → merge to `main` → `build-and-publish` runs → `saas-core-deploy` updates → `git pull && docker compose pull && docker compose up -d` on the server.
+That's the entire automated loop: branch → CI green → merge to `main` → `build-and-publish` runs → `saas-core-deploy` updates → self-hosted runner `deploy.yml` auto-deploys & verifies health on the production VM.
+
+> **Note:** As of the CD pipeline in `saas-core-deploy/.github/workflows/deploy.yml`,
+> the steps above under "Every subsequent release" now run automatically via a
+> self-hosted GitHub Actions runner on the production VM — manual SSH is only needed
+> for first-time server setup, disaster recovery, or manual troubleshooting. See
+> `saas-core-deploy/README.md` for the automated pipeline's exact behavior and the
+> volume-naming fix that prevents MongoDB re-initialization mismatches.
 
 ## 4.1 Optional: Mobile App Sync & Build (if `frontend/` changed)
 

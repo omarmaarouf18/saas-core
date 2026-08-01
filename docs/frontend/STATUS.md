@@ -114,6 +114,8 @@
    * `customer_job_map_screen.dart`
    * `owner_reconciliation_queue_screen.dart`
    * `kyc_document_upload_screen.dart`
+   * `forgot_password_screen.dart`
+   * `reset_password_screen.dart`
  * **Widgets**:
    * `rating_summary_card.dart`
    * `primary_button.dart`
