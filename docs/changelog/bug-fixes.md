@@ -2,7 +2,11 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
----
+## UpdateJobLocation `requireTier` Error Branch Missing Return Fix
+
+- **Implementation Detail**: Resolved a critical control-flow defect in `user-service` (`UpdateJobLocation` in `services/user-service/internal/handlers/handlers.go`). When `requireTier` returned a non-`ErrUpgradeRequired` internal error, the handler invoked `clearInFlight()` and `writeJSON(w, http.StatusInternalServerError, ...)` but lacked a `return` statement. This missing return allowed execution to fall through to speed checks and database persistence, attempting to process the update and write a second HTTP 200 response header. This single root cause explained two symptoms: (1) security control-flow bypass where 500 error responses continued execution, and (2) concurrent race test failure (`UpdateJobLocation_Throttle_Concurrent_Race_Handling` getting `[200 200]`) due to `clearInFlight()` releasing the in-flight lock prematurely on fallthrough. Added missing `return` statement immediately following `writeJSON(500)`. Explicitly noted that prior local analysis framing this as an "in-memory path" issue investigated the correct symptom but the wrong layer; the fix belongs in shared control flow. Added regression test `UpdateJobLocation RequireTier InternalError Regression Guard` in `handlers_test.go`.
+- **Commit SHA**: ``89d1f0423315851a25479564996b0620a7ce34f6``
+- **Verification**: Verified via `go test ./services/user-service/internal/handlers/... -run TestUserServiceHandlers/UpdateJobLocation_Throttle -race -count=20` passing 20 consecutive iterations, `TestUserServiceHandlers/UpdateJobLocation_RequireTier_InternalError_Regression_Guard` passing, and `make ci`. ✅
 
 ## WalletDeposit Upper Limit
 
