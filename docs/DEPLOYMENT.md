@@ -458,5 +458,15 @@ docker cp saas-mongo:/data/db/backup_$(date +%F).archive /opt/backups/
 > [!WARNING]
 > Because `GET /` and `GET /health` do not exercise the inter-service mTLS path, a "successful" health check does NOT confirm certificates are valid. Always test at least one real cross-service route (e.g. `POST /api/v1/auth/signup`) before considering a deployment verified.
 
+### 10.7 OTP Dispatcher Silently Reverts to MockSMS or MongoDB SCRAM Auth Fails After CD Run
+* **Symptom**: The `auth-service` OTP delivery mechanism silently reverts from `Resend` (`[AUTH] OTP dispatcher: Resend`) back to `MockSMS` (or MongoDB reports `AuthenticationFailed: SCRAM authentication failed, storedKey mismatch`) whenever the automated CD pipeline runs on a push to `main`, even though an operator manually updated `.env` and restarted services via SSH earlier.
+* **Cause**: Dual `.env` files on the VM host. An operator manually updated `.env` in `~/azureuser/saas-core-deploy/.env` or `/opt/saas-platform/.env`, but the self-hosted GitHub Actions runner (`saas-vm-runner`) executes under system user `deploybot` at `/home/deploybot/actions-runner/_work/saas-core-deploy/saas-core-deploy/` and restores its environment from `/home/deploybot/.env` (a cross-run persistent backup). Every automated CD execution restores `/home/deploybot/.env` into the runner workspace and runs `docker compose up -d --force-recreate`, silently overwriting any manual container overrides with `/home/deploybot/.env`'s contents (see ADR-0012).
+* **Resolution**: Update `/home/deploybot/.env` directly (the canonical source of truth for production environment variables), add the missing keys (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `ALLOWED_ORIGIN`), delete any stale `.env` file in the runner workspace directory, and re-trigger the CD pipeline via `workflow_dispatch` or `git push`.
+* **Verification**: Inspect container logs post-deployment to verify Resend activation:
+  ```bash
+  docker compose logs saas-auth-service --tail 15 | grep "OTP dispatcher"
+  ```
+  Expected output: `[AUTH] OTP dispatcher: Resend (Resend API active)`.
+
 
 
