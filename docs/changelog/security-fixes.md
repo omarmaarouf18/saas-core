@@ -2,7 +2,11 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
----
+## API Gateway Trusted-Proxy-Aware Client IP Resolution
+
+- **Implementation Detail**: Resolved production issue where `api-gateway`'s reverse proxy (`services/api-gateway/internal/proxy/proxy.go`) unconditionally overwrote `X-Forwarded-For` with `req.RemoteAddr`, causing Caddy loopback connections (`127.0.0.1`) to collapse all client IPs to `127.0.0.1` and triggering false rate-limiting lockouts across unrelated users. Created `iputil` package (`services/api-gateway/internal/iputil/iputil.go`) providing `ExtractIP`, `IsTrustedProxy`, and `ResolveClientIP`. Configured `TRUSTED_PROXY_IPS` in `config.go` (defaulting to `127.0.0.1,::1`, configurable via environment variable to support CIDRs like `172.16.0.0/12`). Updated reverse proxy Director and `middleware.RateLimit` (`services/api-gateway/internal/middleware/limiter.go`) to check whether immediate connection IP (`req.RemoteAddr`) matches `TRUSTED_PROXY_IPS`. For trusted proxies with existing `X-Forwarded-For` headers, the real client IP at the head of the chain is preserved and forwarded downstream. Direct untrusted connections overwrite `X-Forwarded-For` with `req.RemoteAddr` to harden against client IP spoofing attacks. Documented trust chain Hop 1 (Caddy → api-gateway) and Hop 2 (api-gateway → auth-service) in code comments and updated `docs/DEPLOYMENT.md` Step 8.1.
+- **Commit SHA**: ``4d2fda7ac63665ec4d9e050f594978118b4a7c79``
+- **Verification**: Verified via unit test suite (`go test -v ./services/api-gateway/...` passing 100% including trusted proxy forwarding, untrusted spoofing overwrite, and empty XFF fallback), `go test ./...` across all services, live production VM deployment (`saas-core-deploy` run `30695839438`), live Caddy proxy requests (`https://api.logiclinkeg.tech`), direct `api-gateway` port 8080 spoofing checks, and pre-push hook validation (`.githooks/pre-push` gate exit code 0). ✅
 
 ## Cumulative Route Speed Check (ADR-0007 Phase 0)
 
