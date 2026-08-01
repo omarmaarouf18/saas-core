@@ -71,8 +71,10 @@ Unlike local Git hooks, GitHub Actions CI is **authoritative and non-bypassable*
    - Sets up Flutter stable channel.
    - Runs `dart format --set-exit-if-changed lib/`, `flutter analyze`, and `flutter test`.
 
-### Practical Utility of CI
-In the project's history, a fabricated commit SHA was pushed on a fresh environment where the local pre-push hook had not been activated. The local push succeeded due to the unconfigured hook, but GitHub Actions CI immediately failed on the `lint-formatting` job's "Verify Markdown Commit SHAs" step, preventing unverified documentation from entering the codebase.
+### Practical Utility of CI & Real Incident Cases
+In the project's history, the "Verify Markdown Commit SHAs" guard has caught fabricated and dangling SHAs:
+1. **Unconfigured Hook Bypass**: A fabricated commit SHA was pushed from an environment where the local pre-push hook had not been activated. GitHub Actions CI immediately caught it on the `lint-formatting` job's "Verify Markdown Commit SHAs" step.
+2. **Dangling Loose Object / Un-Amended File Edit Incident**: During the documentation of ADR-0012, an initial commit (`15f6f28...`) was created locally before updating the file's `Related Commit SHA` field to the amended commit (`f819ce3...`). Because `15f6f28...` existed as a loose object in the local `.git/objects` directory, `git cat-file -e` passed locally during `make ci`. However, loose objects are not transferred during `git push`. When GitHub Actions ran in a clean checkout, `15f6f28...` was missing and CI failed with `BLOCKED: fabricated/non-existent SHA in ./docs/adr/0012-single-source-of-truth-for-production-env.md`. Following this incident, both `.githooks/pre-push` and `.github/workflows/ci.yml` were upgraded to enforce `git merge-base --is-ancestor "$sha" HEAD` across ALL markdown files, preventing dangling local objects from passing locally before push.
 
 ---
 

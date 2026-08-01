@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Single Source of Truth for Production `.env` (ADR-0012)
+
+- **Implementation Detail**: Documented real production incident on `quickdelivery-vm` caused by dual `.env` files (`~/azureuser/saas-core-deploy/.env` vs `/home/deploybot/.env`). The self-hosted GitHub Actions runner (`saas-vm-runner`) restores its working environment from `/home/deploybot/.env` (a cross-run persistent backup). Because `/home/deploybot/.env` lacked `RESEND_API_KEY` and `RESEND_FROM_EMAIL`, every automated CD deployment auto-triggered on pushes to `main` silently restored `/home/deploybot/.env` and force-recreated containers, overriding manual operator SSH edits and silently reverting `auth-service`'s OTP delivery mechanism from `Resend` to `MockSMS`. Additionally, differing `MONGO_INITDB_ROOT_PASSWORD` definitions between the two `.env` files triggered `SCRAM authentication failed` errors. Established `/home/deploybot/.env` as the single canonical source of truth for production environment variables per ADR-0012, updated `docs/DEPLOYMENT.md` Troubleshooting section 10.7 with root cause analysis and manual remediation steps, and added a recommended CD safeguard follow-up to fail loudly if critical keys are missing.
+- **Commit SHA**: ``f819ce30f46e19a5761d441f90c9da9929ce6c65``
+- **Verification**: Verified via `make ci` (0 issues found, all Go tests passing including `TestChangelogCommitSHAs`, `make docs-check`, `gofmt`, `govulncheck`, `gosec`, `flutter analyze`), `docs/adr/0012-single-source-of-truth-for-production-env.md` validation, and manual verification against `saas-core-deploy/.github/workflows/deploy.yml`. ✅
+
+
 ## Resend Email OTP Delivery End-to-End Verification
 
 - **Implementation Detail**: Configured and verified real end-to-end email OTP dispatching via `ResendDispatcher` (`github.com/resend/resend-go/v3`) using live Resend API infrastructure and verified domain `logiclinkeg.tech` (`info@logiclinkeg.tech`). Updated `infrastructure/docker-compose.yml` to inject `RESEND_API_KEY` and `RESEND_FROM_EMAIL` into `auth-service`. Verified full lifecycle: signup (`POST /api/v1/auth/signup`) dispatched live email via Resend API (`Resend email ID: 3f0843d1-5682-455d-9ebe-00fcec6590be`), suppressed `dev_otp` in non-local environment (`APP_ENV=production`), stored AES-256-GCM encrypted OTP ciphertext at rest in MongoDB (`otp_code`), delivered email OTP, completed 2FA authentication via `POST /api/v1/auth/verify-otp` (HTTP 200 OK + JWT issued), and confirmed graceful error logging on invalid API key (`[RESEND] Error dispatching OTP email ... API key is invalid`) without crashing `auth-service`.

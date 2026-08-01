@@ -39,23 +39,12 @@ jobs:
               if ! git cat-file -e "$sha^{commit}" 2>/dev/null; then
                 echo "BLOCKED: fabricated/non-existent SHA $sha in $file"
                 FAILED_SHA=1
+              elif ! git merge-base --is-ancestor "$sha" HEAD 2>/dev/null; then
+                echo "BLOCKED: SHA $sha in $file is not reachable from current branch history"
+                FAILED_SHA=1
               fi
             done
           done
-
-          PREV_COMMIT="HEAD~1"
-          if git rev-parse --verify "$PREV_COMMIT" >/dev/null 2>&1; then
-            NEW_SHAS=$(git diff "$PREV_COMMIT" HEAD -- "docs/changelog/*.md" | grep -E "^\+[[:space:]]*- \*\*Commit SHA\*\*" | grep -oE "[0-9a-f]{40}" || true)
-            for sha in $NEW_SHAS; do
-              if ! git cat-file -e "$sha^{commit}" 2>/dev/null; then
-                echo "BLOCKED: Newly added changelog commit SHA $sha does not exist in Git history"
-                FAILED_SHA=1
-              elif ! git merge-base --is-ancestor "$sha" HEAD 2>/dev/null; then
-                echo "BLOCKED: Newly added changelog commit SHA $sha is not in current branch history"
-                FAILED_SHA=1
-              fi
-            done
-          fi
 
           if [ "$FAILED_SHA" -eq 1 ]; then
             exit 1

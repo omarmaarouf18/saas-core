@@ -2,7 +2,7 @@
 
 - **Status**: Accepted
 - **Date**: 2026-08-01
-- **Related Commit SHA**: `15f6f2896a62e1b5b5a8578e8af973c3effe8139`
+- **Related Commit SHA**: `f819ce30f46e19a5761d441f90c9da9929ce6c65`
 - **Related audit finding**: Production OTP Dispatcher Silent Reversion & MongoDB SCRAM Authentication Mismatch Incident
 
 ## Context
