@@ -24,6 +24,14 @@ class WalletScreen extends StatefulWidget {
 
 class _WalletScreenState extends State<WalletScreen> {
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<OwnerProvider>(context, listen: false).fetchPlatformConfig();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final ownerProvider = Provider.of<OwnerProvider>(context);
@@ -37,6 +45,7 @@ class _WalletScreenState extends State<WalletScreen> {
           : RefreshIndicator(
               onRefresh: () async {
                 await ownerProvider.fetchDashboardData(auth.token!);
+                await ownerProvider.fetchPlatformConfig();
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -56,7 +65,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           ),
                         ),
                         SizedBox(
-                          width: 170,
+                          width: 185,
                           child: PrimaryButton(
                             onPressed: () => _showDepositDialog(context),
                             icon: Icons.add_card_rounded,
@@ -102,6 +111,19 @@ class _WalletScreenState extends State<WalletScreen> {
                         ),
                       ],
                     ),
+                    if (ownerProvider.platformFeePercentage != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          "Platform fee: ${ownerProvider.platformFeePercentage! % 1 == 0 ? ownerProvider.platformFeePercentage!.toInt() : ownerProvider.platformFeePercentage}%",
+                          key: const Key('platform_fee_percentage_text'),
+                          style: AppTypography.labelMd.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: AppSpacing.xl),
 
                     // Transaction History Section
