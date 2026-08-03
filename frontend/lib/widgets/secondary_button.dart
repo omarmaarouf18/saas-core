@@ -47,7 +47,8 @@ class SecondaryButton extends StatelessWidget {
                   text,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.titleMd.copyWith(
-                    color: isOutlined ? AppColors.primary : AppColors.onSecondary,
+                    color:
+                        isOutlined ? AppColors.primary : AppColors.onSecondary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
