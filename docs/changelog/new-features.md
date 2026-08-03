@@ -238,6 +238,12 @@ This file tracks historical entries for the primary category: **New Features Cha
 - **Commit SHA**: ``8f20aa6c78ec97ccf4adb605b57003743579880d``
 - **Verification**: Verified via `flutter analyze` (0 issues) and `flutter test` (100% pass, 50/50 test cases). ✅
 
+## Job Cancellation Frontend Wiring (POST /users/jobs/cancel)
+
+- **Implementation Detail**: Wired `POST /users/jobs/cancel` into the Flutter frontend with strict role-specific and state-specific authorization logic. Added `cancelJob` method to `MarketplaceProvider` (`frontend/lib/providers/marketplace_provider.dart`) and `OwnerProvider` (`frontend/lib/providers/owner_provider.dart`). Created reusable `CancelJobDialog` (`frontend/lib/widgets/cancel_job_dialog.dart`) requiring a non-empty cancellation reason (confirm button disabled when empty). For tenant Owners: rendered "Cancel Job" buttons on `home_screen.dart` (Owner Dashboard) for pending and active jobs. For Customers: rendered "Cancel Job" button on `job_status_screen.dart` for pending jobs, and presented "Open a Complaint Ticket" affordance for active jobs with `// TODO` annotation referencing upcoming ticket endpoint wiring. Cancel buttons are completely omitted for completed and cancelled jobs. Added 6 widget tests in `frontend/test/job_cancellation_test.dart`.
+- **Commit SHA**: ``c9e9c9cdbc8bdce1194098ccb5c4d67a4f457fa1``
+- **Verification**: Verified via `flutter analyze` (0 issues) and `flutter test` (100% pass, 57/57 test cases). ✅
+
 
 
 
