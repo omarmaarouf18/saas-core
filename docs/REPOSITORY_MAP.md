@@ -10,6 +10,9 @@
 
 The Quick Delivery platform operates across 4 decoupled GitHub repositories and 1 production cloud Virtual Private Server (VPS target `quickdelivery-vm`). Monorepo source code (`omarmaarouf18/saas-core`) is strictly isolated from production deployment manifests, standalone mobile app builds, and static marketing website release metadata.
 
+> [!NOTE]
+> **Planned Future Client App (Not Yet Created)**: Per [ADR-0013](adr/0013-support-agent-console-as-separate-client-application.md), a standalone Support Agent Console repository (`omarmaarouf18/support-agent-console`) is planned for administrative ticket resolution endpoints (`POST /chat/tickets/resolve`). This repository **does not exist yet** and is strictly out of scope for `frontend/` (`quick-delivery-mobile`).
+
 ```mermaid
 flowchart TD
     subgraph Monorepo["Primary Monorepo: omarmaarouf18/saas-core"]
