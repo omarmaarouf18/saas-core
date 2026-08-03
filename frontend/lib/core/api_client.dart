@@ -119,6 +119,39 @@ class ApiClient {
     }
   }
 
+  Future<Uint8List> getBytes(
+    String pathOrUrl, {
+    Map<String, String>? queryParams,
+    bool isRetry = false,
+  }) async {
+    try {
+      Uri uri;
+      if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
+        uri = Uri.parse(pathOrUrl);
+      } else {
+        uri = Uri.parse('$baseUrl$pathOrUrl');
+      }
+      if (queryParams != null && queryParams.isNotEmpty) {
+        final existingParams = Map<String, String>.from(uri.queryParameters);
+        existingParams.addAll(queryParams);
+        uri = uri.replace(queryParameters: existingParams);
+      }
+      final response = await _client.get(
+        uri,
+        headers: _getHeaders(),
+      );
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      }
+      throw ApiClientException(
+          'Failed to load document (status: ${response.statusCode})',
+          statusCode: response.statusCode);
+    } catch (e) {
+      if (e is ApiClientException) rethrow;
+      throw ApiClientException('Network error: Unable to load document.');
+    }
+  }
+
   Future<dynamic> postMultipart(
     String path, {
     required String fieldName,

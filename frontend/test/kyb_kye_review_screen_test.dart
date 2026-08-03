@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +11,7 @@ import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/screens/home_screen.dart';
 import 'package:frontend/screens/kyb_kye_review_screen.dart';
 import 'package:frontend/widgets/status_badge.dart';
+import 'package:frontend/widgets/document_viewer_dialog.dart';
 
 class MockApiClientForReviewTest extends ApiClient {
   bool shouldFail = false;
@@ -60,9 +62,12 @@ class MockAuthProviderForReviewTest extends AuthProvider {
   bool mockIsLoadingPending = false;
   String? mockPendingError;
   bool shouldFailPending = false;
+  bool shouldFailDocument = false;
+  bool shouldDelayDocument = false;
   bool fetchPendingCalled = false;
   String? lastInternalToken;
   String? lastReviewerToken;
+  String? lastFetchedDocumentUrl;
 
   MockAuthProviderForReviewTest(super.apiClient, {this.mockUser});
 
@@ -101,6 +106,91 @@ class MockAuthProviderForReviewTest extends AuthProvider {
     }
     notifyListeners();
     return mockPendingSubmissions;
+  }
+
+  @override
+  Future<Uint8List> fetchDocumentBytes(
+    String documentUrl, {
+    String? internalToken,
+    String? reviewerToken,
+  }) async {
+    lastFetchedDocumentUrl = documentUrl;
+    if (shouldDelayDocument) {
+      await Future.delayed(const Duration(seconds: 5));
+    }
+    if (shouldFailDocument) {
+      throw ApiClientException('Failed to load document preview');
+    }
+    // Return dummy 1x1 PNG transparent image bytes
+    return Uint8List.fromList([
+      0x89,
+      0x50,
+      0x4E,
+      0x47,
+      0x0D,
+      0x0A,
+      0x1A,
+      0x0A,
+      0x00,
+      0x00,
+      0x00,
+      0x0D,
+      0x49,
+      0x48,
+      0x44,
+      0x52,
+      0x00,
+      0x00,
+      0x00,
+      0x01,
+      0x00,
+      0x00,
+      0x00,
+      0x01,
+      0x08,
+      0x06,
+      0x00,
+      0x00,
+      0x00,
+      0x1F,
+      0x15,
+      0xC4,
+      0x89,
+      0x00,
+      0x00,
+      0x00,
+      0x0A,
+      0x49,
+      0x44,
+      0x41,
+      0x54,
+      0x78,
+      0x9C,
+      0x63,
+      0x00,
+      0x01,
+      0x00,
+      0x00,
+      0x05,
+      0x00,
+      0x01,
+      0x0D,
+      0x0A,
+      0x2D,
+      0xB4,
+      0x00,
+      0x00,
+      0x00,
+      0x00,
+      0x49,
+      0x45,
+      0x4E,
+      0x44,
+      0xAE,
+      0x42,
+      0x60,
+      0x82
+    ]);
   }
 }
 
@@ -347,7 +437,7 @@ void main() {
       (WidgetTester tester) async {
     final apiClient = ApiClient();
 
-    // Case A: Reviewer role -> KybKyeReviewScreen rendered directly on HomeScreen login
+    // Case A: Reviewer role -> KybKyeReviewScreen rendered directly on HomeScreen
     final reviewerUser = UserProfile(
       id: 'rev-1',
       email: 'reviewer@admin.com',
@@ -407,5 +497,158 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('reviewer_queue_button')), findsNothing);
+  });
+
+  testWidgets(
+      '6. Document Fetch Success: Renders image and PDF previews in DocumentViewerDialog',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final reviewerUser = UserProfile(
+      id: 'rev-1',
+      email: 'reviewer@admin.com',
+      username: 'ReviewerAdmin',
+      role: 'reviewer',
+    );
+    final mockAuth =
+        MockAuthProviderForReviewTest(apiClient, mockUser: reviewerUser);
+
+    final submission = {
+      'user_id': 'owner-101',
+      'username': 'Acme Owner',
+      'email': 'owner@acme.com',
+      'role': 'owner',
+      'kyc_status': 'pending_super_admin_approval',
+      'id_front_url': 'https://storage/id_front_101.png',
+      'id_back_url': 'https://storage/id_back_101.png',
+      'selfie_url': 'https://storage/selfie_101.png',
+      'business_proof_url': 'https://storage/proof_101.pdf',
+    };
+
+    // Case A: Image preview (Front ID)
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: mockAuth,
+        child: MaterialApp(
+          home: Scaffold(
+            body: DocumentViewerDialog(
+              key: const Key('doc_dialog_case_a'),
+              submission: submission,
+              initialDocType: 'id_front',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('document_viewer_dialog')), findsOneWidget);
+    expect(find.byKey(const Key('document_image_preview')), findsOneWidget);
+    expect(mockAuth.lastFetchedDocumentUrl,
+        equals('https://storage/id_front_101.png'));
+
+    // Case B: PDF preview (Business Proof)
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: mockAuth,
+        child: MaterialApp(
+          home: Scaffold(
+            body: DocumentViewerDialog(
+              key: const Key('doc_dialog_case_b'),
+              submission: submission,
+              initialDocType: 'business_proof',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('document_pdf_preview')), findsOneWidget);
+    expect(find.text('PDF Document Preview'), findsOneWidget);
+    expect(mockAuth.lastFetchedDocumentUrl,
+        equals('https://storage/proof_101.pdf'));
+  });
+
+  testWidgets(
+      '7. Document Fetch Failure: Renders error banner in DocumentViewerDialog',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final reviewerUser = UserProfile(
+      id: 'rev-1',
+      email: 'reviewer@admin.com',
+      username: 'ReviewerAdmin',
+      role: 'reviewer',
+    );
+    final mockAuth =
+        MockAuthProviderForReviewTest(apiClient, mockUser: reviewerUser);
+    mockAuth.shouldFailDocument = true;
+
+    final submission = {
+      'user_id': 'owner-101',
+      'username': 'Acme Owner',
+      'role': 'owner',
+      'id_front_url': 'https://storage/id_front_101.png',
+    };
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: mockAuth,
+        child: MaterialApp(
+          home: Scaffold(
+            body: DocumentViewerDialog(
+              submission: submission,
+              initialDocType: 'id_front',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('document_error_banner')), findsOneWidget);
+    expect(find.text('Failed to load document preview'), findsOneWidget);
+  });
+
+  testWidgets(
+      '8. Document Loading State: Renders loading indicator in DocumentViewerDialog',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final reviewerUser = UserProfile(
+      id: 'rev-1',
+      email: 'reviewer@admin.com',
+      username: 'ReviewerAdmin',
+      role: 'reviewer',
+    );
+    final mockAuth =
+        MockAuthProviderForReviewTest(apiClient, mockUser: reviewerUser);
+    mockAuth.shouldDelayDocument = true;
+
+    final submission = {
+      'user_id': 'owner-101',
+      'username': 'Acme Owner',
+      'role': 'owner',
+      'id_front_url': 'https://storage/id_front_101.png',
+    };
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: mockAuth,
+        child: MaterialApp(
+          home: Scaffold(
+            body: DocumentViewerDialog(
+              submission: submission,
+              initialDocType: 'id_front',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(); // Trigger build without settling async delay
+
+    expect(find.byKey(const Key('document_loading_indicator')), findsOneWidget);
+    expect(find.text('Loading document preview...'), findsOneWidget);
+
+    // Advance timer to complete pending delay and avoid dangling timer
+    await tester.pump(const Duration(seconds: 6));
   });
 }

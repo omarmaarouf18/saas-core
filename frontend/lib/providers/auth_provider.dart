@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/api_client.dart';
@@ -399,5 +400,21 @@ class AuthProvider extends ChangeNotifier {
     apiClient.setToken(null);
     await _secureStorage.deleteAll();
     notifyListeners();
+  }
+
+  /// Fetches raw document bytes for viewing a KYB/KYE document image or PDF.
+  Future<Uint8List> fetchDocumentBytes(
+    String documentUrl, {
+    String? internalToken,
+    String? reviewerToken,
+  }) async {
+    final Map<String, String> queryParams = {};
+    if (internalToken != null && internalToken.isNotEmpty) {
+      queryParams['internal_token'] = internalToken;
+    }
+    if (reviewerToken != null && reviewerToken.isNotEmpty) {
+      queryParams['reviewer_token'] = reviewerToken;
+    }
+    return await apiClient.getBytes(documentUrl, queryParams: queryParams);
   }
 }

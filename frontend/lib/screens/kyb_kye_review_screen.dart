@@ -8,6 +8,7 @@ import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
+import '../widgets/document_viewer_dialog.dart';
 
 class KybKyeReviewScreen extends StatefulWidget {
   final String? internalToken;
@@ -160,16 +161,7 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
 
                   return InkWell(
                     key: Key('submission_item_$userId'),
-                    onTap: () {
-                      // Placeholder for future detail view / approve / reject flow
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                              'Submission selected for $username ($userId)'),
-                          duration: const Duration(seconds: 1),
-                        ),
-                      );
-                    },
+                    onTap: () => _openDocumentViewer(item, 'id_front'),
                     borderRadius: BorderRadius.circular(AppRadius.defaultValue),
                     child: ThemedCard(
                       padding: AppSpacing.md,
@@ -252,11 +244,19 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
                             spacing: AppSpacing.xs,
                             runSpacing: AppSpacing.xs,
                             children: [
-                              _buildDocChip('Front ID', hasFront),
-                              _buildDocChip('Back ID', hasBack),
-                              _buildDocChip('Selfie', hasSelfie),
+                              _buildDocChip('Front ID', hasFront,
+                                  onTap: () =>
+                                      _openDocumentViewer(item, 'id_front')),
+                              _buildDocChip('Back ID', hasBack,
+                                  onTap: () =>
+                                      _openDocumentViewer(item, 'id_back')),
+                              _buildDocChip('Selfie', hasSelfie,
+                                  onTap: () =>
+                                      _openDocumentViewer(item, 'selfie')),
                               if (role == 'owner')
-                                _buildDocChip('Business Proof', hasProof),
+                                _buildDocChip('Business Proof', hasProof,
+                                    onTap: () => _openDocumentViewer(
+                                        item, 'business_proof')),
                             ],
                           ),
                           if (docErrors.isNotEmpty) ...[
@@ -295,41 +295,60 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
     );
   }
 
-  Widget _buildDocChip(String label, bool isAvailable) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
+  void _openDocumentViewer(Map<String, dynamic> submission,
+      [String initialDocType = 'id_front']) {
+    showDialog(
+      context: context,
+      builder: (context) => DocumentViewerDialog(
+        submission: submission,
+        initialDocType: initialDocType,
+        internalToken: widget.internalToken,
+        reviewerToken: widget.reviewerToken,
       ),
-      decoration: BoxDecoration(
-        color: isAvailable
-            ? AppColors.success.withValues(alpha: 0.1)
-            : AppColors.outlineVariant.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(
-          color: isAvailable
-              ? AppColors.success.withValues(alpha: 0.3)
-              : AppColors.outlineVariant,
+    );
+  }
+
+  Widget _buildDocChip(String label, bool isAvailable, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: isAvailable ? onTap : null,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isAvailable ? Icons.check_circle : Icons.cancel,
-            size: 14,
-            color: isAvailable ? AppColors.success : AppColors.onSurfaceVariant,
+        decoration: BoxDecoration(
+          color: isAvailable
+              ? AppColors.success.withValues(alpha: 0.1)
+              : AppColors.outlineVariant.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(
+            color: isAvailable
+                ? AppColors.success.withValues(alpha: 0.3)
+                : AppColors.outlineVariant,
           ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: AppTypography.bodyMd.copyWith(
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isAvailable ? Icons.check_circle : Icons.cancel,
+              size: 14,
               color:
                   isAvailable ? AppColors.success : AppColors.onSurfaceVariant,
-              fontWeight: isAvailable ? FontWeight.bold : FontWeight.normal,
             ),
-          ),
-        ],
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: AppTypography.bodyMd.copyWith(
+                color: isAvailable
+                    ? AppColors.success
+                    : AppColors.onSurfaceVariant,
+                fontWeight: isAvailable ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
