@@ -13,6 +13,7 @@ class OwnerProvider extends ChangeNotifier {
   List<dynamic> _ledgerEntries = [];
   List<Job> _ownerJobs = [];
   double? _platformFeePercentage;
+  List<dynamic> _employees = [];
   bool _isLoading = false;
   String? _error;
 
@@ -23,6 +24,7 @@ class OwnerProvider extends ChangeNotifier {
   List<dynamic> get ledgerEntries => _ledgerEntries;
   List<Job> get ownerJobs => _ownerJobs;
   double? get platformFeePercentage => _platformFeePercentage;
+  List<dynamic> get employees => _employees;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -146,6 +148,38 @@ class OwnerProvider extends ChangeNotifier {
       debugPrint('Error toggling employee status: $e');
       _error = friendlyErrorMessage(e);
       rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // API Call: Fetch Registered Employees
+  // GET /auth/employees
+  // ---------------------------------------------------------------------------
+  Future<List<dynamic>> fetchEmployees([String? ownerToken]) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.get(
+        '/auth/employees',
+        queryParams: ownerToken != null ? {'owner_token': ownerToken} : null,
+      );
+
+      if (res is List) {
+        _employees = List<dynamic>.from(res);
+      } else {
+        _employees = [];
+      }
+      return _employees;
+    } catch (e) {
+      debugPrint('Error fetching employees list: $e');
+      _error = friendlyErrorMessage(e);
+      _employees = [];
+      return [];
     } finally {
       _isLoading = false;
       notifyListeners();
