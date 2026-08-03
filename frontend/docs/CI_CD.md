@@ -35,7 +35,7 @@ To avoid manual copy-pasting between repositories while maintaining a clean, sta
 
 * **Source Workflow**: `.github/workflows/sync-mobile-frontend.yml` in `omarmaarouf18/saas-core`.
 * **Triggers**:
-  - `push` events to `main` branch (restricted to `main` to ensure feature branch changes pass CI and code review before release).
+  - `push` events to `main` only (as of commit fd545fc — previously also triggered on `logic-exploitation`, which allowed unreviewed feature-branch code to reach the public mobile app; this was a release-discipline bug, now fixed).
   - Manual trigger: `workflow_dispatch`.
   - Path-scoped filter: `paths: ["frontend/**"]` (only runs when files under `frontend/` change).
 
@@ -88,7 +88,7 @@ To avoid manual copy-pasting between repositories while maintaining a clean, sta
 * **Manually Re-Build APK**:
   Navigate to **Actions** -> **Build Android APK** -> click **Run workflow** -> select branch `main`.
 * **Manually Sync Frontend**:
-  Trigger a manual dispatch on `main` or push a commit to `main` touching any file in `frontend/` in `saas-core`.
+  Trigger a manual dispatch via `workflow_dispatch` (e.g. `gh workflow run sync-mobile-frontend.yml --ref logic-exploitation`) to manually sync from any feature branch for testing purposes, or push a commit to `main` touching any file in `frontend/` in `saas-core` for automatic production release sync.
 
 ---
 

@@ -24,7 +24,7 @@ flowchart TD
 
     subgraph Workflows["GitHub Actions Workflows (saas-core)"]
         WF_BUILD["build-and-publish.yml\n(Triggers on push to main)"]
-        WF_SYNC["sync-mobile-frontend.yml\n(Triggers on push to main\ntouching frontend/**)"]
+        WF_SYNC["sync-mobile-frontend.yml\n(Triggers on push to main only\ntouching frontend/**)"]
     end
 
     subgraph GHCR["GitHub Container Registry (ghcr.io)"]
@@ -94,7 +94,7 @@ The repository enforces a strict two-tier branch safety model:
 
 1. **Active Development Branch (`logic-exploitation`)**:
    - All feature implementation, bug fixes, documentation, and local testing occur on `logic-exploitation`.
-   - Pushes to `logic-exploitation` run automated CI checks (`ci.yml`), but do **NOT** trigger `sync-mobile-frontend.yml` or public APK builds on `quick-delivery-mobile`. Mobile app updates sync only upon merging to `main`.
+   - Pushes to `logic-exploitation` do NOT trigger any mobile sync or release automation. Only merging into `main` triggers `sync-mobile-frontend.yml`. To manually test a sync from a feature branch, use `workflow_dispatch` explicitly (`gh workflow run sync-mobile-frontend.yml --ref logic-exploitation`) — this must be a deliberate manual action, never automatic.
    - > [!WARNING]
      > **No Automatic Production Deployment**: Commits pushed exclusively to `logic-exploitation` **NEVER** trigger Docker image builds or deployment tag updates in `saas-core-deploy`. Development work on `logic-exploitation` will not reach the production VPS (`quickdelivery-vm`) until explicitly merged into `main`.
 
