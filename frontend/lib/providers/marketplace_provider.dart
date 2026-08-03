@@ -301,9 +301,8 @@ class MarketplaceProvider extends ChangeNotifier {
       );
 
       if (res is List) {
-        _customerJobs = res
-            .map((j) => Job.fromJson(j as Map<String, dynamic>))
-            .toList();
+        _customerJobs =
+            res.map((j) => Job.fromJson(j as Map<String, dynamic>)).toList();
       } else {
         _customerJobs = [];
       }

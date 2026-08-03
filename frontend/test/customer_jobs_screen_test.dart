@@ -184,10 +184,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('customer_jobs_list')), findsOneWidget);
-    expect(
-        find.byKey(Key('customer_job_card_${sampleJobPending.id}')), findsOneWidget);
-    expect(
-        find.byKey(Key('customer_job_card_${sampleJobActive.id}')), findsOneWidget);
+    expect(find.byKey(Key('customer_job_card_${sampleJobPending.id}')),
+        findsOneWidget);
+    expect(find.byKey(Key('customer_job_card_${sampleJobActive.id}')),
+        findsOneWidget);
     expect(find.byKey(Key('customer_job_card_${sampleJobCancelled.id}')),
         findsOneWidget);
 
@@ -201,7 +201,8 @@ void main() {
     expect(find.text("Payment: ESCROW"), findsOneWidget);
 
     // Verify cancellation reason
-    expect(find.text("Reason: Customer requested cancellation"), findsOneWidget);
+    expect(
+        find.text("Reason: Customer requested cancellation"), findsOneWidget);
   });
 
   testWidgets('Renders inline error banner when fetchCustomerJobs sets error',
@@ -236,7 +237,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Tap job card
-    await tester.tap(find.byKey(Key('customer_job_card_${sampleJobPending.id}')));
+    await tester
+        .tap(find.byKey(Key('customer_job_card_${sampleJobPending.id}')));
     await tester.pumpAndSettle();
 
     // Confirm navigation to JobStatusScreen

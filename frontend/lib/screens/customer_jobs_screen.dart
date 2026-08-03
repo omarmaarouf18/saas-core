@@ -28,7 +28,8 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
 
   void _loadCustomerJobs() {
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    final marketplace = Provider.of<MarketplaceProvider>(context, listen: false);
+    final marketplace =
+        Provider.of<MarketplaceProvider>(context, listen: false);
     marketplace.fetchCustomerJobs(auth.token);
   }
 
