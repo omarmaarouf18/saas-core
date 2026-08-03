@@ -15,11 +15,19 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  List<dynamic> _pendingSubmissions = [];
+  bool _isLoadingPending = false;
+  String? _pendingError;
+
   UserProfile? get user => _user;
   String? get token => _token;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAuthenticated => _token != null;
+
+  List<dynamic> get pendingSubmissions => _pendingSubmissions;
+  bool get isLoadingPending => _isLoadingPending;
+  String? get pendingError => _pendingError;
 
   AuthProvider(this.apiClient, {PushNotificationService? pushService})
       : pushService =
@@ -123,6 +131,48 @@ class AuthProvider extends ChangeNotifier {
       return true;
     }
     return false;
+  }
+
+  Future<List<dynamic>> fetchPendingSubmissions({
+    String? internalToken,
+    String? reviewerToken,
+  }) async {
+    _isLoadingPending = true;
+    _pendingError = null;
+    notifyListeners();
+
+    try {
+      final queryParams = <String, String>{};
+      if (internalToken != null && internalToken.isNotEmpty) {
+        queryParams['internal_token'] = internalToken;
+      }
+      if (reviewerToken != null && reviewerToken.isNotEmpty) {
+        queryParams['reviewer_token'] = reviewerToken;
+      }
+
+      final res = await apiClient.get(
+        '/auth/kyb-kye/pending',
+        queryParams: queryParams.isNotEmpty ? queryParams : null,
+      );
+
+      if (res is List) {
+        _pendingSubmissions = res;
+      } else if (res is Map &&
+          res.containsKey('submissions') &&
+          res['submissions'] is List) {
+        _pendingSubmissions = res['submissions'] as List<dynamic>;
+      } else {
+        _pendingSubmissions = [];
+      }
+      return _pendingSubmissions;
+    } catch (e) {
+      _pendingError = friendlyErrorMessage(e);
+      _pendingSubmissions = [];
+      return [];
+    } finally {
+      _isLoadingPending = false;
+      notifyListeners();
+    }
   }
 
   void clearError() {
