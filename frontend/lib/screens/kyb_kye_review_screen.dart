@@ -170,8 +170,7 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
                         ),
                       );
                     },
-                    borderRadius:
-                        BorderRadius.circular(AppRadius.defaultValue),
+                    borderRadius: BorderRadius.circular(AppRadius.defaultValue),
                     child: ThemedCard(
                       padding: AppSpacing.md,
                       child: Column(
@@ -213,8 +212,8 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
                                   vertical: AppSpacing.xs,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary
-                                      .withValues(alpha: 0.1),
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.1),
                                   borderRadius:
                                       BorderRadius.circular(AppRadius.sm),
                                 ),
@@ -319,8 +318,7 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
           Icon(
             isAvailable ? Icons.check_circle : Icons.cancel,
             size: 14,
-            color:
-                isAvailable ? AppColors.success : AppColors.onSurfaceVariant,
+            color: isAvailable ? AppColors.success : AppColors.onSurfaceVariant,
           ),
           const SizedBox(width: 4),
           Text(
