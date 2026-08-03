@@ -103,13 +103,31 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
 
   Future<void> _confirmAndCompleteJob(Job job) async {
     final provider = Provider.of<EmployeeJobsProvider>(context, listen: false);
+    final isCod = job.paymentMethod.toLowerCase().trim() == 'cod';
+
+    final String title = isCod
+        ? "Confirm Cash Collection & Complete"
+        : "Complete Job";
+
+    final String message = isCod
+        ? "Confirm you have physically collected the cash payment of \$${job.lockedEscrowAmount?.toStringAsFixed(2) ?? '0.00'} (COD) from the customer.\n\nThis will deduct the platform fee from the owner's wallet and mark Job #${job.id} as completed."
+        : "Are you sure you want to mark Job #${job.id} as completed?";
+
+    final String confirmLabel = isCod
+        ? "Confirm Cash Collected & Complete"
+        : "Complete Job";
+
+    final IconData icon = isCod
+        ? Icons.payments_outlined
+        : Icons.check_circle_outline;
+
     final confirmed = await ConfirmActionDialog.show(
       context,
-      title: "Complete Job",
-      message: "Are you sure you want to mark Job #${job.id} as completed?",
-      confirmLabel: "Complete Job",
+      title: title,
+      message: message,
+      confirmLabel: confirmLabel,
       cancelLabel: "Cancel",
-      icon: Icons.check_circle_outline,
+      icon: icon,
     );
 
     if (confirmed != true || !mounted) return;
@@ -121,7 +139,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     });
 
     try {
-      await provider.completeJob(job.id);
+      await provider.completeJob(job.id, cashCollected: isCod);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

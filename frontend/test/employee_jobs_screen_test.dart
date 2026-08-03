@@ -29,6 +29,7 @@ class MockEmployeeJobsProviderForTest extends EmployeeJobsProvider {
   final String failMessage;
   bool completeJobCalled = false;
   String? completedJobId;
+  bool? lastCashCollectedParam;
 
   MockEmployeeJobsProviderForTest(
     super.apiClient, {
@@ -53,9 +54,10 @@ class MockEmployeeJobsProviderForTest extends EmployeeJobsProvider {
   }
 
   @override
-  Future<void> completeJob(String jobId) async {
+  Future<void> completeJob(String jobId, {bool cashCollected = false}) async {
     completeJobCalled = true;
     completedJobId = jobId;
+    lastCashCollectedParam = cashCollected;
 
     if (shouldFailComplete) {
       throw ApiClientException(failMessage, statusCode: 403);
@@ -90,35 +92,37 @@ class MockEmployeeJobsProviderForTest extends EmployeeJobsProvider {
 }
 
 void main() {
-  final activeJob = Job(
-    id: 'job-active-001',
+  final activeEscrowJob = Job(
+    id: 'job-active-escrow-001',
     ownerId: 'owner-1',
     employeeId: 'emp-1',
     userId: 'cust-1',
     serviceId: 'service-1',
     status: 'active',
     location: JobLocation(latitude: 30.0, longitude: 31.0),
-    paymentMethod: 'cod',
+    paymentMethod: 'escrow',
+    lockedEscrowAmount: 50.0,
   );
 
-  final pendingJob = Job(
-    id: 'job-pending-002',
+  final activeCodJob = Job(
+    id: 'job-active-cod-002',
     ownerId: 'owner-1',
     employeeId: 'emp-1',
     userId: 'cust-2',
     serviceId: 'service-2',
-    status: 'pending',
+    status: 'active',
     location: JobLocation(latitude: 30.0, longitude: 31.0),
     paymentMethod: 'cod',
+    lockedEscrowAmount: 25.50,
   );
 
-  final completedJob = Job(
-    id: 'job-completed-003',
+  final pendingJob = Job(
+    id: 'job-pending-003',
     ownerId: 'owner-1',
     employeeId: 'emp-1',
     userId: 'cust-3',
     serviceId: 'service-3',
-    status: 'completed',
+    status: 'pending',
     location: JobLocation(latitude: 30.0, longitude: 31.0),
     paymentMethod: 'cod',
   );
@@ -158,41 +162,41 @@ void main() {
     final apiClient = ApiClient();
     final jobsProvider = MockEmployeeJobsProviderForTest(
       apiClient,
-      initialJobs: [activeJob, pendingJob, completedJob],
+      initialJobs: [activeEscrowJob, pendingJob],
     );
 
     await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
     await tester.pumpAndSettle();
 
-    // Verify key for activeJob exists
-    expect(find.byKey(const Key('complete_job_button_job-active-001')),
+    // Verify key for activeEscrowJob exists, pendingJob does not
+    expect(
+        find.byKey(const Key('complete_job_button_job-active-escrow-001')),
         findsOneWidget);
-    expect(find.byKey(const Key('complete_job_button_job-pending-002')),
-        findsNothing);
-    expect(find.byKey(const Key('complete_job_button_job-completed-003')),
+    expect(find.byKey(const Key('complete_job_button_job-pending-003')),
         findsNothing);
   });
 
-  testWidgets('(b) Tapping Complete Job shows confirmation dialog',
+  testWidgets('(b) Non-COD job tapping Complete Job shows non-COD dialog copy',
       (WidgetTester tester) async {
     final apiClient = ApiClient();
     final jobsProvider = MockEmployeeJobsProviderForTest(
       apiClient,
-      initialJobs: [activeJob],
+      initialJobs: [activeEscrowJob],
     );
 
     await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
     await tester.pumpAndSettle();
 
-    final cardButton = find.byKey(const Key('complete_job_button_job-active-001'));
+    final cardButton =
+        find.byKey(const Key('complete_job_button_job-active-escrow-001'));
     await tester.ensureVisible(cardButton);
     await tester.tap(cardButton);
     await tester.pumpAndSettle();
 
-    // Verify confirmation dialog text (Card button, Dialog title, Dialog confirm button)
+    // Verify non-COD confirmation dialog text
     expect(find.text('Complete Job'), findsNWidgets(3));
     expect(
-      find.text('Are you sure you want to mark Job #job-active-001 as completed?'),
+      find.text('Are you sure you want to mark Job #job-active-escrow-001 as completed?'),
       findsOneWidget,
     );
     expect(find.text('Cancel'), findsOneWidget);
@@ -201,27 +205,28 @@ void main() {
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
 
-    // Verify completeJob was NOT called
     expect(jobsProvider.completeJobCalled, isFalse);
   });
 
-  testWidgets('(c) Confirming dialog calls completeJob and UI reflects success',
+  testWidgets(
+      '(c) Non-COD job confirmation sends cashCollected: false to provider',
       (WidgetTester tester) async {
     final apiClient = ApiClient();
     final jobsProvider = MockEmployeeJobsProviderForTest(
       apiClient,
-      initialJobs: [activeJob],
+      initialJobs: [activeEscrowJob],
     );
 
     await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
     await tester.pumpAndSettle();
 
-    final cardButton = find.byKey(const Key('complete_job_button_job-active-001'));
+    final cardButton =
+        find.byKey(const Key('complete_job_button_job-active-escrow-001'));
     await tester.ensureVisible(cardButton);
     await tester.tap(cardButton);
     await tester.pumpAndSettle();
 
-    // Tap confirm in dialog
+    // Confirm in non-COD dialog
     final dialogConfirmButton = find.descendant(
       of: find.byType(AlertDialog),
       matching: find.widgetWithText(ElevatedButton, 'Complete Job'),
@@ -229,24 +234,62 @@ void main() {
     await tester.tap(dialogConfirmButton);
     await tester.pumpAndSettle();
 
-    // Verify provider was called
+    // Verify provider was called with cashCollected == false
     expect(jobsProvider.completeJobCalled, isTrue);
-    expect(jobsProvider.completedJobId, 'job-active-001');
-
-    // Success snackbar and updated status badge
-    expect(find.text('Job marked as completed successfully!'), findsOneWidget);
+    expect(jobsProvider.completedJobId, 'job-active-escrow-001');
+    expect(jobsProvider.lastCashCollectedParam, isFalse);
     expect(find.text('COMPLETED'), findsOneWidget);
-    // Button for complete job should no longer exist since status is completed
-    expect(find.byKey(const Key('complete_job_button_job-active-001')),
-        findsNothing);
   });
 
-  testWidgets('(d) On failure, friendly error message is shown inline',
+  testWidgets(
+      '(d) COD job confirmation shows explicit cash collection dialog copy and sends cashCollected: true',
       (WidgetTester tester) async {
     final apiClient = ApiClient();
     final jobsProvider = MockEmployeeJobsProviderForTest(
       apiClient,
-      initialJobs: [activeJob],
+      initialJobs: [activeCodJob],
+    );
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    final cardButton =
+        find.byKey(const Key('complete_job_button_job-active-cod-002'));
+    await tester.ensureVisible(cardButton);
+    await tester.tap(cardButton);
+    await tester.pumpAndSettle();
+
+    // Verify COD-specific confirmation dialog copy
+    expect(find.text('Confirm Cash Collection & Complete'), findsOneWidget);
+    expect(
+      find.textContaining(
+          'Confirm you have physically collected the cash payment of \$25.50 (COD) from the customer.'),
+      findsOneWidget,
+    );
+    expect(find.text('Confirm Cash Collected & Complete'), findsOneWidget);
+
+    // Confirm in COD dialog
+    final dialogConfirmButton = find.descendant(
+      of: find.byType(AlertDialog),
+      matching:
+          find.widgetWithText(ElevatedButton, 'Confirm Cash Collected & Complete'),
+    );
+    await tester.tap(dialogConfirmButton);
+    await tester.pumpAndSettle();
+
+    // Verify provider was called with cashCollected == true
+    expect(jobsProvider.completeJobCalled, isTrue);
+    expect(jobsProvider.completedJobId, 'job-active-cod-002');
+    expect(jobsProvider.lastCashCollectedParam, isTrue);
+    expect(find.text('COMPLETED'), findsOneWidget);
+  });
+
+  testWidgets('(e) On failure, friendly error message is shown inline',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [activeEscrowJob],
       shouldFailComplete: true,
       failMessage: 'Access denied: you are not authorized to complete this job',
     );
@@ -254,7 +297,8 @@ void main() {
     await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
     await tester.pumpAndSettle();
 
-    final cardButton = find.byKey(const Key('complete_job_button_job-active-001'));
+    final cardButton =
+        find.byKey(const Key('complete_job_button_job-active-escrow-001'));
     await tester.ensureVisible(cardButton);
     await tester.tap(cardButton);
     await tester.pumpAndSettle();

@@ -72,7 +72,7 @@ class EmployeeJobsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> completeJob(String jobId) async {
+  Future<void> completeJob(String jobId, {bool cashCollected = false}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -81,7 +81,7 @@ class EmployeeJobsProvider extends ChangeNotifier {
       final token = apiClient.currentToken ?? '';
       await apiClient.post('/users/jobs/complete', {
         'job_id': jobId,
-        'cash_collected': true,
+        'cash_collected': cashCollected,
         if (token.isNotEmpty) 'requester_id': token,
       });
 
