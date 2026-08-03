@@ -60,7 +60,9 @@ jobs:
             --repo omarmaarouf18/quick-delivery-mobile \
             --title "App Release ${{ steps.vars.outputs.short_sha }}" \
             --notes "Automated release built from commit ${{ steps.vars.outputs.short_sha }}" \
-            --clobber
+            || gh release upload "$TAG" build/app/outputs/flutter-apk/app-release.apk \
+               --repo omarmaarouf18/quick-delivery-mobile \
+               --clobber
           echo "apk_url=https://github.com/omarmaarouf18/quick-delivery-mobile/releases/download/${TAG}/app-release.apk" >> "$GITHUB_OUTPUT"
           SIZE_MB=$(du -m build/app/outputs/flutter-apk/app-release.apk | cut -f1)
           echo "size_mb=${SIZE_MB}" >> "$GITHUB_OUTPUT"
