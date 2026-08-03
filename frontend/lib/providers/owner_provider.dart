@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api_client.dart';
 import '../core/error_messages.dart';
+import '../models/job.dart';
 
 class OwnerProvider extends ChangeNotifier {
   final ApiClient apiClient;
@@ -10,6 +11,7 @@ class OwnerProvider extends ChangeNotifier {
   double _withdrawableBalance = 0.0;
   String _subscriptionTier = 'free';
   List<dynamic> _ledgerEntries = [];
+  List<Job> _ownerJobs = [];
   bool _isLoading = false;
   String? _error;
 
@@ -18,6 +20,7 @@ class OwnerProvider extends ChangeNotifier {
   double get withdrawableBalance => _withdrawableBalance;
   String get subscriptionTier => _subscriptionTier;
   List<dynamic> get ledgerEntries => _ledgerEntries;
+  List<Job> get ownerJobs => _ownerJobs;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -264,6 +267,90 @@ class OwnerProvider extends ChangeNotifier {
       return Map<String, dynamic>.from(res);
     } catch (e) {
       debugPrint('Error updating subscription: $e');
+      _error = friendlyErrorMessage(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchOwnerJobs(String ownerToken) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.get('/users/jobs/owner', queryParams: {
+        'owner_token': ownerToken,
+      });
+
+      if (res is List) {
+        _ownerJobs =
+            res.map((j) => Job.fromJson(j as Map<String, dynamic>)).toList();
+      } else {
+        _ownerJobs = [];
+      }
+    } catch (e) {
+      debugPrint('Error fetching owner jobs: $e');
+      _error = friendlyErrorMessage(e);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<Map<String, dynamic>> cancelJob({
+    required String jobId,
+    required String reason,
+    required String ownerToken,
+  }) async {
+    final trimmedReason = reason.trim();
+    if (trimmedReason.isEmpty) {
+      const msg = 'Reason is required to cancel a job.';
+      _error = msg;
+      notifyListeners();
+      throw ApiClientException(msg, statusCode: 400);
+    }
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post('/users/jobs/cancel', {
+        'job_id': jobId,
+        'reason': trimmedReason,
+        'requester_id': ownerToken,
+      });
+
+      final index = _ownerJobs.indexWhere((j) => j.id == jobId);
+      if (index != -1) {
+        final existing = _ownerJobs[index];
+        _ownerJobs[index] = Job(
+          id: existing.id,
+          ownerId: existing.ownerId,
+          employeeId: existing.employeeId,
+          userId: existing.userId,
+          serviceId: existing.serviceId,
+          status: 'cancelled',
+          location: existing.location,
+          currentLocation: existing.currentLocation,
+          paymentMethod: existing.paymentMethod,
+          cancellationReason: trimmedReason,
+          lockedEscrowAmount: existing.lockedEscrowAmount,
+          suggestedPrice: existing.suggestedPrice,
+          proposedPrice: existing.proposedPrice,
+          proposedBy: existing.proposedBy,
+          agreedPrice: existing.agreedPrice,
+          priceProposalExpiresAt: existing.priceProposalExpiresAt,
+          createdAt: existing.createdAt,
+          updatedAt: DateTime.now(),
+        );
+      }
+      return Map<String, dynamic>.from(res is Map ? res : {});
+    } catch (e) {
+      debugPrint('Error cancelling job as owner: $e');
       _error = friendlyErrorMessage(e);
       rethrow;
     } finally {

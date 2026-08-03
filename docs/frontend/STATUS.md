@@ -26,6 +26,7 @@
     *   *Marketplace Directory*: **[VERIFIED]** List view with custom latitude/longitude coordinate query inputs, search radius, exactly 3 categories (Delivery, Ride, Shipping) using existing constant mapping, and price sorting, querying `/users/services`.
     *   *Booking Workflow (COD Only)*: **[VERIFIED]** Booking creation dialog forcing Cash on Delivery (COD) payment method with an informative beta note about deferred escrow, invoking `/users/jobs/track`. Supported by custom backend fallback allowing raw owner user ID input.
     *   *Real-Time Status Screen*: **[VERIFIED]** Step-based progress tracker (Pending -> Active -> Completed/Cancelled), job details, assigned worker info, and 5-second automatic polling + manual status refresh querying `/users/jobs/get`.
+    *   *Job Cancellation Wiring (POST /users/jobs/cancel)*: **[VERIFIED]** Added `cancelJob` to `MarketplaceProvider` and `OwnerProvider`. Implemented `CancelJobDialog` with required reason field validation. Enforces role-specific rules: Owners can cancel pending/active jobs on `home_screen.dart` Dashboard; Customers can cancel pending jobs on `job_status_screen.dart`, while active jobs present "Open a Complaint Ticket" affordance. Verified via 6 widget tests (`test/job_cancellation_test.dart`).
 *   **Phase 5: Real-Time Messaging Integration** — **[100% COMPLETE & VERIFIED]**
     *   *WebSocket Manager & History Sync*: **[VERIFIED]** Connects to the API Gateway proxied chat-service WebSocket endpoint (`wss://`) with the user JWT `token` parameter, subscribing to channel `job:<job_id>`. Automatically loads historical messages via REST first, merging without duplicates. Handles reconnection via exponential backoff.
     *   *Real-Time Messaging*: **[VERIFIED]** Dual-direction messaging works in real-time. Verified via Go integration tests (`TestChatWebSocketCommunication`) simulating concurrent client connections (customer & employee) communicating on a shared job channel.
@@ -127,6 +128,7 @@
    * `themed_loading_indicator.dart`
    * `themed_empty_state.dart`
    * `themed_error_banner.dart`
+   * `cancel_job_dialog.dart`
 
 ---
 

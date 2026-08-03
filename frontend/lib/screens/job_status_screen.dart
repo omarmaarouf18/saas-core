@@ -7,6 +7,7 @@ import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
+import '../widgets/cancel_job_dialog.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
@@ -487,6 +488,63 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => RatingScreen(job: _currentJob),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+
+            if (_currentJob.status == 'pending') ...[
+              SecondaryButton(
+                key: const Key('cancel_job_button'),
+                text: "Cancel Job",
+                icon: Icons.cancel_outlined,
+                isOutlined: true,
+                onPressed: () async {
+                  final auth = Provider.of<AuthProvider>(context, listen: false);
+                  final provider =
+                      Provider.of<MarketplaceProvider>(context, listen: false);
+                  final messenger = ScaffoldMessenger.of(context);
+                  await CancelJobDialog.show(
+                    context,
+                    jobId: _currentJob.id,
+                    onConfirm: (reason) async {
+                      await provider.cancelJob(
+                        jobId: _currentJob.id,
+                        reason: reason,
+                        userToken: auth.token!,
+                      );
+                      if (mounted) {
+                        final isNonCod =
+                            _currentJob.paymentMethod.toLowerCase() != 'cod';
+                        final msg = isNonCod
+                            ? "Job cancelled successfully. Escrow refunded to wallet."
+                            : "Job cancelled successfully.";
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(msg),
+                            backgroundColor: AppColors.success,
+                          ),
+                        );
+                        _refreshJobStatus();
+                      }
+                    },
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ] else if (_currentJob.status == 'active') ...[
+              SecondaryButton(
+                key: const Key('open_complaint_ticket_button'),
+                text: "Open a Complaint Ticket",
+                icon: Icons.report_problem_outlined,
+                isOutlined: true,
+                onPressed: () {
+                  // TODO: Wire to POST /chat/tickets endpoint in upcoming complaint ticket task
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Complaint tickets feature is coming soon."),
                     ),
                   );
                 },
