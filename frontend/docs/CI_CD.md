@@ -11,7 +11,7 @@ To avoid manual copy-pasting between repositories while maintaining a clean, sta
 ```
 [saas-core] (frontend/ directory)
      │
-     │  Push to `main` or `logic-exploitation` touching `frontend/**`
+     │  Push to `main` touching `frontend/**`
      ▼
 [.github/workflows/sync-mobile-frontend.yml] (in saas-core)
      │  1. `git subtree split --prefix=frontend`
@@ -35,7 +35,8 @@ To avoid manual copy-pasting between repositories while maintaining a clean, sta
 
 * **Source Workflow**: `.github/workflows/sync-mobile-frontend.yml` in `omarmaarouf18/saas-core`.
 * **Triggers**:
-  - `push` events to `main` or `logic-exploitation` branches.
+  - `push` events to `main` branch (restricted to `main` to ensure feature branch changes pass CI and code review before release).
+  - Manual trigger: `workflow_dispatch`.
   - Path-scoped filter: `paths: ["frontend/**"]` (only runs when files under `frontend/` change).
 
 ### Mechanics
@@ -87,7 +88,7 @@ To avoid manual copy-pasting between repositories while maintaining a clean, sta
 * **Manually Re-Build APK**:
   Navigate to **Actions** -> **Build Android APK** -> click **Run workflow** -> select branch `main`.
 * **Manually Sync Frontend**:
-  Trigger a manual dispatch or push a commit to `logic-exploitation` or `main` touching any file in `frontend/` in `saas-core`.
+  Trigger a manual dispatch on `main` or push a commit to `main` touching any file in `frontend/` in `saas-core`.
 
 ---
 

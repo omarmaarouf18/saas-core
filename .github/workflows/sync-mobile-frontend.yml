@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - logic-exploitation
     paths:
       - 'frontend/**'
   workflow_dispatch:
