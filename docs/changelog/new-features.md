@@ -244,6 +244,12 @@ This file tracks historical entries for the primary category: **New Features Cha
 - **Commit SHA**: ``c9e9c9cdbc8bdce1194098ccb5c4d67a4f457fa1``
 - **Verification**: Verified via `flutter analyze` (0 issues) and `flutter test` (100% pass, 57/57 test cases). ✅
 
+## Device GPS Location Permission Infrastructure (Part 1 of 2)
+
+- **Implementation Detail**: Added `geolocator: ^12.0.0` dependency to `frontend/pubspec.yaml` (resolving cleanly without version conflicts against `web_socket_channel`). Configured foreground-only Android permission (`ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION` in `AndroidManifest.xml`) and iOS permission (`NSLocationWhenInUseUsageDescription` in `Info.plist`). Created isolated `requestLocationPermission` helper utility (`frontend/lib/core/location_permission.dart`) returning unified `LocationPermissionResult` enum (`granted`, `denied`, `deniedForever`, `serviceDisabled`). Added unit test suite in `frontend/test/location_permission_test.dart` using `MockGeolocatorPlatform` with `MockPlatformInterfaceMixin` covering all permission result states.
+- **Commit SHA**: ``0ee8e7858bcb87dd1e92bbcbc4c121155f673546``
+- **Verification**: Verified via `flutter analyze` (0 issues) and `flutter test` (100% pass, 64/64 test cases). ✅
+
 
 
 
