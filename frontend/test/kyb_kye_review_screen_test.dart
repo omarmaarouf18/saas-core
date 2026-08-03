@@ -64,10 +64,16 @@ class MockAuthProviderForReviewTest extends AuthProvider {
   bool shouldFailPending = false;
   bool shouldFailDocument = false;
   bool shouldDelayDocument = false;
+  bool shouldFailReview = false;
+
   bool fetchPendingCalled = false;
   String? lastInternalToken;
   String? lastReviewerToken;
   String? lastFetchedDocumentUrl;
+
+  String? lastReviewedUserId;
+  String? lastReviewedAction;
+  String? lastReviewedReason;
 
   MockAuthProviderForReviewTest(super.apiClient, {this.mockUser});
 
@@ -191,6 +197,25 @@ class MockAuthProviderForReviewTest extends AuthProvider {
       0x60,
       0x82
     ]);
+  }
+
+  @override
+  Future<bool> reviewSubmission({
+    required String userId,
+    required String action,
+    String? reason,
+    String? internalToken,
+    String? reviewerToken,
+  }) async {
+    lastReviewedUserId = userId;
+    lastReviewedAction = action;
+    lastReviewedReason = reason;
+    if (shouldFailReview) {
+      throw ApiClientException('Failed to process submission review');
+    }
+    mockPendingSubmissions.removeWhere((item) => item['user_id'] == userId);
+    notifyListeners();
+    return true;
   }
 }
 
@@ -650,5 +675,150 @@ void main() {
 
     // Advance timer to complete pending delay and avoid dangling timer
     await tester.pump(const Duration(seconds: 6));
+  });
+
+  testWidgets(
+      '9. Approve Action Success: Calls reviewSubmission with action approve',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final reviewerUser = UserProfile(
+      id: 'rev-1',
+      email: 'reviewer@admin.com',
+      username: 'ReviewerAdmin',
+      role: 'reviewer',
+    );
+    final mockAuth =
+        MockAuthProviderForReviewTest(apiClient, mockUser: reviewerUser);
+    mockAuth.mockPendingSubmissions = [
+      {
+        'user_id': 'owner-101',
+        'username': 'Acme Owner',
+        'role': 'owner',
+        'id_front_url': 'https://storage/id_front_101.png',
+      }
+    ];
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: mockAuth,
+        child: MaterialApp(
+          home: Scaffold(
+            body: DocumentViewerDialog(
+              submission: mockAuth.mockPendingSubmissions[0],
+              initialDocType: 'id_front',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('approve_submission_button')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('approve_submission_button')));
+    await tester.pumpAndSettle();
+
+    expect(mockAuth.lastReviewedUserId, equals('owner-101'));
+    expect(mockAuth.lastReviewedAction, equals('approve'));
+    expect(mockAuth.mockPendingSubmissions, isEmpty);
+  });
+
+  testWidgets(
+      '10. Reject Action Success: Prompts for reason and calls reviewSubmission with action reject',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final reviewerUser = UserProfile(
+      id: 'rev-1',
+      email: 'reviewer@admin.com',
+      username: 'ReviewerAdmin',
+      role: 'reviewer',
+    );
+    final mockAuth =
+        MockAuthProviderForReviewTest(apiClient, mockUser: reviewerUser);
+    mockAuth.mockPendingSubmissions = [
+      {
+        'user_id': 'owner-101',
+        'username': 'Acme Owner',
+        'role': 'owner',
+        'id_front_url': 'https://storage/id_front_101.png',
+      }
+    ];
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: mockAuth,
+        child: MaterialApp(
+          home: Scaffold(
+            body: DocumentViewerDialog(
+              submission: mockAuth.mockPendingSubmissions[0],
+              initialDocType: 'id_front',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('reject_submission_button')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('reject_submission_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('rejection_reason_field')), findsOneWidget);
+    expect(find.byKey(const Key('confirm_reject_button')), findsOneWidget);
+
+    // Enter rejection reason text
+    await tester.enterText(find.byKey(const Key('rejection_reason_field')),
+        'ID document is blurry and illegible.');
+    await tester.tap(find.byKey(const Key('confirm_reject_button')));
+    await tester.pumpAndSettle();
+
+    expect(mockAuth.lastReviewedUserId, equals('owner-101'));
+    expect(mockAuth.lastReviewedAction, equals('reject'));
+    expect(mockAuth.lastReviewedReason,
+        equals('ID document is blurry and illegible.'));
+    expect(mockAuth.mockPendingSubmissions, isEmpty);
+  });
+
+  testWidgets(
+      '11. Review Action Error State: Renders error banner when reviewSubmission fails',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final reviewerUser = UserProfile(
+      id: 'rev-1',
+      email: 'reviewer@admin.com',
+      username: 'ReviewerAdmin',
+      role: 'reviewer',
+    );
+    final mockAuth =
+        MockAuthProviderForReviewTest(apiClient, mockUser: reviewerUser);
+    mockAuth.shouldFailReview = true;
+
+    final submission = {
+      'user_id': 'owner-101',
+      'username': 'Acme Owner',
+      'role': 'owner',
+      'id_front_url': 'https://storage/id_front_101.png',
+    };
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: mockAuth,
+        child: MaterialApp(
+          home: Scaffold(
+            body: DocumentViewerDialog(
+              submission: submission,
+              initialDocType: 'id_front',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('approve_submission_button')));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key('document_review_error_banner')), findsOneWidget);
+    expect(find.text('Failed to process submission review'), findsOneWidget);
   });
 }

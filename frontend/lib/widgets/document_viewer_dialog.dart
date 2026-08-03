@@ -1,12 +1,16 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/api_client.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import 'themed_card.dart';
 import 'themed_loading_indicator.dart';
 import 'themed_error_banner.dart';
 import 'status_badge.dart';
+import 'primary_button.dart';
+import 'secondary_button.dart';
+import 'themed_text_field.dart';
 
 class DocumentViewerDialog extends StatefulWidget {
   final Map<String, dynamic> submission;
@@ -32,6 +36,12 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
   bool _isLoading = false;
   String? _error;
 
+  bool _isSubmittingReview = false;
+  String? _reviewError;
+  bool _showRejectForm = false;
+  final TextEditingController _reasonController = TextEditingController();
+  String? _reasonValidationError;
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +49,12 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadDocument();
     });
+  }
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
   }
 
   String? _getDocUrl(String docType) {
@@ -110,6 +126,36 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
     _loadDocument();
   }
 
+  Future<void> _submitReview(String action, [String? reason]) async {
+    setState(() {
+      _isSubmittingReview = true;
+      _reviewError = null;
+    });
+
+    try {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final userId = widget.submission['user_id']?.toString() ?? '';
+      final success = await auth.reviewSubmission(
+        userId: userId,
+        action: action,
+        reason: reason,
+        internalToken: widget.internalToken,
+        reviewerToken: widget.reviewerToken,
+      );
+
+      if (success && mounted) {
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSubmittingReview = false;
+          _reviewError = (e is ApiClientException) ? e.message : e.toString();
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final username = widget.submission['username']?.toString() ?? 'User';
@@ -128,7 +174,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 750),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
@@ -229,31 +275,33 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                           if (isPdf) {
                             return Container(
                               key: const Key('document_pdf_preview'),
-                              padding: const EdgeInsets.all(AppSpacing.lg),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(
-                                    Icons.picture_as_pdf,
-                                    size: 64,
-                                    color: AppColors.error,
-                                  ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  Text(
-                                    'PDF Document Preview',
-                                    style: AppTypography.titleMd.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.onSurface,
+                              padding: const EdgeInsets.all(AppSpacing.sm),
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.picture_as_pdf,
+                                      size: 48,
+                                      color: AppColors.error,
                                     ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  Text(
-                                    'File Size: ${_bytes!.lengthInBytes} bytes',
-                                    style: AppTypography.bodyMd.copyWith(
-                                      color: AppColors.onSurfaceVariant,
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Text(
+                                      'PDF Document Preview',
+                                      style: AppTypography.titleMd.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.onSurface,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Text(
+                                      'File Size: ${_bytes!.lengthInBytes} bytes',
+                                      style: AppTypography.bodyMd.copyWith(
+                                        color: AppColors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             );
                           }
@@ -275,6 +323,106 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                   ),
                 ),
               ),
+              const SizedBox(height: AppSpacing.md),
+
+              // Error Banner for Review Submissions
+              if (_reviewError != null) ...[
+                ThemedErrorBanner(
+                  key: const Key('document_review_error_banner'),
+                  message: _reviewError!,
+                  onRetry: () => setState(() => _reviewError = null),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+
+              // Review Action Controls (Approve / Reject)
+              if (_showRejectForm) ...[
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ThemedTextField(
+                      key: const Key('rejection_reason_field'),
+                      controller: _reasonController,
+                      labelText: 'Rejection Reason / Notes',
+                      hintText:
+                          'Explain why this submission is being rejected...',
+                      maxLines: 2,
+                    ),
+                    if (_reasonValidationError != null) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        _reasonValidationError!,
+                        style: AppTypography.bodyMd.copyWith(
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.sm),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SecondaryButton(
+                            text: 'Cancel',
+                            onPressed: _isSubmittingReview
+                                ? null
+                                : () => setState(() {
+                                      _showRejectForm = false;
+                                      _reasonValidationError = null;
+                                    }),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: PrimaryButton(
+                            key: const Key('confirm_reject_button'),
+                            text: 'Confirm Reject',
+                            isLoading: _isSubmittingReview,
+                            onPressed: () {
+                              final text = _reasonController.text.trim();
+                              if (text.isEmpty) {
+                                setState(() {
+                                  _reasonValidationError =
+                                      'Rejection reason is required.';
+                                });
+                                return;
+                              }
+                              _submitReview('reject', text);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ] else ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: SecondaryButton(
+                        key: const Key('reject_submission_button'),
+                        text: 'Reject',
+                        icon: Icons.cancel_outlined,
+                        onPressed: _isSubmittingReview
+                            ? null
+                            : () => setState(() {
+                                  _showRejectForm = true;
+                                  _reasonValidationError = null;
+                                }),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: PrimaryButton(
+                        key: const Key('approve_submission_button'),
+                        text: 'Approve',
+                        icon: Icons.check_circle_outline,
+                        isLoading: _isSubmittingReview,
+                        onPressed: () => _submitReview('approve'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),

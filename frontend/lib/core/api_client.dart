@@ -71,17 +71,24 @@ class ApiClient {
   Future<dynamic> post(
     String path,
     Map<String, dynamic> body, {
+    Map<String, String>? queryParams,
     bool isRetry = false,
   }) async {
     try {
+      var uri = Uri.parse('$baseUrl$path');
+      if (queryParams != null && queryParams.isNotEmpty) {
+        uri = uri.replace(queryParameters: queryParams);
+      }
       final response = await _client.post(
-        Uri.parse('$baseUrl$path'),
+        uri,
         headers: _getHeaders(),
         body: jsonEncode(body),
       );
       return await _handleResponse(
         response,
-        onRetry: isRetry ? null : () => post(path, body, isRetry: true),
+        onRetry: isRetry
+            ? null
+            : () => post(path, body, queryParams: queryParams, isRetry: true),
         path: path,
       );
     } catch (e) {

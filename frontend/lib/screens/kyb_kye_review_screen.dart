@@ -295,9 +295,9 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
     );
   }
 
-  void _openDocumentViewer(Map<String, dynamic> submission,
-      [String initialDocType = 'id_front']) {
-    showDialog(
+  Future<void> _openDocumentViewer(Map<String, dynamic> submission,
+      [String initialDocType = 'id_front']) async {
+    final result = await showDialog<bool>(
       context: context,
       builder: (context) => DocumentViewerDialog(
         submission: submission,
@@ -306,6 +306,17 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
         reviewerToken: widget.reviewerToken,
       ),
     );
+
+    if (result == true && mounted) {
+      final username = submission['username']?.toString() ?? 'User';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          key: const Key('review_confirmation_snackbar'),
+          content: Text('Review completed successfully for $username.'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   Widget _buildDocChip(String label, bool isAvailable, {VoidCallback? onTap}) {

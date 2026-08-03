@@ -417,4 +417,51 @@ class AuthProvider extends ChangeNotifier {
     }
     return await apiClient.getBytes(documentUrl, queryParams: queryParams);
   }
+
+  /// Submits an approve or reject review action for a pending KYB/KYE submission.
+  Future<bool> reviewSubmission({
+    required String userId,
+    required String action,
+    String? reason,
+    String? internalToken,
+    String? reviewerToken,
+  }) async {
+    _isLoading = true;
+    _pendingError = null;
+    notifyListeners();
+
+    try {
+      final Map<String, String> queryParams = {};
+      if (internalToken != null && internalToken.isNotEmpty) {
+        queryParams['internal_token'] = internalToken;
+      }
+      if (reviewerToken != null && reviewerToken.isNotEmpty) {
+        queryParams['reviewer_token'] = reviewerToken;
+      }
+
+      final body = {
+        'user_id': userId,
+        'action': action,
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+      };
+
+      final response = await apiClient.post(
+        '/auth/kyb-kye/review',
+        body,
+        queryParams: queryParams,
+      );
+
+      if (response != null && response['status'] == 'reviewed') {
+        _pendingSubmissions.removeWhere((item) => item['user_id'] == userId);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _pendingError = e.toString().replaceAll('ApiClientException: ', '');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }
