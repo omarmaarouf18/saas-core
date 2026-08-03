@@ -7,6 +7,7 @@ import 'package:frontend/models/job.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/employee_jobs_provider.dart';
+import 'package:frontend/providers/employee_location_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/screens/employee_jobs_screen.dart';
 
@@ -35,7 +36,8 @@ class MockEmployeeJobsProviderForTest extends EmployeeJobsProvider {
     super.apiClient, {
     this.initialJobs = const [],
     this.shouldFailComplete = false,
-    this.failMessage = 'Access denied: you are not authorized to complete this job',
+    this.failMessage =
+        'Access denied: you are not authorized to complete this job',
   }) {
     _testJobs = List.from(initialJobs);
   }
@@ -149,6 +151,8 @@ void main() {
           ChangeNotifierProvider<AuthProvider>.value(value: auth),
           ChangeNotifierProvider<EmployeeJobsProvider>.value(
               value: jobsProvider),
+          ChangeNotifierProvider<EmployeeLocationProvider>(
+              create: (_) => EmployeeLocationProvider(apiClient)),
           ChangeNotifierProvider<NotificationsProvider>(
               create: (_) => NotificationsProvider(apiClient)),
         ],
@@ -169,8 +173,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify key for activeEscrowJob exists, pendingJob does not
-    expect(
-        find.byKey(const Key('complete_job_button_job-active-escrow-001')),
+    expect(find.byKey(const Key('complete_job_button_job-active-escrow-001')),
         findsOneWidget);
     expect(find.byKey(const Key('complete_job_button_job-pending-003')),
         findsNothing);
@@ -196,7 +199,8 @@ void main() {
     // Verify non-COD confirmation dialog text
     expect(find.text('Complete Job'), findsNWidgets(3));
     expect(
-      find.text('Are you sure you want to mark Job #job-active-escrow-001 as completed?'),
+      find.text(
+          'Are you sure you want to mark Job #job-active-escrow-001 as completed?'),
       findsOneWidget,
     );
     expect(find.text('Cancel'), findsOneWidget);
@@ -271,8 +275,8 @@ void main() {
     // Confirm in COD dialog
     final dialogConfirmButton = find.descendant(
       of: find.byType(AlertDialog),
-      matching:
-          find.widgetWithText(ElevatedButton, 'Confirm Cash Collected & Complete'),
+      matching: find.widgetWithText(
+          ElevatedButton, 'Confirm Cash Collected & Complete'),
     );
     await tester.tap(dialogConfirmButton);
     await tester.pumpAndSettle();

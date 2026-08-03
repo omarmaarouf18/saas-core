@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../models/job.dart';
+import 'package:geolocator/geolocator.dart';
 import '../providers/auth_provider.dart';
 import '../providers/employee_jobs_provider.dart';
+import '../providers/employee_location_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/confirm_action_dialog.dart';
 import '../widgets/primary_button.dart';
@@ -50,6 +52,13 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   }
 
   @override
+  void deactivate() {
+    Provider.of<EmployeeLocationProvider>(context, listen: false)
+        .stopTracking(notify: false);
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
     _actionController.dispose();
     super.dispose();
@@ -58,8 +67,22 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   Future<void> _refreshJobs() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     if (auth.token != null) {
-      await Provider.of<EmployeeJobsProvider>(context, listen: false)
-          .fetchAssignedJobs(auth.token!);
+      final jobsProvider =
+          Provider.of<EmployeeJobsProvider>(context, listen: false);
+      await jobsProvider.fetchAssignedJobs(auth.token!);
+      if (mounted) {
+        final locationProvider =
+            Provider.of<EmployeeLocationProvider>(context, listen: false);
+        final activeJobs = jobsProvider.jobs
+            .where((j) => j.status.toLowerCase().trim() == 'active')
+            .toList();
+        if (activeJobs.isNotEmpty) {
+          await locationProvider.startTracking(
+              activeJobs.first.id, auth.token!);
+        } else {
+          await locationProvider.stopTracking();
+        }
+      }
     }
   }
 
@@ -138,6 +161,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     try {
       await provider.completeJob(job.id, cashCollected: isCod);
       if (mounted) {
+        Provider.of<EmployeeLocationProvider>(context, listen: false)
+            .stopTracking();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Job marked as completed successfully!"),
@@ -455,6 +480,109 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               ),
             ],
             if (job.status.toLowerCase().trim() == 'active') ...[
+              Consumer<EmployeeLocationProvider>(
+                builder: (context, locationProvider, child) {
+                  if (locationProvider.status ==
+                          LocationSharingStatus.permissionDenied ||
+                      locationProvider.status ==
+                          LocationSharingStatus.serviceDisabled) {
+                    return Container(
+                      key: const Key('location_permission_denied_banner'),
+                      margin: const EdgeInsets.only(top: AppSpacing.sm),
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.1),
+                        borderRadius: AppRadius.defaultBorder,
+                        border: Border.all(color: AppColors.warning),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.location_off_outlined,
+                                  color: AppColors.warning, size: 20),
+                              const SizedBox(width: AppSpacing.xs),
+                              Text(
+                                "Location Permission Required",
+                                style: AppTypography.bodyMd.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.warning,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            "Location sharing is required to share your live delivery progress with the customer.",
+                            style: AppTypography.bodyMd.copyWith(
+                              color: AppColors.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          SecondaryButton(
+                            key: const Key('open_app_settings_button'),
+                            text: "Open App Settings",
+                            icon: Icons.settings_outlined,
+                            isOutlined: true,
+                            onPressed: () {
+                              Geolocator.openAppSettings();
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (locationProvider.status ==
+                      LocationSharingStatus.tracking) {
+                    return Container(
+                      key: const Key('location_sharing_indicator'),
+                      margin: const EdgeInsets.only(top: AppSpacing.sm),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.1),
+                        borderRadius: AppRadius.smBorder,
+                        border: Border.all(
+                            color: AppColors.success.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.success,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Text(
+                            "Sharing live location",
+                            style: AppTypography.labelMd.copyWith(
+                              color: AppColors.success,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (locationProvider.status == LocationSharingStatus.error &&
+                      locationProvider.error != null) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.sm),
+                      child:
+                          ThemedErrorBanner(message: locationProvider.error!),
+                    );
+                  }
+
+                  return const SizedBox.shrink();
+                },
+              ),
               if (_completeErrorJobId == job.id && _completeError != null) ...[
                 const SizedBox(height: AppSpacing.sm),
                 ThemedErrorBanner(message: _completeError!),
