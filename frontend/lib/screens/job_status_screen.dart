@@ -502,7 +502,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 icon: Icons.cancel_outlined,
                 isOutlined: true,
                 onPressed: () async {
-                  final auth = Provider.of<AuthProvider>(context, listen: false);
+                  final auth =
+                      Provider.of<AuthProvider>(context, listen: false);
                   final provider =
                       Provider.of<MarketplaceProvider>(context, listen: false);
                   final messenger = ScaffoldMessenger.of(context);
@@ -544,7 +545,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   // TODO: Wire to POST /chat/tickets endpoint in upcoming complaint ticket task
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text("Complaint tickets feature is coming soon."),
+                      content:
+                          Text("Complaint tickets feature is coming soon."),
                     ),
                   );
                 },

@@ -66,7 +66,8 @@ class _CancelJobDialogState extends State<CancelJobDialog> {
               onChanged: (_) => setState(() {}),
               decoration: const InputDecoration(
                 labelText: "Cancellation Reason *",
-                hintText: "e.g. Customer requested cancellation / Change of plans",
+                hintText:
+                    "e.g. Customer requested cancellation / Change of plans",
                 border: OutlineInputBorder(),
               ),
             ),
@@ -82,7 +83,8 @@ class _CancelJobDialogState extends State<CancelJobDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
+          onPressed:
+              _isSubmitting ? null : () => Navigator.of(context).pop(false),
           child: const Text("Keep Job"),
         ),
         ElevatedButton(
