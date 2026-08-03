@@ -8,6 +8,7 @@ import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../widgets/cancel_job_dialog.dart';
+import '../widgets/create_ticket_dialog.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
@@ -542,11 +543,10 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 icon: Icons.report_problem_outlined,
                 isOutlined: true,
                 onPressed: () {
-                  // TODO: Wire to POST /chat/tickets endpoint in upcoming complaint ticket task
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content:
-                          Text("Complaint tickets feature is coming soon."),
+                  showDialog(
+                    context: context,
+                    builder: (context) => CreateTicketDialog(
+                      contextId: _currentJob.id,
                     ),
                   );
                 },

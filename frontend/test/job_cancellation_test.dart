@@ -11,6 +11,7 @@ import 'package:frontend/providers/owner_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/screens/home_screen.dart';
 import 'package:frontend/screens/job_status_screen.dart';
+import 'package:frontend/widgets/create_ticket_dialog.dart';
 
 class MockAuthProviderForTest extends AuthProvider {
   final UserProfile? mockUser;
@@ -236,11 +237,9 @@ void main() {
       ownerProvider: ownerProvider,
     ));
     await tester.pumpAndSettle();
-    expect(
-        find.byKey(const Key('cancel_owner_job_button_job-completed-103')),
+    expect(find.byKey(const Key('cancel_owner_job_button_job-completed-103')),
         findsNothing);
-    expect(
-        find.byKey(const Key('cancel_owner_job_button_job-cancelled-104')),
+    expect(find.byKey(const Key('cancel_owner_job_button_job-cancelled-104')),
         findsNothing);
   });
 
@@ -306,8 +305,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Enter reason and confirm
-    await tester.enterText(
-        find.byKey(const Key('cancel_reason_input')), 'Owner cancelling active job');
+    await tester.enterText(find.byKey(const Key('cancel_reason_input')),
+        'Owner cancelling active job');
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('confirm_cancel_button')));
@@ -342,9 +341,8 @@ void main() {
     await tester.tap(complaintButton);
     await tester.pumpAndSettle();
 
-    // SnackBar placeholder notice displayed
-    expect(find.text('Complaint tickets feature is coming soon.'),
-        findsOneWidget);
+    // CreateTicketDialog displayed upon clicking complaint button
+    expect(find.byType(CreateTicketDialog), findsOneWidget);
     expect(mpProvider.cancelJobCalled, isFalse);
   });
 
@@ -377,12 +375,14 @@ void main() {
     expect(mpProvider.lastCancelledReason, 'Customer changed mind');
   });
 
-  testWidgets('(f) On cancellation failure, friendly error is shown inline in dialog',
+  testWidgets(
+      '(f) On cancellation failure, friendly error is shown inline in dialog',
       (WidgetTester tester) async {
     final apiClient = ApiClient();
     final mpProvider = MockMarketplaceProviderForTest(apiClient)
       ..shouldFailCancel = true
-      ..failMessage = 'Access denied: you are not authorized to cancel this job';
+      ..failMessage =
+          'Access denied: you are not authorized to cancel this job';
 
     await tester.pumpWidget(createCustomerWidget(
       job: pendingJob,
