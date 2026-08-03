@@ -151,6 +151,13 @@ The detailed project history is distributed across categorized changelog files. 
   * **Decision**: A 4th service category for cargo/goods transport (distinct from passenger "Ride") is deferred and not scoped for the current launch. The customer-facing home screen displays exactly 3 service tiles (Delivery, Ride, Shipping), where "Ride" maps to the backend's `transport` category.
   * **Reasoning**: Keeping the scope limited to a 3-category directory for launch. If added later, cargo/goods transport will require a brand new backend category value distinct from `transport` (which is reserved for passenger rides) to avoid ambiguity.
 
+### 3. Not Started Yet
+
+* **Business Owner Configuration**
+  * **Custom & Negotiable Pricing**: Custom or negotiable base pricing per owner beyond fixed `TenantBasePrice` and `TenantPricePerKM` values set during service creation (e.g. per-owner pricing tiers, seasonal or promotional pricing, or bulk-service discounts).
+  * **Business Operating Hours**: Operating hours defining days and times an owner's services are available for booking, as no concept of operating hours currently exists anywhere in `models.Service` or `models.Job` and jobs can be booked/tracked at any time regardless of any "open" state.
+  * **Service Coverage Area & Geographic Radius**: Service coverage areas or geographic radii limiting which customer locations an owner's services are bookable for (based on distance from base location or a defined polygon/radius), as `TrackJob` currently accepts any customer location without geographic validation against the owner's operating area.
+  * **Schema Absence Note**: None of these fields or capabilities are currently represented anywhere in `services/user-service/internal/models/models.go` (specifically within the `Service` or `Job` structs).
 
 ---
 
