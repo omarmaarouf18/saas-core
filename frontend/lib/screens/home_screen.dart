@@ -19,6 +19,7 @@ import 'subscription_screen.dart';
 import 'employee_jobs_screen.dart';
 import 'kyc_document_upload_screen.dart';
 import 'customer_marketplace_screen.dart';
+import 'kyb_kye_review_screen.dart';
 import 'owner_reconciliation_queue_screen.dart';
 import '../providers/marketplace_provider.dart';
 import '../widgets/rating_summary_card.dart';
@@ -126,6 +127,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (user.role == 'user') {
         return const CustomerMarketplaceScreen();
       }
+      if (user.role == 'reviewer' || user.role == 'admin') {
+        return const KybKyeReviewScreen();
+      }
       // Non-owner basic dashboard
       return Scaffold(
         backgroundColor: AppColors.scaffoldBackground,
@@ -134,6 +138,19 @@ class _HomeScreenState extends State<HomeScreen> {
           title: const Text("Quick Delivery Dashboard"),
           foregroundColor: AppColors.onPrimary,
           actions: [
+            if (user.role == 'reviewer' || user.role == 'admin')
+              IconButton(
+                key: const Key('reviewer_queue_button'),
+                icon: const Icon(Icons.fact_check_outlined),
+                tooltip: "KYB/KYE Review Queue",
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const KybKyeReviewScreen(),
+                    ),
+                  );
+                },
+              ),
             _buildNotificationBell(context),
             IconButton(
               icon: const Icon(Icons.logout),
@@ -194,6 +211,19 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text("Quick Delivery Owner Dashboard"),
         foregroundColor: AppColors.onPrimary,
         actions: [
+          if (user.role == 'reviewer' || user.role == 'admin')
+            IconButton(
+              key: const Key('reviewer_queue_button'),
+              icon: const Icon(Icons.fact_check_outlined),
+              tooltip: "KYB/KYE Review Queue",
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const KybKyeReviewScreen(),
+                  ),
+                );
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.verified_user_outlined),
             tooltip: "Verification Documents",

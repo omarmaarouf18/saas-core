@@ -4,6 +4,10 @@ import 'package:provider/provider.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/owner_provider.dart';
+import 'package:frontend/providers/notifications_provider.dart';
+import 'package:frontend/providers/marketplace_provider.dart';
+import 'package:frontend/screens/home_screen.dart';
 import 'package:frontend/screens/kyb_kye_review_screen.dart';
 import 'package:frontend/widgets/status_badge.dart';
 
@@ -55,6 +59,7 @@ class MockAuthProviderForReviewTest extends AuthProvider {
   List<dynamic> mockPendingSubmissions = [];
   bool mockIsLoadingPending = false;
   String? mockPendingError;
+  bool shouldFailPending = false;
   bool fetchPendingCalled = false;
   String? lastInternalToken;
   String? lastReviewerToken;
@@ -63,6 +68,9 @@ class MockAuthProviderForReviewTest extends AuthProvider {
 
   @override
   UserProfile? get user => mockUser;
+
+  @override
+  String? get token => 'test-token-123';
 
   @override
   List<dynamic> get pendingSubmissions => mockPendingSubmissions;
@@ -74,6 +82,9 @@ class MockAuthProviderForReviewTest extends AuthProvider {
   String? get pendingError => mockPendingError;
 
   @override
+  Future<void> fetchUserProfile() async {}
+
+  @override
   Future<List<dynamic>> fetchPendingSubmissions({
     String? internalToken,
     String? reviewerToken,
@@ -81,8 +92,37 @@ class MockAuthProviderForReviewTest extends AuthProvider {
     fetchPendingCalled = true;
     lastInternalToken = internalToken;
     lastReviewerToken = reviewerToken;
+    mockIsLoadingPending = false;
+    if (shouldFailPending) {
+      mockPendingError = 'Failed to load reviewer queue';
+      mockPendingSubmissions = [];
+      notifyListeners();
+      return [];
+    }
+    notifyListeners();
     return mockPendingSubmissions;
   }
+}
+
+class MockOwnerProviderForReviewTest extends OwnerProvider {
+  MockOwnerProviderForReviewTest(super.apiClient);
+
+  @override
+  Future<void> fetchDashboardData(String ownerToken) async {}
+
+  @override
+  Future<void> fetchOwnerJobs(String ownerToken) async {}
+}
+
+class MockNotificationsProviderForReviewTest extends NotificationsProvider {
+  MockNotificationsProviderForReviewTest(super.apiClient);
+
+  @override
+  int get unreadCount => 0;
+}
+
+class MockMarketplaceProviderForReviewTest extends MarketplaceProvider {
+  MockMarketplaceProviderForReviewTest(super.apiClient);
 }
 
 void main() {
@@ -101,7 +141,8 @@ void main() {
 
     expect(res.length, equals(2));
     expect(authProvider.pendingSubmissions.length, equals(2));
-    expect(authProvider.pendingSubmissions[0]['username'], equals('Acme Owner'));
+    expect(
+        authProvider.pendingSubmissions[0]['username'], equals('Acme Owner'));
     expect(authProvider.pendingSubmissions[1]['username'],
         equals('Sarah Employee'));
     expect(apiClient.lastQueryParams, isNotNull);
@@ -141,6 +182,30 @@ void main() {
     );
   }
 
+  Widget createHomeScreenWidget({
+    required MockAuthProviderForReviewTest authProvider,
+  }) {
+    final apiClient = ApiClient();
+    final ownerProvider = MockOwnerProviderForReviewTest(apiClient);
+    final notificationsProvider =
+        MockNotificationsProviderForReviewTest(apiClient);
+    final marketplaceProvider = MockMarketplaceProviderForReviewTest(apiClient);
+
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+        ChangeNotifierProvider<OwnerProvider>.value(value: ownerProvider),
+        ChangeNotifierProvider<NotificationsProvider>.value(
+            value: notificationsProvider),
+        ChangeNotifierProvider<MarketplaceProvider>.value(
+            value: marketplaceProvider),
+      ],
+      child: const MaterialApp(
+        home: HomeScreen(),
+      ),
+    );
+  }
+
   testWidgets(
       '1. Role-gating check: Non-reviewer accounts see Access Denied state',
       (WidgetTester tester) async {
@@ -154,8 +219,8 @@ void main() {
     final mockAuth =
         MockAuthProviderForReviewTest(apiClient, mockUser: nonReviewerUser);
 
-    await tester.pumpWidget(
-        createKybKyeReviewScreenWidget(authProvider: mockAuth));
+    await tester
+        .pumpWidget(createKybKyeReviewScreenWidget(authProvider: mockAuth));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('kyb_kye_unauthorized_state')), findsOneWidget);
@@ -183,8 +248,8 @@ void main() {
     mockAuth.mockPendingSubmissions = [];
     mockAuth.mockIsLoadingPending = false;
 
-    await tester.pumpWidget(
-        createKybKyeReviewScreenWidget(authProvider: mockAuth));
+    await tester
+        .pumpWidget(createKybKyeReviewScreenWidget(authProvider: mockAuth));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('kyb_kye_empty_state')), findsOneWidget);
@@ -234,13 +299,12 @@ void main() {
     ];
     mockAuth.mockIsLoadingPending = false;
 
-    await tester.pumpWidget(
-        createKybKyeReviewScreenWidget(authProvider: mockAuth));
+    await tester
+        .pumpWidget(createKybKyeReviewScreenWidget(authProvider: mockAuth));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('kyb_kye_list_view')), findsOneWidget);
-    expect(
-        find.byKey(const Key('submission_item_owner-101')), findsOneWidget);
+    expect(find.byKey(const Key('submission_item_owner-101')), findsOneWidget);
     expect(find.byKey(const Key('submission_item_emp-102')), findsOneWidget);
 
     expect(find.text('Acme Owner'), findsOneWidget);
@@ -268,15 +332,80 @@ void main() {
     );
     final mockAuth =
         MockAuthProviderForReviewTest(apiClient, mockUser: reviewerUser);
-    mockAuth.mockPendingSubmissions = [];
-    mockAuth.mockIsLoadingPending = false;
-    mockAuth.mockPendingError = 'Failed to load reviewer queue';
+    mockAuth.shouldFailPending = true;
 
-    await tester.pumpWidget(
-        createKybKyeReviewScreenWidget(authProvider: mockAuth));
+    await tester
+        .pumpWidget(createKybKyeReviewScreenWidget(authProvider: mockAuth));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('kyb_kye_error_banner')), findsOneWidget);
     expect(find.text('Failed to load reviewer queue'), findsOneWidget);
+  });
+
+  testWidgets(
+      '5. Navigation Entry Point: Visible for reviewer/admin roles and hidden for other roles',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+
+    // Case A: Reviewer role -> KybKyeReviewScreen rendered directly on HomeScreen login
+    final reviewerUser = UserProfile(
+      id: 'rev-1',
+      email: 'reviewer@admin.com',
+      username: 'ReviewerUser',
+      role: 'reviewer',
+    );
+    final reviewerAuth =
+        MockAuthProviderForReviewTest(apiClient, mockUser: reviewerUser);
+
+    await tester.pumpWidget(createHomeScreenWidget(authProvider: reviewerAuth));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(KybKyeReviewScreen), findsOneWidget);
+    expect(find.text('Pending KYB/KYE Submissions'), findsOneWidget);
+
+    // Case B: Admin role -> KybKyeReviewScreen rendered directly on HomeScreen
+    final adminUser = UserProfile(
+      id: 'admin-1',
+      email: 'admin@system.com',
+      username: 'AdminUser',
+      role: 'admin',
+    );
+    final adminAuth =
+        MockAuthProviderForReviewTest(apiClient, mockUser: adminUser);
+
+    await tester.pumpWidget(createHomeScreenWidget(authProvider: adminAuth));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(KybKyeReviewScreen), findsOneWidget);
+
+    // Case C: Owner role -> reviewer_queue_button absent
+    final ownerUser = UserProfile(
+      id: 'owner-1',
+      email: 'owner@example.com',
+      username: 'OwnerUser',
+      role: 'owner',
+    );
+    final ownerAuth =
+        MockAuthProviderForReviewTest(apiClient, mockUser: ownerUser);
+
+    await tester.pumpWidget(createHomeScreenWidget(authProvider: ownerAuth));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('reviewer_queue_button')), findsNothing);
+
+    // Case D: Customer (user) role -> reviewer_queue_button absent
+    final customerUser = UserProfile(
+      id: 'cust-1',
+      email: 'customer@example.com',
+      username: 'CustomerUser',
+      role: 'user',
+    );
+    final customerAuth =
+        MockAuthProviderForReviewTest(apiClient, mockUser: customerUser);
+
+    await tester.pumpWidget(createHomeScreenWidget(authProvider: customerAuth));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('reviewer_queue_button')), findsNothing);
   });
 }
