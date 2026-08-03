@@ -6,6 +6,7 @@ import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/employee_jobs_provider.dart';
 import '../providers/notifications_provider.dart';
+import '../widgets/confirm_action_dialog.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
@@ -29,6 +30,9 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   final _actionController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isSimulating = false;
+  String? _completingJobId;
+  String? _completeError;
+  String? _completeErrorJobId;
 
   final List<String> _suggestions = [
     "Arrived at Pickup",
@@ -93,6 +97,52 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     } finally {
       if (mounted) {
         setState(() => _isSimulating = false);
+      }
+    }
+  }
+
+  Future<void> _confirmAndCompleteJob(Job job) async {
+    final provider = Provider.of<EmployeeJobsProvider>(context, listen: false);
+    final confirmed = await ConfirmActionDialog.show(
+      context,
+      title: "Complete Job",
+      message: "Are you sure you want to mark Job #${job.id} as completed?",
+      confirmLabel: "Complete Job",
+      cancelLabel: "Cancel",
+      icon: Icons.check_circle_outline,
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _completingJobId = job.id;
+      _completeError = null;
+      _completeErrorJobId = null;
+    });
+
+    try {
+      await provider.completeJob(job.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Job marked as completed successfully!"),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error completing job: $e');
+      if (mounted) {
+        setState(() {
+          _completeError = friendlyErrorMessage(e);
+          _completeErrorJobId = job.id;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _completingJobId = null;
+        });
       }
     }
   }
@@ -387,6 +437,22 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                     color: AppColors.error,
                   ),
                 ),
+              ),
+            ],
+            if (job.status.toLowerCase().trim() == 'active') ...[
+              if (_completeErrorJobId == job.id && _completeError != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                ThemedErrorBanner(message: _completeError!),
+              ],
+              const SizedBox(height: AppSpacing.md),
+              PrimaryButton(
+                key: Key('complete_job_button_${job.id}'),
+                text: "Complete Job",
+                icon: Icons.check_circle_outline,
+                isLoading: _completingJobId == job.id,
+                onPressed: _completingJobId != null
+                    ? null
+                    : () => _confirmAndCompleteJob(job),
               ),
             ],
           ],
