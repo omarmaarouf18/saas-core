@@ -2,7 +2,7 @@
 
 - **Status**: Proposed (Forward-Looking Scope Boundary)
 - **Date**: 2026-08-03
-- **Related Commit SHA**: <sha>
+- **Related Commit SHA**: 856bba37c92dc605e53559c4d6465848c2bff1a8
 - **Related Audit / Scope Finding**: Scope Boundary & Agent Authentication Isolation for `POST /chat/tickets/resolve`
 
 ## Context
