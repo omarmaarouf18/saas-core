@@ -235,7 +235,7 @@ This file tracks historical entries for the primary category: **New Features Cha
 ## Job Completion Frontend Wiring
 
 - **Implementation Detail**: Wired `POST /users/jobs/complete` into the Flutter frontend. Added `completeJob(String jobId)` method to `EmployeeJobsProvider` (`frontend/lib/providers/employee_jobs_provider.dart`) and rendered "Complete Job" action button in `EmployeeJobsScreen` (`frontend/lib/screens/employee_jobs_screen.dart`) exclusively for active/in-progress jobs. Features confirmation modal (`ConfirmActionDialog`), double-submission loading state, inline error banner via `friendlyErrorMessage`, and immediate job status update to COMPLETED. Added 4 widget tests (`frontend/test/employee_jobs_screen_test.dart`).
-- **Commit SHA**: `8f20aa6c78ec97ccf4adb605b57003743579880d`
+- **Commit SHA**: ``8f20aa6c78ec97ccf4adb605b57003743579880d``
 - **Verification**: Verified via `flutter analyze` (0 issues) and `flutter test` (100% pass, 50/50 test cases). ✅
 
 
