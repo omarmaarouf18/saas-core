@@ -69,6 +69,7 @@
  *   **Live Employee Map Tracking**: Hydrates employee locations from HTTP API endpoints, connects to chat-service WebSocket hub channels (`fleet:<owner_id>` / `job:<job_id>`), updates employee marker positions in real time, and displays reconnection banners gracefully. Verified end-to-end with real backend WebSocket connections and broadcasts (`TestADR0008_E2E_LiveEmployeeMapTracking`).
  *   **Owner Escrow Reconciliation Review**: Lists jobs in status `escrow_reconciliation_required` for tenant owners via `GET /users/jobs/reconciliation-queue`, displays human-readable failure descriptions and locked escrow details, requires interactive confirmation dialogs before executing release/refund fund movements via `POST /users/jobs/reconciliation-resolve`, handles empty/loading states, and handles 409 conflict and 429 rate-limit responses gracefully.
  *   **Negotiable Transport Pricing (ADR-0006)**: Enables customer and employee counter-offers within ±50% bounds for transport jobs in `awaiting_price_response` state via `POST /users/jobs/propose-price` and `POST /users/jobs/respond-price`, displays clear proposal comparison card with system fare comparison, handles 409 `job_state_changed` conflicts gracefully, and tracks 5-minute negotiation expiry window with live countdown ticker and expired banner state.
+ *   **Device GPS Location Permission Infrastructure (Part 1)**: Added `geolocator: ^12.0.0` dependency, configured foreground-only Android (`ACCESS_FINE_LOCATION`) and iOS (`NSLocationWhenInUseUsageDescription`) location permissions, implemented `requestLocationPermission` helper utility (`frontend/lib/core/location_permission.dart`), and added 7 unit tests in `frontend/test/location_permission_test.dart` covering all permission result states (`serviceDisabled`, `granted`, `denied`, `deniedForever`).
 
  ## File Tracking Index
 
@@ -76,6 +77,7 @@
  * **Core**:
    * `api_client.dart`
    * `error_messages.dart`
+   * `location_permission.dart`
  * **Models**:
    * `user_profile.dart`
    * `job.dart`
