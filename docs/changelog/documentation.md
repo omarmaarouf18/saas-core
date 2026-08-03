@@ -116,6 +116,8 @@ This file tracks historical entries for the primary category: **Documentation Ch
 - **Commit SHA**: ``fd751f5dc833511329360d6411265450781807b4``
 - **Verification**: Verified via `make ci` gate and `make docs-check`. ✅
 
+## Deferred Business Owner Configuration Backlog Scope
 
-
-
+- **Implementation Detail**: Added documented, deferred Business Owner Configuration backlog entry in `AI_CONTEXT.md` under `### 3. Not Started Yet`, detailing future scope for custom negotiable base pricing per owner, business operating hours, service coverage geographic radius boundaries, and explicitly noting their absence in `services/user-service/internal/models/models.go` (`Service` and `Job` structs).
+- **Commit SHA**: ``f25b8ef8d73920f5e18c36cdf4c4d53ef89ed016``
+- **Verification**: Verified via `make docs-check` and `.githooks/pre-push` gate passing all freshness and commit SHA checks cleanly. ✅
