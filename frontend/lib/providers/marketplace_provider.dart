@@ -8,11 +8,13 @@ class MarketplaceProvider extends ChangeNotifier {
   final ApiClient apiClient;
 
   List<MarketplaceService> _services = [];
+  List<Job> _customerJobs = [];
   bool _isLoading = false;
   String? _error;
   Job? _bookedJob;
 
   List<MarketplaceService> get services => _services;
+  List<Job> get customerJobs => _customerJobs;
   bool get isLoading => _isLoading;
   String? get error => _error;
   Job? get bookedJob => _bookedJob;
@@ -277,6 +279,40 @@ class MarketplaceProvider extends ChangeNotifier {
       debugPrint('Error cancelling job: $e');
       _error = friendlyErrorMessage(e);
       rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<List<Job>> fetchCustomerJobs([String? userToken]) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final queryParams = <String, String>{};
+      if (userToken != null && userToken.isNotEmpty) {
+        queryParams['requester_token'] = userToken;
+      }
+      final res = await apiClient.get(
+        '/users/jobs/mine',
+        queryParams: queryParams.isNotEmpty ? queryParams : null,
+      );
+
+      if (res is List) {
+        _customerJobs = res
+            .map((j) => Job.fromJson(j as Map<String, dynamic>))
+            .toList();
+      } else {
+        _customerJobs = [];
+      }
+      return _customerJobs;
+    } catch (e) {
+      debugPrint('Error fetching customer jobs: $e');
+      _error = friendlyErrorMessage(e);
+      _customerJobs = [];
+      return [];
     } finally {
       _isLoading = false;
       notifyListeners();
