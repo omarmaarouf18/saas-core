@@ -32,6 +32,9 @@ as the literal first command in the sequence, unconditionally and idempotently. 
 
 Do not batch multiple unrelated changes into one commit, and do not wait until a whole task is finished if it has multiple independent sub-changes. Once verified, run `git config core.hooksPath .githooks`, `git add`, `git commit` with a specific message, and push to origin/logic-exploitation via `make push`.
 
+### Shared Widget Changes
+Any change touching a shared/reusable widget (anything in `frontend/lib/widgets/`) as a side effect of an otherwise-scoped feature task must be called out as its own explicit item in the commit message and the task report — e.g., a separate section/paragraph titled "Unrelated shared-widget fix" — rather than folded silently into the feature diff. This makes it possible to review or revert it independently of the feature it was bundled with.
+
 ### Reporting Push Verification
 - The agent MUST run `make push` (not raw `git push`) for the final push of any task.
 - The agent's final report MUST include the literal, unedited output of `make push` (the `PUSH_VERIFIED: <hash>` line) pasted as-is.
