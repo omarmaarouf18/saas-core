@@ -19,9 +19,13 @@ import 'subscription_screen.dart';
 import 'employee_jobs_screen.dart';
 import 'kyc_document_upload_screen.dart';
 import 'customer_marketplace_screen.dart';
+import 'kyb_kye_review_screen.dart';
 import 'owner_reconciliation_queue_screen.dart';
 import '../providers/marketplace_provider.dart';
 import '../widgets/rating_summary_card.dart';
+import '../widgets/cancel_job_dialog.dart';
+import '../widgets/secondary_button.dart';
+import '../widgets/status_badge.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -46,8 +50,9 @@ class _HomeScreenState extends State<HomeScreen> {
     await auth.fetchUserProfile();
     if (!mounted) return;
     if (auth.user?.role == 'owner') {
-      await Provider.of<OwnerProvider>(context, listen: false)
-          .fetchDashboardData(auth.token!);
+      final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
+      await ownerProvider.fetchDashboardData(auth.token!);
+      await ownerProvider.fetchOwnerJobs(auth.token!);
     }
   }
 
@@ -122,6 +127,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (user.role == 'user') {
         return const CustomerMarketplaceScreen();
       }
+      if (user.role == 'reviewer' || user.role == 'admin') {
+        return const KybKyeReviewScreen();
+      }
       // Non-owner basic dashboard
       return Scaffold(
         backgroundColor: AppColors.scaffoldBackground,
@@ -130,6 +138,19 @@ class _HomeScreenState extends State<HomeScreen> {
           title: const Text("Quick Delivery Dashboard"),
           foregroundColor: AppColors.onPrimary,
           actions: [
+            if (user.role == 'reviewer' || user.role == 'admin')
+              IconButton(
+                key: const Key('reviewer_queue_button'),
+                icon: const Icon(Icons.fact_check_outlined),
+                tooltip: "KYB/KYE Review Queue",
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const KybKyeReviewScreen(),
+                    ),
+                  );
+                },
+              ),
             _buildNotificationBell(context),
             IconButton(
               icon: const Icon(Icons.logout),
@@ -190,6 +211,19 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text("Quick Delivery Owner Dashboard"),
         foregroundColor: AppColors.onPrimary,
         actions: [
+          if (user.role == 'reviewer' || user.role == 'admin')
+            IconButton(
+              key: const Key('reviewer_queue_button'),
+              icon: const Icon(Icons.fact_check_outlined),
+              tooltip: "KYB/KYE Review Queue",
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const KybKyeReviewScreen(),
+                  ),
+                );
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.verified_user_outlined),
             tooltip: "Verification Documents",
@@ -489,20 +523,101 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             const SizedBox(height: AppSpacing.xl),
-            const ThemedSectionHeader(title: "Active Jobs"),
+            const ThemedSectionHeader(title: "Owner Jobs"),
             const SizedBox(height: AppSpacing.sm),
 
-            // Active Jobs placeholder stating the API gap
-            const ThemedCard(
-              borderRadius: AppRadius.md,
-              padding: AppSpacing.lg,
-              child: ThemedEmptyState(
-                icon: Icons.assignment_late_outlined,
-                title: "No Active Jobs Found",
-                description:
-                    "Active job tracking is active on the platform, but the user-service does not currently expose an API endpoint to list active jobs for owners.",
+            if (ownerProvider.ownerJobs.isEmpty)
+              const ThemedCard(
+                borderRadius: AppRadius.md,
+                padding: AppSpacing.lg,
+                child: ThemedEmptyState(
+                  icon: Icons.assignment_outlined,
+                  title: "No Owner Jobs Found",
+                  description:
+                      "You currently have no jobs registered under your tenant account.",
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: ownerProvider.ownerJobs.length,
+                itemBuilder: (context, index) {
+                  final job = ownerProvider.ownerJobs[index];
+                  final canCancel =
+                      job.status == 'pending' || job.status == 'active';
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: ThemedCard(
+                      padding: AppSpacing.md,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "Job #${job.id}",
+                                style: AppTypography.titleMd.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              StatusBadge(status: job.status),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            "Payment: ${job.paymentMethod.toUpperCase()}${job.lockedEscrowAmount != null ? ' (\$${job.lockedEscrowAmount!.toStringAsFixed(2)})' : ''}",
+                            style: AppTypography.bodyMd.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                          if (canCancel) ...[
+                            const SizedBox(height: AppSpacing.sm),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: SecondaryButton(
+                                key: Key('cancel_owner_job_button_${job.id}'),
+                                text: "Cancel Job",
+                                icon: Icons.cancel_outlined,
+                                isOutlined: true,
+                                onPressed: () async {
+                                  await CancelJobDialog.show(
+                                    context,
+                                    jobId: job.id,
+                                    onConfirm: (reason) async {
+                                      await ownerProvider.cancelJob(
+                                        jobId: job.id,
+                                        reason: reason,
+                                        ownerToken: auth.token!,
+                                      );
+                                      if (context.mounted) {
+                                        final isNonCod =
+                                            job.paymentMethod.toLowerCase() !=
+                                                'cod';
+                                        final msg = isNonCod
+                                            ? "Job cancelled successfully. Escrow refunded to wallet."
+                                            : "Job cancelled successfully.";
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(msg),
+                                            backgroundColor: AppColors.success,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
-            ),
           ],
         ),
       ),

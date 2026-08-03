@@ -232,6 +232,24 @@ This file tracks historical entries for the primary category: **New Features Cha
 - **Commit SHA**: ``ee443e39358b7f4c06fe7eb2f2a57b2f4e4c8d79``
 - **Verification**: Verified via `go test -v ./internal/handlers -run "TestForgotPassword_|TestResetPassword_"` (6/6 pass) and `make docs`. ✅
 
+## Job Completion Frontend Wiring
+
+- **Implementation Detail**: Wired `POST /users/jobs/complete` into the Flutter frontend. Added `completeJob(String jobId)` method to `EmployeeJobsProvider` (`frontend/lib/providers/employee_jobs_provider.dart`) and rendered "Complete Job" action button in `EmployeeJobsScreen` (`frontend/lib/screens/employee_jobs_screen.dart`) exclusively for active/in-progress jobs. Features confirmation modal (`ConfirmActionDialog`), double-submission loading state, inline error banner via `friendlyErrorMessage`, and immediate job status update to COMPLETED. Added 4 widget tests (`frontend/test/employee_jobs_screen_test.dart`).
+- **Commit SHA**: ``8f20aa6c78ec97ccf4adb605b57003743579880d``
+- **Verification**: Verified via `flutter analyze` (0 issues) and `flutter test` (100% pass, 50/50 test cases). ✅
+
+## Job Cancellation Frontend Wiring (POST /users/jobs/cancel)
+
+- **Implementation Detail**: Wired `POST /users/jobs/cancel` into the Flutter frontend with strict role-specific and state-specific authorization logic. Added `cancelJob` method to `MarketplaceProvider` (`frontend/lib/providers/marketplace_provider.dart`) and `OwnerProvider` (`frontend/lib/providers/owner_provider.dart`). Created reusable `CancelJobDialog` (`frontend/lib/widgets/cancel_job_dialog.dart`) requiring a non-empty cancellation reason (confirm button disabled when empty). For tenant Owners: rendered "Cancel Job" buttons on `home_screen.dart` (Owner Dashboard) for pending and active jobs. For Customers: rendered "Cancel Job" button on `job_status_screen.dart` for pending jobs, and presented "Open a Complaint Ticket" affordance for active jobs with `// TODO` annotation referencing upcoming ticket endpoint wiring. Cancel buttons are completely omitted for completed and cancelled jobs. Added 6 widget tests in `frontend/test/job_cancellation_test.dart`.
+- **Commit SHA**: ``c9e9c9cdbc8bdce1194098ccb5c4d67a4f457fa1``
+- **Verification**: Verified via `flutter analyze` (0 issues) and `flutter test` (100% pass, 57/57 test cases). ✅
+
+## Device GPS Location Permission Infrastructure (Part 1 of 2)
+
+- **Implementation Detail**: Added `geolocator: ^12.0.0` dependency to `frontend/pubspec.yaml` (resolving cleanly without version conflicts against `web_socket_channel`). Configured foreground-only Android permission (`ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION` in `AndroidManifest.xml`) and iOS permission (`NSLocationWhenInUseUsageDescription` in `Info.plist`). Created isolated `requestLocationPermission` helper utility (`frontend/lib/core/location_permission.dart`) returning unified `LocationPermissionResult` enum (`granted`, `denied`, `deniedForever`, `serviceDisabled`). Added unit test suite in `frontend/test/location_permission_test.dart` using `MockGeolocatorPlatform` with `MockPlatformInterfaceMixin` covering all permission result states.
+- **Commit SHA**: ``0ee8e7858bcb87dd1e92bbcbc4c121155f673546``
+- **Verification**: Verified via `flutter analyze` (0 issues) and `flutter test` (100% pass, 64/64 test cases). ✅
+
 
 
 

@@ -41,6 +41,7 @@ When adding a new ADR, use the following template:
 *   [ADR-0010: Separate Repositories vs. Branches for Deployment Artifacts](0010-separate-repos-for-deployment-artifacts.md)
 *   [ADR-0011: Containerized Caddy Reverse Proxy in Docker Compose Stack](0011-containerized-caddy-in-compose-stack.md)
 *   [ADR-0012: Single Source of Truth for Production .env (Self-Hosted Runner Workspace vs. Persistent Backup)](0012-single-source-of-truth-for-production-env.md)
+*   [ADR-0013: Support Agent Console as a Separate Client Application](0013-support-agent-console-as-separate-client-application.md)
 
 
 

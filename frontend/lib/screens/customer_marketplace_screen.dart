@@ -14,6 +14,7 @@ import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
 import 'job_status_screen.dart';
+import 'customer_jobs_screen.dart';
 import 'notifications_screen.dart';
 import '../utils/logout_helper.dart';
 
@@ -147,6 +148,18 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
         actions: [
+          IconButton(
+            key: const Key('my_orders_button'),
+            icon: const Icon(Icons.receipt_long_outlined),
+            tooltip: "My Orders",
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const CustomerJobsScreen(),
+                ),
+              );
+            },
+          ),
           _buildNotificationBell(context),
           IconButton(
             icon: const Icon(Icons.logout),

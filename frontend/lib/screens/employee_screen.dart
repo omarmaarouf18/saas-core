@@ -5,8 +5,10 @@ import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
@@ -43,25 +45,35 @@ class _EmployeeScreenState extends State<EmployeeScreen>
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_handleTabChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _refreshAuditLog();
+      _refreshData();
     });
   }
 
   void _handleTabChange() {
     if (_tabController.index == 1) {
       _refreshAuditLog();
+    } else {
+      _refreshEmployees();
     }
+  }
+
+  void _refreshData() {
+    _refreshEmployees();
+    if (_tabController.index == 1) {
+      _refreshAuditLog();
+    }
+  }
+
+  Future<void> _refreshEmployees() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
+    await ownerProvider.fetchEmployees(auth.token);
   }
 
   Future<void> _refreshAuditLog() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
 
-    // ---------------------------------------------------------------------------
-    // API Call: Fetch Tenant Audit Log
-    // Convention: Uses RAW owner ID (auth.user!.id) as 'tenant_id' AND JWT (auth.token) as 'requester_id'.
-    // Why: auth-service verifies the requester identity (JWT) matches tenant_id.
-    // ---------------------------------------------------------------------------
     await ownerProvider.fetchAuditLog(
       tenantId: auth.user!.id,
       requesterToken: auth.token!,
@@ -123,309 +135,406 @@ class _EmployeeScreenState extends State<EmployeeScreen>
     final auth = Provider.of<AuthProvider>(context);
     final ownerProvider = Provider.of<OwnerProvider>(context);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. Register Employee Form
-          ThemedCard(
-            borderRadius: AppRadius.md,
-            padding: AppSpacing.lg,
-            child: Form(
-              key: _registerFormKey,
+    return RefreshIndicator(
+      onRefresh: _refreshEmployees,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 0. Registered Employees Roster (GET /auth/employees)
+            ThemedCard(
+              key: const Key('registered_employees_card'),
+              borderRadius: AppRadius.md,
+              padding: AppSpacing.lg,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const ThemedSectionHeader(
-                    title: "Register New Employee",
-                  ),
-                  const Divider(
-                    height: AppSpacing.lg,
-                    color: AppColors.outlineVariant,
-                  ),
-                  ThemedTextField(
-                    controller: _regUsernameController,
-                    textDirection: _regUsernameDirection,
-                    labelText: "Employee Username",
-                    prefixIcon: const Icon(Icons.person_outline,
-                        color: AppColors.outline),
-                    onChanged: (val) {
-                      if (val.isNotEmpty) {
-                        final firstRune = val.runes.first;
-                        if (firstRune >= 0x0600 && firstRune <= 0x06FF) {
-                          setState(() {
-                            _regUsernameDirection = TextDirection.rtl;
-                          });
-                        } else {
-                          setState(() {
-                            _regUsernameDirection = TextDirection.ltr;
-                          });
-                        }
-                      } else {
-                        setState(() {
-                          _regUsernameDirection = null;
-                        });
-                      }
-                    },
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return "Username is required";
-                      }
-                      final trimmed = value.trim();
-                      final runeCount = trimmed.runes.length;
-                      if (runeCount < 3) {
-                        return "Username must be at least 3 characters";
-                      }
-                      if (runeCount > 30) {
-                        return "Username must be at most 30 characters";
-                      }
-                      final usernameRegex =
-                          RegExp(r'^([a-zA-Z0-9_ ]|[\u0600-\u06FF])+$');
-                      if (!usernameRegex.hasMatch(trimmed)) {
-                        return "Username contains invalid characters";
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  ThemedTextField(
-                    controller: _regEmailController,
-                    keyboardType: TextInputType.emailAddress,
-                    labelText: "Employee Email",
-                    prefixIcon: const Icon(Icons.email_outlined,
-                        color: AppColors.outline),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return "Email is required";
-                      }
-                      if (!value.contains("@")) {
-                        return "Invalid email address";
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  ThemedTextField(
-                    controller: _regPasswordController,
-                    obscureText: true,
-                    labelText: "Employee Password",
-                    prefixIcon: const Icon(Icons.lock_outline,
-                        color: AppColors.outline),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Password is required";
-                      }
-                      if (value.length < 6) {
-                        return "Password must be at least 6 characters";
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  PrimaryButton(
-                    onPressed: _isRegSubmitting
-                        ? null
-                        : () async {
-                            if (_registerFormKey.currentState!.validate()) {
-                              setState(() => _isRegSubmitting = true);
-                              try {
-                                // ---------------------------------------------------------------------------
-                                // API Call: Register Employee
-                                // Convention: Uses RAW owner ID (auth.user!.id) as 'owner_id' JSON body parameter.
-                                // Why: /auth/signup validates the owner's existence via direct GetByID lookup.
-                                // ---------------------------------------------------------------------------
-                                final res =
-                                    await ownerProvider.registerEmployee(
-                                  email: _regEmailController.text.trim(),
-                                  username: _regUsernameController.text.trim(),
-                                  password: _regPasswordController.text,
-                                  ownerId: auth.user!.id,
-                                );
-
-                                if (mounted) {
-                                  _regEmailController.clear();
-                                  _regUsernameController.clear();
-                                  _regPasswordController.clear();
-                                  _showSuccessDialog(
-                                    title: "Employee Registered",
-                                    message:
-                                        "Successfully created employee account:\n"
-                                        "Username: ${res['username'] ?? ''}\n"
-                                        "Email: ${res['email'] ?? ''}\n"
-                                        "ID: ${res['user_id'] ?? ''}\n\n"
-                                        "This account has no 2FA (auto-confirmed) and is ready for direct login.",
-                                  );
-                                }
-                              } catch (e) {
-                                debugPrint('Error registering worker: $e');
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(friendlyErrorMessage(e)),
-                                      backgroundColor: AppColors.error,
-                                    ),
-                                  );
-                                }
-                              } finally {
-                                if (mounted) {
-                                  setState(() => _isRegSubmitting = false);
-                                }
-                              }
-                            }
-                          },
-                    text: "Register Worker",
-                    isLoading: _isRegSubmitting,
-                    icon: Icons.person_add_alt_1_outlined,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-
-          // 2. Freeze/Activate Toggle Form
-          ThemedCard(
-            borderRadius: AppRadius.md,
-            padding: AppSpacing.lg,
-            child: Form(
-              key: _toggleFormKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const ThemedSectionHeader(
-                    title: "Freeze / Activate Worker Account",
-                  ),
-                  const Divider(
-                    height: AppSpacing.lg,
-                    color: AppColors.outlineVariant,
-                  ),
-                  ThemedTextField(
-                    controller: _togEmailController,
-                    keyboardType: TextInputType.emailAddress,
-                    labelText: "Employee Email",
-                    prefixIcon: const Icon(Icons.email_outlined,
-                        color: AppColors.outline),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return "Employee email is required";
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.md),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        "Account Status Setting:",
-                        style: AppTypography.bodyLg.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.onSurface,
+                      const Expanded(
+                        child: ThemedSectionHeader(
+                          title: "Registered Employees",
                         ),
                       ),
-                      ChoiceChip(
-                        label: Text(_togSetActive ? "ACTIVE" : "FREEZE"),
-                        selected: true,
-                        selectedColor: _togSetActive
-                            ? AppColors.success.withValues(alpha: 0.15)
-                            : AppColors.error.withValues(alpha: 0.15),
-                        labelStyle: AppTypography.labelLg.copyWith(
-                          color: _togSetActive
-                              ? AppColors.success
-                              : AppColors.error,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        avatar: Icon(
-                          _togSetActive
-                              ? Icons.check_circle_outline
-                              : Icons.block_flipped,
-                          color: _togSetActive
-                              ? AppColors.success
-                              : AppColors.error,
-                          size: 18,
-                        ),
-                        onSelected: (_) {
-                          setState(() {
-                            _togSetActive = !_togSetActive;
-                          });
-                        },
+                      IconButton(
+                        key: const Key('refresh_employees_button'),
+                        icon: const Icon(Icons.refresh),
+                        tooltip: "Refresh List",
+                        onPressed: _refreshEmployees,
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  ThemedTextField(
-                    controller: _togPasswordController,
-                    obscureText: true,
-                    labelText: "Confirm Owner Password",
-                    hintText:
-                        "Required for secure out-of-band operations verification.",
-                    prefixIcon: const Icon(Icons.vpn_key_outlined,
-                        color: AppColors.outline),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Owner password is required to re-authenticate";
-                      }
-                      return null;
-                    },
+                  const Divider(
+                    height: AppSpacing.lg,
+                    color: AppColors.outlineVariant,
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-                  PrimaryButton(
-                    onPressed: _isTogSubmitting
-                        ? null
-                        : () async {
-                            if (_toggleFormKey.currentState!.validate()) {
-                              setState(() => _isTogSubmitting = true);
-                              try {
-                                // ---------------------------------------------------------------------------
-                                // API Call: Toggle Employee Status (Freeze/Activate)
-                                // Convention: Uses owner email and owner password (re-auth) in JSON body.
-                                // Why: /auth/employee/toggle re-verifies the owner password via bcrypt.
-                                // ---------------------------------------------------------------------------
-                                final res = await ownerProvider.toggleEmployee(
-                                  employeeEmail:
-                                      _togEmailController.text.trim(),
-                                  ownerEmail: auth.user!.email,
-                                  ownerPassword: _togPasswordController.text,
-                                  setActive: _togSetActive,
-                                );
+                  if (ownerProvider.isLoading &&
+                      ownerProvider.employees.isEmpty)
+                    const ThemedLoadingIndicator(
+                      key: Key('employees_loading'),
+                      message: "Loading employee list...",
+                    )
+                  else if (ownerProvider.error != null &&
+                      ownerProvider.employees.isEmpty)
+                    ThemedErrorBanner(
+                      key: const Key('employees_error_banner'),
+                      message: ownerProvider.error!,
+                    )
+                  else if (ownerProvider.employees.isEmpty)
+                    const ThemedEmptyState(
+                      key: Key('employees_empty_state'),
+                      icon: Icons.badge_outlined,
+                      title: "No Employees Registered",
+                      description:
+                          "Register your first employee account using the form below.",
+                    )
+                  else
+                    ListView.separated(
+                      key: const Key('employees_list_view'),
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: ownerProvider.employees.length,
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: AppSpacing.sm),
+                      itemBuilder: (context, index) {
+                        final emp = ownerProvider.employees[index];
+                        final empId = emp['id']?.toString() ?? '';
+                        final username = emp['username']?.toString() ?? '';
+                        final email = emp['email']?.toString() ?? '';
+                        final isActive = emp['is_active'] == true;
 
-                                if (mounted) {
-                                  _togPasswordController.clear();
-                                  _showSuccessDialog(
-                                    title: "Worker Status Updated",
-                                    message: res['message'] ??
-                                        "Successfully changed status.",
-                                  );
-                                }
-                              } catch (e) {
-                                debugPrint('Error toggling worker status: $e');
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(friendlyErrorMessage(e)),
-                                      backgroundColor: AppColors.error,
+                        return Container(
+                          key: Key('employee_item_$empId'),
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: AppColors.primary,
+                                child: Text(
+                                  username.isNotEmpty
+                                      ? username[0].toUpperCase()
+                                      : 'E',
+                                  style: const TextStyle(
+                                      color: AppColors.onPrimary),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      username,
+                                      style: AppTypography.titleMd.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  );
-                                }
-                              } finally {
-                                if (mounted) {
-                                  setState(() => _isTogSubmitting = false);
-                                }
-                              }
-                            }
-                          },
-                    text: _togSetActive ? "Unfreeze Worker" : "Freeze Worker",
-                    isLoading: _isTogSubmitting,
-                    icon: _togSetActive
-                        ? Icons.check_circle_outline
-                        : Icons.block_flipped,
-                  ),
+                                    Text(
+                                      email,
+                                      style: AppTypography.bodyMd.copyWith(
+                                        color: AppColors.onSurfaceVariant,
+                                        fontSize: 12,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              StatusBadge(
+                                status: isActive ? 'active' : 'frozen',
+                                compact: true,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                 ],
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.lg),
+
+            // 1. Register Employee Form
+            ThemedCard(
+              borderRadius: AppRadius.md,
+              padding: AppSpacing.lg,
+              child: Form(
+                key: _registerFormKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const ThemedSectionHeader(
+                      title: "Register New Employee",
+                    ),
+                    const Divider(
+                      height: AppSpacing.lg,
+                      color: AppColors.outlineVariant,
+                    ),
+                    ThemedTextField(
+                      controller: _regUsernameController,
+                      textDirection: _regUsernameDirection,
+                      labelText: "Employee Username",
+                      hintText: "e.g. driver_john",
+                      prefixIcon: const Icon(Icons.person_outline,
+                          color: AppColors.outline),
+                      onChanged: (val) {
+                        final trimmed = val.trim();
+                        final isRtl = trimmed.isNotEmpty &&
+                            RegExp(r'^[\u0600-\u06FF]').hasMatch(trimmed);
+                        final newDirection =
+                            isRtl ? TextDirection.rtl : TextDirection.ltr;
+                        if (_regUsernameDirection != newDirection) {
+                          setState(() => _regUsernameDirection = newDirection);
+                        }
+                      },
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return "Username is required";
+                        }
+                        if (value.trim().length < 3) {
+                          return "Username must be at least 3 characters";
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    ThemedTextField(
+                      controller: _regEmailController,
+                      keyboardType: TextInputType.emailAddress,
+                      labelText: "Employee Email",
+                      hintText: "e.g. john@company.com",
+                      prefixIcon: const Icon(Icons.email_outlined,
+                          color: AppColors.outline),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return "Email is required";
+                        }
+                        if (!value.contains('@')) {
+                          return "Please enter a valid email";
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    ThemedTextField(
+                      controller: _regPasswordController,
+                      obscureText: true,
+                      labelText: "Employee Password",
+                      hintText: "At least 6 characters",
+                      prefixIcon: const Icon(Icons.lock_outline,
+                          color: AppColors.outline),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Password is required";
+                        }
+                        if (value.length < 6) {
+                          return "Password must be at least 6 characters";
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    PrimaryButton(
+                      onPressed: _isRegSubmitting
+                          ? null
+                          : () async {
+                              if (_registerFormKey.currentState!.validate()) {
+                                setState(() => _isRegSubmitting = true);
+                                try {
+                                  final res =
+                                      await ownerProvider.registerEmployee(
+                                    email: _regEmailController.text.trim(),
+                                    username:
+                                        _regUsernameController.text.trim(),
+                                    password: _regPasswordController.text,
+                                    ownerId: auth.user!.id,
+                                  );
+
+                                  if (mounted) {
+                                    _regUsernameController.clear();
+                                    _regEmailController.clear();
+                                    _regPasswordController.clear();
+                                    _showSuccessDialog(
+                                      title: "Employee Registered",
+                                      message:
+                                          "Successfully created employee account:\n"
+                                          "Username: ${res['username'] ?? ''}\n"
+                                          "ID: ${res['user_id'] ?? ''}",
+                                    );
+                                    _refreshEmployees();
+                                  }
+                                } catch (e) {
+                                  debugPrint('Error registering worker: $e');
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(friendlyErrorMessage(e)),
+                                        backgroundColor: AppColors.error,
+                                      ),
+                                    );
+                                  }
+                                } finally {
+                                  if (mounted) {
+                                    setState(() => _isRegSubmitting = false);
+                                  }
+                                }
+                              }
+                            },
+                      text: "Register Employee",
+                      isLoading: _isRegSubmitting,
+                      icon: Icons.person_add_alt_1_outlined,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+
+            // 2. Freeze/Unfreeze Worker Form
+            ThemedCard(
+              borderRadius: AppRadius.md,
+              padding: AppSpacing.lg,
+              child: Form(
+                key: _toggleFormKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const ThemedSectionHeader(
+                      title: "Freeze / Unfreeze Worker",
+                    ),
+                    const Divider(
+                      height: AppSpacing.lg,
+                      color: AppColors.outlineVariant,
+                    ),
+                    ThemedTextField(
+                      controller: _togEmailController,
+                      keyboardType: TextInputType.emailAddress,
+                      labelText: "Employee Email",
+                      hintText: "e.g. john@company.com",
+                      prefixIcon: const Icon(Icons.email_outlined,
+                          color: AppColors.outline),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return "Employee email is required";
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Target Status",
+                                style: AppTypography.titleMd.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                _togSetActive
+                                    ? "Set account to Active (Unfreeze)"
+                                    : "Set account to Frozen (Suspended)",
+                                style: AppTypography.bodyMd.copyWith(
+                                  color: AppColors.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _togSetActive,
+                          onChanged: (val) {
+                            setState(() {
+                              _togSetActive = val;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    ThemedTextField(
+                      controller: _togPasswordController,
+                      obscureText: true,
+                      labelText: "Confirm Owner Password",
+                      hintText:
+                          "Required for secure out-of-band operations verification.",
+                      prefixIcon: const Icon(Icons.vpn_key_outlined,
+                          color: AppColors.outline),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Owner password is required to re-authenticate";
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    PrimaryButton(
+                      onPressed: _isTogSubmitting
+                          ? null
+                          : () async {
+                              if (_toggleFormKey.currentState!.validate()) {
+                                setState(() => _isTogSubmitting = true);
+                                try {
+                                  final res =
+                                      await ownerProvider.toggleEmployee(
+                                    employeeEmail:
+                                        _togEmailController.text.trim(),
+                                    ownerEmail: auth.user!.email,
+                                    ownerPassword: _togPasswordController.text,
+                                    setActive: _togSetActive,
+                                  );
+
+                                  if (mounted) {
+                                    _togPasswordController.clear();
+                                    _showSuccessDialog(
+                                      title: "Worker Status Updated",
+                                      message: res['message'] ??
+                                          "Successfully changed status.",
+                                    );
+                                    _refreshEmployees();
+                                  }
+                                } catch (e) {
+                                  debugPrint(
+                                      'Error toggling worker status: $e');
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(friendlyErrorMessage(e)),
+                                        backgroundColor: AppColors.error,
+                                      ),
+                                    );
+                                  }
+                                } finally {
+                                  if (mounted) {
+                                    setState(() => _isTogSubmitting = false);
+                                  }
+                                }
+                              }
+                            },
+                      text: _togSetActive ? "Unfreeze Worker" : "Freeze Worker",
+                      isLoading: _isTogSubmitting,
+                      icon: _togSetActive
+                          ? Icons.check_circle_outline
+                          : Icons.block_flipped,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -455,10 +564,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                   );
                 }
 
-                // Render logs reverse-chronologically (which the backend GetAuditLog already does)
                 final entry = ownerProvider.auditLogEntries[index];
                 final action = entry['action'] ?? '';
-                final employeeId = entry['employee_id'] ?? '';
                 final clientIp = entry['client_ip'] ?? '';
 
                 DateTime? timestamp;
@@ -498,52 +605,16 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                             ),
                           ],
                         ),
-                        const Divider(
-                          height: AppSpacing.md,
-                          color: AppColors.outlineVariant,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Worker ID:",
-                                  style: AppTypography.labelMd.copyWith(
-                                    color: AppColors.outline,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.xs),
-                                Text(
-                                  employeeId,
-                                  style: AppTypography.bodyMd.copyWith(
-                                    fontFamily: 'monospace',
-                                    color: AppColors.onSurface,
-                                  ),
-                                ),
-                              ],
+                        if (clientIp.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            "IP: $clientIp",
+                            style: AppTypography.bodyMd.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                              fontSize: 12,
                             ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  "IP Address:",
-                                  style: AppTypography.labelMd.copyWith(
-                                    color: AppColors.outline,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.xs),
-                                Text(
-                                  clientIp,
-                                  style: AppTypography.bodyMd.copyWith(
-                                    color: AppColors.onSurface,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -553,50 +624,21 @@ class _EmployeeScreenState extends State<EmployeeScreen>
           );
   }
 
-  String _twoDigits(int n) => n >= 10 ? "$n" : "0$n";
-
   void _showSuccessDialog({required String title, required String message}) {
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("OK"),
           ),
-          title: Row(
-            children: [
-              const Icon(Icons.check_circle_outline, color: AppColors.success),
-              const SizedBox(width: AppSpacing.base),
-              Text(
-                title,
-                style: AppTypography.titleMd.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            message,
-            style: AppTypography.bodyMd.copyWith(
-              color: AppColors.onSurfaceVariant,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                "OK",
-                style: AppTypography.bodyMd.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
+
+  String _twoDigits(int n) => n.toString().padLeft(2, '0');
 }

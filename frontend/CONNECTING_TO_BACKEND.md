@@ -146,3 +146,20 @@ cd frontend && flutter logs
 | App continues targeting old URL after updating `--dart-define` | Stale compiled binary or cached application state | Execute full clean rebuild sequence in Section 5. |
 | `checkDebugAarMetadata... requires... compile against version 36` | `flutter.compileSdkVersion` resolved below pinned AAR dependency floor (`flutter_plugin_android_lifecycle`) | Pin `compileSdk = 36` in `frontend/android/app/build.gradle.kts` instead of relying on default `flutter.compileSdkVersion`. |
 
+---
+
+## 8. Live Employee Location Updates (`POST /users/jobs/location/update`)
+
+The live employee location update subsystem connects assigned workers on active jobs to the backend location ingestion endpoint:
+
+* **Endpoint**: `POST /users/jobs/location/update` (User Service)
+* **Device Permission Infrastructure (Part 1 — Commit `195ee7f`)**: Utilizes `geolocator: ^12.0.0` with foreground-only permissions (`ACCESS_FINE_LOCATION` on Android, `NSLocationWhenInUseUsageDescription` on iOS). Permission checking is encapsulated in `requestLocationPermission()` (`frontend/lib/core/location_permission.dart`).
+* **Stream Filtering & Client Throttling (Part 2 — Commit `0ee8e78` & Part 2 completion)**:
+  * **Distance Filter**: 10 meters (configured via `LocationSettings(distanceFilter: 10)` in `EmployeeLocationProvider`) to prevent sending repetitive location updates when stationary.
+  * **Minimum Interval Gate**: 3.5 seconds between POST calls. The backend enforces a hard 3-second rate limit floor (`429 Too many location updates`); setting the client-side throttle to 3.5 seconds provides a safety margin.
+* **Non-Fatal Rate Limit & Speed Handling**:
+  * `429` (Rate limit or update in progress) and `400` (`implausible_speed`) responses are logged quietly for diagnostic purposes without setting error states or displaying intrusive UI banners.
+* **Lifecycle & Lifecycle Safety**:
+  * Tracking starts automatically when an active job assigned to the current employee is loaded in `EmployeeJobsScreen`.
+  * Tracking stops automatically when the job transitions out of `active` status (e.g. `completeJob`), when the employee navigates away from the dashboard (`deactivate()`), or when `EmployeeLocationProvider` is disposed.
+

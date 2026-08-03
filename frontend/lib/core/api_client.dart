@@ -71,17 +71,24 @@ class ApiClient {
   Future<dynamic> post(
     String path,
     Map<String, dynamic> body, {
+    Map<String, String>? queryParams,
     bool isRetry = false,
   }) async {
     try {
+      var uri = Uri.parse('$baseUrl$path');
+      if (queryParams != null && queryParams.isNotEmpty) {
+        uri = uri.replace(queryParameters: queryParams);
+      }
       final response = await _client.post(
-        Uri.parse('$baseUrl$path'),
+        uri,
         headers: _getHeaders(),
         body: jsonEncode(body),
       );
       return await _handleResponse(
         response,
-        onRetry: isRetry ? null : () => post(path, body, isRetry: true),
+        onRetry: isRetry
+            ? null
+            : () => post(path, body, queryParams: queryParams, isRetry: true),
         path: path,
       );
     } catch (e) {
@@ -116,6 +123,39 @@ class ApiClient {
       if (e is ApiClientException) rethrow;
       throw ApiClientException(
           "Network error: Please check your internet connection.");
+    }
+  }
+
+  Future<Uint8List> getBytes(
+    String pathOrUrl, {
+    Map<String, String>? queryParams,
+    bool isRetry = false,
+  }) async {
+    try {
+      Uri uri;
+      if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
+        uri = Uri.parse(pathOrUrl);
+      } else {
+        uri = Uri.parse('$baseUrl$pathOrUrl');
+      }
+      if (queryParams != null && queryParams.isNotEmpty) {
+        final existingParams = Map<String, String>.from(uri.queryParameters);
+        existingParams.addAll(queryParams);
+        uri = uri.replace(queryParameters: existingParams);
+      }
+      final response = await _client.get(
+        uri,
+        headers: _getHeaders(),
+      );
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      }
+      throw ApiClientException(
+          'Failed to load document (status: ${response.statusCode})',
+          statusCode: response.statusCode);
+    } catch (e) {
+      if (e is ApiClientException) rethrow;
+      throw ApiClientException('Network error: Unable to load document.');
     }
   }
 

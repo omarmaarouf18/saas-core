@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/api_client.dart';
@@ -15,11 +16,19 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  List<dynamic> _pendingSubmissions = [];
+  bool _isLoadingPending = false;
+  String? _pendingError;
+
   UserProfile? get user => _user;
   String? get token => _token;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAuthenticated => _token != null;
+
+  List<dynamic> get pendingSubmissions => _pendingSubmissions;
+  bool get isLoadingPending => _isLoadingPending;
+  String? get pendingError => _pendingError;
 
   AuthProvider(this.apiClient, {PushNotificationService? pushService})
       : pushService =
@@ -123,6 +132,48 @@ class AuthProvider extends ChangeNotifier {
       return true;
     }
     return false;
+  }
+
+  Future<List<dynamic>> fetchPendingSubmissions({
+    String? internalToken,
+    String? reviewerToken,
+  }) async {
+    _isLoadingPending = true;
+    _pendingError = null;
+    notifyListeners();
+
+    try {
+      final queryParams = <String, String>{};
+      if (internalToken != null && internalToken.isNotEmpty) {
+        queryParams['internal_token'] = internalToken;
+      }
+      if (reviewerToken != null && reviewerToken.isNotEmpty) {
+        queryParams['reviewer_token'] = reviewerToken;
+      }
+
+      final res = await apiClient.get(
+        '/auth/kyb-kye/pending',
+        queryParams: queryParams.isNotEmpty ? queryParams : null,
+      );
+
+      if (res is List) {
+        _pendingSubmissions = res;
+      } else if (res is Map &&
+          res.containsKey('submissions') &&
+          res['submissions'] is List) {
+        _pendingSubmissions = res['submissions'] as List<dynamic>;
+      } else {
+        _pendingSubmissions = [];
+      }
+      return _pendingSubmissions;
+    } catch (e) {
+      _pendingError = friendlyErrorMessage(e);
+      _pendingSubmissions = [];
+      return [];
+    } finally {
+      _isLoadingPending = false;
+      notifyListeners();
+    }
   }
 
   void clearError() {
@@ -349,5 +400,68 @@ class AuthProvider extends ChangeNotifier {
     apiClient.setToken(null);
     await _secureStorage.deleteAll();
     notifyListeners();
+  }
+
+  /// Fetches raw document bytes for viewing a KYB/KYE document image or PDF.
+  Future<Uint8List> fetchDocumentBytes(
+    String documentUrl, {
+    String? internalToken,
+    String? reviewerToken,
+  }) async {
+    final Map<String, String> queryParams = {};
+    if (internalToken != null && internalToken.isNotEmpty) {
+      queryParams['internal_token'] = internalToken;
+    }
+    if (reviewerToken != null && reviewerToken.isNotEmpty) {
+      queryParams['reviewer_token'] = reviewerToken;
+    }
+    return await apiClient.getBytes(documentUrl, queryParams: queryParams);
+  }
+
+  /// Submits an approve or reject review action for a pending KYB/KYE submission.
+  Future<bool> reviewSubmission({
+    required String userId,
+    required String action,
+    String? reason,
+    String? internalToken,
+    String? reviewerToken,
+  }) async {
+    _isLoading = true;
+    _pendingError = null;
+    notifyListeners();
+
+    try {
+      final Map<String, String> queryParams = {};
+      if (internalToken != null && internalToken.isNotEmpty) {
+        queryParams['internal_token'] = internalToken;
+      }
+      if (reviewerToken != null && reviewerToken.isNotEmpty) {
+        queryParams['reviewer_token'] = reviewerToken;
+      }
+
+      final body = {
+        'user_id': userId,
+        'action': action,
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+      };
+
+      final response = await apiClient.post(
+        '/auth/kyb-kye/review',
+        body,
+        queryParams: queryParams,
+      );
+
+      if (response != null && response['status'] == 'reviewed') {
+        _pendingSubmissions.removeWhere((item) => item['user_id'] == userId);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _pendingError = e.toString().replaceAll('ApiClientException: ', '');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

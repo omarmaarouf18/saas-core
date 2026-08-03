@@ -171,6 +171,12 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Commit SHA**: ``c1f00d3d026207acb4f78741afaae121c07afa88``
 - **Verification**: Verified via `flutter analyze` (0 issues), `flutter test` (35/35 test suites passing), and local SHA verification check. ✅
 
+## Job Completion Payment Method Distinction (COD vs Non-COD cash_collected Gate)
+
+- **Implementation Detail**: Resolved a financial-logic bug in `completeJob()` (`frontend/lib/providers/employee_jobs_provider.dart` and `frontend/lib/screens/employee_jobs_screen.dart`). Previously introduced in commit `8f20aa6...`, `completeJob()` hardcoded `cash_collected: true` for all job completion requests sent to `POST /users/jobs/complete`. For COD (cash-on-delivery) jobs, the backend handler (`handlers.go:CompleteJob`) checks `cash_collected: true` as an explicit confirmation gate to trigger immediate platform-fee deduction from the tenant owner's wallet. Hardcoding this to `true` automatically triggered fee deduction on COD jobs without verifying cash was physically collected by the employee. Updated `completeJob(String jobId, {bool cashCollected = false})` signature to pass `cashCollected` dynamically based on `job.paymentMethod`. Updated `EmployeeJobsScreen` confirmation dialog copy to differentiate COD jobs (`"Confirm Cash Collection & Complete"` with explicit physical cash collection prompt) vs non-COD jobs (`"Complete Job"`). Updated widget tests in `frontend/test/employee_jobs_screen_test.dart` to verify COD vs non-COD dialog copy and payload parameter distinction. Audit of previous test gap: earlier tests used a single COD job fixture and mocked `completeJob` without inspecting the `cash_collected` payload boolean.
+- **Commit SHA**: ``73dc64ca3d34bf45333df400cc1fff336e1cf166``
+- **Verification**: Verified via `flutter analyze` (0 issues) and `flutter test` (51/51 test cases passing across all 5 widget test cases covering COD vs non-COD flows). ✅
+
 
 
 

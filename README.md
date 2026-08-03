@@ -177,6 +177,17 @@ To minimize the attack surface of the running services, onboarding a KYB/KYE rev
 
 ---
 
+## Client Features & Capability Overview
+
+Following the completion of Phase 13 (Backend Endpoints Integration Sweep), the Flutter mobile client (`frontend/`) features 100% complete endpoint integration across all primary user roles:
+
+*   **Customer Role**: Service directory browsing and filtering (`CustomerMarketplaceScreen`), job booking and price counter-offer negotiation, order history (`CustomerJobsScreen` / "My Orders"), active job delivery live tracking map (`CustomerJobMapScreen`), real-time channel chat (`ChatScreen`), and complaint ticket submission (`CreateTicketDialog`).
+*   **Owner Role**: Business operational dashboard (`HomeScreen`), revenue and e-wallet ledger (`WalletScreen`), worker management and registered employee roster (`EmployeeScreen`), fleet tracking map (`OwnerFleetMapScreen`), COD cash reconciliation queue (`OwnerReconciliationQueueScreen`), service directory management (`ServiceScreen`), subscription tier management (`SubscriptionScreen`), and job cancellation (`CancelJobDialog`).
+*   **Employee Role**: Direct authentication (bypassing 2FA), assigned job task roster (`EmployeeJobsScreen`), COD vs non-COD job completion with cash collection verification, and background/foreground live GPS location tracking with speed and rate-limit throttle handling (`EmployeeLocationProvider`).
+*   **Reviewer / Admin Role**: KYB/KYE verification queue roster (`KybKyeReviewScreen`), raw document image and PDF preview viewer (`DocumentViewerDialog`), and approve/reject review decisions with mandatory rejection notes.
+
+---
+
 ## Documentation Index
 
 The following documentation resources map the Quick Delivery platform architecture and guidelines:
@@ -191,6 +202,7 @@ The following documentation resources map the Quick Delivery platform architectu
 *   [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Production deployment guide, VPS requirements, reverse proxy setup, and two-repo architecture.
 *   **[docs/CI_CD_AND_HOOKS.md](docs/CI_CD_AND_HOOKS.md)** — Comprehensive breakdown of local Git hooks, GitHub Actions CI, and GHCR build/publish workflows.
 *   **[docs/RUNBOOK.md](docs/RUNBOOK.md)** — Release and server deployment runbook for merging, CI/CD triggering, VPS setup, and rollback procedures.
+*   **[docs/adr/README.md](docs/adr/README.md)** — Architectural Decision Records (ADRs) index capturing system decisions, escrow boundaries, mTLS, and multi-repo architectures.
 *   **[docs/changelog/README.md](docs/changelog/README.md)** — Index of categorized changelogs (Security Fixes, New Features, Infrastructure, Bug Fixes, and Documentation updates).
 
 ### Frontend (Flutter Client)

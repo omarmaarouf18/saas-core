@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api_client.dart';
 import '../core/error_messages.dart';
+import '../models/job.dart';
 
 class OwnerProvider extends ChangeNotifier {
   final ApiClient apiClient;
@@ -10,6 +11,9 @@ class OwnerProvider extends ChangeNotifier {
   double _withdrawableBalance = 0.0;
   String _subscriptionTier = 'free';
   List<dynamic> _ledgerEntries = [];
+  List<Job> _ownerJobs = [];
+  double? _platformFeePercentage;
+  List<dynamic> _employees = [];
   bool _isLoading = false;
   String? _error;
 
@@ -18,6 +22,9 @@ class OwnerProvider extends ChangeNotifier {
   double get withdrawableBalance => _withdrawableBalance;
   String get subscriptionTier => _subscriptionTier;
   List<dynamic> get ledgerEntries => _ledgerEntries;
+  List<Job> get ownerJobs => _ownerJobs;
+  double? get platformFeePercentage => _platformFeePercentage;
+  List<dynamic> get employees => _employees;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -141,6 +148,38 @@ class OwnerProvider extends ChangeNotifier {
       debugPrint('Error toggling employee status: $e');
       _error = friendlyErrorMessage(e);
       rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // API Call: Fetch Registered Employees
+  // GET /auth/employees
+  // ---------------------------------------------------------------------------
+  Future<List<dynamic>> fetchEmployees([String? ownerToken]) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.get(
+        '/auth/employees',
+        queryParams: ownerToken != null ? {'owner_token': ownerToken} : null,
+      );
+
+      if (res is List) {
+        _employees = List<dynamic>.from(res);
+      } else {
+        _employees = [];
+      }
+      return _employees;
+    } catch (e) {
+      debugPrint('Error fetching employees list: $e');
+      _error = friendlyErrorMessage(e);
+      _employees = [];
+      return [];
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -272,8 +311,114 @@ class OwnerProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> fetchOwnerJobs(String ownerToken) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.get('/users/jobs/owner', queryParams: {
+        'owner_token': ownerToken,
+      });
+
+      if (res is List) {
+        _ownerJobs =
+            res.map((j) => Job.fromJson(j as Map<String, dynamic>)).toList();
+      } else {
+        _ownerJobs = [];
+      }
+    } catch (e) {
+      debugPrint('Error fetching owner jobs: $e');
+      _error = friendlyErrorMessage(e);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<Map<String, dynamic>> cancelJob({
+    required String jobId,
+    required String reason,
+    required String ownerToken,
+  }) async {
+    final trimmedReason = reason.trim();
+    if (trimmedReason.isEmpty) {
+      const msg = 'Reason is required to cancel a job.';
+      _error = msg;
+      notifyListeners();
+      throw ApiClientException(msg, statusCode: 400);
+    }
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post('/users/jobs/cancel', {
+        'job_id': jobId,
+        'reason': trimmedReason,
+        'requester_id': ownerToken,
+      });
+
+      final index = _ownerJobs.indexWhere((j) => j.id == jobId);
+      if (index != -1) {
+        final existing = _ownerJobs[index];
+        _ownerJobs[index] = Job(
+          id: existing.id,
+          ownerId: existing.ownerId,
+          employeeId: existing.employeeId,
+          userId: existing.userId,
+          serviceId: existing.serviceId,
+          status: 'cancelled',
+          location: existing.location,
+          currentLocation: existing.currentLocation,
+          paymentMethod: existing.paymentMethod,
+          cancellationReason: trimmedReason,
+          lockedEscrowAmount: existing.lockedEscrowAmount,
+          suggestedPrice: existing.suggestedPrice,
+          proposedPrice: existing.proposedPrice,
+          proposedBy: existing.proposedBy,
+          agreedPrice: existing.agreedPrice,
+          priceProposalExpiresAt: existing.priceProposalExpiresAt,
+          createdAt: existing.createdAt,
+          updatedAt: DateTime.now(),
+        );
+      }
+      return Map<String, dynamic>.from(res is Map ? res : {});
+    } catch (e) {
+      debugPrint('Error cancelling job as owner: $e');
+      _error = friendlyErrorMessage(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  /// Fetches public platform configuration (GET /users/platform/config).
+  ///
+  /// Caches response in memory after first successful fetch since platform fee parameters change infrequently.
+  /// Ignores non-fatal fetch failures to prevent blocking critical UI workflows.
+  Future<void> fetchPlatformConfig() async {
+    if (_platformFeePercentage != null) return;
+
+    try {
+      final res = await apiClient.get('/users/platform/config');
+      if (res != null && res is Map) {
+        final data = Map<String, dynamic>.from(res);
+        if (data.containsKey('platform_fee_percentage')) {
+          _platformFeePercentage =
+              (data['platform_fee_percentage'] as num?)?.toDouble();
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Non-critical: Error fetching platform config: $e');
+    }
   }
 }

@@ -127,6 +127,14 @@ permission errors) live in **[frontend/docs/CI_CD.md](../frontend/docs/CI_CD.md)
 This stage is independent of the server deployment above — a backend release
 and a mobile sync/build can succeed or fail on their own.
 
+> **Note:** As of Phase 13's completion, the Flutter mobile consumer app's
+> functional surface is 100% complete (10/10 actionable backend endpoints integrated).
+> All primary user workflows (customer service directory browsing/booking, order history,
+> active job live map tracking, support ticket complaints; owner dashboard, worker roster,
+> e-wallet ledger, fleet tracking map, COD reconciliation queue; employee job tasks, COD/non-COD
+> completion, distance-filtered live location tracking; reviewer KYB/KYE verification queue
+> and document image/PDF viewer) are fully functional.
+
 ---
 
 ## 5. Rollback

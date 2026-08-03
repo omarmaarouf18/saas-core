@@ -15,6 +15,7 @@ class ChatProvider extends ChangeNotifier {
   List<ChatMessage> _messages = [];
   bool _isConnected = false;
   bool _isConnecting = false;
+  bool _isLoading = false;
   String? _error;
   String? _subscriptionError;
 
@@ -27,6 +28,7 @@ class ChatProvider extends ChangeNotifier {
   List<ChatMessage> get messages => _messages;
   bool get isConnected => _isConnected;
   bool get isConnecting => _isConnecting;
+  bool get isLoading => _isLoading;
   String? get error => _error;
   String? get subscriptionError => _subscriptionError;
 
@@ -196,6 +198,34 @@ class ChatProvider extends ChangeNotifier {
       }
       _connect();
     });
+  }
+
+  Future<Map<String, dynamic>> createTicket({
+    required String contextId,
+    required String userToken,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post(
+        '/chat/tickets',
+        {'context_id': contextId},
+      );
+
+      if (res is Map) {
+        return Map<String, dynamic>.from(res);
+      }
+      return {};
+    } catch (e) {
+      debugPrint('Error creating support ticket: $e');
+      _error = friendlyErrorMessage(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void disconnect() {

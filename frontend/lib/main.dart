@@ -8,6 +8,7 @@ import 'core/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/owner_provider.dart';
 import 'providers/employee_jobs_provider.dart';
+import 'providers/employee_location_provider.dart';
 import 'providers/marketplace_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/notifications_provider.dart';
@@ -44,6 +45,8 @@ void main() {
         ChangeNotifierProvider(create: (_) => MapTrackingProvider(apiClient)),
         ChangeNotifierProvider(
             create: (_) => ReconciliationProvider(apiClient)),
+        ChangeNotifierProvider(
+            create: (_) => EmployeeLocationProvider(apiClient)),
       ],
       child: const MyApp(),
     ),
