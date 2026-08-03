@@ -255,14 +255,16 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    await tester.ensureVisible(find.byKey(const Key('decline_proposal_button')));
+    await tester
+        .ensureVisible(find.byKey(const Key('decline_proposal_button')));
     await tester.tap(find.byKey(const Key('decline_proposal_button')));
     await tester.pump();
     await tester.pump();
 
     expect(marketplaceProvider.respondPriceCalled, isTrue);
     expect(marketplaceProvider.lastDecision, 'decline');
-    expect(find.text('Price proposal declined. Job cancelled.'), findsOneWidget);
+    expect(
+        find.text('Price proposal declined. Job cancelled.'), findsOneWidget);
   });
 
   testWidgets('4. Handling 409 conflict state shows clear user message',
@@ -342,8 +344,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(
-        find.byKey(const Key('negotiation_expired_banner')), findsOneWidget);
+    expect(find.byKey(const Key('negotiation_expired_banner')), findsOneWidget);
     expect(find.text('Negotiation Window Expired (5-min limit lapsed)'),
         findsOneWidget);
   });
