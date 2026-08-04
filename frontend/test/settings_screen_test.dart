@@ -255,7 +255,8 @@ void main() {
     expect(find.byKey(const Key('my_account_setting_row')), findsNothing);
   });
 
-  testWidgets('(d) Tapping Logout calls auth.logout and navigates to LoginScreen',
+  testWidgets(
+      '(d) Tapping Logout calls auth.logout and navigates to LoginScreen',
       (WidgetTester tester) async {
     final themeProvider = ThemeProvider(storage: FakeSecureStorage());
     final user = UserProfile(

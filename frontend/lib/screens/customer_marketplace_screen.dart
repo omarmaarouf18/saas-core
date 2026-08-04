@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
+import 'dart:math' as math;
 import '../core/constants.dart';
 import '../core/theme.dart';
 import '../models/marketplace_service.dart';
@@ -497,10 +498,8 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
       context: context,
       builder: (dialogCtx) {
         final screenSize = MediaQuery.of(dialogCtx).size;
-        final dialogWidth =
-            screenSize.width > 600 ? 500.0 : screenSize.width * 0.92;
-        final dialogHeight =
-            screenSize.height > 700 ? 550.0 : screenSize.height * 0.85;
+        final dialogWidth = math.min(500.0, screenSize.width * 0.9);
+        final dialogHeight = math.min(550.0, screenSize.height * 0.8);
 
         return Dialog(
           key: const Key('location_picker_dialog'),

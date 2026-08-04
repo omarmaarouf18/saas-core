@@ -33,7 +33,8 @@ class MockGeolocatorPlatform extends GeolocatorPlatform
   Future<LocationPermission> requestPermission() async => requestedPermission;
 
   @override
-  Future<Position> getCurrentPosition({LocationSettings? locationSettings}) async =>
+  Future<Position> getCurrentPosition(
+          {LocationSettings? locationSettings}) async =>
       mockPosition;
 }
 
@@ -45,7 +46,8 @@ void main() {
     GeolocatorPlatform.instance = mockGeolocator;
   });
 
-  testWidgets('(a) Defaults to initialLocation or Cairo default when un-fetched',
+  testWidgets(
+      '(a) Defaults to initialLocation or Cairo default when un-fetched',
       (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(
@@ -63,7 +65,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('location_picker_marker')), findsOneWidget);
-    expect(find.byKey(const Key('use_current_location_button')), findsOneWidget);
+    expect(
+        find.byKey(const Key('use_current_location_button')), findsOneWidget);
   });
 
   testWidgets(
@@ -94,8 +97,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(
-        find.text("Location permission denied. Defaulting to Cairo."), findsOneWidget);
+    expect(find.text("Location permission denied. Defaulting to Cairo."),
+        findsOneWidget);
   });
 
   testWidgets(
@@ -129,7 +132,8 @@ void main() {
     expect(selected, isNotNull);
   });
 
-  testWidgets('(d) Use my current location button re-centers when permission granted',
+  testWidgets(
+      '(d) Use my current location button re-centers when permission granted',
       (WidgetTester tester) async {
     mockGeolocator.isServiceEnabled = true;
     mockGeolocator.initialPermission = LocationPermission.whileInUse;
@@ -183,6 +187,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('location_picker_marker')), findsOneWidget);
-    expect(find.byKey(const Key('use_current_location_button')), findsOneWidget);
+    expect(
+        find.byKey(const Key('use_current_location_button')), findsOneWidget);
   });
 }
