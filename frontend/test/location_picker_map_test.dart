@@ -163,4 +163,26 @@ void main() {
     expect(selected!.latitude, 31.2001);
     expect(selected!.longitude, 29.9187);
   });
+
+  testWidgets(
+      '(e) Renders overflow-free inside narrow mobile container bounds (330x480)',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 330,
+            height: 480,
+            child: LocationPickerMap(
+              initialLocation: LatLng(30.0444, 31.2357),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('location_picker_marker')), findsOneWidget);
+    expect(find.byKey(const Key('use_current_location_button')), findsOneWidget);
+  });
 }

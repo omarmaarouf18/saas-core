@@ -108,4 +108,42 @@ void main() {
 
     expect(find.byKey(const Key('location_picker_dialog')), findsNothing);
   });
+
+  testWidgets(
+      'LocationPickerMap dialog renders overflow-free on narrow 360x800 mobile viewport',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final customerUser = UserProfile(
+      id: 'cust-1',
+      email: 'customer@example.com',
+      username: 'cust_user',
+      role: 'user',
+    );
+
+    await tester.pumpWidget(buildMarketplaceApp(
+      MockAuthProviderForTest(apiClient, customerUser),
+    ));
+    await tester.pumpAndSettle();
+
+    final mapBtn = find.byKey(const Key('choose_location_map_button'));
+    expect(mapBtn, findsOneWidget);
+    await tester.tap(mapBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('location_picker_dialog')), findsOneWidget);
+    expect(find.text("Choose Search Location"), findsOneWidget);
+
+    final confirmBtn = find.byKey(const Key('confirm_location_button'));
+    expect(confirmBtn, findsOneWidget);
+    await tester.tap(confirmBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('location_picker_dialog')), findsNothing);
+  });
 }

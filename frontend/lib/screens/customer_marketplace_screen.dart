@@ -231,6 +231,7 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         flex: 3,
                         child: DropdownButtonFormField<String>(
                           initialValue: _selectedCategory,
+                          isExpanded: true,
                           style: AppTypography.bodyMd.copyWith(
                             color: AppColors.onSurface,
                           ),
@@ -284,6 +285,7 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         flex: 2,
                         child: DropdownButtonFormField<String>(
                           initialValue: _sortBy,
+                          isExpanded: true,
                           style: AppTypography.bodyMd.copyWith(
                             color: AppColors.onSurface,
                           ),
@@ -494,60 +496,71 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
     showDialog(
       context: context,
       builder: (dialogCtx) {
+        final screenSize = MediaQuery.of(dialogCtx).size;
+        final dialogWidth =
+            screenSize.width > 600 ? 500.0 : screenSize.width * 0.92;
+        final dialogHeight =
+            screenSize.height > 700 ? 550.0 : screenSize.height * 0.85;
+
         return Dialog(
           key: const Key('location_picker_dialog'),
+          insetPadding: const EdgeInsets.all(AppSpacing.md),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
-          child: Container(
-            width: 500,
-            height: 550,
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "Choose Search Location",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+          child: SizedBox(
+            width: dialogWidth,
+            height: dialogHeight,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          "Choose Search Location",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(dialogCtx).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      child: LocationPickerMap(
+                        initialLocation: tempLocation,
+                        onLocationSelected: (newLocation) {
+                          tempLocation = newLocation;
+                        },
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(dialogCtx).pop(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    child: LocationPickerMap(
-                      initialLocation: tempLocation,
-                      onLocationSelected: (newLocation) {
-                        tempLocation = newLocation;
-                      },
-                    ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                PrimaryButton(
-                  key: const Key('confirm_location_button'),
-                  text: "Confirm Location",
-                  onPressed: () {
-                    setState(() {
-                      _customerLat = tempLocation.latitude;
-                      _customerLon = tempLocation.longitude;
-                    });
-                    Navigator.of(dialogCtx).pop();
-                    _loadServices();
-                  },
-                ),
-              ],
+                  const SizedBox(height: AppSpacing.md),
+                  PrimaryButton(
+                    key: const Key('confirm_location_button'),
+                    text: "Confirm Location",
+                    onPressed: () {
+                      setState(() {
+                        _customerLat = tempLocation.latitude;
+                        _customerLon = tempLocation.longitude;
+                      });
+                      Navigator.of(dialogCtx).pop();
+                      _loadServices();
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         );
