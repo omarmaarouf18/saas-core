@@ -5,6 +5,8 @@ This file tracks historical entries for the primary category: **New Features Cha
 ## Self-Service Profile Update & Frequent Addresses (PATCH /auth/user - ADR-0014)
 
 - **Implementation Detail**: Extended `User` model (`services/auth-service/internal/models/models.go`) with `FrequentAddresses []string` and added `UpdateProfileRequest` DTO. Built `PATCH /auth/user` handler in `auth-service` (`services/auth-service/internal/handlers/auth.go`) allowing authenticated users to update their `username`, `phone`, and `frequent_addresses` (capped at max 10 entries). Enforced strict IDOR protection by deriving target user ID solely from validated JWT claims (rejecting mismatched payload user IDs with 403 Forbidden) and stripping/ignoring sensitive field smuggling (`email`, `password`, `role`, `kyc_status`). Created test suite in `services/auth-service/internal/handlers/user_profile_test.go`. Regenerated `docs/APPLICATION_MAP.md` via `make docs`.
+- **Commit SHA**: ``ad55855bf797c7c4acbf840a2a42f8a0c8483ca2``
+- **Verification**: Verified via `gofmt -w .`, `go build ./...`, `go vet ./...`, `go test ./...`, `gosec`, and `make docs-check`. ✅
 
 ## Service Model Owner Configuration Fields & UpdateService Handler (ADR-0014)
 
