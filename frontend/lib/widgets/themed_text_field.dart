@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
 
-class ThemedTextField extends StatelessWidget {
+class ThemedTextField extends StatefulWidget {
   final TextEditingController? controller;
   final String? labelText;
   final String? hintText;
   final bool obscureText;
+  final bool isPasswordField;
   final TextInputType keyboardType;
   final Widget? prefixIcon;
   final Widget? suffixIcon;
@@ -28,6 +29,7 @@ class ThemedTextField extends StatelessWidget {
     this.labelText,
     this.hintText,
     this.obscureText = false,
+    this.isPasswordField = false,
     this.keyboardType = TextInputType.text,
     this.prefixIcon,
     this.suffixIcon,
@@ -45,14 +47,59 @@ class ThemedTextField extends StatelessWidget {
   });
 
   @override
+  State<ThemedTextField> createState() => _ThemedTextFieldState();
+}
+
+class _ThemedTextFieldState extends State<ThemedTextField> {
+  late bool _obscureText;
+
+  bool get _isPassword => widget.isPasswordField || widget.obscureText;
+
+  @override
+  void initState() {
+    super.initState();
+    _obscureText = _isPassword ? true : widget.obscureText;
+  }
+
+  @override
+  void didUpdateWidget(ThemedTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.obscureText != widget.obscureText ||
+        oldWidget.isPasswordField != widget.isPasswordField) {
+      if (!_isPassword) {
+        _obscureText = widget.obscureText;
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    Widget? effectiveSuffixIcon = widget.suffixIcon;
+    if (_isPassword && effectiveSuffixIcon == null) {
+      effectiveSuffixIcon = IconButton(
+        key: const Key('password_toggle_button'),
+        icon: Icon(
+          _obscureText
+              ? Icons.visibility_outlined
+              : Icons.visibility_off_outlined,
+          color: AppColors.onSurfaceVariant,
+        ),
+        tooltip: _obscureText ? 'Show password' : 'Hide password',
+        onPressed: () {
+          setState(() {
+            _obscureText = !_obscureText;
+          });
+        },
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (labelText != null) ...[
+        if (widget.labelText != null) ...[
           Text(
-            labelText!,
+            widget.labelText!,
             style: AppTypography.labelLg.copyWith(
               color: AppColors.onSurfaceVariant,
             ),
@@ -60,26 +107,26 @@ class ThemedTextField extends StatelessWidget {
           const SizedBox(height: AppSpacing.base),
         ],
         TextFormField(
-          controller: controller,
-          obscureText: obscureText,
-          keyboardType: keyboardType,
-          validator: validator,
-          onChanged: onChanged,
-          enabled: enabled,
-          maxLines: maxLines,
-          textDirection: textDirection,
-          maxLength: maxLength,
-          textAlign: textAlign,
-          style: style ??
+          controller: widget.controller,
+          obscureText: _isPassword ? _obscureText : widget.obscureText,
+          keyboardType: widget.keyboardType,
+          validator: widget.validator,
+          onChanged: widget.onChanged,
+          enabled: widget.enabled,
+          maxLines: widget.maxLines,
+          textDirection: widget.textDirection,
+          maxLength: widget.maxLength,
+          textAlign: widget.textAlign,
+          style: widget.style ??
               AppTypography.bodyMd.copyWith(color: AppColors.onSurface),
-          textInputAction: textInputAction,
-          onFieldSubmitted: onFieldSubmitted,
+          textInputAction: widget.textInputAction,
+          onFieldSubmitted: widget.onFieldSubmitted,
           decoration: InputDecoration(
-            hintText: hintText,
+            hintText: widget.hintText,
             hintStyle: AppTypography.bodyMd.copyWith(color: AppColors.outline),
-            prefixIcon: prefixIcon,
-            suffixIcon: suffixIcon,
-            counterText: counterText,
+            prefixIcon: widget.prefixIcon,
+            suffixIcon: effectiveSuffixIcon,
+            counterText: widget.counterText,
             filled: true,
             fillColor: AppColors.surface,
             contentPadding: const EdgeInsets.symmetric(

@@ -183,7 +183,7 @@ class _OtpScreenState extends State<OtpScreen> {
                             child: Row(
                               children: [
                                 const Icon(Icons.bug_report_outlined,
-                                    color: AppColors.secondary),
+                                    color: AppColors.warning),
                                 const SizedBox(width: AppSpacing.base),
                                 Expanded(
                                   child: Text(

@@ -447,7 +447,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: ownerProvider.subscriptionTier == "paid"
                       ? AppColors.success
                       : (ownerProvider.subscriptionTier == "pending_payment"
-                          ? const Color(0xFF2196F3)
+                          ? const Color(0xFF1D4ED8)
                           : AppColors.warning),
                   onTap: () {
                     Navigator.of(context).push(

@@ -130,6 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           hintText: "Enter your password",
                           prefixIcon: const Icon(Icons.lock_outline),
                           obscureText: true,
+                          isPasswordField: true,
                           validator: (val) {
                             if (val == null || val.isEmpty) {
                               return "Please enter a password";

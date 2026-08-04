@@ -328,6 +328,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     ThemedTextField(
                       controller: _regPasswordController,
                       obscureText: true,
+                      isPasswordField: true,
                       labelText: "Employee Password",
                       hintText: "At least 6 characters",
                       prefixIcon: const Icon(Icons.lock_outline,
@@ -467,6 +468,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     ThemedTextField(
                       controller: _togPasswordController,
                       obscureText: true,
+                      isPasswordField: true,
                       labelText: "Confirm Owner Password",
                       hintText:
                           "Required for secure out-of-band operations verification.",
