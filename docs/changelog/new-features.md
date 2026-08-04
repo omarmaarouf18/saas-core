@@ -5,7 +5,7 @@ This file tracks historical entries for the primary category: **New Features Cha
 ## Interactive Map-Based Location Picker (ADR-0014 Decision #5)
 
 - **Implementation Detail**: Implemented interactive map-based location picker replacing legacy Latitude/Longitude text input fields in `customer_marketplace_screen.dart`. Created reusable `LocationPickerMap` widget (`frontend/lib/widgets/location_picker_map.dart`) built with `flutter_map`, `latlong2`, and `geolocator`. Reused `requestLocationPermission()` helper from `core/location_permission.dart` for a "Use My Location" re-center button (defaulting to Cairo `30.0444, 31.2357` if permission is denied or service disabled). Integrated into `customer_marketplace_screen.dart` via a centered Dialog presenting the interactive map and a "Confirm Location" button, updating latitude/longitude state used by `fetchServices()` and job booking navigation while preserving compact Radius (KM) input. Created widget tests in `frontend/test/location_picker_map_test.dart` and `frontend/test/customer_marketplace_screen_test.dart`.
-- **Commit SHA**: ``b897785071545bac6a31128e180d1fedf536806b``
+- **Commit SHA**: ``2880f7db06c0af403bfe62804f96645ebd924793``
 - **Verification**: Verified via `flutter analyze` (0 issues found), `flutter test` (117/117 full test suite pass), `make docs-check`, and `.githooks/pre-push` gate validation. ✅
 
 ## Unified Settings Screen (Account Action Center) & Theme Persistence (ADR-0014 Part 1)
