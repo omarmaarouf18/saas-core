@@ -239,6 +239,16 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Inserts service listing.",
 		Targets:     "Downstream: calls `auth-service/auth/user`. Writes `services` collection.",
 	},
+	"PUT /users/services": {
+		Permissions: "Owner JWT (KYC Approved)",
+		Function:    "Updates an existing service listing (photo, address, working hours, coverage radius, prices, category).",
+		Targets:     "Downstream: calls `auth-service/auth/user`. Updates `services` collection.",
+	},
+	"POST /users/services/update": {
+		Permissions: "Owner JWT (KYC Approved)",
+		Function:    "Updates an existing service listing (photo, address, working hours, coverage radius, prices, category).",
+		Targets:     "Downstream: calls `auth-service/auth/user`. Updates `services` collection.",
+	},
 	"POST /users/jobs/track": {
 		Permissions: "Owner/Employee JWT (legacy tracking) OR Customer JWT + service_id (owner resolved server-side; supports optional employee pre-assignment)",
 		Function:    "Books job with coordinate validation. Accepts user_id (legacy) or user_token (preferred), owner_id (legacy) or owner_token (preferred), and employee_id (legacy) or employee_token (preferred).",

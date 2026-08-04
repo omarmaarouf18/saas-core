@@ -2,6 +2,12 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Service Model Owner Configuration Fields & UpdateService Handler (ADR-0014)
+
+- **Implementation Detail**: Extended `Service` model (`services/user-service/internal/models/models.go`) with `PhotoURL`, `Address`, `WorkingHours`, and `CoverageRadiusKM`. Extended `CreateServiceRequest` and added `UpdateServiceRequest` DTOs. Built `UpdateService` handler in `user-service` (`services/user-service/internal/handlers/handlers.go`) and MongoDB store (`UpdateService`), supporting `PUT /users/services` and `POST /users/services/update` with KYC approval checks and IDOR tenant ownership protection. Built unit test suite (`services/user-service/internal/handlers/service_owner_config_test.go`) verifying service creation with new fields, updating existing service fields, backward compatibility for legacy payloads omitting new fields, and IDOR protection. Regenerated `docs/APPLICATION_MAP.md` via `make docs`.
+- **Commit SHA**: ``21fbd572ad5437ab7af5b53e9d579a3ab8607390``
+- **Verification**: Verified via `gofmt -w .`, `go build ./...`, `go vet ./...`, `go test ./...`, and `make docs-check`. ✅
+
 ## Interactive Map-Based Location Picker (ADR-0014 Decision #5)
 
 - **Implementation Detail**: Implemented interactive map-based location picker replacing legacy Latitude/Longitude text input fields in `customer_marketplace_screen.dart`. Created reusable `LocationPickerMap` widget (`frontend/lib/widgets/location_picker_map.dart`) built with `flutter_map`, `latlong2`, and `geolocator`. Reused `requestLocationPermission()` helper from `core/location_permission.dart` for a "Use My Location" re-center button (defaulting to Cairo `30.0444, 31.2357` if permission is denied or service disabled). Integrated into `customer_marketplace_screen.dart` via a centered Dialog presenting the interactive map and a "Confirm Location" button, updating latitude/longitude state used by `fetchServices()` and job booking navigation while preserving compact Radius (KM) input. Created widget tests in `frontend/test/location_picker_map_test.dart` and `frontend/test/customer_marketplace_screen_test.dart`.

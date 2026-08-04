@@ -181,6 +181,22 @@ func (s *MongoDB) CreateService(ctx context.Context, svc *models.Service) {
 	}
 }
 
+// UpdateService updates an existing service record in MongoDB.
+func (s *MongoDB) UpdateService(ctx context.Context, svc *models.Service) error {
+	svc.Location = models.NewGeoJSONPoint(svc.Latitude, svc.Longitude)
+	filter := bson.M{"_id": svc.ID, "tenant_id": svc.TenantID}
+	update := bson.M{"$set": svc}
+	res, err := s.services.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Printf("[USER-STORE] UpdateService error: %v", err)
+		return err
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("service not found or tenant mismatch")
+	}
+	return nil
+}
+
 // ListServices uses MongoDB $nearSphere for proximity filtering instead of linear Haversine scan.
 func (s *MongoDB) ListServices(ctx context.Context, sortBy string, nearBy bool, refLat, refLon, maxDistKm float64) []models.ServiceWithPrice {
 	var filter bson.M

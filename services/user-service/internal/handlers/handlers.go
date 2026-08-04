@@ -193,10 +193,13 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 			u.ListServices(w, r)
 		case http.MethodPost:
 			u.CreateService(w, r)
+		case http.MethodPut, http.MethodPatch:
+			u.UpdateService(w, r)
 		default:
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 		}
 	})
+	mux.HandleFunc("/users/services/update", u.UpdateService)
 	mux.HandleFunc("/users/jobs/track", u.TrackJob)
 	mux.HandleFunc("/users/jobs/get", u.GetJob)
 	mux.HandleFunc("/users/jobs/owner", u.GetOwnerJobs)
@@ -319,11 +322,147 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		ID: generateID(), TenantID: req.OwnerID, Name: req.Name, Category: req.Category,
 		BasePrice: req.TenantBasePrice, TenantBasePrice: req.TenantBasePrice,
 		TenantPricePerKM: req.TenantPricePerKM, Latitude: req.Latitude, Longitude: req.Longitude,
+		PhotoURL: req.PhotoURL, Address: req.Address, WorkingHours: req.WorkingHours,
+		CoverageRadiusKM: req.CoverageRadiusKM,
 	}
 
 	u.store.CreateService(r.Context(), svc)
 	log.Printf("[USER] Service created: id=%s name=%s", svc.ID, svc.Name)
 	writeJSON(w, http.StatusCreated, map[string]any{"message": "service created", "service": svc})
+}
+
+// ---------------------------------------------------------------------------
+// PUT /users/services or POST /users/services/update
+// ---------------------------------------------------------------------------
+
+func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
+	var req models.UpdateServiceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+	if req.ID == "" && req.ServiceID != "" {
+		req.ID = req.ServiceID
+	}
+	if req.ID == "" {
+		req.ID = r.URL.Query().Get("id")
+	}
+	if req.ID == "" {
+		req.ID = r.URL.Query().Get("service_id")
+	}
+	if req.OwnerToken != "" {
+		req.OwnerID = req.OwnerToken
+	}
+	if req.ID == "" || req.OwnerID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service id and owner_id are required"})
+		return
+	}
+
+	resolvedOwnerID, err := resolveTokenWithRole(req.OwnerID, "owner")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
+		return
+	}
+	req.OwnerID = resolvedOwnerID
+
+	// Verify owner exists and has approved KYC
+	kycStatus, err := u.checkKYC(req.OwnerID)
+	if err != nil {
+		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.OwnerID, err)
+		if errors.Is(err, ErrServiceUnavailable) {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
+				"error":   "service_unavailable",
+				"message": "Authentication service is temporarily unavailable. Please try again later.",
+			})
+			return
+		}
+		handlerutil.ShipSecurityEvent(r.Context(), "KYC_BLOCKED_ERROR", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("failed KYC check: %v", err), handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "action blocked: unable to verify owner KYC status",
+		})
+		return
+	}
+	if kycStatus != "approved" {
+		log.Printf("[KYC BLOCKED] Owner %s attempted to update service, but KYC status is %q", req.OwnerID, kycStatus)
+		handlerutil.ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("attempted to update service, KYC status is %s", kycStatus), handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "action blocked: owner KYC approval is pending",
+		})
+		return
+	}
+
+	existing := u.store.GetServiceByID(r.Context(), req.ID)
+	if existing == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "service not found"})
+		return
+	}
+
+	if existing.TenantID != req.OwnerID {
+		log.Printf("[SECURITY WARNING] Owner %s attempted to update service %s owned by %s", req.OwnerID, req.ID, existing.TenantID)
+		handlerutil.ShipSecurityEvent(r.Context(), "IDOR_UPDATE_SERVICE_ATTEMPT", "user-service", req.OwnerID, req.ID, fmt.Sprintf("owner %s attempted to update service belonging to owner %s", req.OwnerID, existing.TenantID), handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: service belongs to another tenant"})
+		return
+	}
+
+	if req.Category != "" {
+		if req.Category != "shipping" && req.Category != "delivery" && req.Category != "transport" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid category, must be: shipping, delivery, transport"})
+			return
+		}
+		existing.Category = req.Category
+	}
+
+	if req.Name != "" {
+		existing.Name = req.Name
+	}
+	if req.TenantBasePrice != nil {
+		if *req.TenantBasePrice < 0 {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_base_price cannot be negative"})
+			return
+		}
+		existing.TenantBasePrice = *req.TenantBasePrice
+		existing.BasePrice = *req.TenantBasePrice
+	}
+	if req.TenantPricePerKM != nil {
+		if *req.TenantPricePerKM < 0 {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_price_per_km cannot be negative"})
+			return
+		}
+		existing.TenantPricePerKM = *req.TenantPricePerKM
+	}
+	if req.Latitude != nil {
+		existing.Latitude = *req.Latitude
+	}
+	if req.Longitude != nil {
+		existing.Longitude = *req.Longitude
+	}
+	if req.Latitude != nil || req.Longitude != nil {
+		existing.Location = models.NewGeoJSONPoint(existing.Latitude, existing.Longitude)
+	}
+	if req.PhotoURL != nil {
+		existing.PhotoURL = *req.PhotoURL
+	}
+	if req.Address != nil {
+		existing.Address = *req.Address
+	}
+	if req.WorkingHours != nil {
+		existing.WorkingHours = *req.WorkingHours
+	}
+	if req.CoverageRadiusKM != nil {
+		if *req.CoverageRadiusKM < 0 {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "coverage_radius_km cannot be negative"})
+			return
+		}
+		existing.CoverageRadiusKM = *req.CoverageRadiusKM
+	}
+
+	if err := u.store.UpdateService(r.Context(), existing); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update service: " + err.Error()})
+		return
+	}
+
+	log.Printf("[USER] Service updated: id=%s name=%s owner=%s", existing.ID, existing.Name, existing.TenantID)
+	writeJSON(w, http.StatusOK, map[string]any{"message": "service updated", "service": existing})
 }
 
 // ---------------------------------------------------------------------------

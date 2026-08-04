@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`136676a`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`21fbd57`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -203,6 +203,8 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`GET /users/ratings`** | `user-service` | Owner, Employee, User, or Customer JWT | Returns ratings count and average. Accepts user_id (legacy) or user_token (preferred). | Reads `ratings` collection. |
 | **`GET /users/services`** | `user-service` | Public | Spatial search on services directory. | Reads `services` collection. |
 | **`POST /users/services`** | `user-service` | Owner JWT (KYC Approved) | Inserts service listing. | Downstream: calls `auth-service/auth/user`. Writes `services` collection. |
+| **`PUT /users/services`** | `user-service` | Owner JWT (KYC Approved) | Updates an existing service listing (photo, address, working hours, coverage radius, prices, category). | Downstream: calls `auth-service/auth/user`. Updates `services` collection. |
+| **`GET /users/services/update`** | `user-service` | Public | <!-- TODO: verify manually --> | <!-- TODO: verify manually --> |
 | **`POST /users/subscription`** | `user-service` | Owner JWT (KYC Approved) | Subscribes/renews SaaS tier. Accepts tenant_id (legacy) or tenant_token (preferred), and requester_id (legacy) or requester_token (preferred). | Updates `subscriptions`, writes `wallets`, writes `ledger`. |
 | **`GET /users/wallet`** | `user-service` | Owner JWT | Fetches active balance details. Accepts tenant_id (legacy) or tenant_token (preferred). | Reads `wallets` collection. |
 | **`POST /users/wallet/deposit`** | `user-service` | Owner JWT | Loads funds up to maximum limits. Accepts tenant_id (legacy) or tenant_token (preferred). | Updates `wallets` collection. |

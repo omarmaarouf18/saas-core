@@ -28,16 +28,20 @@ func NewGeoJSONPoint(lat, lon float64) GeoJSONPoint {
 // Service represents an available service offered on the platform.
 // Each service belongs to a tenant and carries tenant-specific pricing.
 type Service struct {
-	ID               string       `json:"id"                  bson:"_id"`
-	TenantID         string       `json:"tenant_id"           bson:"tenant_id"`
-	Name             string       `json:"name"                bson:"name"`
-	Category         string       `json:"category"            bson:"category"`
-	BasePrice        float64      `json:"base_price"          bson:"base_price"`
-	TenantBasePrice  float64      `json:"tenant_base_price"   bson:"tenant_base_price"`   // tenant-specific base fee
-	TenantPricePerKM float64      `json:"tenant_price_per_km" bson:"tenant_price_per_km"` // per-km surcharge
-	Latitude         float64      `json:"latitude"            bson:"latitude"`
-	Longitude        float64      `json:"longitude"           bson:"longitude"`
-	Location         GeoJSONPoint `json:"location"            bson:"location"` // GeoJSON for spatial index
+	ID               string       `json:"id"                            bson:"_id"`
+	TenantID         string       `json:"tenant_id"                     bson:"tenant_id"`
+	Name             string       `json:"name"                          bson:"name"`
+	Category         string       `json:"category"                      bson:"category"`
+	BasePrice        float64      `json:"base_price"                    bson:"base_price"`
+	TenantBasePrice  float64      `json:"tenant_base_price"             bson:"tenant_base_price"`   // tenant-specific base fee
+	TenantPricePerKM float64      `json:"tenant_price_per_km"           bson:"tenant_price_per_km"` // per-km surcharge
+	Latitude         float64      `json:"latitude"                      bson:"latitude"`
+	Longitude        float64      `json:"longitude"                     bson:"longitude"`
+	Location         GeoJSONPoint `json:"location"                      bson:"location"` // GeoJSON for spatial index
+	PhotoURL         string       `json:"photo_url,omitempty"           bson:"photo_url,omitempty"`
+	Address          string       `json:"address,omitempty"             bson:"address,omitempty"`
+	WorkingHours     string       `json:"working_hours,omitempty"       bson:"working_hours,omitempty"`
+	CoverageRadiusKM float64      `json:"coverage_radius_km,omitempty"   bson:"coverage_radius_km,omitempty"`
 }
 
 // ServiceWithPrice wraps a Service with a dynamically computed final price.
@@ -266,6 +270,28 @@ type CreateServiceRequest struct {
 	TenantPricePerKM float64 `json:"tenant_price_per_km"`
 	Latitude         float64 `json:"latitude"`
 	Longitude        float64 `json:"longitude"`
+	PhotoURL         string  `json:"photo_url,omitempty"`
+	Address          string  `json:"address,omitempty"`
+	WorkingHours     string  `json:"working_hours,omitempty"`
+	CoverageRadiusKM float64 `json:"coverage_radius_km,omitempty"`
+}
+
+// UpdateServiceRequest is the expected JSON body for PUT/PATCH /users/services or POST /users/services/update.
+type UpdateServiceRequest struct {
+	ID               string   `json:"id"`
+	ServiceID        string   `json:"service_id,omitempty"`
+	OwnerID          string   `json:"owner_id"`
+	OwnerToken       string   `json:"owner_token,omitempty"`
+	Name             string   `json:"name,omitempty"`
+	Category         string   `json:"category,omitempty"`
+	TenantBasePrice  *float64 `json:"tenant_base_price,omitempty"`
+	TenantPricePerKM *float64 `json:"tenant_price_per_km,omitempty"`
+	Latitude         *float64 `json:"latitude,omitempty"`
+	Longitude        *float64 `json:"longitude,omitempty"`
+	PhotoURL         *string  `json:"photo_url,omitempty"`
+	Address          *string  `json:"address,omitempty"`
+	WorkingHours     *string  `json:"working_hours,omitempty"`
+	CoverageRadiusKM *float64 `json:"coverage_radius_km,omitempty"`
 }
 
 // CreateJobRequest is the expected JSON body for POST /users/jobs/track.
