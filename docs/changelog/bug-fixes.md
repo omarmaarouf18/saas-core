@@ -5,7 +5,7 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 ## Forgot Password Consolidation Dead Code Cleanup
 
 - **Implementation Detail**: Removed unused `ResetPasswordScreen` (`frontend/lib/screens/reset_password_screen.dart`) left behind after consolidating the forgot password flow into a single-step screen in commit `f2495a3...`. Updated `docs/frontend/STATUS.md` and `docs/frontend/ARCHITECTURE.md` to keep documentation and docgen verification tests in sync.
-- **Commit SHA**: ``136676acc0f7359507d29c73d1751d0109fbe7e6``
+- **Commit SHA**: ``bbd869d891205089877a5f1e0a46a2e6814360ca``
 - **Verification**: Verified via `grep` confirming 0 remaining references, `flutter analyze` passing with 0 issues, and `flutter test` passing 106/106 tests cleanly. ✅
 
 ## Deferred User Account Creation Until OTP Verification & IsConfirmed Removal Fix
