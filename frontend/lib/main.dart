@@ -14,6 +14,7 @@ import 'providers/chat_provider.dart';
 import 'providers/notifications_provider.dart';
 import 'providers/map_tracking_provider.dart';
 import 'providers/reconciliation_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -36,6 +37,7 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => OwnerProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => EmployeeJobsProvider(apiClient)),
@@ -59,6 +61,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
     final notifications =
         Provider.of<NotificationsProvider>(context, listen: false);
 
@@ -74,7 +77,7 @@ class MyApp extends StatelessWidget {
       title: 'Quick Delivery',
       theme: quickDeliveryTheme,
       darkTheme: quickDeliveryDarkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: themeProvider.themeMode,
       debugShowCheckedModeBanner: false,
       home: auth.isAuthenticated ? const HomeScreen() : const LoginScreen(),
     );

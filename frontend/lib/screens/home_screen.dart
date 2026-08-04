@@ -6,13 +6,13 @@ import '../providers/owner_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
-import '../utils/logout_helper.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/stat_card.dart';
 import 'login_screen.dart';
 import 'wallet_screen.dart';
 import 'employee_screen.dart';
 import 'service_screen.dart';
+import 'settings_screen.dart';
 import 'notifications_screen.dart';
 import 'subscription_screen.dart';
 
@@ -153,10 +153,15 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             _buildNotificationBell(context),
             IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: "Logout",
-              onPressed: () async {
-                await logoutAndClearProviders(context);
+              key: const Key('settings_button'),
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: "Settings",
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  ),
+                );
               },
             ),
           ],
@@ -253,10 +258,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           _buildNotificationBell(context),
           IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: "Logout",
-            onPressed: () async {
-              await logoutAndClearProviders(context);
+            key: const Key('settings_button'),
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: "Settings",
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
             },
           ),
         ],

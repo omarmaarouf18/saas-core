@@ -16,7 +16,7 @@ import '../widgets/themed_text_field.dart';
 import 'job_status_screen.dart';
 import 'customer_jobs_screen.dart';
 import 'notifications_screen.dart';
-import '../utils/logout_helper.dart';
+import 'settings_screen.dart';
 
 class CustomerMarketplaceScreen extends StatefulWidget {
   const CustomerMarketplaceScreen({super.key});
@@ -162,10 +162,15 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
           ),
           _buildNotificationBell(context),
           IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: "Logout",
-            onPressed: () async {
-              await logoutAndClearProviders(context);
+            key: const Key('settings_button'),
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: "Settings",
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
             },
           ),
         ],

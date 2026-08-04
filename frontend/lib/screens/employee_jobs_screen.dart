@@ -19,7 +19,7 @@ import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
 import 'notifications_screen.dart';
-import '../utils/logout_helper.dart';
+import 'settings_screen.dart';
 
 class EmployeeJobsScreen extends StatefulWidget {
   const EmployeeJobsScreen({super.key});
@@ -254,10 +254,15 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
           ),
           _buildNotificationBell(context),
           IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: "Logout",
-            onPressed: () async {
-              await logoutAndClearProviders(context);
+            key: const Key('settings_button'),
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: "Settings",
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
             },
           ),
         ],

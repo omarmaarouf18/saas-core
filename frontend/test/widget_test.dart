@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:frontend/main.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/providers/owner_provider.dart';
 import 'package:frontend/providers/employee_jobs_provider.dart';
@@ -52,6 +53,7 @@ void main() {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
+          ChangeNotifierProvider(create: (_) => ThemeProvider()),
           ChangeNotifierProvider(create: (_) => AuthProvider(apiClient)),
           ChangeNotifierProvider(create: (_) => OwnerProvider(apiClient)),
           ChangeNotifierProvider(
