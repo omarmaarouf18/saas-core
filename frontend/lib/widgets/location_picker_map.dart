@@ -125,7 +125,8 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
                   height: 40.0,
                   point: _selectedPoint,
                   child: GestureDetector(
-                    onTap: () => widget.onLocationSelected?.call(_selectedPoint),
+                    onTap: () =>
+                        widget.onLocationSelected?.call(_selectedPoint),
                     child: const Icon(
                       Icons.location_on,
                       color: AppColors.primary,
