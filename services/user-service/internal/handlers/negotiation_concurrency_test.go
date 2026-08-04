@@ -331,19 +331,20 @@ func TestProposePrice_ConcurrencyRace_OverwrittenProposalPrevention(t *testing.T
 	wg.Wait()
 
 	successCount := 0
-	conflictCount := 0
+	rejectedCount := 0
 
 	for i, res := range results {
 		t.Logf("Propose Goroutine %d: code=%d body=%s", i+1, res.code, res.body)
 		if res.code == http.StatusOK {
 			successCount++
-		} else if res.code == http.StatusConflict && bytes.Contains([]byte(res.body), []byte("job_state_changed")) {
-			conflictCount++
+		} else if (res.code == http.StatusConflict && bytes.Contains([]byte(res.body), []byte("job_state_changed"))) ||
+			(res.code == http.StatusBadRequest && bytes.Contains([]byte(res.body), []byte("proposal_already_submitted"))) {
+			rejectedCount++
 		}
 	}
 
-	if successCount != 1 || conflictCount != 1 {
-		t.Fatalf("Expected exactly 1 success (200 OK) and 1 conflict (409 job_state_changed). Got: success=%d, conflict=%d", successCount, conflictCount)
+	if successCount != 1 || rejectedCount != 1 {
+		t.Fatalf("Expected exactly 1 success (200 OK) and 1 rejection (400 proposal_already_submitted or 409 job_state_changed). Got: success=%d, rejected=%d", successCount, rejectedCount)
 	}
 
 	updatedJob := s.GetJob(ctx, jobID)

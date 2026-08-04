@@ -2401,6 +2401,9 @@ func (u *UserService) ProposePrice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Early-exit check for non-racing callers. Note: The authoritative correctness guarantee
+	// against concurrent double-proposals is enforced atomically by store.UpdateJobPriceProposal below,
+	// whose CAS filter {_id, status, proposed_price: nil} ensures only one concurrent write succeeds.
 	if job.ProposedPrice != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error":   "proposal_already_submitted",
