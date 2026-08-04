@@ -2,6 +2,12 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## /users/services/update HTTP Method Restriction & PATCH /auth/user Docgen Registration
+
+- **Implementation Detail**: Restricted `/users/services/update` route in `services/user-service/internal/handlers/handlers.go` to HTTP `POST`, `PUT`, and `PATCH` methods (returning 405 Method Not Allowed for GET/DELETE/etc). Extended AST route parser in `shared/infra/docgen/generator.go` to handle `http.MethodPatch` selector expressions and added `PUT/PATCH /users/services/update` and `PATCH /auth/user` entries to `KnownEndpoints`. Regenerated `docs/APPLICATION_MAP.md` via `make docs` and confirmed `PATCH /auth/user` and `/users/services/update` appear in generated application map without TODOs.
+- **Commit SHA**: ``d43b5ecf997c1758fda7940debdd2c2dff846954``
+- **Verification**: Verified via `gofmt -w .`, `go build ./...`, `go vet ./...`, `go test ./...`, and `make docs-check`. ✅
+
 ## LocationPickerMap Dialog & Dropdown Sizing Mobile Overflow Fix
 
 - **Implementation Detail**: Fixed fixed-size container overflow (`width: 500, height: 550`) in `_openLocationPickerDialog` inside `customer_marketplace_screen.dart`. Replaced fixed dimensions with dynamic `MediaQuery` viewport calculations (`dialogWidth = screenSize.width > 600 ? 500.0 : screenSize.width * 0.92`, `dialogHeight = screenSize.height > 700 ? 550.0 : screenSize.height * 0.85`) with `insetPadding: const EdgeInsets.all(AppSpacing.md)`. Wrapped header title `Text` in `Expanded` to prevent horizontal header overflow on small viewports. Added `isExpanded: true` to Category and Sort By `DropdownButtonFormField` widgets to prevent dropdown item text overflow. Added explicit 360x800 mobile viewport regression tests in `customer_marketplace_screen_test.dart` and 330x480 narrow container tests in `location_picker_map_test.dart`.

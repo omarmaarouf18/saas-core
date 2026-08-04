@@ -199,7 +199,14 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 		}
 	})
-	mux.HandleFunc("/users/services/update", u.UpdateService)
+	mux.HandleFunc("/users/services/update", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost, http.MethodPut, http.MethodPatch:
+			u.UpdateService(w, r)
+		default:
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		}
+	})
 	mux.HandleFunc("/users/jobs/track", u.TrackJob)
 	mux.HandleFunc("/users/jobs/get", u.GetJob)
 	mux.HandleFunc("/users/jobs/owner", u.GetOwnerJobs)
