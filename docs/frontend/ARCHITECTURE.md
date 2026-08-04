@@ -26,8 +26,7 @@ This document describes the design patterns, state management models, directory 
     *   `login_screen.dart`: Forms for logins. Handles routing for 2FA-bound roles (Owners, Customers) vs. immediate redirect (Employees).
     *   `signup_screen.dart`: Account registration form.
     *   `otp_screen.dart`: OTP 2FA verify form with auto-populating dev capabilities.
-    *   `forgot_password_screen.dart`: Password reset email request form.
-    *   `reset_password_screen.dart`: Password reset verification and new password submission form.
+    *   `forgot_password_screen.dart`: Single-step password reset code request and verification form.
     *   `home_screen.dart`: Dashboard wrapper incorporating role-based widgets, Owner KYC-pending alert banners, and Reviewer queue entry points (*slated for navigation & Customer Home redesign per ADR-0014*).
     *   `employee_screen.dart`: Employee management and registered worker roster view (*slated for Owner Configuration migration review per ADR-0014*).
     *   `employee_jobs_screen.dart`: Employee assigned job task list and live GPS tracking view (*slated for capability audit & screen redesign per ADR-0014*).

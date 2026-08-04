@@ -151,7 +151,6 @@
    * `owner_reconciliation_queue_screen.dart`
    * `kyc_document_upload_screen.dart`
    * `forgot_password_screen.dart`
-   * `reset_password_screen.dart`
    * `customer_jobs_screen.dart`
    * `kyb_kye_review_screen.dart`
  * **Widgets**:

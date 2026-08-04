@@ -2,6 +2,12 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Forgot Password Consolidation Dead Code Cleanup
+
+- **Implementation Detail**: Removed unused `ResetPasswordScreen` (`frontend/lib/screens/reset_password_screen.dart`) left behind after consolidating the forgot password flow into a single-step screen in commit `f2495a3...`. Updated `docs/frontend/STATUS.md` and `docs/frontend/ARCHITECTURE.md` to keep documentation and docgen verification tests in sync.
+- **Commit SHA**: ``136676acc0f7359507d29c73d1751d0109fbe7e6``
+- **Verification**: Verified via `grep` confirming 0 remaining references, `flutter analyze` passing with 0 issues, and `flutter test` passing 106/106 tests cleanly. ✅
+
 ## Deferred User Account Creation Until OTP Verification & IsConfirmed Removal Fix
 
 - **Implementation Detail**: Fixed permanent login block for confirmed accounts and restructured owner/user registration flow. User accounts for `RoleOwner` and `RoleUser` are now stored in a dedicated `pending_signups` MongoDB collection (encrypted with AES-256-GCM and 5-minute expiry) during `Signup`. Accounts are persisted to the `users` collection only when `VerifyOTP` succeeds, making DB existence inherently mean "confirmed" and eliminating the redundant `IsConfirmed` field across models, store methods, handlers, and unit tests. Employee signups remain immediate and auto-confirmed. Fixed abandoned signups by overwriting existing pending records for the same email during subsequent signup attempts.
