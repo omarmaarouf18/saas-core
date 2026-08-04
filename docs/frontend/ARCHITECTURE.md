@@ -28,12 +28,12 @@ This document describes the design patterns, state management models, directory 
     *   `otp_screen.dart`: OTP 2FA verify form with auto-populating dev capabilities.
     *   `forgot_password_screen.dart`: Password reset email request form.
     *   `reset_password_screen.dart`: Password reset verification and new password submission form.
-    *   `home_screen.dart`: Dashboard wrapper incorporating role-based widgets, Owner KYC-pending alert banners, and Reviewer queue entry points.
-    *   `employee_screen.dart`: Employee management and registered worker roster view.
-    *   `employee_jobs_screen.dart`: Employee assigned job task list and live GPS tracking view.
+    *   `home_screen.dart`: Dashboard wrapper incorporating role-based widgets, Owner KYC-pending alert banners, and Reviewer queue entry points (*slated for navigation & Customer Home redesign per ADR-0014*).
+    *   `employee_screen.dart`: Employee management and registered worker roster view (*slated for Owner Configuration migration review per ADR-0014*).
+    *   `employee_jobs_screen.dart`: Employee assigned job task list and live GPS tracking view (*slated for capability audit & screen redesign per ADR-0014*).
     *   `service_screen.dart`: Owner service directory management view.
     *   `wallet_screen.dart`: Owner e-wallet balance and transaction ledger.
-    *   `customer_marketplace_screen.dart`: Customer service directory search/filter view.
+    *   `customer_marketplace_screen.dart`: Customer service directory search/filter view (*slated for interactive map picker replacement of lat/long inputs per ADR-0014*).
     *   `customer_jobs_screen.dart`: Customer order history ("My Orders") view with status badges and status navigation.
     *   `job_status_screen.dart`: Real-time job tracking status screen with complaint ticket submission trigger.
     *   `chat_screen.dart`: Real-time channel messaging view.

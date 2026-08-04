@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## ADR-0014 Unified Account Settings & Role Home Redesign Planning
+
+- **Implementation Detail**: Created ADR-0014 (`docs/adr/0014-unified-account-settings-and-role-home-redesign.md`) documenting the planned frontend UX restructuring initiative. Registered 4 core decisions: (1) Unified Settings screen (Account Action Center) consolidating theme, language, support, and centralized logout, (2) Deferred Owner Configuration and My Account placeholders, (3) Customer home redesign with 4 category tiles (categories TBD) and search bar, (4) Interactive `flutter_map` location picker replacing manual lat/long text inputs, and (5) Employee backend capability audit as a prerequisite to screen redesign. Updated `docs/adr/README.md`, `docs/frontend/STATUS.md` (Phase 15 `[PLANNED, NOT STARTED]`), `docs/frontend/ARCHITECTURE.md`, and `AI_CONTEXT.md`.
+- **Commit SHA**: ``136676acc0f7359507d29c73d1751d0109fbe7e6``
+- **Verification**: Verified via documentation checks. ✅
+
 ## Complaint Routing Stage 7: Documentation
 
 - **Implementation Detail**: Documented complaint routing design and atomic assignment decisions in DESIGN.md and AI_CONTEXT.md.

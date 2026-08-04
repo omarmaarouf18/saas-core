@@ -151,7 +151,9 @@ The detailed project history is distributed across categorized changelog files. 
   * **Decision**: A 4th service category for cargo/goods transport (distinct from passenger "Ride") is deferred and not scoped for the current launch. The customer-facing home screen displays exactly 3 service tiles (Delivery, Ride, Shipping), where "Ride" maps to the backend's `transport` category.
   * **Reasoning**: Keeping the scope limited to a 3-category directory for launch. If added later, cargo/goods transport will require a brand new backend category value distinct from `transport` (which is reserved for passenger rides) to avoid ambiguity.
 
-### 3. Not Started Yet
+* **Frontend UX Restructuring & Role Home Redesign (ADR-0014)**
+  * **Scope**: Formally planned architecture initiative to consolidate scattered preferences/logout into a unified Settings screen (Account Action Center), redesign the Customer Home layout (4-tile + search), replace raw lat/long fields with an interactive `flutter_map` picker in `customer_marketplace_screen.dart`, and execute an employee backend contract audit prior to redesigning the employee screen(s).
+  * **Status**: Planned / Documented in [ADR-0014](docs/adr/0014-unified-account-settings-and-role-home-redesign.md) and [docs/frontend/STATUS.md](docs/frontend/STATUS.md) Phase 15. Implementation is deferred to multi-phase follow-up tasks.
 
 * **Business Owner Configuration**
   * **Custom & Negotiable Pricing**: Custom or negotiable base pricing per owner beyond fixed `TenantBasePrice` and `TenantPricePerKM` values set during service creation (e.g. per-owner pricing tiers, seasonal or promotional pricing, or bulk-service discounts).
