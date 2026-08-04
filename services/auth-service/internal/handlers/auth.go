@@ -97,7 +97,16 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/employee/action", a.SimulateEmployeeAction)
 	mux.HandleFunc("/auth/audit-log", a.GetAuditLog)
 	mux.HandleFunc("/auth/employees", a.GetEmployees)
-	mux.HandleFunc("/auth/user", a.GetUser)
+	mux.HandleFunc("/auth/user", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			a.GetUser(w, r)
+		case http.MethodPatch:
+			a.UpdateProfile(w, r)
+		default:
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		}
+	})
 	mux.HandleFunc("/auth/user/public-profile", a.GetPublicProfile)
 	mux.HandleFunc("/auth/kyb/upload", a.UploadKYB)
 	mux.HandleFunc("/auth/kye/upload", a.UploadKYE)
@@ -914,7 +923,7 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var lookupID string
 
-	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(a.internalServiceToken)) == 1 {
+	if a.internalServiceToken != "" && subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(a.internalServiceToken)) == 1 {
 		lookupID = id
 	} else {
 		claims, err := jwtutil.ValidateToken(id)
@@ -936,13 +945,15 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := map[string]any{
-		"id":         user.ID,
-		"email":      user.Email,
-		"role":       user.Role,
-		"username":   user.Username,
-		"tenant_id":  user.TenantID,
-		"kyc_status": user.KYCStatus,
-		"is_active":  user.IsActive,
+		"id":                 user.ID,
+		"email":              user.Email,
+		"role":               user.Role,
+		"username":           user.Username,
+		"phone":              user.Phone,
+		"frequent_addresses": user.FrequentAddresses,
+		"tenant_id":          user.TenantID,
+		"kyc_status":         user.KYCStatus,
+		"is_active":          user.IsActive,
 	}
 	if user.Role == models.RoleEmployee {
 		resp["kye_status"] = user.KYEStatus
@@ -951,6 +962,153 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 		resp["rejection_reason"] = user.RejectionReason
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// ---------------------------------------------------------------------------
+// PATCH /auth/user — Self-service profile update for authenticated user
+// ---------------------------------------------------------------------------
+
+func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed, use PATCH"})
+		return
+	}
+
+	claims, err := a.authenticateUser(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: " + err.Error()})
+		return
+	}
+
+	userID := claims.UserID
+	if userID == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid user token: missing user ID"})
+		return
+	}
+
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "failed to read request body"})
+		return
+	}
+	if len(bodyBytes) == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "request body cannot be empty"})
+		return
+	}
+
+	var raw map[string]any
+	if err := json.Unmarshal(bodyBytes, &raw); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+
+	// IDOR Protection: If request body explicitly specifies user_id, id, or user_token that differs from JWT claims, reject with 403 Forbidden.
+	if reqUserID, ok := raw["user_id"].(string); ok && reqUserID != "" && reqUserID != userID {
+		log.Printf("[SECURITY WARNING] User %s attempted IDOR profile update on user %s", userID, reqUserID) // #nosec G706 -- user IDs are authenticated claims vs request string
+		handlerutil.ShipSecurityEvent(r.Context(), "IDOR_PROFILE_UPDATE_ATTEMPT", "auth-service", userID, reqUserID, fmt.Sprintf("user %s attempted profile update on user %s", userID, reqUserID), handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: cannot update another user's profile"})
+		return
+	}
+	if reqID, ok := raw["id"].(string); ok && reqID != "" && reqID != userID {
+		log.Printf("[SECURITY WARNING] User %s attempted IDOR profile update on user %s", userID, reqID) // #nosec G706 -- user IDs are authenticated claims vs request string
+		handlerutil.ShipSecurityEvent(r.Context(), "IDOR_PROFILE_UPDATE_ATTEMPT", "auth-service", userID, reqID, fmt.Sprintf("user %s attempted profile update on user %s", userID, reqID), handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: cannot update another user's profile"})
+		return
+	}
+	if reqUserToken, ok := raw["user_token"].(string); ok && reqUserToken != "" {
+		tokenClaims, err := jwtutil.ValidateToken(reqUserToken)
+		if err != nil || tokenClaims.UserID != userID {
+			log.Printf("[SECURITY WARNING] User %s attempted IDOR profile update via mismatched user_token", userID) // #nosec G706 -- user IDs are authenticated claims
+			handlerutil.ShipSecurityEvent(r.Context(), "IDOR_PROFILE_UPDATE_ATTEMPT", "auth-service", userID, reqUserToken, "user attempted profile update via mismatched user_token", handlerutil.GetClientIP(r))
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: cannot update another user's profile"})
+			return
+		}
+	}
+
+	ctx := r.Context()
+	user := a.store.GetByID(ctx, userID)
+	if user == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "user not found"})
+		return
+	}
+
+	updateFields := bson.M{}
+
+	// 1. Username
+	if val, exists := raw["username"]; exists {
+		str, ok := val.(string)
+		if !ok {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "username must be a string"})
+			return
+		}
+		str = strings.TrimSpace(str)
+		if str == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "username cannot be empty"})
+			return
+		}
+		if str != user.Username {
+			existing := a.store.GetByUsername(ctx, str)
+			if existing != nil && existing.ID != user.ID {
+				writeJSON(w, http.StatusConflict, map[string]string{"error": "username is already taken"})
+				return
+			}
+			updateFields["username"] = str
+		}
+	}
+
+	// 2. Phone
+	if val, exists := raw["phone"]; exists {
+		str, ok := val.(string)
+		if !ok {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "phone must be a string"})
+			return
+		}
+		str = strings.TrimSpace(str)
+		updateFields["phone"] = str
+	}
+
+	// 3. Frequent Addresses
+	if val, exists := raw["frequent_addresses"]; exists {
+		arr, ok := val.([]any)
+		if !ok {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "frequent_addresses must be an array of strings"})
+			return
+		}
+		if len(arr) > 10 {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "frequent_addresses cannot exceed 10 entries"})
+			return
+		}
+		addresses := make([]string, 0, len(arr))
+		for _, item := range arr {
+			addrStr, ok := item.(string)
+			if !ok {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "frequent_addresses entries must be strings"})
+				return
+			}
+			addrStr = strings.TrimSpace(addrStr)
+			if addrStr != "" {
+				addresses = append(addresses, addrStr)
+			}
+		}
+		updateFields["frequent_addresses"] = addresses
+	}
+
+	if len(updateFields) == 0 {
+		writeJSON(w, http.StatusOK, map[string]any{"message": "no profile fields updated", "user": user})
+		return
+	}
+
+	if err := a.store.UpdateUser(ctx, userID, bson.M{"$set": updateFields}); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update user profile: " + err.Error()})
+		return
+	}
+
+	updatedUser := a.store.GetByID(ctx, userID)
+	log.Printf("[AUTH] User profile updated: id=%s username=%s", updatedUser.ID, updatedUser.Username) // #nosec G706 -- updatedUser.ID and Username are loaded from DB record
+	writeJSON(w, http.StatusOK, map[string]any{
+		"message": "profile updated successfully",
+		"user":    updatedUser,
+	})
 }
 
 // ---------------------------------------------------------------------------

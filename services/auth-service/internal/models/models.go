@@ -45,29 +45,30 @@ type PendingSignup struct {
 
 // User represents a registered user in the platform.
 type User struct {
-	ID               string        `json:"id"                        bson:"_id"`
-	Email            string        `json:"email"                     bson:"email"`
-	Username         string        `json:"username"                  bson:"username"`
-	Phone            string        `json:"phone,omitempty"           bson:"phone,omitempty"`
-	Password         string        `json:"-"                         bson:"password"`
-	Role             Role          `json:"role"                      bson:"role"`
-	TenantID         string        `json:"tenant_id,omitempty"       bson:"tenant_id,omitempty"`  // the tenant this user belongs to
-	OwnerID          string        `json:"owner_id,omitempty"        bson:"owner_id,omitempty"`   // KYE: tenant binding (employees only)
-	IsActive         bool          `json:"is_active"                 bson:"is_active"`            // KYE: owner can freeze employee accounts
-	KYCStatus        KYCStatus     `json:"kyc_status,omitempty"      bson:"kyc_status,omitempty"` // KYB status for owners
-	KYEStatus        KYCStatus     `json:"kye_status,omitempty"      bson:"kye_status,omitempty"` // KYE status for employees
-	IDFrontDoc       string        `json:"id_front_doc,omitempty"       bson:"id_front_doc,omitempty"`
-	IDBackDoc        string        `json:"id_back_doc,omitempty"        bson:"id_back_doc,omitempty"`
-	SelfieDoc        string        `json:"selfie_doc,omitempty"         bson:"selfie_doc,omitempty"`
-	BusinessProofDoc string        `json:"business_proof_doc,omitempty" bson:"business_proof_doc,omitempty"`
-	ReviewerID       string        `json:"reviewer_id,omitempty"        bson:"reviewer_id,omitempty"`
-	ReviewedAt       time.Time     `json:"reviewed_at,omitempty"        bson:"reviewed_at,omitempty"`
-	RejectionReason  string        `json:"rejection_reason,omitempty"   bson:"rejection_reason,omitempty"`
-	OTPCode          string        `json:"-"                         bson:"otp_code,omitempty"`
-	OTPExpiresAt     time.Time     `json:"-"                         bson:"otp_expires_at,omitempty"`
-	OTPVerified      bool          `json:"otp_verified"              bson:"otp_verified"`
-	CreatedAt        time.Time     `json:"created_at"                bson:"created_at"`
-	DeviceTokens     []DeviceToken `json:"device_tokens,omitempty"  bson:"device_tokens,omitempty"`
+	ID                string        `json:"id"                        bson:"_id"`
+	Email             string        `json:"email"                     bson:"email"`
+	Username          string        `json:"username"                  bson:"username"`
+	Phone             string        `json:"phone,omitempty"           bson:"phone,omitempty"`
+	FrequentAddresses []string      `json:"frequent_addresses,omitempty" bson:"frequent_addresses,omitempty"`
+	Password          string        `json:"-"                         bson:"password"`
+	Role              Role          `json:"role"                      bson:"role"`
+	TenantID          string        `json:"tenant_id,omitempty"       bson:"tenant_id,omitempty"`  // the tenant this user belongs to
+	OwnerID           string        `json:"owner_id,omitempty"        bson:"owner_id,omitempty"`   // KYE: tenant binding (employees only)
+	IsActive          bool          `json:"is_active"                 bson:"is_active"`            // KYE: owner can freeze employee accounts
+	KYCStatus         KYCStatus     `json:"kyc_status,omitempty"      bson:"kyc_status,omitempty"` // KYB status for owners
+	KYEStatus         KYCStatus     `json:"kye_status,omitempty"      bson:"kye_status,omitempty"` // KYE status for employees
+	IDFrontDoc        string        `json:"id_front_doc,omitempty"       bson:"id_front_doc,omitempty"`
+	IDBackDoc         string        `json:"id_back_doc,omitempty"        bson:"id_back_doc,omitempty"`
+	SelfieDoc         string        `json:"selfie_doc,omitempty"         bson:"selfie_doc,omitempty"`
+	BusinessProofDoc  string        `json:"business_proof_doc,omitempty" bson:"business_proof_doc,omitempty"`
+	ReviewerID        string        `json:"reviewer_id,omitempty"        bson:"reviewer_id,omitempty"`
+	ReviewedAt        time.Time     `json:"reviewed_at,omitempty"        bson:"reviewed_at,omitempty"`
+	RejectionReason   string        `json:"rejection_reason,omitempty"   bson:"rejection_reason,omitempty"`
+	OTPCode           string        `json:"-"                         bson:"otp_code,omitempty"`
+	OTPExpiresAt      time.Time     `json:"-"                         bson:"otp_expires_at,omitempty"`
+	OTPVerified       bool          `json:"otp_verified"              bson:"otp_verified"`
+	CreatedAt         time.Time     `json:"created_at"                bson:"created_at"`
+	DeviceTokens      []DeviceToken `json:"device_tokens,omitempty"  bson:"device_tokens,omitempty"`
 }
 
 // DeviceToken represents a registered push notification token for a client device.
@@ -149,4 +150,11 @@ type Reviewer struct {
 	ID    string `json:"id"    bson:"_id"`
 	Token string `json:"token" bson:"token"`
 	Name  string `json:"name"  bson:"name"`
+}
+
+// UpdateProfileRequest is the expected JSON body for PATCH /auth/user.
+type UpdateProfileRequest struct {
+	Username          *string   `json:"username,omitempty"`
+	Phone             *string   `json:"phone,omitempty"`
+	FrequentAddresses *[]string `json:"frequent_addresses,omitempty"`
 }

@@ -2,6 +2,10 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Self-Service Profile Update & Frequent Addresses (PATCH /auth/user - ADR-0014)
+
+- **Implementation Detail**: Extended `User` model (`services/auth-service/internal/models/models.go`) with `FrequentAddresses []string` and added `UpdateProfileRequest` DTO. Built `PATCH /auth/user` handler in `auth-service` (`services/auth-service/internal/handlers/auth.go`) allowing authenticated users to update their `username`, `phone`, and `frequent_addresses` (capped at max 10 entries). Enforced strict IDOR protection by deriving target user ID solely from validated JWT claims (rejecting mismatched payload user IDs with 403 Forbidden) and stripping/ignoring sensitive field smuggling (`email`, `password`, `role`, `kyc_status`). Created test suite in `services/auth-service/internal/handlers/user_profile_test.go`. Regenerated `docs/APPLICATION_MAP.md` via `make docs`.
+
 ## Service Model Owner Configuration Fields & UpdateService Handler (ADR-0014)
 
 - **Implementation Detail**: Extended `Service` model (`services/user-service/internal/models/models.go`) with `PhotoURL`, `Address`, `WorkingHours`, and `CoverageRadiusKM`. Extended `CreateServiceRequest` and added `UpdateServiceRequest` DTOs. Built `UpdateService` handler in `user-service` (`services/user-service/internal/handlers/handlers.go`) and MongoDB store (`UpdateService`), supporting `PUT /users/services` and `POST /users/services/update` with KYC approval checks and IDOR tenant ownership protection. Built unit test suite (`services/user-service/internal/handlers/service_owner_config_test.go`) verifying service creation with new fields, updating existing service fields, backward compatibility for legacy payloads omitting new fields, and IDOR protection. Regenerated `docs/APPLICATION_MAP.md` via `make docs`.

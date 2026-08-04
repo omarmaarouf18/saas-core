@@ -148,6 +148,11 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Resolves user profile (including username) and role details. Accepts id (legacy) or user_token (preferred).",
 		Targets:     "Reads `users` collection.",
 	},
+	"PATCH /auth/user": {
+		Permissions: "Authenticated User JWT",
+		Function:    "Self-service profile update (username, phone, frequent_addresses) with IDOR protection.",
+		Targets:     "Updates `users` collection.",
+	},
 	"GET /auth/user/public-profile": {
 		Permissions: "User JWT",
 		Function:    "Returns only non-sensitive, public profile fields (ID and username). Accepts id (legacy) or user_token (preferred), and requester_id (legacy) or requester_token (preferred).",
