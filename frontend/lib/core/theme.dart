@@ -34,13 +34,18 @@ class AppColors {
   static const Color onSurfaceVariant = Color(0xFF45464C);
 
   // Status colors (WCAG AA compliant contrast ratios >= 4.5:1 on light surfaces)
-  static const Color success = Color(0xFF15803D); // Dark Green (contrast 5.02:1 on white)
-  static const Color danger = Color(0xFFBA1A1A); // Dark Red (contrast 10.1:1 on white)
-  static const Color warning = Color(0xFFB45309); // Amber-700 (contrast 5.02:1 on white)
+  static const Color success =
+      Color(0xFF15803D); // Dark Green (contrast 5.02:1 on white)
+  static const Color danger =
+      Color(0xFFBA1A1A); // Dark Red (contrast 10.1:1 on white)
+  static const Color warning =
+      Color(0xFFB45309); // Amber-700 (contrast 5.02:1 on white)
 
   // Outline & Dim colors
-  static const Color outline = Color(0xFF57585E); // Dark Gray (contrast 5.61:1 on scaffold, 7.09:1 on white)
-  static const Color outlineVariant = Color(0xFF8E8F95); // Mid Gray (contrast 3.34:1 for UI borders)
+  static const Color outline = Color(
+      0xFF57585E); // Dark Gray (contrast 5.61:1 on scaffold, 7.09:1 on white)
+  static const Color outlineVariant =
+      Color(0xFF8E8F95); // Mid Gray (contrast 3.34:1 for UI borders)
 }
 
 // Backwards-compatible global constants

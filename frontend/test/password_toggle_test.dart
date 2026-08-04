@@ -31,7 +31,8 @@ void main() {
       EditableText editableText = tester.widget(editableTextFinder);
       expect(editableText.obscureText, isTrue);
 
-      final toggleButtonFinder = find.byKey(const Key('password_toggle_button'));
+      final toggleButtonFinder =
+          find.byKey(const Key('password_toggle_button'));
       expect(toggleButtonFinder, findsOneWidget);
       expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
 
@@ -71,7 +72,8 @@ void main() {
         ),
       );
 
-      final toggleButtonFinder = find.byKey(const Key('password_toggle_button'));
+      final toggleButtonFinder =
+          find.byKey(const Key('password_toggle_button'));
       expect(toggleButtonFinder, findsOneWidget);
 
       EditableText editableText = tester.widget(find.byType(EditableText));

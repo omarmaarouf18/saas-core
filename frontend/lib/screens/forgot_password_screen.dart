@@ -50,7 +50,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (email.isEmpty || !email.contains("@")) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Please enter a valid email address to receive a code."),
+          content:
+              Text("Please enter a valid email address to receive a code."),
           backgroundColor: AppColors.error,
         ),
       );
@@ -271,7 +272,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ),
                         const SizedBox(height: AppSpacing.md),
                         ThemedTextField(
-                          key: const Key('forgot_password_confirm_password_field'),
+                          key: const Key(
+                              'forgot_password_confirm_password_field'),
                           controller: _confirmPasswordController,
                           labelText: "Confirm New Password",
                           hintText: "Re-enter your new password",

@@ -64,15 +64,18 @@ void main() {
         ),
       );
 
-      expect(find.byKey(const Key('forgot_password_email_field')), findsOneWidget);
-      expect(find.byKey(const Key('request_reset_code_button')), findsOneWidget);
-      expect(find.byKey(const Key('forgot_password_otp_field')), findsOneWidget);
       expect(
-          find.byKey(const Key('forgot_password_new_password_field')), findsOneWidget);
+          find.byKey(const Key('forgot_password_email_field')), findsOneWidget);
+      expect(
+          find.byKey(const Key('request_reset_code_button')), findsOneWidget);
+      expect(
+          find.byKey(const Key('forgot_password_otp_field')), findsOneWidget);
+      expect(find.byKey(const Key('forgot_password_new_password_field')),
+          findsOneWidget);
       expect(find.byKey(const Key('forgot_password_confirm_password_field')),
           findsOneWidget);
-      expect(
-          find.byKey(const Key('submit_reset_password_button')), findsOneWidget);
+      expect(find.byKey(const Key('submit_reset_password_button')),
+          findsOneWidget);
 
       expect(find.byKey(const Key('password_toggle_button')), findsNWidgets(2));
     });
@@ -97,7 +100,8 @@ void main() {
 
       // 1. Enter email and request code
       await tester.enterText(
-          find.byKey(const Key('forgot_password_email_field')), 'user@example.com');
+          find.byKey(const Key('forgot_password_email_field')),
+          'user@example.com');
       await tester.tap(find.byKey(const Key('request_reset_code_button')));
       await tester.pumpAndSettle();
 
@@ -114,7 +118,8 @@ void main() {
 
       // 2. Enter new password and confirm password on the SAME screen
       await tester.enterText(
-          find.byKey(const Key('forgot_password_new_password_field')), 'newSecret123');
+          find.byKey(const Key('forgot_password_new_password_field')),
+          'newSecret123');
       await tester.enterText(
           find.byKey(const Key('forgot_password_confirm_password_field')),
           'newSecret123');
