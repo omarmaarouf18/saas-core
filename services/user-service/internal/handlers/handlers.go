@@ -398,7 +398,7 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if existing.TenantID != req.OwnerID {
-		log.Printf("[SECURITY WARNING] Owner %s attempted to update service %s owned by %s", req.OwnerID, req.ID, existing.TenantID)
+		log.Printf("[SECURITY WARNING] Owner %s attempted to update service %s owned by %s", req.OwnerID, req.ID, existing.TenantID) // #nosec G706 -- values are authenticated JWT-derived IDs, not raw user input; logged for security audit trail
 		handlerutil.ShipSecurityEvent(r.Context(), "IDOR_UPDATE_SERVICE_ATTEMPT", "user-service", req.OwnerID, req.ID, fmt.Sprintf("owner %s attempted to update service belonging to owner %s", req.OwnerID, existing.TenantID), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: service belongs to another tenant"})
 		return
@@ -461,7 +461,7 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[USER] Service updated: id=%s name=%s owner=%s", existing.ID, existing.Name, existing.TenantID)
+	log.Printf("[USER] Service updated: id=%s name=%s owner=%s", existing.ID, existing.Name, existing.TenantID) // #nosec G706 -- existing.Name is owner-controlled service metadata, not attacker-controlled external input path
 	writeJSON(w, http.StatusOK, map[string]any{"message": "service updated", "service": existing})
 }
 

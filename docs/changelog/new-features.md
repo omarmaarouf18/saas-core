@@ -5,7 +5,7 @@ This file tracks historical entries for the primary category: **New Features Cha
 ## Service Model Owner Configuration Fields & UpdateService Handler (ADR-0014)
 
 - **Implementation Detail**: Extended `Service` model (`services/user-service/internal/models/models.go`) with `PhotoURL`, `Address`, `WorkingHours`, and `CoverageRadiusKM`. Extended `CreateServiceRequest` and added `UpdateServiceRequest` DTOs. Built `UpdateService` handler in `user-service` (`services/user-service/internal/handlers/handlers.go`) and MongoDB store (`UpdateService`), supporting `PUT /users/services` and `POST /users/services/update` with KYC approval checks and IDOR tenant ownership protection. Built unit test suite (`services/user-service/internal/handlers/service_owner_config_test.go`) verifying service creation with new fields, updating existing service fields, backward compatibility for legacy payloads omitting new fields, and IDOR protection. Regenerated `docs/APPLICATION_MAP.md` via `make docs`.
-- **Commit SHA**: ``21fbd572ad5437ab7af5b53e9d579a3ab8607390``
+- **Commit SHA**: ``405d0de263d2f8fd6e554800caa565b7cf311238``
 - **Verification**: Verified via `gofmt -w .`, `go build ./...`, `go vet ./...`, `go test ./...`, and `make docs-check`. ✅
 
 ## Interactive Map-Based Location Picker (ADR-0014 Decision #5)
