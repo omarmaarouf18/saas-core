@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:latlong2/latlong.dart';
 import '../core/constants.dart';
 import '../core/theme.dart';
 import '../models/marketplace_service.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../providers/notifications_provider.dart';
+import '../widgets/location_picker_map.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/themed_card.dart';
@@ -27,10 +29,8 @@ class CustomerMarketplaceScreen extends StatefulWidget {
 }
 
 class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
-  final _latController =
-      TextEditingController(text: "30.0444"); // default Cairo lat
-  final _lonController =
-      TextEditingController(text: "31.2357"); // default Cairo lon
+  double _customerLat = 30.0444; // default Cairo lat
+  double _customerLon = 31.2357; // default Cairo lon
   final _radiusController = TextEditingController(text: "50"); // default radius
 
   String _selectedCategory =
@@ -48,21 +48,17 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
 
   @override
   void dispose() {
-    _latController.dispose();
-    _lonController.dispose();
     _radiusController.dispose();
     super.dispose();
   }
 
   void _loadServices() {
-    final lat = double.tryParse(_latController.text.trim()) ?? 30.0444;
-    final lon = double.tryParse(_lonController.text.trim()) ?? 31.2357;
     final radius = double.tryParse(_radiusController.text.trim()) ?? 50.0;
 
     Provider.of<MarketplaceProvider>(context, listen: false).fetchServices(
       nearBy: _nearBy,
-      lat: lat,
-      lon: lon,
+      lat: _customerLat,
+      lon: _customerLon,
       radius: radius,
       sortBy: _sortBy,
     );
@@ -186,29 +182,38 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Location Coordinates row
+                  // Location Picker & Radius row
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: ThemedTextField(
-                          controller: _latController,
-                          labelText: "Latitude",
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
+                        flex: 2,
+                        child: OutlinedButton.icon(
+                          key: const Key('choose_location_map_button'),
+                          icon: const Icon(Icons.map_outlined,
+                              color: AppColors.primary),
+                          label: Text(
+                            "${_customerLat.toStringAsFixed(4)}, ${_customerLon.toStringAsFixed(4)}",
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.md,
+                              horizontal: AppSpacing.sm,
+                            ),
+                            side: const BorderSide(
+                                color: AppColors.outlineVariant),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppRadius.defaultBorder,
+                            ),
+                          ),
+                          onPressed: () => _openLocationPickerDialog(context),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
-                        child: ThemedTextField(
-                          controller: _lonController,
-                          labelText: "Longitude",
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
+                        flex: 1,
                         child: ThemedTextField(
                           controller: _radiusController,
                           labelText: "Radius (KM)",
@@ -483,6 +488,73 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
     );
   }
 
+  void _openLocationPickerDialog(BuildContext context) {
+    LatLng tempLocation = LatLng(_customerLat, _customerLon);
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return Dialog(
+          key: const Key('location_picker_dialog'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          child: Container(
+            width: 500,
+            height: 550,
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Choose Search Location",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(dialogCtx).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    child: LocationPickerMap(
+                      initialLocation: tempLocation,
+                      onLocationSelected: (newLocation) {
+                        tempLocation = newLocation;
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                PrimaryButton(
+                  key: const Key('confirm_location_button'),
+                  text: "Confirm Location",
+                  onPressed: () {
+                    setState(() {
+                      _customerLat = tempLocation.latitude;
+                      _customerLon = tempLocation.longitude;
+                    });
+                    Navigator.of(dialogCtx).pop();
+                    _loadServices();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _showBookingDialog(
       BuildContext context, MarketplaceService service, String userToken) {
     showDialog(
@@ -492,8 +564,8 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
         return _BookingDialog(
           service: service,
           userToken: userToken,
-          customerLat: double.tryParse(_latController.text.trim()) ?? 30.0444,
-          customerLon: double.tryParse(_lonController.text.trim()) ?? 31.2357,
+          customerLat: _customerLat,
+          customerLon: _customerLon,
         );
       },
     );
