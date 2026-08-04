@@ -2,6 +2,12 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## LocationPickerMap Dialog & Dropdown Sizing Mobile Overflow Fix
+
+- **Implementation Detail**: Fixed fixed-size container overflow (`width: 500, height: 550`) in `_openLocationPickerDialog` inside `customer_marketplace_screen.dart`. Replaced fixed dimensions with dynamic `MediaQuery` viewport calculations (`dialogWidth = screenSize.width > 600 ? 500.0 : screenSize.width * 0.92`, `dialogHeight = screenSize.height > 700 ? 550.0 : screenSize.height * 0.85`) with `insetPadding: const EdgeInsets.all(AppSpacing.md)`. Wrapped header title `Text` in `Expanded` to prevent horizontal header overflow on small viewports. Added `isExpanded: true` to Category and Sort By `DropdownButtonFormField` widgets to prevent dropdown item text overflow. Added explicit 360x800 mobile viewport regression tests in `customer_marketplace_screen_test.dart` and 330x480 narrow container tests in `location_picker_map_test.dart`.
+- **Commit SHA**: ``e82cbf79a6db429bc1bfcf9c2a3bd116925f7f5a``
+- **Verification**: Verified via `flutter analyze` (0 issues found), `flutter test` (119/119 full test suite pass cleanly including 360x800 mobile viewport regression tests), and `make docs-check`. ✅
+
 ## ProposePrice Concurrency Race Test Assertion Flakiness Fix
 
 - **Implementation Detail**: Resolved flaky test assertion in `TestProposePrice_ConcurrencyRace_OverwrittenProposalPrevention` (`services/user-service/internal/handlers/negotiation_concurrency_test.go`). Production data integrity and atomic CAS write in `store.UpdateJobPriceProposal` (`{_id, status, proposed_price: nil}`) were verified as 100% correct (preventing any double-proposals, `successCount == 1` always held). However, the test assertion previously rejected HTTP 400 `proposal_already_submitted` rejections occurring when the losing concurrent goroutine executed an early non-atomic snapshot read before hitting the CAS path. Updated the test assertion to accept either valid rejection outcome (400 `proposal_already_submitted` or 409 `job_state_changed`), and added an explanatory comment above the early non-atomic read in `services/user-service/internal/handlers/handlers.go` clarifying that atomic CAS enforcement remains the authoritative protection mechanism. No production handler logic or business behavior was changed.
