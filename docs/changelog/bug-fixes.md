@@ -5,7 +5,7 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 ## Deferred User Account Creation Until OTP Verification & IsConfirmed Removal Fix
 
 - **Implementation Detail**: Fixed permanent login block for confirmed accounts and restructured owner/user registration flow. User accounts for `RoleOwner` and `RoleUser` are now stored in a dedicated `pending_signups` MongoDB collection (encrypted with AES-256-GCM and 5-minute expiry) during `Signup`. Accounts are persisted to the `users` collection only when `VerifyOTP` succeeds, making DB existence inherently mean "confirmed" and eliminating the redundant `IsConfirmed` field across models, store methods, handlers, and unit tests. Employee signups remain immediate and auto-confirmed. Fixed abandoned signups by overwriting existing pending records for the same email during subsequent signup attempts.
-- **Commit SHA**: ``71c9c02914ad27b1fb2ac9629fc2cc89a5f645e4``
+- **Commit SHA**: ``c9e27c4a322ed7725af7454f692f6b51184a2d91``
 - **Verification**: Verified via `go test ./...` across all Go microservices passing cleanly, including 4 new unit test cases covering abandoned signup overwrites, confirmed user login after JWT expiry, 5-minute pending signup expiration, and wrong OTP failures without user creation. ✅
 
 ## UpdateJobLocation `requireTier` Error Branch Missing Return Fix
