@@ -5,7 +5,7 @@ This file tracks historical entries for the primary category: **New Features Cha
 ## Unified Settings Screen (Account Action Center) & Theme Persistence (ADR-0014 Part 1)
 
 - **Implementation Detail**: Implemented Part 1 of the Unified Settings screen per ADR-0014. Created `ThemeProvider` (`frontend/lib/providers/theme_provider.dart`) managing dynamic `ThemeMode` (Light, Dark, System) and persisting choices across app restarts via `FlutterSecureStorage` under key `theme_mode`. Wired `ThemeProvider` into `main.dart` `MultiProvider` and `MaterialApp`. Created `SettingsScreen` (`frontend/lib/screens/settings_screen.dart`) featuring: (1) 3-way SegmentedButton theme mode selector, (2) Language row with "Coming Soon" badge and feedback snackbar, (3) Role-conditional sections ("Owner Configuration" for owner, "My Account" for customer/user, omitted for employee) with "Coming Soon" badges, (4) Support section ("Customer Service") with coming-soon feedback and `// TODO: wire to POST /chat/tickets once built` comment, and (5) Centralized red Logout button calling `logoutAndClearProviders`. Replaced duplicated Logout buttons in `home_screen.dart`, `customer_marketplace_screen.dart`, and `employee_jobs_screen.dart` with a single Settings gear icon. Created unit/widget test suite in `frontend/test/settings_screen_test.dart`.
-- **Commit SHA**: ``136676acc0f7359507d29c73d1751d0109fbe7e6``
+- **Commit SHA**: ``88a392ebe86aabe97315c95cab6f56be3234cee5``
 - **Verification**: Verified via `flutter analyze` (0 issues found) and `flutter test` (112/112 unit & widget tests pass cleanly). ✅
 
 ## Frontend Batch 1 Auth & Token Lifecycle Wiring
