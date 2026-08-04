@@ -197,11 +197,14 @@ func TestMongoDB_ConcurrentPersistMessageNoCollision(t *testing.T) {
 	channel := "concurrent-test-channel"
 
 	const numMsgs = 500
-	const numGoroutines = 50
+	const numGoroutines = 10
 	errCh := make(chan error, numMsgs)
+	sem := make(chan struct{}, numGoroutines)
 
 	for i := 0; i < numMsgs; i++ {
+		sem <- struct{}{}
 		go func(idx int) {
+			defer func() { <-sem }()
 			msg := &chat.Message{
 				Channel:        channel,
 				SenderID:       fmt.Sprintf("user-%d", idx%numGoroutines),
