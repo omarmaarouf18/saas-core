@@ -23,6 +23,7 @@ import (
 	"github.com/project/auth-service/internal/store"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -274,15 +275,7 @@ func TestAuthHandlers(t *testing.T) {
 	json.Unmarshal(rec.Body.Bytes(), &signupResp)
 	signupOTP := signupResp["dev_otp"].(string)
 
-	// Test Signup Duplicate (Validation error path)
-	req = httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
-	rec = httptest.NewRecorder()
-	a.Signup(rec, req)
-	if rec.Code != http.StatusConflict {
-		t.Errorf("Expected 409 Conflict for duplicate Signup, got %d", rec.Code)
-	}
-
-	// 1b. Verify signup OTP to confirm account
+	// 1b. Verify signup OTP to confirm account and create user record
 	verifySignupBody := models.VerifyOTPRequest{
 		Email: "owner@example.com",
 		OTP:   signupOTP,
@@ -293,6 +286,14 @@ func TestAuthHandlers(t *testing.T) {
 	a.VerifyOTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected 200 OK for VerifyOTP (signup), got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// Test Signup Duplicate (Validation error path against existing confirmed user)
+	req = httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+	rec = httptest.NewRecorder()
+	a.Signup(rec, req)
+	if rec.Code != http.StatusConflict {
+		t.Errorf("Expected 409 Conflict for duplicate Signup, got %d. Body: %s", rec.Code, rec.Body.String())
 	}
 
 	// 2. Test Login (Success path / OTP dispatched)
@@ -546,25 +547,23 @@ func TestKYBKYEUploadAndReview(t *testing.T) {
 
 	// 1. Create owner and employee
 	owner := &models.User{
-		ID:          "owner-user",
-		Email:       "owner@example.com",
-		Username:    "owner_user_username",
-		Password:    "password",
-		Role:        models.RoleOwner,
-		IsActive:    true,
-		IsConfirmed: true,
+		ID:       "owner-user",
+		Email:    "owner@example.com",
+		Username: "owner_user_username",
+		Password: "password",
+		Role:     models.RoleOwner,
+		IsActive: true,
 	}
 	s.CreateUser(ctx, owner)
 
 	employee := &models.User{
-		ID:          "employee-user",
-		Email:       "employee@example.com",
-		Username:    "employee_user_username",
-		Password:    "password",
-		Role:        models.RoleEmployee,
-		IsActive:    true,
-		IsConfirmed: true,
-		OwnerID:     "owner-user",
+		ID:       "employee-user",
+		Email:    "employee@example.com",
+		Username: "employee_user_username",
+		Password: "password",
+		Role:     models.RoleEmployee,
+		IsActive: true,
+		OwnerID:  "owner-user",
 	}
 	s.CreateUser(ctx, employee)
 
@@ -849,14 +848,13 @@ func TestTokenRefresh(t *testing.T) {
 
 	// 1. Create a confirmed and active user in store
 	testUser := &models.User{
-		ID:          "user_refresh_123",
-		Email:       "refresh123@example.com",
-		Username:    "refresh123_username",
-		Password:    "$2a$10$abcdefghijklmnopqrstuv", // Bcrypt format placeholder
-		Role:        models.RoleOwner,
-		TenantID:    "tenant_refresh_123",
-		IsConfirmed: true,
-		IsActive:    true,
+		ID:       "user_refresh_123",
+		Email:    "refresh123@example.com",
+		Username: "refresh123_username",
+		Password: "$2a$10$abcdefghijklmnopqrstuv", // Bcrypt format placeholder
+		Role:     models.RoleOwner,
+		TenantID: "tenant_refresh_123",
+		IsActive: true,
 	}
 	if err := s.CreateUser(ctx, testUser); err != nil {
 		t.Fatalf("failed to create user: %v", err)
@@ -945,7 +943,7 @@ func (c *otpFailContext) Err() error {
 	frames := runtime.CallersFrames(pcs[:n])
 	for {
 		frame, more := frames.Next()
-		if strings.Contains(frame.Function, "SetOTP") {
+		if strings.Contains(frame.Function, "SetOTP") || strings.Contains(frame.Function, "SetPendingSignup") {
 			return context.Canceled
 		}
 		if !more {
@@ -1022,7 +1020,6 @@ func TestGetPendingKYBKYESubmissions_StorageError(t *testing.T) {
 		IDBackDoc:        "id_back_999.png",
 		SelfieDoc:        "selfie_999.png",
 		BusinessProofDoc: "business_proof_999.pdf",
-		IsConfirmed:      true,
 		IsActive:         true,
 	}
 	if err := s.CreateUser(ctx, user); err != nil {
@@ -1270,14 +1267,13 @@ func TestAuth_ExtraGaps(t *testing.T) {
 	t.Run("Refresh_OldTokenNonRevocation", func(t *testing.T) {
 		// Create a confirmed/active user
 		user := &models.User{
-			ID:          "user_refresh_gap",
-			Email:       "refreshgap@example.com",
-			Username:    "refreshgap_username",
-			Password:    "$2a$10$abcdefghijklmnopqrstuv", // Bcrypt placeholder
-			Role:        models.RoleOwner,
-			TenantID:    "tenant_refresh_gap",
-			IsConfirmed: true,
-			IsActive:    true,
+			ID:       "user_refresh_gap",
+			Email:    "refreshgap@example.com",
+			Username: "refreshgap_username",
+			Password: "$2a$10$abcdefghijklmnopqrstuv", // Bcrypt placeholder
+			Role:     models.RoleOwner,
+			TenantID: "tenant_refresh_gap",
+			IsActive: true,
 		}
 		if err := s.CreateUser(ctx, user); err != nil {
 			t.Fatalf("failed to create user: %v", err)
@@ -1316,14 +1312,13 @@ func TestAuth_ExtraGaps(t *testing.T) {
 
 		// Set up an owner user in DB
 		owner := &models.User{
-			ID:          "owner_prov",
-			Email:       "ownerprov@example.com",
-			Username:    "ownerprov_username",
-			Password:    "$2a$10$abcdefghijklmnopqrstuv",
-			Role:        models.RoleOwner,
-			TenantID:    "tenant_prov",
-			IsConfirmed: true,
-			IsActive:    true,
+			ID:       "owner_prov",
+			Email:    "ownerprov@example.com",
+			Username: "ownerprov_username",
+			Password: "$2a$10$abcdefghijklmnopqrstuv",
+			Role:     models.RoleOwner,
+			TenantID: "tenant_prov",
+			IsActive: true,
 		}
 		if err := s.CreateUser(ctx, owner); err != nil {
 			t.Fatalf("failed to create owner: %v", err)
@@ -1331,14 +1326,13 @@ func TestAuth_ExtraGaps(t *testing.T) {
 
 		// Set up a non-owner user in DB
 		nonOwner := &models.User{
-			ID:          "user_non_owner",
-			Email:       "usernonowner@example.com",
-			Username:    "usernonowner_username",
-			Password:    "$2a$10$abcdefghijklmnopqrstuv",
-			Role:        models.RoleUser,
-			TenantID:    "tenant_prov",
-			IsConfirmed: true,
-			IsActive:    true,
+			ID:       "user_non_owner",
+			Email:    "usernonowner@example.com",
+			Username: "usernonowner_username",
+			Password: "$2a$10$abcdefghijklmnopqrstuv",
+			Role:     models.RoleUser,
+			TenantID: "tenant_prov",
+			IsActive: true,
 		}
 		if err := s.CreateUser(ctx, nonOwner); err != nil {
 			t.Fatalf("failed to create non-owner: %v", err)
@@ -1513,14 +1507,13 @@ func TestAuth_ExtraGaps(t *testing.T) {
 			// Case 2: existent email but wrong password
 			hashedPass, _ := bcrypt.GenerateFromPassword([]byte("correctpassword"), bcrypt.DefaultCost)
 			user := &models.User{
-				ID:          "user_login_test",
-				Email:       "exist@example.com",
-				Username:    "exist_username",
-				Password:    string(hashedPass),
-				Role:        models.RoleOwner,
-				TenantID:    "tenant_login_test",
-				IsConfirmed: true,
-				IsActive:    true,
+				ID:       "user_login_test",
+				Email:    "exist@example.com",
+				Username: "exist_username",
+				Password: string(hashedPass),
+				Role:     models.RoleOwner,
+				TenantID: "tenant_login_test",
+				IsActive: true,
 			}
 			if err := s.CreateUser(ctx, user); err != nil {
 				t.Fatalf("failed to create user: %v", err)
@@ -1565,14 +1558,13 @@ func TestAuth_ExtraGaps(t *testing.T) {
 
 			email := "otp_reuse@example.com"
 			user := &models.User{
-				ID:          "user_otp_reuse",
-				Email:       email,
-				Username:    "otp_reuse_username",
-				Password:    "$2a$10$abcdefghijklmnopqrstuv",
-				Role:        models.RoleOwner,
-				TenantID:    "tenant_otp",
-				IsConfirmed: false,
-				IsActive:    true,
+				ID:       "user_otp_reuse",
+				Email:    email,
+				Username: "otp_reuse_username",
+				Password: "$2a$10$abcdefghijklmnopqrstuv",
+				Role:     models.RoleOwner,
+				TenantID: "tenant_otp",
+				IsActive: true,
 			}
 			s.CreateUser(ctx, user)
 			s.SetOTP(ctx, email, "111111")
@@ -1648,14 +1640,13 @@ func TestAuth_ExtraGaps(t *testing.T) {
 
 			email := "otp_lockout@example.com"
 			user := &models.User{
-				ID:          "user_otp_lockout",
-				Email:       email,
-				Username:    "otp_lockout_username",
-				Password:    "$2a$10$abcdefghijklmnopqrstuv",
-				Role:        models.RoleOwner,
-				TenantID:    "tenant_otp",
-				IsConfirmed: false,
-				IsActive:    true,
+				ID:       "user_otp_lockout",
+				Email:    email,
+				Username: "otp_lockout_username",
+				Password: "$2a$10$abcdefghijklmnopqrstuv",
+				Role:     models.RoleOwner,
+				TenantID: "tenant_otp",
+				IsActive: true,
 			}
 			s.CreateUser(ctx, user)
 			s.SetOTP(ctx, email, "888888")
@@ -1693,44 +1684,41 @@ func TestAuth_ExtraGaps(t *testing.T) {
 		// Create Owner A
 		ownerAPass, _ := bcrypt.GenerateFromPassword([]byte("pass_a"), bcrypt.DefaultCost)
 		ownerA := &models.User{
-			ID:          "owner_a",
-			Email:       "owner_a@example.com",
-			Username:    "owner_a_username",
-			Password:    string(ownerAPass),
-			Role:        models.RoleOwner,
-			TenantID:    "tenant_a",
-			IsConfirmed: true,
-			IsActive:    true,
-			KYCStatus:   models.KYCApproved,
+			ID:        "owner_a",
+			Email:     "owner_a@example.com",
+			Username:  "owner_a_username",
+			Password:  string(ownerAPass),
+			Role:      models.RoleOwner,
+			TenantID:  "tenant_a",
+			IsActive:  true,
+			KYCStatus: models.KYCApproved,
 		}
 		s.CreateUser(ctx, ownerA)
 
 		// Create Owner B
 		ownerBPass, _ := bcrypt.GenerateFromPassword([]byte("pass_b"), bcrypt.DefaultCost)
 		ownerB := &models.User{
-			ID:          "owner_b",
-			Email:       "owner_b@example.com",
-			Username:    "owner_b_username",
-			Password:    string(ownerBPass),
-			Role:        models.RoleOwner,
-			TenantID:    "tenant_b",
-			IsConfirmed: true,
-			IsActive:    true,
-			KYCStatus:   models.KYCApproved,
+			ID:        "owner_b",
+			Email:     "owner_b@example.com",
+			Username:  "owner_b_username",
+			Password:  string(ownerBPass),
+			Role:      models.RoleOwner,
+			TenantID:  "tenant_b",
+			IsActive:  true,
+			KYCStatus: models.KYCApproved,
 		}
 		s.CreateUser(ctx, ownerB)
 
 		// Create Employee A (belongs to Owner A)
 		empA := &models.User{
-			ID:          "emp_a",
-			Email:       "emp_a@example.com",
-			Username:    "emp_a_username",
-			Password:    "$2a$10$abcdefghijklmnopqrstuv",
-			Role:        models.RoleEmployee,
-			TenantID:    "tenant_a",
-			OwnerID:     "owner_a",
-			IsConfirmed: true,
-			IsActive:    true,
+			ID:       "emp_a",
+			Email:    "emp_a@example.com",
+			Username: "emp_a_username",
+			Password: "$2a$10$abcdefghijklmnopqrstuv",
+			Role:     models.RoleEmployee,
+			TenantID: "tenant_a",
+			OwnerID:  "owner_a",
+			IsActive: true,
 		}
 		s.CreateUser(ctx, empA)
 
@@ -1814,14 +1802,13 @@ func TestAuth_ExtraGaps(t *testing.T) {
 		aLog := NewAuth(s, &mockOTPDispatcher{}, cfgLog, rdbLog, storeLoc)
 
 		user := &models.User{
-			ID:          "user_logout_gap",
-			Email:       "logoutgap@example.com",
-			Username:    "logoutgap_username",
-			Password:    "$2a$10$abcdefghijklmnopqrstuv",
-			Role:        models.RoleOwner,
-			TenantID:    "tenant_logout",
-			IsConfirmed: true,
-			IsActive:    true,
+			ID:       "user_logout_gap",
+			Email:    "logoutgap@example.com",
+			Username: "logoutgap_username",
+			Password: "$2a$10$abcdefghijklmnopqrstuv",
+			Role:     models.RoleOwner,
+			TenantID: "tenant_logout",
+			IsActive: true,
 		}
 		s.CreateUser(ctx, user)
 
@@ -2058,6 +2045,19 @@ func TestSignupUsernameValidation(t *testing.T) {
 			t.Fatalf("first signup failed: %d. Body: %s", rec1.Code, rec1.Body.String())
 		}
 
+		var resp1 map[string]any
+		json.Unmarshal(rec1.Body.Bytes(), &resp1)
+		otp1 := resp1["dev_otp"].(string)
+
+		// Confirm first user account via OTP
+		vBody1, _ := json.Marshal(models.VerifyOTPRequest{Email: "user1@example.com", OTP: otp1})
+		vReq1 := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(vBody1))
+		vRec1 := httptest.NewRecorder()
+		a.VerifyOTP(vRec1, vReq1)
+		if vRec1.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK verifying first user, got %d", vRec1.Code)
+		}
+
 		// Second user signup with duplicate username but different email: rejected with 409 and specific message
 		reqBody2 := models.SignupRequest{
 			Email:    "user2@example.com",
@@ -2106,13 +2106,12 @@ func TestGetUserUsernameResponse(t *testing.T) {
 
 	ctx := context.Background()
 	user := &models.User{
-		ID:          "test-user-user-123",
-		Email:       "propagate_user@example.com",
-		Username:    "propagate_username",
-		Password:    "hashedpass",
-		Role:        models.RoleUser,
-		IsActive:    true,
-		IsConfirmed: true,
+		ID:       "test-user-user-123",
+		Email:    "propagate_user@example.com",
+		Username: "propagate_username",
+		Password: "hashedpass",
+		Role:     models.RoleUser,
+		IsActive: true,
 	}
 	if err := s.CreateUser(ctx, user); err != nil {
 		t.Fatalf("failed to create user: %v", err)
@@ -2151,15 +2150,14 @@ func TestGetPendingSubmissionsUsername(t *testing.T) {
 
 	ctx := context.Background()
 	user := &models.User{
-		ID:          "pending-user-123",
-		Email:       "pending_propagate@example.com",
-		Username:    "pending_username",
-		Password:    "hashedpass",
-		Role:        models.RoleOwner,
-		IsActive:    true,
-		IsConfirmed: true,
-		KYCStatus:   models.KYCPendingApproval,
-		IDFrontDoc:  "id_front_test.png",
+		ID:         "pending-user-123",
+		Email:      "pending_propagate@example.com",
+		Username:   "pending_username",
+		Password:   "hashedpass",
+		Role:       models.RoleOwner,
+		IsActive:   true,
+		KYCStatus:  models.KYCPendingApproval,
+		IDFrontDoc: "id_front_test.png",
 	}
 	if err := s.CreateUser(ctx, user); err != nil {
 		t.Fatalf("failed to create user: %v", err)
@@ -2246,6 +2244,19 @@ func TestSignupUsernameWhitespaceTrimming(t *testing.T) {
 		t.Fatalf("expected 201 Created for first user registration, got %d. Body: %s", rec2.Code, rec2.Body.String())
 	}
 
+	var respFirst map[string]any
+	json.Unmarshal(rec2.Body.Bytes(), &respFirst)
+	otpFirst := respFirst["dev_otp"].(string)
+
+	// Confirm first user account via OTP
+	vBodyFirst, _ := json.Marshal(models.VerifyOTPRequest{Email: "omar@example.com", OTP: otpFirst})
+	vReqFirst := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(vBodyFirst))
+	vRecFirst := httptest.NewRecorder()
+	a.VerifyOTP(vRecFirst, vReqFirst)
+	if vRecFirst.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK verifying first user, got %d", vRecFirst.Code)
+	}
+
 	// 3. Register second user with "  omar  " (which should be trimmed to "omar" and rejected as duplicate)
 	reqBodySecond := models.SignupRequest{
 		Email:    "omar_dup@example.com",
@@ -2288,6 +2299,19 @@ func TestSignupUsernameCaseInsensitivity(t *testing.T) {
 
 	if rec1.Code != http.StatusCreated {
 		t.Fatalf("expected 201 Created for first user, got %d. Body: %s", rec1.Code, rec1.Body.String())
+	}
+
+	var resp1 map[string]any
+	json.Unmarshal(rec1.Body.Bytes(), &resp1)
+	otp1 := resp1["dev_otp"].(string)
+
+	// Confirm first user account via OTP
+	vBody1, _ := json.Marshal(models.VerifyOTPRequest{Email: "omar@example.com", OTP: otp1})
+	vReq1 := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(vBody1))
+	vRec1 := httptest.NewRecorder()
+	a.VerifyOTP(vRec1, vReq1)
+	if vRec1.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK verifying first user, got %d", vRec1.Code)
 	}
 
 	// 2. Register second user with "Omar" (should fail with StatusConflict / "username already taken")
@@ -2392,97 +2416,90 @@ func TestGetEmployees(t *testing.T) {
 
 	// 1. Create Owners A, B, C, D
 	ownerA := &models.User{
-		ID:          "owner_a_id",
-		Email:       "owner_a@example.com",
-		Username:    "owner_a",
-		Role:        models.RoleOwner,
-		TenantID:    "tenant_a",
-		IsConfirmed: true,
-		IsActive:    true,
-		CreatedAt:   time.Now(),
+		ID:        "owner_a_id",
+		Email:     "owner_a@example.com",
+		Username:  "owner_a",
+		Role:      models.RoleOwner,
+		TenantID:  "tenant_a",
+		IsActive:  true,
+		CreatedAt: time.Now(),
 	}
 	s.CreateUser(ctx, ownerA)
 
 	ownerB := &models.User{
-		ID:          "owner_b_id",
-		Email:       "owner_b@example.com",
-		Username:    "owner_b",
-		Role:        models.RoleOwner,
-		TenantID:    "tenant_b",
-		IsConfirmed: true,
-		IsActive:    true,
-		CreatedAt:   time.Now(),
+		ID:        "owner_b_id",
+		Email:     "owner_b@example.com",
+		Username:  "owner_b",
+		Role:      models.RoleOwner,
+		TenantID:  "tenant_b",
+		IsActive:  true,
+		CreatedAt: time.Now(),
 	}
 	s.CreateUser(ctx, ownerB)
 
 	ownerC := &models.User{
-		ID:          "owner_c_id",
-		Email:       "owner_c@example.com",
-		Username:    "owner_c",
-		Role:        models.RoleOwner,
-		TenantID:    "tenant_c",
-		IsConfirmed: true,
-		IsActive:    true,
-		CreatedAt:   time.Now(),
+		ID:        "owner_c_id",
+		Email:     "owner_c@example.com",
+		Username:  "owner_c",
+		Role:      models.RoleOwner,
+		TenantID:  "tenant_c",
+		IsActive:  true,
+		CreatedAt: time.Now(),
 	}
 	s.CreateUser(ctx, ownerC)
 
 	ownerD := &models.User{
-		ID:          "owner_d_id",
-		Email:       "owner_d@example.com",
-		Username:    "owner_d",
-		Role:        models.RoleOwner,
-		TenantID:    "tenant_d",
-		IsConfirmed: true,
-		IsActive:    true,
-		CreatedAt:   time.Now(),
+		ID:        "owner_d_id",
+		Email:     "owner_d@example.com",
+		Username:  "owner_d",
+		Role:      models.RoleOwner,
+		TenantID:  "tenant_d",
+		IsActive:  true,
+		CreatedAt: time.Now(),
 	}
 	s.CreateUser(ctx, ownerD)
 
 	// 2. Create Employees under Owner A (1 active, 1 frozen/inactive)
 	empA1 := &models.User{
-		ID:          "emp_a1_id",
-		Email:       "emp_a1@example.com",
-		Username:    "emp_a1",
-		Role:        models.RoleEmployee,
-		TenantID:    "tenant_a",
-		OwnerID:     "owner_a_id",
-		IsConfirmed: true,
-		IsActive:    true,
-		Password:    "$2a$10$secret_hash",
-		IDFrontDoc:  "documents/id_front.png",
-		OTPCode:     "123456",
-		CreatedAt:   time.Now(),
+		ID:         "emp_a1_id",
+		Email:      "emp_a1@example.com",
+		Username:   "emp_a1",
+		Role:       models.RoleEmployee,
+		TenantID:   "tenant_a",
+		OwnerID:    "owner_a_id",
+		IsActive:   true,
+		Password:   "$2a$10$secret_hash",
+		IDFrontDoc: "documents/id_front.png",
+		OTPCode:    "123456",
+		CreatedAt:  time.Now(),
 	}
 	s.CreateUser(ctx, empA1)
 
 	empA2 := &models.User{
-		ID:          "emp_a2_id",
-		Email:       "emp_a2@example.com",
-		Username:    "emp_a2",
-		Role:        models.RoleEmployee,
-		TenantID:    "tenant_a",
-		OwnerID:     "owner_a_id",
-		IsConfirmed: true,
-		IsActive:    false, // Frozen/inactive
-		Password:    "$2a$10$secret_hash",
-		IDFrontDoc:  "documents/id_front_2.png",
-		OTPCode:     "654321",
-		CreatedAt:   time.Now(),
+		ID:         "emp_a2_id",
+		Email:      "emp_a2@example.com",
+		Username:   "emp_a2",
+		Role:       models.RoleEmployee,
+		TenantID:   "tenant_a",
+		OwnerID:    "owner_a_id",
+		IsActive:   false, // Frozen/inactive
+		Password:   "$2a$10$secret_hash",
+		IDFrontDoc: "documents/id_front_2.png",
+		OTPCode:    "654321",
+		CreatedAt:  time.Now(),
 	}
 	s.CreateUser(ctx, empA2)
 
 	// 3. Create Employee under Owner B
 	empB1 := &models.User{
-		ID:          "emp_b1_id",
-		Email:       "emp_b1@example.com",
-		Username:    "emp_b1",
-		Role:        models.RoleEmployee,
-		TenantID:    "tenant_b",
-		OwnerID:     "owner_b_id",
-		IsConfirmed: true,
-		IsActive:    true,
-		CreatedAt:   time.Now(),
+		ID:        "emp_b1_id",
+		Email:     "emp_b1@example.com",
+		Username:  "emp_b1",
+		Role:      models.RoleEmployee,
+		TenantID:  "tenant_b",
+		OwnerID:   "owner_b_id",
+		IsActive:  true,
+		CreatedAt: time.Now(),
 	}
 	s.CreateUser(ctx, empB1)
 
@@ -2713,12 +2730,11 @@ func TestGetPublicProfile_ExtraCoverage(t *testing.T) {
 
 	ctx := context.Background()
 	user := &models.User{
-		ID:          "pub-prof-id-123",
-		Email:       "pubprof@example.com",
-		Username:    "pubprofuser",
-		Role:        models.RoleOwner,
-		IsActive:    true,
-		IsConfirmed: true,
+		ID:       "pub-prof-id-123",
+		Email:    "pubprof@example.com",
+		Username: "pubprofuser",
+		Role:     models.RoleOwner,
+		IsActive: true,
 	}
 	if err := mongoStore.CreateUser(ctx, user); err != nil {
 		t.Fatalf("failed to create test user: %v", err)
@@ -2768,18 +2784,16 @@ func TestSimulateEmployeeAction_ExtraCoverage(t *testing.T) {
 
 	ctx := context.Background()
 	activeEmp := &models.User{
-		ID:          "active-emp-123",
-		Email:       "activeemp@example.com",
-		Role:        models.RoleEmployee,
-		IsActive:    true,
-		IsConfirmed: true,
+		ID:       "active-emp-123",
+		Email:    "activeemp@example.com",
+		Role:     models.RoleEmployee,
+		IsActive: true,
 	}
 	frozenEmp := &models.User{
-		ID:          "frozen-emp-123",
-		Email:       "frozenemp@example.com",
-		Role:        models.RoleEmployee,
-		IsActive:    false,
-		IsConfirmed: true,
+		ID:       "frozen-emp-123",
+		Email:    "frozenemp@example.com",
+		Role:     models.RoleEmployee,
+		IsActive: false,
 	}
 	_ = mongoStore.CreateUser(ctx, activeEmp)
 	_ = mongoStore.CreateUser(ctx, frozenEmp)
@@ -2826,14 +2840,13 @@ func TestForgotPassword_AntiEnumeration(t *testing.T) {
 	// Register an existing user
 	existingEmail := "existinguser@example.com"
 	user := &models.User{
-		ID:          "user-exist-1",
-		Email:       existingEmail,
-		Username:    "existinguser",
-		Password:    "hashedpass",
-		Role:        models.RoleUser,
-		IsActive:    true,
-		IsConfirmed: true,
-		CreatedAt:   time.Now().UTC(),
+		ID:        "user-exist-1",
+		Email:     existingEmail,
+		Username:  "existinguser",
+		Password:  "hashedpass",
+		Role:      models.RoleUser,
+		IsActive:  true,
+		CreatedAt: time.Now().UTC(),
 	}
 	if err := mongoStore.CreateUser(ctx, user); err != nil {
 		t.Fatalf("Failed to create test user: %v", err)
@@ -2920,14 +2933,13 @@ func TestResetPassword_Success(t *testing.T) {
 
 	hashedOld, _ := bcrypt.GenerateFromPassword([]byte(oldPassword), bcrypt.DefaultCost)
 	user := &models.User{
-		ID:          "user-reset-1",
-		Email:       email,
-		Username:    "resetpassuser",
-		Password:    string(hashedOld),
-		Role:        models.RoleUser,
-		IsActive:    true,
-		IsConfirmed: true,
-		CreatedAt:   time.Now().UTC(),
+		ID:        "user-reset-1",
+		Email:     email,
+		Username:  "resetpassuser",
+		Password:  string(hashedOld),
+		Role:      models.RoleUser,
+		IsActive:  true,
+		CreatedAt: time.Now().UTC(),
 	}
 	if err := mongoStore.CreateUser(ctx, user); err != nil {
 		t.Fatalf("Failed to create test user: %v", err)
@@ -2977,14 +2989,13 @@ func TestResetPassword_InvalidOrExpiredOTP_RateLimiting(t *testing.T) {
 	ctx := context.Background()
 	email := "wrongotpreset@example.com"
 	user := &models.User{
-		ID:          "user-reset-2",
-		Email:       email,
-		Username:    "wrongotpuser",
-		Password:    "somepass",
-		Role:        models.RoleUser,
-		IsActive:    true,
-		IsConfirmed: true,
-		CreatedAt:   time.Now().UTC(),
+		ID:        "user-reset-2",
+		Email:     email,
+		Username:  "wrongotpuser",
+		Password:  "somepass",
+		Role:      models.RoleUser,
+		IsActive:  true,
+		CreatedAt: time.Now().UTC(),
 	}
 	_ = mongoStore.CreateUser(ctx, user)
 	_ = mongoStore.SetOTP(ctx, email, "123456")
@@ -3053,14 +3064,13 @@ func TestResetPassword_OTPReusePrevention(t *testing.T) {
 	ctx := context.Background()
 	email := "reuseotp@example.com"
 	user := &models.User{
-		ID:          "user-reset-reuse",
-		Email:       email,
-		Username:    "reuseuser",
-		Password:    "OldPassword1",
-		Role:        models.RoleUser,
-		IsActive:    true,
-		IsConfirmed: true,
-		CreatedAt:   time.Now().UTC(),
+		ID:        "user-reset-reuse",
+		Email:     email,
+		Username:  "reuseuser",
+		Password:  "OldPassword1",
+		Role:      models.RoleUser,
+		IsActive:  true,
+		CreatedAt: time.Now().UTC(),
 	}
 	_ = mongoStore.CreateUser(ctx, user)
 	_ = mongoStore.SetOTP(ctx, email, "888999")
@@ -3094,14 +3104,13 @@ func TestDeviceToken_RegistrationAndUpsert(t *testing.T) {
 
 	ctx := context.Background()
 	user := &models.User{
-		ID:          "user-device-token-1",
-		Email:       "devicetoken@example.com",
-		Username:    "devicetokenuser",
-		Password:    "Password123!",
-		Role:        models.RoleUser,
-		IsActive:    true,
-		IsConfirmed: true,
-		CreatedAt:   time.Now().UTC(),
+		ID:        "user-device-token-1",
+		Email:     "devicetoken@example.com",
+		Username:  "devicetokenuser",
+		Password:  "Password123!",
+		Role:      models.RoleUser,
+		IsActive:  true,
+		CreatedAt: time.Now().UTC(),
 	}
 	_ = mongoStore.CreateUser(ctx, user)
 
@@ -3205,5 +3214,261 @@ func TestDeviceToken_Unauthorized(t *testing.T) {
 
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("Expected 401 Unauthorized for unauthenticated device-token request, got %d", rec.Code)
+	}
+}
+
+// Test (a): abandoned signup followed by a second signup attempt with the same email succeeds cleanly.
+func TestSignup_AbandonedSignup_SecondAttemptSucceeds(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	email := "abandoned@example.com"
+
+	// 1. Initial signup attempt (creates pending signup)
+	signupReq1 := models.SignupRequest{
+		Email:    email,
+		Username: "abandoned_user",
+		Password: "password123",
+		Role:     models.RoleUser,
+	}
+	b1, _ := json.Marshal(signupReq1)
+	req1 := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b1))
+	rec1 := httptest.NewRecorder()
+	a.Signup(rec1, req1)
+
+	if rec1.Code != http.StatusCreated {
+		t.Fatalf("expected 201 Created on first signup attempt, got %d. Body: %s", rec1.Code, rec1.Body.String())
+	}
+
+	// Confirm user is NOT in DB yet
+	ctx := context.Background()
+	if user := s.GetByEmail(ctx, email); user != nil {
+		t.Fatalf("expected user record to NOT exist in DB prior to OTP verification")
+	}
+
+	// 2. Abandoned first attempt — second signup attempt with same email
+	signupReq2 := models.SignupRequest{
+		Email:    email,
+		Username: "abandoned_user_2",
+		Password: "newpassword456",
+		Role:     models.RoleUser,
+	}
+	b2, _ := json.Marshal(signupReq2)
+	req2 := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b2))
+	rec2 := httptest.NewRecorder()
+	a.Signup(rec2, req2)
+
+	if rec2.Code != http.StatusCreated {
+		t.Fatalf("expected 201 Created on second signup attempt, got %d. Body: %s", rec2.Code, rec2.Body.String())
+	}
+
+	var signupResp map[string]any
+	json.Unmarshal(rec2.Body.Bytes(), &signupResp)
+	newOtp := signupResp["dev_otp"].(string)
+
+	// 3. Verify OTP from second attempt -> user created in DB
+	verifyReq := models.VerifyOTPRequest{
+		Email: email,
+		OTP:   newOtp,
+	}
+	bv, _ := json.Marshal(verifyReq)
+	reqV := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(bv))
+	recV := httptest.NewRecorder()
+	a.VerifyOTP(recV, reqV)
+
+	if recV.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for VerifyOTP on second attempt, got %d. Body: %s", recV.Code, recV.Body.String())
+	}
+
+	// Confirm user now exists in DB with details from second attempt
+	user := s.GetByEmail(ctx, email)
+	if user == nil || user.Username != "abandoned_user_2" {
+		t.Fatalf("expected user created in DB with username 'abandoned_user_2', got: %+v", user)
+	}
+}
+
+// Test (b): a confirmed user can log in again after their JWT expires (regression test for bug).
+func TestLogin_ConfirmedUser_CanLoginAfterJWTExpires(t *testing.T) {
+	a, _, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	email := "confirmed_login@example.com"
+	pass := "secretpass123"
+
+	// 1. Signup user
+	signupReq := models.SignupRequest{
+		Email:    email,
+		Username: "confirmed_login_user",
+		Password: pass,
+		Role:     models.RoleUser,
+	}
+	b, _ := json.Marshal(signupReq)
+	req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+	a.Signup(rec, req)
+
+	var signupResp map[string]any
+	json.Unmarshal(rec.Body.Bytes(), &signupResp)
+	otp := signupResp["dev_otp"].(string)
+
+	// 2. Verify OTP -> account created in DB
+	verifyReq := models.VerifyOTPRequest{
+		Email: email,
+		OTP:   otp,
+	}
+	bv, _ := json.Marshal(verifyReq)
+	reqV := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(bv))
+	recV := httptest.NewRecorder()
+	a.VerifyOTP(recV, reqV)
+
+	if recV.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK on initial OTP verification, got %d. Body: %s", recV.Code, recV.Body.String())
+	}
+
+	// 3. Simulate future login after JWT expires (e.g. user returns to app)
+	loginReq := models.LoginRequest{
+		Email:    email,
+		Password: pass,
+	}
+	bl, _ := json.Marshal(loginReq)
+	reqL := httptest.NewRequest("POST", "/auth/login", bytes.NewReader(bl))
+	recL := httptest.NewRecorder()
+	a.Login(recL, reqL)
+
+	if recL.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK on login for confirmed user, got %d. Body: %s", recL.Code, recL.Body.String())
+	}
+
+	var loginResp map[string]any
+	json.Unmarshal(recL.Body.Bytes(), &loginResp)
+	loginOtp := loginResp["dev_otp"].(string)
+
+	// 4. Verify login 2FA OTP -> new token issued
+	verifyLoginReq := models.VerifyOTPRequest{
+		Email: email,
+		OTP:   loginOtp,
+	}
+	bvl, _ := json.Marshal(verifyLoginReq)
+	reqVL := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(bvl))
+	recVL := httptest.NewRecorder()
+	a.VerifyOTP(recVL, reqVL)
+
+	if recVL.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK on 2FA login verification, got %d. Body: %s", recVL.Code, recVL.Body.String())
+	}
+}
+
+// Test (c): pending signup expires after 5 minutes and a fresh signup is required.
+func TestSignup_PendingSignup_ExpiresAfter5Minutes(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	email := "expired_pending@example.com"
+
+	// 1. Signup user
+	signupReq := models.SignupRequest{
+		Email:    email,
+		Username: "expired_user",
+		Password: "password123",
+		Role:     models.RoleUser,
+	}
+	b, _ := json.Marshal(signupReq)
+	req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+	a.Signup(rec, req)
+
+	var signupResp map[string]any
+	json.Unmarshal(rec.Body.Bytes(), &signupResp)
+	otp := signupResp["dev_otp"].(string)
+
+	// 2. Manually expire pending signup in DB
+	s.DatabaseForTesting().Collection("pending_signups").UpdateOne(ctx,
+		bson.M{"email": email},
+		bson.M{"$set": bson.M{"otp_expires_at": time.Now().Add(-10 * time.Minute)}},
+	)
+
+	// 3. Verify OTP -> should fail with 401
+	verifyReq := models.VerifyOTPRequest{
+		Email: email,
+		OTP:   otp,
+	}
+	bv, _ := json.Marshal(verifyReq)
+	reqV := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(bv))
+	recV := httptest.NewRecorder()
+	a.VerifyOTP(recV, reqV)
+
+	if recV.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 Unauthorized for expired pending signup OTP, got %d. Body: %s", recV.Code, recV.Body.String())
+	}
+
+	// Verify no user record created in DB
+	if user := s.GetByEmail(ctx, email); user != nil {
+		t.Fatalf("expected user to NOT exist in DB after expired OTP attempt")
+	}
+
+	// 4. Fresh signup works cleanly
+	reqFresh := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+	recFresh := httptest.NewRecorder()
+	a.Signup(recFresh, reqFresh)
+
+	if recFresh.Code != http.StatusCreated {
+		t.Fatalf("expected 201 Created on fresh signup after expiry, got %d. Body: %s", recFresh.Code, recFresh.Body.String())
+	}
+}
+
+// Test (d): wrong OTP against a pending signup fails without creating a user record.
+func TestSignup_WrongOTPAgainstPendingSignup_FailsWithoutUserCreation(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	email := "wrong_otp_pending@example.com"
+
+	// 1. Signup user
+	signupReq := models.SignupRequest{
+		Email:    email,
+		Username: "wrong_otp_user",
+		Password: "password123",
+		Role:     models.RoleUser,
+	}
+	b, _ := json.Marshal(signupReq)
+	req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+	a.Signup(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201 Created on signup, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// 2. Submit wrong OTP
+	verifyReq := models.VerifyOTPRequest{
+		Email: email,
+		OTP:   "000000",
+	}
+	bv, _ := json.Marshal(verifyReq)
+	reqV := httptest.NewRequest("POST", "/auth/verify-otp", bytes.NewReader(bv))
+	recV := httptest.NewRecorder()
+	a.VerifyOTP(recV, reqV)
+
+	if recV.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 Unauthorized for wrong OTP, got %d. Body: %s", recV.Code, recV.Body.String())
+	}
+
+	// 3. Confirm no user record was created in DB
+	if user := s.GetByEmail(ctx, email); user != nil {
+		t.Fatalf("expected user record to NOT exist in DB after wrong OTP, but found user: %+v", user)
 	}
 }

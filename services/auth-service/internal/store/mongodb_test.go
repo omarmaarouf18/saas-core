@@ -65,15 +65,14 @@ func TestMongoDB_UserCRUD(t *testing.T) {
 
 	// 1. CreateUser
 	user := &models.User{
-		ID:          "usr-1",
-		Email:       "testcrud@example.com",
-		Username:    "testcrud",
-		Password:    "hashedpass",
-		Role:        models.RoleOwner,
-		IsActive:    true,
-		IsConfirmed: true,
-		KYCStatus:   models.KYCPendingApproval,
-		CreatedAt:   time.Now(),
+		ID:        "usr-1",
+		Email:     "testcrud@example.com",
+		Username:  "testcrud",
+		Password:  "hashedpass",
+		Role:      models.RoleOwner,
+		IsActive:  true,
+		KYCStatus: models.KYCPendingApproval,
+		CreatedAt: time.Now(),
 	}
 
 	if err := s.CreateUser(ctx, user); err != nil {
@@ -159,12 +158,11 @@ func TestMongoDB_OTPFlows(t *testing.T) {
 
 	ctx := context.Background()
 	user := &models.User{
-		ID:          "otp-usr-1",
-		Email:       "otp@example.com",
-		Username:    "otpuser",
-		Role:        models.RoleUser,
-		IsActive:    true,
-		IsConfirmed: true,
+		ID:       "otp-usr-1",
+		Email:    "otp@example.com",
+		Username: "otpuser",
+		Role:     models.RoleUser,
+		IsActive: true,
 	}
 	if err := s.CreateUser(ctx, user); err != nil {
 		t.Fatalf("failed to create user: %v", err)
@@ -185,6 +183,42 @@ func TestMongoDB_OTPFlows(t *testing.T) {
 	err = s.VerifyOTP(ctx, "otp@example.com", "654321")
 	if err != nil {
 		t.Errorf("Expected VerifyOTP with correct code to succeed, got %v", err)
+	}
+
+	// 4. Pending Signup Store Tests
+	pending := &models.PendingSignup{
+		Email:    "pending_store@example.com",
+		Username: "pending_store_user",
+		Password: "hashedpassword",
+		Role:     models.RoleUser,
+	}
+
+	// SetPendingSignup
+	if err := s.SetPendingSignup(ctx, pending.Email, pending, "123456"); err != nil {
+		t.Fatalf("SetPendingSignup failed: %v", err)
+	}
+
+	// GetPendingSignup
+	gotPending := s.GetPendingSignup(ctx, pending.Email)
+	if gotPending == nil || gotPending.Username != "pending_store_user" {
+		t.Fatalf("GetPendingSignup returned unexpected result: %v", gotPending)
+	}
+
+	// GetAndConsumePendingSignup with wrong OTP -> returns error
+	_, err = s.GetAndConsumePendingSignup(ctx, pending.Email, "000000")
+	if err == nil {
+		t.Errorf("Expected GetAndConsumePendingSignup with wrong OTP to fail, got nil")
+	}
+
+	// GetAndConsumePendingSignup with correct OTP -> returns payload and deletes pending signup
+	consumed, err := s.GetAndConsumePendingSignup(ctx, pending.Email, "123456")
+	if err != nil || consumed == nil || consumed.Username != "pending_store_user" {
+		t.Fatalf("GetAndConsumePendingSignup failed: %v, payload: %v", err, consumed)
+	}
+
+	// Consumed pending signup should no longer exist (replay prevention)
+	if s.GetPendingSignup(ctx, pending.Email) != nil {
+		t.Errorf("Expected pending signup to be deleted after consumption")
 	}
 }
 

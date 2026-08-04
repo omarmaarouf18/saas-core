@@ -253,6 +253,73 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 		a.limiter.Reset(clientIP)
 	}
 
+	// For owner/user roles, generate and dispatch OTP on signup and store as pending.
+	if req.Role == models.RoleOwner || req.Role == models.RoleUser {
+		// Duplicate checks against CONFIRMED existing users in DB.
+		if existing := a.store.GetByEmail(ctx, req.Email); existing != nil {
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error": "email already registered",
+			})
+			return
+		}
+
+		if existing := a.store.GetByUsername(ctx, req.Username); existing != nil {
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error": "username already taken",
+			})
+			return
+		}
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to hash password: " + err.Error(),
+			})
+			return
+		}
+
+		otpCode := generate6DigitOTP()
+		pending := &models.PendingSignup{
+			Email:    req.Email,
+			Username: req.Username,
+			Password: string(hashedPassword),
+			Role:     req.Role,
+			OwnerID:  req.OwnerID,
+		}
+
+		if err := a.store.SetPendingSignup(ctx, req.Email, pending, otpCode); err != nil {
+			log.Printf("[AUTH] Failed to set pending signup for %s: %v", req.Email, err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to set pending signup: " + err.Error(),
+			})
+			return
+		}
+
+		if err := a.dispatcher.Dispatch(req.Email, otpCode); err != nil {
+			log.Printf("[AUTH] OTP dispatch error via %s: %v", a.dispatcher.Name(), err)
+		}
+
+		if a.isLocal {
+			log.Printf("[AUTH] OTP generated for signup: email=%s code=%s dispatcher=%s",
+				req.Email, otpCode, a.dispatcher.Name())
+		} else {
+			log.Printf("[AUTH] OTP generated for signup: email=%s dispatcher=%s",
+				req.Email, a.dispatcher.Name())
+		}
+
+		resp := map[string]any{
+			"status":  "success",
+			"message": "OTP dispatched",
+		}
+		if a.isLocal {
+			resp["dev_otp"] = otpCode
+		}
+
+		writeJSON(w, http.StatusCreated, resp)
+		return
+	}
+
+	// Employee signup — immediate creation, no OTP required.
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
@@ -261,27 +328,16 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Build user record.
 	user := &models.User{
-		ID:          generateID(),
-		Email:       req.Email,
-		Username:    req.Username,
-		Password:    string(hashedPassword),
-		Role:        req.Role,
-		IsActive:    true, // Active by default
-		IsConfirmed: req.Role == models.RoleEmployee,
-		CreatedAt:   time.Now().UTC(),
-	}
-
-	if req.Role == models.RoleEmployee {
-		user.OwnerID = req.OwnerID
-		user.TenantID = req.OwnerID
-	}
-
-	// Owner-specific: KYC status check. Owner is their own tenant.
-	if req.Role == models.RoleOwner {
-		user.KYCStatus = models.KYCPendingApproval
-		user.TenantID = user.ID
+		ID:        generateID(),
+		Email:     req.Email,
+		Username:  req.Username,
+		Password:  string(hashedPassword),
+		Role:      req.Role,
+		OwnerID:   req.OwnerID,
+		TenantID:  req.OwnerID,
+		IsActive:  true,
+		CreatedAt: time.Now().UTC(),
 	}
 
 	if err := a.store.CreateUser(ctx, user); err != nil {
@@ -291,51 +347,8 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[AUTH] Signup: email=%s role=%s id=%s owner_id=%s", user.Email, user.Role, user.ID, user.OwnerID)
+	log.Printf("[AUTH] Employee Signup: email=%s role=%s id=%s owner_id=%s", user.Email, user.Role, user.ID, user.OwnerID)
 
-	// For owner/user roles, generate and dispatch OTP on signup.
-	if req.Role == models.RoleOwner || req.Role == models.RoleUser {
-		otpCode := generate6DigitOTP()
-
-		// Encrypt and store in MongoDB (AES-256-GCM).
-		if err := a.store.SetOTP(ctx, user.Email, otpCode); err != nil {
-			log.Printf("[AUTH] OTP generation failed: deleting created user %s (%s) to avoid orphaned state. Error: %v", user.ID, user.Email, err)
-			if delErr := a.store.DeleteUser(ctx, user.ID); delErr != nil {
-				log.Printf("[AUTH CRITICAL] failed to rollback orphaned user %s after OTP failure: %v", user.ID, delErr)
-			}
-			writeJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": "failed to set OTP: " + err.Error(),
-			})
-			return
-		}
-
-		// Dispatch via the configured dispatcher (mock logs to stdout).
-		if err := a.dispatcher.Dispatch(user.Email, otpCode); err != nil {
-			log.Printf("[AUTH] OTP dispatch error via %s: %v", a.dispatcher.Name(), err)
-		}
-
-		if a.isLocal {
-			log.Printf("[AUTH] OTP generated for signup: email=%s code=%s dispatcher=%s",
-				user.Email, otpCode, a.dispatcher.Name())
-		} else {
-			log.Printf("[AUTH] OTP generated for signup: email=%s dispatcher=%s",
-				user.Email, a.dispatcher.Name())
-		}
-
-		resp := map[string]any{
-			"status":  "success",
-			"message": "OTP dispatched",
-		}
-		// Expose OTP in response ONLY in local environment.
-		if a.isLocal {
-			resp["dev_otp"] = otpCode
-		}
-
-		writeJSON(w, http.StatusCreated, resp)
-		return
-	}
-
-	// Employee signup — no OTP required.
 	writeJSON(w, http.StatusCreated, map[string]any{
 		"status":  "success",
 		"message": "registration successful",
@@ -423,14 +436,6 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	// Reset limits on success
 	a.limiter.Reset(clientIP)
 	a.limiter.Reset(req.Email)
-
-	// Signup verification check
-	if !user.IsConfirmed {
-		writeJSON(w, http.StatusForbidden, map[string]string{
-			"error": "account is not confirmed. please verify the signup OTP first.",
-		})
-		return
-	}
 
 	// KYE Freeze Account check for Employees
 	if user.Role == models.RoleEmployee && !user.IsActive {
@@ -552,7 +557,50 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	if err := a.store.VerifyOTP(ctx, req.Email, req.OTP); err != nil {
+	// 1. Check if user already exists in DB (2FA login verification flow)
+	if user := a.store.GetByEmail(ctx, req.Email); user != nil {
+		if err := a.store.VerifyOTP(ctx, req.Email, req.OTP); err != nil {
+			a.limiter.RecordFailure(clientIP)
+			a.limiter.RecordFailure(req.Email)
+			writeJSON(w, http.StatusUnauthorized, map[string]string{
+				"error": "invalid or expired OTP code",
+			})
+			return
+		}
+
+		a.limiter.Reset(clientIP)
+		a.limiter.Reset(req.Email)
+
+		log.Printf("[AUTH] 2FA Login OTP verified: email=%s role=%s", user.Email, user.Role)
+
+		token, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to generate token: " + err.Error(),
+			})
+			return
+		}
+
+		response := map[string]any{
+			"status":       "success",
+			"message":      "2FA verification successful — authenticated",
+			"user_id":      user.ID,
+			"role":         user.Role,
+			"username":     user.Username,
+			"otp_verified": true,
+			"token":        token,
+		}
+		if user.Role == models.RoleOwner {
+			response["kyc_status"] = user.KYCStatus
+		}
+
+		writeJSON(w, http.StatusOK, response)
+		return
+	}
+
+	// 2. No user record exists in DB — check pending signup (Signup OTP verification flow)
+	pending, err := a.store.GetAndConsumePendingSignup(ctx, req.Email, req.OTP)
+	if err != nil {
 		a.limiter.RecordFailure(clientIP)
 		a.limiter.RecordFailure(req.Email)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
@@ -565,15 +613,32 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	a.limiter.Reset(clientIP)
 	a.limiter.Reset(req.Email)
 
-	user := a.store.GetByEmail(ctx, req.Email)
-	if user == nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "user associated with OTP not found"})
+	// Build real user record now that OTP verification succeeded
+	newUser := &models.User{
+		ID:        generateID(),
+		Email:     pending.Email,
+		Username:  pending.Username,
+		Password:  pending.Password, // already bcrypt hashed
+		Role:      pending.Role,
+		IsActive:  true,
+		CreatedAt: time.Now().UTC(),
+	}
+
+	if pending.Role == models.RoleOwner {
+		newUser.KYCStatus = models.KYCPendingApproval
+		newUser.TenantID = newUser.ID
+	}
+
+	if err := a.store.CreateUser(ctx, newUser); err != nil {
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error": err.Error(),
+		})
 		return
 	}
 
-	log.Printf("[AUTH] OTP verified: email=%s role=%s", user.Email, user.Role)
+	log.Printf("[AUTH] Signup completed & user created: email=%s role=%s id=%s", newUser.Email, newUser.Role, newUser.ID)
 
-	token, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email)
+	token, err := jwtutil.GenerateToken(newUser.ID, string(newUser.Role), newUser.TenantID, newUser.Email)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": "failed to generate token: " + err.Error(),
@@ -584,16 +649,15 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	response := map[string]any{
 		"status":       "success",
 		"message":      "2FA verification successful — authenticated",
-		"user_id":      user.ID,
-		"role":         user.Role,
-		"username":     user.Username,
+		"user_id":      newUser.ID,
+		"role":         newUser.Role,
+		"username":     newUser.Username,
 		"otp_verified": true,
 		"token":        token,
 	}
 
-	// Include KYC status for owners.
-	if user.Role == models.RoleOwner {
-		response["kyc_status"] = user.KYCStatus
+	if newUser.Role == models.RoleOwner {
+		response["kyc_status"] = newUser.KYCStatus
 	}
 
 	writeJSON(w, http.StatusOK, response)
@@ -1627,7 +1691,6 @@ func (a *Auth) ResendOTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	user := a.store.GetByEmail(ctx, req.Email)
 
 	// Generic success response to avoid identity leakage
 	genericResponse := map[string]any{
@@ -1635,24 +1698,25 @@ func (a *Auth) ResendOTP(w http.ResponseWriter, r *http.Request) {
 		"message": "OTP dispatched",
 	}
 
-	if user == nil {
+	user := a.store.GetByEmail(ctx, req.Email)
+	if user != nil {
+		// Existing user records in DB are already confirmed accounts.
+		writeJSON(w, http.StatusOK, genericResponse)
+		return
+	}
+
+	// Check if a pending signup exists for this email
+	pending := a.store.GetPendingSignup(ctx, req.Email)
+	if pending == nil {
 		a.limiter.RecordFailure(clientIP)
 		a.limiter.RecordFailure(req.Email)
 		writeJSON(w, http.StatusOK, genericResponse)
 		return
 	}
 
-	if user.IsConfirmed {
-		// Already confirmed, just return generic success without generating a new OTP
-		writeJSON(w, http.StatusOK, genericResponse)
-		return
-	}
-
-	// Generate a 6-digit OTP.
+	// Pending signup found: generate a fresh 6-digit OTP code and overwrite the pending signup.
 	otpCode := generate6DigitOTP()
-
-	// Encrypt and store in MongoDB (AES-256-GCM).
-	if err := a.store.SetOTP(ctx, user.Email, otpCode); err != nil {
+	if err := a.store.SetPendingSignup(ctx, req.Email, pending, otpCode); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": "failed to set OTP: " + err.Error(),
 		})
@@ -1660,26 +1724,22 @@ func (a *Auth) ResendOTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Dispatch via the configured dispatcher (mock logs to stdout).
-	if err := a.dispatcher.Dispatch(user.Email, otpCode); err != nil {
+	if err := a.dispatcher.Dispatch(req.Email, otpCode); err != nil {
 		log.Printf("[AUTH] OTP resend dispatch error via %s: %v", a.dispatcher.Name(), err)
 	}
 
 	if a.isLocal {
 		log.Printf("[AUTH] OTP generated for resend: email=%s code=%s dispatcher=%s",
-			user.Email, otpCode, a.dispatcher.Name())
+			req.Email, otpCode, a.dispatcher.Name())
+		genericResponse["dev_otp"] = otpCode
 	} else {
 		log.Printf("[AUTH] OTP generated for resend: email=%s dispatcher=%s",
-			user.Email, a.dispatcher.Name())
-	}
-
-	// For local development, append dev_otp to the generic response
-	if a.isLocal {
-		genericResponse["dev_otp"] = otpCode
+			req.Email, a.dispatcher.Name())
 	}
 
 	// Record request in rate limiter
 	a.limiter.RecordFailure(clientIP)
-	a.limiter.RecordFailure(user.Email)
+	a.limiter.RecordFailure(req.Email)
 
 	writeJSON(w, http.StatusOK, genericResponse)
 }

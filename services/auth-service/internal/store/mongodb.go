@@ -21,12 +21,13 @@ import (
 // MongoDB is a persistent store backed by MongoDB for user registration states
 // and the employee action audit log.
 type MongoDB struct {
-	client    *mongo.Client
-	db        *mongo.Database
-	users     *mongo.Collection
-	auditLog  *mongo.Collection
-	reviewers *mongo.Collection
-	cipher    *otpcrypto.Cipher // AES-256-GCM for OTP encryption at rest
+	client         *mongo.Client
+	db             *mongo.Database
+	users          *mongo.Collection
+	auditLog       *mongo.Collection
+	reviewers      *mongo.Collection
+	pendingSignups *mongo.Collection
+	cipher         *otpcrypto.Cipher // AES-256-GCM for OTP encryption at rest
 }
 
 // NewMongoDB connects to the given MongoDB URI, creates the database and
@@ -47,12 +48,13 @@ func NewMongoDB(ctx context.Context, uri, dbName string, otpCipher *otpcrypto.Ci
 
 	db := client.Database(dbName)
 	s := &MongoDB{
-		client:    client,
-		db:        db,
-		users:     db.Collection("users"),
-		auditLog:  db.Collection("audit_log"),
-		reviewers: db.Collection("reviewers"),
-		cipher:    otpCipher,
+		client:         client,
+		db:             db,
+		users:          db.Collection("users"),
+		auditLog:       db.Collection("audit_log"),
+		reviewers:      db.Collection("reviewers"),
+		pendingSignups: db.Collection("pending_signups"),
+		cipher:         otpCipher,
 	}
 
 	if err := s.ensureIndexes(ctx); err != nil {
@@ -224,6 +226,15 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 		return fmt.Errorf("reviewers token index: %w", err)
 	}
 
+	// Pending signups: unique email index.
+	_, err = s.pendingSignups.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: "email", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	})
+	if err != nil {
+		return fmt.Errorf("pending_signups email index: %w", err)
+	}
+
 	log.Println("[AUTH-STORE] All indexes ensured")
 	return nil
 }
@@ -261,6 +272,20 @@ func (s *MongoDB) DeleteUser(ctx context.Context, id string) error {
 func (s *MongoDB) GetByEmail(ctx context.Context, email string) *models.User {
 	var user models.User
 	err := s.users.FindOne(ctx, bson.M{"email": email}).Decode(&user)
+	if err != nil {
+		return nil
+	}
+	return &user
+}
+
+// GetByUsername retrieves a user by username (case-insensitive search matching index).
+func (s *MongoDB) GetByUsername(ctx context.Context, username string) *models.User {
+	var user models.User
+	opts := options.FindOne().SetCollation(&options.Collation{
+		Locale:   "en",
+		Strength: 2,
+	})
+	err := s.users.FindOne(ctx, bson.M{"username": username}, opts).Decode(&user)
 	if err != nil {
 		return nil
 	}
@@ -339,7 +364,7 @@ func (s *MongoDB) VerifyOTP(ctx context.Context, email, otp string) error {
 	// Mark as verified and clear the encrypted code atomically.
 	_, err = s.users.UpdateOne(ctx,
 		bson.M{"email": email},
-		bson.M{"$set": bson.M{"otp_verified": true, "otp_code": "", "is_confirmed": true}},
+		bson.M{"$set": bson.M{"otp_verified": true, "otp_code": ""}},
 	)
 	if err != nil {
 		return fmt.Errorf("store: verify OTP: %w", err)
@@ -347,7 +372,76 @@ func (s *MongoDB) VerifyOTP(ctx context.Context, email, otp string) error {
 	return nil
 }
 
-// StartOTPCleanup periodically sweeps MongoDB and invalidates expired OTPs.
+// ---------------------------------------------------------------------------
+// Pending Signup Operations (Pre-Confirmation Accounts)
+// ---------------------------------------------------------------------------
+
+// SetPendingSignup encrypts the OTP code via AES-256-GCM and stores the pending signup
+// payload in MongoDB under the pending_signups collection. If a pending signup already
+// exists for this email, it is overwritten.
+func (s *MongoDB) SetPendingSignup(ctx context.Context, email string, pending *models.PendingSignup, otp string) error {
+	encrypted, err := s.cipher.Encrypt(otp)
+	if err != nil {
+		return fmt.Errorf("store: OTP encryption failed: %w", err)
+	}
+
+	pending.Email = email
+	pending.OTPCode = encrypted
+	pending.OTPExpiresAt = time.Now().Add(5 * time.Minute)
+	if pending.CreatedAt.IsZero() {
+		pending.CreatedAt = time.Now().UTC()
+	}
+
+	opts := options.Replace().SetUpsert(true)
+	_, err = s.pendingSignups.ReplaceOne(ctx, bson.M{"email": email}, pending, opts)
+	if err != nil {
+		return fmt.Errorf("store: set pending signup: %w", err)
+	}
+	return nil
+}
+
+// GetPendingSignup retrieves an unverified pending signup payload by email. Returns nil if not found.
+func (s *MongoDB) GetPendingSignup(ctx context.Context, email string) *models.PendingSignup {
+	var pending models.PendingSignup
+	err := s.pendingSignups.FindOne(ctx, bson.M{"email": email}).Decode(&pending)
+	if err != nil {
+		return nil
+	}
+	return &pending
+}
+
+// GetAndConsumePendingSignup validates the submitted OTP against the pending signup record.
+// On success, it atomically deletes the pending signup from MongoDB to prevent replay attacks,
+// and returns the pending signup payload.
+func (s *MongoDB) GetAndConsumePendingSignup(ctx context.Context, email, otp string) (*models.PendingSignup, error) {
+	var pending models.PendingSignup
+	err := s.pendingSignups.FindOne(ctx, bson.M{"email": email}).Decode(&pending)
+	if err != nil {
+		return nil, fmt.Errorf("pending signup for %q not found", email)
+	}
+
+	if !pending.OTPExpiresAt.IsZero() && pending.OTPExpiresAt.Before(time.Now()) {
+		_, _ = s.pendingSignups.DeleteOne(ctx, bson.M{"email": email})
+		return nil, fmt.Errorf("OTP has expired")
+	}
+
+	decrypted, err := s.cipher.Decrypt(pending.OTPCode)
+	if err != nil {
+		return nil, fmt.Errorf("store: OTP decryption failed: %w", err)
+	}
+	if subtle.ConstantTimeCompare([]byte(decrypted), []byte(otp)) != 1 {
+		return nil, fmt.Errorf("invalid OTP")
+	}
+
+	_, err = s.pendingSignups.DeleteOne(ctx, bson.M{"email": email})
+	if err != nil {
+		log.Printf("[AUTH-STORE] Failed to delete consumed pending signup for %s: %v", email, err)
+	}
+
+	return &pending, nil
+}
+
+// StartOTPCleanup periodically sweeps MongoDB and invalidates expired OTPs and pending signups.
 func (s *MongoDB) StartOTPCleanup(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	go func() {
@@ -362,6 +456,13 @@ func (s *MongoDB) StartOTPCleanup(ctx context.Context, interval time.Duration) {
 			)
 			if err != nil {
 				log.Printf("[AUTH-STORE] Failed to sweep expired OTPs: %v", err)
+			}
+
+			_, err = s.pendingSignups.DeleteMany(ctx, bson.M{
+				"otp_expires_at": bson.M{"$lt": now},
+			})
+			if err != nil {
+				log.Printf("[AUTH-STORE] Failed to sweep expired pending signups: %v", err)
 			}
 		}
 	}()

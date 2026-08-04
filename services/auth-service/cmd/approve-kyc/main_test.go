@@ -37,13 +37,12 @@ func TestApproveKYCIntegration(t *testing.T) {
 
 	// 1. Seed owner user with pending KYC status
 	ownerUser := &models.User{
-		ID:          userID,
-		Email:       ownerEmail,
-		Role:        models.RoleOwner,
-		KYCStatus:   models.KYCPendingApproval,
-		IsActive:    true,
-		IsConfirmed: true,
-		CreatedAt:   time.Now(),
+		ID:        userID,
+		Email:     ownerEmail,
+		Role:      models.RoleOwner,
+		KYCStatus: models.KYCPendingApproval,
+		IsActive:  true,
+		CreatedAt: time.Now(),
 	}
 
 	if err := mongoStore.CreateUser(ctx, ownerUser); err != nil {

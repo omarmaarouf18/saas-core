@@ -31,6 +31,18 @@ const (
 	KYCNone            KYCStatus = ""
 )
 
+// PendingSignup represents an unverified signup attempt waiting for 2FA OTP verification.
+type PendingSignup struct {
+	Email        string    `json:"email"               bson:"email"`
+	Username     string    `json:"username"            bson:"username"`
+	Password     string    `json:"-"                   bson:"password"` // bcrypt hashed
+	Role         Role      `json:"role"                bson:"role"`
+	OwnerID      string    `json:"owner_id,omitempty"  bson:"owner_id,omitempty"`
+	OTPCode      string    `json:"-"                   bson:"otp_code"` // AES-256-GCM encrypted
+	OTPExpiresAt time.Time `json:"-"                   bson:"otp_expires_at"`
+	CreatedAt    time.Time `json:"created_at"          bson:"created_at"`
+}
+
 // User represents a registered user in the platform.
 type User struct {
 	ID               string        `json:"id"                        bson:"_id"`
@@ -39,10 +51,9 @@ type User struct {
 	Phone            string        `json:"phone,omitempty"           bson:"phone,omitempty"`
 	Password         string        `json:"-"                         bson:"password"`
 	Role             Role          `json:"role"                      bson:"role"`
-	TenantID         string        `json:"tenant_id,omitempty"       bson:"tenant_id,omitempty"` // the tenant this user belongs to
-	OwnerID          string        `json:"owner_id,omitempty"        bson:"owner_id,omitempty"`  // KYE: tenant binding (employees only)
-	IsActive         bool          `json:"is_active"                 bson:"is_active"`           // KYE: owner can freeze employee accounts
-	IsConfirmed      bool          `json:"is_confirmed"              bson:"is_confirmed"`
+	TenantID         string        `json:"tenant_id,omitempty"       bson:"tenant_id,omitempty"`  // the tenant this user belongs to
+	OwnerID          string        `json:"owner_id,omitempty"        bson:"owner_id,omitempty"`   // KYE: tenant binding (employees only)
+	IsActive         bool          `json:"is_active"                 bson:"is_active"`            // KYE: owner can freeze employee accounts
 	KYCStatus        KYCStatus     `json:"kyc_status,omitempty"      bson:"kyc_status,omitempty"` // KYB status for owners
 	KYEStatus        KYCStatus     `json:"kye_status,omitempty"      bson:"kye_status,omitempty"` // KYE status for employees
 	IDFrontDoc       string        `json:"id_front_doc,omitempty"       bson:"id_front_doc,omitempty"`

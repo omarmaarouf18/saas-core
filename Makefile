@@ -13,7 +13,7 @@ docs: ensure-hooks
 	go run tools/docgen/main.go
 
 docs-check: ensure-hooks
-	go test -v -count=1 ./shared/infra/...
+	go test -v -count=1 ./shared/infra/docgen ./shared/infra/handlerutil ./shared/infra/jwtutil ./shared/infra/ratelimit ./shared/infra/resilience ./shared/infra/tlsutil
 
 ci: ensure-hooks
 	./.githooks/pre-push
