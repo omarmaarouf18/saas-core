@@ -13,7 +13,6 @@ import 'package:frontend/screens/settings_screen.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/models/marketplace_service.dart';
-import 'package:latlong2/latlong.dart';
 
 class MockAuthProvider extends ChangeNotifier implements AuthProvider {
   @override
@@ -40,7 +39,6 @@ class MockAuthProvider extends ChangeNotifier implements AuthProvider {
   @override
   Future<void> logout() async {}
 
-  @override
   Future<void> updateProfile({
     String? username,
     String? phone,
@@ -94,10 +92,8 @@ class MockThemeProvider extends ChangeNotifier implements ThemeProvider {
   @override
   ThemeMode themeMode = ThemeMode.light;
 
-  @override
   bool isDarkMode = false;
 
-  @override
   String currentLanguage = 'en';
 
   @override

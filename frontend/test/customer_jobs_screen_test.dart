@@ -9,7 +9,6 @@ import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/screens/customer_jobs_screen.dart';
 import 'package:frontend/screens/customer_marketplace_screen.dart';
-import 'package:frontend/screens/customer_home_screen.dart';
 import 'package:frontend/screens/job_status_screen.dart';
 
 class MockAuthProviderForTest extends AuthProvider {

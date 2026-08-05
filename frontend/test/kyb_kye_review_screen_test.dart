@@ -19,10 +19,8 @@ class MockThemeProviderForReviewTest extends ChangeNotifier
   @override
   ThemeMode themeMode = ThemeMode.light;
 
-  @override
   bool isDarkMode = false;
 
-  @override
   String currentLanguage = 'en';
 
   @override

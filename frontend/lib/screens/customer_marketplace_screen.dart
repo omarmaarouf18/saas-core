@@ -17,9 +17,7 @@ import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
 import 'job_status_screen.dart';
-import 'customer_jobs_screen.dart';
 import 'notifications_screen.dart';
-import 'settings_screen.dart';
 
 class CustomerMarketplaceScreen extends StatefulWidget {
   final bool isEmbeddedInTab;

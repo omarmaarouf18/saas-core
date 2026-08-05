@@ -12,7 +12,6 @@ import 'package:frontend/screens/chat_screen.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/models/chat_message.dart';
-import 'package:latlong2/latlong.dart';
 
 class MockEmployeeAuthProvider extends ChangeNotifier implements AuthProvider {
   @override
@@ -122,7 +121,6 @@ class MockChatProvider extends ChangeNotifier implements ChatProvider {
   @override
   Future<void> fetchHistory(String jobId, String? userToken) async {}
 
-  @override
   Future<void> connect(String jobId, String? userToken) async {}
 
   @override
