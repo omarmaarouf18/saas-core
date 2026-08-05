@@ -1,8 +1,8 @@
 # ADR-0014: Unified Account Settings and Role Home Redesign
 
-- **Status**: Proposed
+- **Status**: Implemented
 - **Date**: 2026-08-04
-- **Related Commit SHA**: N/A (Planning & Architecture Phase)
+- **Related Commit SHAs**: `8afbc4c` (Employee Audit), `ebdbf1a` (Customer 4-Tab Redesign & Employee Capabilities Redesign)
 - **Related audit finding**: UX Restructuring & Navigation Duplication Audit
 
 ## Context

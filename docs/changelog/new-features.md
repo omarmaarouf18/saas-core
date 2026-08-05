@@ -2,6 +2,16 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Phase 15 (b) Customer Home Redesign & (d) Employee Capability Audit & Screen Redesign (ADR-0014)
+
+- **Implementation Detail**:
+  - **Employee Capability Audit (`docs/frontend/EMPLOYEE_CAPABILITY_AUDIT.md`)**: Audited all 11 employee-gated backend endpoints across `user-service`, `auth-service`, `notification-service`, and `chat-service`. Identified 2 reachability gaps in `EmployeeJobsScreen`: (1) Employee Chat missing card action button, and (2) Verification Upload (`POST /auth/kye/upload`) missing entry point. (Commit `8afbc4c`).
+  - **Customer Home 4-Tab Redesign (`frontend/lib/screens/customer_home_screen.dart`)**: Restructured customer role interface around a persistent 4-tab bottom navigation bar (`NavigationBar` with `IndexedStack` lazy tab hydration preserving scroll positions). Tabs: Home (dashboard with greeting, 4 quick access category tiles for Delivery, Ride, Shipping, and Browse All, recent activity summary card, and quick booking banner), Services (relocated marketplace directory), History (relocated customer orders list), and Settings. Embedded persistent top app bar with notification bell. (Commit `ebdbf1a`).
+  - **Employee Capabilities Screen Redesign (`frontend/lib/screens/employee_jobs_screen.dart`)**: Resolved reachability gaps by adding Verification Documents icon button (`key: Key('employee_verification_button')`) in AppBar navigating to `KycDocumentUploadScreen` and Chat button (`key: Key('employee_chat_button_<job_id>')`) on active job cards navigating to `ChatScreen`.
+  - **Widget & Unit Tests**: Created `frontend/test/customer_home_screen_test.dart` and `frontend/test/employee_jobs_screen_audit_test.dart`.
+- **Commit SHAs**: `8afbc4c` (Audit), `ebdbf1a` (Implementation)
+- **Verification**: Verified via `flutter analyze` (0 issues found), `flutter test` (126/126 full test suite pass), live backend health check against `https://api.logiclinkeg.tech`, and `make docs-check`. ✅
+
 ## Self-Service Profile Update & Frequent Addresses (PATCH /auth/user - ADR-0014)
 
 - **Implementation Detail**: Extended `User` model (`services/auth-service/internal/models/models.go`) with `FrequentAddresses []string` and added `UpdateProfileRequest` DTO. Built `PATCH /auth/user` handler in `auth-service` (`services/auth-service/internal/handlers/auth.go`) allowing authenticated users to update their `username`, `phone`, and `frequent_addresses` (capped at max 10 entries). Enforced strict IDOR protection by deriving target user ID solely from validated JWT claims (rejecting mismatched payload user IDs with 403 Forbidden) and stripping/ignoring sensitive field smuggling (`email`, `password`, `role`, `kyc_status`). Created test suite in `services/auth-service/internal/handlers/user_profile_test.go`. Regenerated `docs/APPLICATION_MAP.md` via `make docs`.
