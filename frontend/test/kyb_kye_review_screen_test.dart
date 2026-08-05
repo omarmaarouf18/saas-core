@@ -8,10 +8,26 @@ import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/owner_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/providers/marketplace_provider.dart';
+import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/screens/home_screen.dart';
 import 'package:frontend/screens/kyb_kye_review_screen.dart';
 import 'package:frontend/widgets/status_badge.dart';
 import 'package:frontend/widgets/document_viewer_dialog.dart';
+
+class MockThemeProviderForReviewTest extends ChangeNotifier
+    implements ThemeProvider {
+  @override
+  ThemeMode themeMode = ThemeMode.light;
+
+  @override
+  bool isDarkMode = false;
+
+  @override
+  String currentLanguage = 'en';
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 class MockApiClientForReviewTest extends ApiClient {
   bool shouldFail = false;
@@ -297,6 +313,8 @@ void main() {
     );
   }
 
+
+
   Widget createHomeScreenWidget({
     required MockAuthProviderForReviewTest authProvider,
   }) {
@@ -305,6 +323,7 @@ void main() {
     final notificationsProvider =
         MockNotificationsProviderForReviewTest(apiClient);
     final marketplaceProvider = MockMarketplaceProviderForReviewTest(apiClient);
+    final themeProvider = MockThemeProviderForReviewTest();
 
     return MultiProvider(
       providers: [
@@ -314,6 +333,7 @@ void main() {
             value: notificationsProvider),
         ChangeNotifierProvider<MarketplaceProvider>.value(
             value: marketplaceProvider),
+        ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
       ],
       child: const MaterialApp(
         home: HomeScreen(),

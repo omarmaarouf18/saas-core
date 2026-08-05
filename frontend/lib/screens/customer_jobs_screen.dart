@@ -11,7 +11,8 @@ import '../widgets/themed_loading_indicator.dart';
 import 'job_status_screen.dart';
 
 class CustomerJobsScreen extends StatefulWidget {
-  const CustomerJobsScreen({super.key});
+  final bool isEmbeddedInTab;
+  const CustomerJobsScreen({super.key, this.isEmbeddedInTab = false});
 
   @override
   State<CustomerJobsScreen> createState() => _CustomerJobsScreenState();
@@ -39,19 +40,21 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        title: const Text("My Orders"),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        actions: [
-          IconButton(
-            key: const Key('refresh_customer_jobs_button'),
-            icon: const Icon(Icons.refresh),
-            tooltip: "Refresh",
-            onPressed: _loadCustomerJobs,
-          ),
-        ],
-      ),
+      appBar: widget.isEmbeddedInTab
+          ? null
+          : AppBar(
+              title: const Text("My Orders"),
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+              actions: [
+                IconButton(
+                  key: const Key('refresh_customer_jobs_button'),
+                  icon: const Icon(Icons.refresh),
+                  tooltip: "Refresh",
+                  onPressed: _loadCustomerJobs,
+                ),
+              ],
+            ),
       body: Builder(
         builder: (context) {
           if (marketplace.isLoading && marketplace.customerJobs.isEmpty) {

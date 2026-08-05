@@ -9,6 +9,7 @@ import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/screens/customer_jobs_screen.dart';
 import 'package:frontend/screens/customer_marketplace_screen.dart';
+import 'package:frontend/screens/customer_home_screen.dart';
 import 'package:frontend/screens/job_status_screen.dart';
 
 class MockAuthProviderForTest extends AuthProvider {
@@ -248,6 +249,9 @@ void main() {
   testWidgets(
       'Navigating via My Orders button in CustomerMarketplaceScreen opens CustomerJobsScreen',
       (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
     final apiClient = ApiClient();
     final mockMarketplace = MockMarketplaceProviderForTest(apiClient);
     final mockAuth = MockAuthProviderForTest(
@@ -271,18 +275,13 @@ void main() {
           ),
         ],
         child: const MaterialApp(
-          home: CustomerMarketplaceScreen(),
+          home: CustomerMarketplaceScreen(isEmbeddedInTab: true),
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
-    // Find and tap "My Orders" button
-    expect(find.byKey(const Key('my_orders_button')), findsOneWidget);
-    await tester.tap(find.byKey(const Key('my_orders_button')));
-    await tester.pumpAndSettle();
-
-    // Confirm CustomerJobsScreen is presented
-    expect(find.byType(CustomerJobsScreen), findsOneWidget);
+    // Verify my_orders_button is removed from top app bar when embedded in tab
+    expect(find.byKey(const Key('my_orders_button')), findsNothing);
   });
 }

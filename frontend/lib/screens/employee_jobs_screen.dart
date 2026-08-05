@@ -20,6 +20,8 @@ import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
 import 'notifications_screen.dart';
 import 'settings_screen.dart';
+import 'chat_screen.dart';
+import 'kyc_document_upload_screen.dart';
 
 class EmployeeJobsScreen extends StatefulWidget {
   const EmployeeJobsScreen({super.key});
@@ -251,6 +253,18 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             icon: const Icon(Icons.refresh),
             tooltip: "Refresh Jobs",
             onPressed: _refreshJobs,
+          ),
+          IconButton(
+            key: const Key('employee_verification_button'),
+            icon: const Icon(Icons.verified_user_outlined),
+            tooltip: "Verification Documents",
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const KycDocumentUploadScreen(),
+                ),
+              );
+            },
           ),
           _buildNotificationBell(context),
           IconButton(
@@ -593,14 +607,41 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 ThemedErrorBanner(message: _completeError!),
               ],
               const SizedBox(height: AppSpacing.md),
-              PrimaryButton(
-                key: Key('complete_job_button_${job.id}'),
-                text: "Complete Job",
-                icon: Icons.check_circle_outline,
-                isLoading: _completingJobId == job.id,
-                onPressed: _completingJobId != null
-                    ? null
-                    : () => _confirmAndCompleteJob(job),
+              Row(
+                children: [
+                  Expanded(
+                    child: SecondaryButton(
+                      key: Key('employee_chat_button_${job.id}'),
+                      text: "Chat",
+                      icon: Icons.chat_outlined,
+                      isOutlined: true,
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => ChatScreen(
+                              jobId: job.id,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  if (job.status.toLowerCase().trim() == 'active') ...[
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      flex: 2,
+                      child: PrimaryButton(
+                        key: Key('complete_job_button_${job.id}'),
+                        text: "Complete Job",
+                        icon: Icons.check_circle_outline,
+                        isLoading: _completingJobId == job.id,
+                        onPressed: _completingJobId != null
+                            ? null
+                            : () => _confirmAndCompleteJob(job),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ],

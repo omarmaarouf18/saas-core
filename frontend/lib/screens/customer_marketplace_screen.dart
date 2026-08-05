@@ -22,14 +22,16 @@ import 'notifications_screen.dart';
 import 'settings_screen.dart';
 
 class CustomerMarketplaceScreen extends StatefulWidget {
-  const CustomerMarketplaceScreen({super.key});
+  final bool isEmbeddedInTab;
+  const CustomerMarketplaceScreen({super.key, this.isEmbeddedInTab = false});
 
   @override
   State<CustomerMarketplaceScreen> createState() =>
-      _CustomerMarketplaceScreenState();
+      CustomerMarketplaceScreenState();
 }
 
-class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
+class CustomerMarketplaceScreenState
+    extends State<CustomerMarketplaceScreen> {
   double _customerLat = 30.0444; // default Cairo lat
   double _customerLon = 31.2357; // default Cairo lon
   final _radiusController = TextEditingController(text: "50"); // default radius
@@ -68,46 +70,50 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
   Widget _buildNotificationBell(BuildContext context) {
     return Consumer<NotificationsProvider>(
       builder: (context, provider, child) {
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.notifications),
-              tooltip: 'Notifications',
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationsScreen(),
-                  ),
-                );
-              },
-            ),
-            if (provider.unreadCount > 0)
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: AppColors.error,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  ),
-                  child: Text(
-                    '${provider.unreadCount}',
-                    style: AppTypography.labelMd.copyWith(
-                      color: AppColors.onPrimary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
+        return SizedBox(
+          width: 48,
+          height: 48,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications),
+                tooltip: 'Notifications',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationsScreen(),
                     ),
-                    textAlign: TextAlign.center,
+                  );
+                },
+              ),
+              if (provider.unreadCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: AppColors.error,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      '${provider.unreadCount}',
+                      style: AppTypography.labelMd.copyWith(
+                        color: AppColors.onPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -126,6 +132,12 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
     }
   }
 
+  void selectCategory(String category) {
+    setState(() {
+      _selectedCategory = category;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
@@ -138,42 +150,8 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
             .where((s) => s.category == _selectedCategory)
             .toList();
 
-    return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        title: const Text("Marketplace"),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        actions: [
-          IconButton(
-            key: const Key('my_orders_button'),
-            icon: const Icon(Icons.receipt_long_outlined),
-            tooltip: "My Orders",
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const CustomerJobsScreen(),
-                ),
-              );
-            },
-          ),
-          _buildNotificationBell(context),
-          IconButton(
-            key: const Key('settings_button'),
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: "Settings",
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
+    final bodyContent = Column(
+      children: [
           // Filter & Coordinates Control Panel
           Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -358,17 +336,20 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
             child: marketplace.isLoading
                 ? const ThemedLoadingIndicator(message: "Searching services...")
                 : filteredServices.isEmpty
-                    ? const Padding(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                        child: ThemedCard(
-                          borderRadius: AppRadius.md,
-                          padding: AppSpacing.lg,
-                          child: ThemedEmptyState(
-                            icon: Icons.search_off,
-                            title: "No services found nearby.",
-                            description:
-                                "Try broadening your search radius or changing your coordinates.",
+                    ? const SingleChildScrollView(
+                        physics: AlwaysScrollableScrollPhysics(),
+                        child: Padding(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                          child: ThemedCard(
+                            borderRadius: AppRadius.md,
+                            padding: AppSpacing.lg,
+                            child: ThemedEmptyState(
+                              icon: Icons.search_off,
+                              title: "No services found nearby.",
+                              description:
+                                  "Try broadening your search radius or changing your coordinates.",
+                            ),
                           ),
                         ),
                       )
@@ -487,7 +468,26 @@ class _CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                       ),
           ),
         ],
+      );
+
+    if (widget.isEmbeddedInTab) {
+      return Scaffold(
+        backgroundColor: AppColors.scaffoldBackground,
+        body: SizedBox.expand(child: bodyContent),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: AppColors.scaffoldBackground,
+      appBar: AppBar(
+        title: const Text("Marketplace"),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
+        actions: [
+          _buildNotificationBell(context),
+        ],
       ),
+      body: bodyContent,
     );
   }
 
@@ -838,11 +838,7 @@ class _ServiceRatingWidgetState extends State<ServiceRatingWidget> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const SizedBox(
-        width: 12,
-        height: 12,
-        child: CircularProgressIndicator(strokeWidth: 1.5),
-      );
+      return const SizedBox.shrink();
     }
     if (_count == null || _count == 0) {
       return Text(

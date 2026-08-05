@@ -8,7 +8,8 @@ import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+  final bool isEmbeddedInTab;
+  const SettingsScreen({super.key, this.isEmbeddedInTab = false});
 
   Widget _buildComingSoonBadge() {
     return Container(
@@ -36,11 +37,13 @@ class SettingsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        title: const Text("Settings"),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-      ),
+      appBar: isEmbeddedInTab
+          ? null
+          : AppBar(
+              title: const Text("Settings"),
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+            ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(

@@ -28,7 +28,7 @@ class PrimaryButton extends StatelessWidget {
           )
         : Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.max,
             children: [
               if (icon != null) ...[
                 Icon(icon, size: 20),
@@ -39,6 +39,7 @@ class PrimaryButton extends StatelessWidget {
                   text,
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
+                  textAlign: TextAlign.center,
                   style: AppTypography.titleMd.copyWith(
                     color: AppColors.onPrimary,
                     fontWeight: FontWeight.bold,
