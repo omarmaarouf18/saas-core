@@ -2,6 +2,14 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
+## Reviewer Auth Query-Param Fallback Removal & Document Signing Secret Separation (Findings #2 & #3)
+
+- **Implementation Detail**:
+  1. **Finding #2**: Hardened reviewer authentication in `auth-service` (`authenticateReviewer` in `services/auth-service/internal/handlers/auth.go`). Removed URL query-string fallbacks (`internal_token` and `reviewer_token`) which exposed long-lived credentials to HTTP access logs, browser histories, and `Referer` header leakage. `authenticateReviewer` now strictly requires `X-Internal-Token` and `X-Reviewer-Token` HTTP headers. Updated Flutter frontend (`api_client.dart` and `auth_provider.dart`) and mock tests to pass tokens exclusively in HTTP headers.
+  2. **Finding #3**: Resolved key material reuse in `auth-service` (`cmd/main.go`). Previously, `storage.NewLocalStorage` reused `cfg.JWTSecret` for signing short-lived document viewing URLs, violating cryptographic key separation principles between session JWTs and document-view URLs. Introduced a dedicated required configuration field and environment variable `DOCUMENT_SIGNING_SECRET` in `config.go`, `infrastructure/.env.example`, `infrastructure/docker-compose.yml`, and `docs/DEPLOYMENT.md`. Updated `main.go` to pass `cfg.DocumentSigningSecret` to `storage.NewLocalStorage`.
+- **Commit SHA**: ``f81d97897e342f81488517afbb5b83b6c03aa217``
+- **Verification**: Verified via updated Go handler tests (`QueryParamInternalTokenRejected` and `QueryParamReviewerTokenRejected` in `auth_test.go`), Flutter tests (`flutter test` and `flutter analyze`), `go build ./...`, `go vet ./...`, and unit test suite execution. ✅
+
 ## KYB/KYE Review Approval Atomic Conditional Status Guard (Finding #1)
 
 - **Implementation Detail**: Remediated race condition in `auth-service` (`ReviewKYBKYESubmissions` in `services/auth-service/internal/handlers/auth.go`). Previously, `ReviewKYBKYESubmissions` queried user status via `GetUserByID` and then updated the record unconditionally using `store.UpdateUser(ctx, userID, update)`. Concurrent review requests could both read `pending_approval`, pass status validation in memory, and both write, causing the last write to silently win and generating duplicate/contradictory audit log entries. Added `UpdateUserConditional` store method in `services/auth-service/internal/store/mongodb.go` which conditions `UpdateOne` on matching `_id` AND `kyc_status` (or `kye_status`) equal to `pending_approval`. Updated `ReviewKYBKYESubmissions` to execute `UpdateUserConditional`, returning HTTP 409 Conflict with `{"error": "submission status has already changed or been reviewed"}` when `MatchedCount == 0`.
