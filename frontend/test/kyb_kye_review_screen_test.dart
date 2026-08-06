@@ -451,8 +451,7 @@ void main() {
     expect(find.text('KYE (Employee)'), findsOneWidget);
 
     expect(find.byType(StatusBadge), findsNWidgets(2));
-    expect(
-        find.text('• Failed to load id_back'), findsOneWidget);
+    expect(find.text('• Failed to load id_back'), findsOneWidget);
   });
 
   testWidgets(
