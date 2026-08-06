@@ -2,6 +2,12 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
+## UpdateProfile Unbounded Request Body Cap (Finding #5)
+
+- **Implementation Detail**: Remediated memory exhaustion vulnerability in `auth-service` (`UpdateProfile` in `services/auth-service/internal/handlers/auth.go`). Previously, `UpdateProfile` read the request body via `io.ReadAll(r.Body)` without a size boundary, allowing authenticated users to send arbitrarily large payloads and force full in-memory buffering before JSON decoding or IDOR validation. Wrapped `r.Body` with `http.MaxBytesReader(w, r.Body, 1<<20)` (1MB cap) prior to `io.ReadAll`. Added regression test `Request Body Exceeding 1MB Limit Rejected` in `user_profile_test.go` asserting that payloads exceeding 1MB return HTTP 400 Bad Request without application crashes or silent memory buffering.
+- **Commit SHA**: ``4e550288e34562d4cea04940e0f65a1e1f1df280``
+- **Verification**: Verified via `Request Body Exceeding 1MB Limit Rejected` in `user_profile_test.go`, `go build ./...`, `go vet ./...`, and `go test ./services/auth-service/...`. ✅
+
 ## Reviewer Auth Query-Param Fallback Removal & Document Signing Secret Separation (Findings #2 & #3)
 
 - **Implementation Detail**:
