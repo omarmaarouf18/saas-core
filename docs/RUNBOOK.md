@@ -150,3 +150,13 @@ docker compose up -d --remove-orphans
 ```
 
 Then investigate and fix forward on `logic-exploitation` before merging again.
+
+---
+
+## 6. Database-per-Service Isolation & Environment Reset (Finding #8)
+
+`auth-service` (`auth_db`), `user-service` (`user_db`), and `chat-service` (`chat_db`) use dedicated logical databases on the shared MongoDB cluster (`saas-mongo`).
+
+> [!IMPORTANT]
+> **Deployment Database Reset Policy**:
+> Any existing deployment that previously used the shared `saas_platform` database must be reset upon updating to this architecture (drop `saas_platform` or boot services against new empty `auth_db` and `user_db` databases). This destructive reset is safe because pre-production deployment data is throwaway/test data. Any **FUTURE** database schema/naming changes once real production data exists must be performed via a `mongodump`/`mongorestore` data migration script rather than a fresh reset.

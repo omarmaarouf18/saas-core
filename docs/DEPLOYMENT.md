@@ -125,14 +125,23 @@ Edit `.env` using `nano` or `vim`. Every parameter marked as a production secret
 
 ```env
 # -----------------------------------------------------------------------------
-# Database Credentials & URIs
+# Database Credentials & URIs (Database-per-Service Isolation)
 # -----------------------------------------------------------------------------
 MONGO_INITDB_DATABASE=saas_platform
 MONGO_INITDB_ROOT_USERNAME=root
 MONGO_INITDB_ROOT_PASSWORD=<GENERATE_STRONG_SECRET> # e.g. `openssl rand -hex 24`
 
+# Service-Specific Database Isolation
+AUTH_MONGO_DATABASE=auth_db
+USER_MONGO_DATABASE=user_db
+CHAT_MONGO_DATABASE=chat_db
+
 # MongoDB URI used by microservices over internal Docker network (saas-net)
-MONGO_URI=mongodb://root:<MONGO_INITDB_ROOT_PASSWORD>@mongo:27017/saas_platform?authSource=admin
+MONGO_URI=mongodb://root:<MONGO_INITDB_ROOT_PASSWORD>@mongo:27017/?authSource=admin
+
+> [!IMPORTANT]
+> **Database-per-Service Isolation & Fresh Deployment Reset**:
+> `auth-service` (`auth_db`), `user-service` (`user_db`), and `chat-service` (`chat_db`) use distinct logical databases to enforce microservice data isolation. Any existing deployment running against the old unified `saas_platform` database must be reset (drop `saas_platform` or allow services to boot against fresh empty `auth_db` and `user_db` databases). This destructive reset is safe only because current environment data is test/throwaway data. Any FUTURE database-naming change once real production data exists would require a proper `mongodump`/`mongorestore` data migration script.
 
 REDIS_PASSWORD=<GENERATE_STRONG_SECRET> # e.g. `openssl rand -hex 24`
 REDIS_URI=redis://:<REDIS_PASSWORD>@redis:6379
