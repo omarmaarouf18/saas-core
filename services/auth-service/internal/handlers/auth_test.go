@@ -194,6 +194,7 @@ func TestGetAuditLogAccessControl(t *testing.T) {
 
 func setupTestAuth(t *testing.T) (*Auth, *store.MongoDB, func()) {
 	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	os.Setenv("DOCUMENT_SIGNING_SECRET", "doc-signing-secret-key-32bytes-long-test")
 	jwtutil.Init("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
 
 	mongoURI := os.Getenv("MONGO_URI")
@@ -223,16 +224,17 @@ func setupTestAuth(t *testing.T) (*Auth, *store.MongoDB, func()) {
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 
 	cfg := &config.Config{
-		AppEnv:               "local",
-		GatewaySecret:        "mock-gateway-secret",
-		InternalServiceToken: "mock-internal-token",
-		JWTSecret:            "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2",
+		AppEnv:                "local",
+		GatewaySecret:         "mock-gateway-secret",
+		InternalServiceToken:  "mock-internal-token",
+		JWTSecret:             "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2",
+		DocumentSigningSecret: "doc-signing-secret-key-32bytes-long-test",
 	}
 
 	dispatcher := &mockOTPDispatcher{}
 
 	tempDir := t.TempDir()
-	storeLoc, _ := storage.NewLocalStorage(tempDir, "/api/v1", cfg.JWTSecret)
+	storeLoc, _ := storage.NewLocalStorage(tempDir, "/api/v1", cfg.DocumentSigningSecret)
 	a := NewAuth(s, dispatcher, cfg, rdb, storeLoc)
 	cleanup := func() {
 		if s != nil {
@@ -1772,6 +1774,23 @@ func TestAuth_ExtraGaps(t *testing.T) {
 			_, err := a.authenticateReviewer(req)
 			if err == nil || err.Error() != "invalid reviewer token" {
 				t.Errorf("expected 'invalid reviewer token' error, got: %v", err)
+			}
+		})
+
+		t.Run("QueryParamInternalTokenRejected", func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/some-url?internal_token="+a.internalServiceToken+"&reviewer_token=some-token", nil)
+			_, err := a.authenticateReviewer(req)
+			if err == nil || err.Error() != "unauthorized internal token" {
+				t.Errorf("expected query param internal_token to be rejected, got: %v", err)
+			}
+		})
+
+		t.Run("QueryParamReviewerTokenRejected", func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/some-url?reviewer_token=some-token", nil)
+			req.Header.Set("X-Internal-Token", a.internalServiceToken)
+			_, err := a.authenticateReviewer(req)
+			if err == nil || err.Error() != "missing reviewer token" {
+				t.Errorf("expected query param reviewer_token to be rejected, got: %v", err)
 			}
 		})
 	})

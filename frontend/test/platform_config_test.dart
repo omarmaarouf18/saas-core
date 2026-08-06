@@ -17,7 +17,9 @@ class MockApiClientForConfigTest extends ApiClient {
 
   @override
   Future<dynamic> get(String endpoint,
-      {Map<String, String>? queryParams, bool isRetry = false}) async {
+      {Map<String, String>? queryParams,
+      Map<String, String>? headers,
+      bool isRetry = false}) async {
     if (endpoint == '/users/platform/config') {
       if (shouldFail) {
         throw ApiClientException('Internal Server Error', statusCode: 500);

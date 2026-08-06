@@ -6,30 +6,36 @@ import (
 )
 
 type Config struct {
-	Port                 string
-	MongoURI             string
-	MongoDatabase        string
-	AppEnv               string
-	GatewaySecret        string
-	InternalServiceToken string
-	JWTSecret            string
-	OTPAESKey            string
-	CloudWatchLogGroup   string
-	TLSCertPath          string
-	TLSKeyPath           string
-	TLSCAPath            string
-	StorageBaseDir       string
-	StorageBaseURL       string
-	RedisURI             string
-	UserServiceURL       string
-	ResendAPIKey         string
-	ResendFromEmail      string
+	Port                  string
+	MongoURI              string
+	MongoDatabase         string
+	AppEnv                string
+	GatewaySecret         string
+	InternalServiceToken  string
+	JWTSecret             string
+	DocumentSigningSecret string
+	OTPAESKey             string
+	CloudWatchLogGroup    string
+	TLSCertPath           string
+	TLSKeyPath            string
+	TLSCAPath             string
+	StorageBaseDir        string
+	StorageBaseURL        string
+	RedisURI              string
+	UserServiceURL        string
+	ResendAPIKey          string
+	ResendFromEmail       string
 }
 
 func Load() (*Config, error) {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
 		return nil, errors.New("config: required env var JWT_SECRET is empty")
+	}
+
+	docSigningSecret := os.Getenv("DOCUMENT_SIGNING_SECRET")
+	if docSigningSecret == "" {
+		return nil, errors.New("config: required env var DOCUMENT_SIGNING_SECRET is empty")
 	}
 
 	gatewaySecret := os.Getenv("GATEWAY_SECRET")
@@ -104,23 +110,24 @@ func Load() (*Config, error) {
 	}
 
 	return &Config{
-		Port:                 port,
-		MongoURI:             mongoURI,
-		MongoDatabase:        dbName,
-		AppEnv:               appEnv,
-		GatewaySecret:        gatewaySecret,
-		InternalServiceToken: internalServiceToken,
-		JWTSecret:            jwtSecret,
-		OTPAESKey:            os.Getenv("OTP_AES_KEY"),
-		CloudWatchLogGroup:   os.Getenv("CLOUDWATCH_LOG_GROUP"),
-		TLSCertPath:          tlsCertPath,
-		TLSKeyPath:           tlsKeyPath,
-		TLSCAPath:            tlsCAPath,
-		RedisURI:             redisURI,
-		StorageBaseDir:       storageBaseDir,
-		StorageBaseURL:       storageBaseURL,
-		UserServiceURL:       userServiceURL,
-		ResendAPIKey:         resendAPIKey,
-		ResendFromEmail:      resendFromEmail,
+		Port:                  port,
+		MongoURI:              mongoURI,
+		MongoDatabase:         dbName,
+		AppEnv:                appEnv,
+		GatewaySecret:         gatewaySecret,
+		InternalServiceToken:  internalServiceToken,
+		JWTSecret:             jwtSecret,
+		DocumentSigningSecret: docSigningSecret,
+		OTPAESKey:             os.Getenv("OTP_AES_KEY"),
+		CloudWatchLogGroup:    os.Getenv("CLOUDWATCH_LOG_GROUP"),
+		TLSCertPath:           tlsCertPath,
+		TLSKeyPath:            tlsKeyPath,
+		TLSCAPath:             tlsCAPath,
+		RedisURI:              redisURI,
+		StorageBaseDir:        storageBaseDir,
+		StorageBaseURL:        storageBaseURL,
+		UserServiceURL:        userServiceURL,
+		ResendAPIKey:          resendAPIKey,
+		ResendFromEmail:       resendFromEmail,
 	}, nil
 }

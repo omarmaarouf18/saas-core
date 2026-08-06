@@ -40,7 +40,8 @@ class MockEmployeeAuthProvider extends ChangeNotifier implements AuthProvider {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class MockEmployeeJobsProvider extends ChangeNotifier implements EmployeeJobsProvider {
+class MockEmployeeJobsProvider extends ChangeNotifier
+    implements EmployeeJobsProvider {
   @override
   List<Job> jobs = [
     Job(
@@ -65,7 +66,8 @@ class MockEmployeeJobsProvider extends ChangeNotifier implements EmployeeJobsPro
   Future<void> fetchAssignedJobs(String token) async {}
 
   @override
-  Future<void> simulateAction({required String email, required String action}) async {}
+  Future<void> simulateAction(
+      {required String email, required String action}) async {}
 
   @override
   Future<void> completeJob(String jobId, {bool cashCollected = false}) async {}
@@ -74,7 +76,8 @@ class MockEmployeeJobsProvider extends ChangeNotifier implements EmployeeJobsPro
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class MockEmployeeLocationProvider extends ChangeNotifier implements EmployeeLocationProvider {
+class MockEmployeeLocationProvider extends ChangeNotifier
+    implements EmployeeLocationProvider {
   @override
   LocationSharingStatus status = LocationSharingStatus.idle;
 
@@ -91,7 +94,8 @@ class MockEmployeeLocationProvider extends ChangeNotifier implements EmployeeLoc
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class MockNotificationsProvider extends ChangeNotifier implements NotificationsProvider {
+class MockNotificationsProvider extends ChangeNotifier
+    implements NotificationsProvider {
   @override
   int unreadCount = 0;
 
@@ -133,10 +137,14 @@ class MockChatProvider extends ChangeNotifier implements ChatProvider {
 Widget createTestApp() {
   return MultiProvider(
     providers: [
-      ChangeNotifierProvider<AuthProvider>(create: (_) => MockEmployeeAuthProvider()),
-      ChangeNotifierProvider<EmployeeJobsProvider>(create: (_) => MockEmployeeJobsProvider()),
-      ChangeNotifierProvider<EmployeeLocationProvider>(create: (_) => MockEmployeeLocationProvider()),
-      ChangeNotifierProvider<NotificationsProvider>(create: (_) => MockNotificationsProvider()),
+      ChangeNotifierProvider<AuthProvider>(
+          create: (_) => MockEmployeeAuthProvider()),
+      ChangeNotifierProvider<EmployeeJobsProvider>(
+          create: (_) => MockEmployeeJobsProvider()),
+      ChangeNotifierProvider<EmployeeLocationProvider>(
+          create: (_) => MockEmployeeLocationProvider()),
+      ChangeNotifierProvider<NotificationsProvider>(
+          create: (_) => MockNotificationsProvider()),
       ChangeNotifierProvider<ChatProvider>(create: (_) => MockChatProvider()),
     ],
     child: const MaterialApp(
@@ -146,17 +154,21 @@ Widget createTestApp() {
 }
 
 void main() {
-  testWidgets('EmployeeJobsScreen renders Verification button in AppBar and Chat button on job card',
+  testWidgets(
+      'EmployeeJobsScreen renders Verification button in AppBar and Chat button on job card',
       (WidgetTester tester) async {
     await tester.pumpWidget(createTestApp());
     await tester.pumpAndSettle();
 
     // Verify AppBar contains Verification button
-    expect(find.byKey(const Key('employee_verification_button')), findsOneWidget);
+    expect(
+        find.byKey(const Key('employee_verification_button')), findsOneWidget);
 
     // Verify Job card contains Chat button and Complete Job button
-    expect(find.byKey(const Key('employee_chat_button_job-emp-101')), findsOneWidget);
-    expect(find.byKey(const Key('complete_job_button_job-emp-101')), findsOneWidget);
+    expect(find.byKey(const Key('employee_chat_button_job-emp-101')),
+        findsOneWidget);
+    expect(find.byKey(const Key('complete_job_button_job-emp-101')),
+        findsOneWidget);
   });
 
   testWidgets('Tapping Verification button opens KycDocumentUploadScreen',
@@ -175,7 +187,8 @@ void main() {
     await tester.pumpWidget(createTestApp());
     await tester.pumpAndSettle();
 
-    final chatButton = find.byKey(const Key('employee_chat_button_job-emp-101'));
+    final chatButton =
+        find.byKey(const Key('employee_chat_button_job-emp-101'));
     await tester.ensureVisible(chatButton);
     await tester.tap(chatButton);
     await tester.pumpAndSettle();

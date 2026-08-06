@@ -45,7 +45,9 @@ class MockApiClientForTracking extends ApiClient {
 
   @override
   Future<dynamic> post(String endpoint, Map<String, dynamic> body,
-      {Map<String, String>? queryParams, bool isRetry = false}) async {
+      {Map<String, String>? queryParams,
+      Map<String, String>? headers,
+      bool isRetry = false}) async {
     postCallCount++;
     postPayloads.add(body);
 

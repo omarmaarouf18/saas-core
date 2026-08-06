@@ -19,7 +19,9 @@ class MockAuthApiClient extends ApiClient {
 
   @override
   Future<dynamic> post(String path, Map<String, dynamic> body,
-      {bool isRetry = false, Map<String, String>? queryParams}) async {
+      {bool isRetry = false,
+      Map<String, String>? queryParams,
+      Map<String, String>? headers}) async {
     if (path == '/auth/forgot-password') {
       forgotPasswordCalled = true;
       lastForgotEmail = body['email'] as String?;

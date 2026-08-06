@@ -11,6 +11,7 @@ import (
 func TestLoad_DefaultAppEnv(t *testing.T) {
 	// Set required environment variables to prevent Load() from failing
 	os.Setenv("JWT_SECRET", "dummy-jwt-secret")
+	os.Setenv("DOCUMENT_SIGNING_SECRET", "dummy-doc-signing-secret")
 	os.Setenv("GATEWAY_SECRET", "dummy-gateway-secret")
 	os.Setenv("INTERNAL_SERVICE_TOKEN", "dummy-token")
 	os.Setenv("TLS_CERT_PATH", "dummy-cert")
@@ -23,6 +24,7 @@ func TestLoad_DefaultAppEnv(t *testing.T) {
 
 	defer func() {
 		os.Unsetenv("JWT_SECRET")
+		os.Unsetenv("DOCUMENT_SIGNING_SECRET")
 		os.Unsetenv("GATEWAY_SECRET")
 		os.Unsetenv("INTERNAL_SERVICE_TOKEN")
 		os.Unsetenv("TLS_CERT_PATH")
@@ -48,6 +50,7 @@ func TestLoad_DefaultAppEnv(t *testing.T) {
 
 func TestLoad_ResendConfig(t *testing.T) {
 	os.Setenv("JWT_SECRET", "dummy-jwt-secret")
+	os.Setenv("DOCUMENT_SIGNING_SECRET", "dummy-doc-signing-secret")
 	os.Setenv("GATEWAY_SECRET", "dummy-gateway-secret")
 	os.Setenv("INTERNAL_SERVICE_TOKEN", "dummy-token")
 	os.Setenv("TLS_CERT_PATH", "dummy-cert")
@@ -57,6 +60,7 @@ func TestLoad_ResendConfig(t *testing.T) {
 
 	defer func() {
 		os.Unsetenv("JWT_SECRET")
+		os.Unsetenv("DOCUMENT_SIGNING_SECRET")
 		os.Unsetenv("GATEWAY_SECRET")
 		os.Unsetenv("INTERNAL_SERVICE_TOKEN")
 		os.Unsetenv("TLS_CERT_PATH")

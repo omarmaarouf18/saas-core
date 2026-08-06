@@ -56,7 +56,8 @@ class ApiClient {
 
   String? get currentToken => _jwtToken;
 
-  Map<String, String> _getHeaders({String? overrideToken}) {
+  Map<String, String> _getHeaders(
+      {String? overrideToken, Map<String, String>? extraHeaders}) {
     final headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -65,6 +66,9 @@ class ApiClient {
     if (tokenToUse != null && tokenToUse.isNotEmpty) {
       headers['Authorization'] = 'Bearer $tokenToUse';
     }
+    if (extraHeaders != null) {
+      headers.addAll(extraHeaders);
+    }
     return headers;
   }
 
@@ -72,6 +76,7 @@ class ApiClient {
     String path,
     Map<String, dynamic> body, {
     Map<String, String>? queryParams,
+    Map<String, String>? headers,
     bool isRetry = false,
   }) async {
     try {
@@ -81,14 +86,15 @@ class ApiClient {
       }
       final response = await _client.post(
         uri,
-        headers: _getHeaders(),
+        headers: _getHeaders(extraHeaders: headers),
         body: jsonEncode(body),
       );
       return await _handleResponse(
         response,
         onRetry: isRetry
             ? null
-            : () => post(path, body, queryParams: queryParams, isRetry: true),
+            : () => post(path, body,
+                queryParams: queryParams, headers: headers, isRetry: true),
         path: path,
       );
     } catch (e) {
@@ -101,6 +107,7 @@ class ApiClient {
   Future<dynamic> get(
     String path, {
     Map<String, String>? queryParams,
+    Map<String, String>? headers,
     bool isRetry = false,
   }) async {
     try {
@@ -110,13 +117,14 @@ class ApiClient {
       }
       final response = await _client.get(
         uri,
-        headers: _getHeaders(),
+        headers: _getHeaders(extraHeaders: headers),
       );
       return await _handleResponse(
         response,
         onRetry: isRetry
             ? null
-            : () => get(path, queryParams: queryParams, isRetry: true),
+            : () => get(path,
+                queryParams: queryParams, headers: headers, isRetry: true),
         path: path,
       );
     } catch (e) {
@@ -129,6 +137,7 @@ class ApiClient {
   Future<Uint8List> getBytes(
     String pathOrUrl, {
     Map<String, String>? queryParams,
+    Map<String, String>? headers,
     bool isRetry = false,
   }) async {
     try {
@@ -145,7 +154,7 @@ class ApiClient {
       }
       final response = await _client.get(
         uri,
-        headers: _getHeaders(),
+        headers: _getHeaders(extraHeaders: headers),
       );
       if (response.statusCode == 200) {
         return response.bodyBytes;

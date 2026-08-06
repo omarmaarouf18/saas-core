@@ -143,17 +143,17 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final queryParams = <String, String>{};
+      final headers = <String, String>{};
       if (internalToken != null && internalToken.isNotEmpty) {
-        queryParams['internal_token'] = internalToken;
+        headers['X-Internal-Token'] = internalToken;
       }
       if (reviewerToken != null && reviewerToken.isNotEmpty) {
-        queryParams['reviewer_token'] = reviewerToken;
+        headers['X-Reviewer-Token'] = reviewerToken;
       }
 
       final res = await apiClient.get(
         '/auth/kyb-kye/pending',
-        queryParams: queryParams.isNotEmpty ? queryParams : null,
+        headers: headers.isNotEmpty ? headers : null,
       );
 
       if (res is List) {
@@ -408,14 +408,15 @@ class AuthProvider extends ChangeNotifier {
     String? internalToken,
     String? reviewerToken,
   }) async {
-    final Map<String, String> queryParams = {};
+    final Map<String, String> headers = {};
     if (internalToken != null && internalToken.isNotEmpty) {
-      queryParams['internal_token'] = internalToken;
+      headers['X-Internal-Token'] = internalToken;
     }
     if (reviewerToken != null && reviewerToken.isNotEmpty) {
-      queryParams['reviewer_token'] = reviewerToken;
+      headers['X-Reviewer-Token'] = reviewerToken;
     }
-    return await apiClient.getBytes(documentUrl, queryParams: queryParams);
+    return await apiClient.getBytes(documentUrl,
+        headers: headers.isNotEmpty ? headers : null);
   }
 
   /// Submits an approve or reject review action for a pending KYB/KYE submission.
@@ -431,12 +432,12 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final Map<String, String> queryParams = {};
+      final Map<String, String> headers = {};
       if (internalToken != null && internalToken.isNotEmpty) {
-        queryParams['internal_token'] = internalToken;
+        headers['X-Internal-Token'] = internalToken;
       }
       if (reviewerToken != null && reviewerToken.isNotEmpty) {
-        queryParams['reviewer_token'] = reviewerToken;
+        headers['X-Reviewer-Token'] = reviewerToken;
       }
 
       final body = {
@@ -448,7 +449,7 @@ class AuthProvider extends ChangeNotifier {
       final response = await apiClient.post(
         '/auth/kyb-kye/review',
         body,
-        queryParams: queryParams,
+        headers: headers.isNotEmpty ? headers : null,
       );
 
       if (response != null && response['status'] == 'reviewed') {

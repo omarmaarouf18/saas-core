@@ -49,7 +49,8 @@ class MockAuthProvider extends ChangeNotifier implements AuthProvider {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class MockMarketplaceProvider extends ChangeNotifier implements MarketplaceProvider {
+class MockMarketplaceProvider extends ChangeNotifier
+    implements MarketplaceProvider {
   @override
   List<MarketplaceService> services = [];
 
@@ -80,7 +81,8 @@ class MockMarketplaceProvider extends ChangeNotifier implements MarketplaceProvi
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class MockNotificationsProvider extends ChangeNotifier implements NotificationsProvider {
+class MockNotificationsProvider extends ChangeNotifier
+    implements NotificationsProvider {
   @override
   int unreadCount = 2;
 
@@ -129,8 +131,8 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(createTestApp(
-        child: const CustomerHomeScreen(initialTabIndex: 0)));
+    await tester.pumpWidget(
+        createTestApp(child: const CustomerHomeScreen(initialTabIndex: 0)));
     await tester.pump();
 
     // Verify 4 bottom navigation tabs are rendered
@@ -149,16 +151,14 @@ void main() {
     expect(find.byKey(const Key('category_tile_all')), findsOneWidget);
   });
 
-
-
   testWidgets('CustomerHomeScreen initialTabIndex 1 renders Services tab',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(800, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(createTestApp(
-        child: const CustomerHomeScreen(initialTabIndex: 1)));
+    await tester.pumpWidget(
+        createTestApp(child: const CustomerHomeScreen(initialTabIndex: 1)));
     await tester.pump();
 
     expect(find.byType(CustomerMarketplaceScreen), findsOneWidget);
@@ -170,8 +170,8 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(createTestApp(
-        child: const CustomerHomeScreen(initialTabIndex: 2)));
+    await tester.pumpWidget(
+        createTestApp(child: const CustomerHomeScreen(initialTabIndex: 2)));
     await tester.pump();
 
     expect(find.byType(CustomerJobsScreen), findsOneWidget);
@@ -183,8 +183,8 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(createTestApp(
-        child: const CustomerHomeScreen(initialTabIndex: 3)));
+    await tester.pumpWidget(
+        createTestApp(child: const CustomerHomeScreen(initialTabIndex: 3)));
     await tester.pump();
 
     expect(find.byType(SettingsScreen), findsOneWidget);

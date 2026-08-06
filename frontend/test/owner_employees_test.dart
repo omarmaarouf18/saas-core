@@ -29,7 +29,9 @@ class MockApiClientForEmployeesTest extends ApiClient {
 
   @override
   Future<dynamic> get(String endpoint,
-      {Map<String, String>? queryParams, bool isRetry = false}) async {
+      {Map<String, String>? queryParams,
+      Map<String, String>? headers,
+      bool isRetry = false}) async {
     if (endpoint == '/auth/employees') {
       if (shouldFail) {
         throw ApiClientException('Failed to fetch employees list',

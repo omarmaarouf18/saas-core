@@ -1763,20 +1763,14 @@ func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 	// we default to the safer option of requiring BOTH the X-Internal-Token (internal network context)
 	// and the reviewer token (X-Reviewer-Token).
 
-	// 1. Verify X-Internal-Token
+	// 1. Verify X-Internal-Token header
 	internalToken := r.Header.Get("X-Internal-Token")
-	if internalToken == "" {
-		internalToken = r.URL.Query().Get("internal_token")
-	}
 	if subtle.ConstantTimeCompare([]byte(internalToken), []byte(a.internalServiceToken)) != 1 {
 		return nil, errors.New("unauthorized internal token")
 	}
 
-	// 2. Verify Reviewer Token
+	// 2. Verify X-Reviewer-Token header
 	reviewerToken := r.Header.Get("X-Reviewer-Token")
-	if reviewerToken == "" {
-		reviewerToken = r.URL.Query().Get("reviewer_token")
-	}
 	if reviewerToken == "" {
 		return nil, errors.New("missing reviewer token")
 	}

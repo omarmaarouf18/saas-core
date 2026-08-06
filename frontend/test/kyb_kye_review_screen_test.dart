@@ -30,6 +30,7 @@ class MockThemeProviderForReviewTest extends ChangeNotifier
 class MockApiClientForReviewTest extends ApiClient {
   bool shouldFail = false;
   Map<String, String>? lastQueryParams;
+  Map<String, String>? lastHeaders;
   List<dynamic> mockResponse = [
     {
       'user_id': 'owner-101',
@@ -57,9 +58,12 @@ class MockApiClientForReviewTest extends ApiClient {
 
   @override
   Future<dynamic> get(String endpoint,
-      {Map<String, String>? queryParams, bool isRetry = false}) async {
+      {Map<String, String>? queryParams,
+      Map<String, String>? headers,
+      bool isRetry = false}) async {
     if (endpoint == '/auth/kyb-kye/pending') {
       lastQueryParams = queryParams;
+      lastHeaders = headers;
       if (shouldFail) {
         throw ApiClientException('Failed to load pending submissions queue',
             statusCode: 500);
@@ -274,10 +278,10 @@ void main() {
         authProvider.pendingSubmissions[0]['username'], equals('Acme Owner'));
     expect(authProvider.pendingSubmissions[1]['username'],
         equals('Sarah Employee'));
-    expect(apiClient.lastQueryParams, isNotNull);
-    expect(apiClient.lastQueryParams!['internal_token'],
+    expect(apiClient.lastHeaders, isNotNull);
+    expect(apiClient.lastHeaders!['X-Internal-Token'],
         equals('internal-secret-123'));
-    expect(apiClient.lastQueryParams!['reviewer_token'],
+    expect(apiClient.lastHeaders!['X-Reviewer-Token'],
         equals('reviewer-token-456'));
   });
 
@@ -310,8 +314,6 @@ void main() {
       ),
     );
   }
-
-
 
   Widget createHomeScreenWidget({
     required MockAuthProviderForReviewTest authProvider,
