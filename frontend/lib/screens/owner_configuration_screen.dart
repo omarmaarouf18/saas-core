@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/constants.dart';
 import '../core/error_messages.dart';
@@ -98,6 +99,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
   }
 
   Future<void> _submitForm() async {
+    final l10n = context.l10n;
     setState(() {
       _errorMessage = null;
     });
@@ -109,7 +111,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
     final radius = double.tryParse(_radiusController.text.trim());
     if (radius == null || radius <= 0) {
       setState(() {
-        _errorMessage = 'Coverage radius must be a positive number (> 0).';
+        _errorMessage = l10n.ownerConfigRadiusReq;
       });
       return;
     }
@@ -117,7 +119,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
     final basePrice = double.tryParse(_basePriceController.text.trim());
     if (basePrice == null || basePrice < 0) {
       setState(() {
-        _errorMessage = 'Base price must be a non-negative number.';
+        _errorMessage = l10n.ownerConfigBasePriceReq;
       });
       return;
     }
@@ -125,7 +127,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
     final pricePerKm = double.tryParse(_pricePerKmController.text.trim());
     if (pricePerKm == null || pricePerKm < 0) {
       setState(() {
-        _errorMessage = 'Price per KM must be a non-negative number.';
+        _errorMessage = l10n.ownerConfigPricePerKmReq;
       });
       return;
     }
@@ -177,9 +179,9 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Owner configuration updated successfully"),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(l10n.ownerConfigSuccessMsg),
+            duration: const Duration(seconds: 2),
             backgroundColor: AppColors.success,
           ),
         );
@@ -204,17 +206,16 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        title: const Text("Owner Configuration"),
+        title: Text(l10n.ownerConfigTitle),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
       ),
       body: !_isInitialized
-          ? const Center(
-              child:
-                  ThemedLoadingIndicator(message: "Loading configuration..."))
+          ? Center(child: ThemedLoadingIndicator(message: l10n.loading))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Form(
@@ -222,10 +223,9 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const ThemedSectionHeader(
-                      title: "Business Details",
-                      subtitle:
-                          "Configure public profile and operational rules",
+                    ThemedSectionHeader(
+                      title: l10n.ownerConfigHeader,
+                      subtitle: l10n.ownerConfigHeaderSub,
                     ),
                     const SizedBox(height: AppSpacing.md),
                     if (_errorMessage != null) ...[
@@ -242,16 +242,16 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                         children: [
                           ThemedTextField(
                             key: const Key('owner_config_name_field'),
-                            labelText: "Business Name",
-                            hintText: "Enter your business name",
+                            labelText: l10n.ownerConfigNameLabel,
+                            hintText: l10n.ownerConfigNameHint,
                             controller: _nameController,
                             validator: (v) => v == null || v.trim().isEmpty
-                                ? "Business name is required."
+                                ? l10n.ownerConfigNameReq
                                 : null,
                           ),
                           const SizedBox(height: AppSpacing.md),
                           Text(
-                            "Service Category",
+                            l10n.ownerConfigCategoryLabel,
                             style: AppTypography.labelMd.copyWith(
                               fontWeight: FontWeight.bold,
                               color: AppColors.onSurface,
@@ -295,22 +295,22 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                           const SizedBox(height: AppSpacing.md),
                           ThemedTextField(
                             key: const Key('owner_config_address_field'),
-                            labelText: "Business Address",
-                            hintText: "123 Main St, City, Country",
+                            labelText: l10n.ownerConfigAddressLabel,
+                            hintText: l10n.ownerConfigAddressHint,
                             controller: _addressController,
                           ),
                           const SizedBox(height: AppSpacing.md),
                           ThemedTextField(
                             key: const Key('owner_config_working_hours_field'),
-                            labelText: "Working Hours",
-                            hintText: "e.g. 9:00 AM - 10:00 PM",
+                            labelText: l10n.ownerConfigHoursLabel,
+                            hintText: l10n.ownerConfigHoursHint,
                             controller: _workingHoursController,
                           ),
                           const SizedBox(height: AppSpacing.md),
                           ThemedTextField(
                             key: const Key('owner_config_radius_field'),
-                            labelText: "Coverage Radius (KM)",
-                            hintText: "e.g. 25.0",
+                            labelText: l10n.ownerConfigRadiusLabel,
+                            hintText: l10n.ownerConfigRadiusHint,
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
                             controller: _radiusController,
@@ -318,7 +318,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                               if (v == null || v.trim().isEmpty) return null;
                               final parsed = double.tryParse(v.trim());
                               if (parsed == null || parsed <= 0) {
-                                return "Enter a valid radius > 0.";
+                                return l10n.ownerConfigRadiusReq;
                               }
                               return null;
                             },
@@ -330,19 +330,19 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                                 child: ThemedTextField(
                                   key: const Key(
                                       'owner_config_base_price_field'),
-                                  labelText: "Base Price (\$)",
-                                  hintText: "10.00",
+                                  labelText: l10n.ownerConfigBasePriceLabel,
+                                  hintText: l10n.ownerConfigBasePriceHint,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(
                                           decimal: true),
                                   controller: _basePriceController,
                                   validator: (v) {
                                     if (v == null || v.trim().isEmpty) {
-                                      return "Base price required.";
+                                      return l10n.ownerConfigBasePriceReq;
                                     }
                                     final parsed = double.tryParse(v.trim());
                                     if (parsed == null || parsed < 0) {
-                                      return "Invalid price.";
+                                      return l10n.ownerConfigBasePriceReq;
                                     }
                                     return null;
                                   },
@@ -353,19 +353,19 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                                 child: ThemedTextField(
                                   key: const Key(
                                       'owner_config_price_per_km_field'),
-                                  labelText: "Rate Per KM (\$)",
-                                  hintText: "1.50",
+                                  labelText: l10n.ownerConfigPricePerKmLabel,
+                                  hintText: l10n.ownerConfigPricePerKmHint,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(
                                           decimal: true),
                                   controller: _pricePerKmController,
                                   validator: (v) {
                                     if (v == null || v.trim().isEmpty) {
-                                      return "Rate per KM required.";
+                                      return l10n.ownerConfigPricePerKmReq;
                                     }
                                     final parsed = double.tryParse(v.trim());
                                     if (parsed == null || parsed < 0) {
-                                      return "Invalid rate.";
+                                      return l10n.ownerConfigPricePerKmReq;
                                     }
                                     return null;
                                   },
@@ -376,26 +376,9 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                           const SizedBox(height: AppSpacing.md),
                           ThemedTextField(
                             key: const Key('owner_config_photo_url_field'),
-                            labelText: "Photo / Logo URL",
-                            hintText: "https://example.com/logo.jpg",
+                            labelText: l10n.ownerConfigPhotoUrlLabel,
+                            hintText: l10n.ownerConfigPhotoUrlHint,
                             controller: _photoUrlController,
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          OutlinedButton.icon(
-                            key: const Key('owner_config_pick_photo_button'),
-                            onPressed: () {
-                              _photoUrlController.text =
-                                  "https://example.com/sample_logo.png";
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Sample photo URL selected."),
-                                  duration: Duration(seconds: 1),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.photo_library_outlined,
-                                size: 18),
-                            label: const Text("Select Sample Photo URL"),
                           ),
                         ],
                       ),
@@ -403,7 +386,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                     const SizedBox(height: AppSpacing.xl),
                     PrimaryButton(
                       key: const Key('owner_config_save_button'),
-                      text: "SAVE CONFIGURATION",
+                      text: l10n.ownerConfigSaveButton,
                       isLoading: _isSubmitting,
                       onPressed: _submitForm,
                     ),

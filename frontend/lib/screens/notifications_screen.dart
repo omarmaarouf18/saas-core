@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/notifications_provider.dart';
 import '../models/notification_model.dart';
-import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
-import 'job_status_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -57,6 +56,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     final provider = Provider.of<NotificationsProvider>(context);
     final auth = Provider.of<AuthProvider>(context, listen: false);
+    final l10n = context.l10n;
     final allNotifications = provider.notifications;
     final filtered = _filterNotifications(allNotifications);
 
@@ -75,45 +75,36 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         title: Text(
-          'Notifications',
+          l10n.notificationsTitle,
           style: AppTypography.titleMd.copyWith(color: AppColors.onPrimary),
         ),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
         actions: [
-          if (filtered.any((n) => !n.isRead))
-            TextButton(
-              onPressed: () => provider.markAllAsRead(),
-              child: Text(
-                'Mark all read',
-                style:
-                    AppTypography.labelMd.copyWith(color: AppColors.onPrimary),
-              ),
-            ),
           IconButton(
             icon: const Icon(Icons.delete_sweep),
-            tooltip: 'Clear All',
+            tooltip: l10n.notificationsClear,
             onPressed: () {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
                   backgroundColor: AppColors.surface,
                   title: Text(
-                    'Clear Notifications',
+                    l10n.notificationsClear,
                     style: AppTypography.titleMd
                         .copyWith(color: AppColors.onSurface),
                   ),
                   content: Text(
-                    'Are you sure you want to clear all notifications?',
+                    l10n.notificationsTitle,
                     style: AppTypography.bodyMd
                         .copyWith(color: AppColors.onSurfaceVariant),
                   ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(color: AppColors.primary),
+                      child: Text(
+                        l10n.cancel,
+                        style: const TextStyle(color: AppColors.primary),
                       ),
                     ),
                     ElevatedButton(
@@ -125,7 +116,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         backgroundColor: AppColors.primary,
                         foregroundColor: AppColors.onPrimary,
                       ),
-                      child: const Text('Clear'),
+                      child: Text(l10n.notificationsClear),
                     ),
                   ],
                 ),
@@ -157,8 +148,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 Expanded(
                   child: Text(
                     provider.isConnected
-                        ? 'System Status: Operational. Real-time alert stream active.'
-                        : 'System Status: Disconnected. Reconnecting...',
+                        ? 'System Status: Operational.'
+                        : 'System Status: Disconnected.',
                     style: AppTypography.labelMd.copyWith(
                       color: provider.isConnected
                           ? AppColors.onSurface
@@ -206,10 +197,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           // List of Notifications
           Expanded(
             child: filtered.isEmpty
-                ? const ThemedEmptyState(
+                ? ThemedEmptyState(
                     icon: Icons.notifications_none,
-                    title: 'No notifications found',
-                    description: 'No new notifications to display.',
+                    title: l10n.notificationsTitle,
+                    description: l10n.notificationsTitle,
                   )
                 : ListView(
                     padding:
@@ -259,20 +250,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     String? userToken,
     ColorScheme colorScheme,
   ) {
-    final bool isJobAlert =
-        notif.type == 'job_alert' || notif.id.startsWith('job-');
-    final String bodyText = notif.body;
-
-    // Extract Job ID from body if possible
-    String? extractedJobId;
-    if (isJobAlert) {
-      final reg = RegExp(r'(?:job-alert-|job\s)(notif-\d+|job:\w+|\w{24})');
-      final match = reg.firstMatch(bodyText);
-      if (match != null) {
-        extractedJobId = match.group(1);
-      }
-    }
-
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.base),
       child: ThemedCard(
@@ -328,56 +305,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (isJobAlert &&
-                      extractedJobId != null &&
-                      userToken != null) ...[
-                    TextButton.icon(
-                      icon: const Icon(Icons.gps_fixed, size: 16),
-                      label: const Text('Track Shipment'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.secondary,
-                        textStyle: AppTypography.labelLg,
-                      ),
-                      onPressed: () {
-                        provider.markAsRead(notif.id);
-                        final placeholderJob = Job(
-                          id: extractedJobId!,
-                          ownerId: '',
-                          userId: '',
-                          serviceId: '',
-                          status: 'pending',
-                          location: JobLocation(latitude: 0, longitude: 0),
-                          paymentMethod: 'cod',
-                        );
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => JobStatusScreen(
-                              job: placeholderJob,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(width: AppSpacing.base),
-                  ],
-                  TextButton.icon(
-                    icon: const Icon(Icons.reply, size: 16),
-                    label: const Text('Reply'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      textStyle: AppTypography.labelLg,
-                    ),
-                    onPressed: () {
-                      provider.markAsRead(notif.id);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content:
-                              Text('Reply feature is in beta and local-only.'),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.base),
                   IconButton(
                     icon: const Icon(Icons.delete_outline, size: 18),
                     tooltip: 'Dismiss',

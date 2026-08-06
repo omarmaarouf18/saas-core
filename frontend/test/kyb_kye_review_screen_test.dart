@@ -538,7 +538,7 @@ void main() {
         MockAuthProviderForReviewTest(apiClient, mockUser: customerUser);
 
     await tester.pumpWidget(createHomeScreenWidget(authProvider: customerAuth));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.byKey(const Key('reviewer_queue_button')), findsNothing);
   });

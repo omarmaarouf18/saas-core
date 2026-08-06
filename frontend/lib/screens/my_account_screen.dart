@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
@@ -66,12 +67,13 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   }
 
   void _addAddress() {
+    final l10n = context.l10n;
     final text = _newAddressController.text.trim();
     if (text.isEmpty) return;
 
     if (_frequentAddresses.length >= 10) {
       setState(() {
-        _errorMessage = 'Cannot add more than 10 frequent addresses.';
+        _errorMessage = l10n.myAccountMaxAddressesError;
       });
       return;
     }
@@ -93,6 +95,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   }
 
   Future<void> _submitForm() async {
+    final l10n = context.l10n;
     setState(() {
       _errorMessage = null;
     });
@@ -103,7 +106,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
 
     if (_frequentAddresses.length > 10) {
       setState(() {
-        _errorMessage = 'Cannot add more than 10 frequent addresses.';
+        _errorMessage = l10n.myAccountMaxAddressesError;
       });
       return;
     }
@@ -123,9 +126,9 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Profile updated successfully"),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(l10n.myAccountSuccessMsg),
+            duration: const Duration(seconds: 2),
             backgroundColor: AppColors.success,
           ),
         );
@@ -151,19 +154,18 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final l10n = context.l10n;
     final user = authProvider.user;
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        title: const Text("My Account"),
+        title: Text(l10n.myAccountTitle),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
       ),
       body: !_isInitialized
-          ? const Center(
-              child:
-                  ThemedLoadingIndicator(message: "Loading account details..."))
+          ? Center(child: ThemedLoadingIndicator(message: l10n.loading))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Form(
@@ -171,9 +173,9 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const ThemedSectionHeader(
-                      title: "Account Details",
-                      subtitle: "Manage personal details and saved addresses",
+                    ThemedSectionHeader(
+                      title: l10n.myAccountHeader,
+                      subtitle: l10n.myAccountHeaderSub,
                     ),
                     const SizedBox(height: AppSpacing.md),
                     if (_errorMessage != null) ...[
@@ -191,15 +193,15 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                           // 1. Email (Read-Only)
                           ThemedTextField(
                             key: const Key('my_account_email_field'),
-                            labelText: "Email Address (Read-Only)",
-                            hintText: "Your email address",
+                            labelText: l10n.myAccountEmailLabel,
+                            hintText: l10n.myAccountEmailHint,
                             controller:
                                 TextEditingController(text: user?.email ?? ''),
                             enabled: false,
                           ),
                           const SizedBox(height: AppSpacing.xs),
                           Text(
-                            "Email address cannot be changed.",
+                            l10n.myAccountEmailNote,
                             style: AppTypography.labelMd.copyWith(
                               color: AppColors.onSurfaceVariant,
                             ),
@@ -209,11 +211,11 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                           // 2. Username (Editable)
                           ThemedTextField(
                             key: const Key('my_account_username_field'),
-                            labelText: "Username",
-                            hintText: "Enter username",
+                            labelText: l10n.myAccountUsernameLabel,
+                            hintText: l10n.myAccountUsernameHint,
                             controller: _usernameController,
                             validator: (v) => v == null || v.trim().isEmpty
-                                ? "Username is required."
+                                ? l10n.myAccountUsernameReq
                                 : null,
                           ),
                           const SizedBox(height: AppSpacing.md),
@@ -221,8 +223,8 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                           // 3. Phone (Editable)
                           ThemedTextField(
                             key: const Key('my_account_phone_field'),
-                            labelText: "Phone Number",
-                            hintText: "+201012345678",
+                            labelText: l10n.myAccountPhoneLabel,
+                            hintText: l10n.myAccountPhoneHint,
                             keyboardType: TextInputType.phone,
                             controller: _phoneController,
                           ),
@@ -230,7 +232,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
 
                           // 4. Frequent Addresses List Editor
                           Text(
-                            "Frequent Addresses (${_frequentAddresses.length}/10)",
+                            "${l10n.myAccountAddressesHeader} (${_frequentAddresses.length}/10)",
                             style: AppTypography.labelMd.copyWith(
                               fontWeight: FontWeight.bold,
                               color: AppColors.onSurface,
@@ -238,7 +240,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                           ),
                           const SizedBox(height: AppSpacing.xs),
                           Text(
-                            "Save quick locations for faster booking (max 10).",
+                            l10n.myAccountAddressesSub,
                             style: AppTypography.labelMd.copyWith(
                               color: AppColors.onSurfaceVariant,
                             ),
@@ -252,8 +254,8 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                                 child: ThemedTextField(
                                   key:
                                       const Key('my_account_new_address_field'),
-                                  labelText: "New Address",
-                                  hintText: "e.g. 123 Nile St, Cairo",
+                                  labelText: l10n.myAccountNewAddressLabel,
+                                  hintText: l10n.myAccountNewAddressHint,
                                   controller: _newAddressController,
                                 ),
                               ),
@@ -269,7 +271,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                                   ),
                                 ),
                                 onPressed: _addAddress,
-                                child: const Text("ADD"),
+                                child: Text(l10n.myAccountAddButton),
                               ),
                             ],
                           ),
@@ -281,7 +283,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                               padding: const EdgeInsets.symmetric(
                                   vertical: AppSpacing.xs),
                               child: Text(
-                                "No saved addresses yet.",
+                                l10n.myAccountNoAddresses,
                                 style: AppTypography.bodyMd.copyWith(
                                   color: AppColors.onSurfaceVariant,
                                   fontStyle: FontStyle.italic,
@@ -324,7 +326,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                     const SizedBox(height: AppSpacing.xl),
                     PrimaryButton(
                       key: const Key('my_account_save_button'),
-                      text: "SAVE PROFILE",
+                      text: l10n.myAccountSaveButton,
                       isLoading: _isSubmitting,
                       onPressed: _submitForm,
                     ),

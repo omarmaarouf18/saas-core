@@ -21,6 +21,9 @@ dependencies:
   file_picker: ^8.0.7
   firebase_messaging: ^14.9.4
   geolocator: ^12.0.0
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
@@ -30,3 +33,4 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true

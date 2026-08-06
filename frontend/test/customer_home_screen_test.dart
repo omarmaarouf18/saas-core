@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/locale_provider.dart';
 import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
@@ -116,9 +119,17 @@ Widget createTestApp({Widget? child}) {
       ChangeNotifierProvider<NotificationsProvider>(
           create: (_) => MockNotificationsProvider()),
       ChangeNotifierProvider<ThemeProvider>(create: (_) => MockThemeProvider()),
+      ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
       ChangeNotifierProvider<ChatProvider>(create: (_) => MockChatProvider()),
     ],
     child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: child ?? const CustomerHomeScreen(),
     ),
   );
@@ -133,7 +144,7 @@ void main() {
 
     await tester.pumpWidget(
         createTestApp(child: const CustomerHomeScreen(initialTabIndex: 0)));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
     // Verify 4 bottom navigation tabs are rendered
     expect(find.byKey(const Key('customer_bottom_navigation_bar')),

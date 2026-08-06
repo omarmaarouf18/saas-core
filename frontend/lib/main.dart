@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:frontend/l10n/app_localizations.dart';
+
 import 'core/api_client.dart';
 import 'core/theme.dart';
 import 'providers/auth_provider.dart';
@@ -15,6 +18,7 @@ import 'providers/notifications_provider.dart';
 import 'providers/map_tracking_provider.dart';
 import 'providers/reconciliation_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/locale_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -38,6 +42,7 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => OwnerProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => EmployeeJobsProvider(apiClient)),
@@ -62,6 +67,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final localeProvider = Provider.of<LocaleProvider>(context);
     final notifications =
         Provider.of<NotificationsProvider>(context, listen: false);
 
@@ -78,6 +84,23 @@ class MyApp extends StatelessWidget {
       theme: quickDeliveryTheme,
       darkTheme: quickDeliveryDarkTheme,
       themeMode: themeProvider.themeMode,
+      locale: localeProvider.locale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      localeResolutionCallback: (deviceLocale, supportedLocales) {
+        if (localeProvider.locale != null) {
+          return localeProvider.locale;
+        }
+        if (deviceLocale != null && deviceLocale.languageCode == 'ar') {
+          return const Locale('ar');
+        }
+        return const Locale('en');
+      },
       debugShowCheckedModeBanner: false,
       home: auth.isAuthenticated ? const HomeScreen() : const LoginScreen(),
     );

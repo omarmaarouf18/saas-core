@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
@@ -95,6 +96,7 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
@@ -124,7 +126,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    "Two-Factor Auth",
+                    l10n.otpTitle,
                     style: AppTypography.headlineLg.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
@@ -133,7 +135,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   ),
                   const SizedBox(height: AppSpacing.base),
                   Text(
-                    "Enter the 6-digit code sent to:\n${widget.email}",
+                    "${l10n.otpSubtitle}:\n${widget.email}",
                     style: AppTypography.bodyLg.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
@@ -146,7 +148,7 @@ class _OtpScreenState extends State<OtpScreen> {
                       children: [
                         ThemedTextField(
                           controller: _otpController,
-                          labelText: "6-Digit Code",
+                          labelText: l10n.otpCodeLabel,
                           hintText: "000000",
                           prefixIcon: const Icon(Icons.pin_outlined),
                           keyboardType: TextInputType.number,
@@ -160,7 +162,7 @@ class _OtpScreenState extends State<OtpScreen> {
                           ),
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
-                              return "Please enter the OTP";
+                              return l10n.otpCodeLabel;
                             }
                             if (val.trim().length != 6) {
                               return "OTP must be exactly 6 digits";
@@ -199,7 +201,7 @@ class _OtpScreenState extends State<OtpScreen> {
                         ],
                         const SizedBox(height: AppSpacing.lg),
                         PrimaryButton(
-                          text: "VERIFY OTP",
+                          text: l10n.otpSubmitButton,
                           isLoading: auth.isLoading,
                           onPressed: _submit,
                         ),
@@ -207,7 +209,7 @@ class _OtpScreenState extends State<OtpScreen> {
                         TextButton(
                           onPressed: auth.isLoading ? null : _resendCode,
                           child: Text(
-                            "Resend Code",
+                            l10n.otpResendButton,
                             style: AppTypography.bodyMd.copyWith(
                               color: AppColors.primary,
                               fontWeight: FontWeight.bold,

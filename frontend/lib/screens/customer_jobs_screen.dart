@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
@@ -37,20 +38,21 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
   @override
   Widget build(BuildContext context) {
     final marketplace = Provider.of<MarketplaceProvider>(context);
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: widget.isEmbeddedInTab
           ? null
           : AppBar(
-              title: const Text("My Orders"),
+              title: Text(l10n.customerJobsTitle),
               backgroundColor: AppColors.primary,
               foregroundColor: AppColors.onPrimary,
               actions: [
                 IconButton(
                   key: const Key('refresh_customer_jobs_button'),
                   icon: const Icon(Icons.refresh),
-                  tooltip: "Refresh",
+                  tooltip: l10n.retry,
                   onPressed: _loadCustomerJobs,
                 ),
               ],
@@ -79,7 +81,7 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                     key: const Key('retry_customer_jobs_button'),
                     onPressed: _loadCustomerJobs,
                     icon: const Icon(Icons.refresh),
-                    label: const Text("Retry"),
+                    label: Text(l10n.retry),
                   ),
                 ],
               ),
@@ -91,14 +93,13 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
               onRefresh: () async => _loadCustomerJobs(),
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: AppSpacing.xl),
+                children: [
+                  const SizedBox(height: AppSpacing.xl),
                   ThemedEmptyState(
-                    key: Key('customer_jobs_empty_state'),
+                    key: const Key('customer_jobs_empty_state'),
                     icon: Icons.receipt_long_outlined,
-                    title: "No Orders Found",
-                    description:
-                        "You haven't placed any orders yet. Explore services in the marketplace to get started.",
+                    title: l10n.customerJobsEmpty,
+                    description: l10n.customerJobsEmptyDescription,
                   ),
                 ],
               ),
@@ -137,7 +138,7 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  "Order #${job.id.length > 8 ? job.id.substring(0, 8) : job.id}",
+                                  "${l10n.customerJobsOrder}${job.id.length > 8 ? job.id.substring(0, 8) : job.id}",
                                   style: AppTypography.titleMd.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.onSurface,
@@ -197,7 +198,7 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                                   const SizedBox(width: AppSpacing.xs),
                                   Expanded(
                                     child: Text(
-                                      "Reason: ${job.cancellationReason}",
+                                      "Reason: ${job.cancellationReason!}",
                                       style: AppTypography.bodyMd.copyWith(
                                         color: AppColors.error,
                                         fontSize: 12,

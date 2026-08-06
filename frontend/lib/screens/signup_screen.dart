@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
@@ -61,6 +62,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
@@ -76,7 +78,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    "Create Account",
+                    l10n.signupTitle,
                     style: AppTypography.headlineLg.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
@@ -85,7 +87,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   const SizedBox(height: AppSpacing.base),
                   Text(
-                    "Join Quick Delivery",
+                    l10n.signupSubtitle,
                     style: AppTypography.bodyLg.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
@@ -98,8 +100,8 @@ class _SignupScreenState extends State<SignupScreen> {
                       children: [
                         ThemedTextField(
                           controller: _usernameController,
-                          labelText: "Username",
-                          hintText: "Enter your username",
+                          labelText: l10n.signupUsernameLabel,
+                          hintText: l10n.signupUsernameHint,
                           prefixIcon: const Icon(Icons.person_outline),
                           textDirection: _usernameDirection,
                           onChanged: (val) {
@@ -122,7 +124,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           },
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
-                              return "Please enter a username";
+                              return l10n.signupUsernameReq;
                             }
                             final trimmed = val.trim();
                             final runeCount = trimmed.runes.length;
@@ -143,16 +145,16 @@ class _SignupScreenState extends State<SignupScreen> {
                         const SizedBox(height: AppSpacing.md),
                         ThemedTextField(
                           controller: _emailController,
-                          labelText: "Email Address",
-                          hintText: "Enter your email address",
+                          labelText: l10n.signupEmailLabel,
+                          hintText: l10n.signupEmailHint,
                           prefixIcon: const Icon(Icons.email_outlined),
                           keyboardType: TextInputType.emailAddress,
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
-                              return "Please enter an email";
+                              return l10n.loginEmailReq;
                             }
                             if (!val.contains("@")) {
-                              return "Invalid email address";
+                              return l10n.loginEmailInvalid;
                             }
                             return null;
                           },
@@ -160,17 +162,17 @@ class _SignupScreenState extends State<SignupScreen> {
                         const SizedBox(height: AppSpacing.md),
                         ThemedTextField(
                           controller: _passwordController,
-                          labelText: "Password",
-                          hintText: "Enter your password",
+                          labelText: l10n.signupPasswordLabel,
+                          hintText: l10n.signupPasswordHint,
                           prefixIcon: const Icon(Icons.lock_outline),
                           obscureText: true,
                           isPasswordField: true,
                           validator: (val) {
                             if (val == null || val.isEmpty) {
-                              return "Please enter a password";
+                              return l10n.loginPasswordReq;
                             }
                             if (val.length < 6) {
-                              return "Password must be at least 6 characters";
+                              return l10n.signupPasswordHint;
                             }
                             return null;
                           },
@@ -181,7 +183,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "ACCOUNT ROLE",
+                              l10n.signupRoleLabel,
                               style: AppTypography.labelLg.copyWith(
                                 color: AppColors.onSurfaceVariant,
                               ),
@@ -215,13 +217,13 @@ class _SignupScreenState extends State<SignupScreen> {
                               style: AppTypography.bodyMd.copyWith(
                                 color: AppColors.onSurface,
                               ),
-                              items: const [
+                              items: [
                                 DropdownMenuItem(
                                     value: "owner",
-                                    child: Text("Business Owner")),
+                                    child: Text(l10n.signupRoleOwner)),
                                 DropdownMenuItem(
                                     value: "user",
-                                    child: Text("Customer / Client")),
+                                    child: Text(l10n.signupRoleCustomer)),
                               ],
                               onChanged: (val) {
                                 if (val != null) {
@@ -235,7 +237,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         PrimaryButton(
-                          text: "SIGN UP",
+                          text: l10n.signupSubmitButton,
                           isLoading: auth.isLoading,
                           onPressed: _submit,
                         ),
@@ -245,7 +247,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             Navigator.of(context).pop();
                           },
                           child: Text(
-                            "Already have an account? Log In",
+                            "${l10n.signupHasAccount} ${l10n.signupSignIn}",
                             style: AppTypography.bodyMd.copyWith(
                               color: AppColors.primary,
                               fontWeight: FontWeight.w600,

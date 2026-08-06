@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
@@ -69,6 +70,21 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
     });
   }
 
+  String _getTabTitle(int index, AppLocalizations l10n) {
+    switch (index) {
+      case 0:
+        return l10n.appName;
+      case 1:
+        return l10n.navServices;
+      case 2:
+        return l10n.customerJobsTitle;
+      case 3:
+        return l10n.settingsTitle;
+      default:
+        return l10n.appName;
+    }
+  }
+
   Widget _buildNotificationBell(BuildContext context) {
     return Consumer<NotificationsProvider>(
       builder: (context, provider, child) {
@@ -121,29 +137,15 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
     );
   }
 
-  String _getTabTitle(int index) {
-    switch (index) {
-      case 0:
-        return "Quick Delivery";
-      case 1:
-        return "Services Marketplace";
-      case 2:
-        return "My Orders";
-      case 3:
-        return "Settings";
-      default:
-        return "Quick Delivery";
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
-        title: Text(_getTabTitle(_currentIndex)),
+        title: Text(_getTabTitle(_currentIndex, l10n)),
         actions: [
           _buildNotificationBell(context),
         ],
@@ -180,26 +182,26 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
         key: const Key('customer_bottom_navigation_bar'),
         selectedIndex: _currentIndex,
         onDestinationSelected: onTabTapped,
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            key: Key('nav_tab_home'),
-            icon: Icon(Icons.home),
-            label: 'Home',
+            key: const Key('nav_tab_home'),
+            icon: const Icon(Icons.home),
+            label: l10n.navHome,
           ),
           NavigationDestination(
-            key: Key('nav_tab_services'),
-            icon: Icon(Icons.storefront),
-            label: 'Services',
+            key: const Key('nav_tab_services'),
+            icon: const Icon(Icons.storefront),
+            label: l10n.navServices,
           ),
           NavigationDestination(
-            key: Key('nav_tab_history'),
-            icon: Icon(Icons.receipt_long),
-            label: 'History',
+            key: const Key('nav_tab_history'),
+            icon: const Icon(Icons.receipt_long),
+            label: l10n.navHistory,
           ),
           NavigationDestination(
-            key: Key('nav_tab_settings'),
-            icon: Icon(Icons.settings),
-            label: 'Settings',
+            key: const Key('nav_tab_settings'),
+            icon: const Icon(Icons.settings),
+            label: l10n.navSettings,
           ),
         ],
       ),
@@ -222,17 +224,13 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final marketplace = Provider.of<MarketplaceProvider>(context);
-    final user = auth.user;
-    final username = user?.username.isNotEmpty == true
-        ? user!.username
-        : (user?.email ?? 'Customer');
+    final l10n = context.l10n;
+    final username = auth.user?.username ?? 'Customer';
 
-    final activeJobs = marketplace.customerJobs
-        .where((j) =>
-            j.status.toLowerCase().trim() == 'active' ||
-            j.status.toLowerCase().trim() == 'pending' ||
-            j.status.toLowerCase().trim() == 'awaiting_price_response')
-        .toList();
+    final activeJobs = marketplace.customerJobs.where((j) {
+      final status = j.status.toLowerCase();
+      return status == 'pending' || status == 'active' || status == 'assigned';
+    }).toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -241,15 +239,15 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
         children: [
           // Greeting Header
           Text(
-            "Welcome back, $username!",
-            style: AppTypography.headlineLgMobile.copyWith(
+            "${l10n.customerHomeGreeting} $username!",
+            style: AppTypography.headlineLg.copyWith(
               color: AppColors.primary,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            "What would you like to book today?",
+            l10n.customerHomeSub,
             style: AppTypography.bodyMd.copyWith(
               color: AppColors.onSurfaceVariant,
             ),
@@ -257,9 +255,9 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
 
           // Quick Access Categories
-          const ThemedSectionHeader(
-            title: "Quick Services Access",
-            subtitle: "Browse available services by category",
+          ThemedSectionHeader(
+            title: l10n.customerHomeQuickAccess,
+            subtitle: l10n.customerHomeSub,
           ),
           const SizedBox(height: AppSpacing.md),
           IntrinsicHeight(
@@ -270,7 +268,7 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
                   child: _buildCategoryTile(
                     context,
                     key: const Key('category_tile_delivery'),
-                    title: "Delivery",
+                    title: l10n.customerHomeCatDelivery,
                     icon: Icons.delivery_dining,
                     color: const Color(0xFF15803D),
                     onTap: () => onCategorySelected('delivery'),
@@ -281,7 +279,7 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
                   child: _buildCategoryTile(
                     context,
                     key: const Key('category_tile_transport'),
-                    title: "Ride",
+                    title: l10n.customerHomeCatRide,
                     icon: Icons.directions_car,
                     color: const Color(0xFF1D4ED8),
                     onTap: () => onCategorySelected('transport'),
@@ -299,7 +297,7 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
                   child: _buildCategoryTile(
                     context,
                     key: const Key('category_tile_shipping'),
-                    title: "Shipping",
+                    title: l10n.customerHomeCatShipping,
                     icon: Icons.local_shipping,
                     color: const Color(0xFFB45309),
                     onTap: () => onCategorySelected('shipping'),
@@ -310,7 +308,7 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
                   child: _buildCategoryTile(
                     context,
                     key: const Key('category_tile_all'),
-                    title: "Browse All",
+                    title: l10n.customerHomeCatBrowseAll,
                     icon: Icons.grid_view_rounded,
                     color: AppColors.primary,
                     onTap: () => onCategorySelected('all'),
@@ -332,16 +330,16 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: ThemedSectionHeader(
-                        title: "Recent Activity",
+                        title: l10n.customerHomeRecentActivity,
                       ),
                     ),
                     TextButton.icon(
                       key: const Key('view_all_orders_button'),
                       onPressed: onGoToHistory,
                       icon: const Icon(Icons.arrow_forward, size: 16),
-                      label: const Text("View All"),
+                      label: Text(l10n.customerHomeCatBrowseAll),
                     ),
                   ],
                 ),
@@ -393,7 +391,7 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
                       const SizedBox(width: AppSpacing.base),
                       Expanded(
                         child: Text(
-                          "No active orders right now.",
+                          l10n.customerJobsEmpty,
                           style: AppTypography.bodyMd.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
@@ -408,32 +406,50 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
           const SizedBox(height: AppSpacing.xl),
 
           // Quick Action Booking Banner
-          ThemedCard(
-            borderRadius: AppRadius.md,
-            padding: AppSpacing.lg,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary,
+                  AppColors.primary.withValues(alpha: 0.85),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Row(
               children: [
-                Text(
-                  "Need a service delivered?",
-                  style: AppTypography.bodyLg.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.customerHomeQuickBookBanner,
+                        style: AppTypography.headlineLgMobile.copyWith(
+                          color: AppColors.onPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        l10n.customerHomeSub,
+                        style: AppTypography.bodyMd.copyWith(
+                          color: AppColors.onPrimary.withValues(alpha: 0.85),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  "Find nearby verified service providers and book in seconds.",
-                  style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                const SizedBox(width: AppSpacing.md),
+                SizedBox(
+                  width: 140,
+                  child: PrimaryButton(
+                    key: const Key('quick_book_now_button'),
+                    text: l10n.customerHomeQuickBookBtn,
+                    onPressed: onGoToServices,
                   ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                PrimaryButton(
-                  key: const Key('book_now_home_button'),
-                  text: "Explore Marketplace",
-                  icon: Icons.search,
-                  onPressed: onGoToServices,
                 ),
               ],
             ),
@@ -451,38 +467,34 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return Material(
-      color: color.withValues(alpha: 0.08),
-      borderRadius: AppRadius.mdBorder,
-      child: InkWell(
-        key: key,
-        onTap: onTap,
-        borderRadius: AppRadius.mdBorder,
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.mdBorder,
-            border: Border.all(color: color.withValues(alpha: 0.2)),
-          ),
+    return ThemedCard(
+      key: key,
+      padding: AppSpacing.md,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: color,
+                  color: color.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: Colors.white, size: 24),
+                child: Icon(icon, color: color, size: 28),
               ),
-              const SizedBox(height: AppSpacing.base),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 title,
-                style: AppTypography.bodyLg.copyWith(
+                style: AppTypography.labelLg.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.onSurface,
                 ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),

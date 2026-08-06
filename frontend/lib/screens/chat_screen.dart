@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
@@ -91,6 +92,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final chat = Provider.of<ChatProvider>(context);
+    final l10n = context.l10n;
     final currentUserId = auth.user?.id ?? '';
 
     // Auto scroll to bottom when new messages arrive
@@ -132,7 +134,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           const SizedBox(width: 4),
           Text(
-            "Connecting...",
+            l10n.loading,
             style: AppTypography.labelMd.copyWith(color: AppColors.warning),
           ),
         ],
@@ -163,7 +165,7 @@ class _ChatScreenState extends State<ChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Job Chat #${widget.jobId.substring(0, widget.jobId.length > 8 ? 8 : widget.jobId.length)}",
+              "${l10n.chatTitle} #${widget.jobId.substring(0, widget.jobId.length > 8 ? 8 : widget.jobId.length)}",
               style: AppTypography.titleMd.copyWith(color: AppColors.onPrimary),
             ),
             const SizedBox(height: 2),
@@ -195,10 +197,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 : chat.messages.isEmpty && chat.isConnecting
                     ? const Center(child: ThemedLoadingIndicator())
                     : chat.messages.isEmpty
-                        ? const ThemedEmptyState(
+                        ? ThemedEmptyState(
                             icon: Icons.chat_bubble_outline,
-                            title: "No messages yet",
-                            description: "Start the conversation!",
+                            title: l10n.chatTitle,
+                            description: l10n.chatTypeHint,
                           )
                         : ListView.builder(
                             controller: _scrollController,
@@ -231,7 +233,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     Expanded(
                       child: ThemedTextField(
                         controller: _messageController,
-                        hintText: "Type a message...",
+                        hintText: l10n.chatTypeHint,
                         textInputAction: TextInputAction.send,
                         onFieldSubmitted: (_) => _sendMessage(),
                       ),

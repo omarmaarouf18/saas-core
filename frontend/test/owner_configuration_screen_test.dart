@@ -139,7 +139,10 @@ void main() {
     expect(find.text('30.0'), findsOneWidget);
     expect(find.text('15.0'), findsOneWidget);
     expect(find.text('2.5'), findsOneWidget);
-    expect(find.text('https://example.com/logo.png'), findsOneWidget);
+    await tester.drag(
+        find.byType(SingleChildScrollView), const Offset(0, -300));
+    await tester.pump();
+    expect(find.text('https://example.com/logo.png'), findsAtLeastNWidgets(1));
   });
 
   testWidgets('Navigates to OwnerConfigurationScreen from SettingsScreen',

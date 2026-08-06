@@ -6,6 +6,7 @@ import 'package:frontend/core/api_client.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
+import 'package:frontend/providers/locale_provider.dart';
 import 'package:frontend/providers/chat_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/widgets/create_ticket_dialog.dart';
@@ -75,11 +76,14 @@ void main() {
   Widget buildSettingsApp({
     required AuthProvider authProvider,
     required ThemeProvider themeProvider,
+    LocaleProvider? localeProvider,
   }) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
+        ChangeNotifierProvider<LocaleProvider>(
+            create: (_) => localeProvider ?? LocaleProvider()),
         ChangeNotifierProvider<NotificationsProvider>(
           create: (_) => NotificationsProvider(apiClient),
         ),
@@ -134,7 +138,7 @@ void main() {
     expect(fakeStorage.storage['theme_mode'], 'dark');
   });
 
-  testWidgets('(b1) Language row renders with Coming Soon badge',
+  testWidgets('(b1) Language selector renders SegmentedButton with options',
       (WidgetTester tester) async {
     final themeProvider = ThemeProvider(storage: FakeSecureStorage());
     final ownerUser = UserProfile(
@@ -151,13 +155,16 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    // Verify "Coming Soon" badge exists for placeholder row (Language)
-    expect(find.text("Coming Soon"), findsOneWidget);
+    expect(find.byKey(const Key('language_selector')), findsOneWidget);
+    expect(find.byKey(const Key('lang_auto_button')), findsOneWidget);
+    expect(find.byKey(const Key('lang_en_button')), findsOneWidget);
+    expect(find.byKey(const Key('lang_ar_button')), findsOneWidget);
   });
 
-  testWidgets('(b2) Tapping Language row displays feedback snackbar',
+  testWidgets('(b2) Tapping Language options switches locale in LocaleProvider',
       (WidgetTester tester) async {
     final themeProvider = ThemeProvider(storage: FakeSecureStorage());
+    final localeProvider = LocaleProvider();
     final ownerUser = UserProfile(
       id: 'owner-1',
       email: 'owner@example.com',
@@ -169,15 +176,16 @@ void main() {
     await tester.pumpWidget(buildSettingsApp(
       authProvider: authProvider,
       themeProvider: themeProvider,
+      localeProvider: localeProvider,
     ));
     await tester.pumpAndSettle();
 
-    final langRow = find.byKey(const Key('language_setting_row'));
-    expect(langRow, findsOneWidget);
-    await tester.ensureVisible(langRow);
-    await tester.tap(langRow);
-    await tester.pump();
-    expect(find.text("Language selection is coming soon"), findsOneWidget);
+    final arBtn = find.byKey(const Key('lang_ar_button'));
+    expect(arBtn, findsOneWidget);
+    await tester.tap(arBtn);
+    await tester.pumpAndSettle();
+
+    expect(localeProvider.locale?.languageCode, 'ar');
   });
 
   testWidgets('(b3) Tapping Customer Service row opens CreateTicketDialog',

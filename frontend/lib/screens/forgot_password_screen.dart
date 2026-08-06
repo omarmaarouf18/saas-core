@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
@@ -46,12 +47,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Future<void> _requestCode() async {
+    final l10n = context.l10n;
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains("@")) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text("Please enter a valid email address to receive a code."),
+        SnackBar(
+          content: Text(l10n.loginEmailInvalid),
           backgroundColor: AppColors.error,
         ),
       );
@@ -133,11 +134,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        title: const Text("Forgot / Reset Password"),
+        title: Text(l10n.forgotPasswordTitle),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
         elevation: 0,
@@ -160,7 +162,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    "Reset Your Password",
+                    l10n.forgotPasswordTitle,
                     style: AppTypography.headlineLg.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
@@ -169,7 +171,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                   const SizedBox(height: AppSpacing.base),
                   Text(
-                    "Request a 6-digit reset code, then enter the code and your new password below.",
+                    l10n.forgotPasswordSubtitle,
                     style: AppTypography.bodyLg.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
@@ -206,26 +208,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ThemedTextField(
                           key: const Key('forgot_password_email_field'),
                           controller: _emailController,
-                          labelText: "Email Address",
-                          hintText: "Enter your email address",
+                          labelText: l10n.loginEmailLabel,
+                          hintText: l10n.loginEmailHint,
                           prefixIcon: const Icon(Icons.email_outlined),
                           keyboardType: TextInputType.emailAddress,
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
-                              return "Please enter your email address";
+                              return l10n.loginEmailReq;
                             }
                             if (!val.contains("@")) {
-                              return "Please enter a valid email address";
+                              return l10n.loginEmailInvalid;
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         Align(
-                          alignment: Alignment.centerRight,
+                          alignment: AlignmentDirectional.centerEnd,
                           child: SecondaryButton(
                             key: const Key('request_reset_code_button'),
-                            text: "Request Reset Code",
+                            text: l10n.otpResendButton,
                             icon: Icons.send_outlined,
                             isLoading: _isRequestingCode,
                             onPressed: _requestCode,
@@ -235,18 +237,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ThemedTextField(
                           key: const Key('forgot_password_otp_field'),
                           controller: _otpController,
-                          labelText: "6-Digit Code",
-                          hintText: "Enter verification code",
+                          labelText: l10n.otpCodeLabel,
+                          hintText: "000000",
                           prefixIcon: const Icon(Icons.pin_outlined),
                           keyboardType: TextInputType.number,
                           maxLength: 6,
                           counterText: "",
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
-                              return "Please enter the verification code";
+                              return l10n.otpCodeLabel;
                             }
                             if (val.trim().length != 6) {
-                              return "Code must be exactly 6 digits";
+                              return l10n.otpCodeLabel;
                             }
                             return null;
                           },
@@ -255,17 +257,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ThemedTextField(
                           key: const Key('forgot_password_new_password_field'),
                           controller: _newPasswordController,
-                          labelText: "New Password",
-                          hintText: "Enter your new password",
+                          labelText: l10n.signupPasswordLabel,
+                          hintText: l10n.signupPasswordHint,
                           prefixIcon: const Icon(Icons.lock_outline),
                           obscureText: true,
                           isPasswordField: true,
                           validator: (val) {
                             if (val == null || val.isEmpty) {
-                              return "Please enter a new password";
+                              return l10n.loginPasswordReq;
                             }
                             if (val.length < 6) {
-                              return "Password must be at least 6 characters";
+                              return l10n.signupPasswordHint;
                             }
                             return null;
                           },
@@ -275,17 +277,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           key: const Key(
                               'forgot_password_confirm_password_field'),
                           controller: _confirmPasswordController,
-                          labelText: "Confirm New Password",
-                          hintText: "Re-enter your new password",
+                          labelText: l10n.signupConfirmPasswordLabel,
+                          hintText: l10n.signupConfirmPasswordHint,
                           prefixIcon: const Icon(Icons.lock_reset_outlined),
                           obscureText: true,
                           isPasswordField: true,
                           validator: (val) {
                             if (val == null || val.isEmpty) {
-                              return "Please confirm your new password";
+                              return l10n.loginPasswordReq;
                             }
                             if (val != _newPasswordController.text) {
-                              return "Passwords do not match";
+                              return l10n.signupPasswordMismatch;
                             }
                             return null;
                           },
@@ -293,7 +295,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         const SizedBox(height: AppSpacing.lg),
                         PrimaryButton(
                           key: const Key('submit_reset_password_button'),
-                          text: "RESET PASSWORD",
+                          text: l10n.forgotPasswordSubmitButton,
                           isLoading: auth.isLoading,
                           onPressed: _submitReset,
                         ),

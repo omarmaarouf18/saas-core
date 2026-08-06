@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
@@ -66,6 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
@@ -87,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    "Quick Delivery",
+                    l10n.appName,
                     style: AppTypography.headlineLg.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
@@ -96,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: AppSpacing.base),
                   Text(
-                    "Log in to manage your services",
+                    l10n.loginSubtitle,
                     style: AppTypography.bodyLg.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
@@ -109,16 +111,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         ThemedTextField(
                           controller: _emailController,
-                          labelText: "Email Address",
-                          hintText: "Enter your email address",
+                          labelText: l10n.loginEmailLabel,
+                          hintText: l10n.loginEmailHint,
                           prefixIcon: const Icon(Icons.email_outlined),
                           keyboardType: TextInputType.emailAddress,
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
-                              return "Please enter an email";
+                              return l10n.loginEmailReq;
                             }
                             if (!val.contains("@")) {
-                              return "Invalid email address";
+                              return l10n.loginEmailInvalid;
                             }
                             return null;
                           },
@@ -126,21 +128,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: AppSpacing.md),
                         ThemedTextField(
                           controller: _passwordController,
-                          labelText: "Password",
-                          hintText: "Enter your password",
+                          labelText: l10n.loginPasswordLabel,
+                          hintText: l10n.loginPasswordHint,
                           prefixIcon: const Icon(Icons.lock_outline),
                           obscureText: true,
                           isPasswordField: true,
                           validator: (val) {
                             if (val == null || val.isEmpty) {
-                              return "Please enter a password";
+                              return l10n.loginPasswordReq;
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         Align(
-                          alignment: Alignment.centerRight,
+                          alignment: AlignmentDirectional.centerEnd,
                           child: TextButton(
                             onPressed: () {
                               Navigator.of(context).push(
@@ -151,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               );
                             },
                             child: Text(
-                              "Forgot password?",
+                              l10n.loginForgotPassword,
                               style: AppTypography.bodyMd.copyWith(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.w600,
@@ -161,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: AppSpacing.md),
                         PrimaryButton(
-                          text: "LOG IN",
+                          text: l10n.loginSubmitButton,
                           isLoading: auth.isLoading,
                           onPressed: _submit,
                         ),
@@ -175,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             );
                           },
                           child: Text(
-                            "Don't have an account? Register",
+                            "${l10n.loginNoAccount} ${l10n.loginSignUp}",
                             style: AppTypography.bodyMd.copyWith(
                               color: AppColors.primary,
                               fontWeight: FontWeight.w600,

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/l10n.dart';
 import '../core/api_client.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
@@ -325,12 +326,13 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
   Widget build(BuildContext context) {
     final step = _getStatusStep(_currentJob.status);
     final isCancelled = _currentJob.status == 'cancelled';
+    final l10n = context.l10n;
     final statusColor = StatusBadge.getStatusColor(_currentJob.status);
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        title: const Text("Job Progress"),
+        title: Text(l10n.jobStatusTitle),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
       ),

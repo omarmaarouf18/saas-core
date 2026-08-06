@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:math' as math;
@@ -139,6 +140,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final marketplace = Provider.of<MarketplaceProvider>(context);
+    final l10n = context.l10n;
 
     // Filter services client-side by category if not 'all'
     final filteredServices = _selectedCategory == 'all'
@@ -192,7 +194,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                       flex: 1,
                       child: ThemedTextField(
                         controller: _radiusController,
-                        labelText: "Radius (KM)",
+                        labelText: l10n.customerMarketplaceFilterRadius,
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -212,7 +214,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                           color: AppColors.onSurface,
                         ),
                         decoration: InputDecoration(
-                          labelText: "Category",
+                          labelText: l10n.customerMarketplaceFilterCategory,
                           labelStyle: AppTypography.labelLg.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
@@ -238,8 +240,9 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                           ),
                         ),
                         items: [
-                          const DropdownMenuItem(
-                              value: 'all', child: Text("All Categories")),
+                          DropdownMenuItem(
+                              value: 'all',
+                              child: Text(l10n.customerHomeCatBrowseAll)),
                           ...serviceCategoryLabels.entries.map(
                             (entry) => DropdownMenuItem(
                               value: entry.key,

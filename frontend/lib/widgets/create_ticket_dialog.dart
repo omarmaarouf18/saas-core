@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
@@ -88,11 +89,12 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final hasContextId =
         widget.contextId != null && widget.contextId!.trim().isNotEmpty;
 
     return AlertDialog(
-      title: const Text("Open Complaint Ticket"),
+      title: Text(l10n.jobStatusOpenTicketBtn),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -120,11 +122,11 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> {
               ThemedTextField(
                 key: const Key('ticket_subject_input'),
                 controller: _subjectController,
-                labelText: "Subject / Topic",
-                hintText: "e.g. Delayed Delivery / Driver Unresponsive",
+                labelText: l10n.settingsCustomerService,
+                hintText: l10n.settingsCustomerServiceSub,
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
-                    return "Subject is required.";
+                    return l10n.ticketSubjectReq;
                   }
                   return null;
                 },
@@ -133,12 +135,12 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> {
               ThemedTextField(
                 key: const Key('ticket_description_input'),
                 controller: _descriptionController,
-                labelText: "Issue Details",
-                hintText: "Please describe what went wrong...",
+                labelText: l10n.settingsCustomerServiceSub,
+                hintText: l10n.settingsCustomerServiceSub,
                 maxLines: 3,
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
-                    return "Issue details are required.";
+                    return l10n.ticketDescriptionReq;
                   }
                   return null;
                 },
@@ -148,16 +150,19 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> {
         ),
       ),
       actions: [
-        SecondaryButton(
-          text: "Cancel",
-          isOutlined: true,
-          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+        SizedBox(
+          width: 100,
+          child: SecondaryButton(
+            text: l10n.cancel,
+            isOutlined: true,
+            onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+          ),
         ),
         SizedBox(
           width: 130,
           child: PrimaryButton(
             key: const Key('submit_ticket_button'),
-            text: "Submit",
+            text: l10n.submit,
             isLoading: _isSubmitting,
             onPressed: _isSubmitting ? null : _submitTicket,
           ),
