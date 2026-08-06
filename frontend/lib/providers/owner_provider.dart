@@ -276,6 +276,56 @@ class OwnerProvider extends ChangeNotifier {
   }
 
   // ---------------------------------------------------------------------------
+  // API Call: Update Owner Service Configuration (PUT /users/services)
+  // ---------------------------------------------------------------------------
+  Future<Map<String, dynamic>> updateOwnerServiceConfig({
+    required String serviceId,
+    required String ownerId,
+    String? name,
+    String? category,
+    double? tenantBasePrice,
+    double? tenantPricePerKM,
+    String? photoUrl,
+    String? address,
+    String? workingHours,
+    double? coverageRadiusKm,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final body = <String, dynamic>{
+        'service_id': serviceId,
+        'owner_id': ownerId,
+      };
+      if (name != null) body['name'] = name;
+      if (category != null) body['category'] = category;
+      if (tenantBasePrice != null) body['tenant_base_price'] = tenantBasePrice;
+      if (tenantPricePerKM != null) {
+        body['tenant_price_per_km'] = tenantPricePerKM;
+      }
+      if (photoUrl != null) body['photo_url'] = photoUrl;
+      if (address != null) body['address'] = address;
+      if (workingHours != null) body['working_hours'] = workingHours;
+      if (coverageRadiusKm != null) {
+        body['coverage_radius_km'] = coverageRadiusKm;
+      }
+
+      final res = await apiClient.put('/users/services', body);
+      await fetchServices();
+      return Map<String, dynamic>.from(res is Map ? res : {});
+    } catch (e) {
+      debugPrint('Error updating service configuration: $e');
+      _error = friendlyErrorMessage(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // API Call: Update Subscription
   // ---------------------------------------------------------------------------
   Future<Map<String, dynamic>> updateSubscription({

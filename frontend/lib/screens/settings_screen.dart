@@ -6,6 +6,7 @@ import '../providers/theme_provider.dart';
 import '../utils/logout_helper.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
+import 'owner_configuration_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   final bool isEmbeddedInTab;
@@ -156,14 +157,14 @@ class SettingsScreen extends StatelessWidget {
                     leading: const Icon(Icons.business_outlined,
                         color: AppColors.primary),
                     title: const Text("Owner Configuration"),
-                    subtitle: const Text("Tenant rules & management options"),
-                    trailing: _buildComingSoonBadge(),
+                    subtitle: const Text("Tenant rules & service options"),
+                    trailing: const Icon(Icons.chevron_right,
+                        color: AppColors.outline),
                     onTap: () {
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Owner Configuration is coming soon"),
-                          duration: Duration(seconds: 2),
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const OwnerConfigurationScreen(),
                         ),
                       );
                     },

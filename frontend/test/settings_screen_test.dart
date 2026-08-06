@@ -147,8 +147,8 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    // Verify "Coming Soon" badges exist
-    expect(find.text("Coming Soon"), findsAtLeastNWidgets(3));
+    // Verify "Coming Soon" badges exist for placeholder rows (Language and Customer Service)
+    expect(find.text("Coming Soon"), findsAtLeastNWidgets(2));
   });
 
   testWidgets('(b2) Tapping Language row displays feedback snackbar',
