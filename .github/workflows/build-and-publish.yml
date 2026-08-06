@@ -95,9 +95,9 @@ jobs:
 
           echo "=== Verifying docker-compose.yml syntax ==="
           cd saas-core-deploy
-          docker compose config --quiet 2>/dev/null || {
+          docker compose --env-file .env.example config --quiet 2>/dev/null || {
             echo "::error::Generated docker-compose.yml failed syntax validation!"
-            docker compose config
+            docker compose --env-file .env.example config
             exit 1
           }
           echo "docker-compose.yml syntax validated successfully."
