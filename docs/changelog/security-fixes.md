@@ -2,6 +2,14 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
+## UpdateProfile Duplicate Username Error Sanitization & Phone Validation (Findings #6 & #7)
+
+- **Implementation Detail**:
+  1. **Finding #6**: Fixed raw database error disclosure in `auth-service` (`UpdateProfile` in `services/auth-service/internal/handlers/auth.go`). Previously, database update failures returned raw driver error text via `writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update user profile: " + err.Error()})`, leaking MongoDB collection and index schemas (`E11000 duplicate key error collection...`) on username conflicts. Added `mongo.IsDuplicateKeyError(err)` check on `a.store.UpdateUser` failure path, returning HTTP 409 Conflict with a clean message `{"error": "username is already taken"}` while logging raw errors server-side only.
+  2. **Finding #7**: Added strict format and length validation for `phone` updates in `UpdateProfile`. Previously, `updateFields["phone"] = str` accepted arbitrary or empty strings, allowing accidental phone deletion via `"phone": ""`. Introduced E.164 phone regex validation (`^\+?[0-9]{7,15}$`) requiring 7 to 15 digits with optional leading `+`. Rejects empty strings (`"phone": ""`) and malformed phone strings with HTTP 400 Bad Request (`{"error": "phone number cannot be empty"}` / `{"error": "invalid phone number format"}`).
+- **Commit SHA**: ``f15dadfa4c281607fb4ecafbdafb6bcf82263eb2``
+- **Verification**: Verified via regression test subtests (`Duplicate Username Conflict Returns Clean 409 Without Raw Driver Text`, `Invalid Phone Format Rejected with 400`, and `Empty Phone String Rejected with 400` in `user_profile_test.go`), `go build ./...`, `go vet ./...`, and `go test ./services/auth-service/...`. ✅
+
 ## UpdateProfile Unbounded Request Body Cap (Finding #5)
 
 - **Implementation Detail**: Remediated memory exhaustion vulnerability in `auth-service` (`UpdateProfile` in `services/auth-service/internal/handlers/auth.go`). Previously, `UpdateProfile` read the request body via `io.ReadAll(r.Body)` without a size boundary, allowing authenticated users to send arbitrarily large payloads and force full in-memory buffering before JSON decoding or IDOR validation. Wrapped `r.Body` with `http.MaxBytesReader(w, r.Body, 1<<20)` (1MB cap) prior to `io.ReadAll`. Added regression test `Request Body Exceeding 1MB Limit Rejected` in `user_profile_test.go` asserting that payloads exceeding 1MB return HTTP 400 Bad Request without application crashes or silent memory buffering.
