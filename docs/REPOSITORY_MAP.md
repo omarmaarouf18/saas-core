@@ -144,3 +144,25 @@ Expected output: `ghcr.io/omarmaarouf18/saas-core-api-gateway:<40-char-sha>`
 | **OTP Emails / SMS Not Arriving** | `auth-service` Container Logs | `docker compose logs -f auth-service` | Verify `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are configured in `.env`. Confirm Resend API domain status is verified. |
 | **Public Domain Not Resolving / HTTP 502 / Connection Refused** | `saas-caddy` Container Status & Logs | `docker compose ps caddy` <br> `docker compose logs -f caddy` | Ensure `saas-caddy` container is running (see [DEPLOYMENT.md §10.5](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/DEPLOYMENT.md#105-missing-or-orphaned-saas-caddy-container-causing-public-domain-outage)). Confirm `Caddyfile` reverse_proxy target is `api-gateway:8080` over `saas-net`. |
 | **Production Containers Not Updating After Push** | GitHub Actions `build-and-publish.yml` Log & `saas-core-deploy` Commits | Check [GitHub Actions Runs](https://github.com/omarmaarouf18/saas-core/actions) and [saas-core-deploy Commits](https://github.com/omarmaarouf18/saas-core-deploy/commits/main) | Verify push occurred to `main` (not `logic-exploitation` alone). Ensure `DEPLOY_REPO_PAT` secret is valid. Run `docker compose pull` on the host. |
+
+---
+
+## 5. Monorepo Shared Dependency Constraint (`shared/infra` — Finding #9)
+
+The shared infrastructure utilities (`shared/infra`, containing `jwtutil`, `handlerutil`, `resilience`, `tlsutil`, etc.) are linked via local relative paths across all microservice Go modules:
+```go
+replace github.com/project/shared/infra => ../../shared/infra
+```
+
+### 5.1 Accepted Architecture & Extraction Guidance
+- **Relative Path Resolution**: `shared/infra` is resolved strictly via relative filesystem paths within this monorepo.
+- **Service Extraction Rule**: If any microservice is ever copied or extracted into a separate application repository, `shared/infra` **must be copied alongside it** under the relative path expected by `go.mod`. There is currently no versioned or published module distribution mechanism (such as a standalone Git repository or private Go module proxy).
+
+### 5.2 Known Maintenance Risk & Mitigation
+- > [!WARNING]
+  > **No Automated Security/Fix Propagation Across External Applications**: Any future bug fix, performance optimization, or security hardening applied to `shared/infra` within `saas-core` (e.g. security fixes to `jwtutil`, rate limiters, or TLS helpers) will **NOT** automatically propagate to any copied instance in external repositories.
+  > Whoever maintains an extracted service in a separate application is solely responsible for manually re-syncing `shared/infra`. No automated tooling exists to detect or alert on code drift across standalone copies.
+
+### 5.3 Long-Term Modularization Trigger
+- **Accepted Tradeoff**: This relative-path monorepo coupling is a deliberate, accepted architectural tradeoff for the current single-monorepo deployment model.
+- **Future Re-evaluation Trigger**: Publishing `shared/infra` as a standalone, versioned Go module (in its own dedicated repository or via a private module registry) remains the correct long-term fix. This transition should be formally revisited if/when 3 or more independent applications depend on extracted instances of `shared/infra`.
