@@ -986,6 +986,8 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	// #nosec G120 //nolint:gosec -- body is bounded by http.MaxBytesReader, preventing memory exhaustion
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "failed to read request body"})

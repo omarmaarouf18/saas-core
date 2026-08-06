@@ -248,4 +248,27 @@ func TestUpdateProfile_SelfServiceAndSecurity(t *testing.T) {
 			t.Fatalf("Expected 400 Bad Request when frequent_addresses exceeds 10 entries, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 	})
+
+	// 5. Request Body Exceeding 1MB Limit Rejected
+	t.Run("Request Body Exceeding 1MB Limit Rejected", func(t *testing.T) {
+		largePadding := make([]byte, (1<<20)+100)
+		for i := range largePadding {
+			largePadding[i] = 'a'
+		}
+
+		reqPayload := map[string]any{
+			"username": "user_a_overflow",
+			"padding":  string(largePadding),
+		}
+		bodyBytes, _ := json.Marshal(reqPayload)
+		req := httptest.NewRequest(http.MethodPatch, "/auth/user", bytes.NewReader(bodyBytes))
+		req.Header.Set("Authorization", "Bearer "+tokenA)
+		rec := httptest.NewRecorder()
+
+		a.UpdateProfile(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("Expected 400 Bad Request when request body exceeds 1MB cap, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+	})
 }
