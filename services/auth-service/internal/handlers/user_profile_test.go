@@ -271,4 +271,67 @@ func TestUpdateProfile_SelfServiceAndSecurity(t *testing.T) {
 			t.Fatalf("Expected 400 Bad Request when request body exceeds 1MB cap, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 	})
+
+	// 6. Invalid Phone Format Rejected with 400
+	t.Run("Invalid Phone Format Rejected with 400", func(t *testing.T) {
+		reqPayload := map[string]any{
+			"phone": "invalid-phone-123",
+		}
+		bodyBytes, _ := json.Marshal(reqPayload)
+		req := httptest.NewRequest(http.MethodPatch, "/auth/user", bytes.NewReader(bodyBytes))
+		req.Header.Set("Authorization", "Bearer "+tokenA)
+		rec := httptest.NewRecorder()
+
+		a.UpdateProfile(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("Expected 400 Bad Request for malformed phone, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		if !bytes.Contains(rec.Body.Bytes(), []byte("invalid phone number format")) {
+			t.Errorf("Expected 'invalid phone number format' error, got %s", rec.Body.String())
+		}
+	})
+
+	// 7. Empty Phone String Rejected with 400
+	t.Run("Empty Phone String Rejected with 400", func(t *testing.T) {
+		reqPayload := map[string]any{
+			"phone": "   ",
+		}
+		bodyBytes, _ := json.Marshal(reqPayload)
+		req := httptest.NewRequest(http.MethodPatch, "/auth/user", bytes.NewReader(bodyBytes))
+		req.Header.Set("Authorization", "Bearer "+tokenA)
+		rec := httptest.NewRecorder()
+
+		a.UpdateProfile(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("Expected 400 Bad Request for empty phone, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		if !bytes.Contains(rec.Body.Bytes(), []byte("phone number cannot be empty")) {
+			t.Errorf("Expected 'phone number cannot be empty' error, got %s", rec.Body.String())
+		}
+	})
+
+	// 8. Duplicate Username Conflict Returns Clean 409 Without Raw Driver Text
+	t.Run("Duplicate Username Conflict Returns Clean 409 Without Raw Driver Text", func(t *testing.T) {
+		reqPayload := map[string]any{
+			"username": userB.Username, // user_b_orig
+		}
+		bodyBytes, _ := json.Marshal(reqPayload)
+		req := httptest.NewRequest(http.MethodPatch, "/auth/user", bytes.NewReader(bodyBytes))
+		req.Header.Set("Authorization", "Bearer "+tokenA)
+		rec := httptest.NewRecorder()
+
+		a.UpdateProfile(rec, req)
+
+		if rec.Code != http.StatusConflict {
+			t.Fatalf("Expected 409 Conflict for duplicate username, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		if bytes.Contains(rec.Body.Bytes(), []byte("E11000")) || bytes.Contains(rec.Body.Bytes(), []byte("duplicate key")) {
+			t.Errorf("SECURITY DEFECT: Raw Mongo driver error string leaked in response body! Got: %s", rec.Body.String())
+		}
+		if !bytes.Contains(rec.Body.Bytes(), []byte("username is already taken")) {
+			t.Errorf("Expected 'username is already taken' error message, got %s", rec.Body.String())
+		}
+	})
 }

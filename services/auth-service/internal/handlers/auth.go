@@ -12,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -26,8 +27,11 @@ import (
 	"github.com/project/shared/infra/tlsutil"
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var phoneRegex = regexp.MustCompile(`^\+?[0-9]{7,15}$`)
 
 // Auth holds runtime dependencies for the authentication handlers.
 type Auth struct {
@@ -1066,6 +1070,14 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		str = strings.TrimSpace(str)
+		if str == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "phone number cannot be empty"})
+			return
+		}
+		if !phoneRegex.MatchString(str) {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid phone number format"})
+			return
+		}
 		updateFields["phone"] = str
 	}
 
@@ -1101,7 +1113,12 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.store.UpdateUser(ctx, userID, bson.M{"$set": updateFields}); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update user profile: " + err.Error()})
+		log.Printf("[AUTH] Failed to update user profile for user %s: %v", userID, err)
+		if mongo.IsDuplicateKeyError(err) {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": "username is already taken"})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update user profile"})
 		return
 	}
 
