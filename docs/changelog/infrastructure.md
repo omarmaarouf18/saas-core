@@ -2,6 +2,12 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Strict CD Pre-Flight Validation, Structural Sync & Rollback (ADR-0015)
+
+- **Implementation Detail**: Added `--check-env` pre-flight validation flag across all 5 Go microservices (`api-gateway`, `auth-service`, `chat-service`, `notification-service`, `user-service`) running `config.Load()` and exiting 0/1 without starting the HTTP server or requiring DB/TLS cert files. Created production reference files in `infrastructure/deploy/` (`docker-compose.prod.yml` containing canonical environment variable blocks and `deploy.yml` featuring pre-flight validation, all-5-service health checks, health-gated rollback to prior `docker-compose.yml`, and `.env` symlink unification). Rewrote `update-deployment-repo` job in `.github/workflows/build-and-publish.yml` to execute full structural sync from `infrastructure/deploy/` to `omarmaarouf18/saas-core-deploy` (eliminating env block drift). Authored [ADR-0015](docs/adr/0015-strict-cd-preflight-validation.md) documenting root causes of 3 real production incidents from 2026-08-06.
+- **Commit SHA**: `8f768a08059af871c2885ce143c7520685a84741`
+- **Verification**: Verified via `--check-env` exit code 1 failure test on missing required env vars, exit code 0 success test with required env vars, YAML syntax validation across all workflow and compose files, `make ci` execution, and cross-repository automated sync pipeline. ✅
+
 ## Database-per-Service Microservice Isolation (Finding #8)
 
 - **Implementation Detail**: Enforced strict logical database isolation per microservice to resolve shared-database tight coupling (`MONGO_INITDB_DATABASE=saas_platform`). Updated default database name fallback in `auth-service` (`services/auth-service/internal/config/config.go`) to `auth_db` and in `user-service` (`services/user-service/internal/config/config.go`) to `user_db`. Restructured `infrastructure/.env.example`, `infrastructure/.env`, `infrastructure/.env.local`, and `infrastructure/docker-compose.yml` to pass dedicated environment variables (`AUTH_MONGO_DATABASE=auth_db`, `USER_MONGO_DATABASE=user_db`, `CHAT_MONGO_DATABASE=chat_db`). Updated `docs/DEPLOYMENT.md` and `docs/RUNBOOK.md` noting the database separation, documenting that pre-production deployments must be reset (booting fresh empty `auth_db` and `user_db` databases), and specifying that future database structure changes once live production data exists require a formal `mongodump`/`mongorestore` data migration script.

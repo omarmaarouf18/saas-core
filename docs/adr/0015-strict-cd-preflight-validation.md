@@ -2,7 +2,7 @@
 
 - **Status**: Accepted
 - **Date**: 2026-08-06
-- **Related Commit SHA**: (to be filled after commit)
+- **Related Commit SHA**: `8f768a08059af871c2885ce143c7520685a84741`
 - **Supersedes**: Extends ADR-0012 (§ "Recommended Follow-Up Safeguard")
 
 ## Context
