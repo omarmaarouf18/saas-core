@@ -92,6 +92,21 @@ func (s *MongoDB) UpdateUser(ctx context.Context, userID string, update bson.M) 
 	return err
 }
 
+// UpdateUserConditional performs an UpdateOne matching both _id and statusField equal to expectedStatus.
+// Returns (true, nil) if a document was matched and updated, (false, nil) if MatchedCount == 0 (race condition / status changed),
+// or (false, err) on database error.
+func (s *MongoDB) UpdateUserConditional(ctx context.Context, userID string, statusField string, expectedStatus models.KYCStatus, update bson.M) (bool, error) {
+	filter := bson.M{
+		"_id":       userID,
+		statusField: expectedStatus,
+	}
+	res, err := s.users.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return false, err
+	}
+	return res.MatchedCount > 0, nil
+}
+
 // GetPendingKYBKYE returns all users with pending KYB or KYE approval status.
 func (s *MongoDB) GetPendingKYBKYE(ctx context.Context) ([]*models.User, error) {
 	filter := bson.M{

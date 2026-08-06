@@ -11,6 +11,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -3470,5 +3471,106 @@ func TestSignup_WrongOTPAgainstPendingSignup_FailsWithoutUserCreation(t *testing
 	// 3. Confirm no user record was created in DB
 	if user := s.GetByEmail(ctx, email); user != nil {
 		t.Fatalf("expected user record to NOT exist in DB after wrong OTP, but found user: %+v", user)
+	}
+}
+
+func TestReviewKYBKYESubmissions_ConcurrencyRace(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+
+	// 1. Create a pending owner submission
+	owner := &models.User{
+		ID:        "owner-race-1",
+		Email:     "owner-race@example.com",
+		Role:      models.RoleOwner,
+		KYCStatus: models.KYCPendingApproval,
+	}
+	if err := s.CreateUser(ctx, owner); err != nil {
+		t.Fatalf("Failed to create owner user: %v", err)
+	}
+
+	// 2. Create reviewer
+	reviewer := &models.Reviewer{
+		ID:    "reviewer-race-1",
+		Token: "reviewer-token-race",
+		Name:  "Race Reviewer",
+	}
+	if err := s.AddReviewer(ctx, reviewer); err != nil {
+		t.Fatalf("Failed to create reviewer: %v", err)
+	}
+
+	// 3. Simulate two concurrent review requests
+	bodyApprove, _ := json.Marshal(map[string]string{
+		"user_id": owner.ID,
+		"action":  "approve",
+	})
+	bodyReject, _ := json.Marshal(map[string]string{
+		"user_id": owner.ID,
+		"action":  "reject",
+		"reason":  "blurry document",
+	})
+
+	var wg sync.WaitGroup
+	var code1, code2 int
+	var body1, body2 string
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		req := httptest.NewRequest("POST", "/auth/kyb-kye/review", bytes.NewReader(bodyApprove))
+		req.Header.Set("X-Internal-Token", a.internalServiceToken)
+		req.Header.Set("X-Reviewer-Token", reviewer.Token)
+		rec := httptest.NewRecorder()
+		a.ReviewKYBKYESubmissions(rec, req)
+		code1 = rec.Code
+		body1 = rec.Body.String()
+	}()
+
+	go func() {
+		defer wg.Done()
+		req := httptest.NewRequest("POST", "/auth/kyb-kye/review", bytes.NewReader(bodyReject))
+		req.Header.Set("X-Internal-Token", a.internalServiceToken)
+		req.Header.Set("X-Reviewer-Token", reviewer.Token)
+		rec := httptest.NewRecorder()
+		a.ReviewKYBKYESubmissions(rec, req)
+		code2 = rec.Code
+		body2 = rec.Body.String()
+	}()
+
+	wg.Wait()
+
+	// Assert exactly one 200 OK and one 409 Conflict
+	var status200Count, status409Count int
+	if code1 == http.StatusOK {
+		status200Count++
+	} else if code1 == http.StatusConflict {
+		status409Count++
+	}
+
+	if code2 == http.StatusOK {
+		status200Count++
+	} else if code2 == http.StatusConflict {
+		status409Count++
+	}
+
+	if status200Count != 1 || status409Count != 1 {
+		t.Fatalf("Expected exactly one 200 OK and one 409 Conflict, got code1=%d (body: %s), code2=%d (body: %s)", code1, body1, code2, body2)
+	}
+
+	// 4. Assert audit logs count is exactly 1 (not 2 contradictory audit log entries)
+	logs := s.GetAuditLog(ctx, "")
+	var kycReviewedCount int
+	for _, l := range logs {
+		if l.Action == "KYC_REVIEWED" && l.TenantID == owner.ID {
+			kycReviewedCount++
+		}
+	}
+	if kycReviewedCount != 1 {
+		t.Errorf("Expected exactly 1 audit log entry for KYC_REVIEWED, got %d", kycReviewedCount)
 	}
 }

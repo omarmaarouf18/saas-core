@@ -1670,16 +1670,32 @@ func (a *Auth) ReviewKYBKYESubmissions(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	var statusField string
 	if isOwner {
+		statusField = "kyc_status"
 		update["$set"].(bson.M)["kyc_status"] = finalStatus
 	} else {
+		statusField = "kye_status"
 		update["$set"].(bson.M)["kye_status"] = finalStatus
 	}
 
-	if err := a.store.UpdateUser(ctx, targetUser.ID, update); err != nil {
+	updated, err := a.store.UpdateUserConditional(ctx, targetUser.ID, statusField, models.KYCPendingApproval, update)
+	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
+	if !updated {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "submission status has already changed or been reviewed"})
+		return
+	}
+
+	a.store.AppendAudit(ctx, models.AuditEntry{
+		EmployeeID: reviewer.ID,
+		TenantID:   targetUser.ID,
+		Action:     "KYC_REVIEWED",
+		Timestamp:  time.Now().UTC(),
+		ClientIP:   handlerutil.GetClientIP(r),
+	})
 
 	handlerutil.ShipSecurityEvent(ctx, "KYC_REVIEWED", "auth-service", reviewer.ID, req.UserID, fmt.Sprintf("action: %s, reason: %s", req.Action, req.Reason), handlerutil.GetClientIP(r))
 
