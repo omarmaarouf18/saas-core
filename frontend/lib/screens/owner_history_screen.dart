@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
@@ -481,6 +482,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final ownerProvider = Provider.of<OwnerProvider>(context);
 
     final tabBarView = TabBarView(
@@ -506,7 +508,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
-        title: const Text("History & Audit Logs"),
+        title: Text(l10n.ownerHistoryTitle),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.secondary,

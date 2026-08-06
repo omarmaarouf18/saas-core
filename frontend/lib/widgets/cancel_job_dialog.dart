@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/l10n/l10n.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
 
@@ -44,10 +45,11 @@ class _CancelJobDialogState extends State<CancelJobDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isReasonEmpty = _reasonController.text.trim().isEmpty;
 
     return AlertDialog(
-      title: Text("Cancel Job #${widget.jobId}"),
+      title: Text(l10n.cancelJobHeader(widget.jobId)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -85,7 +87,7 @@ class _CancelJobDialogState extends State<CancelJobDialog> {
         TextButton(
           onPressed:
               _isSubmitting ? null : () => Navigator.of(context).pop(false),
-          child: const Text("Keep Job"),
+          child: Text(l10n.cancelJobKeep),
         ),
         ElevatedButton(
           key: const Key('confirm_cancel_button'),
@@ -123,7 +125,7 @@ class _CancelJobDialogState extends State<CancelJobDialog> {
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
-              : const Text("Confirm Cancel"),
+              : Text(l10n.cancelJobConfirm),
         ),
       ],
     );

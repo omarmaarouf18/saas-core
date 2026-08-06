@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/l10n/l10n.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../models/job.dart';
@@ -101,10 +102,11 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     try {
       await provider.simulateAction(email: email, action: action);
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         _actionController.clear();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Action logged successfully: \"$action\""),
+            content: Text(l10n.actionLoggedSuccess(action)),
             backgroundColor: AppColors.success,
           ),
         );
@@ -163,11 +165,12 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     try {
       await provider.completeJob(job.id, cashCollected: isCod);
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         Provider.of<EmployeeLocationProvider>(context, listen: false)
             .stopTracking();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Job marked as completed successfully!"),
+          SnackBar(
+            content: Text(l10n.jobMarkedCompletedSuccess),
             backgroundColor: AppColors.success,
           ),
         );
@@ -239,6 +242,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final auth = Provider.of<AuthProvider>(context);
     final jobsProvider = Provider.of<EmployeeJobsProvider>(context);
 
@@ -247,7 +251,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
-        title: const Text("Employee Jobs Dashboard"),
+        title: Text(l10n.employeeJobsTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

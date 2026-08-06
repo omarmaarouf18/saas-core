@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/l10n/l10n.dart';
 import '../core/constants.dart';
 import '../core/theme.dart';
 import '../providers/map_tracking_provider.dart';
@@ -35,9 +36,10 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Live Courier Tracking'),
+        title: Text(l10n.liveCourierTracking),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

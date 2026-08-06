@@ -644,4 +644,228 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ticketDescriptionReq => 'Issue details are required.';
+
+  @override
+  String get liveCourierTracking => 'Live Courier Tracking';
+
+  @override
+  String get subscriptionPlansTitle => 'Subscription Plans';
+
+  @override
+  String get fleetLiveMapTitle => 'Fleet Live Map';
+
+  @override
+  String get pendingKybKyeSubmissions => 'Pending KYB/KYE Submissions';
+
+  @override
+  String reviewCompletedSuccess(String username) {
+    return 'Review completed successfully for $username.';
+  }
+
+  @override
+  String get reconciliationReviewTitle => 'Escrow Reconciliation Review';
+
+  @override
+  String get tooltipRefreshQueue => 'Refresh Queue';
+
+  @override
+  String get reconciliationEmptyTitle => 'No jobs pending reconciliation';
+
+  @override
+  String get reconciliationEmptyDesc =>
+      'All escrow transactions are healthy. No flagged jobs require manual review.';
+
+  @override
+  String get reconciliationFailureReason => 'Failure Reason';
+
+  @override
+  String get reconciliationNote => 'Note';
+
+  @override
+  String get reconciliationLockedEscrow => 'Locked Escrow';
+
+  @override
+  String get reconciliationEmployeeId => 'Employee ID';
+
+  @override
+  String get reconciliationCustomerId => 'Customer ID';
+
+  @override
+  String get reconciliationServiceId => 'Service ID';
+
+  @override
+  String get reconciliationRefundCustomer => 'Refund to Customer';
+
+  @override
+  String get reconciliationReleaseEmployee => 'Release to Employee';
+
+  @override
+  String reconciliationConfirmTitle(String actionLabel) {
+    return 'Confirm $actionLabel';
+  }
+
+  @override
+  String reconciliationConfirmMessage(
+      String actionLabel, String jobId, String amount, String targetRole) {
+    return 'Are you sure you want to $actionLabel for Job #$jobId?\n\nThis will transfer $amount Credits back to the $targetRole. Real funds will be moved.';
+  }
+
+  @override
+  String get reconciliationSuccessRelease =>
+      'Escrow resolved: funds released to employee/tenant';
+
+  @override
+  String get reconciliationSuccessRefund =>
+      'Escrow resolved: funds refunded to customer';
+
+  @override
+  String get reconciliationFailed => 'Failed to resolve reconciliation';
+
+  @override
+  String get roleEmployeeTenant => 'employee/tenant';
+
+  @override
+  String get roleCustomer => 'customer';
+
+  @override
+  String get docViewerTitle => 'Document Viewer';
+
+  @override
+  String get docTabIdFront => 'Front ID';
+
+  @override
+  String get docTabIdBack => 'Back ID';
+
+  @override
+  String get docTabSelfie => 'Selfie';
+
+  @override
+  String get docTabBusinessProof => 'Business Proof';
+
+  @override
+  String get docLoadingPreview => 'Loading document preview...';
+
+  @override
+  String get docNotProvided => 'Document not provided for this submission.';
+
+  @override
+  String get docFailedLoad => 'Failed to load document preview';
+
+  @override
+  String get docPdfPreviewTitle => 'PDF Document Preview';
+
+  @override
+  String docFileSize(int size) {
+    return 'File Size: $size bytes';
+  }
+
+  @override
+  String get docDecodeError => 'Failed to decode image bytes.';
+
+  @override
+  String get docNoDocument => 'No document loaded.';
+
+  @override
+  String get docRejectionReasonLabel => 'Rejection Reason / Notes';
+
+  @override
+  String get docRejectionReasonHint =>
+      'Explain why this submission is being rejected...';
+
+  @override
+  String get docRejectionReasonReq => 'Rejection reason is required.';
+
+  @override
+  String get docConfirmReject => 'Confirm Reject';
+
+  @override
+  String chatFailedSend(String error) {
+    return 'Failed to send message: $error';
+  }
+
+  @override
+  String get filterSortPrice => 'Price';
+
+  @override
+  String get filterSortNone => 'None';
+
+  @override
+  String bookingFailed(String error) {
+    return 'Booking Failed: $error';
+  }
+
+  @override
+  String actionLoggedSuccess(String action) {
+    return 'Action logged successfully: \"$action\"';
+  }
+
+  @override
+  String get jobMarkedCompletedSuccess =>
+      'Job marked as completed successfully!';
+
+  @override
+  String get quickDeliveryDashboard => 'Quick Delivery Dashboard';
+
+  @override
+  String get forgotPasswordSentMsg =>
+      'A password reset code has been sent if an account exists.';
+
+  @override
+  String get counterOfferSuccessMsg => 'Counter-offer submitted successfully!';
+
+  @override
+  String get kycTakeCamera => 'Take Photo with Camera';
+
+  @override
+  String get kycChooseGallery => 'Choose Image from Gallery';
+
+  @override
+  String get kycSelectPdf => 'Select PDF Document';
+
+  @override
+  String get otpResendSuccessMsg =>
+      'A new OTP code has been sent successfully.';
+
+  @override
+  String get ratingIdentityError =>
+      'Error: Cannot determine other party identity.';
+
+  @override
+  String get ratingSuccessMsg => 'Blind rating submitted successfully!';
+
+  @override
+  String ratingFailed(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String get unauthenticatedMsg => 'Unauthenticated';
+
+  @override
+  String get serviceCreatedSuccess => 'Service created successfully!';
+
+  @override
+  String serviceCreateFailed(String error) {
+    return 'Failed to create service: $error';
+  }
+
+  @override
+  String cancelJobHeader(String jobId) {
+    return 'Cancel Job #$jobId';
+  }
+
+  @override
+  String get cancelJobKeep => 'Keep Job';
+
+  @override
+  String get cancelJobConfirm => 'Confirm Cancel';
+
+  @override
+  String get locationPermissionDeniedDefault =>
+      'Location permission denied. Defaulting to Cairo.';
+
+  @override
+  String locationFetchError(String error) {
+    return 'Error fetching location: $error';
+  }
 }

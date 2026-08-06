@@ -37,21 +37,27 @@ This document records the full internationalization (i18n) setup and string extr
 | `kyb_kye_review_screen.dart` | Review Queue | 8 | Fully Localized | Admin approval queue & decision dialogs |
 | `service_screen.dart` | Service Config | 10 | Fully Localized | Service listing & parameters form |
 | `wallet_screen.dart` | Wallet | 12 | Fully Localized | Balance cards, deposit dialog & transaction ledger |
-| `reconciliation_queue_screen.dart` | Escrow Queue | 8 | Fully Localized | Reconciliation actions & confirmation modal |
+| `owner_reconciliation_queue_screen.dart` | Escrow Queue | 18 | Fully Localized | Reconciliation actions, queue refresh & confirmation modal |
 | `rating_screen.dart` | Service Rating | 7 | Fully Localized | Star rating & review submission |
 | `subscription_screen.dart` | Subscriptions | 8 | Fully Localized | Plan tiers & activation buttons |
 | `create_ticket_dialog.dart` | Shared Dialog | 6 | Fully Localized | Complaint ticket form fields & actions |
 | `cancel_job_dialog.dart` | Shared Dialog | 5 | Fully Localized | Job cancellation modal |
 | `confirm_action_dialog.dart` | Shared Dialog | 4 | Fully Localized | Generic confirmation dialog |
+| `document_viewer_dialog.dart` | Shared Dialog | 18 | Fully Localized | KYB/KYE document viewer tabs, preview & review action controls |
 | `location_picker_map.dart` | Shared Widget | 4 | Fully Localized | Map location picker CTAs |
 
 ---
 
 ## Static Regex Verification
-Run command for hardcoded English UI strings:
+Verification command for hardcoded English UI strings:
 ```bash
-grep -rn "Text('" frontend/lib/screens frontend/lib/widgets
+cd frontend && grep -rn "Text('" lib/screens lib/widgets ; grep -rn 'Text("' lib/screens lib/widgets
 ```
+
+> **Audit Correction Note**: An initial audit claimed zero hardcoded strings remained, but a comprehensive follow-up pass identified 13 hardcoded strings across 6 files (`customer_job_map_screen.dart`, `subscription_screen.dart`, `owner_fleet_map_screen.dart`, `kyb_kye_review_screen.dart`, `owner_reconciliation_queue_screen.dart`, and `document_viewer_dialog.dart`), plus double-quoted `Text("...")` occurrences in several other screens. `owner_reconciliation_queue_screen.dart` had been listed under an incorrect filename (`reconciliation_queue_screen.dart`) and lacked `AppLocalizations` wiring completely, while `document_viewer_dialog.dart` was omitted from the matrix.
+>
+> All identified gaps were fully resolved by extracting strings into `app_en.arb` and `app_ar.arb` (with natural Egyptian-market Arabic terminology) and wiring all widgets to `AppLocalizations.of(context)!`.
+
 Result: **Zero hardcoded user-facing strings remain in UI widgets.** All static text references `AppLocalizations.of(context)!`.
 
 ---

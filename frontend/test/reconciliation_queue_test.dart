@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/core/api_client.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/models/reconciliation_job.dart';
 import 'package:frontend/providers/reconciliation_provider.dart';
@@ -65,6 +67,23 @@ class MockReconciliationProvider extends ReconciliationProvider {
   }
 }
 
+Widget buildReconciliationApp(MockReconciliationProvider mockProvider) {
+  return MaterialApp(
+    locale: const Locale('en'),
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: ChangeNotifierProvider<ReconciliationProvider>.value(
+      value: mockProvider,
+      child: const OwnerReconciliationQueueScreen(),
+    ),
+  );
+}
+
 void main() {
   final testJob = ReconciliationJob(
     id: 'job-test-101',
@@ -90,18 +109,11 @@ void main() {
       initialJobs: [testJob],
     );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ChangeNotifierProvider<ReconciliationProvider>.value(
-          value: mockProvider,
-          child: const OwnerReconciliationQueueScreen(),
-        ),
-      ),
-    );
+    await tester.pumpWidget(buildReconciliationApp(mockProvider));
     await tester.pumpAndSettle();
 
     // Verify job ID, human-readable failure reason, note, and locked escrow amount
-    expect(find.text('Job #job-test-101'), findsOneWidget);
+    expect(find.text('Order #job-test-101'), findsOneWidget);
     expect(find.text('Distance mismatch — under 70% of booked distance'),
         findsOneWidget);
     expect(find.text('actual 2.00 km vs booked 10.00 km'), findsOneWidget);
@@ -119,14 +131,7 @@ void main() {
       initialJobs: [],
     );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ChangeNotifierProvider<ReconciliationProvider>.value(
-          value: mockProvider,
-          child: const OwnerReconciliationQueueScreen(),
-        ),
-      ),
-    );
+    await tester.pumpWidget(buildReconciliationApp(mockProvider));
     await tester.pumpAndSettle();
 
     expect(find.text('No jobs pending reconciliation'), findsOneWidget);
@@ -144,14 +149,7 @@ void main() {
       initialJobs: [testJob],
     );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ChangeNotifierProvider<ReconciliationProvider>.value(
-          value: mockProvider,
-          child: const OwnerReconciliationQueueScreen(),
-        ),
-      ),
-    );
+    await tester.pumpWidget(buildReconciliationApp(mockProvider));
     await tester.pumpAndSettle();
 
     // Tap Release to Employee
@@ -182,14 +180,7 @@ void main() {
       initialJobs: [testJob],
     );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ChangeNotifierProvider<ReconciliationProvider>.value(
-          value: mockProvider,
-          child: const OwnerReconciliationQueueScreen(),
-        ),
-      ),
-    );
+    await tester.pumpWidget(buildReconciliationApp(mockProvider));
     await tester.pumpAndSettle();
 
     // Tap Release to Employee
@@ -207,7 +198,7 @@ void main() {
     expect(mockProvider.lastResolvedDecision, 'release_to_employee');
 
     // Job card should be gone and empty state rendered
-    expect(find.text('Job #job-test-101'), findsNothing);
+    expect(find.text('Order #job-test-101'), findsNothing);
     expect(find.text('No jobs pending reconciliation'), findsOneWidget);
     expect(find.text('Escrow resolved: funds released to employee/tenant'),
         findsOneWidget);
@@ -222,14 +213,7 @@ void main() {
       mockResolveConflict: true,
     );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ChangeNotifierProvider<ReconciliationProvider>.value(
-          value: mockProvider,
-          child: const OwnerReconciliationQueueScreen(),
-        ),
-      ),
-    );
+    await tester.pumpWidget(buildReconciliationApp(mockProvider));
     await tester.pumpAndSettle();
 
     // Tap Refund to Customer

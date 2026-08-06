@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/l10n/l10n.dart';
 import '../core/api_client.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
@@ -73,12 +74,13 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
   }
 
   Future<void> _loadDocument() async {
+    final l10n = AppLocalizations.of(context)!;
     final url = _getDocUrl(_selectedDocType);
     if (url == null || url.isEmpty) {
       if (mounted) {
         setState(() {
           _bytes = null;
-          _error = 'Document not provided for this submission.';
+          _error = l10n.docNotProvided;
           _isLoading = false;
         });
       }
@@ -112,7 +114,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
         setState(() {
           _bytes = null;
           _isLoading = false;
-          _error = 'Failed to load document preview';
+          _error = l10n.docFailedLoad;
         });
       }
     }
@@ -158,6 +160,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final username = widget.submission['username']?.toString() ?? 'User';
     final role = widget.submission['role']?.toString() ?? 'user';
     final status = widget.submission['kyc_status']?.toString() ??
@@ -190,7 +193,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Document Viewer',
+                          l10n.docViewerTitle,
                           style: AppTypography.headlineLgMobile.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,
@@ -210,7 +213,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                   IconButton(
                     key: const Key('close_document_viewer'),
                     icon: const Icon(Icons.close),
-                    tooltip: 'Close',
+                    tooltip: l10n.close,
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -224,26 +227,26 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                 children: [
                   ChoiceChip(
                     key: const Key('doc_tab_id_front'),
-                    label: const Text('Front ID'),
+                    label: Text(l10n.docTabIdFront),
                     selected: _selectedDocType == 'id_front',
                     onSelected: (_) => _onDocTypeChanged('id_front'),
                   ),
                   ChoiceChip(
                     key: const Key('doc_tab_id_back'),
-                    label: const Text('Back ID'),
+                    label: Text(l10n.docTabIdBack),
                     selected: _selectedDocType == 'id_back',
                     onSelected: (_) => _onDocTypeChanged('id_back'),
                   ),
                   ChoiceChip(
                     key: const Key('doc_tab_selfie'),
-                    label: const Text('Selfie'),
+                    label: Text(l10n.docTabSelfie),
                     selected: _selectedDocType == 'selfie',
                     onSelected: (_) => _onDocTypeChanged('selfie'),
                   ),
                   if (role == 'owner')
                     ChoiceChip(
                       key: const Key('doc_tab_business_proof'),
-                      label: const Text('Business Proof'),
+                      label: Text(l10n.docTabBusinessProof),
                       selected: _selectedDocType == 'business_proof',
                       onSelected: (_) => _onDocTypeChanged('business_proof'),
                     ),
@@ -259,9 +262,9 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                     child: Builder(
                       builder: (context) {
                         if (_isLoading) {
-                          return const ThemedLoadingIndicator(
-                            key: Key('document_loading_indicator'),
-                            message: 'Loading document preview...',
+                          return ThemedLoadingIndicator(
+                            key: const Key('document_loading_indicator'),
+                            message: l10n.docLoadingPreview,
                           );
                         }
                         if (_error != null) {
@@ -287,7 +290,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                                     ),
                                     const SizedBox(height: AppSpacing.xs),
                                     Text(
-                                      'PDF Document Preview',
+                                      l10n.docPdfPreviewTitle,
                                       style: AppTypography.titleMd.copyWith(
                                         fontWeight: FontWeight.bold,
                                         color: AppColors.onSurface,
@@ -295,7 +298,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                                     ),
                                     const SizedBox(height: AppSpacing.xs),
                                     Text(
-                                      'File Size: ${_bytes!.lengthInBytes} bytes',
+                                      l10n.docFileSize(_bytes!.lengthInBytes),
                                       style: AppTypography.bodyMd.copyWith(
                                         color: AppColors.onSurfaceVariant,
                                       ),
@@ -310,14 +313,14 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                             key: const Key('document_image_preview'),
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) {
-                              return const ThemedErrorBanner(
-                                key: Key('document_error_banner'),
-                                message: 'Failed to decode image bytes.',
+                              return ThemedErrorBanner(
+                                key: const Key('document_error_banner'),
+                                message: l10n.docDecodeError,
                               );
                             },
                           );
                         }
-                        return const Text('No document loaded.');
+                        return Text(l10n.docNoDocument);
                       },
                     ),
                   ),
@@ -343,9 +346,8 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                     ThemedTextField(
                       key: const Key('rejection_reason_field'),
                       controller: _reasonController,
-                      labelText: 'Rejection Reason / Notes',
-                      hintText:
-                          'Explain why this submission is being rejected...',
+                      labelText: l10n.docRejectionReasonLabel,
+                      hintText: l10n.docRejectionReasonHint,
                       maxLines: 2,
                     ),
                     if (_reasonValidationError != null) ...[
@@ -362,7 +364,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                       children: [
                         Expanded(
                           child: SecondaryButton(
-                            text: 'Cancel',
+                            text: l10n.cancel,
                             onPressed: _isSubmittingReview
                                 ? null
                                 : () => setState(() {
@@ -375,14 +377,14 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                         Expanded(
                           child: PrimaryButton(
                             key: const Key('confirm_reject_button'),
-                            text: 'Confirm Reject',
+                            text: l10n.docConfirmReject,
                             isLoading: _isSubmittingReview,
                             onPressed: () {
                               final text = _reasonController.text.trim();
                               if (text.isEmpty) {
                                 setState(() {
                                   _reasonValidationError =
-                                      'Rejection reason is required.';
+                                      l10n.docRejectionReasonReq;
                                 });
                                 return;
                               }
@@ -400,7 +402,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                     Expanded(
                       child: SecondaryButton(
                         key: const Key('reject_submission_button'),
-                        text: 'Reject',
+                        text: l10n.kybKyeRejectBtn,
                         icon: Icons.cancel_outlined,
                         onPressed: _isSubmittingReview
                             ? null
@@ -414,7 +416,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                     Expanded(
                       child: PrimaryButton(
                         key: const Key('approve_submission_button'),
-                        text: 'Approve',
+                        text: l10n.kybKyeApproveBtn,
                         icon: Icons.check_circle_outline,
                         isLoading: _isSubmittingReview,
                         onPressed: () => _submitReview('approve'),

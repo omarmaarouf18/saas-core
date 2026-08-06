@@ -53,9 +53,10 @@ class _OtpScreenState extends State<OtpScreen> {
         ),
       );
     } else {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("A new OTP code has been sent successfully."),
+        SnackBar(
+          content: Text(l10n.otpResendSuccessMsg),
           backgroundColor: AppColors.success,
         ),
       );

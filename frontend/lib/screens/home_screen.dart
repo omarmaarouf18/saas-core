@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
@@ -145,6 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    final l10n = AppLocalizations.of(context)!;
     final user = auth.user;
 
     if (user == null) {
@@ -173,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: AppColors.scaffoldBackground,
         appBar: AppBar(
           backgroundColor: AppColors.primary,
-          title: const Text("Quick Delivery Dashboard"),
+          title: Text(l10n.quickDeliveryDashboard),
           foregroundColor: AppColors.onPrimary,
           actions: [
             if (user.role == 'reviewer' || user.role == 'admin')

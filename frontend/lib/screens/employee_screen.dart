@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/l10n/l10n.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
@@ -629,13 +630,13 @@ class _EmployeeScreenState extends State<EmployeeScreen>
   void _showSuccessDialog({required String title, required String message}) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: Text(title),
         content: Text(message),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text("OK"),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(AppLocalizations.of(ctx)!.ok),
           ),
         ],
       ),

@@ -1351,6 +1351,391 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Issue details are required.'**
   String get ticketDescriptionReq;
+
+  /// No description provided for @liveCourierTracking.
+  ///
+  /// In en, this message translates to:
+  /// **'Live Courier Tracking'**
+  String get liveCourierTracking;
+
+  /// No description provided for @subscriptionPlansTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription Plans'**
+  String get subscriptionPlansTitle;
+
+  /// No description provided for @fleetLiveMapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fleet Live Map'**
+  String get fleetLiveMapTitle;
+
+  /// No description provided for @pendingKybKyeSubmissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending KYB/KYE Submissions'**
+  String get pendingKybKyeSubmissions;
+
+  /// No description provided for @reviewCompletedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Review completed successfully for {username}.'**
+  String reviewCompletedSuccess(String username);
+
+  /// No description provided for @reconciliationReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Escrow Reconciliation Review'**
+  String get reconciliationReviewTitle;
+
+  /// No description provided for @tooltipRefreshQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Queue'**
+  String get tooltipRefreshQueue;
+
+  /// No description provided for @reconciliationEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No jobs pending reconciliation'**
+  String get reconciliationEmptyTitle;
+
+  /// No description provided for @reconciliationEmptyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'All escrow transactions are healthy. No flagged jobs require manual review.'**
+  String get reconciliationEmptyDesc;
+
+  /// No description provided for @reconciliationFailureReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Failure Reason'**
+  String get reconciliationFailureReason;
+
+  /// No description provided for @reconciliationNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get reconciliationNote;
+
+  /// No description provided for @reconciliationLockedEscrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked Escrow'**
+  String get reconciliationLockedEscrow;
+
+  /// No description provided for @reconciliationEmployeeId.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee ID'**
+  String get reconciliationEmployeeId;
+
+  /// No description provided for @reconciliationCustomerId.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer ID'**
+  String get reconciliationCustomerId;
+
+  /// No description provided for @reconciliationServiceId.
+  ///
+  /// In en, this message translates to:
+  /// **'Service ID'**
+  String get reconciliationServiceId;
+
+  /// No description provided for @reconciliationRefundCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund to Customer'**
+  String get reconciliationRefundCustomer;
+
+  /// No description provided for @reconciliationReleaseEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Release to Employee'**
+  String get reconciliationReleaseEmployee;
+
+  /// No description provided for @reconciliationConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm {actionLabel}'**
+  String reconciliationConfirmTitle(String actionLabel);
+
+  /// No description provided for @reconciliationConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to {actionLabel} for Job #{jobId}?\n\nThis will transfer {amount} Credits back to the {targetRole}. Real funds will be moved.'**
+  String reconciliationConfirmMessage(
+      String actionLabel, String jobId, String amount, String targetRole);
+
+  /// No description provided for @reconciliationSuccessRelease.
+  ///
+  /// In en, this message translates to:
+  /// **'Escrow resolved: funds released to employee/tenant'**
+  String get reconciliationSuccessRelease;
+
+  /// No description provided for @reconciliationSuccessRefund.
+  ///
+  /// In en, this message translates to:
+  /// **'Escrow resolved: funds refunded to customer'**
+  String get reconciliationSuccessRefund;
+
+  /// No description provided for @reconciliationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to resolve reconciliation'**
+  String get reconciliationFailed;
+
+  /// No description provided for @roleEmployeeTenant.
+  ///
+  /// In en, this message translates to:
+  /// **'employee/tenant'**
+  String get roleEmployeeTenant;
+
+  /// No description provided for @roleCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'customer'**
+  String get roleCustomer;
+
+  /// No description provided for @docViewerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Document Viewer'**
+  String get docViewerTitle;
+
+  /// No description provided for @docTabIdFront.
+  ///
+  /// In en, this message translates to:
+  /// **'Front ID'**
+  String get docTabIdFront;
+
+  /// No description provided for @docTabIdBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back ID'**
+  String get docTabIdBack;
+
+  /// No description provided for @docTabSelfie.
+  ///
+  /// In en, this message translates to:
+  /// **'Selfie'**
+  String get docTabSelfie;
+
+  /// No description provided for @docTabBusinessProof.
+  ///
+  /// In en, this message translates to:
+  /// **'Business Proof'**
+  String get docTabBusinessProof;
+
+  /// No description provided for @docLoadingPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading document preview...'**
+  String get docLoadingPreview;
+
+  /// No description provided for @docNotProvided.
+  ///
+  /// In en, this message translates to:
+  /// **'Document not provided for this submission.'**
+  String get docNotProvided;
+
+  /// No description provided for @docFailedLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load document preview'**
+  String get docFailedLoad;
+
+  /// No description provided for @docPdfPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF Document Preview'**
+  String get docPdfPreviewTitle;
+
+  /// No description provided for @docFileSize.
+  ///
+  /// In en, this message translates to:
+  /// **'File Size: {size} bytes'**
+  String docFileSize(int size);
+
+  /// No description provided for @docDecodeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to decode image bytes.'**
+  String get docDecodeError;
+
+  /// No description provided for @docNoDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'No document loaded.'**
+  String get docNoDocument;
+
+  /// No description provided for @docRejectionReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejection Reason / Notes'**
+  String get docRejectionReasonLabel;
+
+  /// No description provided for @docRejectionReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain why this submission is being rejected...'**
+  String get docRejectionReasonHint;
+
+  /// No description provided for @docRejectionReasonReq.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejection reason is required.'**
+  String get docRejectionReasonReq;
+
+  /// No description provided for @docConfirmReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Reject'**
+  String get docConfirmReject;
+
+  /// No description provided for @chatFailedSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send message: {error}'**
+  String chatFailedSend(String error);
+
+  /// No description provided for @filterSortPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get filterSortPrice;
+
+  /// No description provided for @filterSortNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get filterSortNone;
+
+  /// No description provided for @bookingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking Failed: {error}'**
+  String bookingFailed(String error);
+
+  /// No description provided for @actionLoggedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Action logged successfully: \"{action}\"'**
+  String actionLoggedSuccess(String action);
+
+  /// No description provided for @jobMarkedCompletedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Job marked as completed successfully!'**
+  String get jobMarkedCompletedSuccess;
+
+  /// No description provided for @quickDeliveryDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Delivery Dashboard'**
+  String get quickDeliveryDashboard;
+
+  /// No description provided for @forgotPasswordSentMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'A password reset code has been sent if an account exists.'**
+  String get forgotPasswordSentMsg;
+
+  /// No description provided for @counterOfferSuccessMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Counter-offer submitted successfully!'**
+  String get counterOfferSuccessMsg;
+
+  /// No description provided for @kycTakeCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Take Photo with Camera'**
+  String get kycTakeCamera;
+
+  /// No description provided for @kycChooseGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Image from Gallery'**
+  String get kycChooseGallery;
+
+  /// No description provided for @kycSelectPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Select PDF Document'**
+  String get kycSelectPdf;
+
+  /// No description provided for @otpResendSuccessMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'A new OTP code has been sent successfully.'**
+  String get otpResendSuccessMsg;
+
+  /// No description provided for @ratingIdentityError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: Cannot determine other party identity.'**
+  String get ratingIdentityError;
+
+  /// No description provided for @ratingSuccessMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Blind rating submitted successfully!'**
+  String get ratingSuccessMsg;
+
+  /// No description provided for @ratingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String ratingFailed(String error);
+
+  /// No description provided for @unauthenticatedMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Unauthenticated'**
+  String get unauthenticatedMsg;
+
+  /// No description provided for @serviceCreatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Service created successfully!'**
+  String get serviceCreatedSuccess;
+
+  /// No description provided for @serviceCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create service: {error}'**
+  String serviceCreateFailed(String error);
+
+  /// No description provided for @cancelJobHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Job #{jobId}'**
+  String cancelJobHeader(String jobId);
+
+  /// No description provided for @cancelJobKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Job'**
+  String get cancelJobKeep;
+
+  /// No description provided for @cancelJobConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Cancel'**
+  String get cancelJobConfirm;
+
+  /// No description provided for @locationPermissionDeniedDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission denied. Defaulting to Cairo.'**
+  String get locationPermissionDeniedDefault;
+
+  /// No description provided for @locationFetchError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error fetching location: {error}'**
+  String locationFetchError(String error);
 }
 
 class _AppLocalizationsDelegate

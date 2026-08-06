@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
@@ -98,9 +99,10 @@ class _RatingScreenState extends State<RatingScreen> {
 
   Future<void> _submitRating() async {
     if (_otherPartyId == null) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Error: Cannot determine other party identity."),
+        SnackBar(
+          content: Text(l10n.ratingIdentityError),
           backgroundColor: Colors.red,
         ),
       );
@@ -125,9 +127,10 @@ class _RatingScreenState extends State<RatingScreen> {
       );
 
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Blind rating submitted successfully!"),
+          SnackBar(
+            content: Text(l10n.ratingSuccessMsg),
             backgroundColor: Colors.green,
           ),
         );
@@ -139,9 +142,10 @@ class _RatingScreenState extends State<RatingScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Error: $e"),
+            content: Text(l10n.ratingFailed(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -157,6 +161,7 @@ class _RatingScreenState extends State<RatingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -164,7 +169,7 @@ class _RatingScreenState extends State<RatingScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Rate Your Experience"),
+        title: Text(l10n.ratingTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

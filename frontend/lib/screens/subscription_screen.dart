@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
@@ -42,9 +43,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Error: $e"),
+            content: Text(l10n.ratingFailed(e.toString())),
             backgroundColor: AppColors.error,
           ),
         );
@@ -60,12 +62,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final ownerProvider = Provider.of<OwnerProvider>(context);
     final currentTier = ownerProvider.subscriptionTier;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Subscription Plans'),
+        title: Text(l10n.subscriptionPlansTitle),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),

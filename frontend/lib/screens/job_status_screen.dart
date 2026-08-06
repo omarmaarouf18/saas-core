@@ -143,9 +143,10 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         if (updated != null) {
           setState(() => _currentJob = updated);
         }
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Counter-offer submitted successfully!"),
+          SnackBar(
+            content: Text(l10n.counterOfferSuccessMsg),
             backgroundColor: AppColors.success,
           ),
         );

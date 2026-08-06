@@ -636,8 +636,228 @@ class AppLocalizationsAr extends AppLocalizations {
   String get locationPickerConfirmBtn => 'تأكيد الموقع';
 
   @override
-  String get ticketSubjectReq => 'عنوان الطلب مطلوب.';
+  String get ticketSubjectReq => 'عنوان التذكرة مطلوب.';
 
   @override
   String get ticketDescriptionReq => 'تفاصيل المشكلة مطلوبة.';
+
+  @override
+  String get liveCourierTracking => 'تتبع المندوب مباشر';
+
+  @override
+  String get subscriptionPlansTitle => 'خطط الاشتراك';
+
+  @override
+  String get fleetLiveMapTitle => 'خريطة الأسطول الحية';
+
+  @override
+  String get pendingKybKyeSubmissions => 'طلبات التوثيق المعلقة (KYB/KYE)';
+
+  @override
+  String reviewCompletedSuccess(String username) {
+    return 'تمت مراجعة طلب $username بنجاح.';
+  }
+
+  @override
+  String get reconciliationReviewTitle => 'مراجعة تسوية الضمان';
+
+  @override
+  String get tooltipRefreshQueue => 'تحديث القائمة';
+
+  @override
+  String get reconciliationEmptyTitle => 'مفيش طلبات معلقة للتسوية';
+
+  @override
+  String get reconciliationEmptyDesc =>
+      'كل معاملات الضمان سليمة. مفيش طلبات محتاجة مراجعة يدوية.';
+
+  @override
+  String get reconciliationFailureReason => 'سبب التعثر';
+
+  @override
+  String get reconciliationNote => 'ملاحظات';
+
+  @override
+  String get reconciliationLockedEscrow => 'المبلغ المحتجز بالضمان';
+
+  @override
+  String get reconciliationEmployeeId => 'رقم العامل/الطيار';
+
+  @override
+  String get reconciliationCustomerId => 'رقم العميل';
+
+  @override
+  String get reconciliationServiceId => 'رقم الخدمة';
+
+  @override
+  String get reconciliationRefundCustomer => 'استرداد للعميل';
+
+  @override
+  String get reconciliationReleaseEmployee => 'إفراج للطيار/العامل';
+
+  @override
+  String reconciliationConfirmTitle(String actionLabel) {
+    return 'تأكيد $actionLabel';
+  }
+
+  @override
+  String reconciliationConfirmMessage(
+      String actionLabel, String jobId, String amount, String targetRole) {
+    return 'هل أنت متأكد من $actionLabel للطلب رقم #$jobId؟\n\nسيتم تحويل $amount رصيد إلى $targetRole. سيتم نقل أموال فعلية.';
+  }
+
+  @override
+  String get reconciliationSuccessRelease =>
+      'تمت تسوية الضمان: تم تحويل المبلغ للطيار/العامل';
+
+  @override
+  String get reconciliationSuccessRefund =>
+      'تمت تسوية الضمان: تم إرجاع المبلغ للعميل';
+
+  @override
+  String get reconciliationFailed => 'فشل في إجراء تسوية الضمان';
+
+  @override
+  String get roleEmployeeTenant => 'العامل/المندوب';
+
+  @override
+  String get roleCustomer => 'العميل';
+
+  @override
+  String get docViewerTitle => 'عرض المستندات والوثائق';
+
+  @override
+  String get docTabIdFront => 'بطاقة الرقم القومي (وجه)';
+
+  @override
+  String get docTabIdBack => 'بطاقة الرقم القومي (ظهر)';
+
+  @override
+  String get docTabSelfie => 'صورة شخصية (سيلفي)';
+
+  @override
+  String get docTabBusinessProof => 'إثبات النشاط التجاري';
+
+  @override
+  String get docLoadingPreview => 'جاري تحميل معاينة المستند...';
+
+  @override
+  String get docNotProvided => 'المستند غير مرفق في هذا الطلب.';
+
+  @override
+  String get docFailedLoad => 'فشل في تحميل معاينة المستند';
+
+  @override
+  String get docPdfPreviewTitle => 'معاينة ملف PDF';
+
+  @override
+  String docFileSize(int size) {
+    return 'حجم الملف: $size بايت';
+  }
+
+  @override
+  String get docDecodeError => 'فشل في قراءة صورة المستند.';
+
+  @override
+  String get docNoDocument => 'لم يتم تحميل أي مستند.';
+
+  @override
+  String get docRejectionReasonLabel => 'سبب الرفض / ملاحظات المراجع';
+
+  @override
+  String get docRejectionReasonHint => 'اكتب سبب رفض طلب التوثيق...';
+
+  @override
+  String get docRejectionReasonReq => 'لازم تكتب سبب الرفض.';
+
+  @override
+  String get docConfirmReject => 'تأكيد الرفض';
+
+  @override
+  String chatFailedSend(String error) {
+    return 'فشل في إرسال الرسالة: $error';
+  }
+
+  @override
+  String get filterSortPrice => 'السعر';
+
+  @override
+  String get filterSortNone => 'بدون';
+
+  @override
+  String bookingFailed(String error) {
+    return 'فشل حجز الخدمة: $error';
+  }
+
+  @override
+  String actionLoggedSuccess(String action) {
+    return 'تم تسجيل الإجراء بنجاح: \"$action\"';
+  }
+
+  @override
+  String get jobMarkedCompletedSuccess => 'تم تعليم الطلب كمكتمل بنجاح!';
+
+  @override
+  String get quickDeliveryDashboard => 'لوحة تحكم سريع ديلفري';
+
+  @override
+  String get forgotPasswordSentMsg =>
+      'تم إرسال كود إعادة التعين إذا كان الحساب موجوداً.';
+
+  @override
+  String get counterOfferSuccessMsg => 'تم تقديم العرض البديل بنجاح!';
+
+  @override
+  String get kycTakeCamera => 'التقط صورة بالكاميرا';
+
+  @override
+  String get kycChooseGallery => 'اختر صورة من المعرض';
+
+  @override
+  String get kycSelectPdf => 'اختر مستند PDF';
+
+  @override
+  String get otpResendSuccessMsg => 'تم إرسال كود تفعيل جديد بنجاح.';
+
+  @override
+  String get ratingIdentityError => 'خطأ: تعذر تحديد هوية الطرف الآخر.';
+
+  @override
+  String get ratingSuccessMsg => 'تم تقديم التقييم بنجاح!';
+
+  @override
+  String ratingFailed(String error) {
+    return 'خطأ: $error';
+  }
+
+  @override
+  String get unauthenticatedMsg => 'غير مسجل الدخول';
+
+  @override
+  String get serviceCreatedSuccess => 'تم إنشاء الخدمة بنجاح!';
+
+  @override
+  String serviceCreateFailed(String error) {
+    return 'فشل في إنشاء الخدمة: $error';
+  }
+
+  @override
+  String cancelJobHeader(String jobId) {
+    return 'إلغاء الطلب رقم #$jobId';
+  }
+
+  @override
+  String get cancelJobKeep => 'الاحتفاظ بالطلب';
+
+  @override
+  String get cancelJobConfirm => 'تأكيد الإلغاء';
+
+  @override
+  String get locationPermissionDeniedDefault =>
+      'تم رفض إذن الموقع. تم التعيين على القاهرة افتراضياً.';
+
+  @override
+  String locationFetchError(String error) {
+    return 'خطأ في تحديد الموقع: $error';
+  }
 }

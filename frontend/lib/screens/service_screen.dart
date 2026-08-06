@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/l10n/l10n.dart';
 import '../core/constants.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
@@ -39,9 +40,10 @@ class _ServiceScreenState extends State<ServiceScreen> {
     final user = auth.user;
 
     if (user == null) {
-      return const Scaffold(
+      final l10n = AppLocalizations.of(context)!;
+      return Scaffold(
         body: Center(
-          child: Text("Unauthenticated"),
+          child: Text(l10n.unauthenticatedMsg),
         ),
       );
     }
@@ -51,10 +53,11 @@ class _ServiceScreenState extends State<ServiceScreen> {
     final myServices =
         owner.services.where((s) => s['tenant_id'] == user.id).toList();
 
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        title: const Text("Configure Services"),
+        title: Text(l10n.ownerConfigTitle),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
       ),
@@ -402,21 +405,22 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                 ownerId: ownerId,
                               );
                               if (context.mounted) {
+                                final l10n = AppLocalizations.of(context)!;
                                 Navigator.of(context).pop();
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content:
-                                        Text("Service created successfully!"),
+                                  SnackBar(
+                                    content: Text(l10n.serviceCreatedSuccess),
                                     backgroundColor: AppColors.success,
                                   ),
                                 );
                               }
                             } catch (e) {
                               if (context.mounted) {
+                                final l10n = AppLocalizations.of(context)!;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content:
-                                        Text("Failed to create service: $e"),
+                                    content: Text(
+                                        l10n.serviceCreateFailed(e.toString())),
                                     backgroundColor: AppColors.error,
                                   ),
                                 );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
 import '../models/reconciliation_job.dart';
 import '../providers/reconciliation_provider.dart';
@@ -31,18 +32,24 @@ class _OwnerReconciliationQueueScreenState
     required ReconciliationJob job,
     required String decision,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     final isRelease = decision == 'release_to_employee';
-    final actionLabel =
-        isRelease ? 'Release to Employee' : 'Refund to Customer';
-    final targetRole = isRelease ? 'employee/tenant' : 'customer';
+    final actionLabel = isRelease
+        ? l10n.reconciliationReleaseEmployee
+        : l10n.reconciliationRefundCustomer;
+    final targetRole = isRelease ? l10n.roleEmployeeTenant : l10n.roleCustomer;
 
     final confirmed = await ConfirmActionDialog.show(
       context,
-      title: 'Confirm $actionLabel',
-      message: 'Are you sure you want to $actionLabel for Job #${job.id}?\n\n'
-          'This will transfer ${job.lockedEscrowAmount.toStringAsFixed(2)} Credits back to the $targetRole. Real funds will be moved.',
-      confirmLabel: 'Confirm $actionLabel',
-      cancelLabel: 'Cancel',
+      title: l10n.reconciliationConfirmTitle(actionLabel),
+      message: l10n.reconciliationConfirmMessage(
+        actionLabel,
+        job.id,
+        job.lockedEscrowAmount.toStringAsFixed(2),
+        targetRole,
+      ),
+      confirmLabel: l10n.reconciliationConfirmTitle(actionLabel),
+      cancelLabel: l10n.cancel,
       isDestructive: !isRelease,
     );
 
@@ -62,14 +69,14 @@ class _OwnerReconciliationQueueScreenState
           SnackBar(
             content: Text(
               isRelease
-                  ? 'Escrow resolved: funds released to employee/tenant'
-                  : 'Escrow resolved: funds refunded to customer',
+                  ? l10n.reconciliationSuccessRelease
+                  : l10n.reconciliationSuccessRefund,
             ),
             backgroundColor: AppColors.success,
           ),
         );
       } else {
-        final err = provider.error ?? 'Failed to resolve reconciliation';
+        final err = provider.error ?? l10n.reconciliationFailed;
         messenger.showSnackBar(
           SnackBar(
             content: Text(err),
@@ -82,16 +89,17 @@ class _OwnerReconciliationQueueScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
-        title: const Text('Escrow Reconciliation Review'),
+        title: Text(l10n.reconciliationReviewTitle),
         foregroundColor: AppColors.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh Queue',
+            tooltip: l10n.tooltipRefreshQueue,
             onPressed: () {
               Provider.of<ReconciliationProvider>(context, listen: false)
                   .fetchQueue();
@@ -128,7 +136,7 @@ class _OwnerReconciliationQueueScreenState
                     const SizedBox(height: AppSpacing.lg),
                     ElevatedButton(
                       onPressed: () => provider.fetchQueue(),
-                      child: const Text('Retry'),
+                      child: Text(l10n.retry),
                     ),
                   ],
                 ),
@@ -137,17 +145,16 @@ class _OwnerReconciliationQueueScreenState
           }
 
           if (provider.queue.isEmpty) {
-            return const RefreshIndicator(
+            return RefreshIndicator(
               onRefresh: _onRefresh,
               child: SingleChildScrollView(
-                physics: AlwaysScrollableScrollPhysics(),
+                physics: const AlwaysScrollableScrollPhysics(),
                 child: Padding(
-                  padding: EdgeInsets.all(AppSpacing.xl),
+                  padding: const EdgeInsets.all(AppSpacing.xl),
                   child: ThemedEmptyState(
                     icon: Icons.check_circle_outline,
-                    title: 'No jobs pending reconciliation',
-                    description:
-                        'All escrow transactions are healthy. No flagged jobs require manual review.',
+                    title: l10n.reconciliationEmptyTitle,
+                    description: l10n.reconciliationEmptyDesc,
                   ),
                 ),
               ),
@@ -161,7 +168,7 @@ class _OwnerReconciliationQueueScreenState
               itemCount: provider.queue.length,
               itemBuilder: (context, index) {
                 final job = provider.queue[index];
-                return _buildReconciliationCard(context, job);
+                return _buildReconciliationCard(context, job, l10n);
               },
             ),
           );
@@ -172,7 +179,8 @@ class _OwnerReconciliationQueueScreenState
 
   static Future<void> _onRefresh() async {}
 
-  Widget _buildReconciliationCard(BuildContext context, ReconciliationJob job) {
+  Widget _buildReconciliationCard(
+      BuildContext context, ReconciliationJob job, AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       child: ThemedCard(
@@ -186,7 +194,7 @@ class _OwnerReconciliationQueueScreenState
               children: [
                 Expanded(
                   child: Text(
-                    'Job #${job.id}',
+                    '${l10n.customerJobsOrder}${job.id}',
                     style: AppTypography.headlineLgMobile.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
@@ -204,7 +212,7 @@ class _OwnerReconciliationQueueScreenState
             const Divider(color: AppColors.outlineVariant),
             const SizedBox(height: AppSpacing.sm),
             _buildDetailRow(
-              'Failure Reason',
+              l10n.reconciliationFailureReason,
               job.humanReadableFailureReason,
               isBold: true,
               valueColor: AppColors.error,
@@ -212,34 +220,34 @@ class _OwnerReconciliationQueueScreenState
             if (job.reconciliationNote.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.xs),
               _buildDetailRow(
-                'Note',
+                l10n.reconciliationNote,
                 job.reconciliationNote,
               ),
             ],
             const SizedBox(height: AppSpacing.xs),
             _buildDetailRow(
-              'Locked Escrow',
+              l10n.reconciliationLockedEscrow,
               '${job.lockedEscrowAmount.toStringAsFixed(2)} Credits',
               isBold: true,
               valueColor: AppColors.primary,
             ),
             if (job.employeeId != null && job.employeeId!.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.xs),
-              _buildDetailRow('Employee ID', job.employeeId!),
+              _buildDetailRow(l10n.reconciliationEmployeeId, job.employeeId!),
             ],
             const SizedBox(height: AppSpacing.xs),
-            _buildDetailRow('Customer ID', job.userId),
+            _buildDetailRow(l10n.reconciliationCustomerId, job.userId),
             const SizedBox(height: AppSpacing.xs),
-            _buildDetailRow('Service ID', job.serviceId),
+            _buildDetailRow(l10n.reconciliationServiceId, job.serviceId),
             const SizedBox(height: AppSpacing.lg),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.undo, color: AppColors.error),
-                    label: const Text(
-                      'Refund to Customer',
-                      style: TextStyle(color: AppColors.error),
+                    label: Text(
+                      l10n.reconciliationRefundCustomer,
+                      style: const TextStyle(color: AppColors.error),
                     ),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.error),
@@ -260,7 +268,7 @@ class _OwnerReconciliationQueueScreenState
                 Expanded(
                   child: ElevatedButton.icon(
                     icon: const Icon(Icons.check_circle_outline),
-                    label: const Text('Release to Employee'),
+                    label: Text(l10n.reconciliationReleaseEmployee),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: AppColors.onPrimary,

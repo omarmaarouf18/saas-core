@@ -85,10 +85,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
       );
     } else {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text("A password reset code has been sent if an account exists."),
+        SnackBar(
+          content: Text(l10n.forgotPasswordSentMsg),
           backgroundColor: AppColors.success,
         ),
       );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/employee_jobs_provider.dart';
 import 'package:frontend/providers/employee_location_provider.dart';
@@ -148,6 +150,14 @@ Widget createTestApp() {
       ChangeNotifierProvider<ChatProvider>(create: (_) => MockChatProvider()),
     ],
     child: const MaterialApp(
+      locale: Locale('en'),
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: EmployeeJobsScreen(),
     ),
   );

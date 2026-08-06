@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/l10n/l10n.dart';
 
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
@@ -36,16 +37,16 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
   Future<void> _fetchSubmissions() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final user = auth.user;
-    if (user?.role == 'reviewer' || user?.role == 'admin') {
-      await auth.fetchPendingSubmissions(
-        internalToken: widget.internalToken,
-        reviewerToken: widget.reviewerToken,
-      );
-    }
+    if (user?.role != 'reviewer' && user?.role != 'admin') return;
+    await auth.fetchPendingSubmissions(
+      internalToken: widget.internalToken,
+      reviewerToken: widget.reviewerToken,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final auth = Provider.of<AuthProvider>(context);
     final user = auth.user;
 
@@ -55,7 +56,7 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
-        title: const Text('Pending KYB/KYE Submissions'),
+        title: Text(l10n.pendingKybKyeSubmissions),
         foregroundColor: AppColors.onPrimary,
         actions: [
           if (isReviewer)
@@ -308,11 +309,12 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
     );
 
     if (result == true && mounted) {
+      final l10n = AppLocalizations.of(context)!;
       final username = submission['username']?.toString() ?? 'User';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           key: const Key('review_confirmation_snackbar'),
-          content: Text('Review completed successfully for $username.'),
+          content: Text(l10n.reviewCompletedSuccess(username)),
           duration: const Duration(seconds: 2),
         ),
       );

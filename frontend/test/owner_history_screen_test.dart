@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/core/api_client.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:frontend/screens/owner_history_screen.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/owner_provider.dart';
@@ -96,6 +98,14 @@ Widget createOwnerHistoryScreenApp({
               )),
     ],
     child: MaterialApp(
+      locale: const Locale('en'),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: OwnerHistoryScreen(isEmbeddedInTab: isEmbeddedInTab),
     ),
   );

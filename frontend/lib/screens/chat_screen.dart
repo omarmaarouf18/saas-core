@@ -78,9 +78,10 @@ class _ChatScreenState extends State<ChatScreen> {
       Timer(const Duration(milliseconds: 100), _scrollToBottom);
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Failed to send message: $e"),
+            content: Text(l10n.chatFailedSend(e.toString())),
             backgroundColor: Colors.red.shade800,
           ),
         );

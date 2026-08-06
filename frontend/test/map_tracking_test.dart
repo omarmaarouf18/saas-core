@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/core/api_client.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:frontend/models/employee_marker.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/providers/map_tracking_provider.dart';
@@ -25,41 +27,75 @@ class MockMapTrackingProvider extends MapTrackingProvider {
     this.initialJobLoc,
     this.initialAssignedEmp,
   }) : super(apiClient) {
-    initialMarkers.forEach((k, v) {
-      updateMarkerManually(v);
-    });
+    _testMarkers = Map.from(initialMarkers);
+    _testLoading = initialLoading;
+    _testConnected = initialConnected;
+    _testSubError = initialSubError;
+    _testJobLoc = initialJobLoc;
+    _testAssignedEmp = initialAssignedEmp;
   }
 
-  @override
-  JobLocation? get customerJobLocation => initialJobLoc;
+  late Map<String, EmployeeMarkerData> _testMarkers;
+  late bool _testLoading;
+  late bool _testConnected;
+  late String? _testSubError;
+  late JobLocation? _testJobLoc;
+  late String? _testAssignedEmp;
 
   @override
-  String? get assignedEmployeeId => initialAssignedEmp;
+  Map<String, EmployeeMarkerData> get employeeMarkers =>
+      Map.unmodifiable(_testMarkers);
 
   @override
-  bool get isLoading => initialLoading;
+  List<EmployeeMarkerData> get markersList => _testMarkers.values.toList();
 
   @override
-  bool get isConnected => initialConnected;
+  bool get isLoading => _testLoading;
 
   @override
-  String? get subscriptionError => initialSubError;
+  bool get isConnected => _testConnected;
 
   @override
-  Future<void> hydrateOwnerFleet(String ownerToken) async {
-    // Prevent real network call during widget unit testing
-  }
+  String? get subscriptionError => _testSubError;
 
   @override
-  Future<void> hydrateCustomerJob(String jobId, String userToken) async {
-    // Prevent real network call during widget unit testing
-  }
+  JobLocation? get customerJobLocation => _testJobLoc;
+
+  @override
+  String? get assignedEmployeeId => _testAssignedEmp;
+
+  @override
+  Future<void> hydrateOwnerFleet(String ownerToken) async {}
+
+  @override
+  Future<void> hydrateCustomerJob(String jobId, String userToken) async {}
 
   @override
   void connectAndSubscribe(String channel, String token,
-      {dynamic customChannel}) {
-    // Prevent real WebSocket network connection during unit testing
+      {dynamic customChannel}) {}
+
+  @override
+  Future<void> disconnect() async {}
+
+  @override
+  void updateMarkerManually(EmployeeMarkerData data) {
+    _testMarkers[data.employeeId] = data;
+    notifyListeners();
   }
+}
+
+Widget buildTestMapApp({required Widget child}) {
+  return MaterialApp(
+    locale: const Locale('en'),
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: child,
+  );
 }
 
 void main() {
@@ -75,8 +111,8 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: ChangeNotifierProvider<MapTrackingProvider>.value(
+        buildTestMapApp(
+          child: ChangeNotifierProvider<MapTrackingProvider>.value(
             value: mockProvider,
             child: const OwnerFleetMapScreen(
               ownerId: 'owner-123',
@@ -107,8 +143,8 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: ChangeNotifierProvider<MapTrackingProvider>.value(
+        buildTestMapApp(
+          child: ChangeNotifierProvider<MapTrackingProvider>.value(
             value: mockProvider,
             child: const OwnerFleetMapScreen(
               ownerId: 'owner-123',
@@ -144,8 +180,8 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: ChangeNotifierProvider<MapTrackingProvider>.value(
+        buildTestMapApp(
+          child: ChangeNotifierProvider<MapTrackingProvider>.value(
             value: mockProvider,
             child: const OwnerFleetMapScreen(
               ownerId: 'owner-123',
@@ -163,8 +199,8 @@ void main() {
         EmployeeMarkerData(
           employeeId: 'emp-001',
           jobId: 'job-100',
-          latitude: 30.0445,
-          longitude: 31.2358,
+          latitude: 30.0500,
+          longitude: 31.2400,
           updatedAt: DateTime.now(),
         ),
       );
@@ -172,8 +208,8 @@ void main() {
         EmployeeMarkerData(
           employeeId: 'emp-002',
           jobId: 'job-101',
-          latitude: 30.0450,
-          longitude: 31.2360,
+          latitude: 30.0600,
+          longitude: 31.2500,
           updatedAt: DateTime.now(),
         ),
       );
@@ -196,8 +232,8 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: ChangeNotifierProvider<MapTrackingProvider>.value(
+        buildTestMapApp(
+          child: ChangeNotifierProvider<MapTrackingProvider>.value(
             value: mockProvider,
             child: const CustomerJobMapScreen(
               jobId: 'job-999',
@@ -230,8 +266,8 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: ChangeNotifierProvider<MapTrackingProvider>.value(
+        buildTestMapApp(
+          child: ChangeNotifierProvider<MapTrackingProvider>.value(
             value: mockProvider,
             child: const CustomerJobMapScreen(
               jobId: 'job-999',
@@ -256,6 +292,7 @@ void main() {
       final mockProvider = MockMapTrackingProvider(
         apiClient: apiClient,
         initialAssignedEmp: 'courier-77',
+        initialJobLoc: JobLocation(latitude: 30.0, longitude: 30.0),
         initialMarkers: {
           'courier-77': EmployeeMarkerData(
             employeeId: 'courier-77',
@@ -270,8 +307,8 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: ChangeNotifierProvider<MapTrackingProvider>.value(
+        buildTestMapApp(
+          child: ChangeNotifierProvider<MapTrackingProvider>.value(
             value: mockProvider,
             child: const CustomerJobMapScreen(
               jobId: 'job-999',
@@ -283,17 +320,18 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Simulate incoming courier position movement
+      expect(find.text('courier-77'), findsOneWidget);
+
+      // Simulate position update
       mockProvider.updateMarkerManually(
         EmployeeMarkerData(
           employeeId: 'courier-77',
           jobId: 'job-999',
-          latitude: 30.03,
-          longitude: 30.03,
+          latitude: 30.02,
+          longitude: 30.02,
           updatedAt: DateTime.now(),
         ),
       );
-
       await tester.pump();
 
       expect(find.text('courier-77'), findsOneWidget);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:frontend/l10n/l10n.dart';
 import '../core/constants.dart';
 import '../core/location_permission.dart';
 import '../core/theme.dart';
@@ -67,19 +68,21 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
         }
       } else {
         if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Location permission denied. Defaulting to Cairo."),
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: Text(l10n.locationPermissionDeniedDefault),
+              duration: const Duration(seconds: 2),
             ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Error fetching location: $e"),
+            content: Text(l10n.locationFetchError(e.toString())),
             duration: const Duration(seconds: 2),
           ),
         );

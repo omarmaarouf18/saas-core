@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/l10n/l10n.dart';
 import '../core/constants.dart';
 import '../core/theme.dart';
 import '../providers/map_tracking_provider.dart';
 
 class OwnerFleetMapScreen extends StatefulWidget {
   final String ownerId;
-  final String token;
+  final String? token;
 
   const OwnerFleetMapScreen({
     super.key,
     required this.ownerId,
-    required this.token,
+    this.token,
   });
 
   @override
@@ -28,22 +29,27 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<MapTrackingProvider>();
-      provider.hydrateOwnerFleet(widget.token);
-      provider.connectAndSubscribe('fleet:${widget.ownerId}', widget.token);
+      if (widget.token != null) {
+        provider.hydrateOwnerFleet(widget.token!);
+        provider.connectAndSubscribe('fleet:${widget.ownerId}', widget.token!);
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Fleet Live Map'),
+        title: Text(l10n.fleetLiveMapTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
               final provider = context.read<MapTrackingProvider>();
-              provider.hydrateOwnerFleet(widget.token);
+              if (widget.token != null) {
+                provider.hydrateOwnerFleet(widget.token!);
+              }
             },
           ),
         ],

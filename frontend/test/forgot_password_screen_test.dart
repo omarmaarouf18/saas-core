@@ -1,11 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/core/theme.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/screens/forgot_password_screen.dart';
+
+Widget createForgotPasswordApp(AuthProvider authProvider) {
+  return ChangeNotifierProvider<AuthProvider>.value(
+    value: authProvider,
+    child: MaterialApp(
+      locale: const Locale('en'),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      theme: quickDeliveryTheme,
+      home: const ForgotPasswordScreen(),
+    ),
+  );
+}
 
 class MockAuthApiClient extends ApiClient {
   bool forgotPasswordCalled = false;
@@ -56,15 +76,7 @@ void main() {
     testWidgets(
         'renders all fields (Email, OTP, New Password, Confirm Password) and single RESET PASSWORD button on the SAME screen',
         (WidgetTester tester) async {
-      await tester.pumpWidget(
-        ChangeNotifierProvider<AuthProvider>.value(
-          value: authProvider,
-          child: MaterialApp(
-            theme: quickDeliveryTheme,
-            home: const ForgotPasswordScreen(),
-          ),
-        ),
-      );
+      await tester.pumpWidget(createForgotPasswordApp(authProvider));
 
       expect(
           find.byKey(const Key('forgot_password_email_field')), findsOneWidget);
@@ -90,15 +102,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(
-        ChangeNotifierProvider<AuthProvider>.value(
-          value: authProvider,
-          child: MaterialApp(
-            theme: quickDeliveryTheme,
-            home: const ForgotPasswordScreen(),
-          ),
-        ),
-      );
+      await tester.pumpWidget(createForgotPasswordApp(authProvider));
 
       // 1. Enter email and request code
       await tester.enterText(

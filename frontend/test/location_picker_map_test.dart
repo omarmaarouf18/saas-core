@@ -1,9 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:frontend/widgets/location_picker_map.dart';
+
+Widget createLocationApp({required Widget child}) {
+  return MaterialApp(
+    locale: const Locale('en'),
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: Scaffold(
+      body: SizedBox(
+        width: 800,
+        height: 600,
+        child: child,
+      ),
+    ),
+  );
+}
 
 class MockGeolocatorPlatform extends GeolocatorPlatform
     with MockPlatformInterfaceMixin {
@@ -50,15 +72,9 @@ void main() {
       '(a) Defaults to initialLocation or Cairo default when un-fetched',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(
-          body: SizedBox(
-            width: 800,
-            height: 600,
-            child: LocationPickerMap(
-              initialLocation: LatLng(30.0444, 31.2357),
-            ),
-          ),
+      createLocationApp(
+        child: const LocationPickerMap(
+          initialLocation: LatLng(30.0444, 31.2357),
         ),
       ),
     );
@@ -77,15 +93,9 @@ void main() {
     mockGeolocator.requestedPermission = LocationPermission.denied;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SizedBox(
-            width: 800,
-            height: 600,
-            child: LocationPickerMap(
-              geolocatorPlatform: mockGeolocator,
-            ),
-          ),
+      createLocationApp(
+        child: LocationPickerMap(
+          geolocatorPlatform: mockGeolocator,
         ),
       ),
     );
@@ -107,18 +117,12 @@ void main() {
     LatLng? selected;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SizedBox(
-            width: 800,
-            height: 600,
-            child: LocationPickerMap(
-              initialLocation: const LatLng(30.0444, 31.2357),
-              onLocationSelected: (latLng) {
-                selected = latLng;
-              },
-            ),
-          ),
+      createLocationApp(
+        child: LocationPickerMap(
+          initialLocation: const LatLng(30.0444, 31.2357),
+          onLocationSelected: (latLng) {
+            selected = latLng;
+          },
         ),
       ),
     );
@@ -141,19 +145,13 @@ void main() {
     LatLng? selected;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SizedBox(
-            width: 800,
-            height: 600,
-            child: LocationPickerMap(
-              initialLocation: const LatLng(30.0444, 31.2357),
-              geolocatorPlatform: mockGeolocator,
-              onLocationSelected: (latLng) {
-                selected = latLng;
-              },
-            ),
-          ),
+      createLocationApp(
+        child: LocationPickerMap(
+          initialLocation: const LatLng(30.0444, 31.2357),
+          geolocatorPlatform: mockGeolocator,
+          onLocationSelected: (latLng) {
+            selected = latLng;
+          },
         ),
       ),
     );

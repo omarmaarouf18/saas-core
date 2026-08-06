@@ -294,10 +294,12 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                             ),
                           ),
                         ),
-                        items: const [
+                        items: [
                           DropdownMenuItem(
-                              value: 'price', child: Text("Price")),
-                          DropdownMenuItem(value: 'none', child: Text("None")),
+                              value: 'price',
+                              child: Text(l10n.filterSortPrice)),
+                          DropdownMenuItem(
+                              value: 'none', child: Text(l10n.filterSortNone)),
                         ],
                         onChanged: (val) {
                           if (val != null) {
@@ -475,7 +477,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        title: const Text("Marketplace"),
+        title: Text(l10n.customerMarketplaceTitle),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
         actions: [
@@ -629,9 +631,10 @@ class _BookingDialogState extends State<_BookingDialog> {
       setState(() {
         _isSubmitting = false;
       });
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Booking Failed: $e"),
+          content: Text(l10n.bookingFailed(e.toString())),
           backgroundColor: AppColors.error,
         ),
       );

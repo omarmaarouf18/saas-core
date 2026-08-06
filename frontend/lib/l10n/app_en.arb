@@ -237,5 +237,137 @@
   "locationPickerUseMyLocation": "Use My Location",
   "locationPickerConfirmBtn": "Confirm Location",
   "ticketSubjectReq": "Subject is required.",
-  "ticketDescriptionReq": "Issue details are required."
+  "ticketDescriptionReq": "Issue details are required.",
+
+  "liveCourierTracking": "Live Courier Tracking",
+  "subscriptionPlansTitle": "Subscription Plans",
+  "fleetLiveMapTitle": "Fleet Live Map",
+  "pendingKybKyeSubmissions": "Pending KYB/KYE Submissions",
+  "reviewCompletedSuccess": "Review completed successfully for {username}.",
+  "@reviewCompletedSuccess": {
+    "placeholders": {
+      "username": { "type": "String" }
+    }
+  },
+
+  "reconciliationReviewTitle": "Escrow Reconciliation Review",
+  "tooltipRefreshQueue": "Refresh Queue",
+  "reconciliationEmptyTitle": "No jobs pending reconciliation",
+  "reconciliationEmptyDesc": "All escrow transactions are healthy. No flagged jobs require manual review.",
+  "reconciliationFailureReason": "Failure Reason",
+  "reconciliationNote": "Note",
+  "reconciliationLockedEscrow": "Locked Escrow",
+  "reconciliationEmployeeId": "Employee ID",
+  "reconciliationCustomerId": "Customer ID",
+  "reconciliationServiceId": "Service ID",
+  "reconciliationRefundCustomer": "Refund to Customer",
+  "reconciliationReleaseEmployee": "Release to Employee",
+  "reconciliationConfirmTitle": "Confirm {actionLabel}",
+  "@reconciliationConfirmTitle": {
+    "placeholders": {
+      "actionLabel": { "type": "String" }
+    }
+  },
+  "reconciliationConfirmMessage": "Are you sure you want to {actionLabel} for Job #{jobId}?\n\nThis will transfer {amount} Credits back to the {targetRole}. Real funds will be moved.",
+  "@reconciliationConfirmMessage": {
+    "placeholders": {
+      "actionLabel": { "type": "String" },
+      "jobId": { "type": "String" },
+      "amount": { "type": "String" },
+      "targetRole": { "type": "String" }
+    }
+  },
+  "reconciliationSuccessRelease": "Escrow resolved: funds released to employee/tenant",
+  "reconciliationSuccessRefund": "Escrow resolved: funds refunded to customer",
+  "reconciliationFailed": "Failed to resolve reconciliation",
+  "roleEmployeeTenant": "employee/tenant",
+  "roleCustomer": "customer",
+
+  "docViewerTitle": "Document Viewer",
+  "docTabIdFront": "Front ID",
+  "docTabIdBack": "Back ID",
+  "docTabSelfie": "Selfie",
+  "docTabBusinessProof": "Business Proof",
+  "docLoadingPreview": "Loading document preview...",
+  "docNotProvided": "Document not provided for this submission.",
+  "docFailedLoad": "Failed to load document preview",
+  "docPdfPreviewTitle": "PDF Document Preview",
+  "docFileSize": "File Size: {size} bytes",
+  "@docFileSize": {
+    "placeholders": {
+      "size": { "type": "int" }
+    }
+  },
+  "docDecodeError": "Failed to decode image bytes.",
+  "docNoDocument": "No document loaded.",
+  "docRejectionReasonLabel": "Rejection Reason / Notes",
+  "docRejectionReasonHint": "Explain why this submission is being rejected...",
+  "docRejectionReasonReq": "Rejection reason is required.",
+  "docConfirmReject": "Confirm Reject",
+
+  "chatFailedSend": "Failed to send message: {error}",
+  "@chatFailedSend": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "filterSortPrice": "Price",
+  "filterSortNone": "None",
+  "bookingFailed": "Booking Failed: {error}",
+  "@bookingFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "actionLoggedSuccess": "Action logged successfully: \"{action}\"",
+  "@actionLoggedSuccess": {
+    "placeholders": {
+      "action": { "type": "String" }
+    }
+  },
+  "jobMarkedCompletedSuccess": "Job marked as completed successfully!",
+  "quickDeliveryDashboard": "Quick Delivery Dashboard",
+  "forgotPasswordSentMsg": "A password reset code has been sent if an account exists.",
+  "counterOfferSuccessMsg": "Counter-offer submitted successfully!",
+  "kycTakeCamera": "Take Photo with Camera",
+  "kycChooseGallery": "Choose Image from Gallery",
+  "kycSelectPdf": "Select PDF Document",
+  "otpResendSuccessMsg": "A new OTP code has been sent successfully.",
+
+  "ratingIdentityError": "Error: Cannot determine other party identity.",
+  "ratingSuccessMsg": "Blind rating submitted successfully!",
+  "ratingFailed": "Error: {error}",
+  "@ratingFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "unauthenticatedMsg": "Unauthenticated",
+  "serviceCreatedSuccess": "Service created successfully!",
+  "serviceCreateFailed": "Failed to create service: {error}",
+  "@serviceCreateFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "cancelJobHeader": "Cancel Job #{jobId}",
+  "@cancelJobHeader": {
+    "placeholders": {
+      "jobId": { "type": "String" }
+    }
+  },
+  "cancelJobKeep": "Keep Job",
+  "cancelJobConfirm": "Confirm Cancel",
+
+  "locationPermissionDeniedDefault": "Location permission denied. Defaulting to Cairo.",
+  "locationFetchError": "Error fetching location: {error}",
+  "@locationFetchError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  }
 }

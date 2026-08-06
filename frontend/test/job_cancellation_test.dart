@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/core/error_messages.dart';
+import 'package:frontend/l10n/l10n.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
@@ -160,6 +162,14 @@ void main() {
         );
 
     return MaterialApp(
+      locale: const Locale('en'),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: MultiProvider(
         providers: [
           ChangeNotifierProvider<AuthProvider>.value(value: auth),
@@ -191,6 +201,14 @@ void main() {
         );
 
     return MaterialApp(
+      locale: const Locale('en'),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: MultiProvider(
         providers: [
           ChangeNotifierProvider<AuthProvider>.value(value: auth),
@@ -200,7 +218,7 @@ void main() {
           ChangeNotifierProvider<NotificationsProvider>(
               create: (_) => NotificationsProvider(apiClient)),
         ],
-        child: const HomeScreen(),
+        child: const HomeScreen(initialTabIndex: 0),
       ),
     );
   }

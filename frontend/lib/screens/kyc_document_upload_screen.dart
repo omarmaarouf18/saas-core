@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/l10n/l10n.dart';
 
 import '../core/theme.dart';
 import '../core/error_messages.dart';
@@ -88,19 +89,19 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
               const SizedBox(height: AppSpacing.md),
               ListTile(
                 leading: const Icon(Icons.camera_alt, color: AppColors.primary),
-                title: const Text("Take Photo with Camera"),
+                title: Text(AppLocalizations.of(ctx)!.kycTakeCamera),
                 onTap: () => Navigator.pop(ctx, 'camera'),
               ),
               ListTile(
                 leading:
                     const Icon(Icons.photo_library, color: AppColors.primary),
-                title: const Text("Choose Image from Gallery"),
+                title: Text(AppLocalizations.of(ctx)!.kycChooseGallery),
                 onTap: () => Navigator.pop(ctx, 'gallery'),
               ),
               ListTile(
                 leading:
                     const Icon(Icons.picture_as_pdf, color: AppColors.primary),
-                title: const Text("Select PDF Document"),
+                title: Text(AppLocalizations.of(ctx)!.kycSelectPdf),
                 onTap: () => Navigator.pop(ctx, 'pdf'),
               ),
             ],
@@ -160,13 +161,13 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
               const SizedBox(height: AppSpacing.md),
               ListTile(
                 leading: const Icon(Icons.camera_alt, color: AppColors.primary),
-                title: const Text("Take Photo with Camera"),
+                title: Text(AppLocalizations.of(ctx)!.kycTakeCamera),
                 onTap: () => Navigator.pop(ctx, 'camera'),
               ),
               ListTile(
                 leading:
                     const Icon(Icons.photo_library, color: AppColors.primary),
-                title: const Text("Choose Image from Gallery"),
+                title: Text(AppLocalizations.of(ctx)!.kycChooseGallery),
                 onTap: () => Navigator.pop(ctx, 'gallery'),
               ),
             ],
