@@ -6,6 +6,7 @@ import '../providers/theme_provider.dart';
 import '../utils/logout_helper.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
+import 'my_account_screen.dart';
 import 'owner_configuration_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -188,13 +189,12 @@ class SettingsScreen extends StatelessWidget {
                         color: AppColors.primary),
                     title: const Text("My Account"),
                     subtitle: const Text("Account details & preferences"),
-                    trailing: _buildComingSoonBadge(),
+                    trailing: const Icon(Icons.chevron_right,
+                        color: AppColors.outline),
                     onTap: () {
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("My Account details are coming soon"),
-                          duration: Duration(seconds: 2),
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const MyAccountScreen(),
                         ),
                       );
                     },

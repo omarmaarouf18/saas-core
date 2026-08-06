@@ -136,6 +136,38 @@ class ApiClient {
     }
   }
 
+  Future<dynamic> patch(
+    String path,
+    Map<String, dynamic> body, {
+    Map<String, String>? queryParams,
+    Map<String, String>? headers,
+    bool isRetry = false,
+  }) async {
+    try {
+      var uri = Uri.parse('$baseUrl$path');
+      if (queryParams != null && queryParams.isNotEmpty) {
+        uri = uri.replace(queryParameters: queryParams);
+      }
+      final response = await _client.patch(
+        uri,
+        headers: _getHeaders(extraHeaders: headers),
+        body: jsonEncode(body),
+      );
+      return await _handleResponse(
+        response,
+        onRetry: isRetry
+            ? null
+            : () => patch(path, body,
+                queryParams: queryParams, headers: headers, isRetry: true),
+        path: path,
+      );
+    } catch (e) {
+      if (e is ApiClientException) rethrow;
+      throw ApiClientException(
+          "Network error: Please check your internet connection.");
+    }
+  }
+
   Future<dynamic> get(
     String path, {
     Map<String, String>? queryParams,

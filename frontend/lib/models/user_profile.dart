@@ -2,6 +2,8 @@ class UserProfile {
   final String id;
   final String email;
   final String username;
+  final String? phone;
+  final List<String>? frequentAddresses;
   final String role;
   final String? tenantId;
   final String? kycStatus;
@@ -16,6 +18,8 @@ class UserProfile {
     required this.id,
     required this.email,
     required this.username,
+    this.phone,
+    this.frequentAddresses,
     required this.role,
     this.tenantId,
     this.kycStatus,
@@ -28,10 +32,20 @@ class UserProfile {
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
+    List<String>? addresses;
+    if (json['frequent_addresses'] != null &&
+        json['frequent_addresses'] is List) {
+      addresses = (json['frequent_addresses'] as List)
+          .map((e) => e.toString())
+          .toList();
+    }
+
     return UserProfile(
       id: json['user_id'] ?? json['id'] ?? '',
       email: json['email'] ?? '',
       username: json['username'] ?? '',
+      phone: json['phone'],
+      frequentAddresses: addresses,
       role: json['role'] ?? '',
       tenantId: json['tenant_id'],
       kycStatus: json['kyc_status'],

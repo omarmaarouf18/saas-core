@@ -465,4 +465,46 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// Updates current authenticated user profile via PATCH /auth/user.
+  Future<bool> updateOwnProfile({
+    String? username,
+    String? phone,
+    List<String>? frequentAddresses,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final body = <String, dynamic>{};
+      if (username != null) body['username'] = username;
+      if (phone != null) body['phone'] = phone;
+      if (frequentAddresses != null) {
+        body['frequent_addresses'] = frequentAddresses;
+      }
+
+      final res = await apiClient.patch('/auth/user', body);
+      if (res is Map<String, dynamic> && res.containsKey('user')) {
+        final userObj = res['user'];
+        if (userObj is Map<String, dynamic>) {
+          _user = UserProfile.fromJson(userObj);
+          if (_user!.username.isNotEmpty) {
+            await _secureStorage.write(
+                key: 'user_username', value: _user!.username);
+          }
+        }
+      } else {
+        await fetchUserProfile();
+      }
+      return true;
+    } catch (e) {
+      debugPrint('Update profile error: $e');
+      _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }
