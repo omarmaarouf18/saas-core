@@ -93,13 +93,23 @@ jobs:
           mkdir -p saas-core-deploy/.github/workflows
           cp saas-core/infrastructure/deploy/deploy.yml saas-core-deploy/.github/workflows/deploy.yml
 
-          echo "=== Verifying docker-compose.yml syntax ==="
+          echo "=== Verifying docker-compose.yml syntax with dummy environment ==="
           cd saas-core-deploy
-          docker compose --env-file .env.example config --quiet 2>/dev/null || {
+          grep -oE '\$\{?[A-Z0-9_]+\}?' docker-compose.yml | sed 's/[${}]//g' | sort -u | while read -r var; do
+            if [[ "$var" == *"PORT"* ]]; then
+              echo "${var}=8000"
+            else
+              echo "${var}=dummy_val_for_ci_validation"
+            fi
+          done > .env.ci.dummy
+
+          docker compose --env-file .env.ci.dummy config --quiet 2>/dev/null || {
             echo "::error::Generated docker-compose.yml failed syntax validation!"
-            docker compose --env-file .env.example config
+            docker compose --env-file .env.ci.dummy config
+            rm -f .env.ci.dummy
             exit 1
           }
+          rm -f .env.ci.dummy
           echo "docker-compose.yml syntax validated successfully."
 
       - name: Commit and Push Changes
