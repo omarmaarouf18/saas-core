@@ -6,7 +6,9 @@ import 'package:frontend/core/api_client.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
+import 'package:frontend/providers/chat_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
+import 'package:frontend/widgets/create_ticket_dialog.dart';
 import 'package:frontend/screens/settings_screen.dart';
 import 'package:frontend/screens/login_screen.dart';
 
@@ -81,6 +83,9 @@ void main() {
         ChangeNotifierProvider<NotificationsProvider>(
           create: (_) => NotificationsProvider(apiClient),
         ),
+        ChangeNotifierProvider<ChatProvider>(
+          create: (_) => ChatProvider(apiClient),
+        ),
       ],
       child: MaterialApp(
         themeMode: themeProvider.themeMode,
@@ -129,8 +134,7 @@ void main() {
     expect(fakeStorage.storage['theme_mode'], 'dark');
   });
 
-  testWidgets(
-      '(b1) Language, Owner-Config, My-Account, Customer-Service rows render as disabled with Coming Soon badges',
+  testWidgets('(b1) Language row renders with Coming Soon badge',
       (WidgetTester tester) async {
     final themeProvider = ThemeProvider(storage: FakeSecureStorage());
     final ownerUser = UserProfile(
@@ -147,8 +151,8 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    // Verify "Coming Soon" badges exist for placeholder rows (Language and Customer Service)
-    expect(find.text("Coming Soon"), findsAtLeastNWidgets(2));
+    // Verify "Coming Soon" badge exists for placeholder row (Language)
+    expect(find.text("Coming Soon"), findsOneWidget);
   });
 
   testWidgets('(b2) Tapping Language row displays feedback snackbar',
@@ -176,7 +180,7 @@ void main() {
     expect(find.text("Language selection is coming soon"), findsOneWidget);
   });
 
-  testWidgets('(b3) Tapping Customer Service row displays feedback snackbar',
+  testWidgets('(b3) Tapping Customer Service row opens CreateTicketDialog',
       (WidgetTester tester) async {
     final themeProvider = ThemeProvider(storage: FakeSecureStorage());
     final ownerUser = UserProfile(
@@ -197,8 +201,10 @@ void main() {
     expect(csRow, findsOneWidget);
     await tester.ensureVisible(csRow);
     await tester.tap(csRow);
-    await tester.pump();
-    expect(find.text("Customer Service is coming soon"), findsOneWidget);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CreateTicketDialog), findsOneWidget);
+    expect(find.text("Open Complaint Ticket"), findsOneWidget);
   });
 
   testWidgets(

@@ -4,6 +4,7 @@ import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../utils/logout_helper.dart';
+import '../widgets/create_ticket_dialog.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
 import 'my_account_screen.dart';
@@ -205,7 +206,6 @@ class SettingsScreen extends StatelessWidget {
             ],
 
             // 4. Support Section
-            // TODO: wire to POST /chat/tickets once built
             const ThemedSectionHeader(
               title: "Support & Help",
               subtitle: "Get assistance or submit issues",
@@ -222,14 +222,12 @@ class SettingsScreen extends StatelessWidget {
                   title: const Text("Customer Service"),
                   subtitle:
                       const Text("Contact support & submit complaint tickets"),
-                  trailing: _buildComingSoonBadge(),
+                  trailing:
+                      const Icon(Icons.chevron_right, color: AppColors.outline),
                   onTap: () {
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Customer Service is coming soon"),
-                        duration: Duration(seconds: 2),
-                      ),
+                    showDialog(
+                      context: context,
+                      builder: (context) => const CreateTicketDialog(),
                     );
                   },
                 ),

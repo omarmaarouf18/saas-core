@@ -10,11 +10,11 @@ import 'themed_error_banner.dart';
 import 'themed_text_field.dart';
 
 class CreateTicketDialog extends StatefulWidget {
-  final String contextId;
+  final String? contextId;
 
   const CreateTicketDialog({
     super.key,
-    required this.contextId,
+    this.contextId,
   });
 
   @override
@@ -48,7 +48,11 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> {
 
     final subject = _subjectController.text.trim();
     final description = _descriptionController.text.trim();
-    final combinedContext = "Job #${widget.contextId} - $subject: $description";
+    final hasContextId =
+        widget.contextId != null && widget.contextId!.trim().isNotEmpty;
+    final combinedContext = hasContextId
+        ? "Job #${widget.contextId} - $subject: $description"
+        : "$subject: $description";
 
     try {
       final res = await chat.createTicket(
@@ -84,6 +88,9 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final hasContextId =
+        widget.contextId != null && widget.contextId!.trim().isNotEmpty;
+
     return AlertDialog(
       title: const Text("Open Complaint Ticket"),
       content: SingleChildScrollView(
@@ -93,14 +100,16 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "Reference ID: #${widget.contextId.length > 8 ? widget.contextId.substring(0, 8) : widget.contextId}",
-                style: AppTypography.bodyMd.copyWith(
-                  color: AppColors.onSurfaceVariant,
-                  fontSize: 12,
+              if (hasContextId) ...[
+                Text(
+                  "Reference ID: #${widget.contextId!.length > 8 ? widget.contextId!.substring(0, 8) : widget.contextId}",
+                  style: AppTypography.bodyMd.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.md),
+              ],
               if (_errorMessage != null) ...[
                 ThemedErrorBanner(
                   key: const Key('create_ticket_error_banner'),
