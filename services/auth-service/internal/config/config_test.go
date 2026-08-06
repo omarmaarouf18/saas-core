@@ -99,3 +99,46 @@ func TestLoad_ResendConfig(t *testing.T) {
 		t.Errorf("expected empty Resend config values when unset, got key=%q from=%q", cfg.ResendAPIKey, cfg.ResendFromEmail)
 	}
 }
+
+func TestLoad_MongoDatabaseDefaults(t *testing.T) {
+	os.Setenv("JWT_SECRET", "dummy-jwt-secret")
+	os.Setenv("DOCUMENT_SIGNING_SECRET", "dummy-doc-signing-secret")
+	os.Setenv("GATEWAY_SECRET", "dummy-gateway-secret")
+	os.Setenv("INTERNAL_SERVICE_TOKEN", "dummy-token")
+	os.Setenv("TLS_CERT_PATH", "dummy-cert")
+	os.Setenv("TLS_KEY_PATH", "dummy-key")
+	os.Setenv("TLS_CA_PATH", "dummy-ca")
+	os.Setenv("REDIS_URI", "redis://localhost:6379")
+
+	defer func() {
+		os.Unsetenv("JWT_SECRET")
+		os.Unsetenv("DOCUMENT_SIGNING_SECRET")
+		os.Unsetenv("GATEWAY_SECRET")
+		os.Unsetenv("INTERNAL_SERVICE_TOKEN")
+		os.Unsetenv("TLS_CERT_PATH")
+		os.Unsetenv("TLS_KEY_PATH")
+		os.Unsetenv("TLS_CA_PATH")
+		os.Unsetenv("REDIS_URI")
+		os.Unsetenv("AUTH_MONGO_DATABASE")
+		os.Unsetenv("MONGO_INITDB_DATABASE")
+	}()
+
+	os.Unsetenv("AUTH_MONGO_DATABASE")
+	os.Unsetenv("MONGO_INITDB_DATABASE")
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
+	}
+	if cfg.MongoDatabase != "auth_db" {
+		t.Errorf("expected default MongoDatabase to be 'auth_db', got %q", cfg.MongoDatabase)
+	}
+
+	os.Setenv("AUTH_MONGO_DATABASE", "custom_auth_db")
+	cfg, err = config.Load()
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
+	}
+	if cfg.MongoDatabase != "custom_auth_db" {
+		t.Errorf("expected MongoDatabase to be 'custom_auth_db', got %q", cfg.MongoDatabase)
+	}
+}

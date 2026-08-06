@@ -60,12 +60,15 @@ func Load() (*Config, error) {
 
 	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27017/saas_platform"
+		mongoURI = "mongodb://localhost:27017/user_db"
 	}
 
-	dbName := os.Getenv("MONGO_INITDB_DATABASE")
+	dbName := os.Getenv("USER_MONGO_DATABASE")
 	if dbName == "" {
-		dbName = "saas_platform"
+		dbName = os.Getenv("MONGO_INITDB_DATABASE")
+	}
+	if dbName == "" {
+		dbName = "user_db"
 	}
 
 	authServiceURL := os.Getenv("AUTH_SERVICE_URL")

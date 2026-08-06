@@ -50,9 +50,12 @@ func main() {
 	if mongoURI == "" {
 		mongoURI = "mongodb://localhost:27017"
 	}
-	dbName := os.Getenv("MONGO_INITDB_DATABASE")
+	dbName := os.Getenv("AUTH_MONGO_DATABASE")
 	if dbName == "" {
-		dbName = "saas_platform"
+		dbName = os.Getenv("MONGO_INITDB_DATABASE")
+	}
+	if dbName == "" {
+		dbName = "auth_db"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

@@ -78,9 +78,12 @@ func Load() (*Config, error) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	dbName := os.Getenv("MONGO_INITDB_DATABASE")
+	dbName := os.Getenv("AUTH_MONGO_DATABASE")
 	if dbName == "" {
-		dbName = "saas_platform"
+		dbName = os.Getenv("MONGO_INITDB_DATABASE")
+	}
+	if dbName == "" {
+		dbName = "auth_db"
 	}
 
 	appEnv := os.Getenv("APP_ENV")
