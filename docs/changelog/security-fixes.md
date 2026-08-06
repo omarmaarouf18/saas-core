@@ -2,6 +2,14 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
+## KYB/KYE Review Approval Atomic Conditional Status Guard (Finding #1)
+
+- **Implementation Detail**: Remediated race condition in `auth-service` (`ReviewKYBKYESubmissions` in `services/auth-service/internal/handlers/auth.go`). Previously, `ReviewKYBKYESubmissions` queried user status via `GetUserByID` and then updated the record unconditionally using `store.UpdateUser(ctx, userID, update)`. Concurrent review requests could both read `pending_approval`, pass status validation in memory, and both write, causing the last write to silently win and generating duplicate/contradictory audit log entries. Added `UpdateUserConditional` store method in `services/auth-service/internal/store/mongodb.go` which conditions `UpdateOne` on matching `_id` AND `kyc_status` (or `kye_status`) equal to `pending_approval`. Updated `ReviewKYBKYESubmissions` to execute `UpdateUserConditional`, returning HTTP 409 Conflict with `{"error": "submission status has already changed or been reviewed"}` when `MatchedCount == 0`.
+- **Commit SHA**: `bb1d0099a4e536686d0206d9d6e0a91453602147`
+- **Verification**: Verified via regression test `TestReviewKYBKYESubmissions_ConcurrencyRace` in `auth_test.go` confirming 1 success (200 OK) and 1 conflict (409 Conflict) on concurrent reviews with exactly 1 audit log entry ("KYC_REVIEWED"), `go build ./...`, `go vet ./...`, and `go test ./...` in `auth-service`. ✅
+
+
+
 ## UpdateJobLocation Atomic Rate-Limit Throttle Reservation
 
 - **Implementation Detail**: Resolved TOCTOU (time-of-check-to-time-of-use) race condition in `user-service` (`UpdateJobLocation` in `services/user-service/internal/handlers/handlers.go`). Previously, rate limiting/throttling checks were performed after database reads (`GetJob`) and subscription tier checks (`requireTier`), allowing two simultaneous requests to pass validation before either committed its in-flight lock or updated timestamp. Created `tryReserveLocationThrottleInMemory` helper for atomic in-memory reservation and moved the throttle reservation check to the immediate entry point of `UpdateJobLocation` (before DB queries or external calls). Ensured atomic in-flight reservation across both Redis (`checkLocationThrottleScript`) and in-memory modes. If any subsequent validation step fails, `clearInFlight()` is called to release the reservation.
