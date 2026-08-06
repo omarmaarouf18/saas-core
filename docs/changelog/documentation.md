@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## Monorepo Shared Dependency Constraint Documentation (Finding #9)
+
+- **Implementation Detail**: Documented Finding #9 as a deliberate, accepted monorepo dependency constraint in `docs/REPOSITORY_MAP.md` §5 and `AI_CONTEXT.md`. Clarified that `shared/infra` is resolved strictly via relative paths (`replace github.com/project/shared/infra => ../../shared/infra` in `services/*/go.mod`). Explicitly documented extraction guidance (if a service is ever copied into an external application, `shared/infra` must be copied alongside it) and the associated maintenance risk (future bug fixes or security hardening in `saas-core`'s `shared/infra` will not automatically propagate to copied instances, requiring manual operator re-syncing). Identified the long-term resolution trigger (publishing `shared/infra` as a standalone versioned module should 3+ independent applications depend on copied instances).
+- **Commit SHA**: ``a35ca8670818a6d1c44b5bfd21ed211bd3f38c83``
+- **Verification**: Verified via `git diff --stat` (0 code or go.mod files touched, documentation files only) and `make docs-check`. ✅
+
 ## ADR-0014 Unified Account Settings & Role Home Redesign Planning
 
 - **Implementation Detail**: Created ADR-0014 (`docs/adr/0014-unified-account-settings-and-role-home-redesign.md`) documenting the planned frontend UX restructuring initiative. Registered 4 core decisions: (1) Unified Settings screen (Account Action Center) consolidating theme, language, support, and centralized logout, (2) Deferred Owner Configuration and My Account placeholders, (3) Customer home redesign with 4 category tiles (categories TBD) and search bar, (4) Interactive `flutter_map` location picker replacing manual lat/long text inputs, and (5) Employee backend capability audit as a prerequisite to screen redesign. Updated `docs/adr/README.md`, `docs/frontend/STATUS.md` (Phase 15 `[PLANNED, NOT STARTED]`), `docs/frontend/ARCHITECTURE.md`, and `AI_CONTEXT.md`.
