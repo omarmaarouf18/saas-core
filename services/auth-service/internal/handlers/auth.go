@@ -1570,7 +1570,7 @@ func (a *Auth) GetPendingKYBKYESubmissions(w http.ResponseWriter, r *http.Reques
 			url, err := a.storage.GetSignedURL(ctx, u.IDFrontDoc, 15*time.Minute)
 			if err != nil {
 				log.Printf("[AUTH] Failed to generate signed URL for id_front doc (user %s): %v", u.ID, err)
-				sub.DocumentErrors = append(sub.DocumentErrors, fmt.Sprintf("Failed to load id_front: %v", err))
+				sub.DocumentErrors = append(sub.DocumentErrors, "Failed to load id_front")
 			} else {
 				sub.IDFrontURL = url
 				handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("generated signed url for IDFrontDoc key: %s", u.IDFrontDoc), handlerutil.GetClientIP(r))
@@ -1580,7 +1580,7 @@ func (a *Auth) GetPendingKYBKYESubmissions(w http.ResponseWriter, r *http.Reques
 			url, err := a.storage.GetSignedURL(ctx, u.IDBackDoc, 15*time.Minute)
 			if err != nil {
 				log.Printf("[AUTH] Failed to generate signed URL for id_back doc (user %s): %v", u.ID, err)
-				sub.DocumentErrors = append(sub.DocumentErrors, fmt.Sprintf("Failed to load id_back: %v", err))
+				sub.DocumentErrors = append(sub.DocumentErrors, "Failed to load id_back")
 			} else {
 				sub.IDBackURL = url
 				handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("generated signed url for IDBackDoc key: %s", u.IDBackDoc), handlerutil.GetClientIP(r))
@@ -1590,7 +1590,7 @@ func (a *Auth) GetPendingKYBKYESubmissions(w http.ResponseWriter, r *http.Reques
 			url, err := a.storage.GetSignedURL(ctx, u.SelfieDoc, 15*time.Minute)
 			if err != nil {
 				log.Printf("[AUTH] Failed to generate signed URL for selfie doc (user %s): %v", u.ID, err)
-				sub.DocumentErrors = append(sub.DocumentErrors, fmt.Sprintf("Failed to load selfie: %v", err))
+				sub.DocumentErrors = append(sub.DocumentErrors, "Failed to load selfie")
 			} else {
 				sub.SelfieURL = url
 				handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("generated signed url for SelfieDoc key: %s", u.SelfieDoc), handlerutil.GetClientIP(r))
@@ -1600,7 +1600,7 @@ func (a *Auth) GetPendingKYBKYESubmissions(w http.ResponseWriter, r *http.Reques
 			url, err := a.storage.GetSignedURL(ctx, u.BusinessProofDoc, 15*time.Minute)
 			if err != nil {
 				log.Printf("[AUTH] Failed to generate signed URL for business_proof doc (user %s): %v", u.ID, err)
-				sub.DocumentErrors = append(sub.DocumentErrors, fmt.Sprintf("Failed to load business_proof: %v", err))
+				sub.DocumentErrors = append(sub.DocumentErrors, "Failed to load business_proof")
 			} else {
 				sub.BusinessProofURL = url
 				handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("generated signed url for BusinessProofDoc key: %s", u.BusinessProofDoc), handlerutil.GetClientIP(r))

@@ -52,7 +52,7 @@ class MockApiClientForReviewTest extends ApiClient {
       'id_front_url': 'https://storage/id_front_102.png',
       'id_back_url': 'https://storage/id_back_102.png',
       'selfie_url': 'https://storage/selfie_102.png',
-      'document_errors': ['Failed to load id_back: connection reset'],
+      'document_errors': ['Failed to load id_back'],
     },
   ];
 
@@ -429,7 +429,7 @@ void main() {
         'id_front_url': 'https://storage/id_front_102.png',
         'id_back_url': 'https://storage/id_back_102.png',
         'selfie_url': 'https://storage/selfie_102.png',
-        'document_errors': ['Failed to load id_back: connection reset'],
+        'document_errors': ['Failed to load id_back'],
       },
     ];
     mockAuth.mockIsLoadingPending = false;
@@ -451,8 +451,8 @@ void main() {
     expect(find.text('KYE (Employee)'), findsOneWidget);
 
     expect(find.byType(StatusBadge), findsNWidgets(2));
-    expect(find.text('• Failed to load id_back: connection reset'),
-        findsOneWidget);
+    expect(
+        find.text('• Failed to load id_back'), findsOneWidget);
   });
 
   testWidgets(

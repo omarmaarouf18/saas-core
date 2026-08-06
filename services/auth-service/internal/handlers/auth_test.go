@@ -1077,8 +1077,11 @@ func TestGetPendingKYBKYESubmissions_StorageError(t *testing.T) {
 			if sub.IDBackURL != "" {
 				t.Errorf("Expected id_back URL to be empty on failure, got %q", sub.IDBackURL)
 			}
-			if len(sub.DocumentErrors) != 1 || !strings.Contains(sub.DocumentErrors[0], "Failed to load id_back") {
-				t.Errorf("Expected 1 document error for id_back, got: %v", sub.DocumentErrors)
+			if len(sub.DocumentErrors) != 1 || sub.DocumentErrors[0] != "Failed to load id_back" {
+				t.Errorf("Expected exact document error 'Failed to load id_back', got: %v", sub.DocumentErrors)
+			}
+			if strings.Contains(sub.DocumentErrors[0], ":") {
+				t.Errorf("SECURITY DEFECT: DocumentErrors leaked internal error details or colon interpolation! Got: %s", sub.DocumentErrors[0])
 			}
 		}
 	}

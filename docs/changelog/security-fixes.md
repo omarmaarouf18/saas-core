@@ -2,6 +2,12 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
+## GetPendingKYBKYESubmissions Storage Error Detail Sanitization (Finding #4)
+
+- **Implementation Detail**: Remediated internal storage error disclosure in `auth-service` (`GetPendingKYBKYESubmissions` in `services/auth-service/internal/handlers/auth.go`). Previously, signed URL generation failures for reviewer document previews appended `fmt.Sprintf("Failed to load <doc_type>: %v", err)` to the user-facing `DocumentErrors` response array, exposing internal storage paths and driver-level error details to reviewers. Updated `GetPendingKYBKYESubmissions` to log underlying storage errors server-side via `log.Printf(...)` while appending generic error strings without string interpolation (`"Failed to load id_front"`, `"Failed to load id_back"`, `"Failed to load selfie"`, and `"Failed to load business_proof"`). Updated regression test `TestGetPendingKYBKYESubmissions_StorageError` in `auth_test.go` and frontend mock tests to assert exact generic error strings and confirm no raw error details or colon interpolation are exposed.
+- **Commit SHA**: ``0a5e3ee24dc021169bf3ca3c72684978ca0170cc``
+- **Verification**: Verified via `TestGetPendingKYBKYESubmissions_StorageError` in `auth_test.go`, `flutter test` (126/126 pass), `go build ./...`, `go vet ./...`, and `go test ./services/auth-service/...`. ✅
+
 ## UpdateProfile Duplicate Username Error Sanitization & Phone Validation (Findings #6 & #7)
 
 - **Implementation Detail**:
