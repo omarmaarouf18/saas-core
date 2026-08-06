@@ -5,7 +5,7 @@ This file tracks historical entries for the primary category: **Security Fixes C
 ## KYB/KYE Review Approval Atomic Conditional Status Guard (Finding #1)
 
 - **Implementation Detail**: Remediated race condition in `auth-service` (`ReviewKYBKYESubmissions` in `services/auth-service/internal/handlers/auth.go`). Previously, `ReviewKYBKYESubmissions` queried user status via `GetUserByID` and then updated the record unconditionally using `store.UpdateUser(ctx, userID, update)`. Concurrent review requests could both read `pending_approval`, pass status validation in memory, and both write, causing the last write to silently win and generating duplicate/contradictory audit log entries. Added `UpdateUserConditional` store method in `services/auth-service/internal/store/mongodb.go` which conditions `UpdateOne` on matching `_id` AND `kyc_status` (or `kye_status`) equal to `pending_approval`. Updated `ReviewKYBKYESubmissions` to execute `UpdateUserConditional`, returning HTTP 409 Conflict with `{"error": "submission status has already changed or been reviewed"}` when `MatchedCount == 0`.
-- **Commit SHA**: `bb1d0099a4e536686d0206d9d6e0a91453602147`
+- **Commit SHA**: ``bb1d0099a4e536686d0206d9d6e0a91453602147``
 - **Verification**: Verified via regression test `TestReviewKYBKYESubmissions_ConcurrencyRace` in `auth_test.go` confirming 1 success (200 OK) and 1 conflict (409 Conflict) on concurrent reviews with exactly 1 audit log entry ("KYC_REVIEWED"), `go build ./...`, `go vet ./...`, and `go test ./...` in `auth-service`. ✅
 
 
