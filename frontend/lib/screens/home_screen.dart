@@ -16,6 +16,7 @@ import 'settings_screen.dart';
 import 'notifications_screen.dart';
 import 'subscription_screen.dart';
 
+import 'owner_history_screen.dart';
 import 'employee_jobs_screen.dart';
 import 'kyc_document_upload_screen.dart';
 import 'customer_home_screen.dart';
@@ -28,21 +29,58 @@ import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int initialTabIndex;
+  const HomeScreen({super.key, this.initialTabIndex = 0});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+  late Set<int> _visitedTabs;
 
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialTabIndex;
+    _visitedTabs = {_currentIndex};
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshData();
     });
+  }
+
+  @override
+  void didUpdateWidget(HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTabIndex != oldWidget.initialTabIndex) {
+      setState(() {
+        _currentIndex = widget.initialTabIndex;
+        _visitedTabs.add(_currentIndex);
+      });
+    }
+  }
+
+  void onTabTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+      _visitedTabs.add(index);
+    });
+  }
+
+  String _getTabTitle(int index) {
+    switch (index) {
+      case 0:
+        return "Quick Delivery Owner Dashboard";
+      case 1:
+        return "Manage Workers";
+      case 2:
+        return "Settings";
+      case 3:
+        return "History & Audit Logs";
+      default:
+        return "Quick Delivery Owner Dashboard";
+    }
   }
 
   Future<void> _refreshData() async {
@@ -213,7 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
-        title: const Text("Quick Delivery Owner Dashboard"),
+        title: Text(_getTabTitle(_currentIndex)),
         foregroundColor: AppColors.onPrimary,
         actions: [
           if (user.role == 'reviewer' || user.role == 'admin')
@@ -355,46 +393,51 @@ class _HomeScreenState extends State<HomeScreen> {
             child: IndexedStack(
               index: _currentIndex,
               children: [
-                _buildDashboardTab(context, user),
-                const WalletScreen(),
-                const EmployeeScreen(),
-                const ServiceScreen(),
+                _visitedTabs.contains(0)
+                    ? _buildDashboardTab(context, user)
+                    : const SizedBox.shrink(),
+                _visitedTabs.contains(1)
+                    ? const EmployeeScreen()
+                    : const SizedBox.shrink(),
+                _visitedTabs.contains(2)
+                    ? const SettingsScreen(isEmbeddedInTab: true)
+                    : const SizedBox.shrink(),
+                _visitedTabs.contains(3)
+                    ? const OwnerHistoryScreen(isEmbeddedInTab: true)
+                    : const SizedBox.shrink(),
               ],
             ),
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.outline,
-        showUnselectedLabels: true,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard),
-            label: "Dashboard",
+      bottomNavigationBar: NavigationBar(
+        key: const Key('owner_bottom_navigation_bar'),
+        selectedIndex: _currentIndex,
+        onDestinationSelected: onTabTapped,
+        destinations: const [
+          NavigationDestination(
+            key: Key('owner_nav_tab_home'),
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            activeIcon: Icon(Icons.account_balance_wallet),
-            label: "Wallet",
-          ),
-          BottomNavigationBarItem(
+          NavigationDestination(
+            key: Key('owner_nav_tab_employees'),
             icon: Icon(Icons.people_outline),
-            activeIcon: Icon(Icons.people),
-            label: "Employees",
+            selectedIcon: Icon(Icons.people),
+            label: 'Employees',
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
+            key: Key('owner_nav_tab_settings'),
             icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: "Services",
+            selectedIcon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+          NavigationDestination(
+            key: Key('owner_nav_tab_history'),
+            icon: Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history),
+            label: 'History',
           ),
         ],
       ),
@@ -445,6 +488,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       : "${ownerProvider.walletBalance.toStringAsFixed(2)} Credits",
                   icon: Icons.account_balance_wallet_outlined,
                   color: AppColors.primary,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const WalletScreen(),
+                      ),
+                    );
+                  },
                 ),
                 _buildMetricCard(
                   title: "Subscription Tier",
@@ -473,6 +523,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   subtitle: "N/A (No List API)",
                   icon: Icons.people_outline,
                   color: AppColors.outline,
+                  onTap: () {
+                    onTabTapped(1); // Switch to Employees tab
+                  },
                 ),
                 _buildMetricCard(
                   title: "Escrow Review",
@@ -488,6 +541,130 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   },
+                ),
+              ],
+            ),
+
+            const SizedBox(height: AppSpacing.lg),
+            // Quick Access Management Cards
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    key: const Key('owner_dashboard_wallet_card'),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const WalletScreen(),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    child: ThemedCard(
+                      padding: AppSpacing.md,
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.sm),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                            ),
+                            child: const Icon(
+                              Icons.account_balance_wallet,
+                              color: AppColors.primary,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "My Wallet",
+                                  style: AppTypography.titleMd.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  "Ledger & balance",
+                                  style: AppTypography.labelMd.copyWith(
+                                    color: AppColors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right,
+                            color: AppColors.onSurfaceVariant,
+                            size: 18,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: InkWell(
+                    key: const Key('owner_dashboard_services_card'),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const ServiceScreen(),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    child: ThemedCard(
+                      padding: AppSpacing.md,
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.sm),
+                            decoration: BoxDecoration(
+                              color: AppColors.secondary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                            ),
+                            child: const Icon(
+                              Icons.storefront,
+                              color: AppColors.secondary,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Services",
+                                  style: AppTypography.titleMd.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  "Rates & config",
+                                  style: AppTypography.labelMd.copyWith(
+                                    color: AppColors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right,
+                            color: AppColors.onSurfaceVariant,
+                            size: 18,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
