@@ -55,10 +55,15 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   update-deployment-repo:
-    name: Update Deployment Repository Image Tags
+    name: Sync Deployment Repository (Full Structural Sync)
     needs: build-and-publish
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Source Repository
+        uses: actions/checkout@v4
+        with:
+          path: saas-core
+
       - name: Generate GitHub App token
         uses: actions/create-github-app-token@v1
         id: app-token
@@ -74,19 +79,38 @@ jobs:
           repository: ${{ github.repository_owner }}/saas-core-deploy
           token: ${{ steps.app-token.outputs.token }}
           ref: main
+          path: saas-core-deploy
 
-      - name: Update Service Image Tags in docker-compose.yml
+      - name: Sync Full Structural Content from Reference Files
         run: |
-          sed -i "s|image: ghcr.io/${{ github.repository_owner }}/saas-core-\([^:]*\):.*|image: ghcr.io/${{ github.repository_owner }}/saas-core-\1:${{ github.sha }}|g" docker-compose.yml
+          echo "=== Syncing docker-compose.prod.yml → docker-compose.yml ==="
+          cp saas-core/infrastructure/deploy/docker-compose.prod.yml saas-core-deploy/docker-compose.yml
+
+          echo "=== Substituting IMAGE_TAG with commit SHA ==="
+          sed -i "s|IMAGE_TAG|${{ github.sha }}|g" saas-core-deploy/docker-compose.yml
+
+          echo "=== Syncing deploy.yml workflow ==="
+          mkdir -p saas-core-deploy/.github/workflows
+          cp saas-core/infrastructure/deploy/deploy.yml saas-core-deploy/.github/workflows/deploy.yml
+
+          echo "=== Verifying docker-compose.yml syntax ==="
+          cd saas-core-deploy
+          docker compose config --quiet 2>/dev/null || {
+            echo "::error::Generated docker-compose.yml failed syntax validation!"
+            docker compose config
+            exit 1
+          }
+          echo "docker-compose.yml syntax validated successfully."
 
       - name: Commit and Push Changes
+        working-directory: saas-core-deploy
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docker-compose.yml
+          git add -A
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "deploy: update production image tags to commit ${{ github.sha }}"
+            git commit -m "deploy: sync full structure and update image tags to commit ${{ github.sha }}"
             git push origin main
           fi

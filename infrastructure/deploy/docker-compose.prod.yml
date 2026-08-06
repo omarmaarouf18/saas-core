@@ -1,0 +1,257 @@
+# =============================================================================
+# SaaS Platform — Production Deployment Docker Compose Orchestration
+# =============================================================================
+# THIS IS A REFERENCE COPY maintained in saas-core. The update-deployment-repo
+# job in build-and-publish.yml copies this file to saas-core-deploy with
+# IMAGE_TAG substituted for the actual commit SHA.
+#
+# Usage (on production VM, via deploy.yml):
+#   docker compose --env-file .env up -d
+#   docker compose --env-file .env down
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Data Stores
+  # ---------------------------------------------------------------------------
+  mongo:
+    image: mongo:7
+    container_name: saas-mongo
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh -u \"$$MONGO_INITDB_ROOT_USERNAME\" -p \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval \"db.adminCommand('ping')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - saas-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: saas-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6380:6379"
+    volumes:
+      - redis_data:/data
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - saas-net
+
+  # ---------------------------------------------------------------------------
+  # Production Microservices (Images from GHCR)
+  # ---------------------------------------------------------------------------
+  api-gateway:
+    image: ghcr.io/omarmaarouf18/saas-core-api-gateway:IMAGE_TAG
+    container_name: saas-api-gateway
+    restart: unless-stopped
+    ports:
+      - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
+    volumes:
+      - ./certs/ca.crt:/app/certs/ca.crt:ro
+      - ./certs/api-gateway.crt:/app/certs/api-gateway.crt:ro
+      - ./certs/api-gateway.key:/app/certs/api-gateway.key:ro
+      - ./certs/api-gateway-external.crt:/app/certs/api-gateway-external.crt:ro
+      - ./certs/api-gateway-external.key:/app/certs/api-gateway-external.key:ro
+    environment:
+      PORT: ${API_GATEWAY_PORT}
+      MONGO_URI: ${MONGO_URI}
+      REDIS_URI: ${REDIS_URI}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      USER_SERVICE_URL: ${USER_SERVICE_URL}
+      CHAT_SERVICE_URL: ${CHAT_SERVICE_URL}
+      NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL}
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
+      APP_ENV: ${APP_ENV}
+      LOG_LEVEL: ${LOG_LEVEL}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      TLS_CERT_PATH: /app/certs/api-gateway.crt
+      TLS_KEY_PATH: /app/certs/api-gateway.key
+      TLS_CA_PATH: /app/certs/ca.crt
+      EXTERNAL_TLS_CERT_PATH: /app/certs/api-gateway-external.crt
+      EXTERNAL_TLS_KEY_PATH: /app/certs/api-gateway-external.key
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-127.0.0.1,::1,172.16.0.0/12,10.0.0.0/8}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - saas-net
+
+  chat-service:
+    image: ghcr.io/omarmaarouf18/saas-core-chat-service:IMAGE_TAG
+    container_name: saas-chat-service
+    restart: unless-stopped
+    expose:
+      - "${CHAT_SERVICE_PORT}"
+    volumes:
+      - ./certs/ca.crt:/app/certs/ca.crt:ro
+      - ./certs/chat-service.crt:/app/certs/chat-service.crt:ro
+      - ./certs/chat-service.key:/app/certs/chat-service.key:ro
+    environment:
+      PORT: ${CHAT_SERVICE_PORT}
+      MONGO_URI: ${MONGO_URI}
+      CHAT_MONGO_DATABASE: ${CHAT_MONGO_DATABASE:-chat_db}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+      REDIS_URI: ${REDIS_URI}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      USER_SERVICE_URL: ${USER_SERVICE_URL}
+      APP_ENV: ${APP_ENV}
+      LOG_LEVEL: ${LOG_LEVEL}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      AWS_REGION: ${AWS_REGION}
+      CLOUDWATCH_LOG_GROUP: ${CLOUDWATCH_LOG_GROUP}
+      TLS_CERT_PATH: /app/certs/chat-service.crt
+      TLS_KEY_PATH: /app/certs/chat-service.key
+      TLS_CA_PATH: /app/certs/ca.crt
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - saas-net
+
+  auth-service:
+    image: ghcr.io/omarmaarouf18/saas-core-auth-service:IMAGE_TAG
+    container_name: saas-auth-service
+    restart: unless-stopped
+    expose:
+      - "${AUTH_SERVICE_PORT}"
+    volumes:
+      - ./certs/ca.crt:/app/certs/ca.crt:ro
+      - ./certs/auth-service.crt:/app/certs/auth-service.crt:ro
+      - ./certs/auth-service.key:/app/certs/auth-service.key:ro
+    environment:
+      PORT: ${AUTH_SERVICE_PORT}
+      MONGO_URI: ${MONGO_URI}
+      AUTH_MONGO_DATABASE: ${AUTH_MONGO_DATABASE:-auth_db}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+      REDIS_URI: ${REDIS_URI}
+      APP_ENV: ${APP_ENV}
+      LOG_LEVEL: ${LOG_LEVEL}
+      JWT_SECRET: ${JWT_SECRET}
+      DOCUMENT_SIGNING_SECRET: ${DOCUMENT_SIGNING_SECRET}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      OTP_AES_KEY: ${OTP_AES_KEY}
+      AWS_REGION: ${AWS_REGION}
+      CLOUDWATCH_LOG_GROUP: ${CLOUDWATCH_LOG_GROUP}
+      TLS_CERT_PATH: /app/certs/auth-service.crt
+      TLS_KEY_PATH: /app/certs/auth-service.key
+      TLS_CA_PATH: /app/certs/ca.crt
+      USER_SERVICE_URL: ${USER_SERVICE_URL}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - saas-net
+
+  user-service:
+    image: ghcr.io/omarmaarouf18/saas-core-user-service:IMAGE_TAG
+    container_name: saas-user-service
+    restart: unless-stopped
+    expose:
+      - "${USER_SERVICE_PORT}"
+    volumes:
+      - ./certs/ca.crt:/app/certs/ca.crt:ro
+      - ./certs/user-service.crt:/app/certs/user-service.crt:ro
+      - ./certs/user-service.key:/app/certs/user-service.key:ro
+    environment:
+      PORT: ${USER_SERVICE_PORT}
+      MONGO_URI: ${MONGO_URI}
+      USER_MONGO_DATABASE: ${USER_MONGO_DATABASE:-user_db}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+      REDIS_URI: ${REDIS_URI}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      CHAT_SERVICE_URL: ${CHAT_SERVICE_URL}
+      APP_ENV: ${APP_ENV}
+      LOG_LEVEL: ${LOG_LEVEL}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      AWS_REGION: ${AWS_REGION}
+      CLOUDWATCH_LOG_GROUP: ${CLOUDWATCH_LOG_GROUP}
+      TLS_CERT_PATH: /app/certs/user-service.crt
+      TLS_KEY_PATH: /app/certs/user-service.key
+      TLS_CA_PATH: /app/certs/ca.crt
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - saas-net
+
+  notification-service:
+    image: ghcr.io/omarmaarouf18/saas-core-notification-service:IMAGE_TAG
+    container_name: saas-notification-service
+    restart: unless-stopped
+    expose:
+      - "${NOTIFICATION_SERVICE_PORT}"
+    volumes:
+      - ./certs/ca.crt:/app/certs/ca.crt:ro
+      - ./certs/notification-service.crt:/app/certs/notification-service.crt:ro
+      - ./certs/notification-service.key:/app/certs/notification-service.key:ro
+    environment:
+      PORT: ${NOTIFICATION_SERVICE_PORT}
+      MONGO_URI: ${MONGO_URI}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+      REDIS_URI: ${REDIS_URI}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
+      APP_ENV: ${APP_ENV}
+      LOG_LEVEL: ${LOG_LEVEL}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      TLS_CERT_PATH: /app/certs/notification-service.crt
+      TLS_KEY_PATH: /app/certs/notification-service.key
+      TLS_CA_PATH: /app/certs/ca.crt
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - saas-net
+
+# ---------------------------------------------------------------------------
+# Persistent Volumes
+# ---------------------------------------------------------------------------
+volumes:
+  mongo_data:
+    driver: local
+    name: saas_platform_mongo_data
+  redis_data:
+    driver: local
+    name: saas_platform_redis_data
+
+# ---------------------------------------------------------------------------
+# Network
+# ---------------------------------------------------------------------------
+networks:
+  saas-net:
+    driver: bridge

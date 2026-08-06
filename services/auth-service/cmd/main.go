@@ -27,6 +27,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -47,6 +48,18 @@ import (
 )
 
 func main() {
+	// --check-env: validate config and exit without starting the server.
+	// Used by the CD pipeline pre-flight to verify env vars before deployment.
+	if len(os.Args) > 1 && os.Args[1] == "--check-env" {
+		_, err := config.Load()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "PREFLIGHT FAILED: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println("PREFLIGHT OK: auth-service config validated")
+		os.Exit(0)
+	}
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("[AUTH] Failed to load configuration: %v", err)

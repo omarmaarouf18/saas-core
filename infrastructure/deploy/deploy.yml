@@ -1,0 +1,289 @@
+# =============================================================================
+# SaaS Platform — Production CD Pipeline (Strict Pre-Flight Validation)
+# =============================================================================
+# THIS IS A REFERENCE COPY maintained in saas-core/infrastructure/deploy/.
+# The update-deployment-repo job in build-and-publish.yml syncs this file to
+# saas-core-deploy/.github/workflows/deploy.yml automatically.
+#
+# See ADR-0015 for design rationale and incident context.
+# =============================================================================
+
+name: Continuous Deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Production VM
+    runs-on: [self-hosted, saas-vm]
+
+    steps:
+      - name: Fix Workspace File Ownership
+        run: |
+          docker run --rm -v $(pwd):/work alpine chown -R $(id -u):$(id -g) /work 2>/dev/null || true
+
+      - name: Checkout Deployment Repository
+        uses: actions/checkout@v4
+        with:
+          clean: false
+          fetch-depth: 2
+
+      - name: Unify Production Environment File (Symlink)
+        run: |
+          # ADR-0015 / ADR-0012: /home/deploybot/.env is the SOLE canonical
+          # source of truth. Workspace .env is always a symlink to it.
+          if [ -f /home/deploybot/.env ]; then
+            # Remove any stale workspace copy (not a symlink)
+            if [ -f .env ] && [ ! -L .env ]; then
+              echo "Removing stale workspace .env copy (not a symlink)..."
+              rm -f .env
+            fi
+            ln -sf /home/deploybot/.env .env
+            echo "Workspace .env symlinked to /home/deploybot/.env"
+          elif [ -f .env ] && [ ! -L .env ]; then
+            # Workspace has a real .env but canonical location is missing — migrate
+            echo "Migrating workspace .env to /home/deploybot/.env and symlinking back..."
+            cp .env /home/deploybot/.env
+            rm -f .env
+            ln -sf /home/deploybot/.env .env
+          else
+            echo "::error::No .env found at /home/deploybot/.env or in workspace. Cannot deploy."
+            exit 1
+          fi
+
+      - name: Ensure Real mTLS Certificate Files
+        run: |
+          INVALID_MOUNTS=$(find certs/ -maxdepth 1 -type d ! -path certs/ 2>/dev/null | wc -l)
+          if [ "$INVALID_MOUNTS" -gt 0 ] || [ ! -f certs/ca.key ] || [ ! -f certs/api-gateway.key ]; then
+            echo "Found invalid directory mounts or missing cert keys (invalid count: $INVALID_MOUNTS) — stopping containers and purging certs..."
+            docker compose down --remove-orphans 2>/dev/null || true
+            rm -rf certs
+            mkdir -p certs
+          fi
+
+          # Check if existing persistent certs lack SAN extension (legacy Common Name defect)
+          if [ -f /home/deploybot/certs/auth-service.crt ] && ! openssl x509 -in /home/deploybot/certs/auth-service.crt -noout -text 2>/dev/null | grep -q "Subject Alternative Name"; then
+            echo "Persistent certs in /home/deploybot/certs lack SAN extensions — purging old certs..."
+            rm -rf /home/deploybot/certs certs
+            docker compose down --remove-orphans 2>/dev/null || true
+          fi
+
+          if [ ! -f certs/ca.key ]; then
+            if [ -d /home/deploybot/certs ] && [ -f /home/deploybot/certs/ca.key ]; then
+              echo "Restoring mTLS certificates from /home/deploybot/certs..."
+              cp -r /home/deploybot/certs/* certs/
+            elif [ -d /opt/saas-platform/certs ] && [ -f /opt/saas-platform/certs/ca.key ] && [ -r /opt/saas-platform/certs/ca.key ]; then
+              echo "Copying mTLS certificates from /opt/saas-platform/certs..."
+              cp -r /opt/saas-platform/certs/* certs/
+            else
+              echo "Generating fresh mTLS certificates..."
+              mkdir -p certs
+              cd certs
+              openssl genrsa -out ca.key 4096 2>/dev/null
+              openssl req -new -x509 -days 3650 -key ca.key -out ca.crt -subj "/CN=SaaS-Root-CA" 2>/dev/null
+              for svc in api-gateway auth-service user-service chat-service notification-service api-gateway-external; do
+                openssl genrsa -out ${svc}.key 2048 2>/dev/null
+                openssl req -new -key ${svc}.key -out ${svc}.csr -subj "/CN=${svc}" -addext "subjectAltName = DNS:${svc}, DNS:localhost, IP:127.0.0.1" 2>/dev/null
+                openssl x509 -req -in ${svc}.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out ${svc}.crt -days 3650 -copy_extensions copy 2>/dev/null
+              done
+              cd ..
+            fi
+          fi
+
+          mkdir -p /home/deploybot/certs
+          cp -r certs/* /home/deploybot/certs/ 2>/dev/null || true
+          ls -la certs/
+
+      - name: Validate Docker Compose Configuration
+        run: |
+          echo "Validating docker-compose.yml configuration..."
+          docker compose config --quiet || {
+            echo "::error::docker-compose.yml validation failed!"
+            docker compose config
+            exit 1
+          }
+          echo "docker-compose.yml configuration is valid."
+
+      # -----------------------------------------------------------------------
+      # PRE-FLIGHT: Validate env vars BEFORE touching running containers
+      # (ADR-0015: fail-before-touching gate)
+      # -----------------------------------------------------------------------
+      - name: Pre-Flight Environment Validation
+        run: |
+          echo "================================================================="
+          echo "PRE-FLIGHT: Validating environment for all services via --check-env"
+          echo "================================================================="
+          PREFLIGHT_FAILED=0
+
+          for svc in api-gateway auth-service chat-service notification-service user-service; do
+            # Extract image tag from docker-compose.yml
+            IMAGE=$(grep -A2 "^  ${svc}:" docker-compose.yml | grep 'image:' | head -1 | sed 's/.*image: *//' | tr -d '[:space:]')
+            if [ -z "$IMAGE" ]; then
+              echo "::error::PREFLIGHT FAILED: Could not extract image for $svc from docker-compose.yml"
+              PREFLIGHT_FAILED=1
+              continue
+            fi
+
+            echo "Pre-flight check: $svc ($IMAGE)"
+
+            # TLS cert paths are hardcoded literals in docker-compose.yml (not from .env),
+            # so we pass dummy values. config.Load() only checks non-empty strings, not
+            # file existence — actual file reads happen later in main() via tlsutil.
+            docker run --rm --env-file .env \
+              -e TLS_CERT_PATH=/preflight-dummy \
+              -e TLS_KEY_PATH=/preflight-dummy \
+              -e TLS_CA_PATH=/preflight-dummy \
+              -e EXTERNAL_TLS_CERT_PATH=/preflight-dummy \
+              -e EXTERNAL_TLS_KEY_PATH=/preflight-dummy \
+              "$IMAGE" --check-env 2>&1
+
+            if [ $? -ne 0 ]; then
+              echo "::error::PREFLIGHT FAILED: $svc config validation failed."
+              PREFLIGHT_FAILED=1
+            else
+              echo "PREFLIGHT OK: $svc"
+            fi
+          done
+
+          if [ $PREFLIGHT_FAILED -ne 0 ]; then
+            echo "================================================================="
+            echo "::error::DEPLOYMENT ABORTED — pre-flight validation failed."
+            echo "Existing containers remain UNTOUCHED and are still serving traffic."
+            echo "Fix the .env file at /home/deploybot/.env and re-run."
+            echo "================================================================="
+            exit 1
+          fi
+
+          echo "================================================================="
+          echo "All 5 services passed pre-flight validation."
+          echo "================================================================="
+
+      - name: Pull Production Container Images
+        run: |
+          echo "Pulling updated production container images..."
+          docker compose pull
+
+      - name: Save Current Image Tags for Rollback
+        run: |
+          echo "Saving current container image tags for potential rollback..."
+          docker inspect --format='{{.Config.Image}}' $(docker ps -q) 2>/dev/null | sort > /tmp/previous-images.txt || true
+          if [ -s /tmp/previous-images.txt ]; then
+            echo "Previous images saved:"
+            cat /tmp/previous-images.txt
+          else
+            echo "No running containers found (fresh deployment)."
+          fi
+
+      - name: Deploy Container Services
+        run: |
+          echo "Deploying updated services..."
+          docker compose up -d --force-recreate --remove-orphans
+          echo "=== DOCKER COMPOSE CONTAINER STATUS ==="
+          docker compose ps
+
+      - name: Inspect MongoDB Startup Logs
+        run: |
+          echo "=== MONGODB STARTUP LOGS ==="
+          docker compose logs mongo --tail=30
+
+      # -----------------------------------------------------------------------
+      # POST-DEPLOY: Health verification for ALL services (ADR-0015)
+      # -----------------------------------------------------------------------
+      - name: Verify All Service Health
+        id: health-check
+        run: |
+          echo "================================================================="
+          echo "POST-DEPLOY: Verifying health for all 5 services"
+          echo "================================================================="
+
+          SERVICES="api-gateway:8080 auth-service:3002 chat-service:3001 notification-service:3004 user-service:3003"
+          FAILED_SERVICES=""
+          MAX_RETRIES=12
+          RETRY_DELAY=5
+
+          for entry in $SERVICES; do
+            SVC=$(echo $entry | cut -d: -f1)
+            PORT=$(echo $entry | cut -d: -f2)
+            CONTAINER="saas-${SVC}"
+            echo "Checking health of $SVC on port $PORT..."
+
+            SUCCESS=0
+            for i in $(seq 1 $MAX_RETRIES); do
+              # Try HTTPS first (all services use TLS), fall back to HTTP
+              HTTP_STATUS=$(docker exec $CONTAINER curl -s -k -o /dev/null -w "%{http_code}" "https://localhost:${PORT}/health" 2>/dev/null || echo "000")
+              if [ "$HTTP_STATUS" = "000" ]; then
+                HTTP_STATUS=$(docker exec $CONTAINER curl -s -k -o /dev/null -w "%{http_code}" "http://localhost:${PORT}/health" 2>/dev/null || echo "000")
+              fi
+
+              if [ "$HTTP_STATUS" = "200" ]; then
+                echo "$SVC health check passed (HTTP 200)"
+                SUCCESS=1
+                break
+              fi
+              echo "$SVC attempt $i/$MAX_RETRIES returned HTTP $HTTP_STATUS, waiting ${RETRY_DELAY}s..."
+              sleep $RETRY_DELAY
+            done
+
+            if [ $SUCCESS -ne 1 ]; then
+              FAILED_SERVICES="$FAILED_SERVICES $SVC"
+              echo "::error::$SVC health check FAILED after $MAX_RETRIES attempts"
+            fi
+          done
+
+          if [ -n "$FAILED_SERVICES" ]; then
+            echo "FAILED_SERVICES=$FAILED_SERVICES" >> "$GITHUB_OUTPUT"
+            echo "::error::Health check failures detected:$FAILED_SERVICES"
+            exit 1
+          fi
+
+          echo "================================================================="
+          echo "All 5 services passed health checks."
+          echo "================================================================="
+
+      # -----------------------------------------------------------------------
+      # ROLLBACK: Restore previous docker-compose.yml on health failure
+      # -----------------------------------------------------------------------
+      - name: Rollback on Health Failure
+        if: failure() && steps.health-check.outcome == 'failure'
+        run: |
+          echo "================================================================="
+          echo "ROLLBACK: Attempting to restore previous deployment..."
+          echo "================================================================="
+
+          FAILED="${{ steps.health-check.outputs.FAILED_SERVICES }}"
+
+          if git show HEAD~1:docker-compose.yml > /dev/null 2>&1; then
+            echo "Restoring docker-compose.yml from previous commit..."
+            git checkout HEAD~1 -- docker-compose.yml
+            docker compose up -d --force-recreate --remove-orphans
+
+            echo "================================================================="
+            echo "ROLLED BACK: Services${FAILED:- (unknown)} failed health check."
+            echo "Restored previous docker-compose.yml from git history."
+            echo "Previous image tags:"
+            cat /tmp/previous-images.txt 2>/dev/null || echo "(not available)"
+            echo "================================================================="
+          else
+            echo "::error::Cannot rollback — no previous commit in git history."
+            echo "Manual intervention required."
+          fi
+
+      - name: Reset File Ownership for Workspace
+        if: always()
+        run: |
+          docker run --rm -v $(pwd):/work alpine chown -R $(id -u):$(id -g) /work 2>/dev/null || true
+
+      - name: Print Container Logs on Failure
+        if: failure()
+        run: |
+          echo "================================================================="
+          echo "DEPLOYMENT FAILURE LOG DUMP (Last 50 lines per container)"
+          echo "================================================================="
+          docker compose ps
+          echo "-----------------------------------------------------------------"
+          docker compose logs --tail=50
+          echo "================================================================="

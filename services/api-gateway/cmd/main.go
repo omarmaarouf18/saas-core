@@ -6,8 +6,10 @@ package main
 
 import (
 	"crypto/subtle"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/project/gateway/internal/config"
@@ -20,6 +22,18 @@ import (
 )
 
 func main() {
+	// --check-env: validate config and exit without starting the server.
+	// Used by the CD pipeline pre-flight to verify env vars before deployment.
+	if len(os.Args) > 1 && os.Args[1] == "--check-env" {
+		_, err := config.Load()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "PREFLIGHT FAILED: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println("PREFLIGHT OK: api-gateway config validated")
+		os.Exit(0)
+	}
+
 	// ---- Load configuration from environment ----
 	cfg, err := config.Load()
 	if err != nil {
