@@ -269,6 +269,12 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``4a1bd377352e426352bd704b4a8795530b589b7b``
 - **Verification**: Verified via Dockerfile builds, changelog commit SHA verification, and pre-push gate. ✅
 
+## Microservices mTLS Health Check Client Certificate Integration
+
+- **Implementation Detail**: Resolved deployment health check failure where internal microservices (`auth-service`, `chat-service`, `notification-service`, `user-service`) returned `HTTP 400` during health checks due to mandatory mutual TLS (`tls.RequireAndVerifyClientCert`). Updated `infrastructure/deploy/deploy.yml` post-deploy health check step to pass mounted mTLS client certificates (`--cert /app/certs/${SVC}.crt --key /app/certs/${SVC}.key`) on initial HTTPS check, with fallback to non-mTLS HTTPS and HTTP.
+- **Commit SHA**: ``8e552163daa90cccd34eb849fa3188f311a40285``
+- **Verification**: Verified via `shared/infra` changelog tests, pre-push gate, and local TLS check. ✅
+
 
 
 
