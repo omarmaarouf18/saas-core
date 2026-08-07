@@ -8,7 +8,6 @@ import '../providers/notifications_provider.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_empty_state.dart';
-import '../widgets/stat_card.dart';
 import 'login_screen.dart';
 import 'wallet_screen.dart';
 import 'employee_screen.dart';
@@ -450,110 +449,69 @@ class _HomeScreenState extends State<HomeScreen> {
     final auth = Provider.of<AuthProvider>(context);
     final ownerProvider = Provider.of<OwnerProvider>(context);
 
+    final walletText = ownerProvider.isLoading
+        ? "..."
+        : "${ownerProvider.walletBalance.toStringAsFixed(2)} Credits";
+
+    final subText = ownerProvider.isLoading
+        ? "..."
+        : ownerProvider.subscriptionTier.toUpperCase().replaceAll('_', ' ');
+
+    final subColor = ownerProvider.subscriptionTier == "paid"
+        ? AppColors.success
+        : (ownerProvider.subscriptionTier == "pending_payment"
+            ? const Color(0xFF1D4ED8)
+            : AppColors.warning);
+
     return RefreshIndicator(
       onRefresh: _refreshData,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Welcome back, ${authUser.username.isNotEmpty ? authUser.username : authUser.email}!",
-              style: AppTypography.headlineLgMobile.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
+        child: TweenAnimationBuilder<double>(
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOutCubic,
+          tween: Tween<double>(begin: 0.0, end: 1.0),
+          builder: (context, animValue, child) {
+            return Opacity(
+              opacity: animValue,
+              child: Transform.translate(
+                offset: Offset(0, 15 * (1 - animValue)),
+                child: child,
               ),
-            ),
-            const SizedBox(height: AppSpacing.base),
-            Text(
-              "Tenant Owner ID: ${authUser.id}",
-              style: AppTypography.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Dashboard Metrics Grid
-            GridView.count(
-              crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: AppSpacing.md,
-              mainAxisSpacing: AppSpacing.md,
-              childAspectRatio: 1.3,
-              children: [
-                _buildMetricCard(
-                  title: "Wallet Balance",
-                  value: ownerProvider.isLoading
-                      ? "..."
-                      : "${ownerProvider.walletBalance.toStringAsFixed(2)} Credits",
-                  icon: Icons.account_balance_wallet_outlined,
-                  color: AppColors.primary,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const WalletScreen(),
-                      ),
-                    );
-                  },
-                ),
-                _buildMetricCard(
-                  title: "Subscription Tier",
-                  value: ownerProvider.isLoading
-                      ? "..."
-                      : ownerProvider.subscriptionTier
-                          .toUpperCase()
-                          .replaceAll('_', ' '),
-                  icon: Icons.card_membership_outlined,
-                  color: ownerProvider.subscriptionTier == "paid"
-                      ? AppColors.success
-                      : (ownerProvider.subscriptionTier == "pending_payment"
-                          ? const Color(0xFF1D4ED8)
-                          : AppColors.warning),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const SubscriptionScreen(),
-                      ),
-                    );
-                  },
-                ),
-                _buildMetricCard(
-                  title: "Employee Count",
-                  value: "0",
-                  subtitle: "N/A (No List API)",
-                  icon: Icons.people_outline,
-                  color: AppColors.outline,
-                  onTap: () {
-                    onTabTapped(1); // Switch to Employees tab
-                  },
-                ),
-                _buildMetricCard(
-                  title: "Escrow Review",
-                  value: "Queue",
-                  subtitle: "Flagged Jobs",
-                  icon: Icons.gavel_outlined,
-                  color: AppColors.secondary,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const OwnerReconciliationQueueScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-
-            const SizedBox(height: AppSpacing.lg),
-            // Quick Access Management Cards
-            Row(
-              children: [
-                Expanded(
-                  child: InkWell(
-                    key: const Key('owner_dashboard_wallet_card'),
+            );
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Section with Welcome Greeting & Compact Wallet Balance Badge
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Welcome back, ${authUser.username.isNotEmpty ? authUser.username : authUser.email}!",
+                          style: AppTypography.headlineLgMobile.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          "Tenant Owner ID: ${authUser.id}",
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  InkWell(
+                    key: const Key('owner_dashboard_wallet_badge'),
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -561,273 +519,468 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     },
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    child: ThemedCard(
-                      padding: AppSpacing.md,
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(AppSpacing.sm),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                            ),
-                            child: const Icon(
-                              Icons.account_balance_wallet,
-                              color: AppColors.primary,
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "My Wallet",
-                                  style: AppTypography.titleMd.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  "Ledger & balance",
-                                  style: AppTypography.labelMd.copyWith(
-                                    color: AppColors.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(
-                            Icons.chevron_right,
-                            color: AppColors.onSurfaceVariant,
-                            size: 18,
-                          ),
-                        ],
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm,
                       ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: InkWell(
-                    key: const Key('owner_dashboard_services_card'),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const ServiceScreen(),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppRadius.full),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          width: 1,
                         ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    child: ThemedCard(
-                      padding: AppSpacing.md,
+                      ),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(AppSpacing.sm),
-                            decoration: BoxDecoration(
-                              color: AppColors.secondary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                            ),
-                            child: const Icon(
-                              Icons.storefront,
-                              color: AppColors.secondary,
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Services",
-                                  style: AppTypography.titleMd.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  "Rates & config",
-                                  style: AppTypography.labelMd.copyWith(
-                                    color: AppColors.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                           const Icon(
-                            Icons.chevron_right,
-                            color: AppColors.onSurfaceVariant,
+                            Icons.account_balance_wallet,
+                            color: AppColors.primary,
                             size: 18,
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Text(
+                            walletText,
+                            style: AppTypography.labelLg.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
 
-            const SizedBox(height: AppSpacing.lg),
-            FutureBuilder<Map<String, dynamic>>(
-              future: Provider.of<MarketplaceProvider>(context, listen: false)
-                  .fetchRatings(auth.token!),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(AppColors.primary),
-                      ),
-                    ),
-                  );
-                }
-                if (snapshot.hasError) {
-                  return const SizedBox.shrink();
-                }
-                final data = snapshot.data;
-                if (data == null) {
-                  return const SizedBox.shrink();
-                }
-                final double avg =
-                    (data['average_rating'] as num?)?.toDouble() ?? 0.0;
-                final int count = (data['count'] as num?)?.toInt() ?? 0;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const ThemedSectionHeader(
-                      title: "Your Service Reputation",
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    RatingSummaryCard(averageRating: avg, ratingCount: count),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
-                );
-              },
-            ),
+              const SizedBox(height: AppSpacing.lg),
 
-            const SizedBox(height: AppSpacing.xl),
-            const ThemedSectionHeader(title: "Owner Jobs"),
-            const SizedBox(height: AppSpacing.sm),
-
-            if (ownerProvider.ownerJobs.isEmpty)
-              const ThemedCard(
+              // Compact Inline Summary Card replacing dense StatCard grid
+              ThemedCard(
                 borderRadius: AppRadius.md,
-                padding: AppSpacing.lg,
-                child: ThemedEmptyState(
-                  icon: Icons.assignment_outlined,
-                  title: "No Owner Jobs Found",
-                  description:
-                      "You currently have no jobs registered under your tenant account.",
-                ),
-              )
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: ownerProvider.ownerJobs.length,
-                itemBuilder: (context, index) {
-                  final job = ownerProvider.ownerJobs[index];
-                  final canCancel =
-                      job.status == 'pending' || job.status == 'active';
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                    child: ThemedCard(
-                      padding: AppSpacing.md,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                padding: AppSpacing.md,
+                child: Row(
+                  children: [
+                    // Subscription Tier Item
+                    Expanded(
+                      child: InkWell(
+                        key: const Key('owner_dashboard_sub_chip'),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const SubscriptionScreen(),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.xs),
+                          child: Column(
                             children: [
+                              Icon(
+                                Icons.card_membership_outlined,
+                                color: subColor,
+                                size: 22,
+                              ),
+                              const SizedBox(height: AppSpacing.xs),
                               Text(
-                                "Job #${job.id}",
-                                style: AppTypography.titleMd.copyWith(
+                                subText,
+                                style: AppTypography.labelLg.copyWith(
+                                  color: subColor,
                                   fontWeight: FontWeight.bold,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              StatusBadge(status: job.status),
+                              const SizedBox(height: 2),
+                              Text(
+                                "Subscription",
+                                style: AppTypography.labelMd.copyWith(
+                                  color: AppColors.onSurfaceVariant,
+                                ),
+                              ),
                             ],
                           ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            "Payment: ${job.paymentMethod.toUpperCase()}${job.lockedEscrowAmount != null ? ' (\$${job.lockedEscrowAmount!.toStringAsFixed(2)})' : ''}",
-                            style: AppTypography.bodyMd.copyWith(
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                          ),
-                          if (canCancel) ...[
-                            const SizedBox(height: AppSpacing.sm),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: SecondaryButton(
-                                key: Key('cancel_owner_job_button_${job.id}'),
-                                text: "Cancel Job",
-                                icon: Icons.cancel_outlined,
-                                isOutlined: true,
-                                onPressed: () async {
-                                  await CancelJobDialog.show(
-                                    context,
-                                    jobId: job.id,
-                                    onConfirm: (reason) async {
-                                      await ownerProvider.cancelJob(
-                                        jobId: job.id,
-                                        reason: reason,
-                                        ownerToken: auth.token!,
-                                      );
-                                      if (context.mounted) {
-                                        final isNonCod =
-                                            job.paymentMethod.toLowerCase() !=
-                                                'cod';
-                                        final msg = isNonCod
-                                            ? "Job cancelled successfully. Escrow refunded to wallet."
-                                            : "Job cancelled successfully.";
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(
-                                            content: Text(msg),
-                                            backgroundColor: AppColors.success,
-                                          ),
-                                        );
-                                      }
-                                    },
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
                     ),
+
+                    Container(
+                      height: 36,
+                      width: 1,
+                      color: AppColors.outlineVariant.withValues(alpha: 0.5),
+                    ),
+
+                    // Employee Roster Item
+                    Expanded(
+                      child: InkWell(
+                        key: const Key('owner_dashboard_employees_chip'),
+                        onTap: () {
+                          onTabTapped(1); // Switch to Employees tab
+                        },
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.xs),
+                          child: Column(
+                            children: [
+                              const Icon(
+                                Icons.people_outline,
+                                color: AppColors.primary,
+                                size: 22,
+                              ),
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
+                                "Roster",
+                                style: AppTypography.labelLg.copyWith(
+                                  color: AppColors.onSurface,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                "Employees",
+                                style: AppTypography.labelMd.copyWith(
+                                  color: AppColors.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    Container(
+                      height: 36,
+                      width: 1,
+                      color: AppColors.outlineVariant.withValues(alpha: 0.5),
+                    ),
+
+                    // Escrow Review Item
+                    Expanded(
+                      child: InkWell(
+                        key: const Key('owner_dashboard_escrow_chip'),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const OwnerReconciliationQueueScreen(),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.xs),
+                          child: Column(
+                            children: [
+                              const Icon(
+                                Icons.gavel_outlined,
+                                color: AppColors.secondary,
+                                size: 22,
+                              ),
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
+                                "Escrow",
+                                style: AppTypography.labelLg.copyWith(
+                                  color: AppColors.secondary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                "Review Queue",
+                                style: AppTypography.labelMd.copyWith(
+                                  color: AppColors.onSurfaceVariant,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: AppSpacing.lg),
+              // Quick Access Management Cards
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      key: const Key('owner_dashboard_wallet_card'),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const WalletScreen(),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      child: ThemedCard(
+                        padding: AppSpacing.md,
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(AppSpacing.sm),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                              ),
+                              child: const Icon(
+                                Icons.account_balance_wallet,
+                                color: AppColors.primary,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "My Wallet",
+                                    style: AppTypography.titleMd.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    "Ledger & balance",
+                                    style: AppTypography.labelMd.copyWith(
+                                      color: AppColors.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: AppColors.onSurfaceVariant,
+                              size: 18,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: InkWell(
+                      key: const Key('owner_dashboard_services_card'),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const ServiceScreen(),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      child: ThemedCard(
+                        padding: AppSpacing.md,
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(AppSpacing.sm),
+                              decoration: BoxDecoration(
+                                color:
+                                    AppColors.secondary.withValues(alpha: 0.1),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                              ),
+                              child: const Icon(
+                                Icons.storefront,
+                                color: AppColors.secondary,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Services",
+                                    style: AppTypography.titleMd.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    "Rates & config",
+                                    style: AppTypography.labelMd.copyWith(
+                                      color: AppColors.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: AppColors.onSurfaceVariant,
+                              size: 18,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: AppSpacing.lg),
+              FutureBuilder<Map<String, dynamic>>(
+                future: Provider.of<MarketplaceProvider>(context, listen: false)
+                    .fetchRatings(auth.token!),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(AppColors.primary),
+                        ),
+                      ),
+                    );
+                  }
+                  if (snapshot.hasError) {
+                    return const SizedBox.shrink();
+                  }
+                  final data = snapshot.data;
+                  if (data == null) {
+                    return const SizedBox.shrink();
+                  }
+                  final double avg =
+                      (data['average_rating'] as num?)?.toDouble() ?? 0.0;
+                  final int count = (data['count'] as num?)?.toInt() ?? 0;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const ThemedSectionHeader(
+                        title: "Your Service Reputation",
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      RatingSummaryCard(averageRating: avg, ratingCount: count),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
                   );
                 },
               ),
-          ],
+
+              const SizedBox(height: AppSpacing.xl),
+              const ThemedSectionHeader(title: "Owner Jobs"),
+              const SizedBox(height: AppSpacing.sm),
+
+              if (ownerProvider.ownerJobs.isEmpty)
+                const ThemedCard(
+                  borderRadius: AppRadius.md,
+                  padding: AppSpacing.lg,
+                  child: ThemedEmptyState(
+                    icon: Icons.assignment_outlined,
+                    title: "No Owner Jobs Found",
+                    description:
+                        "You currently have no jobs registered under your tenant account.",
+                  ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: ownerProvider.ownerJobs.length,
+                  itemBuilder: (context, index) {
+                    final job = ownerProvider.ownerJobs[index];
+                    final canCancel =
+                        job.status == 'pending' || job.status == 'active';
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      child: ThemedCard(
+                        padding: AppSpacing.md,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "Job #${job.id}",
+                                  style: AppTypography.titleMd.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                StatusBadge(status: job.status),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              "Payment: ${job.paymentMethod.toUpperCase()}${job.lockedEscrowAmount != null ? ' (\$${job.lockedEscrowAmount!.toStringAsFixed(2)})' : ''}",
+                              style: AppTypography.bodyMd.copyWith(
+                                color: AppColors.onSurfaceVariant,
+                              ),
+                            ),
+                            if (canCancel) ...[
+                              const SizedBox(height: AppSpacing.sm),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: SecondaryButton(
+                                  key: Key('cancel_owner_job_button_${job.id}'),
+                                  text: "Cancel Job",
+                                  icon: Icons.cancel_outlined,
+                                  isOutlined: true,
+                                  onPressed: () async {
+                                    await CancelJobDialog.show(
+                                      context,
+                                      jobId: job.id,
+                                      onConfirm: (reason) async {
+                                        await ownerProvider.cancelJob(
+                                          jobId: job.id,
+                                          reason: reason,
+                                          ownerToken: auth.token!,
+                                        );
+                                        if (context.mounted) {
+                                          final isNonCod =
+                                              job.paymentMethod.toLowerCase() !=
+                                                  'cod';
+                                          final msg = isNonCod
+                                              ? "Job cancelled successfully. Escrow refunded to wallet."
+                                              : "Job cancelled successfully.";
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(msg),
+                                              backgroundColor:
+                                                  AppColors.success,
+                                            ),
+                                          );
+                                        }
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildMetricCard({
-    required String title,
-    required String value,
-    String? subtitle,
-    required IconData icon,
-    required Color color,
-    VoidCallback? onTap,
-  }) {
-    return StatCard(
-      label: title,
-      value: value,
-      trend: subtitle,
-      icon: icon,
-      iconColor: color,
-      onTap: onTap,
     );
   }
 

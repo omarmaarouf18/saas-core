@@ -135,10 +135,10 @@ void main() {
     expect(find.byKey(const Key('owner_nav_tab_settings')), findsOneWidget);
     expect(find.byKey(const Key('owner_nav_tab_history')), findsOneWidget);
 
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Employees'), findsOneWidget);
-    expect(find.text('Settings'), findsOneWidget);
-    expect(find.text('History'), findsOneWidget);
+    expect(find.text('Home'), findsWidgets);
+    expect(find.text('Employees'), findsWidgets);
+    expect(find.text('Settings'), findsWidgets);
+    expect(find.text('History'), findsWidgets);
   });
 
   testWidgets('Tapping bottom nav tabs switches screens',
@@ -228,6 +228,40 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ServiceScreen), findsOneWidget);
+  });
+
+  testWidgets(
+      'Wallet balance badge renders compact balance and pushes WalletScreen on tap',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createOwnerHomeScreenApp(initialTabIndex: 0));
+    await tester.pumpAndSettle();
+
+    final walletBadge = find.byKey(const Key('owner_dashboard_wallet_badge'));
+    expect(walletBadge, findsOneWidget);
+    expect(find.text('500.00 Credits'), findsOneWidget);
+
+    await tester.tap(walletBadge);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(WalletScreen), findsOneWidget);
+    expect(find.text('My Wallet'), findsOneWidget);
+  });
+
+  testWidgets('Summary card chips render and navigate correctly',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createOwnerHomeScreenApp(initialTabIndex: 0));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('owner_dashboard_sub_chip')), findsOneWidget);
+    expect(find.byKey(const Key('owner_dashboard_employees_chip')),
+        findsOneWidget);
+    expect(
+        find.byKey(const Key('owner_dashboard_escrow_chip')), findsOneWidget);
+
+    // Tap Employees summary chip -> switches to Employees tab (index 1)
+    await tester.tap(find.byKey(const Key('owner_dashboard_employees_chip')));
+    await tester.pumpAndSettle();
+    expect(find.byType(EmployeeScreen), findsOneWidget);
   });
 
   testWidgets('IndexedStack preserves visited tab state',
