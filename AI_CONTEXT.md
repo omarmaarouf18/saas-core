@@ -1,7 +1,7 @@
 # AI Context: Quick Delivery
 
 > [!IMPORTANT]
-> **Branch Workflow**: `main` = stable/deployable, kept in sync only via reviewed merges from `logic-exploitation`. All active development happens on `logic-exploitation`. Never commit directly to `main`.
+> **Branch Workflow**: `main` = stable/deployable, kept in sync via reviewed merges from `logic-exploitation`. All active development happens on `logic-exploitation`. Emergency hotfixes for live production CD/deploy pipeline failures may be committed directly to `main` when needed immediately to unblock deployment, but MUST be synced back to `logic-exploitation` via fast-forward merge as the very next action afterward so the branches do not diverge.
 
 This file serves as a persistent, model-agnostic, single source of truth for the technical stack, architecture, feature status, security logs, and current gaps of the Quick Delivery platform. Any agent or developer modifying this repository must update this document in the same commit. (Note: The repository and codebase are internally named saas-core for historical reasons.)
 

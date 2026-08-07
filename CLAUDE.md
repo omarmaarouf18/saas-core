@@ -11,6 +11,11 @@ For frontend-related work, you must also consult [docs/frontend/STATUS.md](docs/
 
 To prevent documentation drift, any other agent-specific instruction files created in the future (e.g., CODEX.md, .cursorrules, etc.) must be created as short pointer files stating "Follow CLAUDE.md verbatim", never as copies.
 
+## Branch & Hotfix Syncing Policy
+- All active development happens on `logic-exploitation`.
+- Merges to `main` happen via fast-forward merge after verifying the full test suite and CI.
+- **Production CD Hotfix Procedure**: Emergency hotfixes for live production CD/deploy pipeline failures may be committed directly to `main` when necessary to unblock deployment, but MUST be synced back to `logic-exploitation` via fast-forward (`git checkout logic-exploitation && git merge --ff-only origin/main && git push origin logic-exploitation`) as the very next action afterward so the two branches remain in sync.
+
 
 
 ## Auto-commit policy
