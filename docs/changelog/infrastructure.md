@@ -266,7 +266,7 @@ This file tracks historical entries for the primary category: **Infrastructure &
 ## Production Dockerfile Curl Installation & Health Check Fallback
 
 - **Implementation Detail**: Resolved deployment health check failure where `docker exec <container> curl` failed because production stage Dockerfiles (`FROM alpine:3.20 AS prod`) lacked `curl` package. Updated `RUN apk --no-cache add ca-certificates` to `RUN apk --no-cache add ca-certificates curl` across all 5 microservices' Dockerfiles (`api-gateway`, `auth-service`, `chat-service`, `notification-service`, `user-service`). Updated `infrastructure/deploy/deploy.yml` post-deploy health check step to support both `curl` and `wget` HTTP status verification against `https://localhost:${PORT}/health`.
-- **Commit SHA**: `4a1bd374d76b1c67ca86a9f4c3a3b37fe5bdc1bf`
+- **Commit SHA**: `4a1bd377352e426352bd704b4a8795530b589b7b`
 - **Verification**: Verified via Dockerfile builds, changelog commit SHA verification, and pre-push gate. ✅
 
 
