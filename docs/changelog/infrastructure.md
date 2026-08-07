@@ -263,6 +263,12 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``ef4bd21b7a0c2d1e721027c5d1852b77cf7b42c7``
 - **Verification**: Verified via `make ci` gate, `make docs-check`, and `docker compose config` syntax validation. ✅
 
+## Production Dockerfile Curl Installation & Health Check Fallback
+
+- **Implementation Detail**: Resolved deployment health check failure where `docker exec <container> curl` failed because production stage Dockerfiles (`FROM alpine:3.20 AS prod`) lacked `curl` package. Updated `RUN apk --no-cache add ca-certificates` to `RUN apk --no-cache add ca-certificates curl` across all 5 microservices' Dockerfiles (`api-gateway`, `auth-service`, `chat-service`, `notification-service`, `user-service`). Updated `infrastructure/deploy/deploy.yml` post-deploy health check step to support both `curl` and `wget` HTTP status verification against `https://localhost:${PORT}/health`.
+- **Commit SHA**: `4a1bd374d76b1c67ca86a9f4c3a3b37fe5bdc1bf`
+- **Verification**: Verified via Dockerfile builds, changelog commit SHA verification, and pre-push gate. ✅
+
 
 
 
