@@ -1061,7 +1061,7 @@ abstract class AppLocalizations {
   /// No description provided for @ownerHistoryTitle.
   ///
   /// In en, this message translates to:
-  /// **'Business History'**
+  /// **'History & Audit Logs'**
   String get ownerHistoryTitle;
 
   /// No description provided for @ownerHistoryTabAudit.
@@ -1073,7 +1073,7 @@ abstract class AppLocalizations {
   /// No description provided for @ownerHistoryTabJobs.
   ///
   /// In en, this message translates to:
-  /// **'Completed Jobs'**
+  /// **'Jobs'**
   String get ownerHistoryTabJobs;
 
   /// No description provided for @ownerHistoryTabLedger.
@@ -1736,6 +1736,528 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error fetching location: {error}'**
   String locationFetchError(String error);
+
+  /// No description provided for @settingsKycRowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity Verification (KYC)'**
+  String get settingsKycRowTitle;
+
+  /// No description provided for @settingsKycSubtitleDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your account identity and documents'**
+  String get settingsKycSubtitleDefault;
+
+  /// No description provided for @settingsKycSubtitleRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification Rejected - Action Required'**
+  String get settingsKycSubtitleRejected;
+
+  /// No description provided for @settingsKycSubtitlePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification Pending Approval'**
+  String get settingsKycSubtitlePending;
+
+  /// No description provided for @ownerHomeTabTitleDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Delivery Owner Dashboard'**
+  String get ownerHomeTabTitleDashboard;
+
+  /// No description provided for @ownerHomeTabTitleWorkers.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Workers'**
+  String get ownerHomeTabTitleWorkers;
+
+  /// No description provided for @ownerHomeTabTitleHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History & Audit Logs'**
+  String get ownerHomeTabTitleHistory;
+
+  /// No description provided for @ownerHomeWelcomeUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back, {name}!'**
+  String ownerHomeWelcomeUser(String name);
+
+  /// No description provided for @ownerHomeAccountId.
+  ///
+  /// In en, this message translates to:
+  /// **'Account ID: {id}'**
+  String ownerHomeAccountId(String id);
+
+  /// No description provided for @ownerHomeProfileInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Information'**
+  String get ownerHomeProfileInfo;
+
+  /// No description provided for @ownerHomeLabelUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get ownerHomeLabelUsername;
+
+  /// No description provided for @ownerHomeLabelEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get ownerHomeLabelEmail;
+
+  /// No description provided for @ownerHomeLabelRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get ownerHomeLabelRole;
+
+  /// No description provided for @ownerHomeTooltipReviewQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'KYB/KYE Review Queue'**
+  String get ownerHomeTooltipReviewQueue;
+
+  /// No description provided for @ownerHomeTooltipEscrowReconciliation.
+  ///
+  /// In en, this message translates to:
+  /// **'Escrow Reconciliation'**
+  String get ownerHomeTooltipEscrowReconciliation;
+
+  /// No description provided for @ownerHomeTooltipNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get ownerHomeTooltipNotifications;
+
+  /// No description provided for @ownerHomeTooltipSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get ownerHomeTooltipSettings;
+
+  /// No description provided for @ownerHomeNavHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get ownerHomeNavHome;
+
+  /// No description provided for @ownerHomeNavEmployees.
+  ///
+  /// In en, this message translates to:
+  /// **'Employees'**
+  String get ownerHomeNavEmployees;
+
+  /// No description provided for @ownerHomeNavHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get ownerHomeNavHistory;
+
+  /// No description provided for @ownerHomeNavSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get ownerHomeNavSettings;
+
+  /// No description provided for @ownerHomeTenantId.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant Owner ID: {id}'**
+  String ownerHomeTenantId(String id);
+
+  /// No description provided for @ownerHomeCreditsAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} Credits'**
+  String ownerHomeCreditsAmount(String amount);
+
+  /// No description provided for @ownerHomeSubTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get ownerHomeSubTitle;
+
+  /// No description provided for @ownerHomeRosterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster'**
+  String get ownerHomeRosterTitle;
+
+  /// No description provided for @ownerHomeEmployeesSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Employees'**
+  String get ownerHomeEmployeesSub;
+
+  /// No description provided for @ownerHomeEscrowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Escrow'**
+  String get ownerHomeEscrowTitle;
+
+  /// No description provided for @ownerHomeReviewQueueSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Queue'**
+  String get ownerHomeReviewQueueSub;
+
+  /// No description provided for @ownerHomeMyWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'My Wallet'**
+  String get ownerHomeMyWallet;
+
+  /// No description provided for @ownerHomeWalletSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Ledger & balance'**
+  String get ownerHomeWalletSub;
+
+  /// No description provided for @ownerHomeServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get ownerHomeServices;
+
+  /// No description provided for @ownerHomeServicesSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Rates & config'**
+  String get ownerHomeServicesSub;
+
+  /// No description provided for @ownerHomeServiceReputation.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Service Reputation'**
+  String get ownerHomeServiceReputation;
+
+  /// No description provided for @ownerHomeOwnerJobs.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner Jobs'**
+  String get ownerHomeOwnerJobs;
+
+  /// No description provided for @ownerHomeNoJobsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No Owner Jobs Found'**
+  String get ownerHomeNoJobsTitle;
+
+  /// No description provided for @ownerHomeNoJobsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'You currently have no jobs registered under your tenant account.'**
+  String get ownerHomeNoJobsDesc;
+
+  /// No description provided for @ownerHomeJobId.
+  ///
+  /// In en, this message translates to:
+  /// **'Job #{id}'**
+  String ownerHomeJobId(String id);
+
+  /// No description provided for @ownerHomePaymentInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment: {method}{escrowInfo}'**
+  String ownerHomePaymentInfo(String method, String escrowInfo);
+
+  /// No description provided for @ownerHomeCancelJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Job'**
+  String get ownerHomeCancelJob;
+
+  /// No description provided for @ownerHomeJobCancelledEscrowRefunded.
+  ///
+  /// In en, this message translates to:
+  /// **'Job cancelled successfully. Escrow refunded to wallet.'**
+  String get ownerHomeJobCancelledEscrowRefunded;
+
+  /// No description provided for @ownerHomeJobCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Job cancelled successfully.'**
+  String get ownerHomeJobCancelled;
+
+  /// No description provided for @ownerHistoryTabActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get ownerHistoryTabActivity;
+
+  /// No description provided for @ownerHistoryNoActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No Employee Activity Found'**
+  String get ownerHistoryNoActivityTitle;
+
+  /// No description provided for @ownerHistoryNoActivityDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'No tenant audit log events recorded yet.'**
+  String get ownerHistoryNoActivityDesc;
+
+  /// No description provided for @ownerHistoryActorId.
+  ///
+  /// In en, this message translates to:
+  /// **'Actor: {id}'**
+  String ownerHistoryActorId(String id);
+
+  /// No description provided for @ownerHistoryNoJobsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No Completed Jobs Found'**
+  String get ownerHistoryNoJobsTitle;
+
+  /// No description provided for @ownerHistoryNoJobsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'No completed or cancelled jobs recorded for your tenant.'**
+  String get ownerHistoryNoJobsDesc;
+
+  /// No description provided for @ownerHistoryCancellationReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String ownerHistoryCancellationReason(String reason);
+
+  /// No description provided for @ownerHistoryNoLedgerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No Ledger Entries Found'**
+  String get ownerHistoryNoLedgerTitle;
+
+  /// No description provided for @ownerHistoryNoLedgerDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'No wallet transaction history recorded yet.'**
+  String get ownerHistoryNoLedgerDesc;
+
+  /// No description provided for @ownerHistoryBalanceAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance after: \${amount}{jobInfo}'**
+  String ownerHistoryBalanceAfter(String amount, String jobInfo);
+
+  /// No description provided for @employeeJobsTooltipVerification.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification Documents'**
+  String get employeeJobsTooltipVerification;
+
+  /// No description provided for @employeeJobsJobId.
+  ///
+  /// In en, this message translates to:
+  /// **'Job #{id}'**
+  String employeeJobsJobId(String id);
+
+  /// No description provided for @employeeJobsSuggestionArrivedPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrived at Pickup'**
+  String get employeeJobsSuggestionArrivedPickup;
+
+  /// No description provided for @employeeJobsSuggestionInRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Job in Route'**
+  String get employeeJobsSuggestionInRoute;
+
+  /// No description provided for @employeeJobsSuggestionArrivedDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrived at Destination'**
+  String get employeeJobsSuggestionArrivedDestination;
+
+  /// No description provided for @employeeJobsSuggestionCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Job Completed'**
+  String get employeeJobsSuggestionCompleted;
+
+  /// No description provided for @employeeJobsSimulatorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee Action Simulator'**
+  String get employeeJobsSimulatorTitle;
+
+  /// No description provided for @employeeJobsSimulatorDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Log service events directly into the tenant audit trail.'**
+  String get employeeJobsSimulatorDesc;
+
+  /// No description provided for @employeeJobsSimulatorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulation Action Text'**
+  String get employeeJobsSimulatorLabel;
+
+  /// No description provided for @employeeJobsSimulatorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., Arrived at Pickup, Job in Route'**
+  String get employeeJobsSimulatorHint;
+
+  /// No description provided for @employeeJobsSimulatorValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter or select an action to simulate'**
+  String get employeeJobsSimulatorValidation;
+
+  /// No description provided for @employeeJobsSimulateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate Action'**
+  String get employeeJobsSimulateButton;
+
+  /// No description provided for @employeeJobsSectionAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Assigned Jobs'**
+  String get employeeJobsSectionAssigned;
+
+  /// No description provided for @employeeJobsLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading assigned jobs...'**
+  String get employeeJobsLoading;
+
+  /// No description provided for @employeeJobsNoJobsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No Jobs Assigned'**
+  String get employeeJobsNoJobsTitle;
+
+  /// No description provided for @employeeJobsNoJobsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'No jobs currently assigned to you.'**
+  String get employeeJobsNoJobsDesc;
+
+  /// No description provided for @employeeJobsWelcomeGreeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back!'**
+  String get employeeJobsWelcomeGreeting;
+
+  /// No description provided for @employeeJobsLoggedInAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged in as: {name}'**
+  String employeeJobsLoggedInAs(String name);
+
+  /// No description provided for @employeeJobsGpsLive.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS Live'**
+  String get employeeJobsGpsLive;
+
+  /// No description provided for @employeeJobsGpsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS Off'**
+  String get employeeJobsGpsOff;
+
+  /// No description provided for @employeeJobsConfirmCodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Cash Collection & Complete'**
+  String get employeeJobsConfirmCodTitle;
+
+  /// No description provided for @employeeJobsConfirmCodMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm you have physically collected the cash payment of \${amount} (COD) from the customer.\n\nThis will deduct the platform fee from the owner\'s wallet and mark Job #{jobId} as completed.'**
+  String employeeJobsConfirmCodMessage(String amount, String jobId);
+
+  /// No description provided for @employeeJobsConfirmNonCodMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to mark Job #{jobId} as completed?'**
+  String employeeJobsConfirmNonCodMessage(String jobId);
+
+  /// No description provided for @employeeJobsConfirmCodButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Cash Collected & Complete'**
+  String get employeeJobsConfirmCodButton;
+
+  /// No description provided for @employeeJobsConfirmNonCodButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Job'**
+  String get employeeJobsConfirmNonCodButton;
+
+  /// No description provided for @employeeJobsDestinationCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination Coordinates'**
+  String get employeeJobsDestinationCoordinates;
+
+  /// No description provided for @employeeJobsLabelCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get employeeJobsLabelCustomer;
+
+  /// No description provided for @employeeJobsLabelPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get employeeJobsLabelPayment;
+
+  /// No description provided for @employeeJobsLabelEscrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Escrow'**
+  String get employeeJobsLabelEscrow;
+
+  /// No description provided for @employeeJobsCancellationReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation Reason: {reason}'**
+  String employeeJobsCancellationReason(String reason);
+
+  /// No description provided for @employeeJobsLocationPermissionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Location Permission Required'**
+  String get employeeJobsLocationPermissionTitle;
+
+  /// No description provided for @employeeJobsLocationPermissionDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Location sharing is required to share your live delivery progress with the customer.'**
+  String get employeeJobsLocationPermissionDesc;
+
+  /// No description provided for @employeeJobsOpenAppSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open App Settings'**
+  String get employeeJobsOpenAppSettings;
+
+  /// No description provided for @employeeJobsSharingLiveLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing live location'**
+  String get employeeJobsSharingLiveLocation;
+
+  /// No description provided for @employeeJobsChatButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get employeeJobsChatButton;
+
+  /// No description provided for @employeeJobsCompleteJobButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Job'**
+  String get employeeJobsCompleteJobButton;
 }
 
 class _AppLocalizationsDelegate

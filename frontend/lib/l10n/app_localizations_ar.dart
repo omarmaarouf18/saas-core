@@ -494,13 +494,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownerHomeEntryService => 'إعدادات الخدمة';
 
   @override
-  String get ownerHistoryTitle => 'سجل الأعمال';
+  String get ownerHistoryTitle => 'السجل وسجلات المراجعة';
 
   @override
   String get ownerHistoryTabAudit => 'سجل العمليات';
 
   @override
-  String get ownerHistoryTabJobs => 'الطلبات المكتملة';
+  String get ownerHistoryTabJobs => 'الطلبات';
 
   @override
   String get ownerHistoryTabLedger => 'المعاملات المالية';
@@ -860,4 +860,303 @@ class AppLocalizationsAr extends AppLocalizations {
   String locationFetchError(String error) {
     return 'خطأ في تحديد الموقع: $error';
   }
+
+  @override
+  String get settingsKycRowTitle => 'تأكيد الهوية (KYC)';
+
+  @override
+  String get settingsKycSubtitleDefault => 'أكد هويتك وارفع مستندات حسابك';
+
+  @override
+  String get settingsKycSubtitleRejected =>
+      'تم رفض التوثيق - مطلوب اتخاذ إجراء';
+
+  @override
+  String get settingsKycSubtitlePending => 'التوثيق قيد المراجعة والاعتماد';
+
+  @override
+  String get ownerHomeTabTitleDashboard => 'لوحة تحكم صاحب العمل';
+
+  @override
+  String get ownerHomeTabTitleWorkers => 'إدارة العمال';
+
+  @override
+  String get ownerHomeTabTitleHistory => 'السجل وسجلات المراجعة';
+
+  @override
+  String ownerHomeWelcomeUser(String name) {
+    return 'أهلاً بك مجدداً، $name!';
+  }
+
+  @override
+  String ownerHomeAccountId(String id) {
+    return 'معرف الحساب: $id';
+  }
+
+  @override
+  String get ownerHomeProfileInfo => 'بيانات الملف الشخصي';
+
+  @override
+  String get ownerHomeLabelUsername => 'اسم المستخدم';
+
+  @override
+  String get ownerHomeLabelEmail => 'البريد الإلكتروني';
+
+  @override
+  String get ownerHomeLabelRole => 'الدور';
+
+  @override
+  String get ownerHomeTooltipReviewQueue => 'قائمة مراجعة التوثيق';
+
+  @override
+  String get ownerHomeTooltipEscrowReconciliation => 'تسوية الضمان المالي';
+
+  @override
+  String get ownerHomeTooltipNotifications => 'الإشعارات';
+
+  @override
+  String get ownerHomeTooltipSettings => 'الإعدادات';
+
+  @override
+  String get ownerHomeNavHome => 'الرئيسية';
+
+  @override
+  String get ownerHomeNavEmployees => 'الموظفين';
+
+  @override
+  String get ownerHomeNavHistory => 'السجل';
+
+  @override
+  String get ownerHomeNavSettings => 'الإعدادات';
+
+  @override
+  String ownerHomeTenantId(String id) {
+    return 'معرف صاحب النشاط: $id';
+  }
+
+  @override
+  String ownerHomeCreditsAmount(String amount) {
+    return '$amount رصيد';
+  }
+
+  @override
+  String get ownerHomeSubTitle => 'الاشتراك';
+
+  @override
+  String get ownerHomeRosterTitle => 'الفريق';
+
+  @override
+  String get ownerHomeEmployeesSub => 'الموظفين';
+
+  @override
+  String get ownerHomeEscrowTitle => 'الضمان';
+
+  @override
+  String get ownerHomeReviewQueueSub => 'قائمة المراجعة';
+
+  @override
+  String get ownerHomeMyWallet => 'محفظتي';
+
+  @override
+  String get ownerHomeWalletSub => 'السجل والرصيد';
+
+  @override
+  String get ownerHomeServices => 'الخدمات';
+
+  @override
+  String get ownerHomeServicesSub => 'الأسعار والإعدادات';
+
+  @override
+  String get ownerHomeServiceReputation => 'تقييم خدماتك';
+
+  @override
+  String get ownerHomeOwnerJobs => 'طلبات العمل';
+
+  @override
+  String get ownerHomeNoJobsTitle => 'لا توجد طلبات عمل';
+
+  @override
+  String get ownerHomeNoJobsDesc =>
+      'ليس لديك أي طلبات مسجلة تحت حساب نشاطك التجاري حالياً.';
+
+  @override
+  String ownerHomeJobId(String id) {
+    return 'طلب #$id';
+  }
+
+  @override
+  String ownerHomePaymentInfo(String method, String escrowInfo) {
+    return 'الدفع: $method$escrowInfo';
+  }
+
+  @override
+  String get ownerHomeCancelJob => 'إلغاء الطلب';
+
+  @override
+  String get ownerHomeJobCancelledEscrowRefunded =>
+      'تم إلغاء الطلب بنجاح واسترجاع المبلغ الضامن للمحفظة.';
+
+  @override
+  String get ownerHomeJobCancelled => 'تم إلغاء الطلب بنجاح.';
+
+  @override
+  String get ownerHistoryTabActivity => 'النشاط';
+
+  @override
+  String get ownerHistoryNoActivityTitle => 'لا يوجد نشاط للموظفين';
+
+  @override
+  String get ownerHistoryNoActivityDesc =>
+      'لم يتم تسجيل أي أحداث في سجل مراجعة النشاط حتى الآن.';
+
+  @override
+  String ownerHistoryActorId(String id) {
+    return 'المنفذ: $id';
+  }
+
+  @override
+  String get ownerHistoryNoJobsTitle => 'لا توجد طلبات مكتملة';
+
+  @override
+  String get ownerHistoryNoJobsDesc =>
+      'لا توجد طلبات مكتملة أو ملغاة مسجلة لنشاطك التجاري.';
+
+  @override
+  String ownerHistoryCancellationReason(String reason) {
+    return 'السبب: $reason';
+  }
+
+  @override
+  String get ownerHistoryNoLedgerTitle => 'لا توجد سجلات معاملات';
+
+  @override
+  String get ownerHistoryNoLedgerDesc =>
+      'لم يتم تسجيل أي معاملات مالية في المحفظة حتى الآن.';
+
+  @override
+  String ownerHistoryBalanceAfter(String amount, String jobInfo) {
+    return 'الرصيد بعد العملية: \$$amount$jobInfo';
+  }
+
+  @override
+  String get employeeJobsTooltipVerification => 'مستندات التوثيق';
+
+  @override
+  String employeeJobsJobId(String id) {
+    return 'طلب #$id';
+  }
+
+  @override
+  String get employeeJobsSuggestionArrivedPickup => 'وصلت لمكان الاستلام';
+
+  @override
+  String get employeeJobsSuggestionInRoute => 'الطلب في الطريق';
+
+  @override
+  String get employeeJobsSuggestionArrivedDestination => 'وصلت للوجهة';
+
+  @override
+  String get employeeJobsSuggestionCompleted => 'تم إكمال الطلب';
+
+  @override
+  String get employeeJobsSimulatorTitle => 'محاكي إجراءات الموظف';
+
+  @override
+  String get employeeJobsSimulatorDesc =>
+      'تسجيل أحداث الخدمة مباشرة في سجل مراجعة النشاط.';
+
+  @override
+  String get employeeJobsSimulatorLabel => 'نص الإجراء المحاكى';
+
+  @override
+  String get employeeJobsSimulatorHint =>
+      'مثال: وصلت لمكان الاستلام، الطلب في الطريق';
+
+  @override
+  String get employeeJobsSimulatorValidation =>
+      'يرجى كتابة أو اختيار إجراء للمحاكاة';
+
+  @override
+  String get employeeJobsSimulateButton => 'محاكاة الإجراء';
+
+  @override
+  String get employeeJobsSectionAssigned => 'الطلبات المسندة إليك';
+
+  @override
+  String get employeeJobsLoading => 'جاري تحميل الطلبات المسندة...';
+
+  @override
+  String get employeeJobsNoJobsTitle => 'لا توجد طلبات مسندة';
+
+  @override
+  String get employeeJobsNoJobsDesc => 'لا توجد طلبات مسندة إليك حالياً.';
+
+  @override
+  String get employeeJobsWelcomeGreeting => 'أهلاً بك مجدداً!';
+
+  @override
+  String employeeJobsLoggedInAs(String name) {
+    return 'مسجل الدخول باسم: $name';
+  }
+
+  @override
+  String get employeeJobsGpsLive => 'الموقع مباشر';
+
+  @override
+  String get employeeJobsGpsOff => 'الموقع متوقف';
+
+  @override
+  String get employeeJobsConfirmCodTitle => 'تأكيد تحصيل المبلغ نقداً والإكمال';
+
+  @override
+  String employeeJobsConfirmCodMessage(String amount, String jobId) {
+    return 'تأكيد استلامك المبلغ النقدي قدره \$$amount من العميل.\n\nسيتم خصم عمولة المنصة من محفظة صاحب العمل وتحديد الطلب #$jobId كمكتمل.';
+  }
+
+  @override
+  String employeeJobsConfirmNonCodMessage(String jobId) {
+    return 'هل أنت متاكد من تأكيد إكمال الطلب رقم #$jobId؟';
+  }
+
+  @override
+  String get employeeJobsConfirmCodButton => 'تأكيد استلام النقد وإكمال الطلب';
+
+  @override
+  String get employeeJobsConfirmNonCodButton => 'إكمال الطلب';
+
+  @override
+  String get employeeJobsDestinationCoordinates => 'إحداثيات الوجهة';
+
+  @override
+  String get employeeJobsLabelCustomer => 'العميل';
+
+  @override
+  String get employeeJobsLabelPayment => 'طريقة الدفع';
+
+  @override
+  String get employeeJobsLabelEscrow => 'المبلغ الضامن';
+
+  @override
+  String employeeJobsCancellationReason(String reason) {
+    return 'سبب الإلغاء: $reason';
+  }
+
+  @override
+  String get employeeJobsLocationPermissionTitle => 'مطلوب إذن الوصول للموقع';
+
+  @override
+  String get employeeJobsLocationPermissionDesc =>
+      'مشاركة الموقع مطلوبة لمشاركة خط سير التوصيل المباشر مع العميل.';
+
+  @override
+  String get employeeJobsOpenAppSettings => 'فتح إعدادات التطبيق';
+
+  @override
+  String get employeeJobsSharingLiveLocation => 'جاري مشاركة الموقع المباشر';
+
+  @override
+  String get employeeJobsChatButton => 'المحادثة';
+
+  @override
+  String get employeeJobsCompleteJobButton => 'إكمال الطلب';
 }

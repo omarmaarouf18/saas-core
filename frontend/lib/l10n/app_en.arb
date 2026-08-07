@@ -369,5 +369,172 @@
     "placeholders": {
       "error": { "type": "String" }
     }
-  }
+  },
+
+  "settingsKycRowTitle": "Identity Verification (KYC)",
+  "settingsKycSubtitleDefault": "Verify your account identity and documents",
+  "settingsKycSubtitleRejected": "Verification Rejected - Action Required",
+  "settingsKycSubtitlePending": "Verification Pending Approval",
+
+  "ownerHomeTabTitleDashboard": "Quick Delivery Owner Dashboard",
+  "ownerHomeTabTitleWorkers": "Manage Workers",
+  "ownerHomeTabTitleHistory": "History & Audit Logs",
+  "ownerHomeWelcomeUser": "Welcome back, {name}!",
+  "@ownerHomeWelcomeUser": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "ownerHomeAccountId": "Account ID: {id}",
+  "@ownerHomeAccountId": {
+    "placeholders": {
+      "id": { "type": "String" }
+    }
+  },
+  "ownerHomeProfileInfo": "Profile Information",
+  "ownerHomeLabelUsername": "Username",
+  "ownerHomeLabelEmail": "Email",
+  "ownerHomeLabelRole": "Role",
+  "ownerHomeTooltipReviewQueue": "KYB/KYE Review Queue",
+  "ownerHomeTooltipEscrowReconciliation": "Escrow Reconciliation",
+  "ownerHomeTooltipNotifications": "Notifications",
+  "ownerHomeTooltipSettings": "Settings",
+  "ownerHomeNavHome": "Home",
+  "ownerHomeNavEmployees": "Employees",
+  "ownerHomeNavHistory": "History",
+  "ownerHomeNavSettings": "Settings",
+  "ownerHomeTenantId": "Tenant Owner ID: {id}",
+  "@ownerHomeTenantId": {
+    "placeholders": {
+      "id": { "type": "String" }
+    }
+  },
+  "ownerHomeCreditsAmount": "{amount} Credits",
+  "@ownerHomeCreditsAmount": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "ownerHomeSubTitle": "Subscription",
+  "ownerHomeRosterTitle": "Roster",
+  "ownerHomeEmployeesSub": "Employees",
+  "ownerHomeEscrowTitle": "Escrow",
+  "ownerHomeReviewQueueSub": "Review Queue",
+  "ownerHomeMyWallet": "My Wallet",
+  "ownerHomeWalletSub": "Ledger & balance",
+  "ownerHomeServices": "Services",
+  "ownerHomeServicesSub": "Rates & config",
+  "ownerHomeServiceReputation": "Your Service Reputation",
+  "ownerHomeOwnerJobs": "Owner Jobs",
+  "ownerHomeNoJobsTitle": "No Owner Jobs Found",
+  "ownerHomeNoJobsDesc": "You currently have no jobs registered under your tenant account.",
+  "ownerHomeJobId": "Job #{id}",
+  "@ownerHomeJobId": {
+    "placeholders": {
+      "id": { "type": "String" }
+    }
+  },
+  "ownerHomePaymentInfo": "Payment: {method}{escrowInfo}",
+  "@ownerHomePaymentInfo": {
+    "placeholders": {
+      "method": { "type": "String" },
+      "escrowInfo": { "type": "String" }
+    }
+  },
+  "ownerHomeCancelJob": "Cancel Job",
+  "ownerHomeJobCancelledEscrowRefunded": "Job cancelled successfully. Escrow refunded to wallet.",
+  "ownerHomeJobCancelled": "Job cancelled successfully.",
+
+  "ownerHistoryTitle": "History & Audit Logs",
+  "ownerHistoryTabActivity": "Activity",
+  "ownerHistoryTabJobs": "Jobs",
+  "ownerHistoryTabLedger": "Ledger",
+  "ownerHistoryNoActivityTitle": "No Employee Activity Found",
+  "ownerHistoryNoActivityDesc": "No tenant audit log events recorded yet.",
+  "ownerHistoryActorId": "Actor: {id}",
+  "@ownerHistoryActorId": {
+    "placeholders": {
+      "id": { "type": "String" }
+    }
+  },
+  "ownerHistoryNoJobsTitle": "No Completed Jobs Found",
+  "ownerHistoryNoJobsDesc": "No completed or cancelled jobs recorded for your tenant.",
+  "ownerHistoryCancellationReason": "Reason: {reason}",
+  "@ownerHistoryCancellationReason": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
+  "ownerHistoryNoLedgerTitle": "No Ledger Entries Found",
+  "ownerHistoryNoLedgerDesc": "No wallet transaction history recorded yet.",
+  "ownerHistoryBalanceAfter": "Balance after: ${amount}{jobInfo}",
+  "@ownerHistoryBalanceAfter": {
+    "placeholders": {
+      "amount": { "type": "String" },
+      "jobInfo": { "type": "String" }
+    }
+  },
+
+  "employeeJobsTooltipVerification": "Verification Documents",
+  "employeeJobsJobId": "Job #{id}",
+  "@employeeJobsJobId": {
+    "placeholders": {
+      "id": { "type": "String" }
+    }
+  },
+  "employeeJobsSuggestionArrivedPickup": "Arrived at Pickup",
+  "employeeJobsSuggestionInRoute": "Job in Route",
+  "employeeJobsSuggestionArrivedDestination": "Arrived at Destination",
+  "employeeJobsSuggestionCompleted": "Job Completed",
+  "employeeJobsSimulatorTitle": "Employee Action Simulator",
+  "employeeJobsSimulatorDesc": "Log service events directly into the tenant audit trail.",
+  "employeeJobsSimulatorLabel": "Simulation Action Text",
+  "employeeJobsSimulatorHint": "e.g., Arrived at Pickup, Job in Route",
+  "employeeJobsSimulatorValidation": "Please enter or select an action to simulate",
+  "employeeJobsSimulateButton": "Simulate Action",
+  "employeeJobsSectionAssigned": "Your Assigned Jobs",
+  "employeeJobsLoading": "Loading assigned jobs...",
+  "employeeJobsNoJobsTitle": "No Jobs Assigned",
+  "employeeJobsNoJobsDesc": "No jobs currently assigned to you.",
+  "employeeJobsWelcomeGreeting": "Welcome back!",
+  "employeeJobsLoggedInAs": "Logged in as: {name}",
+  "@employeeJobsLoggedInAs": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "employeeJobsGpsLive": "GPS Live",
+  "employeeJobsGpsOff": "GPS Off",
+  "employeeJobsConfirmCodTitle": "Confirm Cash Collection & Complete",
+  "employeeJobsConfirmCodMessage": "Confirm you have physically collected the cash payment of ${amount} (COD) from the customer.\n\nThis will deduct the platform fee from the owner's wallet and mark Job #{jobId} as completed.",
+  "@employeeJobsConfirmCodMessage": {
+    "placeholders": {
+      "amount": { "type": "String" },
+      "jobId": { "type": "String" }
+    }
+  },
+  "employeeJobsConfirmNonCodMessage": "Are you sure you want to mark Job #{jobId} as completed?",
+  "@employeeJobsConfirmNonCodMessage": {
+    "placeholders": {
+      "jobId": { "type": "String" }
+    }
+  },
+  "employeeJobsConfirmCodButton": "Confirm Cash Collected & Complete",
+  "employeeJobsConfirmNonCodButton": "Complete Job",
+  "employeeJobsDestinationCoordinates": "Destination Coordinates",
+  "employeeJobsLabelCustomer": "Customer",
+  "employeeJobsLabelPayment": "Payment",
+  "employeeJobsLabelEscrow": "Escrow",
+  "employeeJobsCancellationReason": "Cancellation Reason: {reason}",
+  "@employeeJobsCancellationReason": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
+  "employeeJobsLocationPermissionTitle": "Location Permission Required",
+  "employeeJobsLocationPermissionDesc": "Location sharing is required to share your live delivery progress with the customer.",
+  "employeeJobsOpenAppSettings": "Open App Settings",
+  "employeeJobsSharingLiveLocation": "Sharing live location",
+  "employeeJobsChatButton": "Chat",
+  "employeeJobsCompleteJobButton": "Complete Job"
 }

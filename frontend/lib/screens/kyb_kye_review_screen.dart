@@ -58,14 +58,6 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
         backgroundColor: AppColors.primary,
         title: Text(l10n.pendingKybKyeSubmissions),
         foregroundColor: AppColors.onPrimary,
-        actions: [
-          if (isReviewer)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              tooltip: 'Refresh Queue',
-              onPressed: _fetchSubmissions,
-            ),
-        ],
       ),
       body: !isReviewer
           ? const Center(

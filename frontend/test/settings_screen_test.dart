@@ -301,42 +301,76 @@ void main() {
   });
 
   testWidgets(
-      '(e) KYC verification entry point visibility logic: unverified/rejected shows row, approved hides row',
+      '(e) KYC verification entry point visibility logic: customer role hides row, unverified owner/employee shows row, approved hides row',
       (WidgetTester tester) async {
     final themeProvider = ThemeProvider(storage: FakeSecureStorage());
 
-    // 1. Unverified user -> shows KYC row
-    final unverifiedUser = UserProfile(
-      id: 'user-1',
-      email: 'unverified@example.com',
-      username: 'unverified',
+    // 1. Unverified customer ('user' role) -> hides KYC row
+    final unverifiedCustomer = UserProfile(
+      id: 'cust-1',
+      email: 'customer@example.com',
+      username: 'customer1',
       role: 'user',
       kycStatus: 'unverified',
     );
     await tester.pumpWidget(buildSettingsApp(
-      authProvider: MockAuthProvider(apiClient, unverifiedUser),
+      authProvider: MockAuthProvider(apiClient, unverifiedCustomer),
       themeProvider: themeProvider,
     ));
     await tester.pumpAndSettle();
 
-    final kycRow = find.byKey(const Key('kyc_verification_setting_row'));
-    expect(kycRow, findsOneWidget);
-    expect(find.text("Identity Verification (KYC)"), findsOneWidget);
+    expect(
+        find.byKey(const Key('kyc_verification_setting_row')), findsNothing);
 
-    // 2. Approved user -> hides KYC row
-    final approvedUser = UserProfile(
-      id: 'user-2',
-      email: 'approved@example.com',
-      username: 'approved',
-      role: 'user',
+    // 2. Unverified owner ('owner' role) -> shows KYC row
+    final unverifiedOwner = UserProfile(
+      id: 'owner-1',
+      email: 'owner@example.com',
+      username: 'owner1',
+      role: 'owner',
+      kycStatus: 'unverified',
+    );
+    await tester.pumpWidget(buildSettingsApp(
+      authProvider: MockAuthProvider(apiClient, unverifiedOwner),
+      themeProvider: themeProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key('kyc_verification_setting_row')), findsOneWidget);
+
+    // 3. Unverified employee ('employee' role) -> shows KYC row
+    final unverifiedEmployee = UserProfile(
+      id: 'emp-1',
+      email: 'emp@example.com',
+      username: 'emp1',
+      role: 'employee',
+      kycStatus: 'unverified',
+    );
+    await tester.pumpWidget(buildSettingsApp(
+      authProvider: MockAuthProvider(apiClient, unverifiedEmployee),
+      themeProvider: themeProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key('kyc_verification_setting_row')), findsOneWidget);
+
+    // 4. Approved owner -> hides KYC row
+    final approvedOwner = UserProfile(
+      id: 'owner-2',
+      email: 'approved_owner@example.com',
+      username: 'approved_owner',
+      role: 'owner',
       kycStatus: 'approved',
     );
     await tester.pumpWidget(buildSettingsApp(
-      authProvider: MockAuthProvider(apiClient, approvedUser),
+      authProvider: MockAuthProvider(apiClient, approvedOwner),
       themeProvider: themeProvider,
     ));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('kyc_verification_setting_row')), findsNothing);
+    expect(
+        find.byKey(const Key('kyc_verification_setting_row')), findsNothing);
   });
 }

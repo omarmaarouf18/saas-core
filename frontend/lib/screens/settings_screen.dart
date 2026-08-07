@@ -29,17 +29,19 @@ class SettingsScreen extends StatelessWidget {
         ? 'auto'
         : localeProvider!.locale!.languageCode;
 
-    final bool showKycRow = user != null && user.kycStatus != 'approved';
+    final bool showKycRow = user != null &&
+        (user.role == 'owner' || user.role == 'employee') &&
+        user.kycStatus != 'approved';
     final bool isKycRejected = user?.kycStatus == 'rejected';
     final bool isKycPending = user?.kycStatus == 'pending_super_admin_approval';
 
-    String kycSubtitle = "Verify your account identity and documents";
+    String kycSubtitle = l10n.settingsKycSubtitleDefault;
     Color kycIconColor = AppColors.primary;
     if (isKycRejected) {
-      kycSubtitle = "Verification Rejected - Action Required";
+      kycSubtitle = l10n.settingsKycSubtitleRejected;
       kycIconColor = AppColors.error;
     } else if (isKycPending) {
-      kycSubtitle = "Verification Pending Approval";
+      kycSubtitle = l10n.settingsKycSubtitlePending;
       kycIconColor = AppColors.warning;
     }
 
@@ -226,7 +228,7 @@ class SettingsScreen extends StatelessWidget {
                           Icons.verified_user_outlined,
                           color: kycIconColor,
                         ),
-                        title: const Text("Identity Verification (KYC)"),
+                        title: Text(l10n.settingsKycRowTitle),
                         subtitle: Text(kycSubtitle),
                         trailing: const Icon(Icons.chevron_right,
                             color: AppColors.outline),

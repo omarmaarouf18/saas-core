@@ -96,16 +96,6 @@ class _OwnerReconciliationQueueScreenState
         backgroundColor: AppColors.primary,
         title: Text(l10n.reconciliationReviewTitle),
         foregroundColor: AppColors.onPrimary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: l10n.tooltipRefreshQueue,
-            onPressed: () {
-              Provider.of<ReconciliationProvider>(context, listen: false)
-                  .fetchQueue();
-            },
-          ),
-        ],
       ),
       body: Consumer<ReconciliationProvider>(
         builder: (context, provider, child) {

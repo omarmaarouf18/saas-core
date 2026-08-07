@@ -67,18 +67,19 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  String _getTabTitle(int index) {
+  String _getTabTitle(BuildContext context, int index) {
+    final l10n = AppLocalizations.of(context)!;
     switch (index) {
       case 0:
-        return "Quick Delivery Owner Dashboard";
+        return l10n.ownerHomeTabTitleDashboard;
       case 1:
-        return "Manage Workers";
+        return l10n.ownerHomeTabTitleWorkers;
       case 2:
-        return "Settings";
+        return l10n.ownerHistoryTitle;
       case 3:
-        return "History & Audit Logs";
+        return l10n.settingsTitle;
       default:
-        return "Quick Delivery Owner Dashboard";
+        return l10n.ownerHomeTabTitleDashboard;
     }
   }
 
@@ -96,12 +97,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildNotificationBell(BuildContext context) {
     return Consumer<NotificationsProvider>(
       builder: (context, provider, child) {
+        final l10n = AppLocalizations.of(context)!;
         return Stack(
           alignment: Alignment.center,
           children: [
             IconButton(
               icon: const Icon(Icons.notifications),
-              tooltip: 'Notifications',
+              tooltip: l10n.ownerHomeTooltipNotifications,
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -199,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
               IconButton(
                 key: const Key('reviewer_queue_button'),
                 icon: const Icon(Icons.fact_check_outlined),
-                tooltip: "KYB/KYE Review Queue",
+                tooltip: l10n.ownerHomeTooltipReviewQueue,
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
@@ -212,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
             IconButton(
               key: const Key('settings_button'),
               icon: const Icon(Icons.settings_outlined),
-              tooltip: "Settings",
+              tooltip: l10n.ownerHomeTooltipSettings,
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -229,7 +231,8 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Welcome back, ${user.username.isNotEmpty ? user.username : user.email}!",
+                l10n.ownerHomeWelcomeUser(
+                    user.username.isNotEmpty ? user.username : user.email),
                 style: AppTypography.headlineLgMobile.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
@@ -237,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: AppSpacing.base),
               Text(
-                "Account ID: ${user.id}",
+                l10n.ownerHomeAccountId(user.id),
                 style: AppTypography.bodyMd.copyWith(
                   color: AppColors.onSurfaceVariant,
                 ),
@@ -249,14 +252,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const ThemedSectionHeader(title: "Profile Information"),
+                    ThemedSectionHeader(title: l10n.ownerHomeProfileInfo),
                     const Divider(
                       height: AppSpacing.lg,
                       color: AppColors.outlineVariant,
                     ),
-                    _buildDetailRow("Username", user.username),
-                    _buildDetailRow("Email", user.email),
-                    _buildDetailRow("Role", user.role.toUpperCase()),
+                    _buildDetailRow(l10n.ownerHomeLabelUsername, user.username),
+                    _buildDetailRow(l10n.ownerHomeLabelEmail, user.email),
+                    _buildDetailRow(
+                        l10n.ownerHomeLabelRole, user.role.toUpperCase()),
                   ],
                 ),
               ),
@@ -293,7 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         title: Text(
-          _getTabTitle(_currentIndex),
+          _getTabTitle(context, _currentIndex),
           style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
         ),
         actions: [
@@ -301,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
             IconButton(
               key: const Key('reviewer_queue_button'),
               icon: const Icon(Icons.fact_check_outlined),
-              tooltip: "KYB/KYE Review Queue",
+              tooltip: l10n.ownerHomeTooltipReviewQueue,
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -312,7 +316,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           IconButton(
             icon: const Icon(Icons.gavel_outlined),
-            tooltip: "Escrow Reconciliation",
+            tooltip: l10n.ownerHomeTooltipEscrowReconciliation,
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -321,16 +325,11 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: "Refresh Data",
-            onPressed: _refreshData,
-          ),
           _buildNotificationBell(context),
           IconButton(
             key: const Key('settings_button'),
             icon: const Icon(Icons.settings_outlined),
-            tooltip: "Settings",
+            tooltip: l10n.ownerHomeTooltipSettings,
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -369,30 +368,30 @@ class _HomeScreenState extends State<HomeScreen> {
         key: const Key('owner_bottom_navigation_bar'),
         selectedIndex: _currentIndex,
         onDestinationSelected: onTabTapped,
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            key: Key('owner_nav_tab_home'),
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
+            key: const Key('owner_nav_tab_home'),
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home),
+            label: l10n.ownerHomeNavHome,
           ),
           NavigationDestination(
-            key: Key('owner_nav_tab_employees'),
-            icon: Icon(Icons.people_outline),
-            selectedIcon: Icon(Icons.people),
-            label: 'Employees',
+            key: const Key('owner_nav_tab_employees'),
+            icon: const Icon(Icons.people_outline),
+            selectedIcon: const Icon(Icons.people),
+            label: l10n.ownerHomeNavEmployees,
           ),
           NavigationDestination(
-            key: Key('owner_nav_tab_history'),
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
-            label: 'History',
+            key: const Key('owner_nav_tab_history'),
+            icon: const Icon(Icons.history_outlined),
+            selectedIcon: const Icon(Icons.history),
+            label: l10n.ownerHomeNavHistory,
           ),
           NavigationDestination(
-            key: Key('owner_nav_tab_settings'),
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
+            key: const Key('owner_nav_tab_settings'),
+            icon: const Icon(Icons.settings_outlined),
+            selectedIcon: const Icon(Icons.settings),
+            label: l10n.ownerHomeNavSettings,
           ),
         ],
       ),
@@ -400,12 +399,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDashboardTab(BuildContext context, authUser) {
+    final l10n = AppLocalizations.of(context)!;
     final auth = Provider.of<AuthProvider>(context);
     final ownerProvider = Provider.of<OwnerProvider>(context);
 
     final walletText = ownerProvider.isLoading
         ? "..."
-        : "${ownerProvider.walletBalance.toStringAsFixed(2)} Credits";
+        : l10n.ownerHomeCreditsAmount(
+            ownerProvider.walletBalance.toStringAsFixed(2));
 
     final subText = ownerProvider.isLoading
         ? "..."
@@ -447,7 +448,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Welcome back, ${authUser.username.isNotEmpty ? authUser.username : authUser.email}!",
+                          l10n.ownerHomeWelcomeUser(authUser.username.isNotEmpty
+                              ? authUser.username
+                              : authUser.email),
                           style: AppTypography.headlineLgMobile.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,
@@ -455,7 +458,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         Text(
-                          "Tenant Owner ID: ${authUser.id}",
+                          l10n.ownerHomeTenantId(authUser.id),
                           style: AppTypography.bodyMd.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
@@ -552,7 +555,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                "Subscription",
+                                l10n.ownerHomeSubTitle,
                                 style: AppTypography.labelMd.copyWith(
                                   color: AppColors.onSurfaceVariant,
                                 ),
@@ -589,7 +592,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(height: AppSpacing.xs),
                               Text(
-                                "Roster",
+                                l10n.ownerHomeRosterTitle,
                                 style: AppTypography.labelLg.copyWith(
                                   color: AppColors.onSurface,
                                   fontWeight: FontWeight.bold,
@@ -599,7 +602,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                "Employees",
+                                l10n.ownerHomeEmployeesSub,
                                 style: AppTypography.labelMd.copyWith(
                                   color: AppColors.onSurfaceVariant,
                                 ),
@@ -641,7 +644,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(height: AppSpacing.xs),
                               Text(
-                                "Escrow",
+                                l10n.ownerHomeEscrowTitle,
                                 style: AppTypography.labelLg.copyWith(
                                   color: AppColors.secondary,
                                   fontWeight: FontWeight.bold,
@@ -651,7 +654,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                "Review Queue",
+                                l10n.ownerHomeReviewQueueSub,
                                 style: AppTypography.labelMd.copyWith(
                                   color: AppColors.onSurfaceVariant,
                                 ),
@@ -705,14 +708,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "My Wallet",
+                                    l10n.ownerHomeMyWallet,
                                     style: AppTypography.titleMd.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    "Ledger & balance",
+                                    l10n.ownerHomeWalletSub,
                                     style: AppTypography.labelMd.copyWith(
                                       color: AppColors.onSurfaceVariant,
                                     ),
@@ -766,14 +769,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "Services",
+                                    l10n.ownerHomeServices,
                                     style: AppTypography.titleMd.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    "Rates & config",
+                                    l10n.ownerHomeServicesSub,
                                     style: AppTypography.labelMd.copyWith(
                                       color: AppColors.onSurfaceVariant,
                                     ),
@@ -823,8 +826,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const ThemedSectionHeader(
-                        title: "Your Service Reputation",
+                      ThemedSectionHeader(
+                        title: l10n.ownerHomeServiceReputation,
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       RatingSummaryCard(averageRating: avg, ratingCount: count),
@@ -835,18 +838,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
 
               const SizedBox(height: AppSpacing.xl),
-              const ThemedSectionHeader(title: "Owner Jobs"),
+              ThemedSectionHeader(title: l10n.ownerHomeOwnerJobs),
               const SizedBox(height: AppSpacing.sm),
 
               if (ownerProvider.ownerJobs.isEmpty)
-                const ThemedCard(
+                ThemedCard(
                   borderRadius: AppRadius.md,
                   padding: AppSpacing.lg,
                   child: ThemedEmptyState(
                     icon: Icons.assignment_outlined,
-                    title: "No Owner Jobs Found",
-                    description:
-                        "You currently have no jobs registered under your tenant account.",
+                    title: l10n.ownerHomeNoJobsTitle,
+                    description: l10n.ownerHomeNoJobsDesc,
                   ),
                 )
               else
@@ -869,7 +871,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  "Job #${job.id}",
+                                  l10n.ownerHomeJobId(job.id),
                                   style: AppTypography.titleMd.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -879,7 +881,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: AppSpacing.xs),
                             Text(
-                              "Payment: ${job.paymentMethod.toUpperCase()}${job.lockedEscrowAmount != null ? ' (\$${job.lockedEscrowAmount!.toStringAsFixed(2)})' : ''}",
+                              l10n.ownerHomePaymentInfo(
+                                  job.paymentMethod.toUpperCase(),
+                                  job.lockedEscrowAmount != null
+                                      ? ' (\$${job.lockedEscrowAmount!.toStringAsFixed(2)})'
+                                      : ''),
                               style: AppTypography.bodyMd.copyWith(
                                 color: AppColors.onSurfaceVariant,
                               ),
@@ -890,7 +896,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 alignment: Alignment.centerRight,
                                 child: SecondaryButton(
                                   key: Key('cancel_owner_job_button_${job.id}'),
-                                  text: "Cancel Job",
+                                  text: l10n.ownerHomeCancelJob,
                                   icon: Icons.cancel_outlined,
                                   isOutlined: true,
                                   onPressed: () async {
@@ -908,8 +914,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                               job.paymentMethod.toLowerCase() !=
                                                   'cod';
                                           final msg = isNonCod
-                                              ? "Job cancelled successfully. Escrow refunded to wallet."
-                                              : "Job cancelled successfully.";
+                                              ? l10n
+                                                  .ownerHomeJobCancelledEscrowRefunded
+                                              : l10n.ownerHomeJobCancelled;
                                           ScaffoldMessenger.of(context)
                                               .showSnackBar(
                                             SnackBar(

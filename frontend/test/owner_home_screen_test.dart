@@ -147,6 +147,19 @@ void main() {
     expect(find.text('Employees'), findsWidgets);
     expect(find.text('History'), findsWidgets);
     expect(find.text('Settings'), findsWidgets);
+    expect(find.text('Overview'), findsNothing);
+  });
+
+  testWidgets('Pull to refresh gesture on Home tab triggers refresh',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createOwnerHomeScreenApp(initialTabIndex: 0));
+    await tester.pumpAndSettle();
+
+    await tester.fling(
+        find.byType(RefreshIndicator), const Offset(0.0, 300.0), 1000.0);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HomeScreen), findsOneWidget);
   });
 
   testWidgets('Tapping bottom nav tabs switches screens',

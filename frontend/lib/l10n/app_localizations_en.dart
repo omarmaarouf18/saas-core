@@ -498,13 +498,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownerHomeEntryService => 'Service Configuration';
 
   @override
-  String get ownerHistoryTitle => 'Business History';
+  String get ownerHistoryTitle => 'History & Audit Logs';
 
   @override
   String get ownerHistoryTabAudit => 'Audit Log';
 
   @override
-  String get ownerHistoryTabJobs => 'Completed Jobs';
+  String get ownerHistoryTabJobs => 'Jobs';
 
   @override
   String get ownerHistoryTabLedger => 'Ledger';
@@ -868,4 +868,308 @@ class AppLocalizationsEn extends AppLocalizations {
   String locationFetchError(String error) {
     return 'Error fetching location: $error';
   }
+
+  @override
+  String get settingsKycRowTitle => 'Identity Verification (KYC)';
+
+  @override
+  String get settingsKycSubtitleDefault =>
+      'Verify your account identity and documents';
+
+  @override
+  String get settingsKycSubtitleRejected =>
+      'Verification Rejected - Action Required';
+
+  @override
+  String get settingsKycSubtitlePending => 'Verification Pending Approval';
+
+  @override
+  String get ownerHomeTabTitleDashboard => 'Quick Delivery Owner Dashboard';
+
+  @override
+  String get ownerHomeTabTitleWorkers => 'Manage Workers';
+
+  @override
+  String get ownerHomeTabTitleHistory => 'History & Audit Logs';
+
+  @override
+  String ownerHomeWelcomeUser(String name) {
+    return 'Welcome back, $name!';
+  }
+
+  @override
+  String ownerHomeAccountId(String id) {
+    return 'Account ID: $id';
+  }
+
+  @override
+  String get ownerHomeProfileInfo => 'Profile Information';
+
+  @override
+  String get ownerHomeLabelUsername => 'Username';
+
+  @override
+  String get ownerHomeLabelEmail => 'Email';
+
+  @override
+  String get ownerHomeLabelRole => 'Role';
+
+  @override
+  String get ownerHomeTooltipReviewQueue => 'KYB/KYE Review Queue';
+
+  @override
+  String get ownerHomeTooltipEscrowReconciliation => 'Escrow Reconciliation';
+
+  @override
+  String get ownerHomeTooltipNotifications => 'Notifications';
+
+  @override
+  String get ownerHomeTooltipSettings => 'Settings';
+
+  @override
+  String get ownerHomeNavHome => 'Home';
+
+  @override
+  String get ownerHomeNavEmployees => 'Employees';
+
+  @override
+  String get ownerHomeNavHistory => 'History';
+
+  @override
+  String get ownerHomeNavSettings => 'Settings';
+
+  @override
+  String ownerHomeTenantId(String id) {
+    return 'Tenant Owner ID: $id';
+  }
+
+  @override
+  String ownerHomeCreditsAmount(String amount) {
+    return '$amount Credits';
+  }
+
+  @override
+  String get ownerHomeSubTitle => 'Subscription';
+
+  @override
+  String get ownerHomeRosterTitle => 'Roster';
+
+  @override
+  String get ownerHomeEmployeesSub => 'Employees';
+
+  @override
+  String get ownerHomeEscrowTitle => 'Escrow';
+
+  @override
+  String get ownerHomeReviewQueueSub => 'Review Queue';
+
+  @override
+  String get ownerHomeMyWallet => 'My Wallet';
+
+  @override
+  String get ownerHomeWalletSub => 'Ledger & balance';
+
+  @override
+  String get ownerHomeServices => 'Services';
+
+  @override
+  String get ownerHomeServicesSub => 'Rates & config';
+
+  @override
+  String get ownerHomeServiceReputation => 'Your Service Reputation';
+
+  @override
+  String get ownerHomeOwnerJobs => 'Owner Jobs';
+
+  @override
+  String get ownerHomeNoJobsTitle => 'No Owner Jobs Found';
+
+  @override
+  String get ownerHomeNoJobsDesc =>
+      'You currently have no jobs registered under your tenant account.';
+
+  @override
+  String ownerHomeJobId(String id) {
+    return 'Job #$id';
+  }
+
+  @override
+  String ownerHomePaymentInfo(String method, String escrowInfo) {
+    return 'Payment: $method$escrowInfo';
+  }
+
+  @override
+  String get ownerHomeCancelJob => 'Cancel Job';
+
+  @override
+  String get ownerHomeJobCancelledEscrowRefunded =>
+      'Job cancelled successfully. Escrow refunded to wallet.';
+
+  @override
+  String get ownerHomeJobCancelled => 'Job cancelled successfully.';
+
+  @override
+  String get ownerHistoryTabActivity => 'Activity';
+
+  @override
+  String get ownerHistoryNoActivityTitle => 'No Employee Activity Found';
+
+  @override
+  String get ownerHistoryNoActivityDesc =>
+      'No tenant audit log events recorded yet.';
+
+  @override
+  String ownerHistoryActorId(String id) {
+    return 'Actor: $id';
+  }
+
+  @override
+  String get ownerHistoryNoJobsTitle => 'No Completed Jobs Found';
+
+  @override
+  String get ownerHistoryNoJobsDesc =>
+      'No completed or cancelled jobs recorded for your tenant.';
+
+  @override
+  String ownerHistoryCancellationReason(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get ownerHistoryNoLedgerTitle => 'No Ledger Entries Found';
+
+  @override
+  String get ownerHistoryNoLedgerDesc =>
+      'No wallet transaction history recorded yet.';
+
+  @override
+  String ownerHistoryBalanceAfter(String amount, String jobInfo) {
+    return 'Balance after: \$$amount$jobInfo';
+  }
+
+  @override
+  String get employeeJobsTooltipVerification => 'Verification Documents';
+
+  @override
+  String employeeJobsJobId(String id) {
+    return 'Job #$id';
+  }
+
+  @override
+  String get employeeJobsSuggestionArrivedPickup => 'Arrived at Pickup';
+
+  @override
+  String get employeeJobsSuggestionInRoute => 'Job in Route';
+
+  @override
+  String get employeeJobsSuggestionArrivedDestination =>
+      'Arrived at Destination';
+
+  @override
+  String get employeeJobsSuggestionCompleted => 'Job Completed';
+
+  @override
+  String get employeeJobsSimulatorTitle => 'Employee Action Simulator';
+
+  @override
+  String get employeeJobsSimulatorDesc =>
+      'Log service events directly into the tenant audit trail.';
+
+  @override
+  String get employeeJobsSimulatorLabel => 'Simulation Action Text';
+
+  @override
+  String get employeeJobsSimulatorHint =>
+      'e.g., Arrived at Pickup, Job in Route';
+
+  @override
+  String get employeeJobsSimulatorValidation =>
+      'Please enter or select an action to simulate';
+
+  @override
+  String get employeeJobsSimulateButton => 'Simulate Action';
+
+  @override
+  String get employeeJobsSectionAssigned => 'Your Assigned Jobs';
+
+  @override
+  String get employeeJobsLoading => 'Loading assigned jobs...';
+
+  @override
+  String get employeeJobsNoJobsTitle => 'No Jobs Assigned';
+
+  @override
+  String get employeeJobsNoJobsDesc => 'No jobs currently assigned to you.';
+
+  @override
+  String get employeeJobsWelcomeGreeting => 'Welcome back!';
+
+  @override
+  String employeeJobsLoggedInAs(String name) {
+    return 'Logged in as: $name';
+  }
+
+  @override
+  String get employeeJobsGpsLive => 'GPS Live';
+
+  @override
+  String get employeeJobsGpsOff => 'GPS Off';
+
+  @override
+  String get employeeJobsConfirmCodTitle =>
+      'Confirm Cash Collection & Complete';
+
+  @override
+  String employeeJobsConfirmCodMessage(String amount, String jobId) {
+    return 'Confirm you have physically collected the cash payment of \$$amount (COD) from the customer.\n\nThis will deduct the platform fee from the owner\'s wallet and mark Job #$jobId as completed.';
+  }
+
+  @override
+  String employeeJobsConfirmNonCodMessage(String jobId) {
+    return 'Are you sure you want to mark Job #$jobId as completed?';
+  }
+
+  @override
+  String get employeeJobsConfirmCodButton =>
+      'Confirm Cash Collected & Complete';
+
+  @override
+  String get employeeJobsConfirmNonCodButton => 'Complete Job';
+
+  @override
+  String get employeeJobsDestinationCoordinates => 'Destination Coordinates';
+
+  @override
+  String get employeeJobsLabelCustomer => 'Customer';
+
+  @override
+  String get employeeJobsLabelPayment => 'Payment';
+
+  @override
+  String get employeeJobsLabelEscrow => 'Escrow';
+
+  @override
+  String employeeJobsCancellationReason(String reason) {
+    return 'Cancellation Reason: $reason';
+  }
+
+  @override
+  String get employeeJobsLocationPermissionTitle =>
+      'Location Permission Required';
+
+  @override
+  String get employeeJobsLocationPermissionDesc =>
+      'Location sharing is required to share your live delivery progress with the customer.';
+
+  @override
+  String get employeeJobsOpenAppSettings => 'Open App Settings';
+
+  @override
+  String get employeeJobsSharingLiveLocation => 'Sharing live location';
+
+  @override
+  String get employeeJobsChatButton => 'Chat';
+
+  @override
+  String get employeeJobsCompleteJobButton => 'Complete Job';
 }

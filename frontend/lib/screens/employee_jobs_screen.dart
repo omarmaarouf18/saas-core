@@ -39,12 +39,12 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   String? _completeError;
   String? _completeErrorJobId;
 
-  final List<String> _suggestions = [
-    "Arrived at Pickup",
-    "Job in Route",
-    "Arrived at Destination",
-    "Job Completed",
-  ];
+  List<String> _getSuggestions(AppLocalizations l10n) => [
+        l10n.employeeJobsSuggestionArrivedPickup,
+        l10n.employeeJobsSuggestionInRoute,
+        l10n.employeeJobsSuggestionArrivedDestination,
+        l10n.employeeJobsSuggestionCompleted,
+      ];
 
   @override
   void initState() {
@@ -129,18 +129,22 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   }
 
   Future<void> _confirmAndCompleteJob(Job job) async {
+    final l10n = AppLocalizations.of(context)!;
     final provider = Provider.of<EmployeeJobsProvider>(context, listen: false);
     final isCod = job.paymentMethod.toLowerCase().trim() == 'cod';
 
-    final String title =
-        isCod ? "Confirm Cash Collection & Complete" : "Complete Job";
+    final String title = isCod
+        ? l10n.employeeJobsConfirmCodTitle
+        : l10n.employeeJobsConfirmNonCodButton;
 
     final String message = isCod
-        ? "Confirm you have physically collected the cash payment of \$${job.lockedEscrowAmount?.toStringAsFixed(2) ?? '0.00'} (COD) from the customer.\n\nThis will deduct the platform fee from the owner's wallet and mark Job #${job.id} as completed."
-        : "Are you sure you want to mark Job #${job.id} as completed?";
+        ? l10n.employeeJobsConfirmCodMessage(
+            job.lockedEscrowAmount?.toStringAsFixed(2) ?? '0.00', job.id)
+        : l10n.employeeJobsConfirmNonCodMessage(job.id);
 
-    final String confirmLabel =
-        isCod ? "Confirm Cash Collected & Complete" : "Complete Job";
+    final String confirmLabel = isCod
+        ? l10n.employeeJobsConfirmCodButton
+        : l10n.employeeJobsConfirmNonCodButton;
 
     final IconData icon =
         isCod ? Icons.payments_outlined : Icons.check_circle_outline;
@@ -150,7 +154,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
       title: title,
       message: message,
       confirmLabel: confirmLabel,
-      cancelLabel: "Cancel",
+      cancelLabel: l10n.cancel,
       icon: icon,
     );
 
@@ -262,16 +266,10 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh,
-                color: Theme.of(context).colorScheme.onSurface),
-            tooltip: "Refresh Jobs",
-            onPressed: _refreshJobs,
-          ),
-          IconButton(
             key: const Key('employee_verification_button'),
             icon: Icon(Icons.verified_user_outlined,
                 color: Theme.of(context).colorScheme.onSurface),
-            tooltip: "Verification Documents",
+            tooltip: l10n.employeeJobsTooltipVerification,
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -285,7 +283,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             key: const Key('settings_button'),
             icon: Icon(Icons.settings_outlined,
                 color: Theme.of(context).colorScheme.onSurface),
-            tooltip: "Settings",
+            tooltip: l10n.ownerHomeTooltipSettings,
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -310,13 +308,13 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               const SizedBox(height: AppSpacing.lg),
               _buildActionSimulatorCard(),
               const SizedBox(height: AppSpacing.xl),
-              const ThemedSectionHeader(title: "Your Assigned Jobs"),
+              ThemedSectionHeader(title: l10n.employeeJobsSectionAssigned),
               const SizedBox(height: AppSpacing.sm),
               if (jobsProvider.isLoading && jobsProvider.jobs.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40.0),
-                  child: ThemedLoadingIndicator(
-                      message: "Loading assigned jobs..."),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40.0),
+                  child:
+                      ThemedLoadingIndicator(message: l10n.employeeJobsLoading),
                 )
               else if (jobsProvider.error != null && jobsProvider.jobs.isEmpty)
                 ThemedErrorBanner(message: jobsProvider.error!)
@@ -330,6 +328,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   }
 
   Widget _buildHeader(String displayName) {
+    final l10n = AppLocalizations.of(context)!;
     return Consumer<EmployeeLocationProvider>(
       builder: (context, locationProvider, child) {
         final isTracking =
@@ -376,7 +375,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Welcome back!",
+                      l10n.employeeJobsWelcomeGreeting,
                       style: AppTypography.headlineLgMobile.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
@@ -384,7 +383,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
-                      "Logged in as: $displayName",
+                      l10n.employeeJobsLoggedInAs(displayName),
                       style: AppTypography.bodyMd.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
@@ -434,7 +433,9 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                         ),
                         const SizedBox(width: AppSpacing.xs),
                         Text(
-                          isTracking ? "GPS Live" : "GPS Off",
+                          isTracking
+                              ? l10n.employeeJobsGpsLive
+                              : l10n.employeeJobsGpsOff,
                           style: AppTypography.labelMd.copyWith(
                             color: isTracking
                                 ? AppColors.success
@@ -454,6 +455,9 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   }
 
   Widget _buildActionSimulatorCard() {
+    final l10n = AppLocalizations.of(context)!;
+    final suggestions = _getSuggestions(l10n);
+
     return ThemedCard(
       borderRadius: AppRadius.lg,
       padding: AppSpacing.lg,
@@ -479,7 +483,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
-                    "Employee Action Simulator",
+                    l10n.employeeJobsSimulatorTitle,
                     style: AppTypography.titleMd.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.onSurface,
@@ -490,7 +494,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              "Log service events directly into the tenant audit trail.",
+              l10n.employeeJobsSimulatorDesc,
               style: AppTypography.bodyMd.copyWith(
                 color: AppColors.onSurfaceVariant,
               ),
@@ -501,13 +505,13 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             ),
             ThemedTextField(
               controller: _actionController,
-              labelText: "Simulation Action Text",
-              hintText: "e.g., Arrived at Pickup, Job in Route",
+              labelText: l10n.employeeJobsSimulatorLabel,
+              hintText: l10n.employeeJobsSimulatorHint,
               prefixIcon: const Icon(Icons.run_circle_outlined,
                   color: AppColors.outline),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return "Please enter or select an action to simulate";
+                  return l10n.employeeJobsSimulatorValidation;
                 }
                 return null;
               },
@@ -516,7 +520,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             Wrap(
               spacing: AppSpacing.xs,
               runSpacing: AppSpacing.xs,
-              children: _suggestions.map((suggestion) {
+              children: suggestions.map((suggestion) {
                 final isSelected = _actionController.text.trim() == suggestion;
                 return ChoiceChip(
                   label: Text(suggestion),
@@ -547,7 +551,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             PrimaryButton(
               onPressed: _isSimulating ? null : _submitAction,
               icon: Icons.send_outlined,
-              text: "Simulate Action",
+              text: l10n.employeeJobsSimulateButton,
               isLoading: _isSimulating,
             ),
           ],
@@ -557,14 +561,15 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   }
 
   Widget _buildJobsList(List<Job> jobs) {
+    final l10n = AppLocalizations.of(context)!;
     if (jobs.isEmpty) {
-      return const ThemedCard(
+      return ThemedCard(
         borderRadius: AppRadius.lg,
         padding: AppSpacing.xl,
         child: ThemedEmptyState(
           icon: Icons.assignment_late_outlined,
-          title: "No Jobs Assigned",
-          description: "No jobs currently assigned to you.",
+          title: l10n.employeeJobsNoJobsTitle,
+          description: l10n.employeeJobsNoJobsDesc,
         ),
       );
     }
@@ -581,6 +586,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   }
 
   Widget _buildJobCard(Job job) {
+    final l10n = AppLocalizations.of(context)!;
     final isActive = job.status.toLowerCase().trim() == 'active';
 
     return Padding(
@@ -612,7 +618,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                       const SizedBox(width: AppSpacing.xs),
                       Expanded(
                         child: Text(
-                          "Job #${job.id}",
+                          l10n.employeeJobsJobId(job.id),
                           style: AppTypography.titleMd.copyWith(
                             fontFamily: 'monospace',
                             fontWeight: FontWeight.bold,
@@ -648,7 +654,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Destination Coordinates",
+                          l10n.employeeJobsDestinationCoordinates,
                           style: AppTypography.labelLg.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
@@ -674,20 +680,21 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               children: [
                 _buildSubordinateChip(
                   Icons.person_outline,
-                  "Customer",
+                  l10n.employeeJobsLabelCustomer,
                   job.userId,
                 ),
                 _buildSubordinateChip(
                   Icons.payment_outlined,
-                  "Payment",
+                  l10n.employeeJobsLabelPayment,
                   job.paymentMethod.toUpperCase(),
                 ),
                 if (job.lockedEscrowAmount != null &&
                     job.lockedEscrowAmount! > 0)
                   _buildSubordinateChip(
                     Icons.lock_clock_outlined,
-                    "Escrow",
-                    "${job.lockedEscrowAmount!.toStringAsFixed(2)} Credits",
+                    l10n.employeeJobsLabelEscrow,
+                    l10n.ownerHomeCreditsAmount(
+                        job.lockedEscrowAmount!.toStringAsFixed(2)),
                   ),
               ],
             ),
@@ -704,7 +711,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                       Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                 ),
                 child: Text(
-                  "Cancellation Reason: ${job.cancellationReason}",
+                  l10n.employeeJobsCancellationReason(job.cancellationReason!),
                   style: AppTypography.bodyMd.copyWith(
                     color: AppColors.error,
                   ),
@@ -736,7 +743,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                                   color: AppColors.warning, size: 20),
                               const SizedBox(width: AppSpacing.xs),
                               Text(
-                                "Location Permission Required",
+                                l10n.employeeJobsLocationPermissionTitle,
                                 style: AppTypography.bodyMd.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: AppColors.warning,
@@ -746,7 +753,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                           ),
                           const SizedBox(height: AppSpacing.xs),
                           Text(
-                            "Location sharing is required to share your live delivery progress with the customer.",
+                            l10n.employeeJobsLocationPermissionDesc,
                             style: AppTypography.bodyMd.copyWith(
                               color: AppColors.onSurface,
                             ),
@@ -754,7 +761,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                           const SizedBox(height: AppSpacing.sm),
                           SecondaryButton(
                             key: const Key('open_app_settings_button'),
-                            text: "Open App Settings",
+                            text: l10n.employeeJobsOpenAppSettings,
                             icon: Icons.settings_outlined,
                             isOutlined: true,
                             onPressed: () {
@@ -792,7 +799,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                           ),
                           const SizedBox(width: AppSpacing.xs),
                           Text(
-                            "Sharing live location",
+                            l10n.employeeJobsSharingLiveLocation,
                             style: AppTypography.labelMd.copyWith(
                               color: AppColors.success,
                               fontWeight: FontWeight.bold,
@@ -827,7 +834,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 Expanded(
                   child: SecondaryButton(
                     key: Key('employee_chat_button_${job.id}'),
-                    text: "Chat",
+                    text: l10n.employeeJobsChatButton,
                     icon: Icons.chat_outlined,
                     isOutlined: true,
                     onPressed: () {
@@ -847,7 +854,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                     flex: 2,
                     child: PrimaryButton(
                       key: Key('complete_job_button_${job.id}'),
-                      text: "Complete Job",
+                      text: l10n.employeeJobsCompleteJobButton,
                       icon: Icons.check_circle_outline,
                       isLoading: _completingJobId == job.id,
                       onPressed: _completingJobId != null

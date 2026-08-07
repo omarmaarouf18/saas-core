@@ -2,6 +2,15 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Settings KYC Role Gating, Redundant Refresh Button Cleanup, and Owner Arabic Localization
+
+- **Implementation Detail**:
+  1. **Settings KYC Role Gating (Bug 1)**: Updated `frontend/lib/screens/settings_screen.dart` to gate identity verification (KYC/KYB) display with `showKycRow = user != null && (user.role == 'owner' || user.role == 'employee') && user.kycStatus != 'approved'`. Updated `frontend/test/settings_screen_test.dart` to verify customer role (`user`) hides the KYC row even when unverified, while owner and employee roles display the row when unverified and hide it when approved.
+  2. **Redundant Refresh Button Cleanup (Bug 2)**: Removed redundant refresh `IconButton` widgets from AppBar `actions` across 5 screens (`employee_jobs_screen.dart`, `home_screen.dart`, `customer_jobs_screen.dart`, `kyb_kye_review_screen.dart`, `owner_reconciliation_queue_screen.dart`) while retaining `RefreshIndicator` pull-to-refresh gestures. Added widget tests covering `RefreshIndicator` pull gestures in `employee_jobs_screen_audit_test.dart` and `owner_home_screen_test.dart`.
+  3. **Owner Arabic Localization Pass (Bug 3)**: Extracted and localized ~90 hardcoded strings across `home_screen.dart`, `owner_history_screen.dart`, `employee_jobs_screen.dart`, and `settings_screen.dart`. Added keys to `app_en.arb` and natural Egyptian colloquial Arabic translations (`ar_EG`) in `app_ar.arb`. Ran `flutter gen-l10n`.
+- **Commit SHA**: ``13a554168c2c358079ce5b806352d931f84e61b2``
+- **Verification**: Verified via `flutter analyze` (0 issues found), `flutter test` (167/167 pass 100%), live backend health check (`https://api.logiclinkeg.tech/health` -> `{"status":"ok"}`), and `.githooks/pre-push` gate passing cleanly. ✅
+
 ## /users/services/update HTTP Method Restriction & PATCH /auth/user Docgen Registration
 
 - **Implementation Detail**: Restricted `/users/services/update` route in `services/user-service/internal/handlers/handlers.go` to HTTP `POST`, `PUT`, and `PATCH` methods (returning 405 Method Not Allowed for GET/DELETE/etc). Extended AST route parser in `shared/infra/docgen/generator.go` to handle `http.MethodPatch` selector expressions and added `PUT/PATCH /users/services/update` and `PATCH /auth/user` entries to `KnownEndpoints`. Regenerated `docs/APPLICATION_MAP.md` via `make docs` and confirmed `PATCH /auth/user` and `/users/services/update` appear in generated application map without TODOs.

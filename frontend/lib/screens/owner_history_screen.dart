@@ -83,7 +83,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
     }
   }
 
-  Widget _buildTabBar() {
+  Widget _buildTabBar(AppLocalizations l10n) {
     return Material(
       color: AppColors.primary,
       child: TabBar(
@@ -97,21 +97,21 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
           fontSize: 13,
         ),
         unselectedLabelStyle: AppTypography.titleMd.copyWith(fontSize: 13),
-        tabs: const [
+        tabs: [
           Tab(
-            key: Key('history_tab_activity'),
-            text: "Activity",
-            icon: Icon(Icons.history_outlined, size: 20),
+            key: const Key('history_tab_activity'),
+            text: l10n.ownerHistoryTabActivity,
+            icon: const Icon(Icons.history_outlined, size: 20),
           ),
           Tab(
-            key: Key('history_tab_jobs'),
-            text: "Jobs",
-            icon: Icon(Icons.assignment_turned_in_outlined, size: 20),
+            key: const Key('history_tab_jobs'),
+            text: l10n.ownerHistoryTabJobs,
+            icon: const Icon(Icons.assignment_turned_in_outlined, size: 20),
           ),
           Tab(
-            key: Key('history_tab_ledger'),
-            text: "Ledger",
-            icon: Icon(Icons.account_balance_wallet_outlined, size: 20),
+            key: const Key('history_tab_ledger'),
+            text: l10n.ownerHistoryTabLedger,
+            icon: const Icon(Icons.account_balance_wallet_outlined, size: 20),
           ),
         ],
       ),
@@ -119,6 +119,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
   }
 
   Widget _buildActivityLogTab(OwnerProvider ownerProvider) {
+    final l10n = AppLocalizations.of(context)!;
     return RefreshIndicator(
       onRefresh: _refreshAuditLog,
       child: ownerProvider.isLoading && ownerProvider.auditLogEntries.isEmpty
@@ -134,14 +135,14 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                     const SizedBox(height: AppSpacing.md),
                   ],
                   if (ownerProvider.auditLogEntries.isEmpty)
-                    const ThemedCard(
+                    ThemedCard(
                       borderRadius: AppRadius.md,
                       padding: AppSpacing.lg,
                       child: ThemedEmptyState(
-                        key: Key('empty_audit_log_state'),
+                        key: const Key('empty_audit_log_state'),
                         icon: Icons.history_outlined,
-                        title: "No Employee Activity Found",
-                        description: "No tenant audit log events recorded yet.",
+                        title: l10n.ownerHistoryNoActivityTitle,
+                        description: l10n.ownerHistoryNoActivityDesc,
                       ),
                     )
                   else
@@ -213,7 +214,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                                 children: [
                                   if (actorId.isNotEmpty)
                                     Text(
-                                      "Actor: $actorId",
+                                      l10n.ownerHistoryActorId(actorId),
                                       style: AppTypography.labelMd.copyWith(
                                         color: AppColors.onSurfaceVariant,
                                       ),
@@ -238,6 +239,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
   }
 
   Widget _buildCompletedJobsTab(OwnerProvider ownerProvider) {
+    final l10n = AppLocalizations.of(context)!;
     final List<Job> completedJobs = ownerProvider.ownerJobs
         .where((j) => j.status == 'completed' || j.status == 'cancelled')
         .toList();
@@ -257,15 +259,14 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                     const SizedBox(height: AppSpacing.md),
                   ],
                   if (completedJobs.isEmpty)
-                    const ThemedCard(
+                    ThemedCard(
                       borderRadius: AppRadius.md,
                       padding: AppSpacing.lg,
                       child: ThemedEmptyState(
-                        key: Key('empty_jobs_state'),
+                        key: const Key('empty_jobs_state'),
                         icon: Icons.assignment_turned_in_outlined,
-                        title: "No Completed Jobs Found",
-                        description:
-                            "No completed or cancelled jobs recorded for your tenant.",
+                        title: l10n.ownerHistoryNoJobsTitle,
+                        description: l10n.ownerHistoryNoJobsDesc,
                       ),
                     )
                   else
@@ -288,7 +289,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    "Job #${job.id}",
+                                    l10n.ownerHomeJobId(job.id),
                                     style: AppTypography.titleMd.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -298,7 +299,11 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                               ),
                               const SizedBox(height: AppSpacing.xs),
                               Text(
-                                "Payment: ${job.paymentMethod.toUpperCase()}${job.lockedEscrowAmount != null ? ' (\$${job.lockedEscrowAmount!.toStringAsFixed(2)})' : ''}",
+                                l10n.ownerHomePaymentInfo(
+                                    job.paymentMethod.toUpperCase(),
+                                    job.lockedEscrowAmount != null
+                                        ? ' (\$${job.lockedEscrowAmount!.toStringAsFixed(2)})'
+                                        : ''),
                                 style: AppTypography.bodyMd.copyWith(
                                   color: AppColors.onSurfaceVariant,
                                 ),
@@ -308,7 +313,8 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                                   job.cancellationReason!.isNotEmpty) ...[
                                 const SizedBox(height: AppSpacing.xs),
                                 Text(
-                                  "Reason: ${job.cancellationReason}",
+                                  l10n.ownerHistoryCancellationReason(
+                                      job.cancellationReason!),
                                   style: AppTypography.bodyMd.copyWith(
                                     color: AppColors.error,
                                     fontStyle: FontStyle.italic,
@@ -327,6 +333,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
   }
 
   Widget _buildWalletLedgerTab(OwnerProvider ownerProvider) {
+    final l10n = AppLocalizations.of(context)!;
     return RefreshIndicator(
       onRefresh: _refreshLedger,
       child: ownerProvider.isLoading && ownerProvider.ledgerEntries.isEmpty
@@ -342,15 +349,14 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                     const SizedBox(height: AppSpacing.md),
                   ],
                   if (ownerProvider.ledgerEntries.isEmpty)
-                    const ThemedCard(
+                    ThemedCard(
                       borderRadius: AppRadius.md,
                       padding: AppSpacing.lg,
                       child: ThemedEmptyState(
-                        key: Key('empty_ledger_state'),
+                        key: const Key('empty_ledger_state'),
                         icon: Icons.receipt_long_outlined,
-                        title: "No Ledger Entries Found",
-                        description:
-                            "No wallet transaction history recorded yet.",
+                        title: l10n.ownerHistoryNoLedgerTitle,
+                        description: l10n.ownerHistoryNoLedgerDesc,
                       ),
                     )
                   else
@@ -443,7 +449,11 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      "Balance after: \$${balanceAfter.toStringAsFixed(2)}${jobId.isNotEmpty ? ' • Job #$jobId' : ''}",
+                                      l10n.ownerHistoryBalanceAfter(
+                                          balanceAfter.toStringAsFixed(2),
+                                          jobId.isNotEmpty
+                                              ? ' • Job #$jobId'
+                                              : ''),
                                       style: AppTypography.labelMd.copyWith(
                                         color: AppColors.onSurfaceVariant,
                                       ),
@@ -497,7 +507,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
     if (widget.isEmbeddedInTab) {
       return Column(
         children: [
-          _buildTabBar(),
+          _buildTabBar(l10n),
           Expanded(child: tabBarView),
         ],
       );
@@ -515,21 +525,21 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
           indicatorWeight: 3,
           labelColor: AppColors.onPrimary,
           unselectedLabelColor: AppColors.onPrimary.withValues(alpha: 0.7),
-          tabs: const [
+          tabs: [
             Tab(
-              key: Key('history_tab_activity'),
-              text: "Activity",
-              icon: Icon(Icons.history_outlined, size: 20),
+              key: const Key('history_tab_activity'),
+              text: l10n.ownerHistoryTabActivity,
+              icon: const Icon(Icons.history_outlined, size: 20),
             ),
             Tab(
-              key: Key('history_tab_jobs'),
-              text: "Jobs",
-              icon: Icon(Icons.assignment_turned_in_outlined, size: 20),
+              key: const Key('history_tab_jobs'),
+              text: l10n.ownerHistoryTabJobs,
+              icon: const Icon(Icons.assignment_turned_in_outlined, size: 20),
             ),
             Tab(
-              key: Key('history_tab_ledger'),
-              text: "Ledger",
-              icon: Icon(Icons.account_balance_wallet_outlined, size: 20),
+              key: const Key('history_tab_ledger'),
+              text: l10n.ownerHistoryTabLedger,
+              icon: const Icon(Icons.account_balance_wallet_outlined, size: 20),
             ),
           ],
         ),

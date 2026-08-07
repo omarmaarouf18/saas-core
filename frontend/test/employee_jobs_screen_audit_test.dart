@@ -205,4 +205,16 @@ void main() {
 
     expect(find.byType(ChatScreen), findsOneWidget);
   });
+
+  testWidgets('Pull to refresh gesture triggers fetchAssignedJobs',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createTestApp());
+    await tester.pumpAndSettle();
+
+    await tester.fling(
+        find.byType(RefreshIndicator), const Offset(0.0, 300.0), 1000.0);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(EmployeeJobsScreen), findsOneWidget);
+  });
 }

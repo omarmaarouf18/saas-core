@@ -48,14 +48,6 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
               title: Text(l10n.customerJobsTitle),
               backgroundColor: AppColors.primary,
               foregroundColor: AppColors.onPrimary,
-              actions: [
-                IconButton(
-                  key: const Key('refresh_customer_jobs_button'),
-                  icon: const Icon(Icons.refresh),
-                  tooltip: l10n.retry,
-                  onPressed: _loadCustomerJobs,
-                ),
-              ],
             ),
       body: Builder(
         builder: (context) {
