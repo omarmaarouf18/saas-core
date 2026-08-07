@@ -78,6 +78,7 @@ type UserService struct {
 	authServiceURL         string
 	chatServiceURL         string
 	limiter                *handlerutil.RateLimiter
+	readLimiter            *handlerutil.RateLimiter
 	internalServiceToken   string
 	locationThrottleMu     sync.Mutex
 	locationLastUpdate     map[string]time.Time
@@ -164,6 +165,7 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 	}
 
 	rl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Minute, "user")
+	rlRead := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "user:read")
 
 	authClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
 	chatClient := resilience.NewClient(client, "chat-service", 2, 5*time.Second)
@@ -173,6 +175,7 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		authServiceURL:         cfg.AuthServiceURL,
 		chatServiceURL:         chatServiceURL,
 		limiter:                handlerutil.NewRateLimiter(rl),
+		readLimiter:            handlerutil.NewRateLimiter(rlRead),
 		internalServiceToken:   cfg.InternalServiceToken,
 		locationLastUpdate:     make(map[string]time.Time),
 		locationInFlight:       make(map[string]bool),
@@ -1155,7 +1158,7 @@ func (u *UserService) GetOwnerJobs(w http.ResponseWriter, r *http.Request) {
 
 	// Identity-based rate limiting (30 req/min)
 	rateKey := "jobs_owner:" + resolvedOwnerID
-	if limited, remaining := u.limiter.CheckAndRecord(rateKey); limited {
+	if limited, remaining := u.readLimiter.CheckAndRecord(rateKey); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})
@@ -1242,7 +1245,7 @@ func (u *UserService) GetCustomerJobs(w http.ResponseWriter, r *http.Request) {
 
 	// Identity-based rate limiting (30 req/min)
 	rateKey := "jobs_customer:" + resolvedCustomerID
-	if limited, remaining := u.limiter.CheckAndRecord(rateKey); limited {
+	if limited, remaining := u.readLimiter.CheckAndRecord(rateKey); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})
@@ -1400,7 +1403,7 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 
 func (u *UserService) GetLedger(w http.ResponseWriter, r *http.Request) {
 	ip := handlerutil.GetIP(r)
-	if limited, remaining := u.limiter.CheckAndRecord("get_ledger_ip:" + ip); limited {
+	if limited, remaining := u.readLimiter.CheckAndRecord("get_ledger_ip:" + ip); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})
@@ -1427,7 +1430,7 @@ func (u *UserService) GetLedger(w http.ResponseWriter, r *http.Request) {
 	tenantID = resolvedTenantID
 
 	tenantKey := "ledger_tenant:" + tenantID
-	if limited, remaining := u.limiter.CheckAndRecord(tenantKey); limited {
+	if limited, remaining := u.readLimiter.CheckAndRecord(tenantKey); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many ledger requests for this tenant, locked out for %.0f seconds", remaining.Seconds()),
 		})
@@ -1878,7 +1881,7 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 
 func (u *UserService) GetRatings(w http.ResponseWriter, r *http.Request) {
 	ip := handlerutil.GetIP(r)
-	if limited, remaining := u.limiter.CheckAndRecord("get_ratings:" + ip); limited {
+	if limited, remaining := u.readLimiter.CheckAndRecord("get_ratings:" + ip); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})
@@ -2890,7 +2893,7 @@ func (u *UserService) GetReconciliationQueue(w http.ResponseWriter, r *http.Requ
 
 	// Identity-based rate limiting (30 req/min)
 	rateKey := "jobs_reconciliation_queue:" + resolvedOwnerID
-	if limited, remaining := u.limiter.CheckAndRecord(rateKey); limited {
+	if limited, remaining := u.readLimiter.CheckAndRecord(rateKey); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})

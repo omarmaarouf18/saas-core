@@ -3301,7 +3301,7 @@ func TestGetJobsByOwner(t *testing.T) {
 		rateLimitOwnerID := "owner-ratelimit-300"
 		tokenRateLimit, _ := jwtutil.GenerateToken(rateLimitOwnerID, "owner", rateLimitOwnerID, "rate@example.com")
 
-		for i := 0; i < 5; i++ {
+		for i := 0; i < 30; i++ {
 			req := httptest.NewRequest("GET", "/users/jobs/owner", nil)
 			req.Header.Set("Authorization", "Bearer "+tokenRateLimit)
 			rec := httptest.NewRecorder()
@@ -3311,14 +3311,14 @@ func TestGetJobsByOwner(t *testing.T) {
 			}
 		}
 
-		// 6th request must trigger 429
+		// 31st request must trigger 429
 		reqLimit := httptest.NewRequest("GET", "/users/jobs/owner", nil)
 		reqLimit.Header.Set("Authorization", "Bearer "+tokenRateLimit)
 		recLimit := httptest.NewRecorder()
 		u.GetOwnerJobs(recLimit, reqLimit)
 
 		if recLimit.Code != http.StatusTooManyRequests {
-			t.Fatalf("Expected 429 Too Many Requests on 6th call, got %d. Body: %s", recLimit.Code, recLimit.Body.String())
+			t.Fatalf("Expected 429 Too Many Requests on 31st call, got %d. Body: %s", recLimit.Code, recLimit.Body.String())
 		}
 		if !strings.Contains(recLimit.Body.String(), "too many requests") {
 			t.Errorf("Expected rate limit error message in body, got %s", recLimit.Body.String())
@@ -3477,7 +3477,7 @@ func TestGetJobsByCustomer(t *testing.T) {
 		rateLimitCustID := "cust-ratelimit-300"
 		tokenRateLimit, _ := jwtutil.GenerateToken(rateLimitCustID, "user", rateLimitCustID, "custrate@example.com")
 
-		for i := 0; i < 5; i++ {
+		for i := 0; i < 30; i++ {
 			req := httptest.NewRequest("GET", "/users/jobs/mine", nil)
 			req.Header.Set("Authorization", "Bearer "+tokenRateLimit)
 			rec := httptest.NewRecorder()
@@ -3487,14 +3487,14 @@ func TestGetJobsByCustomer(t *testing.T) {
 			}
 		}
 
-		// 6th request must trigger 429
+		// 31st request must trigger 429
 		reqLimit := httptest.NewRequest("GET", "/users/jobs/mine", nil)
 		reqLimit.Header.Set("Authorization", "Bearer "+tokenRateLimit)
 		recLimit := httptest.NewRecorder()
 		u.GetCustomerJobs(recLimit, reqLimit)
 
 		if recLimit.Code != http.StatusTooManyRequests {
-			t.Fatalf("Expected 429 Too Many Requests on 6th call, got %d. Body: %s", recLimit.Code, recLimit.Body.String())
+			t.Fatalf("Expected 429 Too Many Requests on 31st call, got %d. Body: %s", recLimit.Code, recLimit.Body.String())
 		}
 		if !strings.Contains(recLimit.Body.String(), "too many requests") {
 			t.Errorf("Expected rate limit error message in body, got %s", recLimit.Body.String())
@@ -3855,8 +3855,8 @@ func TestRateJobAndGetRatings_RateLimiting(t *testing.T) {
 
 	tok, _ := jwtutil.GenerateToken("usr-1", "user", "owner-1", "u@example.com")
 
-	// Rate limit is 5 requests per minute per IP
-	for i := 0; i < 5; i++ {
+	// Rate limit is 30 requests per minute per IP for GetRatings
+	for i := 0; i < 30; i++ {
 		req := httptest.NewRequest("GET", "/users/ratings?user_id=usr-1", nil)
 		req.Header.Set("Authorization", "Bearer "+tok)
 		req.RemoteAddr = "192.168.1.100:12345"
@@ -3864,15 +3864,15 @@ func TestRateJobAndGetRatings_RateLimiting(t *testing.T) {
 		u.GetRatings(rec, req)
 	}
 
-	// 6th request should be rate-limited (429 Too Many Requests)
-	req6 := httptest.NewRequest("GET", "/users/ratings?user_id=usr-1", nil)
-	req6.Header.Set("Authorization", "Bearer "+tok)
-	req6.RemoteAddr = "192.168.1.100:12345"
-	rec6 := httptest.NewRecorder()
-	u.GetRatings(rec6, req6)
+	// 31st request should be rate-limited (429 Too Many Requests)
+	req31 := httptest.NewRequest("GET", "/users/ratings?user_id=usr-1", nil)
+	req31.Header.Set("Authorization", "Bearer "+tok)
+	req31.RemoteAddr = "192.168.1.100:12345"
+	rec31 := httptest.NewRecorder()
+	u.GetRatings(rec31, req31)
 
-	if rec6.Code != http.StatusTooManyRequests {
-		t.Fatalf("Expected status 429 Too Many Requests for GetRatings rate limit, got %d. Body: %s", rec6.Code, rec6.Body.String())
+	if rec31.Code != http.StatusTooManyRequests {
+		t.Fatalf("Expected status 429 Too Many Requests for GetRatings rate limit, got %d. Body: %s", rec31.Code, rec31.Body.String())
 	}
 
 	// RateJob test for rate limiting
@@ -3952,8 +3952,8 @@ func TestGetLedger_RateLimiting(t *testing.T) {
 
 	ownerToken, _ := jwtutil.GenerateToken("ledger-owner-1", "owner", "ledger-owner-1", "owner@example.com")
 
-	// Rate limit is 5 requests per minute per IP
-	for i := 0; i < 5; i++ {
+	// Rate limit is 30 requests per minute per IP for GetLedger
+	for i := 0; i < 30; i++ {
 		req := httptest.NewRequest("GET", "/users/ledger?tenant_token="+ownerToken, nil)
 		req.RemoteAddr = "192.168.2.100:12345"
 		rec := httptest.NewRecorder()
@@ -3963,14 +3963,14 @@ func TestGetLedger_RateLimiting(t *testing.T) {
 		}
 	}
 
-	// 6th request from same IP should be rate-limited (429 Too Many Requests)
-	req6 := httptest.NewRequest("GET", "/users/ledger?tenant_token="+ownerToken, nil)
-	req6.RemoteAddr = "192.168.2.100:12345"
-	rec6 := httptest.NewRecorder()
-	u.GetLedger(rec6, req6)
+	// 31st request from same IP should be rate-limited (429 Too Many Requests)
+	req31 := httptest.NewRequest("GET", "/users/ledger?tenant_token="+ownerToken, nil)
+	req31.RemoteAddr = "192.168.2.100:12345"
+	rec31 := httptest.NewRecorder()
+	u.GetLedger(rec31, req31)
 
-	if rec6.Code != http.StatusTooManyRequests {
-		t.Fatalf("Expected status 429 Too Many Requests for GetLedger rate limit, got %d. Body: %s", rec6.Code, rec6.Body.String())
+	if rec31.Code != http.StatusTooManyRequests {
+		t.Fatalf("Expected status 429 Too Many Requests for GetLedger rate limit, got %d. Body: %s", rec31.Code, rec31.Body.String())
 	}
 }
 

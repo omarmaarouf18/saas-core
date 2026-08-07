@@ -1517,3 +1517,42 @@ func TestHandleCreateTicket_ExtraCoverage(t *testing.T) {
 		t.Errorf("Expected 400 Bad Request for malformed JSON, got %d", rec.Code)
 	}
 }
+
+func TestHandleWebSocket_RateLimiting(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	cfg := &config.Config{}
+	hub := chat.NewHub()
+	c := NewChat(hub, nil, cfg, rdb)
+
+	ip := "192.168.1.150:12345"
+
+	// 30 requests within 1 minute should be allowed by wsLimiter (returns 401 for missing token, not 429)
+	for i := 0; i < 30; i++ {
+		req := httptest.NewRequest("GET", "/chat/ws", nil)
+		req.RemoteAddr = ip
+		rec := httptest.NewRecorder()
+		c.HandleWebSocket(rec, req)
+		if rec.Code == http.StatusTooManyRequests {
+			t.Fatalf("Request %d was unexpectedly rate limited (429)", i+1)
+		}
+	}
+
+	// 31st request from same IP should be rate limited (429 Too Many Requests)
+	req31 := httptest.NewRequest("GET", "/chat/ws", nil)
+	req31.RemoteAddr = ip
+	rec31 := httptest.NewRecorder()
+	c.HandleWebSocket(rec31, req31)
+
+	if rec31.Code != http.StatusTooManyRequests {
+		t.Fatalf("Expected 429 Too Many Requests on 31st call, got %d. Body: %s", rec31.Code, rec31.Body.String())
+	}
+}

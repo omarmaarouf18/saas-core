@@ -52,6 +52,7 @@ type Chat struct {
 	tokenCache           map[string]cachedToken
 	tokenCacheMu         sync.Mutex
 	limiter              *handlerutil.RateLimiter
+	wsLimiter            *handlerutil.RateLimiter
 	internalServiceToken string
 	allowedOrigin        string
 	authClient           *resilience.ResilienceClient
@@ -78,6 +79,7 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Cli
 	}
 
 	rl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Minute, "chat")
+	wsRl := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "chat:ws")
 
 	authClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
 	userClient := resilience.NewClient(client, "user-service", 2, 5*time.Second)
@@ -89,6 +91,7 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Cli
 		userServiceURL:       cfg.UserServiceURL,
 		tokenCache:           make(map[string]cachedToken),
 		limiter:              handlerutil.NewRateLimiter(rl),
+		wsLimiter:            handlerutil.NewRateLimiter(wsRl),
 		internalServiceToken: cfg.InternalServiceToken,
 		allowedOrigin:        allowedOrigin,
 		authClient:           authClient,
@@ -255,7 +258,7 @@ func (c *Chat) canAccessChannel(userID, channel string) (bool, error) {
 //	GET /chat/ws?token=<user_token>
 func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	ip := handlerutil.GetIP(r)
-	if limited, remaining := c.limiter.CheckAndRecord(ip); limited {
+	if limited, remaining := c.wsLimiter.CheckAndRecord(ip); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})

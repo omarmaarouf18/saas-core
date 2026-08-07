@@ -207,6 +207,12 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Commit SHA**: ``73dc64ca3d34bf45333df400cc1fff336e1cf166``
 - **Verification**: Verified via `flutter analyze` (0 issues) and `flutter test` (51/51 test cases passing across all 5 widget test cases covering COD vs non-COD flows). ✅
 
+## Separate WebSocket & Read-Endpoint Rate Limiters from Write-Action Limits
+
+- **Implementation Detail**: Separated overly-restrictive blanket 5-req/min rate limiters into dedicated read and connection limiters to prevent chat lockouts during normal client lifecycle reconnections and smooth out high-frequency data browsing. In `chat-service` (`services/chat-service/internal/handlers/chat.go`), introduced `wsLimiter` (`chat:ws`, 30 req/min) for `GET /chat/ws`, while keeping `HandleCreateTicket` on `limiter` (`chat`, 5 req/min). In `user-service` (`services/user-service/internal/handlers/handlers.go`), introduced `readLimiter` (`user:read`, 30 req/min) for read-heavy endpoints (`GetOwnerJobs`, `GetCustomerJobs`, `GetLedger` at both call sites, `GetRatings`, `GetReconciliationQueue`), while preserving 5 req/min write limits on `WalletDeposit`, `RateJob`, `CancelJob`, `ProposePrice`, `RespondPrice`, `TrackJob`, and `ResolveReconciliation`.
+- **Commit SHA**: ``UNVERIFIED_PENDING_COMMIT``
+- **Verification**: Verified via unit test suites in `chat-service` (`TestHandleWebSocket_RateLimiting`) and `user-service` (`TestGetJobsByOwner`, `TestGetJobsByCustomer`, `TestRateJob_RateLimiting`, `TestGetLedger_RateLimiting`, `TestGetReconciliationQueue`), `gofmt`, `go build`, and `go vet`. ✅
+
 
 
 
