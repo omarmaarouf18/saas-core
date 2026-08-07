@@ -265,4 +265,29 @@ void main() {
     expect(find.byKey(const Key('owner_config_error_banner')), findsOneWidget);
     expect(find.text(ErrorMessages.badRequest), findsOneWidget);
   });
+
+  testWidgets(
+      'Tapping image pick button invokes picker and updates photo URL field',
+      (WidgetTester tester) async {
+    bool pickerInvoked = false;
+    await tester.pumpWidget(createOwnerConfigApp(
+      homeScreen: OwnerConfigurationScreen(
+        onPickImage: (context) async {
+          pickerInvoked = true;
+          return 'https://example.com/uploaded_logo.png';
+        },
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final pickBtn = find.byKey(const Key('owner_config_pick_image_button'));
+    expect(pickBtn, findsOneWidget);
+
+    await tester.ensureVisible(pickBtn);
+    await tester.tap(pickBtn);
+    await tester.pumpAndSettle();
+
+    expect(pickerInvoked, isTrue);
+    expect(find.text('https://example.com/uploaded_logo.png'), findsOneWidget);
+  });
 }

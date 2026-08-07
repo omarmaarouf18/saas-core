@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/l10n/l10n.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../core/constants.dart';
 import '../core/error_messages.dart';
@@ -13,8 +14,11 @@ import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
 
+typedef ImagePickerCallback = Future<String?> Function(BuildContext context);
+
 class OwnerConfigurationScreen extends StatefulWidget {
-  const OwnerConfigurationScreen({super.key});
+  final ImagePickerCallback? onPickImage;
+  const OwnerConfigurationScreen({super.key, this.onPickImage});
 
   @override
   State<OwnerConfigurationScreen> createState() =>
@@ -37,6 +41,27 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
   String? _errorMessage;
   bool _isInitialized = false;
   Map<String, dynamic>? _existingService;
+
+  Future<void> _pickImage() async {
+    if (widget.onPickImage != null) {
+      final path = await widget.onPickImage!(context);
+      if (path != null && mounted) {
+        setState(() {
+          _photoUrlController.text = path;
+        });
+      }
+      return;
+    }
+    try {
+      final picker = ImagePicker();
+      final xfile = await picker.pickImage(source: ImageSource.gallery);
+      if (xfile != null && mounted) {
+        setState(() {
+          _photoUrlController.text = xfile.path;
+        });
+      }
+    } catch (_) {}
+  }
 
   @override
   void initState() {
@@ -374,11 +399,27 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                             ],
                           ),
                           const SizedBox(height: AppSpacing.md),
-                          ThemedTextField(
-                            key: const Key('owner_config_photo_url_field'),
-                            labelText: l10n.ownerConfigPhotoUrlLabel,
-                            hintText: l10n.ownerConfigPhotoUrlHint,
-                            controller: _photoUrlController,
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ThemedTextField(
+                                  key:
+                                      const Key('owner_config_photo_url_field'),
+                                  labelText: l10n.ownerConfigPhotoUrlLabel,
+                                  hintText: l10n.ownerConfigPhotoUrlHint,
+                                  controller: _photoUrlController,
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              IconButton(
+                                key:
+                                    const Key('owner_config_pick_image_button'),
+                                icon: const Icon(Icons.add_a_photo_outlined,
+                                    color: AppColors.primary),
+                                tooltip: "Pick Image",
+                                onPressed: _pickImage,
+                              ),
+                            ],
                           ),
                         ],
                       ),

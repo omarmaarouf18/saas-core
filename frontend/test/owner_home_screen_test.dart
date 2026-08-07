@@ -132,13 +132,21 @@ void main() {
         find.byKey(const Key('owner_bottom_navigation_bar')), findsOneWidget);
     expect(find.byKey(const Key('owner_nav_tab_home')), findsOneWidget);
     expect(find.byKey(const Key('owner_nav_tab_employees')), findsOneWidget);
-    expect(find.byKey(const Key('owner_nav_tab_settings')), findsOneWidget);
     expect(find.byKey(const Key('owner_nav_tab_history')), findsOneWidget);
+    expect(find.byKey(const Key('owner_nav_tab_settings')), findsOneWidget);
+
+    final navBar = tester.widget<NavigationBar>(
+        find.byKey(const Key('owner_bottom_navigation_bar')));
+    expect(navBar.destinations.length, equals(4));
+    expect(
+      (navBar.destinations.last as NavigationDestination).key,
+      equals(const Key('owner_nav_tab_settings')),
+    );
 
     expect(find.text('Home'), findsWidgets);
     expect(find.text('Employees'), findsWidgets);
-    expect(find.text('Settings'), findsWidgets);
     expect(find.text('History'), findsWidgets);
+    expect(find.text('Settings'), findsWidgets);
   });
 
   testWidgets('Tapping bottom nav tabs switches screens',
@@ -151,23 +159,23 @@ void main() {
     expect(
         find.byKey(const Key('owner_dashboard_wallet_card')), findsOneWidget);
 
-    // Tap Employees tab
+    // Tap Employees tab (index 1)
     await tester.tap(find.byKey(const Key('owner_nav_tab_employees')));
     await tester.pumpAndSettle();
     expect(find.text('Manage Workers'), findsAtLeastNWidgets(1));
     expect(find.byType(EmployeeScreen), findsOneWidget);
 
-    // Tap Settings tab
+    // Tap History tab (index 2)
+    await tester.tap(find.byKey(const Key('owner_nav_tab_history')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('history_tab_activity')), findsOneWidget);
+    expect(find.byType(OwnerHistoryScreen), findsOneWidget);
+
+    // Tap Settings tab (index 3)
     await tester.tap(find.byKey(const Key('owner_nav_tab_settings')));
     await tester.pumpAndSettle();
     expect(find.text('Settings'), findsWidgets);
     expect(find.byType(SettingsScreen), findsOneWidget);
-
-    // Tap History tab
-    await tester.tap(find.byKey(const Key('owner_nav_tab_history')));
-    await tester.pumpAndSettle();
-    expect(find.text('History & Audit Logs'), findsWidgets);
-    expect(find.byType(OwnerHistoryScreen), findsOneWidget);
   });
 
   testWidgets('initialTabIndex 1 renders Employees tab directly',
@@ -179,20 +187,20 @@ void main() {
     expect(find.byType(EmployeeScreen), findsOneWidget);
   });
 
-  testWidgets('initialTabIndex 2 renders Settings tab directly',
+  testWidgets('initialTabIndex 2 renders History tab directly',
       (WidgetTester tester) async {
     await tester.pumpWidget(createOwnerHomeScreenApp(initialTabIndex: 2));
     await tester.pumpAndSettle();
 
-    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(find.byType(OwnerHistoryScreen), findsOneWidget);
   });
 
-  testWidgets('initialTabIndex 3 renders History tab directly',
+  testWidgets('initialTabIndex 3 renders Settings tab directly',
       (WidgetTester tester) async {
     await tester.pumpWidget(createOwnerHomeScreenApp(initialTabIndex: 3));
     await tester.pumpAndSettle();
 
-    expect(find.byType(OwnerHistoryScreen), findsOneWidget);
+    expect(find.byType(SettingsScreen), findsOneWidget);
   });
 
   testWidgets('Home tab dashboard entry point pushes WalletScreen',

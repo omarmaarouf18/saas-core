@@ -18,7 +18,6 @@ import 'subscription_screen.dart';
 
 import 'owner_history_screen.dart';
 import 'employee_jobs_screen.dart';
-import 'kyc_document_upload_screen.dart';
 import 'customer_home_screen.dart';
 import 'kyb_kye_review_screen.dart';
 import 'owner_reconciliation_queue_screen.dart';
@@ -153,11 +152,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final isOwner = user.role == "owner";
-    final status = user.effectiveKycStatus;
-    final isKycPending = status == "pending_super_admin_approval";
-    final isKycRejected = status == "rejected";
-    final isKycUnverified =
-        status.isEmpty || status == "none" || status == "unverified";
 
     if (!isOwner) {
       if (user.role == 'employee') {
@@ -269,17 +263,6 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           IconButton(
-            icon: const Icon(Icons.verified_user_outlined),
-            tooltip: "Verification Documents",
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const KycDocumentUploadScreen(),
-                ),
-              );
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.gavel_outlined),
             tooltip: "Escrow Reconciliation",
             onPressed: () {
@@ -313,83 +296,6 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (isKycPending)
-            GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const KycDocumentUploadScreen(),
-                  ),
-                );
-              },
-              child: Container(
-                color: AppColors.warning,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.warning_amber_rounded,
-                        color: AppColors.onPrimary, size: 28),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        "KYC Pending Approval: Your account documents are being reviewed. Click to view submitted files.",
-                        style: AppTypography.bodyMd.copyWith(
-                          color: AppColors.onPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const Icon(Icons.arrow_forward_ios,
-                        color: AppColors.onPrimary, size: 16),
-                  ],
-                ),
-              ),
-            )
-          else if (isKycUnverified || isKycRejected)
-            GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const KycDocumentUploadScreen(),
-                  ),
-                );
-              },
-              child: Container(
-                color: isKycRejected ? AppColors.error : AppColors.secondary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isKycRejected
-                          ? Icons.error_outline
-                          : Icons.shield_outlined,
-                      color: AppColors.onPrimary,
-                      size: 28,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        isKycRejected
-                            ? "Verification Rejected: Please tap here to re-upload your verification documents."
-                            : "Account Unverified: Upload your KYB verification documents to activate your account.",
-                        style: AppTypography.bodyMd.copyWith(
-                          color: AppColors.onPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const Icon(Icons.arrow_forward_ios,
-                        color: AppColors.onPrimary, size: 16),
-                  ],
-                ),
-              ),
-            ),
           Expanded(
             child: IndexedStack(
               index: _currentIndex,
@@ -401,10 +307,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? const EmployeeScreen()
                     : const SizedBox.shrink(),
                 _visitedTabs.contains(2)
-                    ? const SettingsScreen(isEmbeddedInTab: true)
+                    ? const OwnerHistoryScreen(isEmbeddedInTab: true)
                     : const SizedBox.shrink(),
                 _visitedTabs.contains(3)
-                    ? const OwnerHistoryScreen(isEmbeddedInTab: true)
+                    ? const SettingsScreen(isEmbeddedInTab: true)
                     : const SizedBox.shrink(),
               ],
             ),
@@ -429,16 +335,16 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Employees',
           ),
           NavigationDestination(
-            key: Key('owner_nav_tab_settings'),
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-          NavigationDestination(
             key: Key('owner_nav_tab_history'),
             icon: Icon(Icons.history_outlined),
             selectedIcon: Icon(Icons.history),
             label: 'History',
+          ),
+          NavigationDestination(
+            key: Key('owner_nav_tab_settings'),
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
       ),

@@ -9,6 +9,7 @@ import '../utils/logout_helper.dart';
 import '../widgets/create_ticket_dialog.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
+import 'kyc_document_upload_screen.dart';
 import 'my_account_screen.dart';
 import 'owner_configuration_screen.dart';
 
@@ -28,6 +29,20 @@ class SettingsScreen extends StatelessWidget {
         ? 'auto'
         : localeProvider!.locale!.languageCode;
 
+    final bool showKycRow = user != null && user.kycStatus != 'approved';
+    final bool isKycRejected = user?.kycStatus == 'rejected';
+    final bool isKycPending = user?.kycStatus == 'pending_super_admin_approval';
+
+    String kycSubtitle = "Verify your account identity and documents";
+    Color kycIconColor = AppColors.primary;
+    if (isKycRejected) {
+      kycSubtitle = "Verification Rejected - Action Required";
+      kycIconColor = AppColors.error;
+    } else if (isKycPending) {
+      kycSubtitle = "Verification Pending Approval";
+      kycIconColor = AppColors.warning;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: isEmbeddedInTab
@@ -42,10 +57,10 @@ class SettingsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1. Appearance Section
+            // 1. Consolidated Appearance & Preferences Section
             ThemedSectionHeader(
-              title: l10n.settingsAppearance,
-              subtitle: l10n.settingsAppearanceSub,
+              title: l10n.settingsPreferences,
+              subtitle: l10n.settingsPreferencesSub,
             ),
             const SizedBox(height: AppSpacing.sm),
             ThemedCard(
@@ -61,7 +76,7 @@ class SettingsScreen extends StatelessWidget {
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.sm),
                   SegmentedButton<ThemeMode>(
                     key: const Key('theme_mode_selector'),
                     segments: [
@@ -97,22 +112,9 @@ class SettingsScreen extends StatelessWidget {
                       }
                     },
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // 2. Preferences (Language) Section
-            ThemedSectionHeader(
-              title: l10n.settingsPreferences,
-              subtitle: l10n.settingsPreferencesSub,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            ThemedCard(
-              padding: AppSpacing.md,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                  const SizedBox(height: AppSpacing.md),
+                  const Divider(height: 1),
+                  const SizedBox(height: AppSpacing.md),
                   Text(
                     l10n.settingsLanguage,
                     style: TextStyle(
@@ -121,7 +123,7 @@ class SettingsScreen extends StatelessWidget {
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.sm),
                   SegmentedButton<String>(
                     key: const Key('language_selector'),
                     segments: [
@@ -167,69 +169,83 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
 
-            // 3. Role-Specific Section (Owner Configuration or My Account)
-            if (user?.role == 'owner') ...[
-              ThemedSectionHeader(
-                title: l10n.settingsOwnerConfig,
-                subtitle: l10n.settingsOwnerConfigSub,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              ThemedCard(
-                padding: 0,
-                child: Material(
-                  color: Colors.transparent,
-                  child: ListTile(
-                    key: const Key('owner_config_setting_row'),
-                    leading: const Icon(Icons.business_outlined,
-                        color: AppColors.primary),
-                    title: Text(l10n.settingsOwnerConfig),
-                    subtitle: Text(l10n.settingsOwnerConfigSub),
-                    trailing: const Icon(Icons.chevron_right,
-                        color: AppColors.outline),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const OwnerConfigurationScreen(),
+            // 2. Account Section (Owner Config / My Account & Relocated KYC Entry Point)
+            ThemedSectionHeader(
+              title: l10n.settingsAccountSection,
+              subtitle: l10n.settingsAccountSectionSub,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            ThemedCard(
+              padding: 0,
+              child: Material(
+                color: Colors.transparent,
+                child: Column(
+                  children: [
+                    if (user?.role == 'owner') ...[
+                      ListTile(
+                        key: const Key('owner_config_setting_row'),
+                        leading: const Icon(Icons.business_outlined,
+                            color: AppColors.primary),
+                        title: Text(l10n.settingsOwnerConfig),
+                        subtitle: Text(l10n.settingsOwnerConfigSub),
+                        trailing: const Icon(Icons.chevron_right,
+                            color: AppColors.outline),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const OwnerConfigurationScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      if (showKycRow) const Divider(height: 1),
+                    ] else if (user?.role == 'user') ...[
+                      ListTile(
+                        key: const Key('my_account_setting_row'),
+                        leading: const Icon(Icons.person_outlined,
+                            color: AppColors.primary),
+                        title: Text(l10n.settingsMyAccount),
+                        subtitle: Text(l10n.settingsMyAccountSub),
+                        trailing: const Icon(Icons.chevron_right,
+                            color: AppColors.outline),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const MyAccountScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      if (showKycRow) const Divider(height: 1),
+                    ],
+                    if (showKycRow)
+                      ListTile(
+                        key: const Key('kyc_verification_setting_row'),
+                        leading: Icon(
+                          Icons.verified_user_outlined,
+                          color: kycIconColor,
                         ),
-                      );
-                    },
-                  ),
+                        title: const Text("Identity Verification (KYC)"),
+                        subtitle: Text(kycSubtitle),
+                        trailing: const Icon(Icons.chevron_right,
+                            color: AppColors.outline),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const KycDocumentUploadScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
-            ] else if (user?.role == 'user') ...[
-              ThemedSectionHeader(
-                title: l10n.settingsAccountSection,
-                subtitle: l10n.settingsAccountSectionSub,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              ThemedCard(
-                padding: 0,
-                child: Material(
-                  color: Colors.transparent,
-                  child: ListTile(
-                    key: const Key('my_account_setting_row'),
-                    leading: const Icon(Icons.person_outlined,
-                        color: AppColors.primary),
-                    title: Text(l10n.settingsMyAccount),
-                    subtitle: Text(l10n.settingsMyAccountSub),
-                    trailing: const Icon(Icons.chevron_right,
-                        color: AppColors.outline),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const MyAccountScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-            ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
 
-            // 4. Support Section
+            // 3. Support Section
             ThemedSectionHeader(
               title: l10n.settingsSupport,
               subtitle: l10n.settingsSupportSub,
@@ -258,7 +274,7 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // 5. Logout Section
+            // 4. Logout Section
             SizedBox(
               width: double.infinity,
               height: 52,

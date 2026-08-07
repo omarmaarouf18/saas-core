@@ -299,4 +299,44 @@ void main() {
     expect(mockAuth.logoutCalled, isTrue);
     expect(find.byType(LoginScreen), findsOneWidget);
   });
+
+  testWidgets(
+      '(e) KYC verification entry point visibility logic: unverified/rejected shows row, approved hides row',
+      (WidgetTester tester) async {
+    final themeProvider = ThemeProvider(storage: FakeSecureStorage());
+
+    // 1. Unverified user -> shows KYC row
+    final unverifiedUser = UserProfile(
+      id: 'user-1',
+      email: 'unverified@example.com',
+      username: 'unverified',
+      role: 'user',
+      kycStatus: 'unverified',
+    );
+    await tester.pumpWidget(buildSettingsApp(
+      authProvider: MockAuthProvider(apiClient, unverifiedUser),
+      themeProvider: themeProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    final kycRow = find.byKey(const Key('kyc_verification_setting_row'));
+    expect(kycRow, findsOneWidget);
+    expect(find.text("Identity Verification (KYC)"), findsOneWidget);
+
+    // 2. Approved user -> hides KYC row
+    final approvedUser = UserProfile(
+      id: 'user-2',
+      email: 'approved@example.com',
+      username: 'approved',
+      role: 'user',
+      kycStatus: 'approved',
+    );
+    await tester.pumpWidget(buildSettingsApp(
+      authProvider: MockAuthProvider(apiClient, approvedUser),
+      themeProvider: themeProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('kyc_verification_setting_row')), findsNothing);
+  });
 }
