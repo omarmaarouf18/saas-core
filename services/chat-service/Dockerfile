@@ -35,7 +35,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/service ./cmd/mai
 # ---- Production Stage ----------------------------------------------------
 FROM alpine:3.20 AS prod
 
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates curl
 
 COPY --from=build /bin/service /bin/service
 

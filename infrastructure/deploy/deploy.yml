@@ -214,9 +214,11 @@ jobs:
             SUCCESS=0
             for i in $(seq 1 $MAX_RETRIES); do
               # Try HTTPS first (all services use TLS), fall back to HTTP
-              HTTP_STATUS=$(docker exec $CONTAINER curl -s -k -o /dev/null -w "%{http_code}" "https://localhost:${PORT}/health" 2>/dev/null || echo "000")
-              if [ "$HTTP_STATUS" = "000" ]; then
-                HTTP_STATUS=$(docker exec $CONTAINER curl -s -k -o /dev/null -w "%{http_code}" "http://localhost:${PORT}/health" 2>/dev/null || echo "000")
+              HTTP_STATUS=$(docker exec $CONTAINER curl -s -k -o /dev/null -w "%{http_code}" "https://localhost:${PORT}/health" 2>/dev/null || \
+                            docker exec $CONTAINER wget --no-check-certificate -q -O /dev/null --server-response "https://localhost:${PORT}/health" 2>&1 | awk '/HTTP\// {print $2}' | tail -1 || echo "000")
+              if [ "$HTTP_STATUS" = "000" ] || [ -z "$HTTP_STATUS" ]; then
+                HTTP_STATUS=$(docker exec $CONTAINER curl -s -k -o /dev/null -w "%{http_code}" "http://localhost:${PORT}/health" 2>/dev/null || \
+                              docker exec $CONTAINER wget -q -O /dev/null --server-response "http://localhost:${PORT}/health" 2>&1 | awk '/HTTP\// {print $2}' | tail -1 || echo "000")
               fi
 
               if [ "$HTTP_STATUS" = "200" ]; then
