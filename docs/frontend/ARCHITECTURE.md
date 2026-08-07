@@ -45,8 +45,8 @@ This document describes the design patterns, state management models, directory 
     *   `kyc_document_upload_screen.dart`: KYB/KYE document submission form.
     *   `kyb_kye_review_screen.dart`: Reviewer queue roster view for pending KYB/KYE verification requests.
 *   **`lib/widgets/`**: Reusable component design system and dialogs.
-    *   `primary_button.dart`: Standard themed primary action button with loading and text truncation handling.
-    *   `secondary_button.dart`: Outlined secondary action button with icon support.
+    *   `primary_button.dart`: Standard themed primary action button with built-in 600ms tap-debounce protection (`StatefulWidget`) alongside `isLoading` state handling to prevent accidental double-tap 429 rate limit errors.
+    *   `secondary_button.dart`: Outlined secondary action button with icon support and built-in 600ms tap-debounce protection (`StatefulWidget`).
     *   `themed_card.dart`: Container card styled with design system tokens.
     *   `themed_text_field.dart`: Standardized input text field.
     *   `themed_section_header.dart`: Layout section header widget.

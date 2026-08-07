@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/widgets/confirm_action_dialog.dart';
 import 'package:frontend/widgets/entity_avatar.dart';
 import 'package:frontend/widgets/info_list_tile.dart';
+import 'package:frontend/widgets/primary_button.dart';
+import 'package:frontend/widgets/secondary_button.dart';
 import 'package:frontend/widgets/stat_card.dart';
 import 'package:frontend/widgets/status_badge.dart';
 
@@ -263,6 +265,106 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(result, isFalse);
+    });
+  });
+
+  group('PrimaryButton & SecondaryButton Debounce Tests', () {
+    testWidgets('PrimaryButton ignores rapid double taps within 600ms',
+        (tester) async {
+      int tapCount = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PrimaryButton(
+              text: 'Submit',
+              onPressed: () => tapCount++,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(PrimaryButton));
+      await tester.tap(find.byType(PrimaryButton));
+      await tester.pump();
+
+      expect(tapCount, equals(1));
+    });
+
+    testWidgets('PrimaryButton accepts subsequent tap after 600ms duration',
+        (tester) async {
+      int tapCount = 0;
+      var currentTime = DateTime(2026, 8, 7, 10, 0, 0);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PrimaryButton(
+              text: 'Submit',
+              onPressed: () => tapCount++,
+              nowProvider: () => currentTime,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(PrimaryButton));
+      await tester.pump();
+      expect(tapCount, equals(1));
+
+      currentTime = currentTime.add(const Duration(milliseconds: 650));
+
+      await tester.tap(find.byType(PrimaryButton));
+      await tester.pump();
+      expect(tapCount, equals(2));
+    });
+
+    testWidgets('SecondaryButton ignores rapid double taps within 600ms',
+        (tester) async {
+      int tapCount = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SecondaryButton(
+              text: 'Cancel',
+              onPressed: () => tapCount++,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(SecondaryButton));
+      await tester.tap(find.byType(SecondaryButton));
+      await tester.pump();
+
+      expect(tapCount, equals(1));
+    });
+
+    testWidgets('SecondaryButton accepts subsequent tap after 600ms duration',
+        (tester) async {
+      int tapCount = 0;
+      var currentTime = DateTime(2026, 8, 7, 10, 0, 0);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SecondaryButton(
+              text: 'Cancel',
+              onPressed: () => tapCount++,
+              nowProvider: () => currentTime,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(SecondaryButton));
+      await tester.pump();
+      expect(tapCount, equals(1));
+
+      currentTime = currentTime.add(const Duration(milliseconds: 650));
+
+      await tester.tap(find.byType(SecondaryButton));
+      await tester.pump();
+      expect(tapCount, equals(2));
     });
   });
 }

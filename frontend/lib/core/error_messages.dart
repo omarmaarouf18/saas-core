@@ -12,7 +12,7 @@ class ErrorMessages {
   static const String conflict =
       "Something changed — please refresh and try again.";
   static const String tooManyRequests =
-      "Too many attempts. Please wait a bit and try again.";
+      "That went through already — no need to tap again.";
   static const String serverError =
       "Something went wrong on our end. Please try again shortly.";
   static const String connectionError =

@@ -31,7 +31,7 @@ void main() {
         ),
         (
           ApiClientException('rate_limit_exceeded', statusCode: 429),
-          "Too many attempts. Please wait a bit and try again."
+          "That went through already — no need to tap again."
         ),
         (
           ApiClientException('internal_server_error', statusCode: 500),

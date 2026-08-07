@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
 
-class PrimaryButton extends StatelessWidget {
+class PrimaryButton extends StatefulWidget {
   final String text;
   final VoidCallback? onPressed;
   final bool isLoading;
   final IconData? icon;
+  final DateTime Function()? nowProvider;
 
   const PrimaryButton({
     super.key,
@@ -13,11 +14,31 @@ class PrimaryButton extends StatelessWidget {
     this.onPressed,
     this.isLoading = false,
     this.icon,
+    this.nowProvider,
   });
 
   @override
+  State<PrimaryButton> createState() => _PrimaryButtonState();
+}
+
+class _PrimaryButtonState extends State<PrimaryButton> {
+  DateTime? _lastTapTime;
+
+  void _handleTap() {
+    if (widget.onPressed == null) return;
+    final now =
+        widget.nowProvider != null ? widget.nowProvider!() : DateTime.now();
+    if (_lastTapTime != null &&
+        now.difference(_lastTapTime!) < const Duration(milliseconds: 600)) {
+      return;
+    }
+    _lastTapTime = now;
+    widget.onPressed!();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final Widget buttonChild = isLoading
+    final Widget buttonChild = widget.isLoading
         ? const SizedBox(
             width: 20,
             height: 20,
@@ -30,13 +51,13 @@ class PrimaryButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.max,
             children: [
-              if (icon != null) ...[
-                Icon(icon, size: 20),
+              if (widget.icon != null) ...[
+                Icon(widget.icon, size: 20),
                 const SizedBox(width: AppSpacing.base),
               ],
               Flexible(
                 child: Text(
-                  text,
+                  widget.text,
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                   textAlign: TextAlign.center,
@@ -53,7 +74,8 @@ class PrimaryButton extends StatelessWidget {
       width: double.infinity,
       height: 52,
       child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
+        onPressed:
+            (widget.isLoading || widget.onPressed == null) ? null : _handleTap,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.onPrimary,

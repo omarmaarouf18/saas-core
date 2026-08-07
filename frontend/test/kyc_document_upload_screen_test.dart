@@ -294,7 +294,9 @@ void main() {
       MaterialApp(
         home: ChangeNotifierProvider<AuthProvider>.value(
           value: mockAuth,
-          child: KycDocumentUploadScreen(onPickFile: wrongFormatPicker),
+          child: KycDocumentUploadScreen(
+              key: const ValueKey('wrong_format'),
+              onPickFile: wrongFormatPicker),
         ),
       ),
     );
