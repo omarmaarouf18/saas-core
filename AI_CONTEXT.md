@@ -2,6 +2,8 @@
 
 > [!IMPORTANT]
 > **Branch Workflow**: `main` = stable/deployable, kept in sync via reviewed merges from `logic-exploitation`. All active development happens on `logic-exploitation`. Emergency hotfixes for live production CD/deploy pipeline failures may be committed directly to `main` when needed immediately to unblock deployment, but MUST be synced back to `logic-exploitation` via fast-forward merge as the very next action afterward so the branches do not diverge.
+>
+> **Never use `git push --force` or `git push --force-with-lease` on `logic-exploitation` or `main` under any circumstances without explicit, per-instance human approval in the task itself.** If a push is rejected because the remote branch has diverged (e.g. another session/agent pushed in the meantime), STOP and report the divergence — do not force-resolve by overwriting remote history. Pull, inspect what changed, and merge/rebase cleanly, or ask for guidance if the correct resolution isn't obvious. This applies even to fixing a self-made mistake (e.g. wanting to amend a commit that was already pushed) — prefer a new corrective commit over rewriting pushed history.
 
 This file serves as a persistent, model-agnostic, single source of truth for the technical stack, architecture, feature status, security logs, and current gaps of the Quick Delivery platform. Any agent or developer modifying this repository must update this document in the same commit. (Note: The repository and codebase are internally named saas-core for historical reasons.)
 
