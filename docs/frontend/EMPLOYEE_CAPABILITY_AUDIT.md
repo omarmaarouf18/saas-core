@@ -40,8 +40,9 @@ This audit cross-references all backend endpoints across `services/user-service`
 
 - **Single-Screen Sectional Dashboard Architecture**:
   - Based on this audit, the Employee role has **one primary operational focus**: managing assigned jobs and executing field delivery workflow (location tracking, action logging, job completion, and customer chat).
-  - Rather than splitting into multi-tab navigation, the Employee UI uses a clean, single-screen sectional dashboard (`EmployeeJobsScreen`) with:
-    1. **AppBar**: Quick access to Refresh, KYE Verification Documents, Notifications Bell, and Settings.
-    2. **Status Banner**: Live GPS location sharing indicator when an active job exists.
-    3. **Action Simulator Section**: Quick logging of service events into the tenant audit trail.
-    4. **Assigned Jobs Roster**: Complete job cards featuring status badges, destination coordinates, customer ID, payment method, escrow info, **Real-time Chat Button**, and **Job Completion Button**.
+  - Rather than splitting into multi-tab navigation, the Employee UI uses a clean, single-screen sectional dashboard (`EmployeeJobsScreen`) maintaining the same architectural decision with a complete visual/UX overhaul:
+    1. **Transparent Header (AppBar Replacement)**: Modern transparent/Material-3-surface-tinted navigation header (`backgroundColor: Colors.transparent`, `elevation: 0`, `scrolledUnderElevation: 0`) consistent with owner and customer home screen designs, offering quick access to Refresh, KYE Verification Documents (`key: Key('employee_verification_button')`), Notifications Bell, and Settings (`key: Key('settings_button')`).
+    2. **User Greeting & Live GPS Pill**: Integrated top gradient welcome header with user profile badge and a glanceable live GPS status pill (`TweenAnimationBuilder` entrance animation) rendering pulsing green `AppColors.success` "GPS Live" or amber `AppColors.warning` "GPS Off".
+    3. **Compact Action Simulator Card**: Interactive quick-action card featuring `ChoiceChip` selection chips for rapid event selection, `ThemedTextField` for custom event text, and `PrimaryButton` for audit log submission.
+    4. **Assigned Jobs Roster**: Information-dense job cards restructured with clear visual hierarchy: primary destination coordinates highlighted in accent container, secondary metadata (Customer ID, Payment Method, Escrow Locked) formatted as subordinate chips, cancellation/permission warning banners, and prominent bottom action bar separating Real-time Chat (`key: Key('employee_chat_button_<job_id>')`) and Job Completion (`key: Key('complete_job_button_<job_id>')`).
+

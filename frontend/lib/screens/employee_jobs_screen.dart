@@ -249,18 +249,28 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        title: Text(l10n.employeeJobsTitle),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        title: Text(
+          l10n.employeeJobsTitle,
+          style: AppTypography.titleMd.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh,
+                color: Theme.of(context).colorScheme.onSurface),
             tooltip: "Refresh Jobs",
             onPressed: _refreshJobs,
           ),
           IconButton(
             key: const Key('employee_verification_button'),
-            icon: const Icon(Icons.verified_user_outlined),
+            icon: Icon(Icons.verified_user_outlined,
+                color: Theme.of(context).colorScheme.onSurface),
             tooltip: "Verification Documents",
             onPressed: () {
               Navigator.of(context).push(
@@ -273,7 +283,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
           _buildNotificationBell(context),
           IconButton(
             key: const Key('settings_button'),
-            icon: const Icon(Icons.settings_outlined),
+            icon: Icon(Icons.settings_outlined,
+                color: Theme.of(context).colorScheme.onSurface),
             tooltip: "Settings",
             onPressed: () {
               Navigator.of(context).push(
@@ -319,40 +330,170 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   }
 
   Widget _buildHeader(String displayName) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Welcome back!",
-          style: AppTypography.headlineLgMobile.copyWith(
-            color: AppColors.primary,
-            fontWeight: FontWeight.bold,
+    return Consumer<EmployeeLocationProvider>(
+      builder: (context, locationProvider, child) {
+        final isTracking =
+            locationProvider.status == LocationSharingStatus.tracking;
+        final isDenied = locationProvider.status ==
+                LocationSharingStatus.permissionDenied ||
+            locationProvider.status == LocationSharingStatus.serviceDisabled;
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.primary.withValues(alpha: 0.08),
+                AppColors.surface,
+              ],
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
+            ),
+            borderRadius: AppRadius.lgBorder,
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.15),
+            ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          "Logged in as: $displayName",
-          style: AppTypography.bodyMd.copyWith(
-            color: AppColors.onSurfaceVariant,
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.badge_outlined,
+                  color: AppColors.primary,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Welcome back!",
+                      style: AppTypography.headlineLgMobile.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      "Logged in as: $displayName",
+                      style: AppTypography.bodyMd.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (isTracking || isDenied)
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.8, end: 1.0),
+                  duration: const Duration(milliseconds: 300),
+                  builder: (context, scale, child) {
+                    return Transform.scale(
+                      scale: scale,
+                      child: child,
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.xs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isTracking
+                          ? AppColors.success.withValues(alpha: 0.12)
+                          : AppColors.warning.withValues(alpha: 0.12),
+                      borderRadius: AppRadius.smBorder,
+                      border: Border.all(
+                        color: isTracking
+                            ? AppColors.success.withValues(alpha: 0.4)
+                            : AppColors.warning.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isTracking
+                                ? AppColors.success
+                                : AppColors.warning,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          isTracking ? "GPS Live" : "GPS Off",
+                          style: AppTypography.labelMd.copyWith(
+                            color: isTracking
+                                ? AppColors.success
+                                : AppColors.warning,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 
   Widget _buildActionSimulatorCard() {
     return ThemedCard(
-      borderRadius: AppRadius.md,
+      borderRadius: AppRadius.lg,
       padding: AppSpacing.lg,
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const ThemedSectionHeader(
-              title: "Employee Action Simulator",
-              subtitle:
-                  "Log service events directly into the tenant audit trail.",
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.xs),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withValues(alpha: 0.12),
+                    borderRadius: AppRadius.smBorder,
+                  ),
+                  child: const Icon(
+                    Icons.bolt_outlined,
+                    color: AppColors.secondary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    "Employee Action Simulator",
+                    style: AppTypography.titleMd.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              "Log service events directly into the tenant audit trail.",
+              style: AppTypography.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
             ),
             const Divider(
               height: AppSpacing.lg,
@@ -373,21 +514,32 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
             Wrap(
-              spacing: AppSpacing.base,
+              spacing: AppSpacing.xs,
               runSpacing: AppSpacing.xs,
               children: _suggestions.map((suggestion) {
-                return SizedBox(
-                  width: 175,
-                  height: 40,
-                  child: SecondaryButton(
-                    text: suggestion,
-                    isOutlined: true,
-                    onPressed: () {
-                      setState(() {
-                        _actionController.text = suggestion;
-                      });
-                    },
+                final isSelected = _actionController.text.trim() == suggestion;
+                return ChoiceChip(
+                  label: Text(suggestion),
+                  selected: isSelected,
+                  selectedColor: AppColors.primary.withValues(alpha: 0.15),
+                  backgroundColor: AppColors.surface,
+                  labelStyle: AppTypography.labelMd.copyWith(
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.onSurfaceVariant,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
+                  side: BorderSide(
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.outlineVariant,
+                  ),
+                  onSelected: (selected) {
+                    setState(() {
+                      _actionController.text = suggestion;
+                    });
+                  },
                 );
               }).toList(),
             ),
@@ -407,8 +559,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   Widget _buildJobsList(List<Job> jobs) {
     if (jobs.isEmpty) {
       return const ThemedCard(
-        borderRadius: AppRadius.md,
-        padding: AppSpacing.lg,
+        borderRadius: AppRadius.lg,
+        padding: AppSpacing.xl,
         child: ThemedEmptyState(
           icon: Icons.assignment_late_outlined,
           title: "No Jobs Assigned",
@@ -429,11 +581,13 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   }
 
   Widget _buildJobCard(Job job) {
+    final isActive = job.status.toLowerCase().trim() == 'active';
+
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: ThemedCard(
-        borderRadius: AppRadius.md,
-        padding: AppSpacing.md,
+        borderRadius: AppRadius.lg,
+        padding: AppSpacing.lg,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -441,14 +595,33 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text(
-                    "Job ID: ${job.id}",
-                    style: AppTypography.bodyMd.copyWith(
-                      fontFamily: 'monospace',
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.onSurface,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.xs),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: AppRadius.smBorder,
+                        ),
+                        child: const Icon(
+                          Icons.local_shipping_outlined,
+                          color: AppColors.primary,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        child: Text(
+                          "Job #${job.id}",
+                          style: AppTypography.titleMd.copyWith(
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.onSurface,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 StatusBadge(status: job.status),
@@ -458,32 +631,66 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               height: AppSpacing.lg,
               color: AppColors.outlineVariant,
             ),
-            _buildJobDetailRow(
-              Icons.location_on_outlined,
-              "Destination",
-              "Lat: ${job.location.latitude.toStringAsFixed(6)}, Lon: ${job.location.longitude.toStringAsFixed(6)}",
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            _buildJobDetailRow(
-              Icons.person_outline,
-              "Customer ID",
-              job.userId,
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            _buildJobDetailRow(
-              Icons.payment_outlined,
-              "Payment Method",
-              job.paymentMethod.toUpperCase(),
-            ),
-            if (job.lockedEscrowAmount != null &&
-                job.lockedEscrowAmount! > 0) ...[
-              const SizedBox(height: AppSpacing.xs),
-              _buildJobDetailRow(
-                Icons.lock_clock_outlined,
-                "Escrow Locked",
-                "${job.lockedEscrowAmount!.toStringAsFixed(2)} Credits",
+            // Primary Info: Destination
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLow,
+                borderRadius: AppRadius.smBorder,
               ),
-            ],
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on_outlined,
+                      color: AppColors.primary, size: 20),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Destination Coordinates",
+                          style: AppTypography.labelLg.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                        Text(
+                          "Lat: ${job.location.latitude.toStringAsFixed(6)}, Lon: ${job.location.longitude.toStringAsFixed(6)}",
+                          style: AppTypography.bodyMd.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            // Subordinate Info Badges / Chips
+            Wrap(
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
+              children: [
+                _buildSubordinateChip(
+                  Icons.person_outline,
+                  "Customer",
+                  job.userId,
+                ),
+                _buildSubordinateChip(
+                  Icons.payment_outlined,
+                  "Payment",
+                  job.paymentMethod.toUpperCase(),
+                ),
+                if (job.lockedEscrowAmount != null &&
+                    job.lockedEscrowAmount! > 0)
+                  _buildSubordinateChip(
+                    Icons.lock_clock_outlined,
+                    "Escrow",
+                    "${job.lockedEscrowAmount!.toStringAsFixed(2)} Credits",
+                  ),
+              ],
+            ),
             if (job.cancellationReason != null &&
                 job.cancellationReason!.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.sm),
@@ -493,6 +700,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.error.withValues(alpha: 0.1),
                   borderRadius: AppRadius.defaultBorder,
+                  border:
+                      Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   "Cancellation Reason: ${job.cancellationReason}",
@@ -502,7 +711,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 ),
               ),
             ],
-            if (job.status.toLowerCase().trim() == 'active') ...[
+            if (isActive) ...[
               Consumer<EmployeeLocationProvider>(
                 builder: (context, locationProvider, child) {
                   if (locationProvider.status ==
@@ -610,72 +819,83 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 const SizedBox(height: AppSpacing.sm),
                 ThemedErrorBanner(message: _completeError!),
               ],
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  Expanded(
-                    child: SecondaryButton(
-                      key: Key('employee_chat_button_${job.id}'),
-                      text: "Chat",
-                      icon: Icons.chat_outlined,
-                      isOutlined: true,
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => ChatScreen(
-                              jobId: job.id,
-                            ),
+            ],
+            const SizedBox(height: AppSpacing.lg),
+            // Action buttons bar
+            Row(
+              children: [
+                Expanded(
+                  child: SecondaryButton(
+                    key: Key('employee_chat_button_${job.id}'),
+                    text: "Chat",
+                    icon: Icons.chat_outlined,
+                    isOutlined: true,
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => ChatScreen(
+                            jobId: job.id,
                           ),
-                        );
-                      },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                if (isActive) ...[
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    flex: 2,
+                    child: PrimaryButton(
+                      key: Key('complete_job_button_${job.id}'),
+                      text: "Complete Job",
+                      icon: Icons.check_circle_outline,
+                      isLoading: _completingJobId == job.id,
+                      onPressed: _completingJobId != null
+                          ? null
+                          : () => _confirmAndCompleteJob(job),
                     ),
                   ),
-                  if (job.status.toLowerCase().trim() == 'active') ...[
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      flex: 2,
-                      child: PrimaryButton(
-                        key: Key('complete_job_button_${job.id}'),
-                        text: "Complete Job",
-                        icon: Icons.check_circle_outline,
-                        isLoading: _completingJobId == job.id,
-                        onPressed: _completingJobId != null
-                            ? null
-                            : () => _confirmAndCompleteJob(job),
-                      ),
-                    ),
-                  ],
                 ],
-              ),
-            ],
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildJobDetailRow(IconData icon, String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18, color: AppColors.outline),
-        const SizedBox(width: AppSpacing.base),
-        Text(
-          "$label: ",
-          style: AppTypography.bodyMd.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.onSurfaceVariant,
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: AppTypography.bodyMd.copyWith(
-              color: AppColors.onSurface,
+  Widget _buildSubordinateChip(IconData icon, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.smBorder,
+        border: Border.all(color: AppColors.outlineVariant),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.onSurfaceVariant),
+          const SizedBox(width: AppSpacing.xs),
+          Text(
+            "$label: ",
+            style: AppTypography.labelLg.copyWith(
+              color: AppColors.onSurfaceVariant,
+              fontWeight: FontWeight.normal,
             ),
           ),
-        ),
-      ],
+          Text(
+            value,
+            style: AppTypography.labelLg.copyWith(
+              color: AppColors.onSurface,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
