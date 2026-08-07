@@ -43,6 +43,8 @@ When adding a new ADR, use the following template:
 *   [ADR-0012: Single Source of Truth for Production .env (Self-Hosted Runner Workspace vs. Persistent Backup)](0012-single-source-of-truth-for-production-env.md)
 *   [ADR-0013: Support Agent Console as a Separate Client Application](0013-support-agent-console-as-separate-client-application.md)
 *   [ADR-0014: Unified Account Settings and Role Home Redesign](0014-unified-account-settings-and-role-home-redesign.md)
+*   [ADR-0015: Strict CD Pre-Flight Validation (Pre-Flight Env Check, Health-Gated Rollback)](0015-strict-cd-preflight-validation.md)
+*   [ADR-0016: Tiered Rate Limits for UX over Uniform Security Floor](0016-tiered-rate-limits-for-ux-over-uniform-security-floor.md)
 
 
 

@@ -1,0 +1,75 @@
+# ADR-0016: Tiered Rate Limits for UX over Uniform Security Floor
+
+- **Status**: Accepted
+- **Date**: 2026-08-07
+- **Related Commit SHA**: `131a8a8133b8a4b7f58ada9a92cb0ed0cc0e6e96`
+- **Related Frontend Commit SHA**: `901eefab742e44f443e54231fe8867e194e2ef2f`
+- **Supersedes**: Extends rate-limiting architecture established in ADR-0001 and ADR-0005
+
+## Context
+
+During initial microservice development, a single uniform rate limit of 5 requests per minute (managed via `shared/infra/ratelimit` backed by Redis) was applied across nearly every authenticated endpoint in `chat-service`, `notification-service`, and `user-service`. The design treated all endpoints as equally sensitive under a blanket security floor.
+
+While effective at stopping brute-force and spam attacks, this uniform 5-request/minute limit caused severe, reproducible UX breakage in real-world mobile app usage:
+
+1. **WebSocket Connection Lockouts (`GET /chat/ws`)**:
+   The WebSocket handshake endpoint in `chat-service` shared the blanket 5-req/min limiter. In normal mobile client lifecycles (app backgrounding/foregrounding, brief Wi-Fi/cellular handoffs, screen transitions), a client reconnects multiple times per minute. Exceeding 5 reconnects within 60 seconds triggered HTTP 429 lockouts, locking real users out of real-time messaging entirely.
+
+2. **Read-Heavy Data Browsing Bottlenecks**:
+   Read-only endpoints (`GET /users/jobs/owner`, `GET /users/jobs/mine`, `GET /users/ledger`, `GET /users/ratings`, `GET /users/jobs/reconciliation-queue`) shared the same 5-req/min write-action rate limiter. Standard mobile browsing actions—such as pulling to refresh, switching tabs, or toggling filters—exhausted the 5-request quota almost instantly, surfacing generic "Please try again later" errors during normal navigation.
+
+3. **Systemic Double-Tap UX Races**:
+   Rapid double-tapping on buttons before Flutter widget loading states (`isLoading`) re-rendered would fire duplicate asynchronous HTTP requests in parallel, causing the second request to hit 429 rate limits.
+
+## Decision
+
+We chose to explicitly prioritize legitimate user experience over a uniform, maximally-strict security floor by introducing **Endpoint-Classified Tiered Rate Limiting**:
+
+1. **Connection-Lifecycle Tier (30 req/min)**:
+   Assigned a dedicated Redis rate limiter (`chat:ws`, 30 req/min, 1-minute window) exclusively to `GET /chat/ws` in `services/chat-service/internal/handlers/chat.go`. This provides headroom for legitimate mobile network drops and app resume events while preserving lockout protection against aggressive connection flooding.
+
+2. **Read-Heavy Browsing Tier (30 req/min)**:
+   Created a dedicated read rate limiter (`user:read`, 30 req/min, 1-minute window) in `services/user-service/internal/handlers/handlers.go` for all high-frequency read endpoints (`GetOwnerJobs`, `GetCustomerJobs`, `GetLedger` at both IP and tenant call sites, `GetRatings`, `GetReconciliationQueue`).
+
+3. **Infrequent Write-Action Tier (5 req/min - Unchanged)**:
+   Preserved the original tight 5 req/min rate limiters on genuinely infrequent, high-risk write operations (`WalletDeposit`, `RateJob`, `CancelJob`, `ProposePrice`, `RespondPrice`, `TrackJob`, `ResolveReconciliation`, `HandleCreateTicket`). These actions do not require high frequency and benefit from tight anti-abuse controls (preventing financial fraud, review manipulation, and ticket spam).
+
+4. **Shared Frontend Widget Tap-Debounce (600ms)**:
+   Converted `PrimaryButton` and `SecondaryButton` (`frontend/lib/widgets/`) to `StatefulWidget` incorporating a built-in 600ms tap-debounce guard alongside `isLoading` state handling, eliminating double-tap 429 races across all mobile screens without modifying individual call sites.
+
+## Endpoint Classification & Rate Limit Matrix
+
+| Endpoint | Handler / Service | Old Limit | New Limit | Rate Limit Key / Namespace | Classification Tier | Rationale |
+|---|---|---|---|---|---|---|
+| `GET /chat/ws` | `HandleWebSocket` (`chat-service`) | 5 / min | **30 / min** | `chat:ws:<ip>` | Connection-Lifecycle | Mobile backgrounding, network switches, and tab navigation cause normal reconnects. |
+| `GET /users/jobs/owner` | `GetOwnerJobs` (`user-service`) | 5 / min | **30 / min** | `user:read:jobs_owner:<owner_id>` | Read-Heavy Browsing | Tenant owners refresh job lists frequently while managing active orders. |
+| `GET /users/jobs/mine` | `GetCustomerJobs` (`user-service`) | 5 / min | **30 / min** | `user:read:jobs_customer:<cust_id>` | Read-Heavy Browsing | Customers check order status and list views repeatedly during active bookings. |
+| `GET /users/ledger` | `GetLedger` (`user-service`) | 5 / min | **30 / min** | `user:read:get_ledger_ip:<ip>` & `ledger_tenant:<id>` | Read-Heavy Browsing | Financial statement review involves frequent pagination and date range filtering. |
+| `GET /users/ratings` | `GetRatings` (`user-service`) | 5 / min | **30 / min** | `user:read:get_ratings:<ip>` | Read-Heavy Browsing | Rating summary cards are fetched during profile browsing and job reviews. |
+| `GET /users/jobs/reconciliation-queue` | `GetReconciliationQueue` (`user-service`) | 5 / min | **30 / min** | `user:read:jobs_reconciliation_queue:<owner_id>` | Read-Heavy Browsing | Escalated job queue requires regular review by tenant owners. |
+| `POST /users/wallet/deposit` | `WalletDeposit` (`user-service`) | 5 / min | **5 / min** | `user:<ip>` | Infrequent Write-Action | Financial deposit attempts should remain strictly rate-limited against payment abuse. |
+| `POST /users/jobs/rate` | `RateJob` (`user-service`) | 5 / min | **5 / min** | `user:rate_job:<ip>` | Infrequent Write-Action | Rating submission occurs once per completed job. |
+| `POST /users/jobs/cancel` | `CancelJob` (`user-service`) | 5 / min | **5 / min** | `user:<tenant_id>` | Infrequent Write-Action | Cancellation is an infrequent state-change operation. |
+| `POST /users/jobs/propose-price` | `ProposePrice` (`user-service`) | 5 / min | **5 / min** | `user:<ip>` | Infrequent Write-Action | Counter-offer submission occurs within structured 5-minute negotiation windows. |
+| `POST /users/jobs/respond-price` | `RespondPrice` (`user-service`) | 5 / min | **5 / min** | `user:<ip>` | Infrequent Write-Action | Accepting/declining price proposals is a single state-changing decision. |
+| `POST /users/jobs/track` | `TrackJob` (`user-service`) | 5 / min | **5 / min** | `user:<ip>` | Infrequent Write-Action | Booking creation occurs once per customer order session. |
+| `POST /users/jobs/reconciliation/resolve` | `ResolveReconciliation` (`user-service`) | 5 / min | **5 / min** | `user:<ip>` | Infrequent Write-Action | Escrow dispute resolution is a deliberate operator intervention. |
+| `POST /chat/tickets` | `HandleCreateTicket` (`chat-service`) | 5 / min | **5 / min** | `chat:ticket_create:<user_id>` | Infrequent Write-Action | Support ticket creation is an infrequent complaint action. |
+| `POST /notifications/send` | `Send` (`notification-service`) | 5 / min | **5 / min** | `notification:<ip>` | Service-to-Service | Internal endpoint gated by `X-Internal-Token`, separate scaling domain. |
+
+## Consequences
+
+### Positive
+- **Eliminated Chat Lockouts**: Client reconnections no longer lock users out of real-time messaging during ordinary mobile app use.
+- **Smooth Browsing Experience**: Pull-to-refresh and tab navigation on job lists, ledgers, and ratings operate without false-positive 429 lockouts.
+- **Double-Tap Protection**: Shared Flutter button widgets absorb rapid accidental taps client-side before network requests are dispatched.
+- **Targeted Security Floor**: High-risk write endpoints remain tightly rate-limited (5 req/min), preserving anti-abuse protection where it matters most.
+
+### Negative / Accepted Security Tradeoffs
+- **Slightly Increased Scraping Headroom**: Raising read endpoint limits to 30 req/min allows a determined scraper 30 requests per minute per IP/identity instead of 5. Accepted as a necessary tradeoff since blocking real users is a far worse failure mode.
+- **Monitoring & Revisit Triggers**: If automated scraping or resource exhaustion patterns are observed on read endpoints via CloudWatch logs or Redis rate-limit telemetry (`security event shipping`), individual endpoint limits can be tuned dynamically via config without structural code refactoring.
+
+## Implementation Reference & Verification
+
+- **Backend Rate Limit Separation**: Implemented in commit [`131a8a8133b8a4b7f58ada9a92cb0ed0cc0e6e96`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/chat-service/internal/handlers/chat.go). Verified via unit tests (`TestHandleWebSocket_RateLimiting`, `TestGetJobsByOwner`, `TestGetJobsByCustomer`, `TestRateJob_RateLimiting`, `TestGetLedger_RateLimiting`, `TestGetReconciliationQueue`), `gofmt`, `go build`, and `go vet`.
+- **Frontend Button Tap Debounce**: Implemented in commit [`901eefab742e44f443e54231fe8867e194e2ef2f`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/widgets/primary_button.dart). Verified via `dart format`, `flutter analyze` (0 issues), and `flutter test` (159/159 full suite pass).
