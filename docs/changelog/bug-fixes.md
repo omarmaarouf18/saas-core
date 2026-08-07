@@ -210,7 +210,7 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 ## Separate WebSocket & Read-Endpoint Rate Limiters from Write-Action Limits
 
 - **Implementation Detail**: Separated overly-restrictive blanket 5-req/min rate limiters into dedicated read and connection limiters to prevent chat lockouts during normal client lifecycle reconnections and smooth out high-frequency data browsing. In `chat-service` (`services/chat-service/internal/handlers/chat.go`), introduced `wsLimiter` (`chat:ws`, 30 req/min) for `GET /chat/ws`, while keeping `HandleCreateTicket` on `limiter` (`chat`, 5 req/min). In `user-service` (`services/user-service/internal/handlers/handlers.go`), introduced `readLimiter` (`user:read`, 30 req/min) for read-heavy endpoints (`GetOwnerJobs`, `GetCustomerJobs`, `GetLedger` at both call sites, `GetRatings`, `GetReconciliationQueue`), while preserving 5 req/min write limits on `WalletDeposit`, `RateJob`, `CancelJob`, `ProposePrice`, `RespondPrice`, `TrackJob`, and `ResolveReconciliation`.
-- **Commit SHA**: ``UNVERIFIED_PENDING_COMMIT``
+- **Commit SHA**: ``131a8a8133b8a4b7f58ada9a92cb0ed0cc0e6e96``
 - **Verification**: Verified via unit test suites in `chat-service` (`TestHandleWebSocket_RateLimiting`) and `user-service` (`TestGetJobsByOwner`, `TestGetJobsByCustomer`, `TestRateJob_RateLimiting`, `TestGetLedger_RateLimiting`, `TestGetReconciliationQueue`), `gofmt`, `go build`, and `go vet`. ✅
 
 
