@@ -7,11 +7,17 @@ import 'package:frontend/core/api_client.dart';
 import 'package:frontend/core/theme.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/theme_provider.dart';
+import 'package:frontend/providers/locale_provider.dart';
 import 'package:frontend/screens/forgot_password_screen.dart';
 
 Widget createForgotPasswordApp(AuthProvider authProvider) {
-  return ChangeNotifierProvider<AuthProvider>.value(
-    value: authProvider,
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ChangeNotifierProvider(create: (_) => LocaleProvider()),
+      ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+    ],
     child: MaterialApp(
       locale: const Locale('en'),
       localizationsDelegates: const [

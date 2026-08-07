@@ -143,9 +143,33 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        title: Text(_getTabTitle(_currentIndex, l10n)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.sm),
+          child: Center(
+            child: Container(
+              key: const Key('app_header_logo'),
+              padding: const EdgeInsets.all(AppSpacing.xs),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: const Icon(
+                Icons.storefront,
+                color: AppColors.secondary,
+                size: 18,
+              ),
+            ),
+          ),
+        ),
+        title: Text(
+          _getTabTitle(_currentIndex, l10n),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
         actions: [
           _buildNotificationBell(context),
         ],
@@ -270,7 +294,7 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
                     key: const Key('category_tile_delivery'),
                     title: l10n.customerHomeCatDelivery,
                     icon: Icons.delivery_dining,
-                    color: const Color(0xFF15803D),
+                    color: AppColors.success,
                     onTap: () => onCategorySelected('delivery'),
                   ),
                 ),
@@ -281,7 +305,7 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
                     key: const Key('category_tile_transport'),
                     title: l10n.customerHomeCatRide,
                     icon: Icons.directions_car,
-                    color: const Color(0xFF1D4ED8),
+                    color: AppColors.primary,
                     onTap: () => onCategorySelected('transport'),
                   ),
                 ),
@@ -299,7 +323,7 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
                     key: const Key('category_tile_shipping'),
                     title: l10n.customerHomeCatShipping,
                     icon: Icons.local_shipping,
-                    color: const Color(0xFFB45309),
+                    color: AppColors.warning,
                     onTap: () => onCategorySelected('shipping'),
                   ),
                 ),

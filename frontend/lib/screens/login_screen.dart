@@ -3,6 +3,8 @@ import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../providers/locale_provider.dart';
+import '../providers/theme_provider.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_text_field.dart';
@@ -67,6 +69,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final localeProvider = Provider.of<LocaleProvider?>(context);
     final l10n = context.l10n;
 
     return Scaffold(
@@ -82,27 +86,82 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(
-                    Icons.storefront_outlined,
-                    size: 64,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    l10n.appName,
-                    style: AppTypography.headlineLg.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AppSpacing.base),
-                  Text(
-                    l10n.loginSubtitle,
-                    style: AppTypography.bodyLg.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                    textAlign: TextAlign.center,
+                  // Header Row with compact QD Logotype & Pre-Login Theme/Lang Toggles
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        key: const Key('login_qd_logo'),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.xs,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.storefront,
+                              color: AppColors.secondary,
+                              size: 20,
+                            ),
+                            SizedBox(width: AppSpacing.xs),
+                            Text(
+                              "QD",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.onPrimary,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                            key: const Key('login_theme_toggle_button'),
+                            icon: Icon(
+                              themeProvider.themeMode == ThemeMode.dark
+                                  ? Icons.dark_mode_outlined
+                                  : (themeProvider.themeMode == ThemeMode.light
+                                      ? Icons.light_mode_outlined
+                                      : Icons.brightness_auto_outlined),
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            tooltip: "Toggle Theme Mode",
+                            onPressed: () {
+                              final nextMode = themeProvider.themeMode ==
+                                      ThemeMode.light
+                                  ? ThemeMode.dark
+                                  : (themeProvider.themeMode == ThemeMode.dark
+                                      ? ThemeMode.system
+                                      : ThemeMode.light);
+                              themeProvider.setThemeMode(nextMode);
+                            },
+                          ),
+                          IconButton(
+                            key: const Key('login_lang_toggle_button'),
+                            icon: Icon(
+                              Icons.language,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            tooltip: "Toggle Language",
+                            onPressed: () {
+                              final isAr =
+                                  localeProvider?.locale?.languageCode == 'ar';
+                              localeProvider?.setLocale(isAr
+                                  ? const Locale('en')
+                                  : const Locale('ar'));
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   ThemedCard(

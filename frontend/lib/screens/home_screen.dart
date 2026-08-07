@@ -167,9 +167,33 @@ class _HomeScreenState extends State<HomeScreen> {
       return Scaffold(
         backgroundColor: AppColors.scaffoldBackground,
         appBar: AppBar(
-          backgroundColor: AppColors.primary,
-          title: Text(l10n.quickDeliveryDashboard),
-          foregroundColor: AppColors.onPrimary,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+          foregroundColor: Theme.of(context).colorScheme.onSurface,
+          leading: Padding(
+            padding: const EdgeInsets.only(left: AppSpacing.sm),
+            child: Center(
+              child: Container(
+                key: const Key('app_header_logo'),
+                padding: const EdgeInsets.all(AppSpacing.xs),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: const Icon(
+                  Icons.storefront,
+                  color: AppColors.secondary,
+                  size: 18,
+                ),
+              ),
+            ),
+          ),
+          title: Text(
+            l10n.quickDeliveryDashboard,
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+          ),
           actions: [
             if (user.role == 'reviewer' || user.role == 'admin')
               IconButton(
@@ -245,9 +269,33 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        title: Text(_getTabTitle(_currentIndex)),
-        foregroundColor: AppColors.onPrimary,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.sm),
+          child: Center(
+            child: Container(
+              key: const Key('app_header_logo'),
+              padding: const EdgeInsets.all(AppSpacing.xs),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: const Icon(
+                Icons.storefront,
+                color: AppColors.secondary,
+                size: 18,
+              ),
+            ),
+          ),
+        ),
+        title: Text(
+          _getTabTitle(_currentIndex),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
         actions: [
           if (user.role == 'reviewer' || user.role == 'admin')
             IconButton(
@@ -366,7 +414,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final subColor = ownerProvider.subscriptionTier == "paid"
         ? AppColors.success
         : (ownerProvider.subscriptionTier == "pending_payment"
-            ? const Color(0xFF1D4ED8)
+            ? AppColors.primary
             : AppColors.warning);
 
     return RefreshIndicator(

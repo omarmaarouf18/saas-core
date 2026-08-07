@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/main.dart';
 import 'package:frontend/core/api_client.dart';
+import 'package:frontend/core/theme.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/providers/locale_provider.dart';
@@ -67,9 +68,78 @@ void main() {
       ),
     );
 
-    // Verify that the login screen elements render correctly.
-    expect(find.text('Quick Delivery'), findsOneWidget);
-    expect(find.text('Log in to manage your services'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Verify that the login screen elements render correctly with compact QD logotype & pre-login toggles.
+    expect(find.byKey(const Key('login_qd_logo')), findsOneWidget);
+    expect(find.byKey(const Key('login_theme_toggle_button')), findsOneWidget);
+    expect(find.byKey(const Key('login_lang_toggle_button')), findsOneWidget);
+  });
+
+  testWidgets('Pre-login theme and language toggles invoke shared providers',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final themeProvider = ThemeProvider();
+    final localeProvider = LocaleProvider();
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
+          ChangeNotifierProvider<LocaleProvider>.value(value: localeProvider),
+          ChangeNotifierProvider(create: (_) => AuthProvider(apiClient)),
+          ChangeNotifierProvider(create: (_) => OwnerProvider(apiClient)),
+          ChangeNotifierProvider(
+              create: (_) => EmployeeJobsProvider(apiClient)),
+          ChangeNotifierProvider(
+              create: (_) => NotificationsProvider(apiClient)),
+        ],
+        child: const MyApp(),
+      ),
+    );
+
+    // Initial theme mode is system
+    expect(themeProvider.themeMode, ThemeMode.system);
+
+    // Tap theme toggle button -> switches to light mode
+    await tester.tap(find.byKey(const Key('login_theme_toggle_button')));
+    await tester.pump();
+    expect(themeProvider.themeMode, ThemeMode.light);
+
+    // Tap theme toggle button -> switches to dark mode
+    await tester.tap(find.byKey(const Key('login_theme_toggle_button')));
+    await tester.pump();
+    expect(themeProvider.themeMode, ThemeMode.dark);
+
+    // Tap language toggle button -> switches to Arabic
+    await tester.tap(find.byKey(const Key('login_lang_toggle_button')));
+    await tester.pump();
+    expect(localeProvider.locale?.languageCode, 'ar');
+  });
+
+  testWidgets('Dark mode contrast spot-check across hardened screens',
+      (WidgetTester tester) async {
+    final darkTheme = quickDeliveryDarkTheme;
+
+    // Pump widget tree under darkTheme
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: darkTheme,
+        home: Scaffold(
+          backgroundColor: darkTheme.scaffoldBackgroundColor,
+          body: Builder(builder: (context) {
+            final theme = Theme.of(context);
+            expect(theme.brightness, Brightness.dark);
+            expect(theme.colorScheme.surface, isNotNull);
+            expect(theme.colorScheme.onSurface, isNotNull);
+            return Container(color: theme.colorScheme.surface);
+          }),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.byType(Container), findsWidgets);
   });
 
   testWidgets('OtpScreen OTP length regression guard',

@@ -98,7 +98,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                       child: const Text(
                         'Pickup',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.onPrimary,
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
                         ),
