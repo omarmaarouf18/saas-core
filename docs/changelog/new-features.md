@@ -2,6 +2,17 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## ADR-0017 Zero-Commission Subscription-Only Revenue Model & Gateway Readiness
+
+- **Implementation Detail**:
+  - **Zero-Commission COD Completion**: Created `CompleteCODJob` in `store/mongodb.go` for pure cash collection logging with 0 wallet mutation. Updated `CompleteJob` COD path and `ResolveReconciliation` to log collection timestamps without wallet balance deduction.
+  - **100% Electronic Payment Credits**: Updated `ReleaseEscrowWithSplit` in `store/mongodb.go` to release 100% of escrow balance to tenant owner withdrawable balance with 0% platform commission. Set default platform fee percentage to 0.0%.
+  - **Owner Payout Request Capability**: Added `PayoutRequest` model, `payout_requests` MongoDB collection, and store methods (`CreatePayoutRequest`, `GetPayoutRequests`). Exposed endpoints `POST /users/wallet/payout/request` and `GET /users/wallet/payout/requests` with IDOR owner authorization and withdrawable balance checks.
+  - **Gateway-Ready Feature Flag**: Added `ELECTRONIC_PAYMENTS_ENABLED` feature flag to `config.go` (defaulting to `false`). Gated non-COD payment methods in `TrackJob`.
+  - **Test Suite (`services/user-service/internal/handlers/payout_and_cod_zero_fee_test.go`)**: Built unit tests `TestCODZeroFeeCompletion`, `TestOwnerPayoutRequestFlow`, and `TestElectronicPaymentsFeatureFlag`. Updated `escrow_state_audit_test.go` and `handlers_test.go` for 0% commission assertions.
+- **Commit SHA**: `63d300d`
+- **Verification**: Verified via `gofmt`, `go build`, `go vet`, and `go test -v ./...` (100% test pass). ✅
+
 ## Phase 15 (b) Customer Home Redesign & (d) Employee Capability Audit & Screen Redesign (ADR-0014)
 
 - **Implementation Detail**:

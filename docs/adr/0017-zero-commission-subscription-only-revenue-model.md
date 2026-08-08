@@ -1,8 +1,8 @@
 # ADR-0017: Zero-Commission Subscription-Only Revenue Model
 
-- **Status**: Proposed
+- **Status**: Accepted
 - **Date**: 2026-08-08
-- **Related Commit SHA**: `a2835440a8b3795fbb3c8551c09a621bf7e78f58`
+- **Related Commit SHAs**: `85a5c04`, `63d300d`
 - **Related Audit Finding**: `docs/BUSINESS_LOGIC_AUDIT.md` (Finding 1 & Finding 2)
 
 ## Context
@@ -10,6 +10,10 @@
 A recent business-logic audit (`docs/BUSINESS_LOGIC_AUDIT.md`) found that the current codebase deducts a 15% platform fee (`PlatformFeePercentage`, currently defaulting to `15.0` in the `platform_config` collection) on every completed job, via `ReleaseEscrowWithSplit` (electronic/wallet-based payments) and `DeductCODFee` (cash-on-delivery payments), in `services/user-service/internal/store/mongodb.go`.
 
 This does not reflect the actual, current business model: the platform's only revenue source is the monthly SaaS subscription fee, which already covers infrastructure, the application, and the payment gateway the platform provides. The platform takes 0% of any transaction, regardless of payment method — all transaction value belongs entirely to the owner.
+
+### Business Operational Context (Gateway Readiness)
+
+Electronic payment gateways (Visa/InstaPay/etc.) are NOT yet contracted — COD is the only currently active payment method in production, and will remain the only one until a gateway provider is signed. The system is built FULLY READY to receive gateway integration (data model, credits ledger, payout request capability via `payout_requests` collection, `ELECTRONIC_PAYMENTS_ENABLED` feature flag) without actually wiring to any real gateway or exposing electronic payment as a selectable option to end users yet.
 
 ## Decision
 

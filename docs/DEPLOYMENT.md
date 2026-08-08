@@ -478,5 +478,34 @@ docker cp saas-mongo:/data/db/backup_$(date +%F).archive /opt/backups/
   ```
   Expected output: `[AUTH] OTP dispatcher: Resend (Resend API active)`.
 
+---
+
+## 11. Database Migrations & Data Model Corrections
+
+### 11.1 ADR-0017 Zero-Commission Data Model Migration (`platform_config`)
+
+When deploying the zero-commission subscription revenue model (ADR-0017), existing production data in the `platform_config` collection must be updated to set `platform_fee_percentage` to `0.0`.
+
+Execute the following `mongosh` script against the production MongoDB container:
+
+```bash
+docker compose exec mongo mongosh -u root -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin saas_platform --eval '
+  db.platform_config.updateOne(
+    { _id: "global" },
+    { $set: { platform_fee_percentage: 0.0, updated_at: new Date() } },
+    { upsert: true }
+  );
+'
+```
+
+Verify migration result:
+```bash
+docker compose exec mongo mongosh -u root -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin saas_platform --eval '
+  db.platform_config.find({ _id: "global" });
+'
+```
+Expected output: `{ _id: "global", platform_fee_percentage: 0, platform_wallet_id: "platform-central" }`.
+
+
 
 

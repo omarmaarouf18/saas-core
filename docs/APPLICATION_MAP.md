@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`ebdbf1a`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`63d300d`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -212,6 +212,8 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`POST /users/subscription`** | `user-service` | Owner JWT (KYC Approved) | Subscribes/renews SaaS tier. Accepts tenant_id (legacy) or tenant_token (preferred), and requester_id (legacy) or requester_token (preferred). | Updates `subscriptions`, writes `wallets`, writes `ledger`. |
 | **`GET /users/wallet`** | `user-service` | Owner JWT | Fetches active balance details. Accepts tenant_id (legacy) or tenant_token (preferred). | Reads `wallets` collection. |
 | **`POST /users/wallet/deposit`** | `user-service` | Owner JWT | Loads funds up to maximum limits. Accepts tenant_id (legacy) or tenant_token (preferred). | Updates `wallets` collection. |
+| **`POST /users/wallet/payout/request`** | `user-service` | Public | RequestPayout processes a tenant owner's withdrawal request (POST /users/wallet/payout/request). | <!-- TODO: verify manually --> |
+| **`GET /users/wallet/payout/requests`** | `user-service` | Public | GetPayoutRequests retrieves historical payout requests for a tenant owner (GET /users/wallet/payout/requests). | <!-- TODO: verify manually --> |
 <!-- GENERATED:ENDPOINTS:END -->
 
 ### Standalone Operations (CLI Tool)
