@@ -2384,6 +2384,9 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 		}
 		dist := haversineKm(job.Location.Latitude, job.Location.Longitude, svc.Latitude, svc.Longitude)
 		amount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
+		if job.AgreedPrice != nil && *job.AgreedPrice > 0 {
+			amount = *job.AgreedPrice
+		}
 
 		if job.LockedEscrowAmount == 0 {
 			log.Printf("[SECURITY WARNING] LockedEscrowAmount is 0 for non-COD job %s during CancelJob. Refund aborted.", job.ID)

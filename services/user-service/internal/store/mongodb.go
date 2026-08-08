@@ -900,8 +900,19 @@ func (s *MongoDB) UpdateJobLocation(ctx context.Context, id string, lat, lon flo
 }
 
 // CancelJob updates a job's status to cancelled and stores the reason.
+// Enforces CAS status guard allowing cancellation only from active, pending, awaiting_price_response, escrow_reconciliation_required, or cancelled (from RefundEscrow) states.
 func (s *MongoDB) CancelJob(ctx context.Context, id string, reason string) error {
-	res, err := s.jobs.UpdateOne(ctx, bson.M{"_id": id},
+	res, err := s.jobs.UpdateOne(ctx,
+		bson.M{
+			"_id": id,
+			"status": bson.M{"$in": []models.JobStatus{
+				models.JobStatusActive,
+				models.JobStatusPending,
+				models.JobStatusAwaitingPriceResponse,
+				models.JobStatusEscrowReconciliationRequired,
+				models.JobStatusCancelled,
+			}},
+		},
 		bson.M{"$set": bson.M{
 			"status":              models.JobStatusCancelled,
 			"cancellation_reason": reason,
@@ -911,7 +922,11 @@ func (s *MongoDB) CancelJob(ctx context.Context, id string, reason string) error
 		return fmt.Errorf("store: cancel job: %w", err)
 	}
 	if res.MatchedCount == 0 {
-		return fmt.Errorf("job %q not found", id)
+		var job models.Job
+		if findErr := s.jobs.FindOne(ctx, bson.M{"_id": id}).Decode(&job); findErr != nil {
+			return fmt.Errorf("job %q not found", id)
+		}
+		return fmt.Errorf("cancel job failed: job %s is not in a cancellable state (currently %s)", id, job.Status)
 	}
 	return nil
 }
