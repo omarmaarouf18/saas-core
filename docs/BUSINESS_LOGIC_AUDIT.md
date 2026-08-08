@@ -29,6 +29,9 @@ This review was concentrated on the highest-financial-risk surface (job lifecycl
   * Store Comparisons: [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L531-L565) (`ReleaseEscrowWithSplit` lines 531–565), [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L698-L724) (`DeductCODFee` lines 698–724), [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L920-L948) (`RefundEscrow` lines 920–948)
   * Handler Implementation: [`services/user-service/internal/handlers/handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L2379-L2415) (`CancelJob` lines 2379–2415)
 
+> [!NOTE]
+> **Business Model Update**: Root cause identified — see [ADR-0017](adr/0017-zero-commission-subscription-only-revenue-model.md) for the corrected business model; code remediation tracked separately.
+
 ### Detail & Verification Findings
 In `services/user-service/internal/store/mongodb.go`, job status state transitions for non-COD lifecycle operations (`ReleaseEscrowWithSplit`, `DeductCODFee`, `RefundEscrow`) are all guarded using an atomic compare-and-swap (CAS) pattern. Specifically:
 - `ReleaseEscrowWithSplit` conditions its `UpdateOne` query on `status: {$in: [JobStatusActive, JobStatusEscrowReconciliationRequired]}`.
@@ -68,6 +71,9 @@ The query filters strictly on `{"_id": id}` with **no status precondition**.
   * `CancelJob` Handler: [`services/user-service/internal/handlers/handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L2385-L2409) (lines 2385–2409)
   * Escrow Locking (`RespondPrice`): [`services/user-service/internal/handlers/handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L2744-L2784) (lines 2744–2784)
   * Store Refund (`RefundEscrow`): [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L932-L950) (lines 932–950)
+
+> [!NOTE]
+> **Business Model Update**: Root cause identified — see [ADR-0017](adr/0017-zero-commission-subscription-only-revenue-model.md) for the corrected business model; code remediation tracked separately.
 
 ### Detail & Verification Findings
 In `handlers.go`, `CompleteJob` recalculates the amount to release using the base service pricing formula, but explicitly checks for a negotiated price:

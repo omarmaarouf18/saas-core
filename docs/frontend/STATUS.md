@@ -97,7 +97,12 @@
     *   *(a) Transparent Navigation Header*: **[VERIFIED]** Replaced solid gray `AppBar` on `EmployeeJobsScreen` (`frontend/lib/screens/employee_jobs_screen.dart`) with transparent/Material-3-surface-tinted navigation header matching owner and customer home screens while preserving all 4 action buttons (`Refresh`, `employee_verification_button`, `_buildNotificationBell`, `settings_button`).
     *   *(b) Live GPS Status Pill & Welcome Banner*: **[VERIFIED]** Integrated top gradient welcome card with user profile badge and glanceable live GPS status pill (`TweenAnimationBuilder` scale entrance animation) showing pulsing green `AppColors.success` "GPS Live" or amber `AppColors.warning` "GPS Off".
     *   *(c) Compact Action Simulator Card*: **[VERIFIED]** Redesigned the audit event simulation section into a sleek `ThemedCard` with `ChoiceChip` selection chips for quick event selection, `ThemedTextField` for custom event text, and `PrimaryButton` for submission.
-    *   *(d) Structured Job Card Hierarchy*: **[VERIFIED]** Restructured `_buildJobCard` with primary destination coordinates highlighted in accent container, secondary metadata (Customer ID, Payment Method, Escrow) formatted as subordinate chips, cancellation/permission banners, and bottom action bar separating Real-time Chat (`key: Key('employee_chat_button_<job_id>')`) and Job Completion (`key: Key('complete_job_button_<job_id>')`).
+    * **Phase 18: Zero-Commission Revenue Model Migration (ADR-0017)** — **[PLANNED, NOT STARTED]**
+    *   *(a) Remove Fee-Splitting*: **[PLANNED]** Remove fee-splitting calculation and platform wallet fee transfers from `ReleaseEscrowWithSplit` in `user-service`.
+    *   *(b) COD Pure Log Entry*: **[PLANNED]** Make COD collection a pure log entry (amount, job, timestamp) with no wallet, escrow, or ledger balance mutation during `CompleteJob`.
+    *   *(c) Owner Payout/Withdrawal Request Capability*: **[PLANNED]** Build new backend endpoint and tracking workflow for tenant owners to request payouts/withdrawals of accumulated withdrawable balances.
+    *   *(d) Production Data Correction*: **[PLANNED]** Execute data correction script/migration for existing production `platform_config` document setting `PlatformFeePercentage: 0.0`.
+    *   *(e) Frontend 0% Fee & Payout UI*: **[PLANNED]** Update Flutter client screens to display 0% platform commission and surface owner payout request UI.
 
  ---
 
