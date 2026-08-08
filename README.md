@@ -203,6 +203,7 @@ The following documentation resources map the Quick Delivery platform architectu
 *   **[docs/CI_CD_AND_HOOKS.md](docs/CI_CD_AND_HOOKS.md)** — Comprehensive breakdown of local Git hooks, GitHub Actions CI, and GHCR build/publish workflows.
 *   **[docs/RUNBOOK.md](docs/RUNBOOK.md)** — Release and server deployment runbook for merging, CI/CD triggering, VPS setup, and rollback procedures.
 *   **[docs/adr/README.md](docs/adr/README.md)** — Architectural Decision Records (ADRs) index capturing system decisions, escrow boundaries, mTLS, and multi-repo architectures.
+*   **[docs/BUSINESS_LOGIC_AUDIT.md](docs/BUSINESS_LOGIC_AUDIT.md)** — Formal audit report documenting confirmed business-logic findings (COD race condition & escrow calculations), verified-sound mechanisms, and audit scope limits.
 *   **[docs/changelog/README.md](docs/changelog/README.md)** — Index of categorized changelogs (Security Fixes, New Features, Infrastructure, Bug Fixes, and Documentation updates).
 
 ### Frontend (Flutter Client)
