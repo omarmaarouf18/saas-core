@@ -2,7 +2,7 @@
 
 - **Status**: Proposed
 - **Date**: 2026-08-08
-- **Related Commit SHA**: Uncommitted / Pending Implementation
+- **Related Commit SHA**: `a2835440a8b3795fbb3c8551c09a621bf7e78f58`
 - **Related Audit Finding**: `docs/BUSINESS_LOGIC_AUDIT.md` (Finding 1 & Finding 2)
 
 ## Context

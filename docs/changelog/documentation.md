@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## ADR-0017 Zero-Commission Subscription-Only Revenue Model Architecture
+
+- **Implementation Detail**: Authored `docs/adr/0017-zero-commission-subscription-only-revenue-model.md` defining the business-model pivot to a 0% platform transaction commission revenue model (monthly SaaS subscription fee as sole platform revenue source). Established 0% commission across all payment channels, pure log-entry COD collection without wallet balance mutation, centralized electronic payment credits with tenant owner withdrawal/payout request capability, and planned remediation for `ReleaseEscrowWithSplit` and `DeductCODFee`. Indexed in `docs/adr/README.md`, appended root cause notes in `docs/BUSINESS_LOGIC_AUDIT.md`, registered Phase 18 tracking entry in `docs/frontend/STATUS.md`, and updated `AI_CONTEXT.md`.
+- **Commit SHA**: ``a2835440a8b3795fbb3c8551c09a621bf7e78f58``
+- **Verification**: Verified via `make docs-check` and git history verification. ✅
+
 ## Business Logic Audit Report (Finding 1 & Finding 2)
 
 - **Implementation Detail**: Produced formal business logic audit report `docs/BUSINESS_LOGIC_AUDIT.md` documenting confirmed findings in `services/user-service` job lifecycle and escrow financial logic. Detailed Critical Finding 1 (COD job cancel/complete race condition in `store.CancelJob`) and Medium Finding 2 (`AgreedPrice` omitted in `CancelJob` refund calculation, trapping owner funds in escrow). Documented 4 verified-sound security controls (atomic escrow release double-complete protection, backend KYC enforcement, tenant scope isolation, and employee IDOR protection) and explicit scope limits. Updated `README.md` documentation index.
