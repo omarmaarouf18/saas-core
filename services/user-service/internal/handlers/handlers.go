@@ -74,18 +74,18 @@ return {0, lastUpdateMs}
 
 // UserService holds dependencies for the user-service handlers.
 type UserService struct {
-	store                  *store.MongoDB
-	authServiceURL         string
-	chatServiceURL         string
-	limiter                *handlerutil.RateLimiter
-	readLimiter            *handlerutil.RateLimiter
-	internalServiceToken   string
-	locationThrottleMu     sync.Mutex
-	locationLastUpdate     map[string]time.Time
-	locationInFlight       map[string]bool
-	authClient             *resilience.ResilienceClient
-	chatClient             *resilience.ResilienceClient
-	httpClient             *http.Client
+	store                     *store.MongoDB
+	authServiceURL            string
+	chatServiceURL            string
+	limiter                   *handlerutil.RateLimiter
+	readLimiter               *handlerutil.RateLimiter
+	internalServiceToken      string
+	locationThrottleMu        sync.Mutex
+	locationLastUpdate        map[string]time.Time
+	locationInFlight          map[string]bool
+	authClient                *resilience.ResilienceClient
+	chatClient                *resilience.ResilienceClient
+	httpClient                *http.Client
 	appEnv                    string
 	allowTestPaymentBypass    bool
 	electronicPaymentsEnabled bool
@@ -172,18 +172,18 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 	chatClient := resilience.NewClient(client, "chat-service", 2, 5*time.Second)
 
 	return &UserService{
-		store:                  s,
-		authServiceURL:         cfg.AuthServiceURL,
-		chatServiceURL:         chatServiceURL,
-		limiter:                handlerutil.NewRateLimiter(rl),
-		readLimiter:            handlerutil.NewRateLimiter(rlRead),
-		internalServiceToken:   cfg.InternalServiceToken,
-		locationLastUpdate:     make(map[string]time.Time),
-		locationInFlight:       make(map[string]bool),
-		rdb:                    rdb,
-		authClient:             authClient,
-		chatClient:             chatClient,
-		httpClient:             client,
+		store:                     s,
+		authServiceURL:            cfg.AuthServiceURL,
+		chatServiceURL:            chatServiceURL,
+		limiter:                   handlerutil.NewRateLimiter(rl),
+		readLimiter:               handlerutil.NewRateLimiter(rlRead),
+		internalServiceToken:      cfg.InternalServiceToken,
+		locationLastUpdate:        make(map[string]time.Time),
+		locationInFlight:          make(map[string]bool),
+		rdb:                       rdb,
+		authClient:                authClient,
+		chatClient:                chatClient,
+		httpClient:                client,
 		appEnv:                    cfg.AppEnv,
 		allowTestPaymentBypass:    cfg.AllowTestPaymentBypass,
 		electronicPaymentsEnabled: cfg.ElectronicPaymentsEnabled,

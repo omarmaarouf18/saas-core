@@ -314,7 +314,7 @@ func TestElectronicPaymentsFeatureFlag(t *testing.T) {
 	cfgDisabled := &config.Config{
 		AuthServiceURL:            mockAuthServer.URL,
 		InternalServiceToken:      "mock-token",
-		AllowTestPaymentBypass:   false,
+		AllowTestPaymentBypass:    false,
 		ElectronicPaymentsEnabled: false,
 		AppEnv:                    "production",
 	}
@@ -345,7 +345,7 @@ func TestElectronicPaymentsFeatureFlag(t *testing.T) {
 	cfgEnabled := &config.Config{
 		AuthServiceURL:            mockAuthServer.URL,
 		InternalServiceToken:      "mock-token",
-		AllowTestPaymentBypass:   false,
+		AllowTestPaymentBypass:    false,
 		ElectronicPaymentsEnabled: true,
 		AppEnv:                    "production",
 	}

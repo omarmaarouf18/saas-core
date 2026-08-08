@@ -10,17 +10,17 @@ type Config struct {
 	AllowTestPaymentBypass    bool
 	ElectronicPaymentsEnabled bool
 	Port                      string
-	MongoURI               string
-	MongoDatabase          string
-	JWTSecret              string
-	InternalServiceToken   string
-	AuthServiceURL         string
-	ChatServiceURL         string
-	CloudWatchLogGroup     string
-	TLSCertPath            string
-	TLSKeyPath             string
-	TLSCAPath              string
-	RedisURI               string
+	MongoURI                  string
+	MongoDatabase             string
+	JWTSecret                 string
+	InternalServiceToken      string
+	AuthServiceURL            string
+	ChatServiceURL            string
+	CloudWatchLogGroup        string
+	TLSCertPath               string
+	TLSKeyPath                string
+	TLSCAPath                 string
+	RedisURI                  string
 }
 
 func Load() (*Config, error) {
