@@ -3114,6 +3114,7 @@ func (u *UserService) RequestPayout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// #nosec G706 //nolint:gosec -- IDs are from verified JWT tokens and database, log injection not possible
 	log.Printf("[USER] Payout request created: id=%s tenant=%s amount=%.2f method=%s", payoutReq.ID, resolvedTenantID, payoutReq.Amount, payoutReq.PayoutMethod)
 	writeJSON(w, http.StatusCreated, payoutReq)
 }
