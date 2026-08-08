@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## Business Logic Audit Report (Finding 1 & Finding 2)
+
+- **Implementation Detail**: Produced formal business logic audit report `docs/BUSINESS_LOGIC_AUDIT.md` documenting confirmed findings in `services/user-service` job lifecycle and escrow financial logic. Detailed Critical Finding 1 (COD job cancel/complete race condition in `store.CancelJob`) and Medium Finding 2 (`AgreedPrice` omitted in `CancelJob` refund calculation, trapping owner funds in escrow). Documented 4 verified-sound security controls (atomic escrow release double-complete protection, backend KYC enforcement, tenant scope isolation, and employee IDOR protection) and explicit scope limits. Updated `README.md` documentation index.
+- **Commit SHA**: ``7ed7579e91d299571706b54c067604462180ea31``
+- **Verification**: Verified via `make docs-check` and git history verification. ✅
+
 ## Monorepo Shared Dependency Constraint Documentation (Finding #9)
 
 - **Implementation Detail**: Documented Finding #9 as a deliberate, accepted monorepo dependency constraint in `docs/REPOSITORY_MAP.md` §5 and `AI_CONTEXT.md`. Clarified that `shared/infra` is resolved strictly via relative paths (`replace github.com/project/shared/infra => ../../shared/infra` in `services/*/go.mod`). Explicitly documented extraction guidance (if a service is ever copied into an external application, `shared/infra` must be copied alongside it) and the associated maintenance risk (future bug fixes or security hardening in `saas-core`'s `shared/infra` will not automatically propagate to copied instances, requiring manual operator re-syncing). Identified the long-term resolution trigger (publishing `shared/infra` as a standalone versioned module should 3+ independent applications depend on copied instances).
