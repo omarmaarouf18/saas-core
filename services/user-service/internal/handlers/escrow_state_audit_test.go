@@ -269,10 +269,10 @@ func Test1_FullLifecycleStateAudit(t *testing.T) {
 	if walletStep3.EscrowBalance != 0.0 {
 		t.Errorf("Step 3 Wallet check: expected EscrowBalance == 0.0 after release, got %.2f", walletStep3.EscrowBalance)
 	}
-	// Expected withdrawable balance = 380.0 + 102.0 (net payout 120.0 - 15% platform fee) = 482.0
-	expectedFinalWithdrawable := 380.0 + 102.0
+	// Expected withdrawable balance = 380.0 + 120.0 (100% net payout per ADR-0017 0% platform fee) = 500.0
+	expectedFinalWithdrawable := 380.0 + 120.0
 	if walletStep3.WithdrawableBalance != expectedFinalWithdrawable {
-		t.Errorf("Step 3 Wallet check: expected withdrawable balance %.2f (380 + 102 net), got %.2f", expectedFinalWithdrawable, walletStep3.WithdrawableBalance)
+		t.Errorf("Step 3 Wallet check: expected withdrawable balance %.2f (380 + 120 net), got %.2f", expectedFinalWithdrawable, walletStep3.WithdrawableBalance)
 	}
 }
 

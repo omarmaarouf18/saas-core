@@ -192,8 +192,8 @@ func TestUserServiceHandlers(t *testing.T) {
 		if rec.Code != http.StatusBadRequest {
 			t.Errorf("Expected 400 Bad Request, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
-		if !strings.Contains(rec.Body.String(), "only 'cod' is currently supported") {
-			t.Errorf("Expected error about cod support only, got: %s", rec.Body.String())
+		if !strings.Contains(rec.Body.String(), "electronic payments are not currently enabled") {
+			t.Errorf("Expected error about electronic payments disabled, got: %s", rec.Body.String())
 		}
 	})
 
@@ -1958,9 +1958,9 @@ func TestUserServiceHandlers(t *testing.T) {
 		if wallet.EscrowBalance != 0.0 {
 			t.Errorf("Expected wallet escrow balance to be 0, got %.2f", wallet.EscrowBalance)
 		}
-		// Complete won: total=485 (500 - 15 fee). Cancel won: total=500.
-		if wallet.TotalBalance != 485.0 && wallet.TotalBalance != 500.0 {
-			t.Errorf("Expected wallet total balance to be either 485.0 (complete won) or 500.0 (cancel won), got %.2f", wallet.TotalBalance)
+		// Complete won or Cancel won: total=500.0 (0% platform commission per ADR-0017).
+		if wallet.TotalBalance != 500.0 {
+			t.Errorf("Expected wallet total balance to be 500.0 (0%% platform commission), got %.2f", wallet.TotalBalance)
 		}
 
 		// (b) Test: Concurrent CompleteJob vs CompleteJob
@@ -2152,30 +2152,16 @@ func TestUserServiceHandlers(t *testing.T) {
 			t.Errorf("COD Complete vs Complete: Expected exactly 1 success and 1 failure, got success=%d, fail=%d. Comp1 code: %d, Comp2 code: %d", successCount, failCount, recCompCOD1.Code, recCompCOD2.Code)
 		}
 
-		// Verify exactly one fee deduction on the owner wallet, and one fee credit to platform wallet
+		// Verify 0 fee deduction on owner wallet and 0 platform fee credit (ADR-0017 zero commission)
 		wAfter, _ := s.GetOrCreateWallet(ctx, "kyc-approved-owner-concurrency")
 		wPlatAfter, _ := s.GetOrCreateWallet(ctx, "platform")
 
-		expectedFeeDeduction := wBefore.TotalBalance - wAfter.TotalBalance
-		if expectedFeeDeduction <= 0.0 {
-			t.Errorf("Expected positive fee deduction from owner's wallet, got balance difference: %.2f -> %.2f", wBefore.TotalBalance, wAfter.TotalBalance)
+		if wAfter.TotalBalance != wBefore.TotalBalance {
+			t.Errorf("Expected 0 fee deduction from owner's wallet (ADR-0017 zero commission), got balance: %.2f -> %.2f", wBefore.TotalBalance, wAfter.TotalBalance)
 		}
 
-		platFeeCredit := wPlatAfter.TotalBalance - wPlatBefore.TotalBalance
-		if platFeeCredit <= 0.0 {
-			t.Errorf("Expected positive platform fee credit, got balance difference: %.2f -> %.2f", wPlatBefore.TotalBalance, wPlatAfter.TotalBalance)
-		}
-
-		// Verify that exactly one ledger entry exists for this job in the ledger
-		entries := s.GetLedger(ctx, "kyc-approved-owner-concurrency")
-		codLedgerCount := 0
-		for _, entry := range entries {
-			if entry.JobID == "job-concurrency-COD" {
-				codLedgerCount++
-			}
-		}
-		if codLedgerCount != 1 {
-			t.Errorf("Expected exactly 1 ledger entry for job-concurrency-COD, got %d", codLedgerCount)
+		if wPlatAfter.TotalBalance != wPlatBefore.TotalBalance {
+			t.Errorf("Expected 0 platform fee credit (ADR-0017 zero commission), got balance: %.2f -> %.2f", wPlatBefore.TotalBalance, wPlatAfter.TotalBalance)
 		}
 	})
 

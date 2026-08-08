@@ -18,15 +18,16 @@ import (
 
 // MongoDB is a persistent store for services, jobs, wallets, and the transaction ledger.
 type MongoDB struct {
-	client        *mongo.Client
-	db            *mongo.Database
-	services      *mongo.Collection
-	jobs          *mongo.Collection
-	wallets       *mongo.Collection
-	ledger        *mongo.Collection
-	platConfig    *mongo.Collection
-	subscriptions *mongo.Collection
-	ratings       *mongo.Collection
+	client         *mongo.Client
+	db             *mongo.Database
+	services       *mongo.Collection
+	jobs           *mongo.Collection
+	wallets        *mongo.Collection
+	ledger         *mongo.Collection
+	platConfig     *mongo.Collection
+	subscriptions  *mongo.Collection
+	ratings        *mongo.Collection
+	payoutRequests *mongo.Collection
 
 	releaseEscrowBeforePlatformWalletHook func(ctx context.Context) error
 }
@@ -45,15 +46,16 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 
 	db := client.Database(dbName)
 	s := &MongoDB{
-		client:        client,
-		db:            db,
-		services:      db.Collection("services"),
-		jobs:          db.Collection("jobs"),
-		wallets:       db.Collection("wallets"),
-		ledger:        db.Collection("transaction_ledger"),
-		platConfig:    db.Collection("platform_config"),
-		subscriptions: db.Collection("subscriptions"),
-		ratings:       db.Collection("ratings"),
+		client:         client,
+		db:             db,
+		services:       db.Collection("services"),
+		jobs:           db.Collection("jobs"),
+		wallets:        db.Collection("wallets"),
+		ledger:         db.Collection("transaction_ledger"),
+		platConfig:     db.Collection("platform_config"),
+		subscriptions:  db.Collection("subscriptions"),
+		ratings:        db.Collection("ratings"),
+		payoutRequests: db.Collection("payout_requests"),
 	}
 	if err := s.ensureIndexes(ctx); err != nil {
 		return nil, err
@@ -132,6 +134,11 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 	}); err != nil {
 		return fmt.Errorf("ratings compound unique index: %w", err)
 	}
+	if _, err := s.payoutRequests.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "tenant_id", Value: 1}, {Key: "created_at", Value: -1}},
+	}); err != nil {
+		return fmt.Errorf("payoutRequests composite index: %w", err)
+	}
 	log.Println("[USER-STORE] All indexes ensured")
 	return nil
 }
@@ -151,12 +158,12 @@ func (s *MongoDB) ensureSeedData(ctx context.Context) {
 	} else {
 		log.Printf("[USER-STORE] Seeded %d services", len(seeds))
 	}
-	// Seed platform config (15% fee).
+	// Seed platform config (0% fee — SaaS subscription revenue model per ADR-0017).
 	var cfg models.PlatformConfig
 	err := s.platConfig.FindOne(ctx, bson.M{"_id": "global"}).Decode(&cfg)
 	if err != nil {
 		if _, err := s.platConfig.InsertOne(ctx, models.PlatformConfig{
-			ID: "global", PlatformFeePercentage: 15.0, PlatformWalletID: "platform-central",
+			ID: "global", PlatformFeePercentage: 0.0, PlatformWalletID: "platform-central",
 		}); err != nil {
 			log.Printf("[ERROR] failed to seed platform config: %v", err)
 		}
@@ -527,15 +534,9 @@ func (s *MongoDB) LockEscrow(ctx context.Context, tenantID, jobID string, amount
 	return nil
 }
 
-// ReleaseEscrowWithSplit handles job completion: deducts from escrow, takes platform fee, credits net.
+// ReleaseEscrowWithSplit handles job completion for electronic payments: releases 100% of escrow to owner withdrawable_balance (0% platform commission per ADR-0017).
 func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID string, amount float64) error {
-	var cfg models.PlatformConfig
-	if err := s.platConfig.FindOne(ctx, bson.M{"_id": "global"}).Decode(&cfg); err != nil {
-		return fmt.Errorf("platform config not found: %w", err)
-	}
-
-	feeAmount := math.Round(amount*cfg.PlatformFeePercentage) / 100
-	netAmount := amount - feeAmount
+	netAmount := amount
 	now := time.Now().UTC()
 	tsBase := now.UnixNano()
 
@@ -572,11 +573,11 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 			}
 		}
 
-		// Atomic: deduct escrow, credit withdrawable with net amount.
+		// Atomic: deduct escrow, credit withdrawable with 100% net amount (0% fee).
 		res, err := s.wallets.UpdateOne(sc,
 			bson.M{"tenant_id": tenantID, "escrow_balance": bson.M{"$gte": amount}},
 			bson.M{
-				"$inc": bson.M{"escrow_balance": -amount, "total_balance": -feeAmount, "withdrawable_balance": netAmount},
+				"$inc": bson.M{"escrow_balance": -amount, "withdrawable_balance": netAmount},
 				"$set": bson.M{"updated_at": now},
 			})
 		if err != nil || res.MatchedCount == 0 {
@@ -590,7 +591,7 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 		revertTenantWallet := func() {
 			if isFallback {
 				_, _ = s.wallets.UpdateOne(sc, bson.M{"tenant_id": tenantID}, bson.M{
-					"$inc": bson.M{"escrow_balance": amount, "total_balance": feeAmount, "withdrawable_balance": -netAmount},
+					"$inc": bson.M{"escrow_balance": amount, "withdrawable_balance": -netAmount},
 					"$set": bson.M{"updated_at": time.Now().UTC()},
 				})
 				revertJob()
@@ -604,46 +605,20 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 			}
 		}
 
-		// Credit platform wallet with fee.
-		_, err = s.wallets.UpdateOne(sc, bson.M{"tenant_id": "platform"},
-			bson.M{
-				"$inc": bson.M{"total_balance": feeAmount, "withdrawable_balance": feeAmount},
-				"$set": bson.M{"updated_at": now},
-			})
-		if err != nil {
-			revertTenantWallet()
-			return err
-		}
-
-		revertPlatformWallet := func() {
-			if isFallback {
-				_, _ = s.wallets.UpdateOne(sc, bson.M{"tenant_id": "platform"}, bson.M{
-					"$inc": bson.M{"total_balance": -feeAmount, "withdrawable_balance": -feeAmount},
-					"$set": bson.M{"updated_at": time.Now().UTC()},
-				})
-				revertTenantWallet()
-			}
-		}
-
 		// Ledger entries.
 		entries := []interface{}{
 			models.TransactionLedger{
 				ID: fmt.Sprintf("tx-%d-release", tsBase), TenantID: tenantID, JobID: jobID,
-				Type: models.TxEscrowRelease, Amount: amount, Description: "escrow released", Timestamp: now,
-			},
-			models.TransactionLedger{
-				ID: fmt.Sprintf("tx-%d-fee", tsBase), TenantID: tenantID, JobID: jobID,
-				Type: models.TxPlatformFee, Amount: feeAmount,
-				Description: fmt.Sprintf("platform fee %.1f%%", cfg.PlatformFeePercentage), Timestamp: now,
+				Type: models.TxEscrowRelease, Amount: amount, Description: "escrow released (0% platform commission)", Timestamp: now,
 			},
 			models.TransactionLedger{
 				ID: fmt.Sprintf("tx-%d-payout", tsBase), TenantID: tenantID, JobID: jobID,
-				Type: models.TxPayout, Amount: netAmount, Description: "net payout to tenant", Timestamp: now,
+				Type: models.TxPayout, Amount: netAmount, Description: "100% net payout to tenant owner", Timestamp: now,
 			},
 		}
 		_, err = s.ledger.InsertMany(sc, entries)
 		if err != nil {
-			revertPlatformWallet()
+			revertTenantWallet()
 			return err
 		}
 		return nil
@@ -670,6 +645,112 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 		return runTx(ctx, true)
 	}
 	return err
+}
+
+// CompleteCODJob updates job status to completed for Cash-on-Delivery jobs with zero wallet mutation.
+func (s *MongoDB) CompleteCODJob(ctx context.Context, jobID string) error {
+	resJob, err := s.jobs.UpdateOne(ctx,
+		bson.M{
+			"_id":    jobID,
+			"status": bson.M{"$in": []models.JobStatus{models.JobStatusActive, models.JobStatusEscrowReconciliationRequired}},
+		},
+		bson.M{
+			"$set": bson.M{"status": models.JobStatusCompleted, "updated_at": time.Now().UTC()},
+		})
+	if err != nil {
+		return fmt.Errorf("failed to update COD job status: %w", err)
+	}
+	if resJob.MatchedCount == 0 {
+		return fmt.Errorf("COD job completion failed: job %s is not active or reconciliation required", jobID)
+	}
+	return nil
+}
+
+// CreatePayoutRequest creates a new payout/withdrawal request for an owner, deducting the requested amount from withdrawable_balance.
+func (s *MongoDB) CreatePayoutRequest(ctx context.Context, tenantID string, input models.CreatePayoutRequestInput) (*models.PayoutRequest, error) {
+	if input.Amount <= 0 {
+		return nil, fmt.Errorf("invalid payout amount: must be greater than 0")
+	}
+	if strings.TrimSpace(input.PayoutMethod) == "" {
+		return nil, fmt.Errorf("payout_method is required")
+	}
+
+	w, err := s.GetOrCreateWallet(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	if w.WithdrawableBalance < input.Amount {
+		return nil, fmt.Errorf("insufficient withdrawable balance: have %.2f, need %.2f", w.WithdrawableBalance, input.Amount)
+	}
+
+	now := time.Now().UTC()
+	payoutID := fmt.Sprintf("payout-%d", now.UnixNano())
+
+	// Atomically deduct amount from withdrawable_balance and total_balance
+	res, err := s.wallets.UpdateOne(ctx,
+		bson.M{"tenant_id": tenantID, "withdrawable_balance": bson.M{"$gte": input.Amount}},
+		bson.M{
+			"$inc": bson.M{"withdrawable_balance": -input.Amount, "total_balance": -input.Amount},
+			"$set": bson.M{"updated_at": now},
+		})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update wallet balance for payout: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return nil, fmt.Errorf("payout request failed: insufficient withdrawable balance")
+	}
+
+	payoutReq := &models.PayoutRequest{
+		ID:             payoutID,
+		TenantID:       tenantID,
+		Amount:         input.Amount,
+		Status:         models.PayoutStatusRequested,
+		PayoutMethod:   input.PayoutMethod,
+		AccountDetails: input.AccountDetails,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
+
+	if _, err := s.payoutRequests.InsertOne(ctx, payoutReq); err != nil {
+		// Revert wallet deduction if insert fails
+		_, _ = s.wallets.UpdateOne(ctx, bson.M{"tenant_id": tenantID}, bson.M{
+			"$inc": bson.M{"withdrawable_balance": input.Amount, "total_balance": input.Amount},
+			"$set": bson.M{"updated_at": time.Now().UTC()},
+		})
+		return nil, fmt.Errorf("failed to record payout request: %w", err)
+	}
+
+	// Insert transaction ledger record
+	if _, err := s.ledger.InsertOne(ctx, models.TransactionLedger{
+		ID:            fmt.Sprintf("tx-%d-payout-req", now.UnixNano()),
+		TenantID:      tenantID,
+		Type:          models.TxPayout,
+		Amount:        input.Amount,
+		BalanceBefore: w.WithdrawableBalance,
+		BalanceAfter:  w.WithdrawableBalance - input.Amount,
+		Description:   fmt.Sprintf("payout request %s (%s)", payoutID, input.PayoutMethod),
+		Timestamp:     now,
+	}); err != nil {
+		log.Printf("[ERROR] failed to insert transaction ledger for payout request: %v", err)
+	}
+
+	return payoutReq, nil
+}
+
+// GetPayoutRequests returns all payout requests for a tenant owner ordered by creation time descending.
+func (s *MongoDB) GetPayoutRequests(ctx context.Context, tenantID string) ([]*models.PayoutRequest, error) {
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
+	cursor, err := s.payoutRequests.Find(ctx, bson.M{"tenant_id": tenantID}, opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query payout requests: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var requests []*models.PayoutRequest
+	if err := cursor.All(ctx, &requests); err != nil {
+		return nil, fmt.Errorf("failed to decode payout requests: %w", err)
+	}
+	return requests, nil
 }
 
 func (s *MongoDB) GetLedger(ctx context.Context, tenantID string) []models.TransactionLedger {

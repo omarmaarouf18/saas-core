@@ -256,6 +256,38 @@ type PlatformConfig struct {
 	PlatformWalletID      string  `json:"platform_wallet_id"      bson:"platform_wallet_id"`
 }
 
+// PayoutStatus defines the lifecycle status of an owner payout/withdrawal request.
+type PayoutStatus string
+
+const (
+	PayoutStatusRequested PayoutStatus = "requested"
+	PayoutStatusApproved  PayoutStatus = "approved"
+	PayoutStatusRejected  PayoutStatus = "rejected"
+	PayoutStatusPaid      PayoutStatus = "paid"
+)
+
+// PayoutRequest represents a tenant owner's withdrawal request from withdrawable_balance.
+type PayoutRequest struct {
+	ID              string       `json:"id"               bson:"_id"`
+	TenantID        string       `json:"tenant_id"        bson:"tenant_id"`
+	Amount          float64      `json:"amount"           bson:"amount"`
+	Status          PayoutStatus `json:"status"           bson:"status"`
+	PayoutMethod    string       `json:"payout_method"    bson:"payout_method"` // e.g. "bank_transfer", "instapay"
+	AccountDetails  string       `json:"account_details,omitempty" bson:"account_details,omitempty"`
+	RejectionReason string       `json:"rejection_reason,omitempty" bson:"rejection_reason,omitempty"`
+	CreatedAt       time.Time    `json:"created_at"       bson:"created_at"`
+	UpdatedAt       time.Time    `json:"updated_at"       bson:"updated_at"`
+}
+
+// CreatePayoutRequestInput is the expected JSON payload for POST /users/wallet/payout/request.
+type CreatePayoutRequestInput struct {
+	TenantID       string  `json:"tenant_id,omitempty"`
+	TenantToken    string  `json:"tenant_token,omitempty"`
+	Amount         float64 `json:"amount"`
+	PayoutMethod   string  `json:"payout_method"`
+	AccountDetails string  `json:"account_details,omitempty"`
+}
+
 // ---------------------------------------------------------------------------
 // Request / Response types
 // ---------------------------------------------------------------------------

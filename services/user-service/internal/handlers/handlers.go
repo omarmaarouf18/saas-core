@@ -86,9 +86,10 @@ type UserService struct {
 	authClient             *resilience.ResilienceClient
 	chatClient             *resilience.ResilienceClient
 	httpClient             *http.Client
-	appEnv                 string
-	allowTestPaymentBypass bool
-	rdb                    *redis.Client
+	appEnv                    string
+	allowTestPaymentBypass    bool
+	electronicPaymentsEnabled bool
+	rdb                       *redis.Client
 	// Test hook to block UpdateJobLocation database write for deterministic testing
 	updateJobLocationBeforeWriteHook func(ctx context.Context)
 	// Test hook to force RollbackEscrow to fail for deterministic testing
@@ -183,8 +184,9 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		authClient:             authClient,
 		chatClient:             chatClient,
 		httpClient:             client,
-		appEnv:                 cfg.AppEnv,
-		allowTestPaymentBypass: cfg.AllowTestPaymentBypass,
+		appEnv:                    cfg.AppEnv,
+		allowTestPaymentBypass:    cfg.AllowTestPaymentBypass,
+		electronicPaymentsEnabled: cfg.ElectronicPaymentsEnabled,
 	}
 }
 
@@ -220,6 +222,8 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users/jobs/respond-price", u.RespondPrice)
 	mux.HandleFunc("/users/wallet", u.GetWallet)
 	mux.HandleFunc("/users/wallet/deposit", u.WalletDeposit)
+	mux.HandleFunc("/users/wallet/payout/request", u.RequestPayout)
+	mux.HandleFunc("/users/wallet/payout/requests", u.GetPayoutRequests)
 	mux.HandleFunc("/users/ledger", u.GetLedger)
 	mux.HandleFunc("/users/platform/config", u.GetPlatformConfig)
 	mux.HandleFunc("/users/subscription", u.Subscription)
@@ -603,11 +607,13 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if req.PaymentMethod != "cod" && (!u.allowTestPaymentBypass || (u.appEnv != "test" && u.appEnv != "local")) {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "invalid payment_method: only 'cod' is currently supported",
-		})
-		return
+	if req.PaymentMethod != "cod" {
+		if !u.electronicPaymentsEnabled && (!u.allowTestPaymentBypass || (u.appEnv != "test" && u.appEnv != "local")) {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "electronic payments are not currently enabled; only COD (cash-on-delivery) is active",
+			})
+			return
+		}
 	}
 
 	// 5. Verify owner exists and has approved KYC
@@ -944,7 +950,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Handle COD payment method
+	// Handle COD payment method (pure collection logging per ADR-0017, zero wallet balance mutation)
 	if job.PaymentMethod == "cod" {
 		if !req.CashCollected {
 			writeJSON(w, http.StatusBadRequest, map[string]string{
@@ -953,33 +959,22 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Deduct platform fee directly from owner's wallet (allows negative balance)
-		if err := u.store.DeductCODFee(ctx, job.OwnerID, job.ID, amount); err != nil {
+		if err := u.store.CompleteCODJob(ctx, job.ID); err != nil {
 			if strings.Contains(err.Error(), "not active") {
 				writeJSON(w, http.StatusConflict, map[string]string{"error": "job already completed or not active: " + err.Error()})
 				return
 			}
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to deduct platform fee: " + err.Error()})
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to complete COD job: " + err.Error()})
 			return
 		}
 
-		job.Status = models.JobStatusCompleted
-		job.UpdatedAt = time.Now().UTC()
-
-		cfg := u.store.GetPlatformConfig(ctx)
-		feePercent := 15.0
-		if cfg != nil {
-			feePercent = cfg.PlatformFeePercentage
-		}
-		fee := math.Round(amount*feePercent) / 100
-
-		log.Printf("[USER] COD Job %s completed: cash_collected=%.2f fee=%.2f deducted from owner wallet", job.ID, amount, fee)
+		log.Printf("[USER] COD Job %s completed: cash_collected=%.2f logged (0%% platform commission)", job.ID, amount)
 		writeJSON(w, http.StatusOK, map[string]any{
-			"message":          "COD job completed and platform fee deducted",
+			"message":          "COD job completed and collection logged (0% platform commission)",
 			"job_id":           job.ID,
 			"total_amount":     amount,
-			"platform_fee":     fee,
-			"platform_fee_pct": feePercent,
+			"platform_fee":     0.0,
+			"platform_fee_pct": 0.0,
 		})
 		return
 	}
@@ -2413,6 +2408,10 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 
 	// Perform cancellation in DB
 	if err := u.store.CancelJob(ctx, job.ID, req.Reason); err != nil {
+		if strings.Contains(err.Error(), "not in a cancellable state") {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+			return
+		}
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to cancel job: " + err.Error()})
 		return
 	}
@@ -3008,8 +3007,8 @@ func (u *UserService) ResolveReconciliation(w http.ResponseWriter, r *http.Reque
 	switch req.Decision {
 	case "release_to_employee":
 		if job.PaymentMethod == "cod" {
-			if err := u.store.DeductCODFee(ctx, job.OwnerID, job.ID, amount); err != nil && !strings.Contains(err.Error(), "not active") {
-				log.Printf("[ERROR] Failed to deduct COD fee on reconciliation release for job %s: %v", job.ID, err)
+			if err := u.store.CompleteCODJob(ctx, job.ID); err != nil && !strings.Contains(err.Error(), "not active") {
+				log.Printf("[ERROR] Failed to complete COD job on reconciliation release for job %s: %v", job.ID, err)
 			}
 		} else if amount > 0 {
 			if err := u.store.ReleaseEscrowWithSplit(ctx, job.OwnerID, job.ID, amount); err != nil {
@@ -3058,4 +3057,102 @@ func (u *UserService) ResolveReconciliation(w http.ResponseWriter, r *http.Reque
 			"reconciliation_note": note,
 		})
 	}
+}
+
+// RequestPayout processes a tenant owner's withdrawal request (POST /users/wallet/payout/request).
+func (u *UserService) RequestPayout(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	ctx := r.Context()
+	var req models.CreatePayoutRequestInput
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body: " + err.Error()})
+		return
+	}
+
+	tokenStr := r.Header.Get("Authorization")
+	if strings.HasPrefix(tokenStr, "Bearer ") || strings.HasPrefix(tokenStr, "bearer ") {
+		tokenStr = strings.TrimSpace(tokenStr[7:])
+	}
+	if tokenStr == "" {
+		tokenStr = req.TenantToken
+	}
+	if tokenStr == "" {
+		tokenStr = req.TenantID
+	}
+	if tokenStr == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id or authorization token is required"})
+		return
+	}
+
+	resolvedTenantID, err := resolveTokenWithRole(tokenStr, "owner")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant owner token: " + err.Error()})
+		return
+	}
+
+	if req.Amount <= 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid payout amount: must be greater than 0"})
+		return
+	}
+
+	if strings.TrimSpace(req.PayoutMethod) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "payout_method is required (e.g. bank_transfer, instapay)"})
+		return
+	}
+
+	payoutReq, err := u.store.CreatePayoutRequest(ctx, resolvedTenantID, req)
+	if err != nil {
+		if strings.Contains(err.Error(), "insufficient withdrawable balance") {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create payout request: " + err.Error()})
+		return
+	}
+
+	log.Printf("[USER] Payout request created: id=%s tenant=%s amount=%.2f method=%s", payoutReq.ID, resolvedTenantID, payoutReq.Amount, payoutReq.PayoutMethod)
+	writeJSON(w, http.StatusCreated, payoutReq)
+}
+
+// GetPayoutRequests retrieves historical payout requests for a tenant owner (GET /users/wallet/payout/requests).
+func (u *UserService) GetPayoutRequests(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	ctx := r.Context()
+	tokenStr := r.Header.Get("Authorization")
+	if strings.HasPrefix(tokenStr, "Bearer ") || strings.HasPrefix(tokenStr, "bearer ") {
+		tokenStr = strings.TrimSpace(tokenStr[7:])
+	}
+	if tokenStr == "" {
+		tokenStr = r.URL.Query().Get("tenant_id")
+	}
+	if tokenStr == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id parameter or authorization token is required"})
+		return
+	}
+
+	resolvedTenantID, err := resolveTokenWithRole(tokenStr, "owner")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant owner token: " + err.Error()})
+		return
+	}
+
+	requests, err := u.store.GetPayoutRequests(ctx, resolvedTenantID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to fetch payout requests: " + err.Error()})
+		return
+	}
+
+	if requests == nil {
+		requests = []*models.PayoutRequest{}
+	}
+
+	writeJSON(w, http.StatusOK, requests)
 }

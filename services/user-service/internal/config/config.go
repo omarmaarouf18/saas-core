@@ -6,9 +6,10 @@ import (
 )
 
 type Config struct {
-	AppEnv                 string
-	AllowTestPaymentBypass bool
-	Port                   string
+	AppEnv                    string
+	AllowTestPaymentBypass    bool
+	ElectronicPaymentsEnabled bool
+	Port                      string
 	MongoURI               string
 	MongoDatabase          string
 	JWTSecret              string
@@ -91,20 +92,23 @@ func Load() (*Config, error) {
 		return nil, errors.New("config: ALLOW_TEST_PAYMENT_BYPASS=true is strictly forbidden when APP_ENV is production")
 	}
 
+	electronicPaymentsEnabled := os.Getenv("ELECTRONIC_PAYMENTS_ENABLED") == "true" || os.Getenv("ELECTRONIC_PAYMENTS_ENABLED") == "1"
+
 	return &Config{
-		AppEnv:                 appEnv,
-		AllowTestPaymentBypass: allowTestPaymentBypass,
-		Port:                   port,
-		MongoURI:               mongoURI,
-		MongoDatabase:          dbName,
-		JWTSecret:              jwtSecret,
-		InternalServiceToken:   internalServiceToken,
-		AuthServiceURL:         authServiceURL,
-		ChatServiceURL:         chatServiceURL,
-		CloudWatchLogGroup:     os.Getenv("CLOUDWATCH_LOG_GROUP"),
-		TLSCertPath:            tlsCertPath,
-		TLSKeyPath:             tlsKeyPath,
-		TLSCAPath:              tlsCAPath,
-		RedisURI:               redisURI,
+		AppEnv:                    appEnv,
+		AllowTestPaymentBypass:    allowTestPaymentBypass,
+		ElectronicPaymentsEnabled: electronicPaymentsEnabled,
+		Port:                      port,
+		MongoURI:                  mongoURI,
+		MongoDatabase:             dbName,
+		JWTSecret:                 jwtSecret,
+		InternalServiceToken:      internalServiceToken,
+		AuthServiceURL:            authServiceURL,
+		ChatServiceURL:            chatServiceURL,
+		CloudWatchLogGroup:        os.Getenv("CLOUDWATCH_LOG_GROUP"),
+		TLSCertPath:               tlsCertPath,
+		TLSKeyPath:                tlsKeyPath,
+		TLSCAPath:                 tlsCAPath,
+		RedisURI:                  redisURI,
 	}, nil
 }
