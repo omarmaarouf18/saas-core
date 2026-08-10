@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## Design Token System Migration & Debt Cleanup (Phase 1)
+
+- **Implementation Detail**: Replaced all 55 catalogued instances of hardcoded values across 16 files with canonical `AppColors`, `AppSpacing`, `AppRadius`, and `AppTypography` design tokens. Extended `frontend/lib/core/theme.dart` with clean intermediate tokens (`AppSpacing.xxs/baseSm/xxl/xxxl`, `AppRadius.xxs/smMd/lgXl`). Re-ran `scratch/audit_debt.py` confirming **0** remaining debt findings. Updated `docs/frontend/DESIGN_SYSTEM.md` (§2 tokens table, §5 debt backlog), `docs/frontend/UI_UX_ENTERPRISE_ROADMAP.md` (Phase 1 completion evidence), `docs/frontend/STATUS.md` (Phase 20 tracker entry), and `AI_CONTEXT.md`.
+- **Commit SHA**: ``a855699b603e3b998d2dbd2a40d219193d4aa01f``
+- **Verification**: Verified via `scratch/audit_debt.py` (0 findings), `flutter analyze` (0 issues), `flutter test` (171/171 pass 100%), and RTL `ar_EG` layout validation. ✅
+
 ## Enterprise Design System & Brand Identity Specification (Phase 19)
 
 - **Implementation Detail**: Extended `frontend/lib/core/theme.dart` with enterprise design tokens (`AppElevation`, `AppMotion`, `AppIconSize`, and expanded `AppRadius`). Authored `docs/frontend/BRAND_IDENTITY.md` establishing color rationale, logo rules, Egyptian colloquial Arabic voice guidance, and Uber/Talabat UI benchmarks. Authored `docs/frontend/DESIGN_SYSTEM.md` detailing token references, complete 18-widget component catalog, composition patterns, 55-instance design debt backlog, and RTL layout rules. Authored `docs/frontend/UI_UX_ENTERPRISE_ROADMAP.md` establishing a 6-phase follow-up roadmap (Phases 1–6). Indexed all documents in `README.md` and `docs/frontend/STATUS.md` (Phase 19).
