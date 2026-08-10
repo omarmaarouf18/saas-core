@@ -441,7 +441,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   _buildInfoRow("Service ID", _currentJob.serviceId),
                   _buildInfoRow(
                     "Destination",
-                    "${_currentJob.location.latitude.toStringAsFixed(4)}, ${_currentJob.location.longitude.toStringAsFixed(4)}",
+                    "📍 Delivery Location",
                   ),
                   if (_currentJob.employeeId != null)
                     _buildInfoRow(

@@ -669,7 +669,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                           ),
                         ),
                         Text(
-                          "Lat: ${job.location.latitude.toStringAsFixed(6)}, Lon: ${job.location.longitude.toStringAsFixed(6)}",
+                          "📍 Delivery Location",
                           style: AppTypography.bodyMd.copyWith(
                             fontWeight: FontWeight.w600,
                             color: AppColors.onSurface,

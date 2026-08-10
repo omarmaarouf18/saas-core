@@ -173,7 +173,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         icon: const Icon(Icons.map_outlined,
                             color: AppColors.primary),
                         label: Text(
-                          "${_customerLat.toStringAsFixed(4)}, ${_customerLon.toStringAsFixed(4)}",
+                          l10n.customerMarketplaceChooseMap,
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.bodyMd
                               .copyWith(fontWeight: FontWeight.w600),

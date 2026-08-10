@@ -187,7 +187,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                       ),
                                       const SizedBox(height: AppSpacing.xs),
                                       Text(
-                                        "Coordinates: (${(svc['latitude'] as num?)?.toStringAsFixed(4) ?? '0.0000'}, ${(svc['longitude'] as num?)?.toStringAsFixed(4) ?? '0.0000'})",
+                                        "📍 Service Location",
                                         style: AppTypography.labelMd.copyWith(
                                           color: AppColors.outline,
                                         ),

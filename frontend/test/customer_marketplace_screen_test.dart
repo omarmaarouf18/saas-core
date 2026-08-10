@@ -91,7 +91,7 @@ void main() {
     // 2. Verify Map Picker button exists
     final mapBtn = find.byKey(const Key('choose_location_map_button'));
     expect(mapBtn, findsOneWidget);
-    expect(find.text("30.0444, 31.2357"), findsOneWidget);
+    expect(find.text("Choose Location on Map"), findsOneWidget);
 
     // 3. Tap Map Picker button to open Location Picker Dialog
     await tester.tap(mapBtn);
