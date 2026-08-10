@@ -306,8 +306,17 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                         if (value == null || value.trim().isEmpty) {
                           return "Username is required";
                         }
-                        if (value.trim().length < 3) {
+                        final trimmed = value.trim();
+                        if (trimmed.runes.length < 3) {
                           return "Username must be at least 3 characters";
+                        }
+                        if (trimmed.runes.length > 30) {
+                          return "Username must be at most 30 characters";
+                        }
+                        final usernameRegex =
+                            RegExp(r'^[a-zA-Z0-9_\s\u0600-\u06FF]+$');
+                        if (!usernameRegex.hasMatch(trimmed)) {
+                          return "Username contains invalid characters";
                         }
                         return null;
                       },
@@ -324,7 +333,9 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                         if (value == null || value.trim().isEmpty) {
                           return "Email is required";
                         }
-                        if (!value.contains('@')) {
+                        final emailRegex = RegExp(
+                            r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+                        if (!emailRegex.hasMatch(value.trim())) {
                           return "Please enter a valid email";
                         }
                         return null;

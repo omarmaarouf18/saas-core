@@ -135,7 +135,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               return "Username must be at most 30 characters";
                             }
                             final usernameRegex =
-                                RegExp(r'^([a-zA-Z0-9_ ]|[\u0600-\u06FF])+$');
+                                RegExp(r'^[a-zA-Z0-9_\s\u0600-\u06FF]+$');
                             if (!usernameRegex.hasMatch(trimmed)) {
                               return "Username contains invalid characters";
                             }
@@ -153,7 +153,9 @@ class _SignupScreenState extends State<SignupScreen> {
                             if (val == null || val.trim().isEmpty) {
                               return l10n.loginEmailReq;
                             }
-                            if (!val.contains("@")) {
+                            final emailRegex = RegExp(
+                                r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+                            if (!emailRegex.hasMatch(val.trim())) {
                               return l10n.loginEmailInvalid;
                             }
                             return null;

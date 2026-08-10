@@ -205,7 +205,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             if (val == null || val.trim().isEmpty) {
                               return l10n.loginEmailReq;
                             }
-                            if (!val.contains("@")) {
+                            final emailRegex = RegExp(
+                                r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+                            if (!emailRegex.hasMatch(val.trim())) {
                               return l10n.loginEmailInvalid;
                             }
                             return null;
@@ -234,10 +236,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           counterText: "",
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
-                              return l10n.otpCodeLabel;
+                              return "Enter 6-digit OTP code";
                             }
                             if (val.trim().length != 6) {
-                              return l10n.otpCodeLabel;
+                              return "Enter 6-digit OTP code";
                             }
                             return null;
                           },

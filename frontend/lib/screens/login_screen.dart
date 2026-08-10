@@ -178,7 +178,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             if (val == null || val.trim().isEmpty) {
                               return l10n.loginEmailReq;
                             }
-                            if (!val.contains("@")) {
+                            final emailRegex = RegExp(
+                                r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+                            if (!emailRegex.hasMatch(val.trim())) {
                               return l10n.loginEmailInvalid;
                             }
                             return null;
