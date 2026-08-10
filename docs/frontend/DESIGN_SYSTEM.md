@@ -85,11 +85,14 @@ This design system provides the visual architecture and component spec for Quick
 | :--- | :--- | :--- | :--- |
 | **Duration** | `AppMotion.durationFast` | `150 ms` | Micro-interactions, button presses, switch toggles |
 | **Duration** | `AppMotion.durationMedium` | `300 ms` | Bottom sheet slides, tab transitions, expand/collapse |
-| **Duration** | `AppMotion.durationSlow` | `500 ms` | Screen entrance animations, hero banners, fade-ins |
+| **Duration** | `AppMotion.durationMediumSlow` | `400 ms` | Hero summary banners, welcome card entrance animations |
+| **Duration** | `AppMotion.durationSlow` | `500 ms` | Screen entrance animations, full hero fade-ins |
+| **Duration** | `AppMotion.snackBarDisplay` | `2.0 s` | Toast notification / SnackBar display duration |
 | **Curve** | `AppMotion.curveEntrance` | `Curves.easeOutCubic` | Elements entering the viewport from off-screen |
 | **Curve** | `AppMotion.curveExit` | `Curves.easeInCubic` | Elements exiting the viewport |
 | **Curve** | `AppMotion.curveStateChange` | `Curves.easeInOut` | Smooth in-place transitions (color fades, size shifts) |
 | **Curve** | `AppMotion.curveBounce` | `Curves.elasticOut` | Playful status tick pops and badge highlights |
+| **Logic Guard** | `AppMotion.debounceGuard` | `600 ms` | Double-tap debounce threshold for interactive buttons |
 
 ### 2.6 Iconography Scale (`AppIconSize`)
 

@@ -61,8 +61,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
+        duration: AppMotion.durationMedium,
+        curve: AppMotion.curveEntrance,
       );
     }
   }
@@ -75,7 +75,7 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       await chat.sendMessage(text);
       _messageController.clear();
-      Timer(const Duration(milliseconds: 100), _scrollToBottom);
+      Timer(AppMotion.durationFast, _scrollToBottom);
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;

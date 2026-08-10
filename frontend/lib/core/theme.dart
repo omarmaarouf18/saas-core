@@ -167,14 +167,22 @@ class AppMotion {
       Duration(milliseconds: 150); // Micro-interactions, button taps
   static const Duration durationMedium =
       Duration(milliseconds: 300); // Sheet slides, tab transitions
+  static const Duration durationMediumSlow =
+      Duration(milliseconds: 400); // Hero banner entrance animations
   static const Duration durationSlow =
       Duration(milliseconds: 500); // Screen entrances, hero banners
+  static const Duration snackBarDisplay =
+      Duration(seconds: 2); // Toast/SnackBar display timeout
 
   // Easing Curves
   static const Curve curveEntrance = Curves.easeOutCubic;
   static const Curve curveExit = Curves.easeInCubic;
   static const Curve curveStateChange = Curves.easeInOut;
   static const Curve curveBounce = Curves.elasticOut;
+
+  // Logic Guards
+  static const Duration debounceGuard =
+      Duration(milliseconds: 600); // Button tap debounce threshold
 }
 
 // 6. Iconography Scale Tokens

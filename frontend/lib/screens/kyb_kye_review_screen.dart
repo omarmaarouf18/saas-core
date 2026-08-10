@@ -308,7 +308,7 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
         SnackBar(
           key: const Key('review_confirmation_snackbar'),
           content: Text(l10n.reviewCompletedSuccess(username)),
-          duration: const Duration(seconds: 2),
+          duration: AppMotion.snackBarDisplay,
         ),
       );
     }

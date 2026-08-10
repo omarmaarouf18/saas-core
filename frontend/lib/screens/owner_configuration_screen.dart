@@ -206,7 +206,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.ownerConfigSuccessMsg),
-            duration: const Duration(seconds: 2),
+            duration: AppMotion.snackBarDisplay,
             backgroundColor: AppColors.success,
           ),
         );

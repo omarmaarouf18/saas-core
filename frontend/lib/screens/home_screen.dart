@@ -426,8 +426,8 @@ class _HomeScreenState extends State<HomeScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: TweenAnimationBuilder<double>(
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOutCubic,
+          duration: AppMotion.durationMediumSlow,
+          curve: AppMotion.curveEntrance,
           tween: Tween<double>(begin: 0.0, end: 1.0),
           builder: (context, animValue, child) {
             return Opacity(

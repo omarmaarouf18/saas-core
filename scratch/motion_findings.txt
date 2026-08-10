@@ -1,0 +1,2 @@
+[Hardcoded Duration] screens/job_status_screen.dart:68 -> Duration(seconds: 5) | Line: _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+[Hardcoded Duration] screens/job_status_screen.dart:74 -> Duration(seconds: 1) | Line: _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {

@@ -25,13 +25,14 @@ class SecondaryButton extends StatefulWidget {
 
 class _SecondaryButtonState extends State<SecondaryButton> {
   DateTime? _lastTapTime;
+  bool _isPressed = false;
 
   void _handleTap() {
     if (widget.onPressed == null) return;
     final now =
         widget.nowProvider != null ? widget.nowProvider!() : DateTime.now();
     if (_lastTapTime != null &&
-        now.difference(_lastTapTime!) < const Duration(milliseconds: 600)) {
+        now.difference(_lastTapTime!) < AppMotion.debounceGuard) {
       return;
     }
     _lastTapTime = now;
@@ -105,23 +106,45 @@ class _SecondaryButtonState extends State<SecondaryButton> {
             ),
           );
 
-    final VoidCallback? effectiveOnPressed =
-        (widget.isLoading || widget.onPressed == null) ? null : _handleTap;
+    final bool isEnabled = !widget.isLoading && widget.onPressed != null;
+    final VoidCallback? effectiveOnPressed = isEnabled ? _handleTap : null;
 
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: widget.isOutlined
-          ? OutlinedButton(
-              onPressed: effectiveOnPressed,
-              style: style,
-              child: buttonChild,
-            )
-          : ElevatedButton(
-              onPressed: effectiveOnPressed,
-              style: style,
-              child: buttonChild,
-            ),
+    return Listener(
+      onPointerDown: (_) {
+        if (isEnabled) {
+          setState(() => _isPressed = true);
+        }
+      },
+      onPointerUp: (_) {
+        if (_isPressed) {
+          setState(() => _isPressed = false);
+        }
+      },
+      onPointerCancel: (_) {
+        if (_isPressed) {
+          setState(() => _isPressed = false);
+        }
+      },
+      child: AnimatedScale(
+        scale: (_isPressed && isEnabled) ? 0.96 : 1.0,
+        duration: AppMotion.durationFast,
+        curve: AppMotion.curveStateChange,
+        child: SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: widget.isOutlined
+              ? OutlinedButton(
+                  onPressed: effectiveOnPressed,
+                  style: style,
+                  child: buttonChild,
+                )
+              : ElevatedButton(
+                  onPressed: effectiveOnPressed,
+                  style: style,
+                  child: buttonChild,
+                ),
+        ),
+      ),
     );
   }
 }

@@ -111,6 +111,10 @@
     * **Phase 20: Design Token System Migration & Debt Cleanup (UI/UX Roadmap Phase 1)** — **[100% COMPLETE & VERIFIED]**
     *   *(a) Design Debt Remediation*: **[VERIFIED]** Replaced all 55 catalogued instances of hardcoded values across 16 files with canonical `AppColors`, `AppSpacing`, `AppRadius`, and `AppTypography` design tokens. Extended `theme.dart` with clean intermediate tokens (`AppSpacing.xxs/baseSm/xxl/xxxl`, `AppRadius.xxs/smMd/lgXl`). Re-ran `scratch/audit_debt.py` confirming **0** remaining debt findings.
     *   *(b) Automated & Verification Gates*: **[VERIFIED]** `flutter analyze` (0 issues), `flutter test` (100% pass, 171/171 tests), RTL `ar_EG` layout validation passed.
+    * **Phase 21: Motion, Transitions & Micro-Interactions (UI/UX Roadmap Phase 2)** — **[100% COMPLETE & VERIFIED]**
+    *   *(a) Motion Token Remediation*: **[VERIFIED]** Replaced all magic `Duration` and raw `Curves` instances across screen & widget files with canonical `AppMotion` tokens (`durationFast`, `durationMedium`, `durationMediumSlow`, `durationSlow`, `snackBarDisplay`, `curveEntrance`, `curveBounce`). Extended `theme.dart` with `durationMediumSlow` (400ms), `snackBarDisplay` (2s), and `debounceGuard` (600ms). Re-ran `scratch/audit_motion.py` confirming **0** remaining motion findings (2 non-animation background timers in `job_status_screen.dart` documented as background REST polling & clock countdown exceptions).
+    *   *(b) Button Tap Feedback*: **[VERIFIED]** Implemented subtle scale-down (`0.96`) micro-interaction tap feedback on `PrimaryButton` and `SecondaryButton` using `AnimatedScale` driven by `AppMotion.durationFast` and `AppMotion.curveStateChange`, preserving the 600ms tap-debounce threshold (`AppMotion.debounceGuard`).
+    *   *(c) Automated & Verification Gates*: **[VERIFIED]** `flutter analyze` (0 issues), `flutter test` (100% pass, 173/173 tests including 2 new scale tap feedback widget test cases in `shared_widgets_test.dart`).
 
  ---
 

@@ -72,7 +72,7 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(l10n.locationPermissionDeniedDefault),
-              duration: const Duration(seconds: 2),
+              duration: AppMotion.snackBarDisplay,
             ),
           );
         }
@@ -83,7 +83,7 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.locationFetchError(e.toString())),
-            duration: const Duration(seconds: 2),
+            duration: AppMotion.snackBarDisplay,
           ),
         );
       }

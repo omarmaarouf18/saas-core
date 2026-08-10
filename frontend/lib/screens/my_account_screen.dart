@@ -128,7 +128,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.myAccountSuccessMsg),
-            duration: const Duration(seconds: 2),
+            duration: AppMotion.snackBarDisplay,
             backgroundColor: AppColors.success,
           ),
         );

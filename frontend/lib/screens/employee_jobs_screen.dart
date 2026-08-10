@@ -397,7 +397,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               if (isTracking || isDenied)
                 TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0.8, end: 1.0),
-                  duration: const Duration(milliseconds: 300),
+                  duration: AppMotion.durationMedium,
+                  curve: AppMotion.curveEntrance,
                   builder: (context, scale, child) {
                     return Transform.scale(
                       scale: scale,

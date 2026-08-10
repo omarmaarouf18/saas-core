@@ -23,13 +23,14 @@ class PrimaryButton extends StatefulWidget {
 
 class _PrimaryButtonState extends State<PrimaryButton> {
   DateTime? _lastTapTime;
+  bool _isPressed = false;
 
   void _handleTap() {
     if (widget.onPressed == null) return;
     final now =
         widget.nowProvider != null ? widget.nowProvider!() : DateTime.now();
     if (_lastTapTime != null &&
-        now.difference(_lastTapTime!) < const Duration(milliseconds: 600)) {
+        now.difference(_lastTapTime!) < AppMotion.debounceGuard) {
       return;
     }
     _lastTapTime = now;
@@ -70,25 +71,48 @@ class _PrimaryButtonState extends State<PrimaryButton> {
             ],
           );
 
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed:
-            (widget.isLoading || widget.onPressed == null) ? null : _handleTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.onPrimary,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppRadius.defaultBorder,
-          ),
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.sm,
-            horizontal: AppSpacing.md,
+    final bool isEnabled = !widget.isLoading && widget.onPressed != null;
+
+    return Listener(
+      onPointerDown: (_) {
+        if (isEnabled) {
+          setState(() => _isPressed = true);
+        }
+      },
+      onPointerUp: (_) {
+        if (_isPressed) {
+          setState(() => _isPressed = false);
+        }
+      },
+      onPointerCancel: (_) {
+        if (_isPressed) {
+          setState(() => _isPressed = false);
+        }
+      },
+      child: AnimatedScale(
+        scale: (_isPressed && isEnabled) ? 0.96 : 1.0,
+        duration: AppMotion.durationFast,
+        curve: AppMotion.curveStateChange,
+        child: SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: isEnabled ? _handleTap : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: AppRadius.defaultBorder,
+              ),
+              padding: const EdgeInsets.symmetric(
+                vertical: AppSpacing.sm,
+                horizontal: AppSpacing.md,
+              ),
+            ),
+            child: buttonChild,
           ),
         ),
-        child: buttonChild,
       ),
     );
   }

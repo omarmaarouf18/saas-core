@@ -39,13 +39,14 @@
 
 ---
 
-### Phase 2: Motion, Transitions & Micro-Interactions
-* **Goal**: Standardize screen entrance animations, sheet slide-ins, tab transitions, and interactive tap states using `AppMotion` tokens (`durationFast`, `durationMedium`, `durationSlow`, `curveEntrance`, `curveBounce`).
-* **Scope**: Replace all ad-hoc magic `Duration(...)` calls and hardcoded animation curves across `frontend/lib/screens/` and `frontend/lib/widgets/`.
-* **Definition of Done**:
-  1. Zero magic number `Duration(...)` instances remain in animation builders or page route transitions.
-  2. Micro-interaction feedback (scale or opacity shift) implemented on `PrimaryButton` and `SecondaryButton`.
-  3. `flutter analyze` 0 issues; `flutter test` passes 100%.
+### Phase 2: Motion, Transitions & Micro-Interactions — **[100% COMPLETE & VERIFIED]**
+* **Goal**: Standardize screen entrance animations, sheet slide-ins, tab transitions, and interactive tap states using `AppMotion` tokens (`durationFast`, `durationMedium`, `durationMediumSlow`, `durationSlow`, `curveEntrance`, `curveBounce`).
+* **Scope**: Replaced all ad-hoc magic `Duration(...)` calls and hardcoded animation curves across `frontend/lib/screens/` and `frontend/lib/widgets/`. Added interactive scale micro-interaction tap feedback to `PrimaryButton` and `SecondaryButton` driven by `AppMotion.durationFast` and `AppMotion.curveStateChange`.
+* **Verification Evidence**:
+  1. Automated audit via `scratch/audit_motion.py`: **15 initial findings → 0 remaining motion findings** (2 non-animation background timers in `job_status_screen.dart` documented as background REST polling & clock countdown exceptions).
+  2. Button tap feedback: Added `AnimatedScale` scale-down (0.96) tap feedback on press to `PrimaryButton` and `SecondaryButton`, preserving the existing 600ms tap-debounce logic (`AppMotion.debounceGuard`).
+  3. `flutter analyze`: **0 issues**.
+  4. `flutter test`: **100% pass (173/173 tests passed)** including 2 new widget scale test cases in `shared_widgets_test.dart`.
 
 ---
 

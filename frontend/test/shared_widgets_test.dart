@@ -367,5 +367,79 @@ void main() {
       await tester.pump();
       expect(tapCount, equals(2));
     });
+
+    testWidgets(
+        'PrimaryButton displays AnimatedScale tap feedback on press down',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PrimaryButton(
+              text: 'Submit',
+              onPressed: () {},
+            ),
+          ),
+        ),
+      );
+
+      final animatedScaleFinder = find.byType(AnimatedScale);
+      expect(animatedScaleFinder, findsOneWidget);
+
+      final initialScaleWidget =
+          tester.widget<AnimatedScale>(animatedScaleFinder);
+      expect(initialScaleWidget.scale, equals(1.0));
+
+      final gesture = await tester
+          .startGesture(tester.getCenter(find.byType(PrimaryButton)));
+      await tester.pump();
+
+      final pressedScaleWidget =
+          tester.widget<AnimatedScale>(animatedScaleFinder);
+      expect(pressedScaleWidget.scale, equals(0.96));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      final releasedScaleWidget =
+          tester.widget<AnimatedScale>(animatedScaleFinder);
+      expect(releasedScaleWidget.scale, equals(1.0));
+    });
+
+    testWidgets(
+        'SecondaryButton displays AnimatedScale tap feedback on press down',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SecondaryButton(
+              text: 'Cancel',
+              onPressed: () {},
+            ),
+          ),
+        ),
+      );
+
+      final animatedScaleFinder = find.byType(AnimatedScale);
+      expect(animatedScaleFinder, findsOneWidget);
+
+      final initialScaleWidget =
+          tester.widget<AnimatedScale>(animatedScaleFinder);
+      expect(initialScaleWidget.scale, equals(1.0));
+
+      final gesture = await tester
+          .startGesture(tester.getCenter(find.byType(SecondaryButton)));
+      await tester.pump();
+
+      final pressedScaleWidget =
+          tester.widget<AnimatedScale>(animatedScaleFinder);
+      expect(pressedScaleWidget.scale, equals(0.96));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      final releasedScaleWidget =
+          tester.widget<AnimatedScale>(animatedScaleFinder);
+      expect(releasedScaleWidget.scale, equals(1.0));
+    });
   });
 }
