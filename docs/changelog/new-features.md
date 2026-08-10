@@ -2,6 +2,14 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Owner Home Screen Settings Navigation Duplication Removal
+
+- **Implementation Detail**:
+  - **Duplicate Navigation Path Elimination (`frontend/lib/screens/home_screen.dart`)**: Audited role-branching logic in `home_screen.dart`. Removed the duplicate top AppBar settings `IconButton` (`key: const Key('settings_button')`) from the tabbed Owner role branch (`isOwner == true`), making Settings reachable exclusively via the bottom navigation bar (`owner_nav_tab_settings`).
+  - **Preserved Non-Tabbed Fallback Access**: Retained the AppBar settings `IconButton` in the fallback non-tabbed branch (`!isOwner`) where no bottom navigation bar exists, preserving Settings access for basic/unrecognized roles.
+- **Commit SHA**: ``20b66174a93713d3a5f35bdb2095614e863f0684``
+- **Verification**: Verified via `grep -n "Icons.settings"` (0 duplicate access paths remaining), `flutter analyze` (0 issues found), `flutter test` (100% pass, 191/191 tests passed), `make docs-check`, and `.githooks/pre-push` gate exit code 0. ✅
+
 ## Enterprise UI/UX Polish & Frontend Hardening Pass
 
 - **Implementation Detail**:
