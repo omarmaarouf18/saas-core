@@ -2,6 +2,12 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Removal of Dead DeductCODFee Store Method (ADR-0017 Cleanup)
+
+- **Implementation Detail**: Removed `DeductCODFee` store method from `services/user-service/internal/store/mongodb.go` and corresponding test step in `mongodb_test.go`. The function was dead code left over from pre-ADR-0017 fee-deduction logic and contradicted the zero-commission COD model implemented in commit ``aaaacc531ffe24a9aa6da3c99231844ef4fa8803`` (where `CompleteCODJob` in `handlers.go` performs pure status-only logging with 0% platform fee and zero wallet mutation). Updated architecture maps (`DESIGN.md`, `docs/APPLICATION_MAP.md`, `docs/BUSINESS_LOGIC_AUDIT.md`, `docs/adr/0017-zero-commission-subscription-only-revenue-model.md`).
+- **Commit SHA**: ``431d42a8c0c426fe66037257d42878a84f74c73f``
+- **Verification**: Verified via `gofmt`, `go build`, `go vet`, `go test ./services/user-service/...` (100% pass), and repo-wide grep confirming zero remaining references. ✅
+
 ## COD Job Cancel/Complete Race Condition & AgreedPrice Escrow Refund Math (Audit Findings 1 & 2)
 
 - **Implementation Detail**:
