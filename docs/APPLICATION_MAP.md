@@ -282,16 +282,14 @@ Detailed execution paths for transactions requiring absolute auditing integrity:
          │
          ▼
 POST /users/jobs/complete  ──► (Validates JWT, Checks payment_method == "cod")
-         │
-         ▼
-[user-service] ──────────────► (Fetches global PlatformConfig for fee %)
-         │
-         ▼
-[user-service Store] ────────► DeductCODFee()
-         │
-         ├──► Increment platform wallet balance in MongoDB
-         ├──► Decrement owner wallet balance in MongoDB (allows negative balance)
-         └──► Insert TransactionLedger entry {"id": "tx-<timestamp>-fee", ...}
+          │
+          ▼
+[user-service] ──────────────► (Status-only logging, 0% platform fee per ADR-0017)
+          │
+          ▼
+[user-service Store] ────────► CompleteCODJob()
+          │
+          └──► Logs cash collection event without wallet balance mutation
 ```
 
 ### 2. KYC / KYB Gating

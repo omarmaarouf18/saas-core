@@ -389,7 +389,7 @@ This section consolidates the resolution status for all 10 findings from the ext
 
 ## COD Completion Concurrency Hardening
 
-- **Implementation Detail**: Hardened the Cash on Delivery (COD) job completion path to be atomic by updating the job document status from `active` to `completed` inside `DeductCODFee`'s transaction (using conditional `UpdateOne`). If the job status is already updated, subsequent concurrent completion attempts will fail to match the query and are rejected with a 409 Conflict. This prevents double platform fee deductions and duplicate ledger entries.
+- **Implementation Detail**: Hardened the Cash on Delivery (COD) job completion path to be atomic by updating the job document status from `active` to `completed` inside the completion transaction (using conditional `UpdateOne`). If the job status is already updated, subsequent concurrent completion attempts will fail to match the query and are rejected with a 409 Conflict. This prevents duplicate completions and duplicate ledger entries.
 - **Commit SHA**: ``2c914b98d29631938e543bb770046666180a84b8``
 - **Verification**: Verified via user-service concurrency tests. ✅
 

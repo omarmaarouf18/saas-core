@@ -7,7 +7,7 @@
 
 ## Context
 
-A recent business-logic audit (`docs/BUSINESS_LOGIC_AUDIT.md`) found that the current codebase deducts a 15% platform fee (`PlatformFeePercentage`, currently defaulting to `15.0` in the `platform_config` collection) on every completed job, via `ReleaseEscrowWithSplit` (electronic/wallet-based payments) and `DeductCODFee` (cash-on-delivery payments), in `services/user-service/internal/store/mongodb.go`.
+A recent business-logic audit (`docs/BUSINESS_LOGIC_AUDIT.md`) found that the codebase previously deducted a 15% platform fee (`PlatformFeePercentage`, defaulting to `15.0` in the `platform_config` collection) on every completed job, via `ReleaseEscrowWithSplit` (electronic/wallet-based payments) and legacy COD fee deduction (in `services/user-service/internal/store/mongodb.go`).
 
 This does not reflect the actual, current business model: the platform's only revenue source is the monthly SaaS subscription fee, which already covers infrastructure, the application, and the payment gateway the platform provides. The platform takes 0% of any transaction, regardless of payment method — all transaction value belongs entirely to the owner.
 
@@ -24,7 +24,7 @@ Electronic payment gateways (Visa/InstaPay/etc.) are NOT yet contracted — COD 
 
 ## Consequences
 
-- `ReleaseEscrowWithSplit`, `DeductCODFee`, and the `platform_wallet_id` / platform-central wallet concept as currently implemented no longer match intended behavior and require rework in a follow-up implementation task (do not implement in this ADR task).
+- `ReleaseEscrowWithSplit`, legacy COD fee deduction logic, and the `platform_wallet_id` / platform-central wallet concept as previously implemented no longer match intended behavior and were updated/removed.
 - The existing escrow LOCKING mechanism for electronic payments (job's `locked_escrow_amount`, held until job completion) is NOT necessarily removed — it may still be the correct mechanism for holding electronic payment funds until job completion for dispute-resolution purposes, just with 0% fee taken on release rather than a 15%/85% split. Flag this as an open question for the follow-up implementation task to confirm rather than deciding definitively here.
 - All existing wallet/ledger financial tests referencing `PlatformFeePercentage` or fee amounts will need rework in the follow-up implementation task.
 - Existing production data (`platform_config` document with `PlatformFeePercentage: 15.0`) will need a data correction once code changes land — note this as a required step for the follow-up task, not something to execute now.

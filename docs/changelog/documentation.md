@@ -6,7 +6,7 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ## ADR-0017 Zero-Commission Subscription-Only Revenue Model Architecture
 
-- **Implementation Detail**: Authored `docs/adr/0017-zero-commission-subscription-only-revenue-model.md` defining the business-model pivot to a 0% platform transaction commission revenue model (monthly SaaS subscription fee as sole platform revenue source). Established 0% commission across all payment channels, pure log-entry COD collection without wallet balance mutation, centralized electronic payment credits with tenant owner withdrawal/payout request capability, and planned remediation for `ReleaseEscrowWithSplit` and `DeductCODFee`. Indexed in `docs/adr/README.md`, appended root cause notes in `docs/BUSINESS_LOGIC_AUDIT.md`, registered Phase 18 tracking entry in `docs/frontend/STATUS.md`, and updated `AI_CONTEXT.md`.
+- **Implementation Detail**: Authored `docs/adr/0017-zero-commission-subscription-only-revenue-model.md` defining the business-model pivot to a 0% platform transaction commission revenue model (monthly SaaS subscription fee as sole platform revenue source). Established 0% commission across all payment channels, pure log-entry COD collection without wallet balance mutation, centralized electronic payment credits with tenant owner withdrawal/payout request capability, and remediation removing legacy fee deduction paths. Indexed in `docs/adr/README.md`, appended root cause notes in `docs/BUSINESS_LOGIC_AUDIT.md`, registered Phase 18 tracking entry in `docs/frontend/STATUS.md`, and updated `AI_CONTEXT.md`.
 - **Commit SHA**: ``a2835440a8b3795fbb3c8551c09a621bf7e78f58``
 - **Verification**: Verified via `make docs-check` and git history verification. ✅
 

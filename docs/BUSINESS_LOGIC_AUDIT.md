@@ -26,16 +26,16 @@ This review was concentrated on the highest-financial-risk surface (job lifecycl
 * **Status**: Confirmed
 * **Citations**:
   * Store Implementation: [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L903-L917) (`CancelJob` lines 903–917)
-  * Store Comparisons: [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L531-L565) (`ReleaseEscrowWithSplit` lines 531–565), [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L698-L724) (`DeductCODFee` lines 698–724), [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L920-L948) (`RefundEscrow` lines 920–948)
+  * Store Comparisons: [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L531-L565) (`ReleaseEscrowWithSplit` lines 531–565), [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go) (legacy COD fee deduction), [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L920-L948) (`RefundEscrow` lines 920–948)
   * Handler Implementation: [`services/user-service/internal/handlers/handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L2379-L2415) (`CancelJob` lines 2379–2415)
 
 > [!NOTE]
 > **Business Model Update**: Root cause identified — see [ADR-0017](adr/0017-zero-commission-subscription-only-revenue-model.md) for the corrected business model; code remediation tracked separately.
 
 ### Detail & Verification Findings
-In `services/user-service/internal/store/mongodb.go`, job status state transitions for non-COD lifecycle operations (`ReleaseEscrowWithSplit`, `DeductCODFee`, `RefundEscrow`) are all guarded using an atomic compare-and-swap (CAS) pattern. Specifically:
+In `services/user-service/internal/store/mongodb.go`, job status state transitions for non-COD lifecycle operations (`ReleaseEscrowWithSplit`, legacy COD fee deduction, `RefundEscrow`) are all guarded using an atomic compare-and-swap (CAS) pattern. Specifically:
 - `ReleaseEscrowWithSplit` conditions its `UpdateOne` query on `status: {$in: [JobStatusActive, JobStatusEscrowReconciliationRequired]}`.
-- `DeductCODFee` conditions its `UpdateOne` query on `status: JobStatusActive`.
+- Legacy COD fee deduction conditioned its `UpdateOne` query on `status: JobStatusActive`.
 - `RefundEscrow` conditions its `UpdateOne` query on `status: {$in: [JobStatusActive, JobStatusPending, JobStatusEscrowReconciliationRequired]}`.
 
 In contrast, `CancelJob` in `mongodb.go` (line 904) executes an unguarded database update:
@@ -54,10 +54,10 @@ The query filters strictly on `{"_id": id}` with **no status precondition**.
 2. **Concrete Concurrency Race**:
    - A `POST /users/jobs/complete` request and a `POST /users/jobs/cancel` request for the same active COD job arrive concurrently.
    - At time of request receipt, both handlers read the job document from MongoDB and observe `Status == JobStatusActive`.
-   - `CompleteJob` invokes `DeductCODFee`, which checks `status: JobStatusActive`, updates the job status to `Completed`, deducts the platform fee from the owner's wallet (`total_balance` and `withdrawable_balance`), and records a transaction ledger entry.
+   - `CompleteJob` invokes the completion path (formerly fee deduction), which checks `status: JobStatusActive`, updates the job status to `Completed`, and records a transaction ledger entry.
    - Concurrently, `CancelJob` skips `RefundEscrow` (because `PaymentMethod == "cod"`) and calls `store.CancelJob`.
-   - Because `store.CancelJob`'s `UpdateOne` does not filter on `status: JobStatusActive`, it executes successfully after `DeductCODFee` has already committed. It overwrites the job status from `Completed` to `Cancelled` without error.
-3. **Financial & State Impact**: The owner's wallet is debited for the platform fee (real balance mutation), while the database retains a final job status of `Cancelled`. The state machine is corrupted and financial metrics diverge.
+   - Because `store.CancelJob`'s `UpdateOne` did not filter on `status: JobStatusActive`, it executed successfully after completion committed. It overwrote the job status from `Completed` to `Cancelled` without error.
+3. **Financial & State Impact**: The owner's wallet had state mutation in legacy model, while the database retained a final job status of `Cancelled`. The state machine is corrupted and financial metrics diverge.
 
 ---
 

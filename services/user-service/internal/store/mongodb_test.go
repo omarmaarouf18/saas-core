@@ -199,20 +199,7 @@ func TestMongoDB_WalletAndEscrow(t *testing.T) {
 		t.Fatalf("ReleaseEscrowWithSplit failed: %v", err)
 	}
 
-	// Create active job for DeductCODFee
-	jobCOD := &models.Job{
-		ID:      "job-cod-1",
-		OwnerID: tenantID,
-		Status:  models.JobStatusActive,
-	}
-	_ = s.CreateJob(ctx, jobCOD)
-
-	// 5. DeductCODFee
-	if err := s.DeductCODFee(ctx, tenantID, "job-cod-1", 5.0); err != nil {
-		t.Fatalf("DeductCODFee failed: %v", err)
-	}
-
-	// 6. GetLedger (returns []models.TransactionLedger)
+	// 5. GetLedger (returns []models.TransactionLedger)
 	ledger := s.GetLedger(ctx, tenantID)
 	if len(ledger) == 0 {
 		t.Errorf("GetLedger returned 0 items")
