@@ -266,7 +266,7 @@ class _WalletScreenState extends State<WalletScreen> {
           if (payout.status.toLowerCase() == 'rejected' &&
               payout.rejectionReason != null &&
               payout.rejectionReason!.isNotEmpty) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               "${l10n.payoutRejectionReasonLabel} ${payout.rejectionReason}",
               key: Key('payout_rejection_reason_${payout.id}'),
@@ -318,7 +318,7 @@ class _WalletScreenState extends State<WalletScreen> {
         break;
       case 'refund':
         icon = Icons.replay_rounded;
-        color = Colors.teal;
+        color = AppColors.success;
         break;
       case 'fee_deduction':
         icon = Icons.remove_circle_outline_rounded;

@@ -103,7 +103,7 @@ class _RatingScreenState extends State<RatingScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.ratingIdentityError),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.danger,
         ),
       );
       return;
@@ -131,7 +131,7 @@ class _RatingScreenState extends State<RatingScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.ratingSuccessMsg),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         // Refresh the other party status to see if it unlocks
@@ -146,7 +146,7 @@ class _RatingScreenState extends State<RatingScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.ratingFailed(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.danger,
           ),
         );
       }
@@ -458,7 +458,7 @@ class _RatingScreenState extends State<RatingScreen> {
                     height: 6,
                     decoration: BoxDecoration(
                       color: colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(3),
+                      borderRadius: BorderRadius.circular(AppRadius.radiusXxs),
                     ),
                   ),
                 ),
@@ -468,7 +468,7 @@ class _RatingScreenState extends State<RatingScreen> {
                     height: 6,
                     decoration: BoxDecoration(
                       color: AppColors.outline.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(3),
+                      borderRadius: BorderRadius.circular(AppRadius.radiusXxs),
                     ),
                   ),
                 ),

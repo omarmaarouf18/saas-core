@@ -110,10 +110,10 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   right: 8,
                   top: 8,
                   child: Container(
-                    padding: const EdgeInsets.all(2),
+                    padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
                     decoration: BoxDecoration(
                       color: AppColors.error,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
                     ),
                     constraints: const BoxConstraints(
                       minWidth: 16,
@@ -168,7 +168,7 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
         ),
         title: Text(
           _getTabTitle(_currentIndex, l10n),
-          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+          style: AppTypography.titleMd.copyWith(color: Theme.of(context).colorScheme.onSurface),
         ),
         actions: [
           _buildNotificationBell(context),

@@ -117,10 +117,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 right: 8,
                 top: 8,
                 child: Container(
-                  padding: const EdgeInsets.all(2),
+                  padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
                   decoration: BoxDecoration(
                     color: AppColors.error,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
                   ),
                   constraints: const BoxConstraints(
                     minWidth: 16,
@@ -194,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           title: Text(
             l10n.quickDeliveryDashboard,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            style: AppTypography.titleMd.copyWith(color: Theme.of(context).colorScheme.onSurface),
           ),
           actions: [
             if (user.role == 'reviewer' || user.role == 'admin')
@@ -298,7 +298,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         title: Text(
           _getTabTitle(context, _currentIndex),
-          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+          style: AppTypography.titleMd.copyWith(color: Theme.of(context).colorScheme.onSurface),
         ),
         actions: [
           if (user.role == 'reviewer' || user.role == 'admin')

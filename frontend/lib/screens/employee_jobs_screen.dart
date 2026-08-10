@@ -219,10 +219,10 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 right: 8,
                 top: 8,
                 child: Container(
-                  padding: const EdgeInsets.all(2),
+                  padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
                   decoration: BoxDecoration(
                     color: AppColors.error,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
                   ),
                   constraints: const BoxConstraints(
                     minWidth: 16,
@@ -313,7 +313,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               const SizedBox(height: AppSpacing.sm),
               if (jobsProvider.isLoading && jobsProvider.jobs.isEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40.0),
+                  padding: const EdgeInsetsDirectional.symmetric(vertical: AppSpacing.xxl),
                   child:
                       ThemedLoadingIndicator(message: l10n.employeeJobsLoading),
                 )

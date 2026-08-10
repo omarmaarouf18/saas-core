@@ -406,7 +406,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                             break;
                           case 'refund':
                             icon = Icons.replay_rounded;
-                            color = Colors.teal;
+                            color = AppColors.success;
                             break;
                           case 'fee_deduction':
                             icon = Icons.remove_circle_outline_rounded;

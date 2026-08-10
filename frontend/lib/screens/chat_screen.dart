@@ -82,7 +82,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.chatFailedSend(e.toString())),
-            backgroundColor: Colors.red.shade800,
+            backgroundColor: AppColors.danger,
           ),
         );
       }
@@ -114,7 +114,7 @@ class _ChatScreenState extends State<ChatScreen> {
             decoration: const BoxDecoration(
                 color: AppColors.success, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: AppSpacing.xs),
           Text(
             "Live",
             style: AppTypography.labelMd.copyWith(color: AppColors.success),
@@ -133,7 +133,7 @@ class _ChatScreenState extends State<ChatScreen> {
               color: AppColors.warning,
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: AppSpacing.xs),
           Text(
             l10n.loading,
             style: AppTypography.labelMd.copyWith(color: AppColors.warning),
@@ -150,7 +150,7 @@ class _ChatScreenState extends State<ChatScreen> {
             decoration: const BoxDecoration(
                 color: AppColors.outline, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: AppSpacing.xs),
           Text(
             "Disconnected",
             style: AppTypography.labelMd.copyWith(color: AppColors.outline),

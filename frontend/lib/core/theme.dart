@@ -59,12 +59,16 @@ const Color kStatusWarning = AppColors.warning;
 
 // 2. Spacing Scale (8pt grid system)
 class AppSpacing {
+  static const double xxs = 2.0;
   static const double xs = 4.0;
   static const double base = 8.0;
+  static const double baseSm = 10.0;
   static const double sm = 12.0;
   static const double md = 16.0;
   static const double lg = 24.0;
   static const double xl = 32.0;
+  static const double xxl = 40.0;
+  static const double xxxl = 100.0;
   static const double gutter = 16.0;
   static const double marginMobile = 16.0;
   static const double marginDesktop = 48.0;
@@ -72,26 +76,37 @@ class AppSpacing {
 
 // 3. Border Radius Scale
 class AppRadius {
+  static const double xxs = 3.0;
   static const double xs = 2.0;
   static const double sm = 4.0;
   static const double defaultValue = 8.0;
+  static const double smMd = 10.0;
   static const double md = 12.0;
   static const double lg = 16.0;
+  static const double lgXl = 20.0;
   static const double xl = 24.0;
   static const double full = 9999.0;
 
   // Named aliases
+  static const double radiusXxs = xxs;
+  static const double radiusXs = xs;
   static const double radiusSm = sm;
+  static const double radiusDefault = defaultValue;
+  static const double radiusSmMd = smMd;
   static const double radiusMd = md;
   static const double radiusLg = lg;
+  static const double radiusLgXl = lgXl;
   static const double radiusXl = xl;
   static const double radiusFull = full;
 
+  static BorderRadius get xxsBorder => BorderRadius.circular(xxs);
   static BorderRadius get xsBorder => BorderRadius.circular(xs);
   static BorderRadius get smBorder => BorderRadius.circular(sm);
   static BorderRadius get defaultBorder => BorderRadius.circular(defaultValue);
+  static BorderRadius get smMdBorder => BorderRadius.circular(smMd);
   static BorderRadius get mdBorder => BorderRadius.circular(md);
   static BorderRadius get lgBorder => BorderRadius.circular(lg);
+  static BorderRadius get lgXlBorder => BorderRadius.circular(lgXl);
   static BorderRadius get xlBorder => BorderRadius.circular(xl);
   static BorderRadius get fullBorder => BorderRadius.circular(full);
 }

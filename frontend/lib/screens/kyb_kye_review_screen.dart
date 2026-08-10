@@ -343,7 +343,7 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
               color:
                   isAvailable ? AppColors.success : AppColors.onSurfaceVariant,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: AppSpacing.xs),
             Text(
               label,
               style: AppTypography.bodyMd.copyWith(

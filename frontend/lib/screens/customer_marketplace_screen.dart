@@ -90,10 +90,10 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                   right: 8,
                   top: 8,
                   child: Container(
-                    padding: const EdgeInsets.all(2),
+                    padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
                     decoration: BoxDecoration(
                       color: AppColors.error,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
                     ),
                     constraints: const BoxConstraints(
                       minWidth: 16,
@@ -173,7 +173,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         label: Text(
                           "${_customerLat.toStringAsFixed(4)}, ${_customerLon.toStringAsFixed(4)}",
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          style: AppTypography.bodyMd.copyWith(fontWeight: FontWeight.w600),
                         ),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
@@ -849,7 +849,7 @@ class _ServiceRatingWidgetState extends State<ServiceRatingWidget> {
       mainAxisSize: MainAxisSize.min,
       children: [
         const Icon(Icons.star, color: AppColors.secondary, size: 16),
-        const SizedBox(width: 4),
+        const SizedBox(width: AppSpacing.xs),
         Text(
           "${_avg!.toStringAsFixed(1)} ($_count)",
           style: AppTypography.labelMd.copyWith(

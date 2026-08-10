@@ -89,11 +89,11 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                 child: Column(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 2),
+                      padding: const EdgeInsetsDirectional.symmetric(
+                          horizontal: AppSpacing.xs, vertical: AppSpacing.xxs),
                       decoration: BoxDecoration(
                         color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppRadius.radiusSm),
                       ),
                       child: const Text(
                         'Pickup',
@@ -125,11 +125,11 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                 child: Column(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
+                      padding: const EdgeInsetsDirectional.symmetric(
+                          horizontal: 6, vertical: AppSpacing.xxs),
                       decoration: BoxDecoration(
                         color: AppColors.secondary,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppRadius.radiusSm),
                         border: Border.all(color: AppColors.primary),
                       ),
                       child: Text(
@@ -181,22 +181,22 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                   right: 16,
                   child: Material(
                     elevation: 4,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.radiusDefault),
                     child: Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsetsDirectional.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.radiusDefault),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.directions_car_outlined,
+                          const Icon(Icons.directions_car_outlined,
                               color: AppColors.primary),
-                          SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.base),
                           Expanded(
                             child: Text(
                               'Waiting for courier location updates...',
-                              style: TextStyle(fontSize: 13),
+                              style: AppTypography.labelLg.copyWith(fontSize: 13),
                             ),
                           ),
                         ],
@@ -213,14 +213,14 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                   right: 16,
                   child: Material(
                     elevation: 4,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.radiusDefault),
                     child: Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsetsDirectional.all(AppSpacing.baseSm),
                       decoration: BoxDecoration(
                         color: provider.subscriptionError != null
                             ? AppColors.danger
                             : AppColors.warning,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.radiusDefault),
                       ),
                       child: Row(
                         children: [
@@ -231,7 +231,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                             color: Colors.white,
                             size: 18,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.base),
                           Expanded(
                             child: Text(
                               provider.subscriptionError ??

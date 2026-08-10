@@ -636,7 +636,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                       children: [
                         const Icon(Icons.timer_outlined,
                             size: 14, color: AppColors.warning),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: AppSpacing.xs),
                         Text(
                           _remainingTimeString,
                           key: const Key('countdown_timer_text'),

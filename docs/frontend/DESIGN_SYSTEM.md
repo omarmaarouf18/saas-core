@@ -40,12 +40,16 @@ This design system provides the visual architecture and component spec for Quick
 
 | Token Name | Value (dp) | Usage Rule |
 | :--- | :--- | :--- |
+| `AppSpacing.xxs` | `2.0` | Micro badge padding, tight vertical chip insets |
 | `AppSpacing.xs` | `4.0` | Micro spacing (icon-to-text gap, badge internal padding) |
 | `AppSpacing.base` | `8.0` | Standard grid unit (list item padding, tight row gaps) |
+| `AppSpacing.baseSm` | `10.0` | Intermediate dialog/banner padding, status pill insets |
 | `AppSpacing.sm` | `12.0` | Small container inset, compact card interior padding |
 | `AppSpacing.md` | `16.0` | Standard page margin (mobile), card interior padding |
 | `AppSpacing.lg` | `24.0` | Large section gap, spacing between distinct card groups |
 | `AppSpacing.xl` | `32.0` | Major screen division gap, header-to-content separation |
+| `AppSpacing.xxl` | `40.0` | Large empty state vertical spacing |
+| `AppSpacing.xxxl` | `100.0` | Screen empty state placeholder top spacer |
 | `AppSpacing.gutter` | `16.0` | Standard grid gutter width between multi-column cards |
 | `AppSpacing.marginMobile` | `16.0` | Horizontal scaffold edge margin on mobile viewports |
 | `AppSpacing.marginDesktop` | `48.0` | Horizontal scaffold edge margin on desktop viewports |
@@ -54,11 +58,14 @@ This design system provides the visual architecture and component spec for Quick
 
 | Token Name | Value (dp) | Helper Property | Usage Rule |
 | :--- | :--- | :--- | :--- |
+| `AppRadius.xxs` | `3.0` | `AppRadius.xxsBorder` | Mini progress track indicators |
 | `AppRadius.xs` | `2.0` | `AppRadius.xsBorder` | Micro tags, progress bar indicators |
 | `AppRadius.sm` | `4.0` | `AppRadius.smBorder` | Status badges, chip elements, tooltips |
 | `AppRadius.defaultValue` | `8.0` | `AppRadius.defaultBorder` | Buttons, text fields, small alert banners |
+| `AppRadius.smMd` | `10.0` | `AppRadius.smMdBorder` | Unread notification badge pill radius |
 | `AppRadius.md` | `12.0` | `AppRadius.mdBorder` | Standard surface cards (`ThemedCard`), metric tiles |
 | `AppRadius.lg` | `16.0` | `AppRadius.lgBorder` | Large modal cards, hero summary banners |
+| `AppRadius.lgXl` | `20.0` | `AppRadius.lgXlBorder` | Pill category badge radius |
 | `AppRadius.xl` | `24.0` | `AppRadius.xlBorder` | Bottom sheet top corners, floating dialogs |
 | `AppRadius.full` | `9999.0` | `AppRadius.fullBorder` | Circular avatars (`EntityAvatar`), pill buttons |
 
@@ -196,7 +203,10 @@ Column(
 
 ## 5. Tracked Design Debt Backlog
 
-The following 55 instances of hardcoded values bypass our design token system and are scheduled for remediation in Phase 1 of our UI/UX Roadmap:
+> [!NOTE]
+> **Status**: **[100% RESOLVED IN PHASE 1]** All 55 catalogued instances of hardcoded values have been replaced with canonical `AppColors`, `AppSpacing`, `AppRadius`, and `AppTypography` design tokens. Automated audit via `scratch/audit_debt.py` returns **0** findings.
+
+The following 55 catalogued instances of hardcoded values were remediated in Phase 1:
 
 | # | Screen File | Line | Debt Category | Raw Value | Context |
 | :--- | :--- | :--- | :--- | :--- | :--- |

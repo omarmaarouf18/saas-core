@@ -237,7 +237,7 @@ class _OwnerReconciliationQueueScreenState
                     icon: const Icon(Icons.undo, color: AppColors.error),
                     label: Text(
                       l10n.reconciliationRefundCustomer,
-                      style: const TextStyle(color: AppColors.error),
+                      style: AppTypography.bodyMd.copyWith(color: AppColors.error),
                     ),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.error),
@@ -290,7 +290,7 @@ class _OwnerReconciliationQueueScreenState
     Color? valueColor,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      padding: const EdgeInsetsDirectional.symmetric(vertical: AppSpacing.xxs),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

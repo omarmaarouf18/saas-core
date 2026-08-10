@@ -108,6 +108,9 @@
     *   *(b) Brand Identity Guide*: **[VERIFIED]** Authored `docs/frontend/BRAND_IDENTITY.md` establishing color personality rationale (Deep Navy enterprise trust + Amber Gold speed), logo specs & clear-space rules (`frontend/assets/branding/qd_logo.svg`), Egyptian colloquial Arabic voice guidance, and Uber/Talabat UI competitor benchmark patterns.
     *   *(c) Design System Master Spec & Component Audit*: **[VERIFIED]** Authored `docs/frontend/DESIGN_SYSTEM.md` documenting full token specifications, complete 18-widget component library catalog, screen composition patterns with code snippets, 55-instance tracked design debt backlog, and RTL directional layout rules.
     *   *(d) Phased UI/UX Enterprise Roadmap*: **[VERIFIED]** Authored `docs/frontend/UI_UX_ENTERPRISE_ROADMAP.md` defining a 6-phase roadmap (Phases 1–6) covering debt cleanup, motion standardization, empty/error state polish, visual hierarchy, performance perception/shimmer loaders, and multi-viewport device QA.
+    * **Phase 20: Design Token System Migration & Debt Cleanup (UI/UX Roadmap Phase 1)** — **[100% COMPLETE & VERIFIED]**
+    *   *(a) Design Debt Remediation*: **[VERIFIED]** Replaced all 55 catalogued instances of hardcoded values across 16 files with canonical `AppColors`, `AppSpacing`, `AppRadius`, and `AppTypography` design tokens. Extended `theme.dart` with clean intermediate tokens (`AppSpacing.xxs/baseSm/xxl/xxxl`, `AppRadius.xxs/smMd/lgXl`). Re-ran `scratch/audit_debt.py` confirming **0** remaining debt findings.
+    *   *(b) Automated & Verification Gates*: **[VERIFIED]** `flutter analyze` (0 issues), `flutter test` (100% pass, 171/171 tests), RTL `ar_EG` layout validation passed.
 
  ---
 

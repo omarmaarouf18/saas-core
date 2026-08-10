@@ -80,7 +80,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                         ? ListView(
                             physics: const AlwaysScrollableScrollPhysics(),
                             children: [
-                              const SizedBox(height: 100),
+                              const SizedBox(height: AppSpacing.xxxl),
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: AppSpacing.lg),
@@ -132,15 +132,15 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                           ),
                                           const SizedBox(width: AppSpacing.sm),
                                           Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 4,
+                                            padding: const EdgeInsetsDirectional.symmetric(
+                                              horizontal: AppSpacing.baseSm,
+                                              vertical: AppSpacing.xs,
                                             ),
                                             decoration: BoxDecoration(
                                               color: AppColors.primary
                                                   .withValues(alpha: 0.1),
                                               borderRadius:
-                                                  BorderRadius.circular(20),
+                                                  BorderRadius.circular(AppRadius.radiusLgXl),
                                             ),
                                             child: Text(
                                               categoryLabel,
