@@ -2,6 +2,12 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## ADR-0017 Migration Script Database Name Target Remediation (Finding #8 Alignment)
+
+- **Implementation Detail**: Remediated critical migration script bug in `docs/DEPLOYMENT.md` §11.1 where the ADR-0017 `platform_config` migration script targeted the obsolete shared database name `saas_platform` instead of `user_db` (`${USER_MONGO_DATABASE:-user_db}`). Following Finding #8's database-per-service separation, `user-service` connects to `user_db`. Running the old script would have left production charging the old 15% platform fee. Updated `docs/DEPLOYMENT.md` §11.1 and `mongodump` backup commands, as well as `README.md` manual database ops procedures (`users` -> `auth_db`, `subscriptions` -> `user_db`). Executed the corrected migration against live `user_db.platform_config` setting `platform_fee_percentage: 0.0`.
+- **Commit SHA**: ``d97ef3a3ef5051be2b4adb85cc67004b35237ee4``
+- **Verification**: Verified via `mongosh` against `user_db.platform_config` returning `{ _id: "global", platform_fee_percentage: 0 }`. Passed `go test ./shared/infra/changelog_validation_test.go`. ✅
+
 ## Removal of Dead DeductCODFee Store Method (ADR-0017 Cleanup)
 
 - **Implementation Detail**: Removed `DeductCODFee` store method from `services/user-service/internal/store/mongodb.go` and corresponding test step in `mongodb_test.go`. The function was dead code left over from pre-ADR-0017 fee-deduction logic and contradicted the zero-commission COD model implemented in commit ``aaaacc531ffe24a9aa6da3c99231844ef4fa8803`` (where `CompleteCODJob` in `handlers.go` performs pure status-only logging with 0% platform fee and zero wallet mutation). Updated architecture maps (`DESIGN.md`, `docs/APPLICATION_MAP.md`, `docs/BUSINESS_LOGIC_AUDIT.md`, `docs/adr/0017-zero-commission-subscription-only-revenue-model.md`).
