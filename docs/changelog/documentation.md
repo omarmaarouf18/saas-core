@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## Motion, Transitions & Micro-Interactions (Phase 2)
+
+- **Implementation Detail**: Replaced all hardcoded `Duration` and raw `Curves` instances across screen & widget files with canonical `AppMotion` tokens (`durationFast`, `durationMedium`, `durationMediumSlow`, `durationSlow`, `snackBarDisplay`, `curveEntrance`, `curveBounce`). Extended `frontend/lib/core/theme.dart` with `AppMotion.durationMediumSlow` (400ms), `AppMotion.snackBarDisplay` (2s), and `AppMotion.debounceGuard` (600ms). Added interactive `AnimatedScale` (0.96) micro-interaction tap feedback to `PrimaryButton` and `SecondaryButton` while preserving the 600ms tap-debounce logic. Re-ran `scratch/audit_motion.py` confirming **0** remaining motion findings. Updated `docs/frontend/DESIGN_SYSTEM.md`, `docs/frontend/UI_UX_ENTERPRISE_ROADMAP.md` (Phase 2 evidence), `docs/frontend/STATUS.md` (Phase 21 entry), and `AI_CONTEXT.md`.
+- **Commit SHA**: ``d8b0b2fe6db33ddd27944dc96701dfe74d333d18``
+- **Verification**: Verified via `scratch/audit_motion.py` (0 motion findings), `flutter analyze` (0 issues), and `flutter test` (173/173 pass 100% including 2 new scale tap feedback widget test cases). ✅
+
 ## Design Token System Migration & Debt Cleanup (Phase 1)
 
 - **Implementation Detail**: Replaced all 55 catalogued instances of hardcoded values across 16 files with canonical `AppColors`, `AppSpacing`, `AppRadius`, and `AppTypography` design tokens. Extended `frontend/lib/core/theme.dart` with clean intermediate tokens (`AppSpacing.xxs/baseSm/xxl/xxxl`, `AppRadius.xxs/smMd/lgXl`). Re-ran `scratch/audit_debt.py` confirming **0** remaining debt findings. Updated `docs/frontend/DESIGN_SYSTEM.md` (§2 tokens table, §5 debt backlog), `docs/frontend/UI_UX_ENTERPRISE_ROADMAP.md` (Phase 1 completion evidence), `docs/frontend/STATUS.md` (Phase 20 tracker entry), and `AI_CONTEXT.md`.
