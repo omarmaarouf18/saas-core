@@ -395,25 +395,100 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                             ],
                           ),
                           const SizedBox(height: AppSpacing.md),
-                          Row(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: ThemedTextField(
-                                  key:
-                                      const Key('owner_config_photo_url_field'),
-                                  labelText: l10n.ownerConfigPhotoUrlLabel,
-                                  hintText: l10n.ownerConfigPhotoUrlHint,
-                                  controller: _photoUrlController,
+                              Text(
+                                l10n.ownerConfigPhotoUrlLabel,
+                                style: AppTypography.labelLg.copyWith(
+                                  color: AppColors.onSurfaceVariant,
                                 ),
                               ),
-                              const SizedBox(width: AppSpacing.xs),
-                              IconButton(
-                                key:
-                                    const Key('owner_config_pick_image_button'),
-                                icon: const Icon(Icons.add_a_photo_outlined,
-                                    color: AppColors.primary),
-                                tooltip: l10n.tooltipPickImage,
-                                onPressed: _pickImage,
+                              const SizedBox(height: AppSpacing.xs),
+                              ThemedCard(
+                                hasShadow: false,
+                                borderRadius: AppRadius.md,
+                                padding: AppSpacing.md,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 64,
+                                      height: 64,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surfaceContainerHigh,
+                                        borderRadius: AppRadius.smBorder,
+                                        border: Border.all(
+                                          color: AppColors.outlineVariant,
+                                        ),
+                                      ),
+                                      clipBehavior: Clip.antiAlias,
+                                      child: _photoUrlController.text.isNotEmpty
+                                          ? (_photoUrlController.text.startsWith('http')
+                                              ? Image.network(
+                                                  _photoUrlController.text,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) =>
+                                                      const Icon(
+                                                    Icons.business_outlined,
+                                                    color: AppColors.primary,
+                                                    size: 32,
+                                                  ),
+                                                )
+                                              : const Icon(
+                                                  Icons.image_outlined,
+                                                  color: AppColors.primary,
+                                                  size: 32,
+                                                ))
+                                          : const Icon(
+                                              Icons.add_a_photo_outlined,
+                                              color: AppColors.outline,
+                                              size: 32,
+                                            ),
+                                    ),
+                                    const SizedBox(width: AppSpacing.md),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _photoUrlController.text.isNotEmpty
+                                                ? _photoUrlController.text
+                                                : l10n.ownerConfigPhotoUrlHint,
+                                            key: const Key(
+                                                'owner_config_photo_url_field'),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: AppTypography.bodyMd
+                                                .copyWith(
+                                              color: _photoUrlController
+                                                      .text.isNotEmpty
+                                                  ? AppColors.onSurface
+                                                  : AppColors.outline,
+                                            ),
+                                          ),
+                                          const SizedBox(height: AppSpacing.xs),
+                                          OutlinedButton.icon(
+                                            key: const Key(
+                                                'owner_config_pick_image_button'),
+                                            icon: const Icon(
+                                                Icons.upload_file_outlined,
+                                                size: 18),
+                                            label: Text(l10n.tooltipPickImage),
+                                            style: OutlinedButton.styleFrom(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: AppSpacing.sm,
+                                                vertical: AppSpacing.xs,
+                                              ),
+                                            ),
+                                            onPressed: _pickImage,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
