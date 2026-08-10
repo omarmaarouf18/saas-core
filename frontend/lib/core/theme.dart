@@ -72,6 +72,7 @@ class AppSpacing {
 
 // 3. Border Radius Scale
 class AppRadius {
+  static const double xs = 2.0;
   static const double sm = 4.0;
   static const double defaultValue = 8.0;
   static const double md = 12.0;
@@ -79,6 +80,14 @@ class AppRadius {
   static const double xl = 24.0;
   static const double full = 9999.0;
 
+  // Named aliases
+  static const double radiusSm = sm;
+  static const double radiusMd = md;
+  static const double radiusLg = lg;
+  static const double radiusXl = xl;
+  static const double radiusFull = full;
+
+  static BorderRadius get xsBorder => BorderRadius.circular(xs);
   static BorderRadius get smBorder => BorderRadius.circular(sm);
   static BorderRadius get defaultBorder => BorderRadius.circular(defaultValue);
   static BorderRadius get mdBorder => BorderRadius.circular(md);
@@ -87,25 +96,85 @@ class AppRadius {
   static BorderRadius get fullBorder => BorderRadius.circular(full);
 }
 
-// 4. Elevation & Shadows (Tonal layers + Ambient shadows)
-class AppShadows {
-  static const BoxShadow level1 = BoxShadow(
+// 4. Elevation Scale & Shadow System
+class AppElevation {
+  static const double level0 = 0.0; // Flat cards, inline borders
+  static const double level1 = 1.0; // Resting cards, list items
+  static const double level2 = 3.0; // Floating actions, dropdown menus
+  static const double level3 = 6.0; // Sticky bars, bottom sheets, snackbars
+  static const double level4 = 12.0; // Modal dialogs, full screen overlays
+
+  static const BoxShadow shadowLevel0 = BoxShadow(
+    color: Colors.transparent,
+    offset: Offset.zero,
+    blurRadius: 0,
+  );
+
+  static const BoxShadow shadowLevel1 = BoxShadow(
     color: Color(0x140D1321), // rgba(13, 19, 33, 0.08)
     offset: Offset(0, 2),
     blurRadius: 8,
     spreadRadius: 0,
   );
 
-  static const BoxShadow level2 = BoxShadow(
+  static const BoxShadow shadowLevel2 = BoxShadow(
     color: Color(0x1F0D1321), // rgba(13, 19, 33, 0.12)
     offset: Offset(0, 4),
     blurRadius: 16,
     spreadRadius: 0,
   );
+
+  static const BoxShadow shadowLevel3 = BoxShadow(
+    color: Color(0x290D1321), // rgba(13, 19, 33, 0.16)
+    offset: Offset(0, 8),
+    blurRadius: 24,
+    spreadRadius: 0,
+  );
+
+  static const BoxShadow shadowLevel4 = BoxShadow(
+    color: Color(0x3D0D1321), // rgba(13, 19, 33, 0.24)
+    offset: Offset(0, 16),
+    blurRadius: 32,
+    spreadRadius: 0,
+  );
 }
 
-// 5. Typography Scale
+// Backwards-compatible AppShadows class
+class AppShadows {
+  static const BoxShadow level1 = AppElevation.shadowLevel1;
+  static const BoxShadow level2 = AppElevation.shadowLevel2;
+}
+
+// 5. Motion & Animation Tokens
+class AppMotion {
+  // Durations
+  static const Duration durationFast =
+      Duration(milliseconds: 150); // Micro-interactions, button taps
+  static const Duration durationMedium =
+      Duration(milliseconds: 300); // Sheet slides, tab transitions
+  static const Duration durationSlow =
+      Duration(milliseconds: 500); // Screen entrances, hero banners
+
+  // Easing Curves
+  static const Curve curveEntrance = Curves.easeOutCubic;
+  static const Curve curveExit = Curves.easeInCubic;
+  static const Curve curveStateChange = Curves.easeInOut;
+  static const Curve curveBounce = Curves.elasticOut;
+}
+
+// 6. Iconography Scale Tokens
+class AppIconSize {
+  static const double xs = 14.0; // Compact badge icons, status indicators
+  static const double sm = 16.0; // Inline text icons, small button icons
+  static const double md =
+      24.0; // Standard list tile leading icons, app bar actions
+  static const double lg = 32.0; // Featured card icons, metric stat badges
+  static const double xl = 48.0; // Empty state visual graphic icons
+}
+
+// 7. Typography Scale (Role-Based System)
 class AppTypography {
+  /// Hero stat numbers, large splash headings (48pt)
   static TextStyle get displayLg => GoogleFonts.poppins(
         fontSize: 48,
         fontWeight: FontWeight.bold,
@@ -113,36 +182,42 @@ class AppTypography {
         letterSpacing: -48 * 0.02,
       );
 
+  /// Primary screen titles (desktop/tablet) (32pt)
   static TextStyle get headlineLg => GoogleFonts.poppins(
         fontSize: 32,
         fontWeight: FontWeight.w600,
         height: 40 / 32,
       );
 
+  /// Primary screen titles (mobile viewport) (24pt)
   static TextStyle get headlineLgMobile => GoogleFonts.poppins(
         fontSize: 24,
         fontWeight: FontWeight.w600,
         height: 32 / 24,
       );
 
+  /// Card titles, section headers, dialog titles (18pt)
   static TextStyle get titleMd => GoogleFonts.poppins(
         fontSize: 18,
         fontWeight: FontWeight.w600,
         height: 24 / 18,
       );
 
+  /// Prominent body text, lead paragraphs (16pt)
   static TextStyle get bodyLg => GoogleFonts.poppins(
         fontSize: 16,
         fontWeight: FontWeight.normal,
         height: 24 / 16,
       );
 
+  /// Standard body text, form input text (14pt)
   static TextStyle get bodyMd => GoogleFonts.poppins(
         fontSize: 14,
         fontWeight: FontWeight.normal,
         height: 20 / 14,
       );
 
+  /// Input labels, button titles, pill badges (12pt)
   static TextStyle get labelLg => GoogleFonts.poppins(
         fontSize: 12,
         fontWeight: FontWeight.w600,
@@ -150,6 +225,7 @@ class AppTypography {
         letterSpacing: 12 * 0.05,
       );
 
+  /// Caption text, metadata timestamps, status badges (11pt)
   static TextStyle get labelMd => GoogleFonts.poppins(
         fontSize: 11,
         fontWeight: FontWeight.w500,

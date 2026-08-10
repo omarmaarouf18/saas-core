@@ -210,6 +210,9 @@ The following documentation resources map the Quick Delivery platform architectu
 *   **[frontend/README.md](frontend/README.md)** — Practical developer-facing setup, run instructions, and target platform build scripts.
 *   **[frontend/CONNECTING_TO_BACKEND.md](frontend/CONNECTING_TO_BACKEND.md)** — Per-platform network setup guide for connecting emulators and physical devices to the local backend.
 *   **[docs/frontend/STATUS.md](docs/frontend/STATUS.md)** — Current frontend phase completion progress and verified client capabilities.
+*   **[docs/frontend/BRAND_IDENTITY.md](docs/frontend/BRAND_IDENTITY.md)** — Brand identity guidelines, color personality rationale, QD logo specs, voice & tone, and competitor benchmarks.
+*   **[docs/frontend/DESIGN_SYSTEM.md](docs/frontend/DESIGN_SYSTEM.md)** — Comprehensive frontend design system specification, design token reference, component catalog, composition patterns, and tracked design debt backlog.
+*   **[docs/frontend/UI_UX_ENTERPRISE_ROADMAP.md](docs/frontend/UI_UX_ENTERPRISE_ROADMAP.md)** — Phased roadmap for enterprise UI/UX polish, motion standardization, state polish, and multi-device QA.
 *   **[docs/frontend/ARCHITECTURE.md](docs/frontend/ARCHITECTURE.md)** — Technical design specifications of the client, state managers, directory layouts, and socket subscribers.
 *   **[frontend/docs/CI_CD.md](frontend/docs/CI_CD.md)** — Hot-swap sync pipeline mirroring `frontend/` to the standalone `quick-delivery-mobile` repo and its automated APK build/artifact workflow, including troubleshooting for common sync/build failures.
 
