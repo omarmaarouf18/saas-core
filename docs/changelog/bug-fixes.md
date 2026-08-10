@@ -2,6 +2,16 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Repository Dead-Code & Scratch Directory Cleanup Pass
+
+- **Implementation Detail**:
+  - **Removal of Untracked Scratch Directory (`scratch/`)**: Removed temporary python audit scripts (`audit_debt.py`, `audit_hierarchy.py`, `audit_motion.py`, `audit_states.py`, `audit_widgets.py`) and temporary text finding files (`design_debt_findings.txt`, `hierarchy_findings.txt`, `motion_findings.txt`, `states_findings.txt`) committed during earlier UI audit passes. Added `scratch/` to `.gitignore`.
+  - **Polling Interval Magic Numbers Remediation (`frontend/lib/screens/job_status_screen.dart`)**: Replaced inline magic duration calls (`Duration(seconds: 5)`, `Duration(seconds: 1)`) with named class constants `_jobStatusPollingInterval` and `_countdownTimerInterval`.
+  - **Chat Empty State Clarifying Documentation (`frontend/lib/screens/chat_screen.dart`)**: Documented why `ThemedEmptyState` intentionally omits an action button in empty chat views (since the persistent text input bar and send button are rendered directly below).
+  - **Codebase Dead-Code Sweep**: Ran `go vet ./...` across all 6 Go modules (`services/api-gateway`, `services/auth-service`, `services/chat-service`, `services/notification-service`, `services/user-service`, `shared/infra`) and `flutter analyze` across frontend, confirming 0 dead code or unused import warnings.
+- **Commit SHA**: ``0c046f5b4edeb95bf7f0ca8ed7b15a6b0c2017ea``
+- **Verification**: Verified via `make ci` (full Go backend & Flutter frontend suite passing 100%), `make docs-check`, and `.githooks/pre-push` gate exit code 0. ✅
+
 ## ADR-0017 Migration Script Database Name Target Remediation (Finding #8 Alignment)
 
 - **Implementation Detail**: Remediated critical migration script bug in `docs/DEPLOYMENT.md` §11.1 where the ADR-0017 `platform_config` migration script targeted the obsolete shared database name `saas_platform` instead of `user_db` (`${USER_MONGO_DATABASE:-user_db}`). Following Finding #8's database-per-service separation, `user-service` connects to `user_db`. Running the old script would have left production charging the old 15% platform fee. Updated `docs/DEPLOYMENT.md` §11.1 and `mongodump` backup commands, as well as `README.md` manual database ops procedures (`users` -> `auth_db`, `subscriptions` -> `user_db`). Executed the corrected migration against live `user_db.platform_config` setting `platform_fee_percentage: 0.0`.
