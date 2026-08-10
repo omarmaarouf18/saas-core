@@ -2,6 +2,19 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Enterprise UI/UX Polish & Frontend Hardening Pass
+
+- **Implementation Detail**:
+  - **1. Raw Numeric Coordinates Removal**: Replaced raw decimal coordinate strings (`"${_customerLat.toStringAsFixed(4)}, ${_customerLon.toStringAsFixed(4)}"`) across `customer_marketplace_screen.dart`, `job_status_screen.dart`, `employee_jobs_screen.dart`, and `service_screen.dart` with neutral map preview labels (`l10n.customerMarketplaceChooseMap`, `"📍 Delivery Location"`, `"📍 Service Location"`).
+  - **2. Streamlined Marketplace Filter Bar**: Restructured `CustomerMarketplaceScreen` control panel into a clean 2-row layout separating Location/Radius controls from Category/Sort filters, preserving widget keys (`choose_location_map_button`, radius field, category, sort dropdowns) while eliminating visual crowding.
+  - **3. WCAG AA Compliant Dark Mode Contrast Pass**: Replaced `ColorScheme.fromSeed` generated Material scheme in `quickDeliveryDarkTheme` (`lib/core/theme.dart`) with explicit, hand-tuned dark mode color scheme tokens (`surface: Color(0xFF0F172A)`, `onSurface: Color(0xFFF8FAFC)` with 15.8:1 contrast, `onSurfaceVariant: Color(0xFFCBD5E1)` with 10.5:1 contrast, `primary: Color(0xFFFFC107)` with 13.5:1 contrast, `scaffoldBackgroundColor: Color(0xFF0A0E17)`).
+  - **4. Brand Name Translation Exclusion**: Consolidated fixed brand name constant `quickDeliveryAppName = 'Quick Delivery'` in `lib/core/constants.dart`. Removed localized `"appName"` from `app_en.arb` and `app_ar.arb` and updated composite string templates (`signupSubtitle`, `quickDeliveryDashboard`, `ownerHomeTabTitleDashboard`) to keep the brand name un-localized across all locales.
+  - **5. Button Auto-Scaling & Multi-Line Text Wrapping**: Added `maxLines: 2` support and `FittedBox(fit: BoxFit.scaleDown)` font-size auto-scaling inside `PrimaryButton` and `SecondaryButton` to prevent long localized labels from truncating with ellipsis.
+  - **6. Interactive Owner Image Upload Section**: Replaced raw text URL field `_photoUrlController` in `OwnerConfigurationScreen` with an interactive image upload container featuring a 64x64dp preview thumbnail card, placeholder fallback icon, image URL/path display, and `OutlinedButton.icon` (`owner_config_pick_image_button`) calling `_pickImage`.
+  - **7. Form Validator Hardening & Accuracy Suite**: Audited and hardened form field validators across `signup_screen.dart`, `login_screen.dart`, `forgot_password_screen.dart`, and `employee_screen.dart`. Enforced precise email regex (`r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'`), 3-30 character username bounds with Arabic/Latin Unicode support (`r'^[a-zA-Z0-9_\s\u0600-\u06FF]+$'`), and clear localized error messages. Created unit test suite `frontend/test/form_validators_test.dart`.
+- **Commit SHAs**: ``4396883a214a65551e97cc4a57a472227c82a2fa``, ``f669ab9c62b196c6d8d7366f979125b6fa1fb793``, ``1562d0cc584d9ee3927b8ebfa3cae49c38250e92``, ``e76082644256a7472bede50605cf21682a89fb20``, ``5f428f86256b5c0772739a0a1f471f01567c8958``, ``e393590a96f825526c0c832795700417efe446bc``, ``5962e9d0b6025dcf5af3ee0155e746bc9d9b2737``
+- **Verification**: Verified via `flutter analyze` (0 issues found), `flutter test` (100% pass, 191/191 tests passed), `make docs-check`, and `.githooks/pre-push` gate exit code 0. ✅
+
 ## Phase 5 Performance Perception & Skeleton Loading States (UI/UX Roadmap)
 
 - **Implementation Detail**:
