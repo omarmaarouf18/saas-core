@@ -173,7 +173,8 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         label: Text(
                           "${_customerLat.toStringAsFixed(4)}, ${_customerLon.toStringAsFixed(4)}",
                           overflow: TextOverflow.ellipsis,
-                          style: AppTypography.bodyMd.copyWith(fontWeight: FontWeight.w600),
+                          style: AppTypography.bodyMd
+                              .copyWith(fontWeight: FontWeight.w600),
                         ),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(

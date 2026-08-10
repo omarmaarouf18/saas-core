@@ -238,8 +238,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             Align(
               alignment: Alignment.centerLeft,
               child: Container(
-                padding:
-                    const EdgeInsetsDirectional.symmetric(horizontal: AppSpacing.baseSm, vertical: AppSpacing.xs),
+                padding: const EdgeInsetsDirectional.symmetric(
+                    horizontal: AppSpacing.baseSm, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
                   color: AppColors.secondary,
                   borderRadius: BorderRadius.circular(AppRadius.xl),

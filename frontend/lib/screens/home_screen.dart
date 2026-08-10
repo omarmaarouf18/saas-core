@@ -194,7 +194,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           title: Text(
             l10n.quickDeliveryDashboard,
-            style: AppTypography.titleMd.copyWith(color: Theme.of(context).colorScheme.onSurface),
+            style: AppTypography.titleMd
+                .copyWith(color: Theme.of(context).colorScheme.onSurface),
           ),
           actions: [
             if (user.role == 'reviewer' || user.role == 'admin')
@@ -298,7 +299,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         title: Text(
           _getTabTitle(context, _currentIndex),
-          style: AppTypography.titleMd.copyWith(color: Theme.of(context).colorScheme.onSurface),
+          style: AppTypography.titleMd
+              .copyWith(color: Theme.of(context).colorScheme.onSurface),
         ),
         actions: [
           if (user.role == 'reviewer' || user.role == 'admin')

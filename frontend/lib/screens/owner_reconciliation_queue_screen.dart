@@ -237,7 +237,8 @@ class _OwnerReconciliationQueueScreenState
                     icon: const Icon(Icons.undo, color: AppColors.error),
                     label: Text(
                       l10n.reconciliationRefundCustomer,
-                      style: AppTypography.bodyMd.copyWith(color: AppColors.error),
+                      style:
+                          AppTypography.bodyMd.copyWith(color: AppColors.error),
                     ),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.error),

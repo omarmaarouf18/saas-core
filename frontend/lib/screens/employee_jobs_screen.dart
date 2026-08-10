@@ -313,7 +313,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               const SizedBox(height: AppSpacing.sm),
               if (jobsProvider.isLoading && jobsProvider.jobs.isEmpty)
                 Padding(
-                  padding: const EdgeInsetsDirectional.symmetric(vertical: AppSpacing.xxl),
+                  padding: const EdgeInsetsDirectional.symmetric(
+                      vertical: AppSpacing.xxl),
                   child:
                       ThemedLoadingIndicator(message: l10n.employeeJobsLoading),
                 )

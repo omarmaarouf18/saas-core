@@ -107,7 +107,8 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
                                   horizontal: 6, vertical: AppSpacing.xxs),
                               decoration: BoxDecoration(
                                 color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(AppRadius.radiusSm),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.radiusSm),
                                 border: Border.all(color: AppColors.secondary),
                               ),
                               child: Text(
@@ -143,21 +144,25 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
                   right: 16,
                   child: Material(
                     elevation: 4,
-                    borderRadius: BorderRadius.circular(AppRadius.radiusDefault),
+                    borderRadius:
+                        BorderRadius.circular(AppRadius.radiusDefault),
                     child: Container(
                       padding: const EdgeInsetsDirectional.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(AppRadius.radiusDefault),
+                        borderRadius:
+                            BorderRadius.circular(AppRadius.radiusDefault),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.info_outline, color: AppColors.primary),
+                          const Icon(Icons.info_outline,
+                              color: AppColors.primary),
                           const SizedBox(width: AppSpacing.base),
                           Expanded(
                             child: Text(
                               'No active employees transmitting location.',
-                              style: AppTypography.labelLg.copyWith(fontSize: 13),
+                              style:
+                                  AppTypography.labelLg.copyWith(fontSize: 13),
                             ),
                           ),
                         ],
@@ -174,14 +179,17 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
                   right: 16,
                   child: Material(
                     elevation: 4,
-                    borderRadius: BorderRadius.circular(AppRadius.radiusDefault),
+                    borderRadius:
+                        BorderRadius.circular(AppRadius.radiusDefault),
                     child: Container(
-                      padding: const EdgeInsetsDirectional.all(AppSpacing.baseSm),
+                      padding:
+                          const EdgeInsetsDirectional.all(AppSpacing.baseSm),
                       decoration: BoxDecoration(
                         color: provider.subscriptionError != null
                             ? AppColors.danger
                             : AppColors.warning,
-                        borderRadius: BorderRadius.circular(AppRadius.radiusDefault),
+                        borderRadius:
+                            BorderRadius.circular(AppRadius.radiusDefault),
                       ),
                       child: Row(
                         children: [

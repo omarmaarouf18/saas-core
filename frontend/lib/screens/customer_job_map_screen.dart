@@ -181,12 +181,14 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                   right: 16,
                   child: Material(
                     elevation: 4,
-                    borderRadius: BorderRadius.circular(AppRadius.radiusDefault),
+                    borderRadius:
+                        BorderRadius.circular(AppRadius.radiusDefault),
                     child: Container(
                       padding: const EdgeInsetsDirectional.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(AppRadius.radiusDefault),
+                        borderRadius:
+                            BorderRadius.circular(AppRadius.radiusDefault),
                       ),
                       child: Row(
                         children: [
@@ -196,7 +198,8 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                           Expanded(
                             child: Text(
                               'Waiting for courier location updates...',
-                              style: AppTypography.labelLg.copyWith(fontSize: 13),
+                              style:
+                                  AppTypography.labelLg.copyWith(fontSize: 13),
                             ),
                           ),
                         ],
@@ -213,14 +216,17 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                   right: 16,
                   child: Material(
                     elevation: 4,
-                    borderRadius: BorderRadius.circular(AppRadius.radiusDefault),
+                    borderRadius:
+                        BorderRadius.circular(AppRadius.radiusDefault),
                     child: Container(
-                      padding: const EdgeInsetsDirectional.all(AppSpacing.baseSm),
+                      padding:
+                          const EdgeInsetsDirectional.all(AppSpacing.baseSm),
                       decoration: BoxDecoration(
                         color: provider.subscriptionError != null
                             ? AppColors.danger
                             : AppColors.warning,
-                        borderRadius: BorderRadius.circular(AppRadius.radiusDefault),
+                        borderRadius:
+                            BorderRadius.circular(AppRadius.radiusDefault),
                       ),
                       child: Row(
                         children: [

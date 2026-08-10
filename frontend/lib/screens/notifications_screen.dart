@@ -104,7 +104,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       onPressed: () => Navigator.of(context).pop(),
                       child: Text(
                         l10n.cancel,
-                        style: AppTypography.bodyMd.copyWith(color: AppColors.primary),
+                        style: AppTypography.bodyMd
+                            .copyWith(color: AppColors.primary),
                       ),
                     ),
                     ElevatedButton(

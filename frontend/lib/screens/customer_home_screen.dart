@@ -168,7 +168,8 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
         ),
         title: Text(
           _getTabTitle(_currentIndex, l10n),
-          style: AppTypography.titleMd.copyWith(color: Theme.of(context).colorScheme.onSurface),
+          style: AppTypography.titleMd
+              .copyWith(color: Theme.of(context).colorScheme.onSurface),
         ),
         actions: [
           _buildNotificationBell(context),

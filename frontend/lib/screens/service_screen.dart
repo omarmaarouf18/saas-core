@@ -132,7 +132,8 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                           ),
                                           const SizedBox(width: AppSpacing.sm),
                                           Container(
-                                            padding: const EdgeInsetsDirectional.symmetric(
+                                            padding: const EdgeInsetsDirectional
+                                                .symmetric(
                                               horizontal: AppSpacing.baseSm,
                                               vertical: AppSpacing.xs,
                                             ),
@@ -140,7 +141,8 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                               color: AppColors.primary
                                                   .withValues(alpha: 0.1),
                                               borderRadius:
-                                                  BorderRadius.circular(AppRadius.radiusLgXl),
+                                                  BorderRadius.circular(
+                                                      AppRadius.radiusLgXl),
                                             ),
                                             child: Text(
                                               categoryLabel,
