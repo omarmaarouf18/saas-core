@@ -6,6 +6,7 @@ class PrimaryButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final bool isLoading;
   final IconData? icon;
+  final int maxLines;
   final DateTime Function()? nowProvider;
 
   const PrimaryButton({
@@ -14,6 +15,7 @@ class PrimaryButton extends StatefulWidget {
     this.onPressed,
     this.isLoading = false,
     this.icon,
+    this.maxLines = 2,
     this.nowProvider,
   });
 
@@ -57,14 +59,18 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                 const SizedBox(width: AppSpacing.base),
               ],
               Flexible(
-                child: Text(
-                  widget.text,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  textAlign: TextAlign.center,
-                  style: AppTypography.titleMd.copyWith(
-                    color: AppColors.onPrimary,
-                    fontWeight: FontWeight.bold,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.center,
+                  child: Text(
+                    widget.text,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: widget.maxLines,
+                    textAlign: TextAlign.center,
+                    style: AppTypography.titleMd.copyWith(
+                      color: AppColors.onPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),

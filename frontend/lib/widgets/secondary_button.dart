@@ -7,6 +7,7 @@ class SecondaryButton extends StatefulWidget {
   final bool isLoading;
   final bool isOutlined;
   final IconData? icon;
+  final int maxLines;
   final DateTime Function()? nowProvider;
 
   const SecondaryButton({
@@ -16,6 +17,7 @@ class SecondaryButton extends StatefulWidget {
     this.isLoading = false,
     this.isOutlined = false,
     this.icon,
+    this.maxLines = 2,
     this.nowProvider,
   });
 
@@ -67,14 +69,20 @@ class _SecondaryButtonState extends State<SecondaryButton> {
                 const SizedBox(width: AppSpacing.base),
               ],
               Flexible(
-                child: Text(
-                  widget.text,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.titleMd.copyWith(
-                    color: widget.isOutlined
-                        ? AppColors.primary
-                        : AppColors.onSecondary,
-                    fontWeight: FontWeight.bold,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.center,
+                  child: Text(
+                    widget.text,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: widget.maxLines,
+                    textAlign: TextAlign.center,
+                    style: AppTypography.titleMd.copyWith(
+                      color: widget.isOutlined
+                          ? AppColors.primary
+                          : AppColors.onSecondary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
