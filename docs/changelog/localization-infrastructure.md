@@ -17,7 +17,7 @@ Added full internationalization (i18n) infrastructure and Egyptian Colloquial Ar
 - **Verification**: Verified zero hardcoded `Text('` or `Text("` strings remain via `grep -rn` checks. Passed all 155 Flutter unit and widget tests (`make ci`).
 
 ## Comprehensive Property Audit & Full Application Localization Pass
-- **Commit SHA**: ``072c57d0b09f12a9648c590ca3f745d51aa6083e``
+- **Commit SHA**: ``ebcccfe35486fdf6a05e4858acd8938278c72dfa``
 - **Audit Scope & Root Cause**: The prior localization verification command was restricted solely to single-quoted `Text('...')` calls. A comprehensive property audit pass inspected all string-bearing Flutter widget properties (`title:`, `subtitle:`, `message:`, `label:`, `hintText:`, `labelText:`, `tooltip:`, `content:`, `errorText:`) across `lib/screens` and `lib/widgets`, identifying 87 hardcoded strings missed by the narrow search pattern.
 - **Key Extract & Translations**: Extracted all strings into `app_en.arb` and `app_ar.arb` using natural Egyptian delivery-app market terminology (e.g. "الباقة الأساسية المجانية" for Free Basic Plan, "الباقة الاحترافية المدفوعة" for Professional Paid Plan, "سبب الإلغاء *" for Cancellation Reason *, etc.).
 - **Files Modified**: `subscription_screen.dart`, `wallet_screen.dart`, `status_badge.dart`, `cancel_job_dialog.dart`, `customer_jobs_screen.dart`, `customer_marketplace_screen.dart`, `employee_jobs_screen.dart`, `employee_screen.dart`, `job_status_screen.dart`, `kyb_kye_review_screen.dart`, `kyc_document_upload_screen.dart`, `login_screen.dart`, `notifications_screen.dart`, `owner_configuration_screen.dart`, `rating_screen.dart`, `service_screen.dart`, and `themed_text_field.dart`.
