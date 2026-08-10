@@ -9,7 +9,7 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
   - **Polling Interval Magic Numbers Remediation (`frontend/lib/screens/job_status_screen.dart`)**: Replaced inline magic duration calls (`Duration(seconds: 5)`, `Duration(seconds: 1)`) with named class constants `_jobStatusPollingInterval` and `_countdownTimerInterval`.
   - **Chat Empty State Clarifying Documentation (`frontend/lib/screens/chat_screen.dart`)**: Documented why `ThemedEmptyState` intentionally omits an action button in empty chat views (since the persistent text input bar and send button are rendered directly below).
   - **Codebase Dead-Code Sweep**: Ran `go vet ./...` across all 6 Go modules (`services/api-gateway`, `services/auth-service`, `services/chat-service`, `services/notification-service`, `services/user-service`, `shared/infra`) and `flutter analyze` across frontend, confirming 0 dead code or unused import warnings.
-- **Commit SHA**: ``0c046f5b4edeb95bf7f0ca8ed7b15a6b0c2017ea``
+- **Commit SHA**: ``0c046f526420a0c8d1b94cdca01ed5a7b829f08d``
 - **Verification**: Verified via `make ci` (full Go backend & Flutter frontend suite passing 100%), `make docs-check`, and `.githooks/pre-push` gate exit code 0. ✅
 
 ## ADR-0017 Migration Script Database Name Target Remediation (Finding #8 Alignment)
