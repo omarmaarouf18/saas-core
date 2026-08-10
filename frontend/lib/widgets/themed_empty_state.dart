@@ -29,7 +29,7 @@ class ThemedEmptyState extends StatelessWidget {
           children: [
             Icon(
               icon,
-              size: 64,
+              size: AppIconSize.xl,
               color: AppColors.outline.withValues(alpha: 0.5),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -52,7 +52,7 @@ class ThemedEmptyState extends StatelessWidget {
             if (actionText != null && onActionPressed != null) ...[
               const SizedBox(height: AppSpacing.lg),
               SizedBox(
-                width: 200,
+                width: 220,
                 child: SecondaryButton(
                   text: actionText!,
                   onPressed: onActionPressed!,

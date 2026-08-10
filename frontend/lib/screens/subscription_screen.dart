@@ -7,6 +7,7 @@ import '../providers/owner_provider.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/themed_card.dart';
+import '../widgets/themed_success_banner.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -37,18 +38,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         if (res.containsKey('message')) {
           msg = res['message'] as String;
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        ThemedSnackBar.showSuccess(context, msg);
       }
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.ratingFailed(e.toString())),
-            backgroundColor: AppColors.error,
-          ),
+        ThemedSnackBar.showError(
+          context,
+          l10n.ratingFailed(e.toString()),
+          onRetry: () => _changeSubscription(tier),
         );
       }
     } finally {

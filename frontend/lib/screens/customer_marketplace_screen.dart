@@ -17,6 +17,7 @@ import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
+import '../widgets/themed_success_banner.dart';
 import 'job_status_screen.dart';
 import 'notifications_screen.dart';
 
@@ -351,6 +352,8 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                             title: l10n.noServicesNearby,
                             description:
                                 "Try broadening your search radius or changing your coordinates.",
+                            actionText: "Refresh List",
+                            onActionPressed: _loadServices,
                           ),
                         ),
                       ),
@@ -633,11 +636,9 @@ class _BookingDialogState extends State<_BookingDialog> {
         _isSubmitting = false;
       });
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.bookingFailed(e.toString())),
-          backgroundColor: AppColors.error,
-        ),
+      ThemedSnackBar.showError(
+        context,
+        l10n.bookingFailed(e.toString()),
       );
     }
   }

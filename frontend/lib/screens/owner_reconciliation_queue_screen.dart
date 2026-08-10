@@ -8,6 +8,7 @@ import '../widgets/confirm_action_dialog.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_success_banner.dart';
 
 class OwnerReconciliationQueueScreen extends StatefulWidget {
   const OwnerReconciliationQueueScreen({super.key});
@@ -54,7 +55,6 @@ class _OwnerReconciliationQueueScreenState
     );
 
     if (confirmed == true && context.mounted) {
-      final messenger = ScaffoldMessenger.of(context);
       final provider =
           Provider.of<ReconciliationProvider>(context, listen: false);
       final success = await provider.resolveJob(
@@ -65,22 +65,21 @@ class _OwnerReconciliationQueueScreenState
       if (!context.mounted) return;
 
       if (success) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              isRelease
-                  ? l10n.reconciliationSuccessRelease
-                  : l10n.reconciliationSuccessRefund,
-            ),
-            backgroundColor: AppColors.success,
-          ),
+        ThemedSnackBar.showSuccess(
+          context,
+          isRelease
+              ? l10n.reconciliationSuccessRelease
+              : l10n.reconciliationSuccessRefund,
         );
       } else {
         final err = provider.error ?? l10n.reconciliationFailed;
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(err),
-            backgroundColor: AppColors.error,
+        ThemedSnackBar.showError(
+          context,
+          err,
+          onRetry: () => _showConfirmationDialog(
+            context: context,
+            job: job,
+            decision: decision,
           ),
         );
       }
@@ -145,6 +144,8 @@ class _OwnerReconciliationQueueScreenState
                     icon: Icons.check_circle_outline,
                     title: l10n.reconciliationEmptyTitle,
                     description: l10n.reconciliationEmptyDesc,
+                    actionText: "Refresh Queue",
+                    onActionPressed: _onRefresh,
                   ),
                 ),
               ),

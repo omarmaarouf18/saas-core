@@ -3,12 +3,14 @@ import '../core/theme.dart';
 
 class ThemedErrorBanner extends StatelessWidget {
   final String message;
+  final String? title;
   final VoidCallback? onDismiss;
   final VoidCallback? onRetry;
 
   const ThemedErrorBanner({
     super.key,
     required this.message,
+    this.title,
     this.onDismiss,
     this.onRetry,
   });
@@ -30,6 +32,7 @@ class ThemedErrorBanner extends StatelessWidget {
         children: [
           const Icon(
             Icons.error_outline,
+            size: AppIconSize.md,
             color: AppColors.error,
           ),
           const SizedBox(width: AppSpacing.md),
@@ -39,7 +42,7 @@ class ThemedErrorBanner extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  "Error occurred",
+                  title ?? "Error occurred",
                   style: AppTypography.labelLg.copyWith(
                     color: AppColors.error,
                     fontWeight: FontWeight.bold,
@@ -65,9 +68,12 @@ class ThemedErrorBanner extends StatelessWidget {
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text(
+              child: Text(
                 "Retry",
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: AppTypography.labelLg.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.error,
+                ),
               ),
             ),
           ],

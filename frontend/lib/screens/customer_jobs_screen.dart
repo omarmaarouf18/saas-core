@@ -67,6 +67,7 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                   ThemedErrorBanner(
                     key: const Key('customer_jobs_error_banner'),
                     message: marketplace.error!,
+                    onRetry: _loadCustomerJobs,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   ElevatedButton.icon(
@@ -92,6 +93,8 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                     icon: Icons.receipt_long_outlined,
                     title: l10n.customerJobsEmpty,
                     description: l10n.customerJobsEmptyDescription,
+                    actionText: "Browse Services",
+                    onActionPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),

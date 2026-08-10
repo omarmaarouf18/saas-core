@@ -10,6 +10,7 @@ import '../widgets/themed_text_field.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_success_banner.dart';
 
 class ChatScreen extends StatefulWidget {
   final String jobId;
@@ -79,11 +80,10 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.chatFailedSend(e.toString())),
-            backgroundColor: AppColors.danger,
-          ),
+        ThemedSnackBar.showError(
+          context,
+          l10n.chatFailedSend(e.toString()),
+          onRetry: _sendMessage,
         );
       }
     }
@@ -182,6 +182,7 @@ class _ChatScreenState extends State<ChatScreen> {
           if (chat.error != null && chat.subscriptionError == null)
             ThemedErrorBanner(
               message: chat.error!,
+              onRetry: _initChat,
             ),
           // Main Body
           Expanded(
@@ -192,6 +193,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       child: ThemedErrorBanner(
                         message:
                             "Access Denied: You are not authorized to view or join the chat for Job #${widget.jobId}.",
+                        onRetry: _initChat,
                       ),
                     ),
                   )

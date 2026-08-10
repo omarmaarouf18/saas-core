@@ -7,6 +7,9 @@ import 'package:frontend/widgets/primary_button.dart';
 import 'package:frontend/widgets/secondary_button.dart';
 import 'package:frontend/widgets/stat_card.dart';
 import 'package:frontend/widgets/status_badge.dart';
+import 'package:frontend/widgets/themed_empty_state.dart';
+import 'package:frontend/widgets/themed_error_banner.dart';
+import 'package:frontend/widgets/themed_success_banner.dart';
 
 void main() {
   group('StatusBadge Widget Tests', () {
@@ -440,6 +443,101 @@ void main() {
       final releasedScaleWidget =
           tester.widget<AnimatedScale>(animatedScaleFinder);
       expect(releasedScaleWidget.scale, equals(1.0));
+    });
+  });
+
+  group('Phase 3 State Widgets Tests', () {
+    testWidgets('ThemedEmptyState renders icon, title, description, and primary action button',
+        (tester) async {
+      bool actionPressed = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ThemedEmptyState(
+              icon: Icons.inbox,
+              title: 'No Items Found',
+              description: 'Your item list is currently empty.',
+              actionText: 'Browse Catalog',
+              onActionPressed: () => actionPressed = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.inbox), findsOneWidget);
+      expect(find.text('No Items Found'), findsOneWidget);
+      expect(find.text('Your item list is currently empty.'), findsOneWidget);
+      expect(find.text('Browse Catalog'), findsOneWidget);
+
+      await tester.tap(find.text('Browse Catalog'));
+      expect(actionPressed, isTrue);
+    });
+
+    testWidgets('ThemedErrorBanner renders error message and invokes inline onRetry callback',
+        (tester) async {
+      bool retryTriggered = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ThemedErrorBanner(
+              message: 'Failed to fetch network response',
+              onRetry: () => retryTriggered = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Error occurred'), findsOneWidget);
+      expect(find.text('Failed to fetch network response'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+
+      await tester.tap(find.text('Retry'));
+      expect(retryTriggered, isTrue);
+    });
+
+    testWidgets('ThemedSuccessBanner renders title and message with success styling',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ThemedSuccessBanner(
+              title: 'Operation Successful',
+              message: 'Your profile has been updated.',
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+      expect(find.text('Operation Successful'), findsOneWidget);
+      expect(find.text('Your profile has been updated.'), findsOneWidget);
+    });
+
+    testWidgets('ThemedSnackBar.showSuccess displays floating success toast',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => ThemedSnackBar.showSuccess(
+                  context,
+                  'Payment processed successfully',
+                ),
+                child: const Text('Show Success Toast'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Show Success Toast'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Payment processed successfully'), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
     });
   });
 }

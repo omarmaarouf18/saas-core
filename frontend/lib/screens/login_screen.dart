@@ -8,6 +8,7 @@ import '../providers/theme_provider.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_text_field.dart';
+import '../widgets/themed_success_banner.dart';
 import 'signup_screen.dart';
 import 'otp_screen.dart';
 import 'home_screen.dart';
@@ -43,11 +44,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (auth.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(auth.error!),
-          backgroundColor: AppColors.error,
-        ),
+      ThemedSnackBar.showError(
+        context,
+        auth.error!,
+        onRetry: _submit,
       );
     } else {
       if (auth.isAuthenticated) {

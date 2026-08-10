@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_text_field.dart';
+import '../widgets/themed_success_banner.dart';
 import 'home_screen.dart';
 
 class OtpScreen extends StatefulWidget {
@@ -46,20 +47,14 @@ class _OtpScreenState extends State<OtpScreen> {
     if (!mounted) return;
 
     if (auth.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(auth.error!),
-          backgroundColor: AppColors.error,
-        ),
+      ThemedSnackBar.showError(
+        context,
+        auth.error!,
+        onRetry: _resendCode,
       );
     } else {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.otpResendSuccessMsg),
-          backgroundColor: AppColors.success,
-        ),
-      );
+      ThemedSnackBar.showSuccess(context, l10n.otpResendSuccessMsg);
       setState(() {
         _currentDevOtp = newDevOtp;
         if (newDevOtp != null) {
@@ -80,11 +75,10 @@ class _OtpScreenState extends State<OtpScreen> {
     if (!mounted) return;
 
     if (auth.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(auth.error!),
-          backgroundColor: AppColors.error,
-        ),
+      ThemedSnackBar.showError(
+        context,
+        auth.error!,
+        onRetry: _submit,
       );
     } else if (success) {
       Navigator.of(context).pushAndRemoveUntil(

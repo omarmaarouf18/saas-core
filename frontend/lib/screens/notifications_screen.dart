@@ -202,6 +202,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     icon: Icons.notifications_none,
                     title: l10n.notificationsTitle,
                     description: l10n.notificationsTitle,
+                    actionText: "Back to Home",
+                    onActionPressed: () => Navigator.pop(context),
                   )
                 : ListView(
                     padding:

@@ -17,6 +17,7 @@ import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
+import '../widgets/themed_success_banner.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -162,6 +163,9 @@ class _WalletScreenState extends State<WalletScreen> {
                           title: l10n.payoutHistoryEmpty,
                           description:
                               "Submitted payout requests will appear here with processing status.",
+                          actionText: l10n.payoutWithdrawButton,
+                          onActionPressed: () =>
+                              _showPayoutRequestDialog(context),
                         ),
                       )
                     else
@@ -193,6 +197,9 @@ class _WalletScreenState extends State<WalletScreen> {
                           title: l10n.walletNoTransactions,
                           description:
                               "Your transaction history will appear here once deposits or charges occur.",
+                          actionText: "Refresh Wallet",
+                          onActionPressed: () =>
+                              ownerProvider.fetchDashboardData(auth.token!),
                         ),
                       )
                     else
@@ -475,7 +482,10 @@ class _WalletScreenState extends State<WalletScreen> {
                           ),
                           if (dialogError != null) ...[
                             const SizedBox(height: AppSpacing.md),
-                            ThemedErrorBanner(message: dialogError!),
+                            ThemedErrorBanner(
+                              message: dialogError!,
+                              onRetry: () => setState(() => dialogError = null),
+                            ),
                           ],
                         ],
                       )
@@ -579,7 +589,10 @@ class _WalletScreenState extends State<WalletScreen> {
                             ),
                             if (dialogError != null) ...[
                               const SizedBox(height: AppSpacing.md),
-                              ThemedErrorBanner(message: dialogError!),
+                              ThemedErrorBanner(
+                                message: dialogError!,
+                                onRetry: () => setState(() => dialogError = null),
+                              ),
                             ],
                           ],
                         ),
@@ -644,12 +657,10 @@ class _WalletScreenState extends State<WalletScreen> {
                                   .fetchDashboardData(auth.token!);
                               if (context.mounted) {
                                 Navigator.of(context).pop();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    key: const Key('payout_success_snackbar'),
-                                    content: Text(l10n.payoutSuccessMessage),
-                                    backgroundColor: AppColors.success,
-                                  ),
+                                ThemedSnackBar.showSuccess(
+                                  context,
+                                  l10n.payoutSuccessMessage,
+                                  key: const Key('payout_success_snackbar'),
                                 );
                               }
                             } catch (e) {
@@ -736,7 +747,10 @@ class _WalletScreenState extends State<WalletScreen> {
                     ),
                     if (dialogError != null) ...[
                       const SizedBox(height: AppSpacing.md),
-                      ThemedErrorBanner(message: dialogError!),
+                      ThemedErrorBanner(
+                        message: dialogError!,
+                        onRetry: () => setState(() => dialogError = null),
+                      ),
                     ],
                   ],
                 ),
@@ -775,12 +789,9 @@ class _WalletScreenState extends State<WalletScreen> {
                               await ownerProvider.deposit(auth.token!, amount);
                               if (context.mounted) {
                                 Navigator.of(context).pop();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                        "Successfully deposited ${amount.toStringAsFixed(2)} credits."),
-                                    backgroundColor: AppColors.success,
-                                  ),
+                                ThemedSnackBar.showSuccess(
+                                  context,
+                                  "Successfully deposited ${amount.toStringAsFixed(2)} credits.",
                                 );
                               }
                             } catch (e) {

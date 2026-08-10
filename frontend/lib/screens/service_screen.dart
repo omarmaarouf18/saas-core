@@ -12,6 +12,7 @@ import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_text_field.dart';
+import '../widgets/themed_success_banner.dart';
 
 class ServiceScreen extends StatefulWidget {
   const ServiceScreen({super.key});
@@ -68,11 +69,12 @@ class _ServiceScreenState extends State<ServiceScreen> {
             : Column(
                 children: [
                   if (!isKycApproved)
-                    const Padding(
-                      padding: EdgeInsets.all(AppSpacing.md),
+                    Padding(
+                      padding: const EdgeInsets.all(AppSpacing.md),
                       child: ThemedErrorBanner(
                         message:
                             "KYC Approval Pending: You cannot publish new services until your profile is approved by an administrator.",
+                        onRetry: _loadServices,
                       ),
                     ),
                   Expanded(
@@ -91,6 +93,9 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                     icon: Icons.design_services_outlined,
                                     title: l10n.noServicesConfigured,
                                     description: l10n.noServicesDescription,
+                                    actionText: "Create Service",
+                                    onActionPressed: () =>
+                                        _showCreateServiceDialog(context, user.id),
                                   ),
                                 ),
                               ),
@@ -409,22 +414,17 @@ class _ServiceScreenState extends State<ServiceScreen> {
                               if (context.mounted) {
                                 final l10n = AppLocalizations.of(context)!;
                                 Navigator.of(context).pop();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(l10n.serviceCreatedSuccess),
-                                    backgroundColor: AppColors.success,
-                                  ),
+                                ThemedSnackBar.showSuccess(
+                                  context,
+                                  l10n.serviceCreatedSuccess,
                                 );
                               }
                             } catch (e) {
                               if (context.mounted) {
                                 final l10n = AppLocalizations.of(context)!;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                        l10n.serviceCreateFailed(e.toString())),
-                                    backgroundColor: AppColors.error,
-                                  ),
+                                ThemedSnackBar.showError(
+                                  context,
+                                  l10n.serviceCreateFailed(e.toString()),
                                 );
                               }
                             }

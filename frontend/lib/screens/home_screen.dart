@@ -8,6 +8,7 @@ import '../providers/notifications_provider.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_success_banner.dart';
 import 'login_screen.dart';
 import 'wallet_screen.dart';
 import 'employee_screen.dart';
@@ -851,6 +852,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: Icons.assignment_outlined,
                     title: l10n.ownerHomeNoJobsTitle,
                     description: l10n.ownerHomeNoJobsDesc,
+                    actionText: "Manage Services",
+                    onActionPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const ServiceScreen())),
                   ),
                 )
               else
@@ -919,14 +925,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ? l10n
                                                   .ownerHomeJobCancelledEscrowRefunded
                                               : l10n.ownerHomeJobCancelled;
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                              content: Text(msg),
-                                              backgroundColor:
-                                                  AppColors.success,
-                                            ),
-                                          );
+                                          ThemedSnackBar.showSuccess(
+                                              context, msg);
                                         }
                                       },
                                     );

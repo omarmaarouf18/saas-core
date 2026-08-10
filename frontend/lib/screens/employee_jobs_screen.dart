@@ -18,6 +18,7 @@ import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
+import '../widgets/themed_success_banner.dart';
 import '../widgets/themed_text_field.dart';
 import 'notifications_screen.dart';
 import 'settings_screen.dart';
@@ -104,21 +105,14 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
         _actionController.clear();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.actionLoggedSuccess(action)),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        ThemedSnackBar.showSuccess(context, l10n.actionLoggedSuccess(action));
       }
     } catch (e) {
       debugPrint('Error simulating action: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(friendlyErrorMessage(e)),
-            backgroundColor: AppColors.error,
-          ),
+        ThemedSnackBar.showError(
+          context,
+          friendlyErrorMessage(e),
         );
       }
     } finally {
@@ -172,12 +166,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
         final l10n = AppLocalizations.of(context)!;
         Provider.of<EmployeeLocationProvider>(context, listen: false)
             .stopTracking();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.jobMarkedCompletedSuccess),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        ThemedSnackBar.showSuccess(context, l10n.jobMarkedCompletedSuccess);
       }
     } catch (e) {
       debugPrint('Error completing job: $e');
@@ -319,7 +308,10 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                       ThemedLoadingIndicator(message: l10n.employeeJobsLoading),
                 )
               else if (jobsProvider.error != null && jobsProvider.jobs.isEmpty)
-                ThemedErrorBanner(message: jobsProvider.error!)
+                ThemedErrorBanner(
+                  message: jobsProvider.error!,
+                  onRetry: _refreshJobs,
+                )
               else
                 _buildJobsList(jobsProvider.jobs),
             ],
@@ -573,6 +565,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
           icon: Icons.assignment_late_outlined,
           title: l10n.employeeJobsNoJobsTitle,
           description: l10n.employeeJobsNoJobsDesc,
+          actionText: "Refresh Jobs",
+          onActionPressed: _refreshJobs,
         ),
       );
     }
@@ -817,8 +811,9 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                       locationProvider.error != null) {
                     return Padding(
                       padding: const EdgeInsets.only(top: AppSpacing.sm),
-                      child:
-                          ThemedErrorBanner(message: locationProvider.error!),
+                      child: ThemedErrorBanner(
+                        message: locationProvider.error!,
+                      ),
                     );
                   }
 
@@ -827,7 +822,10 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               ),
               if (_completeErrorJobId == job.id && _completeError != null) ...[
                 const SizedBox(height: AppSpacing.sm),
-                ThemedErrorBanner(message: _completeError!),
+                ThemedErrorBanner(
+                  message: _completeError!,
+                  onRetry: () => _confirmAndCompleteJob(job),
+                ),
               ],
             ],
             const SizedBox(height: AppSpacing.lg),

@@ -10,6 +10,7 @@ import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
+import '../widgets/themed_success_banner.dart';
 
 class MyAccountScreen extends StatefulWidget {
   const MyAccountScreen({super.key});
@@ -125,13 +126,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.myAccountSuccessMsg),
-            duration: AppMotion.snackBarDisplay,
-            backgroundColor: AppColors.success,
-          ),
-        );
+        ThemedSnackBar.showSuccess(context, l10n.myAccountSuccessMsg);
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
         }
@@ -182,6 +177,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                       ThemedErrorBanner(
                         key: const Key('my_account_error_banner'),
                         message: _errorMessage!,
+                        onRetry: _submitForm,
                       ),
                       const SizedBox(height: AppSpacing.md),
                     ],

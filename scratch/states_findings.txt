@@ -1,0 +1,6 @@
+=== EMPTY STATE FINDINGS ===
+chat_screen.dart:202 -> ThemedEmptyState missing primary action button | ? ThemedEmptyState(
+
+=== ERROR BANNER FINDINGS ===
+
+=== SNACKBAR FINDINGS ===

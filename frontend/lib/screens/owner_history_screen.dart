@@ -131,7 +131,10 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (ownerProvider.error != null) ...[
-                    ThemedErrorBanner(message: ownerProvider.error!),
+                    ThemedErrorBanner(
+                      message: ownerProvider.error!,
+                      onRetry: _refreshDataForCurrentTab,
+                    ),
                     const SizedBox(height: AppSpacing.md),
                   ],
                   if (ownerProvider.auditLogEntries.isEmpty)
@@ -143,6 +146,8 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                         icon: Icons.history_outlined,
                         title: l10n.ownerHistoryNoActivityTitle,
                         description: l10n.ownerHistoryNoActivityDesc,
+                        actionText: "Refresh History",
+                        onActionPressed: _refreshDataForCurrentTab,
                       ),
                     )
                   else
@@ -255,7 +260,10 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (ownerProvider.error != null) ...[
-                    ThemedErrorBanner(message: ownerProvider.error!),
+                    ThemedErrorBanner(
+                      message: ownerProvider.error!,
+                      onRetry: _refreshDataForCurrentTab,
+                    ),
                     const SizedBox(height: AppSpacing.md),
                   ],
                   if (completedJobs.isEmpty)
@@ -267,6 +275,8 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                         icon: Icons.assignment_turned_in_outlined,
                         title: l10n.ownerHistoryNoJobsTitle,
                         description: l10n.ownerHistoryNoJobsDesc,
+                        actionText: "Refresh History",
+                        onActionPressed: _refreshDataForCurrentTab,
                       ),
                     )
                   else
@@ -345,7 +355,10 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (ownerProvider.error != null) ...[
-                    ThemedErrorBanner(message: ownerProvider.error!),
+                    ThemedErrorBanner(
+                      message: ownerProvider.error!,
+                      onRetry: _refreshLedger,
+                    ),
                     const SizedBox(height: AppSpacing.md),
                   ],
                   if (ownerProvider.ledgerEntries.isEmpty)
@@ -357,6 +370,8 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                         icon: Icons.receipt_long_outlined,
                         title: l10n.ownerHistoryNoLedgerTitle,
                         description: l10n.ownerHistoryNoLedgerDesc,
+                        actionText: "Refresh History",
+                        onActionPressed: _refreshLedger,
                       ),
                     )
                   else

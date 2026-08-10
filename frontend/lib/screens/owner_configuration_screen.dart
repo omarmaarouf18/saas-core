@@ -13,6 +13,7 @@ import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
+import '../widgets/themed_success_banner.dart';
 
 typedef ImagePickerCallback = Future<String?> Function(BuildContext context);
 
@@ -203,13 +204,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.ownerConfigSuccessMsg),
-            duration: AppMotion.snackBarDisplay,
-            backgroundColor: AppColors.success,
-          ),
-        );
+        ThemedSnackBar.showSuccess(context, l10n.ownerConfigSuccessMsg);
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
         }
@@ -257,6 +252,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                       ThemedErrorBanner(
                         key: const Key('owner_config_error_banner'),
                         message: _errorMessage!,
+                        onRetry: _submitForm,
                       ),
                       const SizedBox(height: AppSpacing.md),
                     ],

@@ -10,6 +10,7 @@ import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_text_field.dart';
+import '../widgets/themed_success_banner.dart';
 
 class RatingScreen extends StatefulWidget {
   final Job job;
@@ -100,12 +101,7 @@ class _RatingScreenState extends State<RatingScreen> {
   Future<void> _submitRating() async {
     if (_otherPartyId == null) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.ratingIdentityError),
-          backgroundColor: AppColors.danger,
-        ),
-      );
+      ThemedSnackBar.showError(context, l10n.ratingIdentityError);
       return;
     }
 
@@ -128,12 +124,7 @@ class _RatingScreenState extends State<RatingScreen> {
 
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.ratingSuccessMsg),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        ThemedSnackBar.showSuccess(context, l10n.ratingSuccessMsg);
         // Refresh the other party status to see if it unlocks
         await _checkOtherPartyRatingStatus();
         if (mounted) {
@@ -143,11 +134,10 @@ class _RatingScreenState extends State<RatingScreen> {
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.ratingFailed(e.toString())),
-            backgroundColor: AppColors.danger,
-          ),
+        ThemedSnackBar.showError(
+          context,
+          l10n.ratingFailed(e.toString()),
+          onRetry: _submitRating,
         );
       }
     } finally {

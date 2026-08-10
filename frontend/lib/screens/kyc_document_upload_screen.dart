@@ -396,6 +396,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
               const SizedBox(height: AppSpacing.md),
               ThemedErrorBanner(
                 message: l10n.rejectionReasonMessage(user.rejectionReason!),
+                onRetry: _refreshUserData,
               ),
             ],
 

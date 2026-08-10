@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_text_field.dart';
+import '../widgets/themed_success_banner.dart';
 import 'otp_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -43,11 +44,10 @@ class _SignupScreenState extends State<SignupScreen> {
     if (!mounted) return;
 
     if (auth.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(auth.error!),
-          backgroundColor: AppColors.error,
-        ),
+      ThemedSnackBar.showError(
+        context,
+        auth.error!,
+        onRetry: _submit,
       );
     } else {
       // On success, navigate to the OTP screen

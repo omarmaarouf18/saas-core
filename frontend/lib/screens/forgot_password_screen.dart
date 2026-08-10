@@ -8,6 +8,7 @@ import '../widgets/secondary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_text_field.dart';
+import '../widgets/themed_success_banner.dart';
 import 'login_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -50,12 +51,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final l10n = context.l10n;
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains("@")) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.loginEmailInvalid),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      ThemedSnackBar.showError(context, l10n.loginEmailInvalid);
       return;
     }
 
@@ -78,20 +74,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
 
     if (auth.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(auth.error!),
-          backgroundColor: AppColors.error,
-        ),
+      ThemedSnackBar.showError(
+        context,
+        auth.error!,
+        onRetry: _requestCode,
       );
     } else {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.forgotPasswordSentMsg),
-          backgroundColor: AppColors.success,
-        ),
-      );
+      ThemedSnackBar.showSuccess(context, l10n.forgotPasswordSentMsg);
     }
   }
 
@@ -110,19 +100,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!mounted) return;
 
     if (auth.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(auth.error!),
-          backgroundColor: AppColors.error,
-        ),
+      ThemedSnackBar.showError(
+        context,
+        auth.error!,
+        onRetry: _submitReset,
       );
     } else if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              "Password reset successfully! You can now log in with your new password."),
-          backgroundColor: AppColors.success,
-        ),
+      ThemedSnackBar.showSuccess(
+        context,
+        "Password reset successfully! You can now log in with your new password.",
       );
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -198,7 +184,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     const SizedBox(height: AppSpacing.md),
                   ],
                   if (auth.error != null) ...[
-                    ThemedErrorBanner(message: auth.error!),
+                    ThemedErrorBanner(
+                      message: auth.error!,
+                      onRetry: _submitReset,
+                    ),
                     const SizedBox(height: AppSpacing.md),
                   ],
                   ThemedCard(

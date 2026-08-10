@@ -13,6 +13,7 @@ import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
+import '../widgets/themed_success_banner.dart';
 import 'employee_jobs_screen.dart';
 
 class EmployeeScreen extends StatefulWidget {
@@ -182,6 +183,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     ThemedErrorBanner(
                       key: const Key('employees_error_banner'),
                       message: ownerProvider.error!,
+                      onRetry: _refreshData,
                     )
                   else if (ownerProvider.employees.isEmpty)
                     ThemedEmptyState(
@@ -190,6 +192,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                       title: l10n.noEmployeesRegistered,
                       description:
                           "Register your first employee account using the form below.",
+                      actionText: "Add Worker",
+                      onActionPressed: () => _tabController.animateTo(1),
                     )
                   else
                     ListView.separated(
@@ -376,11 +380,9 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                                 } catch (e) {
                                   debugPrint('Error registering worker: $e');
                                   if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(friendlyErrorMessage(e)),
-                                        backgroundColor: AppColors.error,
-                                      ),
+                                    ThemedSnackBar.showError(
+                                      context,
+                                      friendlyErrorMessage(e),
                                     );
                                   }
                                 } finally {
@@ -511,11 +513,9 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                                   debugPrint(
                                       'Error toggling worker status: $e');
                                   if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(friendlyErrorMessage(e)),
-                                        backgroundColor: AppColors.error,
-                                      ),
+                                    ThemedSnackBar.showError(
+                                      context,
+                                      friendlyErrorMessage(e),
                                     );
                                   }
                                 } finally {
@@ -563,6 +563,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                       icon: Icons.receipt_long_outlined,
                       title: l10n.noAuditEventsTitle,
                       description: l10n.noAuditEventsDesc,
+                      actionText: "Refresh Audit Log",
+                      onActionPressed: _refreshAuditLog,
                     ),
                   );
                 }

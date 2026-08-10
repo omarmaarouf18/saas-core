@@ -15,6 +15,7 @@ import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
+import '../widgets/themed_success_banner.dart';
 import 'chat_screen.dart';
 import 'rating_screen.dart';
 
@@ -144,12 +145,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           setState(() => _currentJob = updated);
         }
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.counterOfferSuccessMsg),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        ThemedSnackBar.showSuccess(context, l10n.counterOfferSuccessMsg);
         _refreshJobStatus();
       }
     } catch (e) {
@@ -161,11 +157,10 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         } else {
           msg = friendlyErrorMessage(e);
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(msg),
-            backgroundColor: AppColors.error,
-          ),
+        ThemedSnackBar.showError(
+          context,
+          msg,
+          onRetry: () => _submitCounterOffer(proposed),
         );
         _refreshJobStatus();
       }
@@ -192,15 +187,17 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         if (updated != null) {
           setState(() => _currentJob = updated);
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(decision == 'accept'
-                ? "Price proposal accepted! Job is now active."
-                : "Price proposal declined. Job cancelled."),
-            backgroundColor:
-                decision == 'accept' ? AppColors.success : AppColors.error,
-          ),
-        );
+        if (decision == 'accept') {
+          ThemedSnackBar.showSuccess(
+            context,
+            "Price proposal accepted! Job is now active.",
+          );
+        } else {
+          ThemedSnackBar.showError(
+            context,
+            "Price proposal declined. Job cancelled.",
+          );
+        }
         _refreshJobStatus();
       }
     } catch (e) {
@@ -212,11 +209,10 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         } else {
           msg = friendlyErrorMessage(e);
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(msg),
-            backgroundColor: AppColors.error,
-          ),
+        ThemedSnackBar.showError(
+          context,
+          msg,
+          onRetry: () => _respondToProposal(decision),
         );
         _refreshJobStatus();
       }
@@ -510,7 +506,6 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                       Provider.of<AuthProvider>(context, listen: false);
                   final provider =
                       Provider.of<MarketplaceProvider>(context, listen: false);
-                  final messenger = ScaffoldMessenger.of(context);
                   await CancelJobDialog.show(
                     context,
                     jobId: _currentJob.id,
@@ -526,12 +521,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                         final msg = isNonCod
                             ? "Job cancelled successfully. Escrow refunded to wallet."
                             : "Job cancelled successfully.";
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(msg),
-                            backgroundColor: AppColors.success,
-                          ),
-                        );
+                        ThemedSnackBar.showSuccess(this.context, msg);
                         _refreshJobStatus();
                       }
                     },

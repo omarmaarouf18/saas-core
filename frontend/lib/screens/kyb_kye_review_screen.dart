@@ -10,6 +10,7 @@ import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/document_viewer_dialog.dart';
+import '../widgets/themed_success_banner.dart';
 
 class KybKyeReviewScreen extends StatefulWidget {
   final String? internalToken;
@@ -69,6 +70,8 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
                   title: l10n.accessDeniedTitle,
                   description:
                       'This reviewer queue is restricted to authorized reviewer accounts only.',
+                  actionText: "Go Back",
+                  onActionPressed: () => Navigator.pop(context),
                 ),
               ),
             )
@@ -111,6 +114,8 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
                 title: l10n.noPendingSubmissions,
                 description:
                     'All KYB/KYE verification requests have been processed.',
+                actionText: "Refresh Queue",
+                onActionPressed: _fetchSubmissions,
               )
             else
               ListView.separated(
@@ -304,12 +309,10 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
     if (result == true && mounted) {
       final l10n = AppLocalizations.of(context)!;
       final username = submission['username']?.toString() ?? 'User';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          key: const Key('review_confirmation_snackbar'),
-          content: Text(l10n.reviewCompletedSuccess(username)),
-          duration: AppMotion.snackBarDisplay,
-        ),
+      ThemedSnackBar.showSuccess(
+        context,
+        l10n.reviewCompletedSuccess(username),
+        key: const Key('review_confirmation_snackbar'),
       );
     }
   }
