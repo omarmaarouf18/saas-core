@@ -1,5 +1,8 @@
 // Global constants for the Quick Delivery (qd) frontend client.
 
+/// Fixed brand name constant used across all locales.
+const String quickDeliveryAppName = 'Quick Delivery';
+
 /// Map of backend service category keys to client-facing UI labels.
 /// - 'transport' maps to "Ride" (representing passenger ride-hailing / travel).
 /// - 'delivery' maps to "Delivery".

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
+import '../core/constants.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../providers/notifications_provider.dart';
@@ -73,7 +74,7 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
   String _getTabTitle(int index, AppLocalizations l10n) {
     switch (index) {
       case 0:
-        return l10n.appName;
+        return quickDeliveryAppName;
       case 1:
         return l10n.navServices;
       case 2:
@@ -81,7 +82,7 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
       case 3:
         return l10n.settingsTitle;
       default:
-        return l10n.appName;
+        return quickDeliveryAppName;
     }
   }
 

@@ -9,9 +9,6 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
-  String get appName => 'سريع ديلفري';
-
-  @override
   String get ok => 'تمام';
 
   @override
@@ -306,7 +303,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get signupTitle => 'إنشاء حساب جديد';
 
   @override
-  String get signupSubtitle => 'انضم لسريع ديلفري النهاردة';
+  String get signupSubtitle => 'انضم لـ Quick Delivery النهاردة';
 
   @override
   String get signupUsernameLabel => 'اسم المستخدم';
@@ -798,7 +795,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get jobMarkedCompletedSuccess => 'تم تعليم الطلب كمكتمل بنجاح!';
 
   @override
-  String get quickDeliveryDashboard => 'لوحة تحكم سريع ديلفري';
+  String get quickDeliveryDashboard => 'لوحة تحكم Quick Delivery';
 
   @override
   String get forgotPasswordSentMsg =>

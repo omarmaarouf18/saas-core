@@ -98,12 +98,6 @@ abstract class AppLocalizations {
     Locale('en')
   ];
 
-  /// No description provided for @appName.
-  ///
-  /// In en, this message translates to:
-  /// **'Quick Delivery'**
-  String get appName;
-
   /// No description provided for @ok.
   ///
   /// In en, this message translates to:
