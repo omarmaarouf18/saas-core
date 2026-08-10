@@ -36,7 +36,8 @@ class ThemedCard extends StatelessWidget {
                 color: AppColors.outlineVariant.withValues(alpha: 0.3),
                 width: 1,
               ),
-        boxShadow: elevation ?? (hasShadow ? AppElevation.shadowLevel1List : null),
+        boxShadow:
+            elevation ?? (hasShadow ? AppElevation.shadowLevel1List : null),
       ),
       child: child,
     );
