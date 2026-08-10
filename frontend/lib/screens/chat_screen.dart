@@ -200,6 +200,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 : chat.messages.isEmpty && chat.isConnecting
                     ? const Center(child: ThemedLoadingIndicator())
                     : chat.messages.isEmpty
+                        // Empty chat state: no action button needed as text input bar is always present below.
                         ? ThemedEmptyState(
                             icon: Icons.chat_bubble_outline,
                             title: l10n.chatTitle,

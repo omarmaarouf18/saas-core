@@ -65,14 +65,17 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     super.dispose();
   }
 
+  static const Duration _jobStatusPollingInterval = Duration(seconds: 5);
+  static const Duration _countdownTimerInterval = Duration(seconds: 1);
+
   void _startPolling() {
-    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    _pollingTimer = Timer.periodic(_jobStatusPollingInterval, (timer) {
       _refreshJobStatus(silent: true);
     });
   }
 
   void _startCountdownTimer() {
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _countdownTimer = Timer.periodic(_countdownTimerInterval, (_) {
       if (mounted && _currentJob.status == 'awaiting_price_response') {
         setState(() {});
       }
