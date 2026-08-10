@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## Phase 18 (ADR-0017) Frontend Status Tracker Accuracy Alignment
+
+- **Implementation Detail**: Updated `docs/frontend/STATUS.md` Phase 18 and `AI_CONTEXT.md` to align tracking status with completed ADR-0017 backend implementation. Marked sub-items (a) Fee-Splitting Removal (`aaaacc531ffe24a9aa6da3c99231844ef4fa8803`), (b) COD Pure Log Entry (`aaaacc531ffe24a9aa6da3c99231844ef4fa8803`, `431d42a8c0c426fe66037257d42878a84f74c73f`), (c) Owner Payout Request Capability (backend API endpoints `POST /users/wallet/payout/request` & `GET /users/wallet/payout/requests`, `aaaacc531ffe24a9aa6da3c99231844ef4fa8803`), and (d) Production Data Correction (`d97ef3a3ef5051be2b4adb85cc67004b35237ee4`, `255b6ec60e86fb0e287e334d0fa46749de9f2830`) as `[VERIFIED]`. Explicitly noted sub-item (c) covers backend API endpoints only (frontend UI pending under sub-item e), and retained sub-item (e) Frontend 0% Fee & Payout UI as `[PLANNED, NOT STARTED]`.
+- **Commit SHA**: ``1597f118c1b448bbc5e814228eefd6d4668e5fd7``
+- **Verification**: Verified via `git diff --stat` confirming 0 code changes, and passed `go test ./shared/infra/changelog_validation_test.go`. ✅
+
 ## ADR-0017 Zero-Commission Subscription-Only Revenue Model Architecture
 
 - **Implementation Detail**: Authored `docs/adr/0017-zero-commission-subscription-only-revenue-model.md` defining the business-model pivot to a 0% platform transaction commission revenue model (monthly SaaS subscription fee as sole platform revenue source). Established 0% commission across all payment channels, pure log-entry COD collection without wallet balance mutation, centralized electronic payment credits with tenant owner withdrawal/payout request capability, and remediation removing legacy fee deduction paths. Indexed in `docs/adr/README.md`, appended root cause notes in `docs/BUSINESS_LOGIC_AUDIT.md`, registered Phase 18 tracking entry in `docs/frontend/STATUS.md`, and updated `AI_CONTEXT.md`.
