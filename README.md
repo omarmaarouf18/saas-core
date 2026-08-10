@@ -37,7 +37,7 @@ MONGO_URI=mongodb://localhost:27017 go run ./services/auth-service/cmd/approve-k
 ### Method 2: Manual Database Updates (Fallback)
 If the CLI tool is unavailable, approvals can be handled manually by an operations engineer directly in the database.
 
-* **Database**: `saas_platform`
+* **Database**: `auth_db` (`AUTH_MONGO_DATABASE`)
 * **Collection**: `users`
 * **KYC Status Field**: `kyc_status`
 * **Approved Value**: `"approved"`
@@ -45,9 +45,9 @@ If the CLI tool is unavailable, approvals can be handled manually by an operatio
 
 #### Step-by-Step Approval Instructions
 1. **Access the MongoDB database instance** (e.g., via `mongosh` or your database admin tool).
-2. **Switch to the platform database**:
+2. **Switch to the auth database**:
    ```javascript
-   use saas_platform;
+   use auth_db;
    ```
 3. **Locate the owner account** by their registration email (or ID) to verify they exist and their current status is `pending_super_admin_approval`:
    ```javascript
@@ -75,7 +75,7 @@ If the CLI tool is unavailable, approvals can be handled manually by an operatio
 To prevent unverified upgrades and unauthorized access to premium features, transitioning a tenant's subscription to the `"paid"` tier is deliberately **not** automated or self-service via the API. Instead, upgrades must be requested via the app (which flags the subscription as `"pending_payment"`) and then manually activated by an operations engineer once out-of-band payment is confirmed.
 
 ### MongoDB Configuration Details
-* **Database**: `saas_platform`
+* **Database**: `user_db` (`USER_MONGO_DATABASE`)
 * **Collection**: `subscriptions`
 * **Subscription Tier Field**: `tier`
 * **Paid Value**: `"paid"`
@@ -86,9 +86,9 @@ To prevent unverified upgrades and unauthorized access to premium features, tran
 ### Step-by-Step Activation Instructions
 
 1. **Access the MongoDB database instance** (e.g., via `mongosh` or your database admin tool).
-2. **Switch to the platform database**:
+2. **Switch to the user service database**:
    ```javascript
-   use saas_platform;
+   use user_db;
    ```
 3. **Locate the tenant subscription** by their tenant ID to verify their current status is `pending_payment`:
    ```javascript

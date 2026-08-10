@@ -370,7 +370,6 @@ docker compose logs -f auth-service
 docker compose exec mongo mongodump \
   -u root -p "<MONGO_INITDB_ROOT_PASSWORD>" \
   --authenticationDatabase admin \
-  --db saas_platform \
   --archive=/data/db/backup_$(date +%F).archive --gzip
 
 docker cp saas-mongo:/data/db/backup_$(date +%F).archive /opt/backups/
@@ -484,12 +483,12 @@ docker cp saas-mongo:/data/db/backup_$(date +%F).archive /opt/backups/
 
 ### 11.1 ADR-0017 Zero-Commission Data Model Migration (`platform_config`)
 
-When deploying the zero-commission subscription revenue model (ADR-0017), existing production data in the `platform_config` collection must be updated to set `platform_fee_percentage` to `0.0`.
+When deploying the zero-commission subscription revenue model (ADR-0017), existing production data in the `platform_config` collection must be updated to set `platform_fee_percentage` to `0.0`. `user-service` owns `platform_config` and connects to database `${USER_MONGO_DATABASE:-user_db}` (per Finding #8 database-per-service separation).
 
 Execute the following `mongosh` script against the production MongoDB container:
 
 ```bash
-docker compose exec mongo mongosh -u root -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin saas_platform --eval '
+docker compose exec mongo mongosh -u root -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin "${USER_MONGO_DATABASE:-user_db}" --eval '
   db.platform_config.updateOne(
     { _id: "global" },
     { $set: { platform_fee_percentage: 0.0, updated_at: new Date() } },
@@ -500,7 +499,7 @@ docker compose exec mongo mongosh -u root -p "$MONGO_INITDB_ROOT_PASSWORD" --aut
 
 Verify migration result:
 ```bash
-docker compose exec mongo mongosh -u root -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin saas_platform --eval '
+docker compose exec mongo mongosh -u root -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin "${USER_MONGO_DATABASE:-user_db}" --eval '
   db.platform_config.find({ _id: "global" });
 '
 ```
