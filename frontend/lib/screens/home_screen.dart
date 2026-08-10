@@ -330,18 +330,6 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           _buildNotificationBell(context),
-          IconButton(
-            key: const Key('settings_button'),
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: l10n.ownerHomeTooltipSettings,
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                ),
-              );
-            },
-          ),
         ],
       ),
       body: Column(
