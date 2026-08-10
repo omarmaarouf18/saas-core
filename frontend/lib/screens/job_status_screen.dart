@@ -392,21 +392,21 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const ThemedSectionHeader(
-                      title: "Live Tracking",
+                    ThemedSectionHeader(
+                      title: l10n.liveTrackingTitle,
                     ),
                     const SizedBox(height: AppSpacing.md),
                     _buildStepRow(
                       index: 0,
                       currentStep: step,
-                      title: "Request Placed",
-                      subtitle: "Waiting for operator approval",
+                      title: l10n.stepRequestPlaced,
+                      subtitle: l10n.stepWaitingApproval,
                       isLast: false,
                     ),
                     _buildStepRow(
                       index: 1,
                       currentStep: step,
-                      title: "Worker Dispatched",
+                      title: l10n.stepWorkerDispatched,
                       subtitle: _currentJob.employeeId == null
                           ? "Assigning an employee..."
                           : (_resolvedUsername != null &&
@@ -418,8 +418,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                     _buildStepRow(
                       index: 2,
                       currentStep: step,
-                      title: "Job Completed",
-                      subtitle: "Delivery completed successfully",
+                      title: l10n.stepJobCompleted,
+                      subtitle: l10n.stepCompletedSuccessfully,
                       isLast: true,
                     ),
                   ],
@@ -435,8 +435,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const ThemedSectionHeader(
-                    title: "Job Details",
+                  ThemedSectionHeader(
+                    title: l10n.jobDetailsTitle,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _buildInfoRow("Payment Method",
@@ -601,6 +601,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
   }
 
   Widget _buildNegotiationCard() {
+    final l10n = context.l10n;
     final suggested = _currentJob.suggestedPrice ?? 0.0;
     final proposed = _currentJob.proposedPrice;
     final proposedBy = _currentJob.proposedBy;
@@ -620,7 +621,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ThemedSectionHeader(
-            title: "Price Negotiation",
+            title: l10n.priceNegotiationTitle,
             trailing: (status == 'awaiting_price_response' && !expired)
                 ? Container(
                     padding: const EdgeInsets.symmetric(
@@ -828,7 +829,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
-                      hintText: "e.g. ${suggested.toStringAsFixed(2)}",
+                      hintText: l10n
+                          .negotiationHintExample(suggested.toStringAsFixed(2)),
                       prefixText: "\$ ",
                       errorText: _proposalError,
                       contentPadding: const EdgeInsets.symmetric(

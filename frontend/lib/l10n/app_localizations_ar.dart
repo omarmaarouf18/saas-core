@@ -594,7 +594,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get walletTotalBalance => 'إجمالي الرصيد';
 
   @override
-  String get walletWithdrawable => 'المتاح للسحب';
+  String get walletWithdrawable => 'القابل للسحب';
 
   @override
   String get walletEscrow => 'معلق بالشحن';
@@ -1159,4 +1159,250 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get employeeJobsCompleteJobButton => 'إكمال الطلب';
+
+  @override
+  String get planFreeBasic => 'الباقة الأساسية المجانية';
+
+  @override
+  String get planProfessionalPaid => 'الباقة الاحترافية المدفوعة';
+
+  @override
+  String get walletLoading => 'جاري تحميل المحفظة...';
+
+  @override
+  String get walletLockedEscrow => 'المحجوز (الضمان)';
+
+  @override
+  String get walletTransactionLedger => 'سجل المعاملات';
+
+  @override
+  String get walletNoTransactions => 'لا توجد معاملات مسجلة حتى الآن.';
+
+  @override
+  String get walletAmountCredits => 'المبلغ (الرصيد)';
+
+  @override
+  String get cancelJobReasonLabel => 'سبب الإلغاء *';
+
+  @override
+  String get cancelJobReasonHint => 'مثال: طلب العميل الإلغاء / تغيير الخطط';
+
+  @override
+  String get statusCompleted => 'مكتمل';
+
+  @override
+  String get statusActive => 'نشط';
+
+  @override
+  String get statusAwaitingPrice => 'في انتظار السعر';
+
+  @override
+  String get statusPending => 'قيد الانتظار';
+
+  @override
+  String get statusCancelled => 'ملغى';
+
+  @override
+  String get statusPendingApproval => 'في انتظار الموافقة';
+
+  @override
+  String get statusApproved => 'مقبول';
+
+  @override
+  String get statusRejected => 'مرفوض';
+
+  @override
+  String get statusUnverified => 'غير موثق';
+
+  @override
+  String get statusReconciliationRequired => 'يتطلب التسوية';
+
+  @override
+  String get showPassword => 'إظهار كلمة السر';
+
+  @override
+  String get hidePassword => 'إخفاء كلمة السر';
+
+  @override
+  String get customerOrdersLoading => 'جاري تحميل الطلبات...';
+
+  @override
+  String get tooltipNotifications => 'الإشعارات';
+
+  @override
+  String get tooltipRefreshList => 'تحديث القائمة';
+
+  @override
+  String get tooltipRefreshStatus => 'تحديث الحالة';
+
+  @override
+  String get tooltipToggleTheme => 'تغيير الوضع';
+
+  @override
+  String get tooltipToggleLanguage => 'تغيير اللغة';
+
+  @override
+  String get tooltipDismiss => 'إغلاق';
+
+  @override
+  String get tooltipPickImage => 'اختيار صورة';
+
+  @override
+  String get sortByLabel => 'ترتيب حسب';
+
+  @override
+  String get searchingServices => 'جاري البحث عن الخدمات...';
+
+  @override
+  String get noServicesNearby => 'لم يتم العثور على خدمات قريبة.';
+
+  @override
+  String get paymentMethodLabel => 'طريقة الدفع';
+
+  @override
+  String get registeredEmployees => 'الموظفون المسجلون';
+
+  @override
+  String get loadingEmployeeList => 'جاري تحميل قائمة الموظفين...';
+
+  @override
+  String get noEmployeesRegistered => 'لا يوجد موظفون مسجلون';
+
+  @override
+  String get registerNewEmployee => 'تسجيل موظف جديد';
+
+  @override
+  String get employeeUsernameLabel => 'اسم المستخدم للموظف';
+
+  @override
+  String get employeeUsernameHint => 'مثال: driver_john';
+
+  @override
+  String get employeeEmailLabel => 'البريد الإلكتروني للموظف';
+
+  @override
+  String get employeeEmailHint => 'مثال: john@company.com';
+
+  @override
+  String get employeePasswordLabel => 'كلمة سر الموظف';
+
+  @override
+  String get employeePasswordHint => '6 أحرف على الأقل';
+
+  @override
+  String get employeeRegisteredTitle => 'تم تسجيل الموظف';
+
+  @override
+  String get freezeUnfreezeWorker => 'تجميد / إلغاء تجميد العامل';
+
+  @override
+  String get confirmOwnerPassword => 'تأكيد كلمة سر المالك';
+
+  @override
+  String get workerStatusUpdated => 'تم تحديث حالة العامل';
+
+  @override
+  String get loadingAuditTrail => 'جاري تحميل سجل التدقيق...';
+
+  @override
+  String get noAuditEventsTitle => 'لا توجد أحداث تدقيق مسجلة';
+
+  @override
+  String get noAuditEventsDesc => 'لا توجد أحداث تدقيق مسجلة لهذا الحساب.';
+
+  @override
+  String get liveTrackingTitle => 'المتابعة الحية';
+
+  @override
+  String get stepRequestPlaced => 'تم تقديم الطلب';
+
+  @override
+  String get stepWaitingApproval => 'في انتظار موافقة المشغل';
+
+  @override
+  String get stepWorkerDispatched => 'تم إرسال العامل';
+
+  @override
+  String get stepJobCompleted => 'تم إكمال الطلب';
+
+  @override
+  String get stepCompletedSuccessfully => 'تم التوصيل بنجاح';
+
+  @override
+  String get jobDetailsTitle => 'تفاصيل الطلب';
+
+  @override
+  String get priceNegotiationTitle => 'التفاوض على السعر';
+
+  @override
+  String negotiationHintExample(String price) {
+    return 'مثال: $price';
+  }
+
+  @override
+  String get accessDeniedTitle => 'تم رفض الوصول';
+
+  @override
+  String get loadingPendingSubmissions => 'جاري تحميل الطلبات المعلقة...';
+
+  @override
+  String get noPendingSubmissions => 'لا توجد طلبات معلقة';
+
+  @override
+  String rejectionReasonMessage(String reason) {
+    return 'سبب الرفض: $reason';
+  }
+
+  @override
+  String get ratingFeatureUnbiased => 'تقييمات محايدة';
+
+  @override
+  String get ratingFeatureTrust => 'حماية الثقة';
+
+  @override
+  String get ratingFeatureWindow => 'مهلة 24 ساعة';
+
+  @override
+  String get privateFeedbackLabel => 'ملاحظة خاصة (اختياري)';
+
+  @override
+  String get privateFeedbackHint =>
+      'ما الذي تم بشكل جيد؟ وما الذي يمكن تحسينه؟';
+
+  @override
+  String get loadingStatus => 'جاري تحميل الحالة...';
+
+  @override
+  String get loadingServices => 'جاري تحميل الخدمات...';
+
+  @override
+  String get noServicesConfigured => 'لم يتم ضبط أي خدمات';
+
+  @override
+  String get noServicesDescription =>
+      'لم يتم ضبط أي خدمات بعد.\nإضغط على زر + لإنشاء خدمة جديدة.';
+
+  @override
+  String get addService => 'إضافة خدمة';
+
+  @override
+  String get kycPending => 'في انتظار التوثيق';
+
+  @override
+  String get serviceNameLabel => 'اسم الخدمة';
+
+  @override
+  String get categoryLabel => 'الفئة';
+
+  @override
+  String get basePriceLabel => 'السعر الأساسي (\$)';
+
+  @override
+  String get ratePerKmLabel => 'السعر لكل كم (\$)';
+
+  @override
+  String get latitudeLabel => 'خط العرض';
+
+  @override
+  String get longitudeLabel => 'خط الطول';
 }

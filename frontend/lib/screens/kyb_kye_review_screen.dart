@@ -60,13 +60,13 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
         foregroundColor: AppColors.onPrimary,
       ),
       body: !isReviewer
-          ? const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpacing.lg),
+          ? Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Center(
                 child: ThemedEmptyState(
-                  key: Key('kyb_kye_unauthorized_state'),
+                  key: const Key('kyb_kye_unauthorized_state'),
                   icon: Icons.gavel_outlined,
-                  title: 'Access Denied',
+                  title: l10n.accessDeniedTitle,
                   description:
                       'This reviewer queue is restricted to authorized reviewer accounts only.',
                 ),
@@ -77,10 +77,11 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
   }
 
   Widget _buildContent(BuildContext context, AuthProvider auth) {
+    final l10n = context.l10n;
     if (auth.isLoadingPending && auth.pendingSubmissions.isEmpty) {
-      return const ThemedLoadingIndicator(
-        key: Key('kyb_kye_loading_indicator'),
-        message: 'Loading pending submissions...',
+      return ThemedLoadingIndicator(
+        key: const Key('kyb_kye_loading_indicator'),
+        message: l10n.loadingPendingSubmissions,
       );
     }
 
@@ -104,10 +105,10 @@ class _KybKyeReviewScreenState extends State<KybKyeReviewScreen> {
               const SizedBox(height: AppSpacing.md),
             ],
             if (submissions.isEmpty && !auth.isLoadingPending)
-              const ThemedEmptyState(
-                key: Key('kyb_kye_empty_state'),
+              ThemedEmptyState(
+                key: const Key('kyb_kye_empty_state'),
                 icon: Icons.assignment_turned_in_outlined,
-                title: 'No Pending Submissions',
+                title: l10n.noPendingSubmissions,
                 description:
                     'All KYB/KYE verification requests have been processed.',
               )

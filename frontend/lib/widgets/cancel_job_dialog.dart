@@ -66,11 +66,10 @@ class _CancelJobDialogState extends State<CancelJobDialog> {
               autofocus: true,
               maxLines: 3,
               onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(
-                labelText: "Cancellation Reason *",
-                hintText:
-                    "e.g. Customer requested cancellation / Change of plans",
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.cancelJobReasonLabel,
+                hintText: l10n.cancelJobReasonHint,
+                border: const OutlineInputBorder(),
               ),
             ),
             if (_inlineError != null) ...[

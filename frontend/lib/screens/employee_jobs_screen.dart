@@ -197,6 +197,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   }
 
   Widget _buildNotificationBell(BuildContext context) {
+    final l10n = context.l10n;
     return Consumer<NotificationsProvider>(
       builder: (context, provider, child) {
         return Stack(
@@ -204,7 +205,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
           children: [
             IconButton(
               icon: const Icon(Icons.notifications),
-              tooltip: 'Notifications',
+              tooltip: l10n.tooltipNotifications,
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(

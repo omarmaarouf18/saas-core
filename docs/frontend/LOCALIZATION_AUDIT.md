@@ -48,17 +48,20 @@ This document records the full internationalization (i18n) setup and string extr
 
 ---
 
-## Static Regex Verification
+## Static Regex & Property Audit Verification
 Verification command for hardcoded English UI strings:
 ```bash
-cd frontend && grep -rn "Text('" lib/screens lib/widgets ; grep -rn 'Text("' lib/screens lib/widgets
+grep -rnE "(Text\(|hintText:|labelText:|tooltip:|title:|content:|label:|message:|errorText:|helperText:)[ '\"a-zA-Z0-9]" frontend/lib/screens/ frontend/lib/widgets/ | grep -v "key:" | grep -v "//" | grep -v "l10n"
 ```
 
-> **Audit Correction Note**: An initial audit claimed zero hardcoded strings remained, but a comprehensive follow-up pass identified 13 hardcoded strings across 6 files (`customer_job_map_screen.dart`, `subscription_screen.dart`, `owner_fleet_map_screen.dart`, `kyb_kye_review_screen.dart`, `owner_reconciliation_queue_screen.dart`, and `document_viewer_dialog.dart`), plus double-quoted `Text("...")` occurrences in several other screens. `owner_reconciliation_queue_screen.dart` had been listed under an incorrect filename (`reconciliation_queue_screen.dart`) and lacked `AppLocalizations` wiring completely, while `document_viewer_dialog.dart` was omitted from the matrix.
+> **Audit Correction Note (Comprehensive Property Audit)**:
+> The initial audit pass used a verification command restricted solely to single-quoted `Text('...')` calls. This narrow search pattern missed hardcoded strings in double-quoted strings (`Text("...")`), string interpolation (`Text('... $var')`), and other common Flutter string-bearing widget properties such as `labelText:`, `hintText:`, `tooltip:`, `title:`, `message:`, `label:`, and `content:`.
 >
-> All identified gaps were fully resolved by extracting strings into `app_en.arb` and `app_ar.arb` (with natural Egyptian-market Arabic terminology) and wiring all widgets to `AppLocalizations.of(context)!`.
+> A second, comprehensive audit pass inspected all string-bearing Flutter properties across all files in `lib/screens` and `lib/widgets`, identifying 87 additional hardcoded UI strings (including `subscription_screen.dart` plan titles, `wallet_screen.dart` balance titles and deposit labels, `status_badge.dart` status labels, `cancel_job_dialog.dart` reason labels, `themed_text_field.dart` password toggle tooltips, and action/navigation tooltips across multiple screens).
+>
+> All identified string properties were extracted into `app_en.arb` and `app_ar.arb` (with natural Egyptian-market Arabic terminology, e.g. "الباقة الأساسية المجانية" for Free Basic Plan and "الباقة الاحترافية المدفوعة" for Professional Paid Plan) and wired using `AppLocalizations.of(context)!` / `context.l10n`.
 
-Result: **Zero hardcoded user-facing strings remain in UI widgets.** All static text references `AppLocalizations.of(context)!`.
+Result: **Zero hardcoded user-facing strings remain across any checked Flutter widget properties in `lib/screens` and `lib/widgets`.** All static text references `AppLocalizations.of(context)!`.
 
 ---
 

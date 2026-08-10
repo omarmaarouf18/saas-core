@@ -1,6 +1,5 @@
 {
   "@@locale": "en",
-
   "appName": "Quick Delivery",
   "ok": "OK",
   "cancel": "Cancel",
@@ -12,21 +11,17 @@
   "search": "Search",
   "loading": "Loading...",
   "comingSoon": "Coming Soon",
-
   "navHome": "Home",
   "navServices": "Services",
   "navHistory": "History",
   "navSettings": "Settings",
   "navEmployees": "Employees",
-
   "themeLight": "Light",
   "themeDark": "Dark",
   "themeSystem": "System",
-
   "langAuto": "Auto (System)",
   "langEnglish": "English",
   "langArabic": "العربية (مصر)",
-
   "settingsTitle": "Settings",
   "settingsAppearance": "Appearance",
   "settingsAppearanceSub": "Customize application look and feel",
@@ -45,7 +40,6 @@
   "settingsCustomerService": "Customer Service",
   "settingsCustomerServiceSub": "Contact support & submit complaint tickets",
   "settingsLogout": "LOG OUT",
-
   "myAccountTitle": "My Account",
   "myAccountHeader": "Account Details",
   "myAccountHeaderSub": "Manage personal details and saved addresses",
@@ -66,7 +60,6 @@
   "myAccountMaxAddressesError": "Cannot add more than 10 frequent addresses.",
   "myAccountSaveButton": "SAVE PROFILE",
   "myAccountSuccessMsg": "Profile updated successfully",
-
   "ownerConfigTitle": "Owner Configuration",
   "ownerConfigHeader": "Business Details",
   "ownerConfigHeaderSub": "Update business parameters and service terms",
@@ -91,7 +84,6 @@
   "ownerConfigPhotoUrlHint": "https://example.com/logo.png",
   "ownerConfigSaveButton": "SAVE CONFIGURATION",
   "ownerConfigSuccessMsg": "Owner configuration updated successfully",
-
   "loginTitle": "Welcome Back",
   "loginSubtitle": "Log in to manage your services",
   "loginEmailLabel": "Email Address",
@@ -105,7 +97,6 @@
   "loginForgotPassword": "Forgot password?",
   "loginNoAccount": "Don't have an account?",
   "loginSignUp": "Sign Up",
-
   "signupTitle": "Create Account",
   "signupSubtitle": "Join Quick Delivery today",
   "signupUsernameLabel": "Username",
@@ -124,17 +115,14 @@
   "signupSubmitButton": "CREATE ACCOUNT",
   "signupHasAccount": "Already have an account?",
   "signupSignIn": "Sign In",
-
   "otpTitle": "Two-Factor Verification",
   "otpSubtitle": "Enter the 6-digit code sent to your email",
   "otpCodeLabel": "6-Digit OTP Code",
   "otpSubmitButton": "VERIFY CODE",
   "otpResendButton": "RESEND CODE",
-
   "forgotPasswordTitle": "Reset Password",
   "forgotPasswordSubtitle": "Enter your email and new credentials",
   "forgotPasswordSubmitButton": "RESET PASSWORD",
-
   "customerHomeGreeting": "Welcome back,",
   "customerHomeSub": "What service do you need today?",
   "customerHomeQuickAccess": "Services",
@@ -145,7 +133,6 @@
   "customerHomeRecentActivity": "Recent Activity",
   "customerHomeQuickBookBanner": "Need a quick delivery?",
   "customerHomeQuickBookBtn": "BOOK NOW",
-
   "customerMarketplaceTitle": "Explore Services",
   "customerMarketplaceSearchHint": "Search services...",
   "customerMarketplaceFilterCategory": "Category",
@@ -153,13 +140,11 @@
   "customerMarketplaceChooseMap": "Choose Location on Map",
   "customerMarketplaceBookBtn": "BOOK SERVICE",
   "customerMarketplaceCodNote": "Note: COD (Cash on Delivery) is enforced during beta.",
-
   "customerJobsTitle": "My Orders",
   "customerJobsOrder": "Order #",
   "customerJobsEmpty": "No Orders Found",
   "customerJobsEmptyDescription": "You haven't placed any orders yet. Explore services in the marketplace to get started.",
   "customerJobsViewDetails": "View Details",
-
   "jobStatusTitle": "Order Status",
   "jobStatusPending": "Pending",
   "jobStatusActive": "Active",
@@ -169,76 +154,61 @@
   "jobStatusOpenTicketBtn": "Open Complaint Ticket",
   "jobStatusCounterOfferTitle": "Price Counter-Offer",
   "jobStatusCounterOfferSubmit": "Propose Counter Price",
-
   "ownerHomeGreeting": "Dashboard",
   "ownerHomeKycAlert": "Your KYC verification is pending admin approval.",
   "ownerHomeMetricsWallet": "Wallet Balance",
   "ownerHomeMetricsSubscription": "Subscription Tier",
   "ownerHomeEntryWallet": "Manage Wallet",
   "ownerHomeEntryService": "Service Configuration",
-
-  "ownerHistoryTitle": "Business History",
+  "ownerHistoryTitle": "History & Audit Logs",
   "ownerHistoryTabAudit": "Audit Log",
-  "ownerHistoryTabJobs": "Completed Jobs",
+  "ownerHistoryTabJobs": "Jobs",
   "ownerHistoryTabLedger": "Ledger",
-
   "ownerFleetMapTitle": "Fleet Map",
   "customerJobMapTitle": "Live Tracking",
-
   "employeeJobsTitle": "Assigned Jobs",
   "employeeJobsCompleteBtn": "Complete Job",
   "employeeJobsVerifyDocsBtn": "KYC Documents",
   "employeeJobsChatBtn": "Chat with Customer",
   "employeeJobsCashConfirmTitle": "Confirm Cash Collection",
   "employeeJobsCashConfirmMsg": "Did you collect cash from the customer for this COD job?",
-
   "employeeScreenTitle": "Manage Workers",
   "employeeRegisterHeader": "Register New Worker",
   "employeeFreezeBtn": "Freeze",
   "employeeUnfreezeBtn": "Activate",
-
   "chatTitle": "Job Chat",
   "chatTypeHint": "Type a message...",
   "chatSendBtn": "Send",
-
   "notificationsTitle": "Notifications",
   "notificationsAll": "All",
   "notificationsJobs": "Jobs",
   "notificationsSystem": "System",
   "notificationsAlerts": "Alerts",
   "notificationsClear": "Clear All",
-
   "kycTitle": "Document Verification",
   "kycRejectionBanner": "Your documents were rejected. Reason:",
   "kycApprovedBadge": "Approved",
-
   "kybKyeReviewTitle": "KYC Review Queue",
   "kybKyeApproveBtn": "Approve",
   "kybKyeRejectBtn": "Reject",
-
   "walletTitle": "Owner Wallet",
   "walletTotalBalance": "Total Balance",
   "walletWithdrawable": "Withdrawable",
   "walletEscrow": "In Escrow",
   "walletDepositBtn": "Deposit Funds",
-
   "reconciliationTitle": "Escrow Reconciliation",
   "reconciliationReleaseBtn": "Release Funds",
   "reconciliationRefundBtn": "Refund Customer",
-
   "ratingTitle": "Rate Service",
   "ratingSubmitBtn": "SUBMIT RATING",
-
   "subscriptionTitle": "Subscription Plans",
   "subscriptionFree": "Free Tier",
   "subscriptionPro": "Professional Tier",
-
   "locationPickerTitle": "Choose Location on Map",
   "locationPickerUseMyLocation": "Use My Location",
   "locationPickerConfirmBtn": "Confirm Location",
   "ticketSubjectReq": "Subject is required.",
   "ticketDescriptionReq": "Issue details are required.",
-
   "liveCourierTracking": "Live Courier Tracking",
   "subscriptionPlansTitle": "Subscription Plans",
   "fleetLiveMapTitle": "Fleet Live Map",
@@ -246,10 +216,11 @@
   "reviewCompletedSuccess": "Review completed successfully for {username}.",
   "@reviewCompletedSuccess": {
     "placeholders": {
-      "username": { "type": "String" }
+      "username": {
+        "type": "String"
+      }
     }
   },
-
   "reconciliationReviewTitle": "Escrow Reconciliation Review",
   "tooltipRefreshQueue": "Refresh Queue",
   "reconciliationEmptyTitle": "No jobs pending reconciliation",
@@ -265,16 +236,26 @@
   "reconciliationConfirmTitle": "Confirm {actionLabel}",
   "@reconciliationConfirmTitle": {
     "placeholders": {
-      "actionLabel": { "type": "String" }
+      "actionLabel": {
+        "type": "String"
+      }
     }
   },
   "reconciliationConfirmMessage": "Are you sure you want to {actionLabel} for Job #{jobId}?\n\nThis will transfer {amount} Credits back to the {targetRole}. Real funds will be moved.",
   "@reconciliationConfirmMessage": {
     "placeholders": {
-      "actionLabel": { "type": "String" },
-      "jobId": { "type": "String" },
-      "amount": { "type": "String" },
-      "targetRole": { "type": "String" }
+      "actionLabel": {
+        "type": "String"
+      },
+      "jobId": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "targetRole": {
+        "type": "String"
+      }
     }
   },
   "reconciliationSuccessRelease": "Escrow resolved: funds released to employee/tenant",
@@ -282,7 +263,6 @@
   "reconciliationFailed": "Failed to resolve reconciliation",
   "roleEmployeeTenant": "employee/tenant",
   "roleCustomer": "customer",
-
   "docViewerTitle": "Document Viewer",
   "docTabIdFront": "Front ID",
   "docTabIdBack": "Back ID",
@@ -295,7 +275,9 @@
   "docFileSize": "File Size: {size} bytes",
   "@docFileSize": {
     "placeholders": {
-      "size": { "type": "int" }
+      "size": {
+        "type": "int"
+      }
     }
   },
   "docDecodeError": "Failed to decode image bytes.",
@@ -304,27 +286,30 @@
   "docRejectionReasonHint": "Explain why this submission is being rejected...",
   "docRejectionReasonReq": "Rejection reason is required.",
   "docConfirmReject": "Confirm Reject",
-
   "chatFailedSend": "Failed to send message: {error}",
   "@chatFailedSend": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "filterSortPrice": "Price",
   "filterSortNone": "None",
   "bookingFailed": "Booking Failed: {error}",
   "@bookingFailed": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "actionLoggedSuccess": "Action logged successfully: \"{action}\"",
   "@actionLoggedSuccess": {
     "placeholders": {
-      "action": { "type": "String" }
+      "action": {
+        "type": "String"
+      }
     }
   },
   "jobMarkedCompletedSuccess": "Job marked as completed successfully!",
@@ -335,60 +320,66 @@
   "kycChooseGallery": "Choose Image from Gallery",
   "kycSelectPdf": "Select PDF Document",
   "otpResendSuccessMsg": "A new OTP code has been sent successfully.",
-
   "ratingIdentityError": "Error: Cannot determine other party identity.",
   "ratingSuccessMsg": "Blind rating submitted successfully!",
   "ratingFailed": "Error: {error}",
   "@ratingFailed": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "unauthenticatedMsg": "Unauthenticated",
   "serviceCreatedSuccess": "Service created successfully!",
   "serviceCreateFailed": "Failed to create service: {error}",
   "@serviceCreateFailed": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "cancelJobHeader": "Cancel Job #{jobId}",
   "@cancelJobHeader": {
     "placeholders": {
-      "jobId": { "type": "String" }
+      "jobId": {
+        "type": "String"
+      }
     }
   },
   "cancelJobKeep": "Keep Job",
   "cancelJobConfirm": "Confirm Cancel",
-
   "locationPermissionDeniedDefault": "Location permission denied. Defaulting to Cairo.",
   "locationFetchError": "Error fetching location: {error}",
   "@locationFetchError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "settingsKycRowTitle": "Identity Verification (KYC)",
   "settingsKycSubtitleDefault": "Verify your account identity and documents",
   "settingsKycSubtitleRejected": "Verification Rejected - Action Required",
   "settingsKycSubtitlePending": "Verification Pending Approval",
-
   "ownerHomeTabTitleDashboard": "Quick Delivery Owner Dashboard",
   "ownerHomeTabTitleWorkers": "Manage Workers",
   "ownerHomeTabTitleHistory": "History & Audit Logs",
   "ownerHomeWelcomeUser": "Welcome back, {name}!",
   "@ownerHomeWelcomeUser": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "ownerHomeAccountId": "Account ID: {id}",
   "@ownerHomeAccountId": {
     "placeholders": {
-      "id": { "type": "String" }
+      "id": {
+        "type": "String"
+      }
     }
   },
   "ownerHomeProfileInfo": "Profile Information",
@@ -406,13 +397,17 @@
   "ownerHomeTenantId": "Tenant Owner ID: {id}",
   "@ownerHomeTenantId": {
     "placeholders": {
-      "id": { "type": "String" }
+      "id": {
+        "type": "String"
+      }
     }
   },
   "ownerHomeCreditsAmount": "{amount} Credits",
   "@ownerHomeCreditsAmount": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "ownerHomeSubTitle": "Subscription",
@@ -431,30 +426,34 @@
   "ownerHomeJobId": "Job #{id}",
   "@ownerHomeJobId": {
     "placeholders": {
-      "id": { "type": "String" }
+      "id": {
+        "type": "String"
+      }
     }
   },
   "ownerHomePaymentInfo": "Payment: {method}{escrowInfo}",
   "@ownerHomePaymentInfo": {
     "placeholders": {
-      "method": { "type": "String" },
-      "escrowInfo": { "type": "String" }
+      "method": {
+        "type": "String"
+      },
+      "escrowInfo": {
+        "type": "String"
+      }
     }
   },
   "ownerHomeCancelJob": "Cancel Job",
   "ownerHomeJobCancelledEscrowRefunded": "Job cancelled successfully. Escrow refunded to wallet.",
   "ownerHomeJobCancelled": "Job cancelled successfully.",
-
-  "ownerHistoryTitle": "History & Audit Logs",
   "ownerHistoryTabActivity": "Activity",
-  "ownerHistoryTabJobs": "Jobs",
-  "ownerHistoryTabLedger": "Ledger",
   "ownerHistoryNoActivityTitle": "No Employee Activity Found",
   "ownerHistoryNoActivityDesc": "No tenant audit log events recorded yet.",
   "ownerHistoryActorId": "Actor: {id}",
   "@ownerHistoryActorId": {
     "placeholders": {
-      "id": { "type": "String" }
+      "id": {
+        "type": "String"
+      }
     }
   },
   "ownerHistoryNoJobsTitle": "No Completed Jobs Found",
@@ -462,7 +461,9 @@
   "ownerHistoryCancellationReason": "Reason: {reason}",
   "@ownerHistoryCancellationReason": {
     "placeholders": {
-      "reason": { "type": "String" }
+      "reason": {
+        "type": "String"
+      }
     }
   },
   "ownerHistoryNoLedgerTitle": "No Ledger Entries Found",
@@ -470,16 +471,21 @@
   "ownerHistoryBalanceAfter": "Balance after: ${amount}{jobInfo}",
   "@ownerHistoryBalanceAfter": {
     "placeholders": {
-      "amount": { "type": "String" },
-      "jobInfo": { "type": "String" }
+      "amount": {
+        "type": "String"
+      },
+      "jobInfo": {
+        "type": "String"
+      }
     }
   },
-
   "employeeJobsTooltipVerification": "Verification Documents",
   "employeeJobsJobId": "Job #{id}",
   "@employeeJobsJobId": {
     "placeholders": {
-      "id": { "type": "String" }
+      "id": {
+        "type": "String"
+      }
     }
   },
   "employeeJobsSuggestionArrivedPickup": "Arrived at Pickup",
@@ -500,7 +506,9 @@
   "employeeJobsLoggedInAs": "Logged in as: {name}",
   "@employeeJobsLoggedInAs": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "employeeJobsGpsLive": "GPS Live",
@@ -509,14 +517,20 @@
   "employeeJobsConfirmCodMessage": "Confirm you have physically collected the cash payment of ${amount} (COD) from the customer.\n\nThis will deduct the platform fee from the owner's wallet and mark Job #{jobId} as completed.",
   "@employeeJobsConfirmCodMessage": {
     "placeholders": {
-      "amount": { "type": "String" },
-      "jobId": { "type": "String" }
+      "amount": {
+        "type": "String"
+      },
+      "jobId": {
+        "type": "String"
+      }
     }
   },
   "employeeJobsConfirmNonCodMessage": "Are you sure you want to mark Job #{jobId} as completed?",
   "@employeeJobsConfirmNonCodMessage": {
     "placeholders": {
-      "jobId": { "type": "String" }
+      "jobId": {
+        "type": "String"
+      }
     }
   },
   "employeeJobsConfirmCodButton": "Confirm Cash Collected & Complete",
@@ -528,7 +542,9 @@
   "employeeJobsCancellationReason": "Cancellation Reason: {reason}",
   "@employeeJobsCancellationReason": {
     "placeholders": {
-      "reason": { "type": "String" }
+      "reason": {
+        "type": "String"
+      }
     }
   },
   "employeeJobsLocationPermissionTitle": "Location Permission Required",
@@ -536,5 +552,99 @@
   "employeeJobsOpenAppSettings": "Open App Settings",
   "employeeJobsSharingLiveLocation": "Sharing live location",
   "employeeJobsChatButton": "Chat",
-  "employeeJobsCompleteJobButton": "Complete Job"
+  "employeeJobsCompleteJobButton": "Complete Job",
+  "planFreeBasic": "Free Basic Plan",
+  "planProfessionalPaid": "Professional Paid Plan",
+  "walletLoading": "Loading wallet...",
+  "walletLockedEscrow": "Locked (Escrow)",
+  "walletTransactionLedger": "Transaction Ledger",
+  "walletNoTransactions": "No transactions recorded yet.",
+  "walletAmountCredits": "Amount (Credits)",
+  "cancelJobReasonLabel": "Cancellation Reason *",
+  "cancelJobReasonHint": "e.g. Customer requested cancellation / Change of plans",
+  "statusCompleted": "Completed",
+  "statusActive": "Active",
+  "statusAwaitingPrice": "Awaiting Price",
+  "statusPending": "Pending",
+  "statusCancelled": "Cancelled",
+  "statusPendingApproval": "Pending Approval",
+  "statusApproved": "Approved",
+  "statusRejected": "Rejected",
+  "statusUnverified": "Unverified",
+  "statusReconciliationRequired": "Reconciliation Required",
+  "showPassword": "Show password",
+  "hidePassword": "Hide password",
+  "customerOrdersLoading": "Loading orders...",
+  "tooltipNotifications": "Notifications",
+  "tooltipRefreshList": "Refresh List",
+  "tooltipRefreshStatus": "Refresh Status",
+  "tooltipToggleTheme": "Toggle Theme Mode",
+  "tooltipToggleLanguage": "Toggle Language",
+  "tooltipDismiss": "Dismiss",
+  "tooltipPickImage": "Pick Image",
+  "sortByLabel": "Sort By",
+  "searchingServices": "Searching services...",
+  "noServicesNearby": "No services found nearby.",
+  "paymentMethodLabel": "Payment Method",
+  "registeredEmployees": "Registered Employees",
+  "loadingEmployeeList": "Loading employee list...",
+  "noEmployeesRegistered": "No Employees Registered",
+  "registerNewEmployee": "Register New Employee",
+  "employeeUsernameLabel": "Employee Username",
+  "employeeUsernameHint": "e.g. driver_john",
+  "employeeEmailLabel": "Employee Email",
+  "employeeEmailHint": "e.g. john@company.com",
+  "employeePasswordLabel": "Employee Password",
+  "employeePasswordHint": "At least 6 characters",
+  "employeeRegisteredTitle": "Employee Registered",
+  "freezeUnfreezeWorker": "Freeze / Unfreeze Worker",
+  "confirmOwnerPassword": "Confirm Owner Password",
+  "workerStatusUpdated": "Worker Status Updated",
+  "loadingAuditTrail": "Loading audit trail...",
+  "noAuditEventsTitle": "No audit events recorded",
+  "noAuditEventsDesc": "No audit events recorded for this tenant.",
+  "liveTrackingTitle": "Live Tracking",
+  "stepRequestPlaced": "Request Placed",
+  "stepWaitingApproval": "Waiting for operator approval",
+  "stepWorkerDispatched": "Worker Dispatched",
+  "stepJobCompleted": "Job Completed",
+  "stepCompletedSuccessfully": "Delivery completed successfully",
+  "jobDetailsTitle": "Job Details",
+  "priceNegotiationTitle": "Price Negotiation",
+  "negotiationHintExample": "e.g. {price}",
+  "@negotiationHintExample": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "accessDeniedTitle": "Access Denied",
+  "loadingPendingSubmissions": "Loading pending submissions...",
+  "noPendingSubmissions": "No Pending Submissions",
+  "rejectionReasonMessage": "Rejection Reason: {reason}",
+  "@rejectionReasonMessage": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "ratingFeatureUnbiased": "Unbiased Reviews",
+  "ratingFeatureTrust": "Trust Shield",
+  "ratingFeatureWindow": "24h Window",
+  "privateFeedbackLabel": "Private Feedback (Optional)",
+  "privateFeedbackHint": "What went well? What could be improved?",
+  "loadingStatus": "Loading status...",
+  "loadingServices": "Loading services...",
+  "noServicesConfigured": "No Services Configured",
+  "noServicesDescription": "No services configured yet.\nTap the + button to create a service.",
+  "addService": "Add Service",
+  "kycPending": "KYC Pending",
+  "serviceNameLabel": "Service Name",
+  "categoryLabel": "Category",
+  "basePriceLabel": "Base Price ($)",
+  "ratePerKmLabel": "Rate per KM ($)",
+  "latitudeLabel": "Latitude",
+  "longitudeLabel": "Longitude"
 }

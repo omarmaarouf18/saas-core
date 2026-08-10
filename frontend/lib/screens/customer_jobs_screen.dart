@@ -52,9 +52,9 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
       body: Builder(
         builder: (context) {
           if (marketplace.isLoading && marketplace.customerJobs.isEmpty) {
-            return const ThemedLoadingIndicator(
-              key: Key('customer_jobs_loading'),
-              message: "Loading orders...",
+            return ThemedLoadingIndicator(
+              key: const Key('customer_jobs_loading'),
+              message: l10n.customerOrdersLoading,
             );
           }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
+import '../l10n/l10n.dart';
 
 class ThemedTextField extends StatefulWidget {
   final TextEditingController? controller;
@@ -84,7 +85,9 @@ class _ThemedTextFieldState extends State<ThemedTextField> {
               : Icons.visibility_off_outlined,
           color: AppColors.onSurfaceVariant,
         ),
-        tooltip: _obscureText ? 'Show password' : 'Hide password',
+        tooltip: _obscureText
+            ? (AppLocalizations.of(context)?.showPassword ?? 'Show password')
+            : (AppLocalizations.of(context)?.hidePassword ?? 'Hide password'),
         onPressed: () {
           setState(() {
             _obscureText = !_obscureText;

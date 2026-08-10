@@ -64,7 +64,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
       body: RefreshIndicator(
         onRefresh: _loadServices,
         child: owner.isLoading && myServices.isEmpty
-            ? const ThemedLoadingIndicator(message: "Loading services...")
+            ? ThemedLoadingIndicator(message: l10n.loadingServices)
             : Column(
                 children: [
                   if (!isKycApproved)
@@ -79,19 +79,18 @@ class _ServiceScreenState extends State<ServiceScreen> {
                     child: myServices.isEmpty
                         ? ListView(
                             physics: const AlwaysScrollableScrollPhysics(),
-                            children: const [
-                              SizedBox(height: 100),
+                            children: [
+                              const SizedBox(height: 100),
                               Padding(
-                                padding: EdgeInsets.symmetric(
+                                padding: const EdgeInsets.symmetric(
                                     horizontal: AppSpacing.lg),
                                 child: ThemedCard(
                                   borderRadius: AppRadius.md,
                                   padding: AppSpacing.lg,
                                   child: ThemedEmptyState(
                                     icon: Icons.design_services_outlined,
-                                    title: "No Services Configured",
-                                    description:
-                                        "No services configured yet.\nTap the + button to create a service.",
+                                    title: l10n.noServicesConfigured,
+                                    description: l10n.noServicesDescription,
                                   ),
                                 ),
                               ),
@@ -203,13 +202,14 @@ class _ServiceScreenState extends State<ServiceScreen> {
             isKycApproved ? AppColors.secondary : AppColors.outline,
         foregroundColor:
             isKycApproved ? AppColors.onSecondary : AppColors.surface,
-        tooltip: isKycApproved ? "Add Service" : "KYC Pending",
+        tooltip: isKycApproved ? l10n.addService : l10n.kycPending,
         child: const Icon(Icons.add),
       ),
     );
   }
 
   void _showCreateServiceDialog(BuildContext context, String ownerId) {
+    final l10n = context.l10n;
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
     final basePriceController = TextEditingController();
@@ -246,7 +246,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                     children: [
                       ThemedTextField(
                         controller: nameController,
-                        labelText: "Service Name",
+                        labelText: l10n.serviceNameLabel,
                         validator: (value) =>
                             value == null || value.trim().isEmpty
                                 ? "Name is required"
@@ -259,7 +259,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                           color: AppColors.onSurface,
                         ),
                         decoration: InputDecoration(
-                          labelText: "Category",
+                          labelText: l10n.categoryLabel,
                           labelStyle: AppTypography.labelLg.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
@@ -301,7 +301,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                       const SizedBox(height: AppSpacing.sm),
                       ThemedTextField(
                         controller: basePriceController,
-                        labelText: "Base Price (\$)",
+                        labelText: l10n.basePriceLabel,
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         validator: (value) {
@@ -318,7 +318,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                       const SizedBox(height: AppSpacing.sm),
                       ThemedTextField(
                         controller: pricePerKMController,
-                        labelText: "Rate per KM (\$)",
+                        labelText: l10n.ratePerKmLabel,
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         validator: (value) {
@@ -335,7 +335,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                       const SizedBox(height: AppSpacing.sm),
                       ThemedTextField(
                         controller: latController,
-                        labelText: "Latitude",
+                        labelText: l10n.latitudeLabel,
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         validator: (value) {
@@ -352,7 +352,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                       const SizedBox(height: AppSpacing.sm),
                       ThemedTextField(
                         controller: lonController,
-                        labelText: "Longitude",
+                        labelText: l10n.longitudeLabel,
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         validator: (value) {

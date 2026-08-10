@@ -133,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       : Icons.brightness_auto_outlined),
                               color: Theme.of(context).colorScheme.primary,
                             ),
-                            tooltip: "Toggle Theme Mode",
+                            tooltip: l10n.tooltipToggleTheme,
                             onPressed: () {
                               final nextMode = themeProvider.themeMode ==
                                       ThemeMode.light
@@ -150,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               Icons.language,
                               color: Theme.of(context).colorScheme.primary,
                             ),
-                            tooltip: "Toggle Language",
+                            tooltip: l10n.tooltipToggleLanguage,
                             onPressed: () {
                               final isAr =
                                   localeProvider?.locale?.languageCode == 'ar';

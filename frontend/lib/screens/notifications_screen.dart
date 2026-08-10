@@ -307,7 +307,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.delete_outline, size: 18),
-                    tooltip: 'Dismiss',
+                    tooltip: context.l10n.tooltipDismiss,
                     color: AppColors.onSurfaceVariant,
                     onPressed: () => provider.dismiss(notif.id),
                   ),

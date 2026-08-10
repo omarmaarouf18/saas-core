@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
+import '../l10n/l10n.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
 import '../widgets/info_list_tile.dart';
@@ -33,6 +34,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final auth = Provider.of<AuthProvider>(context);
     final ownerProvider = Provider.of<OwnerProvider>(context);
 
@@ -41,7 +43,7 @@ class _WalletScreenState extends State<WalletScreen> {
       body: ownerProvider.isLoading &&
               ownerProvider.ledgerEntries.isEmpty &&
               ownerProvider.walletBalance == 0.0
-          ? const ThemedLoadingIndicator(message: "Loading wallet...")
+          ? ThemedLoadingIndicator(message: l10n.walletLoading)
           : RefreshIndicator(
               onRefresh: () async {
                 await ownerProvider.fetchDashboardData(auth.token!);
@@ -81,7 +83,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       children: [
                         Expanded(
                           child: _buildBalanceCard(
-                            title: "Total Balance",
+                            title: l10n.walletTotalBalance,
                             value: ownerProvider.walletBalance,
                             icon: Icons.account_balance_rounded,
                             color: AppColors.primary,
@@ -94,7 +96,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       children: [
                         Expanded(
                           child: _buildBalanceCard(
-                            title: "Withdrawable",
+                            title: l10n.walletWithdrawable,
                             value: ownerProvider.withdrawableBalance,
                             icon: Icons.check_circle_outline_rounded,
                             color: AppColors.success,
@@ -103,7 +105,7 @@ class _WalletScreenState extends State<WalletScreen> {
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: _buildBalanceCard(
-                            title: "Locked (Escrow)",
+                            title: l10n.walletLockedEscrow,
                             value: ownerProvider.escrowBalance,
                             icon: Icons.lock_outline_rounded,
                             color: AppColors.warning,
@@ -127,18 +129,18 @@ class _WalletScreenState extends State<WalletScreen> {
                     const SizedBox(height: AppSpacing.xl),
 
                     // Transaction History Section
-                    const ThemedSectionHeader(
-                      title: "Transaction Ledger",
+                    ThemedSectionHeader(
+                      title: l10n.walletTransactionLedger,
                     ),
                     const SizedBox(height: AppSpacing.sm),
 
                     if (ownerProvider.ledgerEntries.isEmpty)
-                      const ThemedCard(
+                      ThemedCard(
                         borderRadius: AppRadius.md,
                         padding: AppSpacing.lg,
                         child: ThemedEmptyState(
                           icon: Icons.receipt_long_outlined,
-                          title: "No transactions recorded yet.",
+                          title: l10n.walletNoTransactions,
                           description:
                               "Your transaction history will appear here once deposits or charges occur.",
                         ),
@@ -288,6 +290,7 @@ class _WalletScreenState extends State<WalletScreen> {
   String _twoDigits(int n) => n >= 10 ? "$n" : "0$n";
 
   void _showDepositDialog(BuildContext context) {
+    final l10n = context.l10n;
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
     final amountController = TextEditingController();
@@ -330,7 +333,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       controller: amountController,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
-                      labelText: "Amount (Credits)",
+                      labelText: l10n.walletAmountCredits,
                       prefixIcon: const Icon(Icons.attach_money,
                           color: AppColors.outline),
                       validator: (value) {

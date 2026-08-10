@@ -319,8 +319,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    expect(
-        find.byKey(const Key('kyc_verification_setting_row')), findsNothing);
+    expect(find.byKey(const Key('kyc_verification_setting_row')), findsNothing);
 
     // 2. Unverified owner ('owner' role) -> shows KYC row
     final unverifiedOwner = UserProfile(
@@ -370,7 +369,6 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    expect(
-        find.byKey(const Key('kyc_verification_setting_row')), findsNothing);
+    expect(find.byKey(const Key('kyc_verification_setting_row')), findsNothing);
   });
 }

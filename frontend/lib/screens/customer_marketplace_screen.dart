@@ -76,7 +76,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.notifications),
-                tooltip: 'Notifications',
+                tooltip: context.l10n.tooltipNotifications,
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
@@ -269,7 +269,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                           color: AppColors.onSurface,
                         ),
                         decoration: InputDecoration(
-                          labelText: "Sort By",
+                          labelText: l10n.sortByLabel,
                           labelStyle: AppTypography.labelLg.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
@@ -335,19 +335,19 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
         // Services Listing
         Expanded(
           child: marketplace.isLoading
-              ? const ThemedLoadingIndicator(message: "Searching services...")
+              ? ThemedLoadingIndicator(message: l10n.searchingServices)
               : filteredServices.isEmpty
-                  ? const SingleChildScrollView(
-                      physics: AlwaysScrollableScrollPhysics(),
+                  ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       child: Padding(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg),
                         child: ThemedCard(
                           borderRadius: AppRadius.md,
                           padding: AppSpacing.lg,
                           child: ThemedEmptyState(
                             icon: Icons.search_off,
-                            title: "No services found nearby.",
+                            title: l10n.noServicesNearby,
                             description:
                                 "Try broadening your search radius or changing your coordinates.",
                           ),
@@ -643,6 +643,7 @@ class _BookingDialogState extends State<_BookingDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final categoryLabel = serviceCategoryLabels[widget.service.category] ??
         widget.service.category;
     return AlertDialog(
@@ -717,8 +718,8 @@ class _BookingDialogState extends State<_BookingDialog> {
               ],
             ),
             const SizedBox(height: AppSpacing.lg),
-            const ThemedSectionHeader(
-              title: "Payment Method",
+            ThemedSectionHeader(
+              title: l10n.paymentMethodLabel,
             ),
             const SizedBox(height: AppSpacing.xs),
             // Forced Option: Cash on Delivery (COD)

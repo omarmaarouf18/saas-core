@@ -1172,4 +1172,250 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get employeeJobsCompleteJobButton => 'Complete Job';
+
+  @override
+  String get planFreeBasic => 'Free Basic Plan';
+
+  @override
+  String get planProfessionalPaid => 'Professional Paid Plan';
+
+  @override
+  String get walletLoading => 'Loading wallet...';
+
+  @override
+  String get walletLockedEscrow => 'Locked (Escrow)';
+
+  @override
+  String get walletTransactionLedger => 'Transaction Ledger';
+
+  @override
+  String get walletNoTransactions => 'No transactions recorded yet.';
+
+  @override
+  String get walletAmountCredits => 'Amount (Credits)';
+
+  @override
+  String get cancelJobReasonLabel => 'Cancellation Reason *';
+
+  @override
+  String get cancelJobReasonHint =>
+      'e.g. Customer requested cancellation / Change of plans';
+
+  @override
+  String get statusCompleted => 'Completed';
+
+  @override
+  String get statusActive => 'Active';
+
+  @override
+  String get statusAwaitingPrice => 'Awaiting Price';
+
+  @override
+  String get statusPending => 'Pending';
+
+  @override
+  String get statusCancelled => 'Cancelled';
+
+  @override
+  String get statusPendingApproval => 'Pending Approval';
+
+  @override
+  String get statusApproved => 'Approved';
+
+  @override
+  String get statusRejected => 'Rejected';
+
+  @override
+  String get statusUnverified => 'Unverified';
+
+  @override
+  String get statusReconciliationRequired => 'Reconciliation Required';
+
+  @override
+  String get showPassword => 'Show password';
+
+  @override
+  String get hidePassword => 'Hide password';
+
+  @override
+  String get customerOrdersLoading => 'Loading orders...';
+
+  @override
+  String get tooltipNotifications => 'Notifications';
+
+  @override
+  String get tooltipRefreshList => 'Refresh List';
+
+  @override
+  String get tooltipRefreshStatus => 'Refresh Status';
+
+  @override
+  String get tooltipToggleTheme => 'Toggle Theme Mode';
+
+  @override
+  String get tooltipToggleLanguage => 'Toggle Language';
+
+  @override
+  String get tooltipDismiss => 'Dismiss';
+
+  @override
+  String get tooltipPickImage => 'Pick Image';
+
+  @override
+  String get sortByLabel => 'Sort By';
+
+  @override
+  String get searchingServices => 'Searching services...';
+
+  @override
+  String get noServicesNearby => 'No services found nearby.';
+
+  @override
+  String get paymentMethodLabel => 'Payment Method';
+
+  @override
+  String get registeredEmployees => 'Registered Employees';
+
+  @override
+  String get loadingEmployeeList => 'Loading employee list...';
+
+  @override
+  String get noEmployeesRegistered => 'No Employees Registered';
+
+  @override
+  String get registerNewEmployee => 'Register New Employee';
+
+  @override
+  String get employeeUsernameLabel => 'Employee Username';
+
+  @override
+  String get employeeUsernameHint => 'e.g. driver_john';
+
+  @override
+  String get employeeEmailLabel => 'Employee Email';
+
+  @override
+  String get employeeEmailHint => 'e.g. john@company.com';
+
+  @override
+  String get employeePasswordLabel => 'Employee Password';
+
+  @override
+  String get employeePasswordHint => 'At least 6 characters';
+
+  @override
+  String get employeeRegisteredTitle => 'Employee Registered';
+
+  @override
+  String get freezeUnfreezeWorker => 'Freeze / Unfreeze Worker';
+
+  @override
+  String get confirmOwnerPassword => 'Confirm Owner Password';
+
+  @override
+  String get workerStatusUpdated => 'Worker Status Updated';
+
+  @override
+  String get loadingAuditTrail => 'Loading audit trail...';
+
+  @override
+  String get noAuditEventsTitle => 'No audit events recorded';
+
+  @override
+  String get noAuditEventsDesc => 'No audit events recorded for this tenant.';
+
+  @override
+  String get liveTrackingTitle => 'Live Tracking';
+
+  @override
+  String get stepRequestPlaced => 'Request Placed';
+
+  @override
+  String get stepWaitingApproval => 'Waiting for operator approval';
+
+  @override
+  String get stepWorkerDispatched => 'Worker Dispatched';
+
+  @override
+  String get stepJobCompleted => 'Job Completed';
+
+  @override
+  String get stepCompletedSuccessfully => 'Delivery completed successfully';
+
+  @override
+  String get jobDetailsTitle => 'Job Details';
+
+  @override
+  String get priceNegotiationTitle => 'Price Negotiation';
+
+  @override
+  String negotiationHintExample(String price) {
+    return 'e.g. $price';
+  }
+
+  @override
+  String get accessDeniedTitle => 'Access Denied';
+
+  @override
+  String get loadingPendingSubmissions => 'Loading pending submissions...';
+
+  @override
+  String get noPendingSubmissions => 'No Pending Submissions';
+
+  @override
+  String rejectionReasonMessage(String reason) {
+    return 'Rejection Reason: $reason';
+  }
+
+  @override
+  String get ratingFeatureUnbiased => 'Unbiased Reviews';
+
+  @override
+  String get ratingFeatureTrust => 'Trust Shield';
+
+  @override
+  String get ratingFeatureWindow => '24h Window';
+
+  @override
+  String get privateFeedbackLabel => 'Private Feedback (Optional)';
+
+  @override
+  String get privateFeedbackHint => 'What went well? What could be improved?';
+
+  @override
+  String get loadingStatus => 'Loading status...';
+
+  @override
+  String get loadingServices => 'Loading services...';
+
+  @override
+  String get noServicesConfigured => 'No Services Configured';
+
+  @override
+  String get noServicesDescription =>
+      'No services configured yet.\nTap the + button to create a service.';
+
+  @override
+  String get addService => 'Add Service';
+
+  @override
+  String get kycPending => 'KYC Pending';
+
+  @override
+  String get serviceNameLabel => 'Service Name';
+
+  @override
+  String get categoryLabel => 'Category';
+
+  @override
+  String get basePriceLabel => 'Base Price (\$)';
+
+  @override
+  String get ratePerKmLabel => 'Rate per KM (\$)';
+
+  @override
+  String get latitudeLabel => 'Latitude';
+
+  @override
+  String get longitudeLabel => 'Longitude';
 }

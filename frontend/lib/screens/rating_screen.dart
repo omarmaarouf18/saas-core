@@ -173,7 +173,7 @@ class _RatingScreenState extends State<RatingScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: "Refresh Status",
+            tooltip: l10n.tooltipRefreshStatus,
             onPressed: _checkOtherPartyRatingStatus,
           ),
         ],
@@ -257,19 +257,19 @@ class _RatingScreenState extends State<RatingScreen> {
               children: [
                 _buildInfoCard(
                   icon: Icons.security_outlined,
-                  title: "Unbiased Reviews",
+                  title: l10n.ratingFeatureUnbiased,
                   subtitle:
                       "Preventing retaliatory or social-pressure ratings.",
                 ),
                 _buildInfoCard(
                   icon: Icons.verified_outlined,
-                  title: "Trust Shield",
+                  title: l10n.ratingFeatureTrust,
                   subtitle:
                       "Ratings directly impact platform reliability ranks.",
                 ),
                 _buildInfoCard(
                   icon: Icons.history_toggle_off_outlined,
-                  title: "24h Window",
+                  title: l10n.ratingFeatureWindow,
                   subtitle:
                       "Submit within 24 hours to ensure your score counts.",
                 ),
@@ -282,6 +282,7 @@ class _RatingScreenState extends State<RatingScreen> {
   }
 
   Widget _buildRatingForm(ColorScheme colorScheme, ThemeData theme) {
+    final l10n = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -351,8 +352,8 @@ class _RatingScreenState extends State<RatingScreen> {
         // Feedback input
         ThemedTextField(
           controller: _commentController,
-          labelText: 'Private Feedback (Optional)',
-          hintText: "What went well? What could be improved?",
+          labelText: l10n.privateFeedbackLabel,
+          hintText: l10n.privateFeedbackHint,
           maxLines: 3,
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -367,6 +368,7 @@ class _RatingScreenState extends State<RatingScreen> {
   }
 
   Widget _buildBlindStatusVisualizer(ColorScheme colorScheme, ThemeData theme) {
+    final l10n = context.l10n;
     return ThemedCard(
       hasShadow: false,
       color: AppColors.surfaceContainerLow,
@@ -376,7 +378,7 @@ class _RatingScreenState extends State<RatingScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (_isLoadingOtherStatus)
-            const ThemedLoadingIndicator(message: "Loading status...")
+            ThemedLoadingIndicator(message: l10n.loadingStatus)
           else if (_otherPartyHasRated) ...[
             Container(
               padding: const EdgeInsets.all(AppSpacing.sm),

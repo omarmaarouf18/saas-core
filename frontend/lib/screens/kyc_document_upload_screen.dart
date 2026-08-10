@@ -285,6 +285,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final auth = Provider.of<AuthProvider>(context);
     final user = auth.user;
 
@@ -343,7 +344,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: "Refresh Status",
+            tooltip: l10n.tooltipRefreshStatus,
             onPressed: _refreshUserData,
           ),
         ],
@@ -394,7 +395,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                 user!.rejectionReason!.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.md),
               ThemedErrorBanner(
-                message: "Rejection Reason: ${user.rejectionReason}",
+                message: l10n.rejectionReasonMessage(user.rejectionReason!),
               ),
             ],
 

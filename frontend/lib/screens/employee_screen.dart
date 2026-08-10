@@ -133,6 +133,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
   }
 
   Widget _buildManageWorkersTab() {
+    final l10n = context.l10n;
     final auth = Provider.of<AuthProvider>(context);
     final ownerProvider = Provider.of<OwnerProvider>(context);
 
@@ -144,9 +145,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 0. Registered Employees Roster (GET /auth/employees)
             ThemedCard(
-              key: const Key('registered_employees_card'),
               borderRadius: AppRadius.md,
               padding: AppSpacing.lg,
               child: Column(
@@ -155,15 +154,15 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: ThemedSectionHeader(
-                          title: "Registered Employees",
+                          title: l10n.registeredEmployees,
                         ),
                       ),
                       IconButton(
                         key: const Key('refresh_employees_button'),
                         icon: const Icon(Icons.refresh),
-                        tooltip: "Refresh List",
+                        tooltip: l10n.tooltipRefreshList,
                         onPressed: _refreshEmployees,
                       ),
                     ],
@@ -174,9 +173,9 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                   ),
                   if (ownerProvider.isLoading &&
                       ownerProvider.employees.isEmpty)
-                    const ThemedLoadingIndicator(
-                      key: Key('employees_loading'),
-                      message: "Loading employee list...",
+                    ThemedLoadingIndicator(
+                      key: const Key('employees_loading'),
+                      message: l10n.loadingEmployeeList,
                     )
                   else if (ownerProvider.error != null &&
                       ownerProvider.employees.isEmpty)
@@ -185,10 +184,10 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                       message: ownerProvider.error!,
                     )
                   else if (ownerProvider.employees.isEmpty)
-                    const ThemedEmptyState(
-                      key: Key('employees_empty_state'),
+                    ThemedEmptyState(
+                      key: const Key('employees_empty_state'),
                       icon: Icons.badge_outlined,
-                      title: "No Employees Registered",
+                      title: l10n.noEmployeesRegistered,
                       description:
                           "Register your first employee account using the form below.",
                     )
@@ -273,8 +272,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const ThemedSectionHeader(
-                      title: "Register New Employee",
+                    ThemedSectionHeader(
+                      title: l10n.registerNewEmployee,
                     ),
                     const Divider(
                       height: AppSpacing.lg,
@@ -283,8 +282,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     ThemedTextField(
                       controller: _regUsernameController,
                       textDirection: _regUsernameDirection,
-                      labelText: "Employee Username",
-                      hintText: "e.g. driver_john",
+                      labelText: l10n.employeeUsernameLabel,
+                      hintText: l10n.employeeUsernameHint,
                       prefixIcon: const Icon(Icons.person_outline,
                           color: AppColors.outline),
                       onChanged: (val) {
@@ -311,8 +310,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     ThemedTextField(
                       controller: _regEmailController,
                       keyboardType: TextInputType.emailAddress,
-                      labelText: "Employee Email",
-                      hintText: "e.g. john@company.com",
+                      labelText: l10n.employeeEmailLabel,
+                      hintText: l10n.employeeEmailHint,
                       prefixIcon: const Icon(Icons.email_outlined,
                           color: AppColors.outline),
                       validator: (value) {
@@ -330,8 +329,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                       controller: _regPasswordController,
                       obscureText: true,
                       isPasswordField: true,
-                      labelText: "Employee Password",
-                      hintText: "At least 6 characters",
+                      labelText: l10n.employeePasswordLabel,
+                      hintText: l10n.employeePasswordHint,
                       prefixIcon: const Icon(Icons.lock_outline,
                           color: AppColors.outline),
                       validator: (value) {
@@ -366,7 +365,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                                     _regEmailController.clear();
                                     _regPasswordController.clear();
                                     _showSuccessDialog(
-                                      title: "Employee Registered",
+                                      title: l10n.employeeRegisteredTitle,
                                       message:
                                           "Successfully created employee account:\n"
                                           "Username: ${res['username'] ?? ''}\n"
@@ -410,8 +409,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const ThemedSectionHeader(
-                      title: "Freeze / Unfreeze Worker",
+                    ThemedSectionHeader(
+                      title: l10n.freezeUnfreezeWorker,
                     ),
                     const Divider(
                       height: AppSpacing.lg,
@@ -420,8 +419,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     ThemedTextField(
                       controller: _togEmailController,
                       keyboardType: TextInputType.emailAddress,
-                      labelText: "Employee Email",
-                      hintText: "e.g. john@company.com",
+                      labelText: l10n.employeeEmailLabel,
+                      hintText: l10n.employeeEmailHint,
                       prefixIcon: const Icon(Icons.email_outlined,
                           color: AppColors.outline),
                       validator: (value) {
@@ -470,7 +469,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                       controller: _togPasswordController,
                       obscureText: true,
                       isPasswordField: true,
-                      labelText: "Confirm Owner Password",
+                      labelText: l10n.confirmOwnerPassword,
                       hintText:
                           "Required for secure out-of-band operations verification.",
                       prefixIcon: const Icon(Icons.vpn_key_outlined,
@@ -502,7 +501,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                                   if (mounted) {
                                     _togPasswordController.clear();
                                     _showSuccessDialog(
-                                      title: "Worker Status Updated",
+                                      title: l10n.workerStatusUpdated,
                                       message: res['message'] ??
                                           "Successfully changed status.",
                                     );
@@ -543,10 +542,11 @@ class _EmployeeScreenState extends State<EmployeeScreen>
   }
 
   Widget _buildAuditTrailTab() {
+    final l10n = context.l10n;
     final ownerProvider = Provider.of<OwnerProvider>(context);
 
     return ownerProvider.isLoading && ownerProvider.auditLogEntries.isEmpty
-        ? const ThemedLoadingIndicator(message: "Loading audit trail...")
+        ? ThemedLoadingIndicator(message: l10n.loadingAuditTrail)
         : RefreshIndicator(
             onRefresh: _refreshAuditLog,
             child: ListView.builder(
@@ -556,13 +556,13 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                   : ownerProvider.auditLogEntries.length,
               itemBuilder: (context, index) {
                 if (ownerProvider.auditLogEntries.isEmpty) {
-                  return const ThemedCard(
+                  return ThemedCard(
                     borderRadius: AppRadius.md,
                     padding: AppSpacing.lg,
                     child: ThemedEmptyState(
                       icon: Icons.receipt_long_outlined,
-                      title: "No audit events recorded",
-                      description: "No audit events recorded for this tenant.",
+                      title: l10n.noAuditEventsTitle,
+                      description: l10n.noAuditEventsDesc,
                     ),
                   );
                 }

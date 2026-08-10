@@ -2258,6 +2258,486 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Complete Job'**
   String get employeeJobsCompleteJobButton;
+
+  /// No description provided for @planFreeBasic.
+  ///
+  /// In en, this message translates to:
+  /// **'Free Basic Plan'**
+  String get planFreeBasic;
+
+  /// No description provided for @planProfessionalPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Professional Paid Plan'**
+  String get planProfessionalPaid;
+
+  /// No description provided for @walletLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading wallet...'**
+  String get walletLoading;
+
+  /// No description provided for @walletLockedEscrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked (Escrow)'**
+  String get walletLockedEscrow;
+
+  /// No description provided for @walletTransactionLedger.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction Ledger'**
+  String get walletTransactionLedger;
+
+  /// No description provided for @walletNoTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions recorded yet.'**
+  String get walletNoTransactions;
+
+  /// No description provided for @walletAmountCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount (Credits)'**
+  String get walletAmountCredits;
+
+  /// No description provided for @cancelJobReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation Reason *'**
+  String get cancelJobReasonLabel;
+
+  /// No description provided for @cancelJobReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Customer requested cancellation / Change of plans'**
+  String get cancelJobReasonHint;
+
+  /// No description provided for @statusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get statusCompleted;
+
+  /// No description provided for @statusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get statusActive;
+
+  /// No description provided for @statusAwaitingPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting Price'**
+  String get statusAwaitingPrice;
+
+  /// No description provided for @statusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get statusPending;
+
+  /// No description provided for @statusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get statusCancelled;
+
+  /// No description provided for @statusPendingApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Approval'**
+  String get statusPendingApproval;
+
+  /// No description provided for @statusApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get statusApproved;
+
+  /// No description provided for @statusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get statusRejected;
+
+  /// No description provided for @statusUnverified.
+  ///
+  /// In en, this message translates to:
+  /// **'Unverified'**
+  String get statusUnverified;
+
+  /// No description provided for @statusReconciliationRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconciliation Required'**
+  String get statusReconciliationRequired;
+
+  /// No description provided for @showPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get showPassword;
+
+  /// No description provided for @hidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get hidePassword;
+
+  /// No description provided for @customerOrdersLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading orders...'**
+  String get customerOrdersLoading;
+
+  /// No description provided for @tooltipNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get tooltipNotifications;
+
+  /// No description provided for @tooltipRefreshList.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh List'**
+  String get tooltipRefreshList;
+
+  /// No description provided for @tooltipRefreshStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Status'**
+  String get tooltipRefreshStatus;
+
+  /// No description provided for @tooltipToggleTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle Theme Mode'**
+  String get tooltipToggleTheme;
+
+  /// No description provided for @tooltipToggleLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle Language'**
+  String get tooltipToggleLanguage;
+
+  /// No description provided for @tooltipDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get tooltipDismiss;
+
+  /// No description provided for @tooltipPickImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick Image'**
+  String get tooltipPickImage;
+
+  /// No description provided for @sortByLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort By'**
+  String get sortByLabel;
+
+  /// No description provided for @searchingServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching services...'**
+  String get searchingServices;
+
+  /// No description provided for @noServicesNearby.
+  ///
+  /// In en, this message translates to:
+  /// **'No services found nearby.'**
+  String get noServicesNearby;
+
+  /// No description provided for @paymentMethodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Method'**
+  String get paymentMethodLabel;
+
+  /// No description provided for @registeredEmployees.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered Employees'**
+  String get registeredEmployees;
+
+  /// No description provided for @loadingEmployeeList.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading employee list...'**
+  String get loadingEmployeeList;
+
+  /// No description provided for @noEmployeesRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'No Employees Registered'**
+  String get noEmployeesRegistered;
+
+  /// No description provided for @registerNewEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Register New Employee'**
+  String get registerNewEmployee;
+
+  /// No description provided for @employeeUsernameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee Username'**
+  String get employeeUsernameLabel;
+
+  /// No description provided for @employeeUsernameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. driver_john'**
+  String get employeeUsernameHint;
+
+  /// No description provided for @employeeEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee Email'**
+  String get employeeEmailLabel;
+
+  /// No description provided for @employeeEmailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. john@company.com'**
+  String get employeeEmailHint;
+
+  /// No description provided for @employeePasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee Password'**
+  String get employeePasswordLabel;
+
+  /// No description provided for @employeePasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 6 characters'**
+  String get employeePasswordHint;
+
+  /// No description provided for @employeeRegisteredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee Registered'**
+  String get employeeRegisteredTitle;
+
+  /// No description provided for @freezeUnfreezeWorker.
+  ///
+  /// In en, this message translates to:
+  /// **'Freeze / Unfreeze Worker'**
+  String get freezeUnfreezeWorker;
+
+  /// No description provided for @confirmOwnerPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Owner Password'**
+  String get confirmOwnerPassword;
+
+  /// No description provided for @workerStatusUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Worker Status Updated'**
+  String get workerStatusUpdated;
+
+  /// No description provided for @loadingAuditTrail.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading audit trail...'**
+  String get loadingAuditTrail;
+
+  /// No description provided for @noAuditEventsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No audit events recorded'**
+  String get noAuditEventsTitle;
+
+  /// No description provided for @noAuditEventsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'No audit events recorded for this tenant.'**
+  String get noAuditEventsDesc;
+
+  /// No description provided for @liveTrackingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Live Tracking'**
+  String get liveTrackingTitle;
+
+  /// No description provided for @stepRequestPlaced.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Placed'**
+  String get stepRequestPlaced;
+
+  /// No description provided for @stepWaitingApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for operator approval'**
+  String get stepWaitingApproval;
+
+  /// No description provided for @stepWorkerDispatched.
+  ///
+  /// In en, this message translates to:
+  /// **'Worker Dispatched'**
+  String get stepWorkerDispatched;
+
+  /// No description provided for @stepJobCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Job Completed'**
+  String get stepJobCompleted;
+
+  /// No description provided for @stepCompletedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery completed successfully'**
+  String get stepCompletedSuccessfully;
+
+  /// No description provided for @jobDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Job Details'**
+  String get jobDetailsTitle;
+
+  /// No description provided for @priceNegotiationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Price Negotiation'**
+  String get priceNegotiationTitle;
+
+  /// No description provided for @negotiationHintExample.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. {price}'**
+  String negotiationHintExample(String price);
+
+  /// No description provided for @accessDeniedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Access Denied'**
+  String get accessDeniedTitle;
+
+  /// No description provided for @loadingPendingSubmissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading pending submissions...'**
+  String get loadingPendingSubmissions;
+
+  /// No description provided for @noPendingSubmissions.
+  ///
+  /// In en, this message translates to:
+  /// **'No Pending Submissions'**
+  String get noPendingSubmissions;
+
+  /// No description provided for @rejectionReasonMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejection Reason: {reason}'**
+  String rejectionReasonMessage(String reason);
+
+  /// No description provided for @ratingFeatureUnbiased.
+  ///
+  /// In en, this message translates to:
+  /// **'Unbiased Reviews'**
+  String get ratingFeatureUnbiased;
+
+  /// No description provided for @ratingFeatureTrust.
+  ///
+  /// In en, this message translates to:
+  /// **'Trust Shield'**
+  String get ratingFeatureTrust;
+
+  /// No description provided for @ratingFeatureWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'24h Window'**
+  String get ratingFeatureWindow;
+
+  /// No description provided for @privateFeedbackLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Private Feedback (Optional)'**
+  String get privateFeedbackLabel;
+
+  /// No description provided for @privateFeedbackHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What went well? What could be improved?'**
+  String get privateFeedbackHint;
+
+  /// No description provided for @loadingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading status...'**
+  String get loadingStatus;
+
+  /// No description provided for @loadingServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading services...'**
+  String get loadingServices;
+
+  /// No description provided for @noServicesConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'No Services Configured'**
+  String get noServicesConfigured;
+
+  /// No description provided for @noServicesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'No services configured yet.\nTap the + button to create a service.'**
+  String get noServicesDescription;
+
+  /// No description provided for @addService.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Service'**
+  String get addService;
+
+  /// No description provided for @kycPending.
+  ///
+  /// In en, this message translates to:
+  /// **'KYC Pending'**
+  String get kycPending;
+
+  /// No description provided for @serviceNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Name'**
+  String get serviceNameLabel;
+
+  /// No description provided for @categoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get categoryLabel;
+
+  /// No description provided for @basePriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Base Price (\$)'**
+  String get basePriceLabel;
+
+  /// No description provided for @ratePerKmLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate per KM (\$)'**
+  String get ratePerKmLabel;
+
+  /// No description provided for @latitudeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude'**
+  String get latitudeLabel;
+
+  /// No description provided for @longitudeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude'**
+  String get longitudeLabel;
 }
 
 class _AppLocalizationsDelegate

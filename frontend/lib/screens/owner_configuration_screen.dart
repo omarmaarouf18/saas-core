@@ -416,7 +416,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                                     const Key('owner_config_pick_image_button'),
                                 icon: const Icon(Icons.add_a_photo_outlined,
                                     color: AppColors.primary),
-                                tooltip: "Pick Image",
+                                tooltip: l10n.tooltipPickImage,
                                 onPressed: _pickImage,
                               ),
                             ],

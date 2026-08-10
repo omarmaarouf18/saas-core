@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
+import '../l10n/l10n.dart';
 
 class StatusBadgeConfig {
   final Color color;
@@ -110,6 +111,40 @@ class StatusBadge extends StatelessWidget {
   static String getStatusLabel(String status) => getConfig(status).label;
   static IconData getStatusIcon(String status) => getConfig(status).icon;
 
+  static String getLocalizedStatusLabel(BuildContext context, String status) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) return getStatusLabel(status);
+    switch (status.toLowerCase().trim()) {
+      case 'completed':
+        return l10n.statusCompleted;
+      case 'active':
+        return l10n.statusActive;
+      case 'awaiting_price_response':
+      case 'awaiting price':
+        return l10n.statusAwaitingPrice;
+      case 'pending':
+        return l10n.statusPending;
+      case 'cancelled':
+      case 'canceled':
+        return l10n.statusCancelled;
+      case 'pending_super_admin_approval':
+        return l10n.statusPendingApproval;
+      case 'approved':
+        return l10n.statusApproved;
+      case 'rejected':
+        return l10n.statusRejected;
+      case 'unverified':
+      case 'none':
+        return l10n.statusUnverified;
+      case 'escrow_reconciliation_required':
+      case 'reconciliation_required':
+      case 'reconciliation required':
+        return l10n.statusReconciliationRequired;
+      default:
+        return getStatusLabel(status);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final config = getConfig(status);
@@ -150,7 +185,7 @@ class StatusBadge extends StatelessWidget {
             const SizedBox(width: AppSpacing.xs),
           ],
           Text(
-            config.label.toUpperCase(),
+            getLocalizedStatusLabel(context, status).toUpperCase(),
             style: textStyle,
           ),
         ],

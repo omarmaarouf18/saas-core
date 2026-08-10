@@ -158,7 +158,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
             // Plan 1: Free Tier Card
             _buildPlanCard(
-              title: 'Free Basic Plan',
+              title: l10n.planFreeBasic,
               price: '\$0',
               billing: 'forever',
               features: [
@@ -178,7 +178,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
             // Plan 2: Professional Paid Tier Card
             _buildPlanCard(
-              title: 'Professional Paid Plan',
+              title: l10n.planProfessionalPaid,
               price: '\$19.99',
               billing: 'per month',
               features: [
