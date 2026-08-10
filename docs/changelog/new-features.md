@@ -10,7 +10,7 @@ This file tracks historical entries for the primary category: **New Features Cha
   - **Owner Payout Request Capability**: Added `PayoutRequest` model, `payout_requests` MongoDB collection, and store methods (`CreatePayoutRequest`, `GetPayoutRequests`). Exposed endpoints `POST /users/wallet/payout/request` and `GET /users/wallet/payout/requests` with IDOR owner authorization and withdrawable balance checks.
   - **Gateway-Ready Feature Flag**: Added `ELECTRONIC_PAYMENTS_ENABLED` feature flag to `config.go` (defaulting to `false`). Gated non-COD payment methods in `TrackJob`.
   - **Test Suite (`services/user-service/internal/handlers/payout_and_cod_zero_fee_test.go`)**: Built unit tests `TestCODZeroFeeCompletion`, `TestOwnerPayoutRequestFlow`, and `TestElectronicPaymentsFeatureFlag`. Updated `escrow_state_audit_test.go` and `handlers_test.go` for 0% commission assertions.
-- **Commit SHA**: `63d300d`
+- **Commit SHA**: ``63d300dbca13738da64edaaa18ec9d43292e0e44``
 - **Verification**: Verified via `gofmt`, `go build`, `go vet`, and `go test -v ./...` (100% test pass). ✅
 
 ## Phase 15 (b) Customer Home Redesign & (d) Employee Capability Audit & Screen Redesign (ADR-0014)

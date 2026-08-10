@@ -8,7 +8,7 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
   - **Finding 1 Fix (`services/user-service/internal/store/mongodb.go`)**: Added atomic CAS status precondition `status: {$in: [JobStatusActive, JobStatusPending, JobStatusAwaitingPriceResponse, JobStatusEscrowReconciliationRequired, JobStatusCancelled]}` to `CancelJob`, eliminating the race condition between concurrent `CompleteJob` and `CancelJob` requests. Returned HTTP 409 Conflict when a non-cancellable state transition occurs.
   - **Finding 2 Fix (`services/user-service/internal/handlers/handlers.go`)**: Updated `CancelJob` refund calculation to inspect `job.AgreedPrice` before falling back to `job.LockedEscrowAmount`, eliminating stranded locked escrow on negotiated transport cancellations.
   - **Test Suite (`services/user-service/internal/handlers/business_logic_audit_fixes_test.go`)**: Built integration tests `TestFinding1_CODCancelCompleteRaceCondition` and `TestFinding2_CancelJob_NegotiatedTransport_AgreedPriceRefund`.
-- **Commit SHA**: `85a5c04`
+- **Commit SHA**: ``85a5c0478729593363a1beb309b9d6e14cb5145d``
 - **Verification**: Verified via `gofmt`, `go build`, `go vet`, and `go test -v ./...`. ✅
 
 ## Settings KYC Role Gating, Redundant Refresh Button Cleanup, and Owner Arabic Localization
