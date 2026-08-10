@@ -3,12 +3,14 @@ import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../l10n/l10n.dart';
+import '../models/payout_request.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
 import '../widgets/info_list_tile.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/stat_card.dart';
+import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
@@ -28,7 +30,9 @@ class _WalletScreenState extends State<WalletScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<OwnerProvider>(context, listen: false).fetchPlatformConfig();
+      final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
+      ownerProvider.fetchPlatformConfig();
+      ownerProvider.fetchPayoutRequests();
     });
   }
 
@@ -48,6 +52,7 @@ class _WalletScreenState extends State<WalletScreen> {
               onRefresh: () async {
                 await ownerProvider.fetchDashboardData(auth.token!);
                 await ownerProvider.fetchPlatformConfig();
+                await ownerProvider.fetchPayoutRequests();
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -113,6 +118,19 @@ class _WalletScreenState extends State<WalletScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    // Request Payout Button directly beneath withdrawable balance cards
+                    SizedBox(
+                      width: double.infinity,
+                      child: PrimaryButton(
+                        key: const Key('request_payout_button'),
+                        onPressed: () => _showPayoutRequestDialog(context),
+                        icon: Icons.outbox_rounded,
+                        text: l10n.payoutWithdrawButton,
+                      ),
+                    ),
+
                     if (ownerProvider.platformFeePercentage != null) ...[
                       const SizedBox(height: AppSpacing.sm),
                       Align(
@@ -126,6 +144,38 @@ class _WalletScreenState extends State<WalletScreen> {
                         ),
                       ),
                     ],
+                    const SizedBox(height: AppSpacing.xl),
+
+                    // Payout Requests History Section
+                    ThemedSectionHeader(
+                      key: const Key('payout_history_header'),
+                      title: l10n.payoutHistoryTitle,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+
+                    if (ownerProvider.payoutRequests.isEmpty)
+                      ThemedCard(
+                        borderRadius: AppRadius.md,
+                        padding: AppSpacing.lg,
+                        child: ThemedEmptyState(
+                          icon: Icons.history_rounded,
+                          title: l10n.payoutHistoryEmpty,
+                          description:
+                              "Submitted payout requests will appear here with processing status.",
+                        ),
+                      )
+                    else
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: ownerProvider.payoutRequests.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: AppSpacing.base),
+                        itemBuilder: (context, index) {
+                          final payout = ownerProvider.payoutRequests[index];
+                          return _buildPayoutTile(context, payout);
+                        },
+                      ),
                     const SizedBox(height: AppSpacing.xl),
 
                     // Transaction History Section
@@ -175,6 +225,64 @@ class _WalletScreenState extends State<WalletScreen> {
       value: "${value.toStringAsFixed(2)} Credits",
       icon: icon,
       iconColor: color,
+    );
+  }
+
+  Widget _buildPayoutTile(BuildContext context, PayoutRequest payout) {
+    final l10n = context.l10n;
+    final isBank = payout.payoutMethod == 'bank_transfer';
+    final methodLabel = isBank
+        ? l10n.payoutMethodBankTransfer
+        : (payout.payoutMethod == 'instapay'
+            ? l10n.payoutMethodInstapay
+            : payout.payoutMethod.toUpperCase());
+
+    final dateStr =
+        "${payout.createdAt.year}-${_twoDigits(payout.createdAt.month)}-${_twoDigits(payout.createdAt.day)} ${_twoDigits(payout.createdAt.hour)}:${_twoDigits(payout.createdAt.minute)}";
+
+    return InfoListTile(
+      key: Key('payout_tile_${payout.id}'),
+      leadingIcon:
+          isBank ? Icons.account_balance_rounded : Icons.phone_android_rounded,
+      leadingIconColor: AppColors.primary,
+      leadingBackgroundColor: AppColors.primary.withValues(alpha: 0.1),
+      title: "${payout.amount.toStringAsFixed(2)} Credits",
+      subtitleWidget: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "$methodLabel • $dateStr",
+            style: AppTypography.labelMd.copyWith(color: AppColors.outline),
+          ),
+          if (payout.accountDetails != null &&
+              payout.accountDetails!.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              payout.accountDetails!,
+              style: AppTypography.labelMd
+                  .copyWith(color: AppColors.onSurfaceVariant),
+            ),
+          ],
+          if (payout.status.toLowerCase() == 'rejected' &&
+              payout.rejectionReason != null &&
+              payout.rejectionReason!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              "${l10n.payoutRejectionReasonLabel} ${payout.rejectionReason}",
+              key: Key('payout_rejection_reason_${payout.id}'),
+              style: AppTypography.labelMd.copyWith(
+                color: AppColors.error,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ],
+      ),
+      trailing: StatusBadge(
+        key: Key('payout_status_badge_${payout.id}'),
+        status: payout.status,
+        compact: true,
+      ),
     );
   }
 
@@ -288,6 +396,282 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   String _twoDigits(int n) => n >= 10 ? "$n" : "0$n";
+
+  void _showPayoutRequestDialog(BuildContext context) {
+    final l10n = context.l10n;
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
+    final amountController = TextEditingController();
+    final accountDetailsController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    String selectedMethod = 'bank_transfer';
+    bool isConfirming = false;
+    bool isSubmitting = false;
+    String? dialogError;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final methodLabel = selectedMethod == 'bank_transfer'
+                ? l10n.payoutMethodBankTransfer
+                : l10n.payoutMethodInstapay;
+
+            return AlertDialog(
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              title: Text(
+                isConfirming ? l10n.payoutConfirmTitle : l10n.payoutDialogTitle,
+                style: AppTypography.titleMd.copyWith(
+                  color: isConfirming ? AppColors.warning : AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: isConfirming
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            decoration: BoxDecoration(
+                              color: AppColors.warning.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                              border: Border.all(color: AppColors.warning),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.warning_amber_rounded,
+                                    color: AppColors.warning, size: 28),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: Text(
+                                    l10n.payoutConfirmMessage(
+                                      double.tryParse(amountController.text)
+                                              ?.toStringAsFixed(2) ??
+                                          amountController.text,
+                                      methodLabel,
+                                    ),
+                                    style: AppTypography.bodyMd.copyWith(
+                                      color: AppColors.onSurface,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          Text(
+                            "Account: ${accountDetailsController.text.trim()}",
+                            style: AppTypography.labelMd.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (dialogError != null) ...[
+                            const SizedBox(height: AppSpacing.md),
+                            ThemedErrorBanner(message: dialogError!),
+                          ],
+                        ],
+                      )
+                    : Form(
+                        key: formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.payoutDialogDescription,
+                              style: AppTypography.bodyMd.copyWith(
+                                color: AppColors.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+
+                            // Amount Field
+                            ThemedTextField(
+                              key: const Key('payout_amount_field'),
+                              controller: amountController,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              labelText: l10n.walletAmountCredits,
+                              prefixIcon: const Icon(
+                                  Icons.account_balance_wallet_outlined,
+                                  color: AppColors.outline),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return l10n.payoutErrorAmountInvalid;
+                                }
+                                final parsed = double.tryParse(value.trim());
+                                if (parsed == null || parsed <= 0) {
+                                  return l10n.payoutErrorAmountInvalid;
+                                }
+                                if (parsed >
+                                    ownerProvider.withdrawableBalance) {
+                                  return l10n.payoutErrorAmountExceeds;
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+
+                            // Payout Method Selector
+                            DropdownButtonFormField<String>(
+                              key: const Key('payout_method_dropdown'),
+                              initialValue: selectedMethod,
+                              decoration: InputDecoration(
+                                labelText: l10n.payoutMethodLabel,
+                                border: OutlineInputBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.sm),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md,
+                                  vertical: AppSpacing.sm,
+                                ),
+                              ),
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'bank_transfer',
+                                  child: Text(l10n.payoutMethodBankTransfer),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'instapay',
+                                  child: Text(l10n.payoutMethodInstapay),
+                                ),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setDialogState(() {
+                                    selectedMethod = val;
+                                  });
+                                }
+                              },
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+
+                            // Account Details Field
+                            ThemedTextField(
+                              key: const Key('payout_account_details_field'),
+                              controller: accountDetailsController,
+                              labelText: l10n.payoutAccountDetailsLabel,
+                              hintText: selectedMethod == 'bank_transfer'
+                                  ? l10n.payoutAccountDetailsBankHint
+                                  : l10n.payoutAccountDetailsInstapayHint,
+                              prefixIcon: Icon(
+                                selectedMethod == 'bank_transfer'
+                                    ? Icons.account_balance_rounded
+                                    : Icons.phone_android_rounded,
+                                color: AppColors.outline,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return l10n.payoutErrorDetailsRequired;
+                                }
+                                return null;
+                              },
+                            ),
+                            if (dialogError != null) ...[
+                              const SizedBox(height: AppSpacing.md),
+                              ThemedErrorBanner(message: dialogError!),
+                            ],
+                          ],
+                        ),
+                      ),
+              ),
+              actionsPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
+              actions: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: SecondaryButton(
+                        text: isConfirming ? "Back" : "Cancel",
+                        isOutlined: true,
+                        onPressed: isSubmitting
+                            ? null
+                            : () {
+                                if (isConfirming) {
+                                  setDialogState(() {
+                                    isConfirming = false;
+                                  });
+                                } else {
+                                  Navigator.of(context).pop();
+                                }
+                              },
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: PrimaryButton(
+                        key: isConfirming
+                            ? const Key('payout_confirm_button')
+                            : const Key('payout_submit_button'),
+                        text: isConfirming ? "Confirm Payout" : "Continue",
+                        isLoading: isSubmitting,
+                        onPressed: () async {
+                          if (!isConfirming) {
+                            if (formKey.currentState!.validate()) {
+                              setDialogState(() {
+                                isConfirming = true;
+                                dialogError = null;
+                              });
+                            }
+                          } else {
+                            setDialogState(() {
+                              isSubmitting = true;
+                              dialogError = null;
+                            });
+
+                            try {
+                              final amount =
+                                  double.parse(amountController.text.trim());
+                              await ownerProvider.requestPayout(
+                                amount: amount,
+                                payoutMethod: selectedMethod,
+                                accountDetails:
+                                    accountDetailsController.text.trim(),
+                              );
+                              await ownerProvider
+                                  .fetchDashboardData(auth.token!);
+                              if (context.mounted) {
+                                Navigator.of(context).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    key: const Key('payout_success_snackbar'),
+                                    content: Text(l10n.payoutSuccessMessage),
+                                    backgroundColor: AppColors.success,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              debugPrint('Error requesting payout: $e');
+                              setDialogState(() {
+                                isSubmitting = false;
+                                dialogError = friendlyErrorMessage(e);
+                              });
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   void _showDepositDialog(BuildContext context) {
     final l10n = context.l10n;

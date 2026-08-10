@@ -1408,4 +1408,68 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get longitudeLabel => 'خط الطول';
+
+  @override
+  String get statusRequested => 'تم الطلب';
+
+  @override
+  String get statusPaid => 'تم الدفع';
+
+  @override
+  String get payoutWithdrawButton => 'طلب سحب الأرباح';
+
+  @override
+  String get payoutDialogTitle => 'طلب سحب الأرباح';
+
+  @override
+  String get payoutDialogDescription =>
+      'أدخل تفاصيل طلب سحب الأرباح من رصيدك المتاح إلى حسابك البنكي أو إنستا باي.';
+
+  @override
+  String get payoutMethodLabel => 'طريقة السحب';
+
+  @override
+  String get payoutMethodBankTransfer => 'تحويل بنكي';
+
+  @override
+  String get payoutMethodInstapay => 'إنستا باي';
+
+  @override
+  String get payoutAccountDetailsLabel => 'تفاصيل الحساب';
+
+  @override
+  String get payoutAccountDetailsBankHint => 'رقم الحساب البنكي الدولي IBAN';
+
+  @override
+  String get payoutAccountDetailsInstapayHint =>
+      'رقم الهاتف أو عنوان إنستا باي';
+
+  @override
+  String get payoutConfirmTitle => 'تأكيد طلب السحب';
+
+  @override
+  String payoutConfirmMessage(String amount, String method) {
+    return 'هل أنت تأكد من طلب سحب $amount رصيد عبر $method؟ سيتم حجز المبلغ من رصيدك المتاح حتى إتمام المعالجة.';
+  }
+
+  @override
+  String get payoutSuccessMessage => 'تم تقديم طلب السحب بنجاح.';
+
+  @override
+  String get payoutHistoryTitle => 'سجل طلبات السحب';
+
+  @override
+  String get payoutHistoryEmpty => 'لم يتم تقديم أي طلبات سحب حتى الآن.';
+
+  @override
+  String get payoutErrorAmountExceeds => 'المبلغ يتجاوز الرصيد المتاح حالياً.';
+
+  @override
+  String get payoutErrorAmountInvalid => 'يرجى إدخال مبلغ صحيح أكبر من 0.';
+
+  @override
+  String get payoutErrorDetailsRequired => 'تفاصيل الحساب مطلوبة.';
+
+  @override
+  String get payoutRejectionReasonLabel => 'سبب الرفض:';
 }

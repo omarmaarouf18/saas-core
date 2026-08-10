@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/api_client.dart';
 import '../core/error_messages.dart';
 import '../models/job.dart';
+import '../models/payout_request.dart';
 
 class OwnerProvider extends ChangeNotifier {
   final ApiClient apiClient;
@@ -14,6 +15,7 @@ class OwnerProvider extends ChangeNotifier {
   List<Job> _ownerJobs = [];
   double? _platformFeePercentage;
   List<dynamic> _employees = [];
+  List<PayoutRequest> _payoutRequests = [];
   bool _isLoading = false;
   String? _error;
 
@@ -25,6 +27,7 @@ class OwnerProvider extends ChangeNotifier {
   List<Job> get ownerJobs => _ownerJobs;
   double? get platformFeePercentage => _platformFeePercentage;
   List<dynamic> get employees => _employees;
+  List<PayoutRequest> get payoutRequests => _payoutRequests;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -469,6 +472,69 @@ class OwnerProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Non-critical: Error fetching platform config: $e');
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // API Call: Request Payout (POST /users/wallet/payout/request)
+  // ---------------------------------------------------------------------------
+  Future<PayoutRequest> requestPayout({
+    required double amount,
+    required String payoutMethod,
+    required String accountDetails,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post('/users/wallet/payout/request', {
+        'amount': amount,
+        'payout_method': payoutMethod,
+        'account_details': accountDetails,
+      });
+
+      final payoutReq = PayoutRequest.fromJson(
+          Map<String, dynamic>.from(res is Map ? res : {}));
+      _payoutRequests.insert(0, payoutReq);
+      return payoutReq;
+    } catch (e) {
+      debugPrint('Error requesting payout: $e');
+      _error = friendlyErrorMessage(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // API Call: Fetch Payout Requests (GET /users/wallet/payout/requests)
+  // ---------------------------------------------------------------------------
+  Future<List<PayoutRequest>> fetchPayoutRequests() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.get('/users/wallet/payout/requests');
+      if (res is List) {
+        _payoutRequests = res
+            .map((item) =>
+                PayoutRequest.fromJson(Map<String, dynamic>.from(item as Map)))
+            .toList();
+      } else {
+        _payoutRequests = [];
+      }
+      return _payoutRequests;
+    } catch (e) {
+      debugPrint('Error fetching payout requests: $e');
+      _error = friendlyErrorMessage(e);
+      _payoutRequests = [];
+      return [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 }

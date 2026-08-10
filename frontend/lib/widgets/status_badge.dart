@@ -32,6 +32,7 @@ class StatusBadge extends StatelessWidget {
     switch (status.toLowerCase().trim()) {
       case 'completed':
       case 'approved':
+      case 'paid':
         return AppColors.success;
       case 'active':
         return AppColors.primary;
@@ -41,6 +42,7 @@ class StatusBadge extends StatelessWidget {
       case 'escrow_reconciliation_required':
       case 'reconciliation_required':
       case 'reconciliation required':
+      case 'requested':
         return AppColors.warning;
       case 'cancelled':
       case 'canceled':
@@ -58,6 +60,8 @@ class StatusBadge extends StatelessWidget {
     switch (status.toLowerCase().trim()) {
       case 'completed':
         return Icons.check_circle_outline;
+      case 'paid':
+        return Icons.payments_outlined;
       case 'active':
         return Icons.local_shipping_outlined;
       case 'awaiting_price_response':
@@ -65,6 +69,8 @@ class StatusBadge extends StatelessWidget {
         return Icons.request_quote_outlined;
       case 'pending':
         return Icons.schedule_outlined;
+      case 'requested':
+        return Icons.hourglass_empty_rounded;
       case 'cancelled':
       case 'canceled':
         return Icons.cancel_outlined;
@@ -95,6 +101,9 @@ class StatusBadge extends StatelessWidget {
       case 'completed':
         label = l10n.statusCompleted;
         break;
+      case 'paid':
+        label = l10n.statusPaid;
+        break;
       case 'active':
         label = l10n.statusActive;
         break;
@@ -104,6 +113,9 @@ class StatusBadge extends StatelessWidget {
         break;
       case 'pending':
         label = l10n.statusPending;
+        break;
+      case 'requested':
+        label = l10n.statusRequested;
         break;
       case 'cancelled':
       case 'canceled':

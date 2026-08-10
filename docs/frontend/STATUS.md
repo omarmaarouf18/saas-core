@@ -97,12 +97,12 @@
     *   *(a) Transparent Navigation Header*: **[VERIFIED]** Replaced solid gray `AppBar` on `EmployeeJobsScreen` (`frontend/lib/screens/employee_jobs_screen.dart`) with transparent/Material-3-surface-tinted navigation header matching owner and customer home screens while preserving all 4 action buttons (`Refresh`, `employee_verification_button`, `_buildNotificationBell`, `settings_button`).
     *   *(b) Live GPS Status Pill & Welcome Banner*: **[VERIFIED]** Integrated top gradient welcome card with user profile badge and glanceable live GPS status pill (`TweenAnimationBuilder` scale entrance animation) showing pulsing green `AppColors.success` "GPS Live" or amber `AppColors.warning` "GPS Off".
     *   *(c) Compact Action Simulator Card*: **[VERIFIED]** Redesigned the audit event simulation section into a sleek `ThemedCard` with `ChoiceChip` selection chips for quick event selection, `ThemedTextField` for custom event text, and `PrimaryButton` for submission.
-    * **Phase 18: Zero-Commission Revenue Model Migration (ADR-0017)** — **[IN PROGRESS — BACKEND 100% COMPLETE & VERIFIED]**
+    * **Phase 18: Zero-Commission Revenue Model Migration (ADR-0017)** — **[100% COMPLETE & VERIFIED]**
     *   *(a) Remove Fee-Splitting*: **[VERIFIED]** Removed 15% platform fee split from `ReleaseEscrowWithSplit` in `services/user-service/internal/store/mongodb.go`; sets `netAmount := amount` with 0% platform commission (commit `aaaacc531ffe24a9aa6da3c99231844ef4fa8803`).
     *   *(b) COD Pure Log Entry*: **[VERIFIED]** `CompleteCODJob` in `user-service` performs pure status-only logging with 0% platform fee and zero wallet/escrow/ledger mutation; legacy fee-deducting `DeductCODFee` was confirmed dead code and removed (commits `aaaacc531ffe24a9aa6da3c99231844ef4fa8803`, `431d42a8c0c426fe66037257d42878a84f74c73f`).
-    *   *(c) Owner Payout/Withdrawal Request Capability*: **[VERIFIED]** (Backend only) Built `POST /users/wallet/payout/request` (`RequestPayout`) and `GET /users/wallet/payout/requests` (`GetPayoutRequests`) endpoints in `services/user-service/internal/handlers/handlers.go` (registered at lines 225-226), backed by `CreatePayoutRequest` and `GetPayoutRequests` in `mongodb.go` and `payout_requests` collection (commit `aaaacc531ffe24a9aa6da3c99231844ef4fa8803`). *Note: Covers backend API endpoints only — no frontend UI exists yet (tracked under sub-item e).*
+    *   *(c) Owner Payout/Withdrawal Request Capability*: **[VERIFIED]** (Backend) Built `POST /users/wallet/payout/request` (`RequestPayout`) and `GET /users/wallet/payout/requests` (`GetPayoutRequests`) endpoints in `services/user-service/internal/handlers/handlers.go` (registered at lines 225-226), backed by `CreatePayoutRequest` and `GetPayoutRequests` in `mongodb.go` and `payout_requests` collection (commit `aaaacc531ffe24a9aa6da3c99231844ef4fa8803`).
     *   *(d) Production Data Correction*: **[VERIFIED]** Executed data correction script against production database `user_db` (`USER_MONGO_DATABASE`), setting `platform_fee_percentage: 0.0` in `user_db.platform_config` with literal before/after `mongosh` verification (commits `d97ef3a3ef5051be2b4adb85cc67004b35237ee4`, `255b6ec60e86fb0e287e334d0fa46749de9f2830`).
-    *   *(e) Frontend 0% Fee & Payout UI*: **[PLANNED, NOT STARTED]** Update Flutter client screens to display 0% platform commission and surface owner payout request UI.
+    *   *(e) Owner Payout Request & History UI*: **[100% COMPLETE & VERIFIED]** Integrated owner payout request creation form dialog (`_showPayoutRequestDialog`) with amount, method (`bank_transfer` / `instapay`), account details inputs, validation against withdrawable balance (`ownerProvider.withdrawableBalance`), and interactive real-money transfer confirmation step (`payout_confirm_button`). Added Payout Requests History section in `WalletScreen` (`frontend/lib/screens/wallet_screen.dart`) displaying past request status badges via `StatusBadge` (extended to support `"requested"`, `"approved"`, `"rejected"`, `"paid"`) and explicit rejection reason banner. Wired `requestPayout` (`POST /users/wallet/payout/request`) and `fetchPayoutRequests` (`GET /users/wallet/payout/requests`) in `OwnerProvider` (`frontend/lib/providers/owner_provider.dart`). Localized all strings in `app_en.arb` and `app_ar.arb`. Verified via 4 widget test cases in `frontend/test/owner_payout_test.dart` and 171 tests across full suite. *Note: Admin fulfillment/approval endpoint is deferred to ADR-0018; submitted requests remain in `"requested"` status.*
 
  ---
 
@@ -145,6 +145,7 @@
    * `notification_model.dart`
    * `employee_marker.dart`
    * `reconciliation_job.dart`
+   * `payout_request.dart`
  * **Theme**:
    * `theme.dart`
  * **Services**:

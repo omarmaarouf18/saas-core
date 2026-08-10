@@ -1421,4 +1421,71 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get longitudeLabel => 'Longitude';
+
+  @override
+  String get statusRequested => 'Requested';
+
+  @override
+  String get statusPaid => 'Paid';
+
+  @override
+  String get payoutWithdrawButton => 'Request Payout';
+
+  @override
+  String get payoutDialogTitle => 'Request Payout';
+
+  @override
+  String get payoutDialogDescription =>
+      'Request a withdrawal from your withdrawable balance to your bank account or InstaPay.';
+
+  @override
+  String get payoutMethodLabel => 'Payout Method';
+
+  @override
+  String get payoutMethodBankTransfer => 'Bank Transfer';
+
+  @override
+  String get payoutMethodInstapay => 'InstaPay';
+
+  @override
+  String get payoutAccountDetailsLabel => 'Account Details';
+
+  @override
+  String get payoutAccountDetailsBankHint =>
+      'IBAN (e.g. EG123456789012345678901234567)';
+
+  @override
+  String get payoutAccountDetailsInstapayHint =>
+      'InstaPay Mobile / Address (e.g. 01012345678)';
+
+  @override
+  String get payoutConfirmTitle => 'Confirm Payout Request';
+
+  @override
+  String payoutConfirmMessage(String amount, String method) {
+    return 'Are you sure you want to request a payout of $amount credits via $method? The requested amount will be held from your withdrawable balance until processed.';
+  }
+
+  @override
+  String get payoutSuccessMessage => 'Payout request submitted successfully.';
+
+  @override
+  String get payoutHistoryTitle => 'Payout Requests History';
+
+  @override
+  String get payoutHistoryEmpty => 'No payout requests submitted yet.';
+
+  @override
+  String get payoutErrorAmountExceeds =>
+      'Amount exceeds current withdrawable balance.';
+
+  @override
+  String get payoutErrorAmountInvalid =>
+      'Please enter a valid amount greater than 0.';
+
+  @override
+  String get payoutErrorDetailsRequired => 'Account details are required.';
+
+  @override
+  String get payoutRejectionReasonLabel => 'Rejection Reason:';
 }

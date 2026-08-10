@@ -647,5 +647,35 @@
   "basePriceLabel": "Base Price ($)",
   "ratePerKmLabel": "Rate per KM ($)",
   "latitudeLabel": "Latitude",
-  "longitudeLabel": "Longitude"
+  "longitudeLabel": "Longitude",
+  "statusRequested": "Requested",
+  "statusPaid": "Paid",
+  "payoutWithdrawButton": "Request Payout",
+  "payoutDialogTitle": "Request Payout",
+  "payoutDialogDescription": "Request a withdrawal from your withdrawable balance to your bank account or InstaPay.",
+  "payoutMethodLabel": "Payout Method",
+  "payoutMethodBankTransfer": "Bank Transfer",
+  "payoutMethodInstapay": "InstaPay",
+  "payoutAccountDetailsLabel": "Account Details",
+  "payoutAccountDetailsBankHint": "IBAN (e.g. EG123456789012345678901234567)",
+  "payoutAccountDetailsInstapayHint": "InstaPay Mobile / Address (e.g. 01012345678)",
+  "payoutConfirmTitle": "Confirm Payout Request",
+  "payoutConfirmMessage": "Are you sure you want to request a payout of {amount} credits via {method}? The requested amount will be held from your withdrawable balance until processed.",
+  "@payoutConfirmMessage": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "payoutSuccessMessage": "Payout request submitted successfully.",
+  "payoutHistoryTitle": "Payout Requests History",
+  "payoutHistoryEmpty": "No payout requests submitted yet.",
+  "payoutErrorAmountExceeds": "Amount exceeds current withdrawable balance.",
+  "payoutErrorAmountInvalid": "Please enter a valid amount greater than 0.",
+  "payoutErrorDetailsRequired": "Account details are required.",
+  "payoutRejectionReasonLabel": "Rejection Reason:"
 }

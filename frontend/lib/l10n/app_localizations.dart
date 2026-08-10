@@ -2744,6 +2744,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Longitude'**
   String get longitudeLabel;
+
+  /// No description provided for @statusRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested'**
+  String get statusRequested;
+
+  /// No description provided for @statusPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get statusPaid;
+
+  /// No description provided for @payoutWithdrawButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Payout'**
+  String get payoutWithdrawButton;
+
+  /// No description provided for @payoutDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Payout'**
+  String get payoutDialogTitle;
+
+  /// No description provided for @payoutDialogDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Request a withdrawal from your withdrawable balance to your bank account or InstaPay.'**
+  String get payoutDialogDescription;
+
+  /// No description provided for @payoutMethodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payout Method'**
+  String get payoutMethodLabel;
+
+  /// No description provided for @payoutMethodBankTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank Transfer'**
+  String get payoutMethodBankTransfer;
+
+  /// No description provided for @payoutMethodInstapay.
+  ///
+  /// In en, this message translates to:
+  /// **'InstaPay'**
+  String get payoutMethodInstapay;
+
+  /// No description provided for @payoutAccountDetailsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Details'**
+  String get payoutAccountDetailsLabel;
+
+  /// No description provided for @payoutAccountDetailsBankHint.
+  ///
+  /// In en, this message translates to:
+  /// **'IBAN (e.g. EG123456789012345678901234567)'**
+  String get payoutAccountDetailsBankHint;
+
+  /// No description provided for @payoutAccountDetailsInstapayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'InstaPay Mobile / Address (e.g. 01012345678)'**
+  String get payoutAccountDetailsInstapayHint;
+
+  /// No description provided for @payoutConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Payout Request'**
+  String get payoutConfirmTitle;
+
+  /// No description provided for @payoutConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to request a payout of {amount} credits via {method}? The requested amount will be held from your withdrawable balance until processed.'**
+  String payoutConfirmMessage(String amount, String method);
+
+  /// No description provided for @payoutSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Payout request submitted successfully.'**
+  String get payoutSuccessMessage;
+
+  /// No description provided for @payoutHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payout Requests History'**
+  String get payoutHistoryTitle;
+
+  /// No description provided for @payoutHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No payout requests submitted yet.'**
+  String get payoutHistoryEmpty;
+
+  /// No description provided for @payoutErrorAmountExceeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount exceeds current withdrawable balance.'**
+  String get payoutErrorAmountExceeds;
+
+  /// No description provided for @payoutErrorAmountInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid amount greater than 0.'**
+  String get payoutErrorAmountInvalid;
+
+  /// No description provided for @payoutErrorDetailsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Account details are required.'**
+  String get payoutErrorDetailsRequired;
+
+  /// No description provided for @payoutRejectionReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejection Reason:'**
+  String get payoutRejectionReasonLabel;
 }
 
 class _AppLocalizationsDelegate
