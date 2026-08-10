@@ -2,6 +2,16 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Phase 5 Performance Perception & Skeleton Loading States (UI/UX Roadmap)
+
+- **Implementation Detail**:
+  - **Skeleton Shimmer Primitive (`frontend/lib/widgets/skeleton_loader.dart`)**: Built reusable shimmer placeholder animation block (`SkeletonLoader`) driven by `AppMotion.durationSlow` loop animation and `AppColors.outlineVariant` gradient sweep. Accepts configurable width, height, and border radius (`AppRadius`) parameters.
+  - **Per-Screen Card Geometry Skeletons**: Built 4 exact-geometry card skeleton widgets matching real card dimensions, padding, avatars, and layout bounds: `MarketplaceCardSkeleton`, `HomeDashboardSkeleton`, `EmployeeJobCardSkeleton`, and `WalletScreenSkeleton`.
+  - **Animated Cross-Fade Transitions**: Wired `AnimatedSwitcher` (`AppMotion.durationMedium`, `AppMotion.curveStateChange`) across initial async loading states in `customer_marketplace_screen.dart`, `home_screen.dart`, `employee_jobs_screen.dart`, and `wallet_screen.dart`. Preserved existing `RefreshIndicator` pull-to-refresh spinner behavior for subsequent updates.
+  - **Widget & Unit Test Suite (`frontend/test/skeleton_loader_test.dart`)**: Created 9 widget & state transition tests verifying skeleton rendering on initial load, provider state transitions, and smooth cross-fade to real content.
+- **Commit SHA**: `cf957f56a6342a9f02dfb1d9afbe61b1004ed881`
+- **Verification**: Verified via `flutter analyze` (0 issues found), `flutter test` (100% pass, 186/186 tests passed), live backend health check against `https://api.logiclinkeg.tech/health` (HTTP 200 OK), `make docs-check`, and `.githooks/pre-push` gate exit code 0. ✅
+
 ## ADR-0017 Zero-Commission Subscription-Only Revenue Model & Gateway Readiness
 
 - **Implementation Detail**:
