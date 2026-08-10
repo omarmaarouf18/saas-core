@@ -95,7 +95,8 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                     description: l10n.noServicesDescription,
                                     actionText: "Create Service",
                                     onActionPressed: () =>
-                                        _showCreateServiceDialog(context, user.id),
+                                        _showCreateServiceDialog(
+                                            context, user.id),
                                   ),
                                 ),
                               ),

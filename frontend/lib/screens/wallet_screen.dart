@@ -591,7 +591,8 @@ class _WalletScreenState extends State<WalletScreen> {
                               const SizedBox(height: AppSpacing.md),
                               ThemedErrorBanner(
                                 message: dialogError!,
-                                onRetry: () => setState(() => dialogError = null),
+                                onRetry: () =>
+                                    setState(() => dialogError = null),
                               ),
                             ],
                           ],
