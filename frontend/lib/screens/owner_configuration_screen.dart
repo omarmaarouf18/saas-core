@@ -423,7 +423,8 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                                       ),
                                       clipBehavior: Clip.antiAlias,
                                       child: _photoUrlController.text.isNotEmpty
-                                          ? (_photoUrlController.text.startsWith('http')
+                                          ? (_photoUrlController.text
+                                                  .startsWith('http')
                                               ? Image.network(
                                                   _photoUrlController.text,
                                                   fit: BoxFit.cover,
@@ -459,8 +460,8 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                                                 'owner_config_photo_url_field'),
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
-                                            style: AppTypography.bodyMd
-                                                .copyWith(
+                                            style:
+                                                AppTypography.bodyMd.copyWith(
                                               color: _photoUrlController
                                                       .text.isNotEmpty
                                                   ? AppColors.onSurface

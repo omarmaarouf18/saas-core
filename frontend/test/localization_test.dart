@@ -79,7 +79,7 @@ void main() {
       final BuildContext context =
           tester.element(find.byType(CustomerHomeScreen));
       expect(Directionality.of(context), equals(TextDirection.rtl));
-      expect(find.text('سريع ديلفري'), findsWidgets);
+      expect(find.text('Quick Delivery'), findsWidgets);
     });
 
     testWidgets(
