@@ -11,10 +11,10 @@ import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/status_badge.dart';
+import '../widgets/skeleton_loader.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
-import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
 import '../widgets/themed_success_banner.dart';
@@ -45,181 +45,191 @@ class _WalletScreenState extends State<WalletScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      body: ownerProvider.isLoading &&
-              ownerProvider.ledgerEntries.isEmpty &&
-              ownerProvider.walletBalance == 0.0
-          ? ThemedLoadingIndicator(message: l10n.walletLoading)
-          : RefreshIndicator(
-              onRefresh: () async {
-                await ownerProvider.fetchDashboardData(auth.token!);
-                await ownerProvider.fetchPlatformConfig();
-                await ownerProvider.fetchPayoutRequests();
-              },
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "My Wallet",
-                          style: AppTypography.headlineLgMobile.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
+      body: AnimatedSwitcher(
+        duration: AppMotion.durationMedium,
+        switchInCurve: AppMotion.curveStateChange,
+        switchOutCurve: AppMotion.curveStateChange,
+        child: (ownerProvider.isLoading &&
+                ownerProvider.ledgerEntries.isEmpty &&
+                ownerProvider.walletBalance == 0.0)
+            ? const Padding(
+                key: ValueKey('wallet_skeleton_loader'),
+                padding: EdgeInsets.all(AppSpacing.lg),
+                child: WalletScreenSkeleton(),
+              )
+            : RefreshIndicator(
+                key: const ValueKey('wallet_content'),
+                onRefresh: () async {
+                  await ownerProvider.fetchDashboardData(auth.token!);
+                  await ownerProvider.fetchPlatformConfig();
+                  await ownerProvider.fetchPayoutRequests();
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header Row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "My Wallet",
+                            style: AppTypography.headlineLgMobile.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        SizedBox(
-                          width: 185,
-                          child: PrimaryButton(
-                            onPressed: () => _showDepositDialog(context),
-                            icon: Icons.add_card_rounded,
-                            text: "Deposit Funds",
+                          SizedBox(
+                            width: 185,
+                            child: PrimaryButton(
+                              onPressed: () => _showDepositDialog(context),
+                              icon: Icons.add_card_rounded,
+                              text: "Deposit Funds",
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Balance Display Cards
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildBalanceCard(
-                            title: l10n.walletTotalBalance,
-                            value: ownerProvider.walletBalance,
-                            icon: Icons.account_balance_rounded,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildBalanceCard(
-                            title: l10n.walletWithdrawable,
-                            value: ownerProvider.withdrawableBalance,
-                            icon: Icons.check_circle_outline_rounded,
-                            color: AppColors.success,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: _buildBalanceCard(
-                            title: l10n.walletLockedEscrow,
-                            value: ownerProvider.escrowBalance,
-                            icon: Icons.lock_outline_rounded,
-                            color: AppColors.warning,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-
-                    // Request Payout Button directly beneath withdrawable balance cards
-                    SizedBox(
-                      width: double.infinity,
-                      child: PrimaryButton(
-                        key: const Key('request_payout_button'),
-                        onPressed: () => _showPayoutRequestDialog(context),
-                        icon: Icons.outbox_rounded,
-                        text: l10n.payoutWithdrawButton,
+                        ],
                       ),
-                    ),
+                      const SizedBox(height: AppSpacing.lg),
 
-                    if (ownerProvider.platformFeePercentage != null) ...[
+                      // Balance Display Cards
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildBalanceCard(
+                              title: l10n.walletTotalBalance,
+                              value: ownerProvider.walletBalance,
+                              icon: Icons.account_balance_rounded,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildBalanceCard(
+                              title: l10n.walletWithdrawable,
+                              value: ownerProvider.withdrawableBalance,
+                              icon: Icons.check_circle_outline_rounded,
+                              color: AppColors.success,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: _buildBalanceCard(
+                              title: l10n.walletLockedEscrow,
+                              value: ownerProvider.escrowBalance,
+                              icon: Icons.lock_outline_rounded,
+                              color: AppColors.warning,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+
+                      // Request Payout Button directly beneath withdrawable balance cards
+                      SizedBox(
+                        width: double.infinity,
+                        child: PrimaryButton(
+                          key: const Key('request_payout_button'),
+                          onPressed: () => _showPayoutRequestDialog(context),
+                          icon: Icons.outbox_rounded,
+                          text: l10n.payoutWithdrawButton,
+                        ),
+                      ),
+
+                      if (ownerProvider.platformFeePercentage != null) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            "Platform fee: ${ownerProvider.platformFeePercentage! % 1 == 0 ? ownerProvider.platformFeePercentage!.toInt() : ownerProvider.platformFeePercentage}%",
+                            key: const Key('platform_fee_percentage_text'),
+                            style: AppTypography.labelMd.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // Payout Requests History Section
+                      ThemedSectionHeader(
+                        key: const Key('payout_history_header'),
+                        title: l10n.payoutHistoryTitle,
+                      ),
                       const SizedBox(height: AppSpacing.sm),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          "Platform fee: ${ownerProvider.platformFeePercentage! % 1 == 0 ? ownerProvider.platformFeePercentage!.toInt() : ownerProvider.platformFeePercentage}%",
-                          key: const Key('platform_fee_percentage_text'),
-                          style: AppTypography.labelMd.copyWith(
-                            color: AppColors.onSurfaceVariant,
+
+                      if (ownerProvider.payoutRequests.isEmpty)
+                        ThemedCard(
+                          elevation: AppElevation.shadowLevel1List,
+                          borderRadius: AppRadius.md,
+                          padding: AppSpacing.lg,
+                          child: ThemedEmptyState(
+                            icon: Icons.history_rounded,
+                            title: l10n.payoutHistoryEmpty,
+                            description:
+                                "Submitted payout requests will appear here with processing status.",
+                            actionText: l10n.payoutWithdrawButton,
+                            onActionPressed: () =>
+                                _showPayoutRequestDialog(context),
                           ),
+                        )
+                      else
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: ownerProvider.payoutRequests.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: AppSpacing.base),
+                          itemBuilder: (context, index) {
+                            final payout = ownerProvider.payoutRequests[index];
+                            return _buildPayoutTile(context, payout);
+                          },
                         ),
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // Transaction History Section
+                      ThemedSectionHeader(
+                        title: l10n.walletTransactionLedger,
                       ),
+                      const SizedBox(height: AppSpacing.sm),
+
+                      if (ownerProvider.ledgerEntries.isEmpty)
+                        ThemedCard(
+                          elevation: AppElevation.shadowLevel1List,
+                          borderRadius: AppRadius.md,
+                          padding: AppSpacing.lg,
+                          child: ThemedEmptyState(
+                            icon: Icons.receipt_long_outlined,
+                            title: l10n.walletNoTransactions,
+                            description:
+                                "Your transaction history will appear here once deposits or charges occur.",
+                            actionText: "Refresh Wallet",
+                            onActionPressed: () =>
+                                ownerProvider.fetchDashboardData(auth.token!),
+                          ),
+                        )
+                      else
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: ownerProvider.ledgerEntries.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: AppSpacing.base),
+                          itemBuilder: (context, index) {
+                            final entry = ownerProvider.ledgerEntries[index];
+                            return _buildLedgerTile(entry);
+                          },
+                        ),
                     ],
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Payout Requests History Section
-                    ThemedSectionHeader(
-                      key: const Key('payout_history_header'),
-                      title: l10n.payoutHistoryTitle,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-
-                    if (ownerProvider.payoutRequests.isEmpty)
-                      ThemedCard(
-                        elevation: AppElevation.shadowLevel1List,
-                        borderRadius: AppRadius.md,
-                        padding: AppSpacing.lg,
-                        child: ThemedEmptyState(
-                          icon: Icons.history_rounded,
-                          title: l10n.payoutHistoryEmpty,
-                          description:
-                              "Submitted payout requests will appear here with processing status.",
-                          actionText: l10n.payoutWithdrawButton,
-                          onActionPressed: () =>
-                              _showPayoutRequestDialog(context),
-                        ),
-                      )
-                    else
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: ownerProvider.payoutRequests.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: AppSpacing.base),
-                        itemBuilder: (context, index) {
-                          final payout = ownerProvider.payoutRequests[index];
-                          return _buildPayoutTile(context, payout);
-                        },
-                      ),
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Transaction History Section
-                    ThemedSectionHeader(
-                      title: l10n.walletTransactionLedger,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-
-                    if (ownerProvider.ledgerEntries.isEmpty)
-                      ThemedCard(
-                        elevation: AppElevation.shadowLevel1List,
-                        borderRadius: AppRadius.md,
-                        padding: AppSpacing.lg,
-                        child: ThemedEmptyState(
-                          icon: Icons.receipt_long_outlined,
-                          title: l10n.walletNoTransactions,
-                          description:
-                              "Your transaction history will appear here once deposits or charges occur.",
-                          actionText: "Refresh Wallet",
-                          onActionPressed: () =>
-                              ownerProvider.fetchDashboardData(auth.token!),
-                        ),
-                      )
-                    else
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: ownerProvider.ledgerEntries.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: AppSpacing.base),
-                        itemBuilder: (context, index) {
-                          final entry = ownerProvider.ledgerEntries[index];
-                          return _buildLedgerTile(entry);
-                        },
-                      ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 

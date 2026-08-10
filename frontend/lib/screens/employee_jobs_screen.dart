@@ -13,10 +13,10 @@ import '../widgets/confirm_action_dialog.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
+import '../widgets/skeleton_loader.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
-import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_success_banner.dart';
 import '../widgets/themed_text_field.dart';
@@ -300,20 +300,29 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               const SizedBox(height: AppSpacing.xl),
               ThemedSectionHeader(title: l10n.employeeJobsSectionAssigned),
               const SizedBox(height: AppSpacing.sm),
-              if (jobsProvider.isLoading && jobsProvider.jobs.isEmpty)
-                Padding(
-                  padding: const EdgeInsetsDirectional.symmetric(
-                      vertical: AppSpacing.xxl),
-                  child:
-                      ThemedLoadingIndicator(message: l10n.employeeJobsLoading),
-                )
-              else if (jobsProvider.error != null && jobsProvider.jobs.isEmpty)
-                ThemedErrorBanner(
-                  message: jobsProvider.error!,
-                  onRetry: _refreshJobs,
-                )
-              else
-                _buildJobsList(jobsProvider.jobs),
+              AnimatedSwitcher(
+                duration: AppMotion.durationMedium,
+                switchInCurve: AppMotion.curveStateChange,
+                switchOutCurve: AppMotion.curveStateChange,
+                child: (jobsProvider.isLoading && jobsProvider.jobs.isEmpty)
+                    ? Column(
+                        key: const ValueKey('employee_jobs_skeleton_list'),
+                        children: List.generate(
+                          3,
+                          (index) => const EmployeeJobCardSkeleton(),
+                        ),
+                      )
+                    : (jobsProvider.error != null && jobsProvider.jobs.isEmpty)
+                        ? ThemedErrorBanner(
+                            key: const ValueKey('employee_jobs_error'),
+                            message: jobsProvider.error!,
+                            onRetry: _refreshJobs,
+                          )
+                        : KeyedSubtree(
+                            key: const ValueKey('employee_jobs_content'),
+                            child: _buildJobsList(jobsProvider.jobs),
+                          ),
+              ),
             ],
           ),
         ),

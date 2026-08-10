@@ -12,9 +12,9 @@ import '../providers/notifications_provider.dart';
 import '../widgets/location_picker_map.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
+import '../widgets/skeleton_loader.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
-import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
 import '../widgets/themed_success_banner.dart';
@@ -337,139 +337,157 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
         ),
         // Services Listing
         Expanded(
-          child: marketplace.isLoading
-              ? ThemedLoadingIndicator(message: l10n.searchingServices)
-              : filteredServices.isEmpty
-                  ? SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg),
-                        child: ThemedCard(
-                          elevation: AppElevation.shadowLevel1List,
-                          borderRadius: AppRadius.md,
-                          padding: AppSpacing.lg,
-                          child: ThemedEmptyState(
-                            icon: Icons.search_off,
-                            title: l10n.noServicesNearby,
-                            description:
-                                "Try broadening your search radius or changing your coordinates.",
-                            actionText: "Refresh List",
-                            onActionPressed: _loadServices,
-                          ),
-                        ),
-                      ),
-                    )
-                  : ListView.builder(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                      itemCount: filteredServices.length,
-                      itemBuilder: (context, index) {
-                        final service = filteredServices[index];
-                        final categoryLabel =
-                            serviceCategoryLabels[service.category] ??
-                                service.category;
-
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: AnimatedSwitcher(
+            duration: AppMotion.durationMedium,
+            switchInCurve: AppMotion.curveStateChange,
+            switchOutCurve: AppMotion.curveStateChange,
+            child: marketplace.isLoading
+                ? ListView.builder(
+                    key: const ValueKey('marketplace_skeleton_list'),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    itemCount: 4,
+                    itemBuilder: (context, index) =>
+                        const MarketplaceCardSkeleton(),
+                  )
+                : filteredServices.isEmpty
+                    ? SingleChildScrollView(
+                        key: const ValueKey('marketplace_empty_state'),
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg),
                           child: ThemedCard(
-                            elevation: AppElevation.shadowLevel2List,
+                            elevation: AppElevation.shadowLevel1List,
                             borderRadius: AppRadius.md,
-                            padding: AppSpacing.md,
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: AppColors.secondary
-                                      .withValues(alpha: 0.2),
-                                  foregroundColor: AppColors.primary,
-                                  child:
-                                      Icon(_getCategoryIcon(service.category)),
-                                ),
-                                const SizedBox(width: AppSpacing.md),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        service.name,
-                                        style: AppTypography.titleMd.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                      const SizedBox(height: AppSpacing.xs),
-                                      Row(
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 8, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: AppColors.primary
-                                                  .withValues(alpha: 0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      AppRadius.sm),
-                                            ),
-                                            child: Text(
-                                              categoryLabel,
-                                              style: AppTypography.labelMd
-                                                  .copyWith(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                color: AppColors.primary,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(
-                                              width: AppSpacing.base),
-                                          Text(
-                                            "${service.distanceKM} km away",
-                                            style:
-                                                AppTypography.bodyMd.copyWith(
-                                              color: AppColors.onSurfaceVariant,
-                                            ),
-                                          ),
-                                          const SizedBox(
-                                              width: AppSpacing.base),
-                                          ServiceRatingWidget(
-                                              tenantId: service.tenantId),
-                                        ],
-                                      ),
-                                      const SizedBox(height: AppSpacing.base),
-                                      Text(
-                                        "Base: \$${service.tenantBasePrice} + \$${service.tenantPricePerKM}/km",
-                                        style: AppTypography.bodyMd.copyWith(
-                                          color: AppColors.onSurfaceVariant,
-                                        ),
-                                      ),
-                                      const SizedBox(height: AppSpacing.xs),
-                                      Text(
-                                        "Est. Price: \$${service.finalPrice}",
-                                        style: AppTypography.titleMd.copyWith(
-                                          color: AppColors.secondary,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: AppSpacing.sm),
-                                SizedBox(
-                                  width: 80,
-                                  child: PrimaryButton(
-                                    text: "Book",
-                                    onPressed: () => _showBookingDialog(
-                                        context, service, auth.token!),
-                                  ),
-                                ),
-                              ],
+                            padding: AppSpacing.lg,
+                            child: ThemedEmptyState(
+                              icon: Icons.search_off,
+                              title: l10n.noServicesNearby,
+                              description:
+                                  "Try broadening your search radius or changing your coordinates.",
+                              actionText: "Refresh List",
+                              onActionPressed: _loadServices,
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      )
+                    : ListView.builder(
+                        key: const ValueKey('marketplace_services_list'),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md),
+                        itemCount: filteredServices.length,
+                        itemBuilder: (context, index) {
+                          final service = filteredServices[index];
+                          final categoryLabel =
+                              serviceCategoryLabels[service.category] ??
+                                  service.category;
+
+                          return Padding(
+                            padding:
+                                const EdgeInsets.only(bottom: AppSpacing.sm),
+                            child: ThemedCard(
+                              elevation: AppElevation.shadowLevel2List,
+                              borderRadius: AppRadius.md,
+                              padding: AppSpacing.md,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: AppColors.secondary
+                                        .withValues(alpha: 0.2),
+                                    foregroundColor: AppColors.primary,
+                                    child: Icon(
+                                        _getCategoryIcon(service.category)),
+                                  ),
+                                  const SizedBox(width: AppSpacing.md),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          service.name,
+                                          style: AppTypography.titleMd.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: AppSpacing.xs),
+                                        Row(
+                                          children: [
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.primary
+                                                    .withValues(alpha: 0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        AppRadius.sm),
+                                              ),
+                                              child: Text(
+                                                categoryLabel,
+                                                style: AppTypography.labelMd
+                                                    .copyWith(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppColors.primary,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(
+                                                width: AppSpacing.base),
+                                            Text(
+                                              "${service.distanceKM} km away",
+                                              style:
+                                                  AppTypography.bodyMd.copyWith(
+                                                color:
+                                                    AppColors.onSurfaceVariant,
+                                              ),
+                                            ),
+                                            const SizedBox(
+                                                width: AppSpacing.base),
+                                            ServiceRatingWidget(
+                                                tenantId: service.tenantId),
+                                          ],
+                                        ),
+                                        const SizedBox(height: AppSpacing.base),
+                                        Text(
+                                          "Base: \$${service.tenantBasePrice} + \$${service.tenantPricePerKM}/km",
+                                          style: AppTypography.bodyMd.copyWith(
+                                            color: AppColors.onSurfaceVariant,
+                                          ),
+                                        ),
+                                        const SizedBox(height: AppSpacing.xs),
+                                        Text(
+                                          "Est. Price: \$${service.finalPrice}",
+                                          style: AppTypography.titleMd.copyWith(
+                                            color: AppColors.secondary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  SizedBox(
+                                    width: 80,
+                                    child: PrimaryButton(
+                                      text: "Book",
+                                      onPressed: () => _showBookingDialog(
+                                          context, service, auth.token!),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+          ),
         ),
       ],
     );

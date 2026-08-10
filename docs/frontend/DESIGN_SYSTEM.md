@@ -135,6 +135,7 @@ All shared widgets are located in `frontend/lib/widgets/`. Below is the complete
 | `PrimaryButton` | `primary_button.dart` | Full-width high-contrast action button with loading spinner state | `text`, `onPressed`, `isLoading`, `icon` | Used across 16 screens |
 | `RatingSummaryCard` | `rating_summary_card.dart` | Rating breakdown card displaying star average, progress bars & counts | `averageRating`, `totalReviews` | `home_screen.dart` |
 | `SecondaryButton` | `secondary_button.dart` | Tonal / outlined secondary action button for non-primary choices | `text`, `onPressed`, `isLoading`, `icon` | Used across 9 screens |
+| `SkeletonLoader` | `skeleton_loader.dart` | Reusable shimmer-animated block & per-screen card geometry loaders | `width`, `height`, `borderRadius`, `margin` | `customer_marketplace_screen.dart`, `home_screen.dart`, `employee_jobs_screen.dart`, `wallet_screen.dart` |
 | `StatCard` | `stat_card.dart` | Metric card with icon, title, bold value, and trend indicator | `title`, `value`, `icon`, `subtitle` | `home_screen.dart`, `wallet_screen.dart` |
 | `StatusBadge` | `status_badge.dart` | Localized pill badge mapping job/kyc/payout status to color/icon | `status` | Used across 10 screens |
 | `ThemedCard` | `themed_card.dart` | Surface card container with radius, ambient elevation & border | `child`, `padding`, `margin`, `onTap` | Used across 23 screens |

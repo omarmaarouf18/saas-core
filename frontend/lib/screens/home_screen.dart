@@ -27,6 +27,7 @@ import '../widgets/rating_summary_card.dart';
 import '../widgets/cancel_job_dialog.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
+import '../widgets/skeleton_loader.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -426,522 +427,561 @@ class _HomeScreenState extends State<HomeScreen> {
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(AppSpacing.lg),
-        child: TweenAnimationBuilder<double>(
-          duration: AppMotion.durationMediumSlow,
-          curve: AppMotion.curveEntrance,
-          tween: Tween<double>(begin: 0.0, end: 1.0),
-          builder: (context, animValue, child) {
-            return Opacity(
-              opacity: animValue,
-              child: Transform.translate(
-                offset: Offset(0, 15 * (1 - animValue)),
-                child: child,
-              ),
-            );
-          },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Section with Welcome Greeting & Compact Wallet Balance Badge
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.ownerHomeWelcomeUser(authUser.username.isNotEmpty
-                              ? authUser.username
-                              : authUser.email),
-                          style: AppTypography.headlineLgMobile.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          l10n.ownerHomeTenantId(authUser.id),
-                          style: AppTypography.bodyMd.copyWith(
-                            color: AppColors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  InkWell(
-                    key: const Key('owner_dashboard_wallet_badge'),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const WalletScreen(),
-                        ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.sm,
+        child: AnimatedSwitcher(
+          duration: AppMotion.durationMedium,
+          switchInCurve: AppMotion.curveStateChange,
+          switchOutCurve: AppMotion.curveStateChange,
+          child: ownerProvider.isLoading
+              ? const HomeDashboardSkeleton(
+                  key: ValueKey('home_dashboard_skeleton'),
+                )
+              : TweenAnimationBuilder<double>(
+                  key: const ValueKey('home_dashboard_content'),
+                  duration: AppMotion.durationMediumSlow,
+                  curve: AppMotion.curveEntrance,
+                  tween: Tween<double>(begin: 0.0, end: 1.0),
+                  builder: (context, animValue, child) {
+                    return Opacity(
+                      opacity: animValue,
+                      child: Transform.translate(
+                        offset: Offset(0, 15 * (1 - animValue)),
+                        child: child,
                       ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(AppRadius.full),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                    );
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header Section with Welcome Greeting & Compact Wallet Balance Badge
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
-                            Icons.account_balance_wallet,
-                            color: AppColors.primary,
-                            size: 18,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.ownerHomeWelcomeUser(
+                                      authUser.username.isNotEmpty
+                                          ? authUser.username
+                                          : authUser.email),
+                                  style:
+                                      AppTypography.headlineLgMobile.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                Text(
+                                  l10n.ownerHomeTenantId(authUser.id),
+                                  style: AppTypography.bodyMd.copyWith(
+                                    color: AppColors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(width: AppSpacing.xs),
-                          Text(
-                            walletText,
-                            style: AppTypography.labelLg.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
+                          const SizedBox(width: AppSpacing.sm),
+                          InkWell(
+                            key: const Key('owner_dashboard_wallet_badge'),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const WalletScreen(),
+                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(AppRadius.full),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md,
+                                vertical: AppSpacing.sm,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.full),
+                                border: Border.all(
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.account_balance_wallet,
+                                    color: AppColors.primary,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: AppSpacing.xs),
+                                  Text(
+                                    walletText,
+                                    style: AppTypography.labelLg.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                ],
-              ),
 
-              const SizedBox(height: AppSpacing.lg),
-
-              // Compact Inline Summary Card replacing dense StatCard grid
-              ThemedCard(
-                borderRadius: AppRadius.md,
-                padding: AppSpacing.md,
-                child: Row(
-                  children: [
-                    // Subscription Tier Item
-                    Expanded(
-                      child: InkWell(
-                        key: const Key('owner_dashboard_sub_chip'),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const SubscriptionScreen(),
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: AppSpacing.xs),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.card_membership_outlined,
-                                color: subColor,
-                                size: 22,
-                              ),
-                              const SizedBox(height: AppSpacing.xs),
-                              Text(
-                                subText,
-                                style: AppTypography.labelLg.copyWith(
-                                  color: subColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                l10n.ownerHomeSubTitle,
-                                style: AppTypography.labelMd.copyWith(
-                                  color: AppColors.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    Container(
-                      height: 36,
-                      width: 1,
-                      color: AppColors.outlineVariant.withValues(alpha: 0.5),
-                    ),
-
-                    // Employee Roster Item
-                    Expanded(
-                      child: InkWell(
-                        key: const Key('owner_dashboard_employees_chip'),
-                        onTap: () {
-                          onTabTapped(1); // Switch to Employees tab
-                        },
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: AppSpacing.xs),
-                          child: Column(
-                            children: [
-                              const Icon(
-                                Icons.people_outline,
-                                color: AppColors.primary,
-                                size: 22,
-                              ),
-                              const SizedBox(height: AppSpacing.xs),
-                              Text(
-                                l10n.ownerHomeRosterTitle,
-                                style: AppTypography.labelLg.copyWith(
-                                  color: AppColors.onSurface,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                l10n.ownerHomeEmployeesSub,
-                                style: AppTypography.labelMd.copyWith(
-                                  color: AppColors.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    Container(
-                      height: 36,
-                      width: 1,
-                      color: AppColors.outlineVariant.withValues(alpha: 0.5),
-                    ),
-
-                    // Escrow Review Item
-                    Expanded(
-                      child: InkWell(
-                        key: const Key('owner_dashboard_escrow_chip'),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const OwnerReconciliationQueueScreen(),
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: AppSpacing.xs),
-                          child: Column(
-                            children: [
-                              const Icon(
-                                Icons.gavel_outlined,
-                                color: AppColors.secondary,
-                                size: 22,
-                              ),
-                              const SizedBox(height: AppSpacing.xs),
-                              Text(
-                                l10n.ownerHomeEscrowTitle,
-                                style: AppTypography.labelLg.copyWith(
-                                  color: AppColors.secondary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                l10n.ownerHomeReviewQueueSub,
-                                style: AppTypography.labelMd.copyWith(
-                                  color: AppColors.onSurfaceVariant,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: AppSpacing.lg),
-              // Quick Access Management Cards
-              Row(
-                children: [
-                  Expanded(
-                    child: InkWell(
-                      key: const Key('owner_dashboard_wallet_card'),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const WalletScreen(),
-                          ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      child: ThemedCard(
-                        padding: AppSpacing.md,
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(AppSpacing.sm),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.1),
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.sm),
-                              ),
-                              child: const Icon(
-                                Icons.account_balance_wallet,
-                                color: AppColors.primary,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    l10n.ownerHomeMyWallet,
-                                    style: AppTypography.titleMd.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    l10n.ownerHomeWalletSub,
-                                    style: AppTypography.labelMd.copyWith(
-                                      color: AppColors.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(
-                              Icons.chevron_right,
-                              color: AppColors.onSurfaceVariant,
-                              size: 18,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: InkWell(
-                      key: const Key('owner_dashboard_services_card'),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const ServiceScreen(),
-                          ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      child: ThemedCard(
-                        padding: AppSpacing.md,
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(AppSpacing.sm),
-                              decoration: BoxDecoration(
-                                color:
-                                    AppColors.secondary.withValues(alpha: 0.1),
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.sm),
-                              ),
-                              child: const Icon(
-                                Icons.storefront,
-                                color: AppColors.secondary,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    l10n.ownerHomeServices,
-                                    style: AppTypography.titleMd.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    l10n.ownerHomeServicesSub,
-                                    style: AppTypography.labelMd.copyWith(
-                                      color: AppColors.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(
-                              Icons.chevron_right,
-                              color: AppColors.onSurfaceVariant,
-                              size: 18,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: AppSpacing.lg),
-              FutureBuilder<Map<String, dynamic>>(
-                future: Provider.of<MarketplaceProvider>(context, listen: false)
-                    .fetchRatings(auth.token!),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(AppColors.primary),
-                        ),
-                      ),
-                    );
-                  }
-                  if (snapshot.hasError) {
-                    return const SizedBox.shrink();
-                  }
-                  final data = snapshot.data;
-                  if (data == null) {
-                    return const SizedBox.shrink();
-                  }
-                  final double avg =
-                      (data['average_rating'] as num?)?.toDouble() ?? 0.0;
-                  final int count = (data['count'] as num?)?.toInt() ?? 0;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ThemedSectionHeader(
-                        title: l10n.ownerHomeServiceReputation,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      RatingSummaryCard(averageRating: avg, ratingCount: count),
                       const SizedBox(height: AppSpacing.lg),
-                    ],
-                  );
-                },
-              ),
 
-              const SizedBox(height: AppSpacing.xl),
-              ThemedSectionHeader(title: l10n.ownerHomeOwnerJobs),
-              const SizedBox(height: AppSpacing.sm),
-
-              if (ownerProvider.ownerJobs.isEmpty)
-                ThemedCard(
-                  borderRadius: AppRadius.md,
-                  padding: AppSpacing.lg,
-                  child: ThemedEmptyState(
-                    icon: Icons.assignment_outlined,
-                    title: l10n.ownerHomeNoJobsTitle,
-                    description: l10n.ownerHomeNoJobsDesc,
-                    actionText: "Manage Services",
-                    onActionPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const ServiceScreen())),
-                  ),
-                )
-              else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: ownerProvider.ownerJobs.length,
-                  itemBuilder: (context, index) {
-                    final job = ownerProvider.ownerJobs[index];
-                    final canCancel =
-                        job.status == 'pending' || job.status == 'active';
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                      child: ThemedCard(
+                      // Compact Inline Summary Card replacing dense StatCard grid
+                      ThemedCard(
+                        borderRadius: AppRadius.md,
                         padding: AppSpacing.md,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  l10n.ownerHomeJobId(job.id),
-                                  style: AppTypography.titleMd.copyWith(
-                                    fontWeight: FontWeight.bold,
+                            // Subscription Tier Item
+                            Expanded(
+                              child: InkWell(
+                                key: const Key('owner_dashboard_sub_chip'),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const SubscriptionScreen(),
+                                    ),
+                                  );
+                                },
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: AppSpacing.xs),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.card_membership_outlined,
+                                        color: subColor,
+                                        size: 22,
+                                      ),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      Text(
+                                        subText,
+                                        style: AppTypography.labelLg.copyWith(
+                                          color: subColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        l10n.ownerHomeSubTitle,
+                                        style: AppTypography.labelMd.copyWith(
+                                          color: AppColors.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                StatusBadge(status: job.status),
-                              ],
-                            ),
-                            const SizedBox(height: AppSpacing.xs),
-                            Text(
-                              l10n.ownerHomePaymentInfo(
-                                  job.paymentMethod.toUpperCase(),
-                                  job.lockedEscrowAmount != null
-                                      ? ' (\$${job.lockedEscrowAmount!.toStringAsFixed(2)})'
-                                      : ''),
-                              style: AppTypography.bodyMd.copyWith(
-                                color: AppColors.onSurfaceVariant,
                               ),
                             ),
-                            if (canCancel) ...[
-                              const SizedBox(height: AppSpacing.sm),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: SecondaryButton(
-                                  key: Key('cancel_owner_job_button_${job.id}'),
-                                  text: l10n.ownerHomeCancelJob,
-                                  icon: Icons.cancel_outlined,
-                                  isOutlined: true,
-                                  onPressed: () async {
-                                    await CancelJobDialog.show(
-                                      context,
-                                      jobId: job.id,
-                                      onConfirm: (reason) async {
-                                        await ownerProvider.cancelJob(
-                                          jobId: job.id,
-                                          reason: reason,
-                                          ownerToken: auth.token!,
-                                        );
-                                        if (context.mounted) {
-                                          final isNonCod =
-                                              job.paymentMethod.toLowerCase() !=
-                                                  'cod';
-                                          final msg = isNonCod
-                                              ? l10n
-                                                  .ownerHomeJobCancelledEscrowRefunded
-                                              : l10n.ownerHomeJobCancelled;
-                                          ThemedSnackBar.showSuccess(
-                                              context, msg);
-                                        }
-                                      },
-                                    );
-                                  },
+
+                            Container(
+                              height: 36,
+                              width: 1,
+                              color: AppColors.outlineVariant
+                                  .withValues(alpha: 0.5),
+                            ),
+
+                            // Employee Roster Item
+                            Expanded(
+                              child: InkWell(
+                                key:
+                                    const Key('owner_dashboard_employees_chip'),
+                                onTap: () {
+                                  onTabTapped(1); // Switch to Employees tab
+                                },
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: AppSpacing.xs),
+                                  child: Column(
+                                    children: [
+                                      const Icon(
+                                        Icons.people_outline,
+                                        color: AppColors.primary,
+                                        size: 22,
+                                      ),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      Text(
+                                        l10n.ownerHomeRosterTitle,
+                                        style: AppTypography.labelLg.copyWith(
+                                          color: AppColors.onSurface,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        l10n.ownerHomeEmployeesSub,
+                                        style: AppTypography.labelMd.copyWith(
+                                          color: AppColors.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ],
+                            ),
+
+                            Container(
+                              height: 36,
+                              width: 1,
+                              color: AppColors.outlineVariant
+                                  .withValues(alpha: 0.5),
+                            ),
+
+                            // Escrow Review Item
+                            Expanded(
+                              child: InkWell(
+                                key: const Key('owner_dashboard_escrow_chip'),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const OwnerReconciliationQueueScreen(),
+                                    ),
+                                  );
+                                },
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: AppSpacing.xs),
+                                  child: Column(
+                                    children: [
+                                      const Icon(
+                                        Icons.gavel_outlined,
+                                        color: AppColors.secondary,
+                                        size: 22,
+                                      ),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      Text(
+                                        l10n.ownerHomeEscrowTitle,
+                                        style: AppTypography.labelLg.copyWith(
+                                          color: AppColors.secondary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        l10n.ownerHomeReviewQueueSub,
+                                        style: AppTypography.labelMd.copyWith(
+                                          color: AppColors.onSurfaceVariant,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                    );
-                  },
+
+                      const SizedBox(height: AppSpacing.lg),
+                      // Quick Access Management Cards
+                      Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              key: const Key('owner_dashboard_wallet_card'),
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const WalletScreen(),
+                                  ),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              child: ThemedCard(
+                                padding: AppSpacing.md,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding:
+                                          const EdgeInsets.all(AppSpacing.sm),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary
+                                            .withValues(alpha: 0.1),
+                                        borderRadius:
+                                            BorderRadius.circular(AppRadius.sm),
+                                      ),
+                                      child: const Icon(
+                                        Icons.account_balance_wallet,
+                                        color: AppColors.primary,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            l10n.ownerHomeMyWallet,
+                                            style:
+                                                AppTypography.titleMd.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            l10n.ownerHomeWalletSub,
+                                            style:
+                                                AppTypography.labelMd.copyWith(
+                                              color: AppColors.onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(
+                                      Icons.chevron_right,
+                                      color: AppColors.onSurfaceVariant,
+                                      size: 18,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: InkWell(
+                              key: const Key('owner_dashboard_services_card'),
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const ServiceScreen(),
+                                  ),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              child: ThemedCard(
+                                padding: AppSpacing.md,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding:
+                                          const EdgeInsets.all(AppSpacing.sm),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.secondary
+                                            .withValues(alpha: 0.1),
+                                        borderRadius:
+                                            BorderRadius.circular(AppRadius.sm),
+                                      ),
+                                      child: const Icon(
+                                        Icons.storefront,
+                                        color: AppColors.secondary,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            l10n.ownerHomeServices,
+                                            style:
+                                                AppTypography.titleMd.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            l10n.ownerHomeServicesSub,
+                                            style:
+                                                AppTypography.labelMd.copyWith(
+                                              color: AppColors.onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(
+                                      Icons.chevron_right,
+                                      color: AppColors.onSurfaceVariant,
+                                      size: 18,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: AppSpacing.lg),
+                      FutureBuilder<Map<String, dynamic>>(
+                        future: Provider.of<MarketplaceProvider>(context,
+                                listen: false)
+                            .fetchRatings(auth.token!),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Padding(
+                              padding:
+                                  EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                              child: SkeletonLoader(
+                                height: 70,
+                                borderRadius: AppRadius.md,
+                              ),
+                            );
+                          }
+                          if (snapshot.hasError) {
+                            return const SizedBox.shrink();
+                          }
+                          final data = snapshot.data;
+                          if (data == null) {
+                            return const SizedBox.shrink();
+                          }
+                          final double avg =
+                              (data['average_rating'] as num?)?.toDouble() ??
+                                  0.0;
+                          final int count =
+                              (data['count'] as num?)?.toInt() ?? 0;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ThemedSectionHeader(
+                                title: l10n.ownerHomeServiceReputation,
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              RatingSummaryCard(
+                                  averageRating: avg, ratingCount: count),
+                              const SizedBox(height: AppSpacing.lg),
+                            ],
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: AppSpacing.xl),
+                      ThemedSectionHeader(title: l10n.ownerHomeOwnerJobs),
+                      const SizedBox(height: AppSpacing.sm),
+
+                      if (ownerProvider.ownerJobs.isEmpty)
+                        ThemedCard(
+                          borderRadius: AppRadius.md,
+                          padding: AppSpacing.lg,
+                          child: ThemedEmptyState(
+                            icon: Icons.assignment_outlined,
+                            title: l10n.ownerHomeNoJobsTitle,
+                            description: l10n.ownerHomeNoJobsDesc,
+                            actionText: "Manage Services",
+                            onActionPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const ServiceScreen())),
+                          ),
+                        )
+                      else
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: ownerProvider.ownerJobs.length,
+                          itemBuilder: (context, index) {
+                            final job = ownerProvider.ownerJobs[index];
+                            final canCancel = job.status == 'pending' ||
+                                job.status == 'active';
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.only(bottom: AppSpacing.md),
+                              child: ThemedCard(
+                                padding: AppSpacing.md,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          l10n.ownerHomeJobId(job.id),
+                                          style: AppTypography.titleMd.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        StatusBadge(status: job.status),
+                                      ],
+                                    ),
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Text(
+                                      l10n.ownerHomePaymentInfo(
+                                          job.paymentMethod.toUpperCase(),
+                                          job.lockedEscrowAmount != null
+                                              ? ' (\$${job.lockedEscrowAmount!.toStringAsFixed(2)})'
+                                              : ''),
+                                      style: AppTypography.bodyMd.copyWith(
+                                        color: AppColors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                    if (canCancel) ...[
+                                      const SizedBox(height: AppSpacing.sm),
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: SecondaryButton(
+                                          key: Key(
+                                              'cancel_owner_job_button_${job.id}'),
+                                          text: l10n.ownerHomeCancelJob,
+                                          icon: Icons.cancel_outlined,
+                                          isOutlined: true,
+                                          onPressed: () async {
+                                            await CancelJobDialog.show(
+                                              context,
+                                              jobId: job.id,
+                                              onConfirm: (reason) async {
+                                                await ownerProvider.cancelJob(
+                                                  jobId: job.id,
+                                                  reason: reason,
+                                                  ownerToken: auth.token!,
+                                                );
+                                                if (context.mounted) {
+                                                  final isNonCod = job
+                                                          .paymentMethod
+                                                          .toLowerCase() !=
+                                                      'cod';
+                                                  final msg = isNonCod
+                                                      ? l10n
+                                                          .ownerHomeJobCancelledEscrowRefunded
+                                                      : l10n
+                                                          .ownerHomeJobCancelled;
+                                                  ThemedSnackBar.showSuccess(
+                                                      context, msg);
+                                                }
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                    ],
+                  ),
                 ),
-            ],
-          ),
         ),
       ),
     );

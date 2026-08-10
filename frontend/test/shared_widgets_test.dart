@@ -447,7 +447,8 @@ void main() {
   });
 
   group('Phase 3 State Widgets Tests', () {
-    testWidgets('ThemedEmptyState renders icon, title, description, and primary action button',
+    testWidgets(
+        'ThemedEmptyState renders icon, title, description, and primary action button',
         (tester) async {
       bool actionPressed = false;
 
@@ -474,7 +475,8 @@ void main() {
       expect(actionPressed, isTrue);
     });
 
-    testWidgets('ThemedErrorBanner renders error message and invokes inline onRetry callback',
+    testWidgets(
+        'ThemedErrorBanner renders error message and invokes inline onRetry callback',
         (tester) async {
       bool retryTriggered = false;
 
@@ -497,7 +499,8 @@ void main() {
       expect(retryTriggered, isTrue);
     });
 
-    testWidgets('ThemedSuccessBanner renders title and message with success styling',
+    testWidgets(
+        'ThemedSuccessBanner renders title and message with success styling',
         (tester) async {
       await tester.pumpWidget(
         const MaterialApp(

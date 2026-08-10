@@ -121,6 +121,10 @@
     * **Phase 23 (Roadmap Phase 4): Visual Hierarchy & Card Presentation Overhaul** — **[100% COMPLETE & VERIFIED]**
     *   *(a) Elevation Shadow Standardization*: **[VERIFIED]** Extended `ThemedCard` with explicit `elevation` parameter support. Standardized static/resting cards to `AppElevation.shadowLevel1List` (control panel, empty containers, job details, worker info, audit logs) and interactive/tappable cards to `AppElevation.shadowLevel2List` (marketplace service booking cards, price counter-offer card, worker registration form, worker status form, employee active job cards) across 5 target screens.
     *   *(b) Hierarchy Audit & Verification*: **[VERIFIED]** Re-ran `scratch/audit_hierarchy.py` confirming 0 remaining hierarchy findings. `flutter analyze` (0 issues), `flutter test` (100% pass, 177/177 tests passed).
+    * **Phase 24 (Roadmap Phase 5): Performance Perception & Skeleton Loading States** — **[100% COMPLETE & VERIFIED]**
+    *   *(a) Skeleton Shimmer Primitive & Card Geometry Skeletons*: **[VERIFIED]** Built reusable `SkeletonLoader` primitive in `frontend/lib/widgets/skeleton_loader.dart` with design system tokens (`AppColors`, `AppRadius`, `AppMotion`), and per-screen card geometry loaders (`MarketplaceCardSkeleton`, `HomeDashboardSkeleton`, `EmployeeJobCardSkeleton`, `WalletScreenSkeleton`) matching real card dimensions, padding, avatars, and layout bounds across `customer_marketplace_screen.dart`, `home_screen.dart`, `employee_jobs_screen.dart`, and `wallet_screen.dart`.
+    *   *(b) Animated Cross-Fade Transitions*: **[VERIFIED]** Wired `AnimatedSwitcher` (`AppMotion.durationMedium`, `AppMotion.curveStateChange`) across initial loading states while retaining pull-to-refresh `RefreshIndicator` for subsequent updates.
+    *   *(c) Automated & Verification Gates*: **[VERIFIED]** `flutter analyze` (0 issues), `flutter test` (100% pass, 186/186 tests including 9 unit & state transition widget tests in `frontend/test/skeleton_loader_test.dart`).
 
  ---
 
@@ -211,6 +215,7 @@
     * `rating_summary_card.dart`
    * `primary_button.dart`
    * `secondary_button.dart`
+   * `skeleton_loader.dart`
    * `themed_text_field.dart`
    * `themed_card.dart`
    * `themed_section_header.dart`
