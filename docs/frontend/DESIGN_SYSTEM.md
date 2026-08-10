@@ -74,8 +74,8 @@ This design system provides the visual architecture and component spec for Quick
 | Level Name | Elevation (dp) | BoxShadow Configuration | Usage Rule |
 | :--- | :--- | :--- | :--- |
 | `AppElevation.level0` | `0.0` | `color: transparent, blur: 0` | Flat cards, inline input fields, bordered rows |
-| `AppElevation.level1` | `1.0` | `color: rgba(13,19,33,0.08), blur: 8, offset: (0,2)` | Resting cards (`ThemedCard`), list item tiles |
-| `AppElevation.level2` | `3.0` | `color: rgba(13,19,33,0.12), blur: 16, offset: (0,4)` | Floating action buttons, active menus, dropdowns |
+| `AppElevation.level1` | `1.0` | `color: rgba(13,19,33,0.08), blur: 8, offset: (0,2)` | `shadowLevel1List`: Resting/static content cards (`ThemedCard`), empty containers, read-only detail panels, audit log tiles |
+| `AppElevation.level2` | `3.0` | `color: rgba(13,19,33,0.12), blur: 16, offset: (0,4)` | `shadowLevel2List`: Interactive/tappable cards, service booking cards, price counter-offer cards, form containers, dropdowns |
 | `AppElevation.level3` | `6.0` | `color: rgba(13,19,33,0.16), blur: 24, offset: (0,8)` | Sticky action bars, bottom sheets, snackbars |
 | `AppElevation.level4` | `12.0` | `color: rgba(13,19,33,0.24), blur: 32, offset: (0,16)` | Modal dialogs (`AlertDialog`), full screen overlays |
 

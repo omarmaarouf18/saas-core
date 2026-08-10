@@ -1,0 +1,11 @@
+Total Hierarchy Findings: 0
+
+File: frontend/lib/screens/customer_marketplace_screen.dart
+
+File: frontend/lib/screens/job_status_screen.dart
+
+File: frontend/lib/screens/wallet_screen.dart
+
+File: frontend/lib/screens/employee_screen.dart
+
+File: frontend/lib/screens/employee_jobs_screen.dart

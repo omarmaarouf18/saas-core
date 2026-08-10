@@ -454,6 +454,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     final suggestions = _getSuggestions(l10n);
 
     return ThemedCard(
+      elevation: AppElevation.shadowLevel2List,
       borderRadius: AppRadius.lg,
       padding: AppSpacing.lg,
       child: Form(
@@ -559,6 +560,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     final l10n = AppLocalizations.of(context)!;
     if (jobs.isEmpty) {
       return ThemedCard(
+        elevation: AppElevation.shadowLevel1List,
         borderRadius: AppRadius.lg,
         padding: AppSpacing.xl,
         child: ThemedEmptyState(
@@ -589,6 +591,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: ThemedCard(
+        elevation: AppElevation.shadowLevel2List,
         borderRadius: AppRadius.lg,
         padding: AppSpacing.lg,
         child: Column(

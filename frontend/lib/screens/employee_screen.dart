@@ -147,6 +147,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ThemedCard(
+              elevation: AppElevation.shadowLevel1List,
               borderRadius: AppRadius.md,
               padding: AppSpacing.lg,
               child: Column(
@@ -269,6 +270,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
 
             // 1. Register Employee Form
             ThemedCard(
+              elevation: AppElevation.shadowLevel2List,
               borderRadius: AppRadius.md,
               padding: AppSpacing.lg,
               child: Form(
@@ -404,6 +406,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
 
             // 2. Freeze/Unfreeze Worker Form
             ThemedCard(
+              elevation: AppElevation.shadowLevel2List,
               borderRadius: AppRadius.md,
               padding: AppSpacing.lg,
               child: Form(
@@ -557,6 +560,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
               itemBuilder: (context, index) {
                 if (ownerProvider.auditLogEntries.isEmpty) {
                   return ThemedCard(
+                    elevation: AppElevation.shadowLevel1List,
                     borderRadius: AppRadius.md,
                     padding: AppSpacing.lg,
                     child: ThemedEmptyState(
@@ -587,6 +591,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                 return Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                   child: ThemedCard(
+                    elevation: AppElevation.shadowLevel1List,
                     borderRadius: AppRadius.md,
                     padding: AppSpacing.md,
                     child: Column(

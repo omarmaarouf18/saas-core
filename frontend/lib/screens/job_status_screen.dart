@@ -426,6 +426,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
 
             // Job details info
             ThemedCard(
+              elevation: AppElevation.shadowLevel1List,
               borderRadius: AppRadius.md,
               padding: AppSpacing.lg,
               child: Column(
@@ -605,6 +606,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     final currentUserId = auth.user?.id;
 
     return ThemedCard(
+      elevation: AppElevation.shadowLevel2List,
       borderRadius: AppRadius.md,
       padding: AppSpacing.lg,
       child: Column(

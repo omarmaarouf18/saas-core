@@ -152,6 +152,9 @@ class AppElevation {
     blurRadius: 32,
     spreadRadius: 0,
   );
+
+  static List<BoxShadow> get shadowLevel1List => [shadowLevel1];
+  static List<BoxShadow> get shadowLevel2List => [shadowLevel2];
 }
 
 // Backwards-compatible AppShadows class

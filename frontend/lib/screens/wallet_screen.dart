@@ -156,6 +156,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
                     if (ownerProvider.payoutRequests.isEmpty)
                       ThemedCard(
+                        elevation: AppElevation.shadowLevel1List,
                         borderRadius: AppRadius.md,
                         padding: AppSpacing.lg,
                         child: ThemedEmptyState(
@@ -190,6 +191,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
                     if (ownerProvider.ledgerEntries.isEmpty)
                       ThemedCard(
+                        elevation: AppElevation.shadowLevel1List,
                         borderRadius: AppRadius.md,
                         padding: AppSpacing.lg,
                         child: ThemedEmptyState(

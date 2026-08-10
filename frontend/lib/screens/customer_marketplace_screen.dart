@@ -156,6 +156,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
         Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: ThemedCard(
+            elevation: AppElevation.shadowLevel1List,
             borderRadius: AppRadius.md,
             padding: AppSpacing.md,
             child: Column(
@@ -345,6 +346,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.lg),
                         child: ThemedCard(
+                          elevation: AppElevation.shadowLevel1List,
                           borderRadius: AppRadius.md,
                           padding: AppSpacing.lg,
                           child: ThemedEmptyState(
@@ -371,6 +373,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                           child: ThemedCard(
+                            elevation: AppElevation.shadowLevel2List,
                             borderRadius: AppRadius.md,
                             padding: AppSpacing.md,
                             child: Row(

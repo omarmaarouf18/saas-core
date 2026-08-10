@@ -6,6 +6,7 @@ class ThemedCard extends StatelessWidget {
   final double? borderRadius;
   final double padding;
   final bool hasShadow;
+  final List<BoxShadow>? elevation;
   final Color? color;
   final BorderSide? borderSide;
 
@@ -15,6 +16,7 @@ class ThemedCard extends StatelessWidget {
     this.borderRadius,
     this.padding = AppSpacing.md,
     this.hasShadow = true,
+    this.elevation,
     this.color,
     this.borderSide,
   });
@@ -34,7 +36,7 @@ class ThemedCard extends StatelessWidget {
                 color: AppColors.outlineVariant.withValues(alpha: 0.3),
                 width: 1,
               ),
-        boxShadow: hasShadow ? [AppShadows.level1] : null,
+        boxShadow: elevation ?? (hasShadow ? AppElevation.shadowLevel1List : null),
       ),
       child: child,
     );

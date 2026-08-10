@@ -118,6 +118,9 @@
     * **Phase 22 (Roadmap Phase 3): Empty, Error & Success State Polish** — **[100% COMPLETE & VERIFIED]**
     *   *(a) State Widgets Upgrade*: **[VERIFIED]** Upgraded `ThemedEmptyState` (sized icon `AppIconSize.xl`, `AppTypography.titleMd`, and contextual primary action buttons across all empty screens), `ThemedErrorBanner` (active `onRetry` callbacks wired to re-trigger failed provider calls across all error states), and introduced `ThemedSuccessBanner` / `ThemedSnackBar` helpers (floating toast notifications with `AppColors.success`/`AppColors.error`, icons, and `AppMotion.snackBarDisplay` 2s duration across 13 screens).
     *   *(b) State Audit & Verification*: **[VERIFIED]** Re-ran `scratch/audit_states.py` confirming 0 unhandled state findings. `flutter analyze` (0 issues), `flutter test` (100% pass, 177/177 tests including 4 new widget state test cases in `shared_widgets_test.dart`).
+    * **Phase 23 (Roadmap Phase 4): Visual Hierarchy & Card Presentation Overhaul** — **[100% COMPLETE & VERIFIED]**
+    *   *(a) Elevation Shadow Standardization*: **[VERIFIED]** Extended `ThemedCard` with explicit `elevation` parameter support. Standardized static/resting cards to `AppElevation.shadowLevel1List` (control panel, empty containers, job details, worker info, audit logs) and interactive/tappable cards to `AppElevation.shadowLevel2List` (marketplace service booking cards, price counter-offer card, worker registration form, worker status form, employee active job cards) across 5 target screens.
+    *   *(b) Hierarchy Audit & Verification*: **[VERIFIED]** Re-ran `scratch/audit_hierarchy.py` confirming 0 remaining hierarchy findings. `flutter analyze` (0 issues), `flutter test` (100% pass, 177/177 tests passed).
 
  ---
 

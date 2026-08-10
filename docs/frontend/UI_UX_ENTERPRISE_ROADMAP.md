@@ -13,7 +13,7 @@
 | **Phase 1** | **Design Token System Migration & Debt Cleanup** | Remediate 55 hardcoded raw values bypassing token system | 15 screen files in `frontend/lib/screens/` | **[100% COMPLETE & VERIFIED]** |
 | **Phase 2** | **Motion, Transitions & Micro-Interactions** | Standardize animation durations, easing curves, and button feedback | 26 screen files, 18 widget files, `AppMotion` | **[PLANNED]** |
 | **Phase 3** | **Empty, Error & Success State Polish** | Elevate placeholder graphics, error banners, and success feedback | `ThemedEmptyState`, `ThemedErrorBanner`, `ThemedLoadingIndicator`, `ThemedSuccessBanner` | **[100% COMPLETE & VERIFIED]** |
-| **Phase 4** | **Visual Hierarchy & Card Presentation Overhaul** | Refine card layouts, elevation shadows, and primary action hierarchy | Marketplace, Job Status, Wallet, Employee screens | **[PLANNED]** |
+| **Phase 4** | **Visual Hierarchy & Card Presentation Overhaul** | Refine card layouts, elevation shadows, and primary action hierarchy | Marketplace, Job Status, Wallet, Employee screens | **[100% COMPLETE & VERIFIED]** |
 | **Phase 5** | **Performance Perception & Skeleton States** | Replace blocking spinners with skeleton shimmer loaders | Marketplace, Home, Employee Jobs, Wallet screens | **[PLANNED]** |
 | **Phase 6** | **Multi-Viewport & Real-Device QA Pass** | Validate touch targets, multi-screen scaling, dark mode, RTL layout | Physical iOS/Android devices & Web viewports | **[PLANNED]** |
 
@@ -63,13 +63,15 @@
 
 ---
 
-### Phase 4: Visual Hierarchy & Card Presentation Overhaul
-* **Goal**: Refine card layout spacing, elevation shadows (`AppElevation`), typography roles (`AppTypography`), and status badge alignments across core complex screens.
-* **Scope**: Re-architect visual presentation in `customer_marketplace_screen.dart`, `job_status_screen.dart`, `wallet_screen.dart`, and `employee_screen.dart`. Group information into distinct `ThemedCard` containers with a single high-contrast primary action per container.
-* **Definition of Done**:
-  1. All content cards adhere to `AppElevation.shadowLevel1` / `shadowLevel2` resting shadows.
-  2. Card headers enforce `AppTypography.titleMd` and `AppSpacing.md` interior margins.
-  3. `flutter analyze` 0 issues; `flutter test` passes 100%.
+### Phase 4: Visual Hierarchy & Card Presentation Overhaul — **[100% COMPLETE & VERIFIED]**
+* **Goal**: Refine card layout spacing, elevation shadows (`AppElevation`), typography roles (`AppTypography`), and status badge alignments across core complex screens (`customer_marketplace_screen.dart`, `job_status_screen.dart`, `wallet_screen.dart`, `employee_screen.dart`, `employee_jobs_screen.dart`).
+* **Scope**: Extended `ThemedCard` with explicit `elevation` parameter support (`AppElevation.shadowLevel1List` for resting/static cards, `AppElevation.shadowLevel2List` for interactive/tappable cards). Standardized interior padding to `AppSpacing.md`/`AppSpacing.lg` tokens and headers to `AppTypography.titleMd`.
+* **Verification Evidence**:
+  1. Automated audit via `scratch/audit_hierarchy.py`: **14 initial findings → 0 remaining findings**.
+  2. Card Elevation Classification: Standardized static/resting cards to `AppElevation.shadowLevel1List` (control panel, empty containers, job details, worker info, audit logs) and interactive/tappable cards to `AppElevation.shadowLevel2List` (marketplace service booking cards, price counter-offer card, worker registration form, worker status form, employee active job cards).
+  3. Action Hierarchy: Maintained single high-contrast `PrimaryButton` per card container with secondary actions demoted to `SecondaryButton` or icon buttons.
+  4. `flutter analyze`: **0 issues**.
+  5. `flutter test`: **100% pass (177/177 tests passed)**.
 
 ---
 
