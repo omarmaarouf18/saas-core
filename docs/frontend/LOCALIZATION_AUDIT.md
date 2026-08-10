@@ -54,12 +54,14 @@ Verification command for hardcoded English UI strings:
 grep -rnE "(Text\(|hintText:|labelText:|tooltip:|title:|content:|label:|message:|errorText:|helperText:)[ '\"a-zA-Z0-9]" frontend/lib/screens/ frontend/lib/widgets/ | grep -v "key:" | grep -v "//" | grep -v "l10n"
 ```
 
-> **Audit Correction Note (Comprehensive Property Audit)**:
+> **Audit Correction Note (Comprehensive Property Audit & Static Method Refactoring)**:
 > The initial audit pass used a verification command restricted solely to single-quoted `Text('...')` calls. This narrow search pattern missed hardcoded strings in double-quoted strings (`Text("...")`), string interpolation (`Text('... $var')`), and other common Flutter string-bearing widget properties such as `labelText:`, `hintText:`, `tooltip:`, `title:`, `message:`, `label:`, and `content:`.
 >
-> A second, comprehensive audit pass inspected all string-bearing Flutter properties across all files in `lib/screens` and `lib/widgets`, identifying 87 additional hardcoded UI strings (including `subscription_screen.dart` plan titles, `wallet_screen.dart` balance titles and deposit labels, `status_badge.dart` status labels, `cancel_job_dialog.dart` reason labels, `themed_text_field.dart` password toggle tooltips, and action/navigation tooltips across multiple screens).
+> A follow-up audit pass identified 87 hardcoded UI strings, but missed static helper methods like `StatusBadgeConfig.getConfig(String status)` in `status_badge.dart` which lacked `BuildContext context` parameters to call `AppLocalizations.of(context)`. `status_badge.dart` was refactored so `getConfig(BuildContext context, String status)` takes `context`, `const` constructors returning runtime strings were updated, and all 10 status labels (`statusCompleted`, `statusActive`, `statusAwaitingPrice`, `statusPending`, `statusCancelled`, `statusPendingApproval`, `statusApproved`, `statusRejected`, `statusUnverified`, `statusReconciliationRequired`, `statusUnknown`) were wired via `context.l10n`.
 >
-> All identified string properties were extracted into `app_en.arb` and `app_ar.arb` (with natural Egyptian-market Arabic terminology, e.g. "الباقة الأساسية المجانية" for Free Basic Plan and "الباقة الاحترافية المدفوعة" for Professional Paid Plan) and wired using `AppLocalizations.of(context)!` / `context.l10n`.
+> **Mandatory Verification Protocol**:
+> 1. **Targeted Literal Grep**: After modifying any file claimed as localized, the verification pass MUST run a targeted `grep` searching specifically for the literal strings previously hardcoded in that file, demonstrating 0 matches.
+> 2. **Static/Const Signature Inspection**: Static/const helper functions returning UI config or labels must be explicitly audited to ensure `BuildContext` (or `AppLocalizations`) is passed through and no static fallback strings remain inside.
 
 Result: **Zero hardcoded user-facing strings remain across any checked Flutter widget properties in `lib/screens` and `lib/widgets`.** All static text references `AppLocalizations.of(context)!`.
 

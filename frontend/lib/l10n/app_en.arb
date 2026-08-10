@@ -572,6 +572,7 @@
   "statusRejected": "Rejected",
   "statusUnverified": "Unverified",
   "statusReconciliationRequired": "Reconciliation Required",
+  "statusUnknown": "Unknown",
   "showPassword": "Show password",
   "hidePassword": "Hide password",
   "customerOrdersLoading": "Loading orders...",

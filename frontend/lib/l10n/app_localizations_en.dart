@@ -1232,6 +1232,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusReconciliationRequired => 'Reconciliation Required';
 
   @override
+  String get statusUnknown => 'Unknown';
+
+  @override
   String get showPassword => 'Show password';
 
   @override

@@ -29,7 +29,8 @@ void main() {
           ),
         );
 
-        final config = StatusBadge.getConfig(status);
+        final context = tester.element(find.byType(StatusBadge));
+        final config = StatusBadge.getConfig(context, status);
         expect(find.text(config.label.toUpperCase()), findsOneWidget);
         expect(find.byIcon(config.icon), findsOneWidget);
       }

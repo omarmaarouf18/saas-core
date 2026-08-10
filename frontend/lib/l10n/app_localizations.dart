@@ -2373,6 +2373,12 @@ abstract class AppLocalizations {
   /// **'Reconciliation Required'**
   String get statusReconciliationRequired;
 
+  /// No description provided for @statusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get statusUnknown;
+
   /// No description provided for @showPassword.
   ///
   /// In en, this message translates to:

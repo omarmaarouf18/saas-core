@@ -1218,6 +1218,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get statusReconciliationRequired => 'يتطلب التسوية';
 
   @override
+  String get statusUnknown => 'غير معروف';
+
+  @override
   String get showPassword => 'إظهار كلمة السر';
 
   @override

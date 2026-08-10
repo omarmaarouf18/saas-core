@@ -379,6 +379,7 @@
   "statusRejected": "مرفوض",
   "statusUnverified": "غير موثق",
   "statusReconciliationRequired": "يتطلب التسوية",
+  "statusUnknown": "غير معروف",
   "showPassword": "إظهار كلمة السر",
   "hidePassword": "إخفاء كلمة السر",
   "customerOrdersLoading": "جاري تحميل الطلبات...",
