@@ -212,7 +212,8 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                               label: Text(l10n.changeEmailButton),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.primary,
-                                side: const BorderSide(color: AppColors.primary),
+                                side:
+                                    const BorderSide(color: AppColors.primary),
                               ),
                             ),
                           ),
@@ -464,9 +465,7 @@ class _EmailChangeDialogState extends State<EmailChangeDialog> {
                 children: [
                   Expanded(
                     child: Text(
-                      _step == 1
-                          ? l10n.changeEmailButton
-                          : "Verify New Email",
+                      _step == 1 ? l10n.changeEmailButton : "Verify New Email",
                       style: AppTypography.titleMd.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
