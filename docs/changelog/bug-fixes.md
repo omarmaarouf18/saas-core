@@ -2,6 +2,15 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Atomic Single-Use Email Change OTP Consumption (`GetAndConsumePendingEmailChange`)
+
+- **Implementation Detail**:
+  - **Single-Operation Atomic FindOneAndDelete (`services/auth-service/internal/store/mongodb.go`)**: Replaced non-atomic `FindOne` followed by separate `DeleteOne` in `GetAndConsumePendingEmailChange` with a single atomic `FindOneAndDelete` operation. The prior implementation (introduced in commit `9a94d94...`) claimed single-use atomic deletion but suffered from a TOCTOU race condition where concurrent requests could both execute `FindOne` and validate the same OTP before either `DeleteOne` completed.
+  - **Single-Attempt OTP Security Pattern**: `FindOneAndDelete` atomically fetches and deletes the pending record in one round trip. Expiry and OTP verification are evaluated against the returned record; if the OTP is wrong or expired, the record remains consumed (single-attempt pattern), requiring the user to request a fresh OTP and preventing brute-force code guessing.
+  - **Concurrency Regression Test (`services/auth-service/internal/handlers/email_change_test.go`)**: Added `TestEmailChange_ConcurrentConfirmRace` firing 2 concurrent goroutines submitting the same valid OTP simultaneously. Asserts exactly one request receives `200 OK` while the second receives a clean rejection, and verifies the user email in MongoDB is correctly updated to `new_email`. Tested with `go test -v -race -count=20` to verify zero data races and 100% test stability.
+- **Commit SHA**: ``488723bda77c89b4a4387d8170cbab5c456b53f5``
+- **Verification**: Verified via `go test -v -race -count=20 ./internal/handlers -run TestEmailChange_ConcurrentConfirmRace` (20/20 pass), full `auth-service` test suite (`go test ./...`, 100% pass), `make docs-check`, and `.githooks/pre-push` gate exit code 0. ✅
+
 ## Repository Dead-Code & Scratch Directory Cleanup Pass
 
 - **Implementation Detail**:
