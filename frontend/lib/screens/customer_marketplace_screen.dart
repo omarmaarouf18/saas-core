@@ -23,7 +23,13 @@ import 'notifications_screen.dart';
 
 class CustomerMarketplaceScreen extends StatefulWidget {
   final bool isEmbeddedInTab;
-  const CustomerMarketplaceScreen({super.key, this.isEmbeddedInTab = false});
+  final bool initialNearBy;
+
+  const CustomerMarketplaceScreen({
+    super.key,
+    this.isEmbeddedInTab = false,
+    this.initialNearBy = false,
+  });
 
   @override
   State<CustomerMarketplaceScreen> createState() =>
@@ -38,11 +44,12 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
   String _selectedCategory =
       'all'; // 'all', 'delivery', 'transport', 'shipping'
   String _sortBy = 'price'; // 'price' or 'none'
-  final bool _nearBy = true;
+  bool _nearBy = false;
 
   @override
   void initState() {
     super.initState();
+    _nearBy = widget.initialNearBy;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadServices();
     });
@@ -162,6 +169,31 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Nearby Distance Filter Toggle Row
+                Row(
+                  children: [
+                    Switch(
+                      key: const Key('nearby_filter_switch'),
+                      value: _nearBy,
+                      activeTrackColor: AppColors.primary,
+                      onChanged: (val) {
+                        setState(() {
+                          _nearBy = val;
+                        });
+                        _loadServices();
+                      },
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      l10n.customerMarketplaceFilterNearby,
+                      style: AppTypography.bodyMd.copyWith(
+                        color: AppColors.onSurface,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
                 // Location Picker & Radius row
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,

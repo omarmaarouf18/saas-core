@@ -292,6 +292,8 @@ class OwnerProvider extends ChangeNotifier {
     String? address,
     String? workingHours,
     double? coverageRadiusKm,
+    double? latitude,
+    double? longitude,
   }) async {
     _isLoading = true;
     _error = null;
@@ -314,6 +316,8 @@ class OwnerProvider extends ChangeNotifier {
       if (coverageRadiusKm != null) {
         body['coverage_radius_km'] = coverageRadiusKm;
       }
+      if (latitude != null) body['latitude'] = latitude;
+      if (longitude != null) body['longitude'] = longitude;
 
       final res = await apiClient.put('/users/services', body);
       await fetchServices();

@@ -284,6 +284,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownerConfigPhotoUrlHint => 'https://example.com/logo.png';
 
   @override
+  String get ownerConfigLocationLabel => 'Business Location';
+
+  @override
+  String get ownerConfigLocationReq =>
+      'Please select your business location on the map.';
+
+  @override
+  String get customerMarketplaceFilterNearby => 'Nearby Only';
+
+  @override
   String get ownerConfigSaveButton => 'SAVE CONFIGURATION';
 
   @override

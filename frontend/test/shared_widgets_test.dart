@@ -273,7 +273,8 @@ void main() {
   });
 
   group('PrimaryButton & SecondaryButton Tests', () {
-    testWidgets('PrimaryButton and SecondaryButton use bodyLg (16px) typography scale',
+    testWidgets(
+        'PrimaryButton and SecondaryButton use bodyLg (16px) typography scale',
         (tester) async {
       await tester.pumpWidget(
         MaterialApp(

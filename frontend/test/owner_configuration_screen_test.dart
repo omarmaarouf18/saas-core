@@ -34,7 +34,9 @@ class MockOwnerProviderForConfigTest extends OwnerProvider {
   final String? mockErrorMsg;
   final bool shouldFailUpdate;
   bool updateCalled = false;
+  bool createCalled = false;
   Map<String, dynamic>? lastUpdatePayload;
+  Map<String, dynamic>? lastCreatePayload;
 
   MockOwnerProviderForConfigTest(
     super.apiClient, {
@@ -53,6 +55,32 @@ class MockOwnerProviderForConfigTest extends OwnerProvider {
   Future<void> fetchServices() async {}
 
   @override
+  Future<Map<String, dynamic>> createService({
+    required String name,
+    required String category,
+    required double tenantBasePrice,
+    required double tenantPricePerKM,
+    required double latitude,
+    required double longitude,
+    required String ownerId,
+  }) async {
+    createCalled = true;
+    lastCreatePayload = {
+      'name': name,
+      'category': category,
+      'tenant_base_price': tenantBasePrice,
+      'tenant_price_per_km': tenantPricePerKM,
+      'latitude': latitude,
+      'longitude': longitude,
+      'owner_id': ownerId,
+    };
+    if (shouldFailUpdate) {
+      throw ApiClientException('Failed to create service', statusCode: 400);
+    }
+    return {'status': 'created', 'id': 'new-svc-123'};
+  }
+
+  @override
   Future<Map<String, dynamic>> updateOwnerServiceConfig({
     required String serviceId,
     required String ownerId,
@@ -64,6 +92,8 @@ class MockOwnerProviderForConfigTest extends OwnerProvider {
     String? address,
     String? workingHours,
     double? coverageRadiusKm,
+    double? latitude,
+    double? longitude,
   }) async {
     updateCalled = true;
     lastUpdatePayload = {
@@ -77,6 +107,8 @@ class MockOwnerProviderForConfigTest extends OwnerProvider {
       'address': address,
       'working_hours': workingHours,
       'coverage_radius_km': coverageRadiusKm,
+      'latitude': latitude,
+      'longitude': longitude,
     };
 
     if (shouldFailUpdate) {
@@ -289,5 +321,55 @@ void main() {
 
     expect(pickerInvoked, isTrue);
     expect(find.text('https://example.com/uploaded_logo.png'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Opens LocationPickerMap dialog, confirms location, and submits selected coordinates',
+      (WidgetTester tester) async {
+    final existingService = [
+      {
+        'id': 'svc-777',
+        'tenant_id': 'owner-config-1',
+        'name': 'Existing Business',
+        'category': 'delivery',
+        'coverage_radius_km': 20.0,
+        'tenant_base_price': 10.0,
+        'tenant_price_per_km': 1.0,
+        'latitude': 31.2000,
+        'longitude': 29.9100,
+      }
+    ];
+
+    await tester.pumpWidget(createOwnerConfigApp(services: existingService));
+    await tester.pumpAndSettle();
+
+    // Verify prepopulated coordinates are displayed
+    expect(find.byKey(const Key('owner_config_location_text')), findsOneWidget);
+    expect(find.textContaining('Lat: 31.2000'), findsOneWidget);
+
+    // Open LocationPickerMap dialog
+    final pickerBtn =
+        find.byKey(const Key('owner_config_location_picker_button'));
+    await tester.ensureVisible(pickerBtn);
+    await tester.tap(pickerBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('location_picker_dialog')), findsOneWidget);
+
+    // Confirm location dialog
+    final confirmBtn = find.byKey(const Key('confirm_location_button'));
+    await tester.tap(confirmBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('location_picker_dialog')), findsNothing);
+
+    // Submit form
+    final saveButton = find.byKey(const Key('owner_config_save_button'));
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
+    await tester.pumpAndSettle();
+
+    expect(
+        find.text('Owner configuration updated successfully'), findsOneWidget);
   });
 }

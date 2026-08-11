@@ -1,12 +1,15 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../core/constants.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/location_picker_map.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
@@ -38,6 +41,8 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
   final _photoUrlController = TextEditingController();
 
   String _selectedCategory = 'delivery';
+  double? _latitude;
+  double? _longitude;
   bool _isSubmitting = false;
   String? _errorMessage;
   bool _isInitialized = false;
@@ -104,6 +109,10 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
         _pricePerKmController.text =
             match['tenant_price_per_km']?.toString() ?? '';
         _photoUrlController.text = match['photo_url']?.toString() ?? '';
+        final rawLat = match['latitude'];
+        final rawLon = match['longitude'];
+        _latitude = (rawLat as num?)?.toDouble() ?? 30.0444;
+        _longitude = (rawLon as num?)?.toDouble() ?? 31.2357;
       }
 
       setState(() {
@@ -124,6 +133,83 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
     super.dispose();
   }
 
+  void _openLocationPickerDialog(BuildContext context) {
+    LatLng tempLocation = (_latitude != null && _longitude != null)
+        ? LatLng(_latitude!, _longitude!)
+        : LocationPickerMap.cairoDefault;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        final screenSize = MediaQuery.of(dialogCtx).size;
+        final dialogWidth = math.min(500.0, screenSize.width * 0.9);
+        final dialogHeight = math.min(550.0, screenSize.height * 0.8);
+
+        return Dialog(
+          key: const Key('location_picker_dialog'),
+          insetPadding: const EdgeInsets.all(AppSpacing.md),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          child: SizedBox(
+            width: dialogWidth,
+            height: dialogHeight,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          context.l10n.customerMarketplaceChooseMap,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(dialogCtx).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      child: LocationPickerMap(
+                        initialLocation: tempLocation,
+                        onLocationSelected: (newLocation) {
+                          tempLocation = newLocation;
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  PrimaryButton(
+                    key: const Key('confirm_location_button'),
+                    text: "Confirm Location",
+                    onPressed: () {
+                      setState(() {
+                        _latitude = tempLocation.latitude;
+                        _longitude = tempLocation.longitude;
+                      });
+                      Navigator.of(dialogCtx).pop();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _submitForm() async {
     final l10n = context.l10n;
     setState(() {
@@ -131,6 +217,13 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
     });
 
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_latitude == null || _longitude == null) {
+      setState(() {
+        _errorMessage = l10n.ownerConfigLocationReq;
+      });
       return;
     }
 
@@ -190,6 +283,8 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
           address: _addressController.text.trim(),
           workingHours: _workingHoursController.text.trim(),
           coverageRadiusKm: radius,
+          latitude: _latitude,
+          longitude: _longitude,
         );
       } else {
         await ownerProvider.createService(
@@ -197,8 +292,8 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
           category: _selectedCategory,
           tenantBasePrice: basePrice,
           tenantPricePerKM: pricePerKm,
-          latitude: 30.0444,
-          longitude: 31.2357,
+          latitude: _latitude!,
+          longitude: _longitude!,
           ownerId: user.id,
         );
       }
@@ -319,6 +414,61 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                             labelText: l10n.ownerConfigAddressLabel,
                             hintText: l10n.ownerConfigAddressHint,
                             controller: _addressController,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          Text(
+                            l10n.ownerConfigLocationLabel,
+                            style: AppTypography.labelLg.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          ThemedCard(
+                            hasShadow: false,
+                            borderRadius: AppRadius.md,
+                            padding: AppSpacing.md,
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.location_on_outlined,
+                                  color: AppColors.primary,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: Text(
+                                    (_latitude != null && _longitude != null)
+                                        ? "Lat: ${_latitude!.toStringAsFixed(4)}, Lon: ${_longitude!.toStringAsFixed(4)}"
+                                        : "No location selected",
+                                    key:
+                                        const Key('owner_config_location_text'),
+                                    style: AppTypography.bodyMd.copyWith(
+                                      color: (_latitude != null &&
+                                              _longitude != null)
+                                          ? AppColors.onSurface
+                                          : AppColors.outline,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                OutlinedButton.icon(
+                                  key: const Key(
+                                      'owner_config_location_picker_button'),
+                                  icon:
+                                      const Icon(Icons.map_outlined, size: 18),
+                                  label:
+                                      Text(l10n.customerMarketplaceChooseMap),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.sm,
+                                      vertical: AppSpacing.xs,
+                                    ),
+                                  ),
+                                  onPressed: () =>
+                                      _openLocationPickerDialog(context),
+                                ),
+                              ],
+                            ),
                           ),
                           const SizedBox(height: AppSpacing.md),
                           ThemedTextField(

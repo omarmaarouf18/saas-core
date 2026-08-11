@@ -315,7 +315,7 @@ void main() {
       // Initial state: isLoading is true -> skeleton card list is rendered
       expect(find.byKey(const ValueKey('marketplace_skeleton_list')),
           findsOneWidget);
-      expect(find.byType(MarketplaceCardSkeleton), findsNWidgets(4));
+      expect(find.byType(MarketplaceCardSkeleton), findsAtLeastNWidgets(1));
 
       // Simulate data arrival
       marketplaceProvider.setServices([

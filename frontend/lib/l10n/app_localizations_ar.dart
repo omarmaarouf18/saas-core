@@ -282,6 +282,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownerConfigPhotoUrlHint => 'https://example.com/logo.png';
 
   @override
+  String get ownerConfigLocationLabel => 'موقع النشاط التجاري';
+
+  @override
+  String get ownerConfigLocationReq =>
+      'يرجى تحديد موقع نشاطك التجاري على الخريطة.';
+
+  @override
+  String get customerMarketplaceFilterNearby => 'القريبة فقط';
+
+  @override
   String get ownerConfigSaveButton => 'حفظ الإعدادات';
 
   @override

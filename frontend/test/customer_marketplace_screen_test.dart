@@ -23,6 +23,8 @@ class MockAuthProviderForTest extends AuthProvider {
 }
 
 class MockMarketplaceProviderForTest extends MarketplaceProvider {
+  bool? lastFetchNearBy;
+
   MockMarketplaceProviderForTest(super.apiClient);
 
   @override
@@ -41,14 +43,18 @@ class MockMarketplaceProviderForTest extends MarketplaceProvider {
     double lon = 31.2357,
     double radius = 50.0,
     String sortBy = 'price',
-  }) async {}
+  }) async {
+    lastFetchNearBy = nearBy;
+  }
 }
 
 void main() {
   late ApiClient apiClient;
+  late MockMarketplaceProviderForTest mockMarketplaceProvider;
 
   setUp(() {
     apiClient = ApiClient();
+    mockMarketplaceProvider = MockMarketplaceProviderForTest(apiClient);
   });
 
   Widget buildMarketplaceApp(AuthProvider authProvider) {
@@ -56,8 +62,8 @@ void main() {
       providers: [
         ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-        ChangeNotifierProvider<MarketplaceProvider>(
-          create: (_) => MockMarketplaceProviderForTest(apiClient),
+        ChangeNotifierProvider<MarketplaceProvider>.value(
+          value: mockMarketplaceProvider,
         ),
         ChangeNotifierProvider<NotificationsProvider>(
           create: (_) => NotificationsProvider(apiClient),
@@ -145,5 +151,35 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('location_picker_dialog')), findsNothing);
+  });
+
+  testWidgets(
+      'Defaults to nearBy: false and toggling distance filter switch sets nearBy: true',
+      (WidgetTester tester) async {
+    final customerUser = UserProfile(
+      id: 'cust-1',
+      email: 'customer@example.com',
+      username: 'cust_user',
+      role: 'user',
+    );
+
+    await tester.pumpWidget(buildMarketplaceApp(
+      MockAuthProviderForTest(apiClient, customerUser),
+    ));
+    await tester.pumpAndSettle();
+
+    // 1. Verify fetchServices was called with nearBy = false by default
+    expect(mockMarketplaceProvider.lastFetchNearBy, isFalse);
+
+    // 2. Verify nearby filter switch exists
+    final switchFinder = find.byKey(const Key('nearby_filter_switch'));
+    expect(switchFinder, findsOneWidget);
+
+    // 3. Toggle switch ON
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+
+    // 4. Verify fetchServices was called with nearBy = true
+    expect(mockMarketplaceProvider.lastFetchNearBy, isTrue);
   });
 }

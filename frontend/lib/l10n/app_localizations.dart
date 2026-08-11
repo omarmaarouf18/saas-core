@@ -632,6 +632,24 @@ abstract class AppLocalizations {
   /// **'https://example.com/logo.png'**
   String get ownerConfigPhotoUrlHint;
 
+  /// No description provided for @ownerConfigLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Business Location'**
+  String get ownerConfigLocationLabel;
+
+  /// No description provided for @ownerConfigLocationReq.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select your business location on the map.'**
+  String get ownerConfigLocationReq;
+
+  /// No description provided for @customerMarketplaceFilterNearby.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby Only'**
+  String get customerMarketplaceFilterNearby;
+
   /// No description provided for @ownerConfigSaveButton.
   ///
   /// In en, this message translates to:
