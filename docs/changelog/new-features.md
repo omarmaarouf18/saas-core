@@ -14,7 +14,7 @@ This file tracks historical entries for the primary category: **New Features Cha
     - `AuthProvider` (`frontend/lib/providers/auth_provider.dart`): Added `requestEmailChange(newEmail)` and `confirmEmailChange(otp)` methods with error handling, loading states, and automatic local user/token storage updates upon successful email confirmation.
     - `MyAccountScreen` (`frontend/lib/screens/my_account_screen.dart`): Replaced static read-only email note with an interactive "Change Email" action button triggering a two-step `EmailChangeDialog` (Step 1: enter new email -> call request endpoint; Step 2: enter 6-digit OTP code -> call confirm endpoint with dev_otp auto-fill support in local mode). Updated `myAccountEmailNote` and added localized strings in `app_en.arb` and `app_ar.arb`.
     - `my_account_screen_test.dart`: Added widget tests for the `EmailChangeDialog` flow (validation, request, OTP entry, success snackbar, and dialog dismissal).
-- **Commit SHA**: `217be08c0407a560bca20a89d556d2ab35442a35`
+- **Commit SHA**: ``217be08c0407a560bca20a89d556d2ab35442a35``
 - **Verification**: Verified via Go unit test suite (`go test ./...` in `auth-service`, 100% pass), `flutter analyze` (0 issues found), `flutter test` (100% pass, 194/194 tests passed), `make docs-check`, and `.githooks/pre-push` gate exit code 0. ✅
 
 ## Owner Home Screen Settings Navigation Duplication Removal
