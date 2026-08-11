@@ -508,17 +508,16 @@ func (s *MongoDB) GetPendingEmailChange(ctx context.Context, userID string) *mod
 }
 
 // GetAndConsumePendingEmailChange validates the submitted OTP against the pending email change record.
-// On success, it atomically deletes the pending email change from MongoDB to prevent replay attacks,
-// and returns the pending email change payload.
+// It uses an atomic FindOneAndDelete operation to retrieve and remove the record in a single
+// round trip, guaranteeing single-use consumption and preventing concurrent replay races.
 func (s *MongoDB) GetAndConsumePendingEmailChange(ctx context.Context, userID, otp string) (*models.PendingEmailChange, error) {
 	var pending models.PendingEmailChange
-	err := s.pendingEmailChanges.FindOne(ctx, bson.M{"user_id": userID}).Decode(&pending)
+	err := s.pendingEmailChanges.FindOneAndDelete(ctx, bson.M{"user_id": userID}).Decode(&pending)
 	if err != nil {
 		return nil, fmt.Errorf("pending email change for user %q not found", userID)
 	}
 
 	if !pending.OTPExpiresAt.IsZero() && pending.OTPExpiresAt.Before(time.Now()) {
-		_, _ = s.pendingEmailChanges.DeleteOne(ctx, bson.M{"user_id": userID})
 		return nil, fmt.Errorf("OTP has expired")
 	}
 
@@ -528,11 +527,6 @@ func (s *MongoDB) GetAndConsumePendingEmailChange(ctx context.Context, userID, o
 	}
 	if subtle.ConstantTimeCompare([]byte(decrypted), []byte(otp)) != 1 {
 		return nil, fmt.Errorf("invalid OTP")
-	}
-
-	_, err = s.pendingEmailChanges.DeleteOne(ctx, bson.M{"user_id": userID})
-	if err != nil {
-		log.Printf("[AUTH-STORE] Failed to delete consumed pending email change for user %s: %v", userID, err)
 	}
 
 	return &pending, nil

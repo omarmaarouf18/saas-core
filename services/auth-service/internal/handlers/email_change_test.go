@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -142,7 +143,7 @@ func TestEmailChange_FullLifecycleAndSecurity(t *testing.T) {
 		t.Fatalf("expected dev_otp in local response, got %v", reqResp)
 	}
 
-	// 5. Confirm with wrong OTP should fail (401)
+	// 5. Confirm with wrong OTP should fail (401) and consume the single-use record
 	confirmWrongBody, _ := json.Marshal(models.EmailChangeConfirmRequest{OTP: "000000"})
 	reqWrong := httptest.NewRequest(http.MethodPost, "/auth/email-change/confirm", bytes.NewReader(confirmWrongBody))
 	reqWrong.Header.Set("Content-Type", "application/json")
@@ -153,8 +154,23 @@ func TestEmailChange_FullLifecycleAndSecurity(t *testing.T) {
 		t.Errorf("expected 401 for wrong OTP, got %d", recWrong.Code)
 	}
 
+	// Request fresh OTP after single-use consumption
+	reqFresh := httptest.NewRequest(http.MethodPost, "/auth/email-change/request", bytes.NewReader(reqBody))
+	reqFresh.Header.Set("Content-Type", "application/json")
+	reqFresh.Header.Set("Authorization", "Bearer "+tokenA)
+	recFresh := httptest.NewRecorder()
+	a.RequestEmailChange(recFresh, reqFresh)
+
+	if recFresh.Code != http.StatusOK {
+		t.Fatalf("expected 200 for fresh email change request, got %d: %s", recFresh.Code, recFresh.Body.String())
+	}
+
+	var freshResp map[string]any
+	json.Unmarshal(recFresh.Body.Bytes(), &freshResp)
+	freshOTP := freshResp["dev_otp"].(string)
+
 	// 6. Confirm with valid OTP (Happy Path Confirm)
-	confirmValidBody, _ := json.Marshal(models.EmailChangeConfirmRequest{OTP: devOTP})
+	confirmValidBody, _ := json.Marshal(models.EmailChangeConfirmRequest{OTP: freshOTP})
 	reqConfirm := httptest.NewRequest(http.MethodPost, "/auth/email-change/confirm", bytes.NewReader(confirmValidBody))
 	reqConfirm.Header.Set("Content-Type", "application/json")
 	reqConfirm.Header.Set("Authorization", "Bearer "+tokenA)
@@ -275,5 +291,118 @@ func TestEmailChange_ExpiredOTP(t *testing.T) {
 
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("expected 401 for expired OTP, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestEmailChange_ConcurrentConfirmRace(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cipher, err := otpcrypto.NewCipher("", "local")
+	if err != nil {
+		t.Fatalf("failed to create cipher: %v", err)
+	}
+
+	dbName := fmt.Sprintf("saas_platform_email_change_race_test_%d", time.Now().UnixNano())
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName, cipher)
+	if err != nil {
+		t.Skipf("Skipping auth-service integration test: MongoDB not available (%v)", err)
+		return
+	}
+	defer func() {
+		_ = s.DropDatabase(context.Background())
+		s.Close(context.Background())
+	}()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	cfg := &config.Config{AppEnv: "local", GatewaySecret: "test-gateway-secret", InternalServiceToken: "test-internal-token-123"}
+	mockStorage, _ := storage.NewLocalStorage(t.TempDir(), "/api/v1", os.Getenv("JWT_SECRET"))
+	a := NewAuth(s, &mockOTPDispatcher{}, cfg, rdb, mockStorage)
+
+	user := &models.User{
+		ID:        "user_race_123",
+		Email:     "user_race@example.com",
+		Username:  "user_race",
+		Role:      models.RoleUser,
+		IsActive:  true,
+		CreatedAt: time.Now().UTC(),
+	}
+	if err := s.CreateUser(ctx, user); err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	token, _ := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email)
+
+	// Step 1: Request email change to obtain dev_otp
+	newEmail := "user_race_new@example.com"
+	reqBody, _ := json.Marshal(models.EmailChangeRequest{NewEmail: newEmail})
+	req := httptest.NewRequest(http.MethodPost, "/auth/email-change/request", bytes.NewReader(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec := httptest.NewRecorder()
+	a.RequestEmailChange(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 for email change request, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var reqResp map[string]any
+	json.Unmarshal(rec.Body.Bytes(), &reqResp)
+	otp := reqResp["dev_otp"].(string)
+
+	// Step 2: Fire two concurrent confirm requests with the exact same valid OTP
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	codes := make([]int, 2)
+
+	for i := 0; i < 2; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			confirmBody, _ := json.Marshal(models.EmailChangeConfirmRequest{OTP: otp})
+			reqConfirm := httptest.NewRequest(http.MethodPost, "/auth/email-change/confirm", bytes.NewReader(confirmBody))
+			reqConfirm.Header.Set("Content-Type", "application/json")
+			reqConfirm.Header.Set("Authorization", "Bearer "+token)
+			reqConfirm.RemoteAddr = fmt.Sprintf("192.168.1.%d:12345", idx+1)
+			recConfirm := httptest.NewRecorder()
+
+			<-start
+			a.ConfirmEmailChange(recConfirm, reqConfirm)
+			codes[idx] = recConfirm.Code
+		}(i)
+	}
+
+	close(start)
+	wg.Wait()
+
+	// Assert exactly one request succeeded (200 OK) and the other failed (401 Unauthorized / not found)
+	successCount := 0
+	for _, code := range codes {
+		if code == http.StatusOK {
+			successCount++
+		}
+	}
+
+	if successCount != 1 {
+		t.Errorf("expected exactly 1 successful confirm request, got %d (codes: %v)", successCount, codes)
+	}
+
+	// Verify database updated to new email
+	dbUser := s.GetByID(ctx, user.ID)
+	if dbUser.Email != newEmail {
+		t.Errorf("expected user email to be %s, got %s", newEmail, dbUser.Email)
 	}
 }
