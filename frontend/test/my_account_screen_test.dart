@@ -23,6 +23,31 @@ class MockAuthProviderForMyAccount extends AuthProvider {
     this.updateErrorCode = 400,
   });
 
+  bool emailChangeRequested = false;
+  bool emailChangeConfirmed = false;
+  String? requestedNewEmail;
+  String? confirmedOtp;
+
+  @override
+  Future<String?> requestEmailChange(String newEmail) async {
+    emailChangeRequested = true;
+    requestedNewEmail = newEmail;
+    if (shouldFailUpdate) {
+      throw ApiClientException('Email conflict', statusCode: 409);
+    }
+    return '123456';
+  }
+
+  @override
+  Future<bool> confirmEmailChange(String otp) async {
+    emailChangeConfirmed = true;
+    confirmedOtp = otp;
+    if (shouldFailUpdate) {
+      throw ApiClientException('Invalid OTP', statusCode: 401);
+    }
+    return true;
+  }
+
   @override
   UserProfile? get user =>
       mockUser ??
@@ -193,5 +218,60 @@ void main() {
 
     expect(find.byKey(const Key('my_account_error_banner')), findsOneWidget);
     expect(find.text(ErrorMessages.forbidden), findsOneWidget);
+  });
+
+  testWidgets(
+      'Opens EmailChangeDialog and validates invalid email address input',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createMyAccountApp());
+    await tester.pumpAndSettle();
+
+    final changeEmailButton = find.byKey(const Key('change_email_button'));
+    expect(changeEmailButton, findsOneWidget);
+    await tester.tap(changeEmailButton);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('new_email_input')), findsOneWidget);
+    expect(find.byKey(const Key('send_email_code_button')), findsOneWidget);
+
+    await tester.enterText(
+        find.byKey(const Key('new_email_input')), 'invalidemail');
+    await tester.tap(find.byKey(const Key('send_email_code_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Please enter a valid email address'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Opens EmailChangeDialog, sends OTP code to valid email, and confirms email change',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createMyAccountApp());
+    await tester.pumpAndSettle();
+
+    final changeEmailButton = find.byKey(const Key('change_email_button'));
+    expect(changeEmailButton, findsOneWidget);
+    await tester.tap(changeEmailButton);
+    await tester.pumpAndSettle();
+
+    // 1. Enter valid new email and submit request
+    await tester.enterText(
+        find.byKey(const Key('new_email_input')), 'new_email@example.com');
+    await tester.tap(find.byKey(const Key('send_email_code_button')));
+    await tester.pumpAndSettle();
+
+    // 2. Verify transition to Step 2 (Confirm OTP)
+    expect(find.byKey(const Key('email_change_otp_input')), findsOneWidget);
+    expect(
+        find.byKey(const Key('confirm_email_change_button')), findsOneWidget);
+
+    // 3. Confirm OTP and submit
+    await tester.enterText(
+        find.byKey(const Key('email_change_otp_input')), '123456');
+    await tester.tap(find.byKey(const Key('confirm_email_change_button')));
+    await tester.pumpAndSettle();
+
+    // 4. Verify success toast and dialog closed
+    expect(find.text('Email address updated successfully'), findsOneWidget);
+    expect(find.byKey(const Key('new_email_input')), findsNothing);
   });
 }

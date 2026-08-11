@@ -365,8 +365,56 @@ abstract class AppLocalizations {
   /// No description provided for @myAccountEmailNote.
   ///
   /// In en, this message translates to:
-  /// **'Email address cannot be changed.'**
+  /// **'Your email address can be updated via OTP verification.'**
   String get myAccountEmailNote;
+
+  /// No description provided for @changeEmailButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Email'**
+  String get changeEmailButton;
+
+  /// No description provided for @enterNewEmailPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your new email address. A verification code will be sent to it.'**
+  String get enterNewEmailPrompt;
+
+  /// No description provided for @newEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New Email Address'**
+  String get newEmailLabel;
+
+  /// No description provided for @sendVerificationCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Code'**
+  String get sendVerificationCode;
+
+  /// No description provided for @confirmEmailChangeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify & Update Email'**
+  String get confirmEmailChangeButton;
+
+  /// No description provided for @emailChangeSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address updated successfully'**
+  String get emailChangeSuccess;
+
+  /// No description provided for @invalidEmailError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email address'**
+  String get invalidEmailError;
+
+  /// No description provided for @enterOtpPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit verification code sent to your new email.'**
+  String get enterOtpPrompt;
 
   /// No description provided for @myAccountUsernameLabel.
   ///

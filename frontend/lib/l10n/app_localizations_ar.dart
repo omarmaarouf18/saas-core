@@ -141,7 +141,34 @@ class AppLocalizationsAr extends AppLocalizations {
   String get myAccountEmailHint => 'الإيميل بتاعك';
 
   @override
-  String get myAccountEmailNote => 'مبتعرفش تغير الإيميل بعد التسجيل.';
+  String get myAccountEmailNote =>
+      'يمكنك تحديث بريدك الإلكتروني عبر رمز التحقق.';
+
+  @override
+  String get changeEmailButton => 'تغيير البريد الإلكتروني';
+
+  @override
+  String get enterNewEmailPrompt =>
+      'أدخل بريدك الإلكتروني الجديد. سنرسل رمز التحقق إليه.';
+
+  @override
+  String get newEmailLabel => 'البريد الإلكتروني الجديد';
+
+  @override
+  String get sendVerificationCode => 'إرسال الرمز';
+
+  @override
+  String get confirmEmailChangeButton => 'التحقق وتحديث البريد الإلكتروني';
+
+  @override
+  String get emailChangeSuccess => 'تم تحديث البريد الإلكتروني بنجاح';
+
+  @override
+  String get invalidEmailError => 'يرجى إدخال بريد إلكتروني صحيح';
+
+  @override
+  String get enterOtpPrompt =>
+      'أدخل رمز التحقق المكون من 6 أرقام المرسل إلى بريدك الجديد.';
 
   @override
   String get myAccountUsernameLabel => 'اسم المستخدم';

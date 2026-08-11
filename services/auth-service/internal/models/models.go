@@ -118,6 +118,26 @@ type ResetPasswordRequest struct {
 	NewPassword string `json:"new_password"`
 }
 
+// EmailChangeRequest is the expected JSON body for POST /auth/email-change/request.
+type EmailChangeRequest struct {
+	NewEmail string `json:"new_email"`
+}
+
+// EmailChangeConfirmRequest is the expected JSON body for POST /auth/email-change/confirm.
+type EmailChangeConfirmRequest struct {
+	OTP string `json:"otp"`
+}
+
+// PendingEmailChange represents a pending email change attempt waiting for OTP verification.
+type PendingEmailChange struct {
+	UserID       string    `json:"user_id"        bson:"user_id"`
+	OldEmail     string    `json:"old_email"      bson:"old_email"`
+	NewEmail     string    `json:"new_email"      bson:"new_email"`
+	OTPCode      string    `json:"-"              bson:"otp_code"` // AES-256-GCM encrypted
+	OTPExpiresAt time.Time `json:"-"              bson:"otp_expires_at"`
+	CreatedAt    time.Time `json:"created_at"     bson:"created_at"`
+}
+
 // LoginResponse is returned on successful credential validation.
 type LoginResponse struct {
 	Message     string `json:"message"`

@@ -143,7 +143,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myAccountEmailHint => 'Your email address';
 
   @override
-  String get myAccountEmailNote => 'Email address cannot be changed.';
+  String get myAccountEmailNote =>
+      'Your email address can be updated via OTP verification.';
+
+  @override
+  String get changeEmailButton => 'Change Email';
+
+  @override
+  String get enterNewEmailPrompt =>
+      'Enter your new email address. A verification code will be sent to it.';
+
+  @override
+  String get newEmailLabel => 'New Email Address';
+
+  @override
+  String get sendVerificationCode => 'Send Code';
+
+  @override
+  String get confirmEmailChangeButton => 'Verify & Update Email';
+
+  @override
+  String get emailChangeSuccess => 'Email address updated successfully';
+
+  @override
+  String get invalidEmailError => 'Please enter a valid email address';
+
+  @override
+  String get enterOtpPrompt =>
+      'Enter the 6-digit verification code sent to your new email.';
 
   @override
   String get myAccountUsernameLabel => 'Username';

@@ -335,6 +335,61 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Initiates an email change by sending a 6-digit OTP code to the new email address.
+  Future<String?> requestEmailChange(String newEmail) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post('/auth/email-change/request', {
+        'new_email': newEmail,
+      });
+      return res['dev_otp'] as String?;
+    } catch (e) {
+      debugPrint('Request email change error: $e');
+      _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Confirms the email change using the 6-digit OTP code.
+  Future<bool> confirmEmailChange(String otp) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post('/auth/email-change/confirm', {
+        'otp': otp,
+      });
+
+      if (res['token'] != null && res['user'] != null) {
+        final newToken = res['token'] as String;
+        final updatedUser = UserProfile.fromJson(res['user']);
+        await _handleAuthSuccess(
+          newToken,
+          updatedUser.id,
+          updatedUser.email,
+          updatedUser.username,
+          updatedUser.role,
+          updatedUser.kycStatus,
+        );
+      }
+      return true;
+    } catch (e) {
+      debugPrint('Confirm email change error: $e');
+      _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> _handleAuthSuccess(String token, String id, String email,
       String username, String role, String? kycStatus) async {
     _token = token;

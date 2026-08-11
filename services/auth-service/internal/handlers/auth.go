@@ -118,6 +118,8 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/kyb-kye/review", a.ReviewKYBKYESubmissions)
 	mux.HandleFunc("/auth/documents/view", a.ViewDocument)
 	mux.HandleFunc("/auth/device-token", a.DeviceToken)
+	mux.HandleFunc("/auth/email-change/request", a.RequestEmailChange)
+	mux.HandleFunc("/auth/email-change/confirm", a.ConfirmEmailChange)
 	mux.HandleFunc("/auth/logout", a.Logout)
 }
 
@@ -2333,5 +2335,241 @@ func (a *Auth) DeviceToken(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, map[string]string{
 		"message": "device token registered successfully",
+	})
+}
+
+// ---------------------------------------------------------------------------
+// POST /auth/email-change/request
+// ---------------------------------------------------------------------------
+
+// RequestEmailChange accepts a new email address, validates its format and availability,
+// and sends an OTP verification code to the new email address.
+func (a *Auth) RequestEmailChange(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "method not allowed, use POST",
+		})
+		return
+	}
+
+	claims, err := a.authenticateUser(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "unauthorized: " + err.Error(),
+		})
+		return
+	}
+
+	ctx := r.Context()
+	user := a.store.GetByID(ctx, claims.UserID)
+	if user == nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "user not found",
+		})
+		return
+	}
+
+	var req models.EmailChangeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid JSON body: " + err.Error(),
+		})
+		return
+	}
+
+	newEmail := strings.ToLower(strings.TrimSpace(req.NewEmail))
+	if newEmail == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "new_email is required",
+		})
+		return
+	}
+
+	if !strings.Contains(newEmail, "@") || !strings.Contains(newEmail, ".") {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid email format",
+		})
+		return
+	}
+
+	if strings.EqualFold(user.Email, newEmail) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "new_email must be different from current email",
+		})
+		return
+	}
+
+	// Check if new_email is already registered to another account
+	existing := a.store.GetByEmail(ctx, newEmail)
+	if existing != nil && existing.ID != user.ID {
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error": "email is already registered to another account",
+		})
+		return
+	}
+
+	clientIP := a.getClientIP(r)
+
+	// Rate limiting checks
+	if locked, remaining := a.limiter.IsLocked(clientIP); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many attempts from this IP. Please try again in %.0f seconds.", remaining.Seconds()),
+		})
+		return
+	}
+
+	if locked, remaining := a.limiter.IsLocked(user.ID); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many attempts for this user. Please try again in %.0f seconds.", remaining.Seconds()),
+		})
+		return
+	}
+
+	otpCode := generate6DigitOTP()
+
+	pending := &models.PendingEmailChange{
+		UserID:   user.ID,
+		OldEmail: user.Email,
+		NewEmail: newEmail,
+	}
+
+	if err := a.store.SetPendingEmailChange(ctx, user.ID, pending, otpCode); err != nil {
+		log.Printf("[AUTH] Failed to store pending email change for %s: %v", user.ID, err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to initiate email change request",
+		})
+		return
+	}
+
+	if err := a.dispatcher.Dispatch(newEmail, otpCode); err != nil {
+		log.Printf("[AUTH] Email change OTP dispatch error for %s via %s: %v", newEmail, a.dispatcher.Name(), err)
+	}
+
+	resp := map[string]any{
+		"status":  "success",
+		"message": "Verification OTP sent to new email address.",
+	}
+
+	if a.isLocal {
+		log.Printf("[AUTH] Email change OTP generated: new_email=%s code=%s dispatcher=%s",
+			newEmail, otpCode, a.dispatcher.Name())
+		resp["dev_otp"] = otpCode
+	} else {
+		log.Printf("[AUTH] Email change OTP generated: new_email=%s dispatcher=%s",
+			newEmail, a.dispatcher.Name())
+	}
+
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// ---------------------------------------------------------------------------
+// POST /auth/email-change/confirm
+// ---------------------------------------------------------------------------
+
+// ConfirmEmailChange verifies the OTP sent to the new email address, updates the user's
+// email address in MongoDB, deletes the pending change record, and returns an updated user
+// object and fresh JWT token.
+func (a *Auth) ConfirmEmailChange(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "method not allowed, use POST",
+		})
+		return
+	}
+
+	claims, err := a.authenticateUser(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "unauthorized: " + err.Error(),
+		})
+		return
+	}
+
+	ctx := r.Context()
+	user := a.store.GetByID(ctx, claims.UserID)
+	if user == nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "user not found",
+		})
+		return
+	}
+
+	var req models.EmailChangeConfirmRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid JSON body: " + err.Error(),
+		})
+		return
+	}
+
+	if strings.TrimSpace(req.OTP) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "otp is required",
+		})
+		return
+	}
+
+	clientIP := a.getClientIP(r)
+
+	// Rate limiting checks
+	if locked, remaining := a.limiter.IsLocked(clientIP); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many attempts from this IP. Please try again in %.0f seconds.", remaining.Seconds()),
+		})
+		return
+	}
+
+	if locked, remaining := a.limiter.IsLocked(user.ID); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many attempts for this user. Please try again in %.0f seconds.", remaining.Seconds()),
+		})
+		return
+	}
+
+	pending, err := a.store.GetAndConsumePendingEmailChange(ctx, user.ID, req.OTP)
+	if err != nil {
+		a.limiter.RecordFailure(clientIP)
+		a.limiter.RecordFailure(user.ID)
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "invalid or expired OTP code",
+		})
+		return
+	}
+
+	// Re-verify that new_email has not been registered in the interim
+	existing := a.store.GetByEmail(ctx, pending.NewEmail)
+	if existing != nil && existing.ID != user.ID {
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error": "email is already registered to another account",
+		})
+		return
+	}
+
+	a.limiter.Reset(clientIP)
+	a.limiter.Reset(user.ID)
+
+	if err := a.store.UpdateEmail(ctx, user.ID, pending.NewEmail); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to update email address: " + err.Error(),
+		})
+		return
+	}
+
+	updatedUser := a.store.GetByID(ctx, user.ID)
+	token, err := jwtutil.GenerateToken(updatedUser.ID, string(updatedUser.Role), updatedUser.TenantID, updatedUser.Email)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to generate updated token: " + err.Error(),
+		})
+		return
+	}
+
+	log.Printf("[AUTH] Email successfully changed for user_id=%s from=%s to=%s", user.ID, pending.OldEmail, pending.NewEmail)
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":  "success",
+		"message": "Email updated successfully",
+		"token":   token,
+		"user":    updatedUser,
 	})
 }

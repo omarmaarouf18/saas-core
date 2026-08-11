@@ -21,13 +21,14 @@ import (
 // MongoDB is a persistent store backed by MongoDB for user registration states
 // and the employee action audit log.
 type MongoDB struct {
-	client         *mongo.Client
-	db             *mongo.Database
-	users          *mongo.Collection
-	auditLog       *mongo.Collection
-	reviewers      *mongo.Collection
-	pendingSignups *mongo.Collection
-	cipher         *otpcrypto.Cipher // AES-256-GCM for OTP encryption at rest
+	client              *mongo.Client
+	db                  *mongo.Database
+	users               *mongo.Collection
+	auditLog            *mongo.Collection
+	reviewers           *mongo.Collection
+	pendingSignups      *mongo.Collection
+	pendingEmailChanges *mongo.Collection
+	cipher              *otpcrypto.Cipher // AES-256-GCM for OTP encryption at rest
 }
 
 // NewMongoDB connects to the given MongoDB URI, creates the database and
@@ -48,13 +49,14 @@ func NewMongoDB(ctx context.Context, uri, dbName string, otpCipher *otpcrypto.Ci
 
 	db := client.Database(dbName)
 	s := &MongoDB{
-		client:         client,
-		db:             db,
-		users:          db.Collection("users"),
-		auditLog:       db.Collection("audit_log"),
-		reviewers:      db.Collection("reviewers"),
-		pendingSignups: db.Collection("pending_signups"),
-		cipher:         otpCipher,
+		client:              client,
+		db:                  db,
+		users:               db.Collection("users"),
+		auditLog:            db.Collection("audit_log"),
+		reviewers:           db.Collection("reviewers"),
+		pendingSignups:      db.Collection("pending_signups"),
+		pendingEmailChanges: db.Collection("pending_email_changes"),
+		cipher:              otpCipher,
 	}
 
 	if err := s.ensureIndexes(ctx); err != nil {
@@ -135,6 +137,15 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 	})
 	if err != nil {
 		return fmt.Errorf("users email index: %w", err)
+	}
+
+	// Pending email changes: unique user_id index.
+	_, err = s.pendingEmailChanges.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: "user_id", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	})
+	if err != nil {
+		return fmt.Errorf("pending email changes user_id index: %w", err)
 	}
 
 	// Check for case-insensitive duplicate usernames before creating unique index
@@ -456,6 +467,89 @@ func (s *MongoDB) GetAndConsumePendingSignup(ctx context.Context, email, otp str
 	return &pending, nil
 }
 
+// ---------------------------------------------------------------------------
+// Pending Email Change Operations
+// ---------------------------------------------------------------------------
+
+// SetPendingEmailChange encrypts the OTP code via AES-256-GCM and stores the pending email change
+// payload in MongoDB under the pending_email_changes collection. If a pending request already
+// exists for this userID, it is overwritten.
+func (s *MongoDB) SetPendingEmailChange(ctx context.Context, userID string, pending *models.PendingEmailChange, otp string) error {
+	encrypted, err := s.cipher.Encrypt(otp)
+	if err != nil {
+		return fmt.Errorf("store: OTP encryption failed: %w", err)
+	}
+
+	pending.UserID = userID
+	pending.OTPCode = encrypted
+	if pending.OTPExpiresAt.IsZero() {
+		pending.OTPExpiresAt = time.Now().Add(5 * time.Minute)
+	}
+	if pending.CreatedAt.IsZero() {
+		pending.CreatedAt = time.Now().UTC()
+	}
+
+	opts := options.Replace().SetUpsert(true)
+	_, err = s.pendingEmailChanges.ReplaceOne(ctx, bson.M{"user_id": userID}, pending, opts)
+	if err != nil {
+		return fmt.Errorf("store: set pending email change: %w", err)
+	}
+	return nil
+}
+
+// GetPendingEmailChange retrieves an unverified pending email change payload by userID. Returns nil if not found.
+func (s *MongoDB) GetPendingEmailChange(ctx context.Context, userID string) *models.PendingEmailChange {
+	var pending models.PendingEmailChange
+	err := s.pendingEmailChanges.FindOne(ctx, bson.M{"user_id": userID}).Decode(&pending)
+	if err != nil {
+		return nil
+	}
+	return &pending
+}
+
+// GetAndConsumePendingEmailChange validates the submitted OTP against the pending email change record.
+// On success, it atomically deletes the pending email change from MongoDB to prevent replay attacks,
+// and returns the pending email change payload.
+func (s *MongoDB) GetAndConsumePendingEmailChange(ctx context.Context, userID, otp string) (*models.PendingEmailChange, error) {
+	var pending models.PendingEmailChange
+	err := s.pendingEmailChanges.FindOne(ctx, bson.M{"user_id": userID}).Decode(&pending)
+	if err != nil {
+		return nil, fmt.Errorf("pending email change for user %q not found", userID)
+	}
+
+	if !pending.OTPExpiresAt.IsZero() && pending.OTPExpiresAt.Before(time.Now()) {
+		_, _ = s.pendingEmailChanges.DeleteOne(ctx, bson.M{"user_id": userID})
+		return nil, fmt.Errorf("OTP has expired")
+	}
+
+	decrypted, err := s.cipher.Decrypt(pending.OTPCode)
+	if err != nil {
+		return nil, fmt.Errorf("store: OTP decryption failed: %w", err)
+	}
+	if subtle.ConstantTimeCompare([]byte(decrypted), []byte(otp)) != 1 {
+		return nil, fmt.Errorf("invalid OTP")
+	}
+
+	_, err = s.pendingEmailChanges.DeleteOne(ctx, bson.M{"user_id": userID})
+	if err != nil {
+		log.Printf("[AUTH-STORE] Failed to delete consumed pending email change for user %s: %v", userID, err)
+	}
+
+	return &pending, nil
+}
+
+// UpdateEmail updates a user's email address in MongoDB.
+func (s *MongoDB) UpdateEmail(ctx context.Context, userID, newEmail string) error {
+	res, err := s.users.UpdateOne(ctx, bson.M{"_id": userID}, bson.M{"$set": bson.M{"email": newEmail}})
+	if err != nil {
+		return fmt.Errorf("store: update email: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("user %q not found", userID)
+	}
+	return nil
+}
+
 // StartOTPCleanup periodically sweeps MongoDB and invalidates expired OTPs and pending signups.
 func (s *MongoDB) StartOTPCleanup(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
@@ -478,6 +572,13 @@ func (s *MongoDB) StartOTPCleanup(ctx context.Context, interval time.Duration) {
 			})
 			if err != nil {
 				log.Printf("[AUTH-STORE] Failed to sweep expired pending signups: %v", err)
+			}
+
+			_, err = s.pendingEmailChanges.DeleteMany(ctx, bson.M{
+				"otp_expires_at": bson.M{"$lt": now},
+			})
+			if err != nil {
+				log.Printf("[AUTH-STORE] Failed to sweep expired pending email changes: %v", err)
 			}
 		}
 	}()
