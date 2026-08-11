@@ -77,7 +77,7 @@ class _SecondaryButtonState extends State<SecondaryButton> {
                     overflow: TextOverflow.ellipsis,
                     maxLines: widget.maxLines,
                     textAlign: TextAlign.center,
-                    style: AppTypography.titleMd.copyWith(
+                    style: AppTypography.bodyLg.copyWith(
                       color: widget.isOutlined
                           ? AppColors.primary
                           : AppColors.onSecondary,

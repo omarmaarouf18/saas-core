@@ -67,7 +67,7 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                     overflow: TextOverflow.ellipsis,
                     maxLines: widget.maxLines,
                     textAlign: TextAlign.center,
-                    style: AppTypography.titleMd.copyWith(
+                    style: AppTypography.bodyLg.copyWith(
                       color: AppColors.onPrimary,
                       fontWeight: FontWeight.bold,
                     ),

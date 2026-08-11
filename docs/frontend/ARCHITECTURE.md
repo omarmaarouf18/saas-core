@@ -45,15 +45,15 @@ This document describes the design patterns, state management models, directory 
     *   `kyc_document_upload_screen.dart`: KYB/KYE document submission form.
     *   `kyb_kye_review_screen.dart`: Reviewer queue roster view for pending KYB/KYE verification requests.
 *   **`lib/widgets/`**: Reusable component design system and dialogs.
-    *   `primary_button.dart`: Standard themed primary action button with built-in 600ms tap-debounce protection (`StatefulWidget`) alongside `isLoading` state handling to prevent accidental double-tap 429 rate limit errors.
-    *   `secondary_button.dart`: Outlined secondary action button with icon support and built-in 600ms tap-debounce protection (`StatefulWidget`).
+    *   `primary_button.dart`: Standard themed primary action button using `AppTypography.bodyLg` (16px bold) type scale with built-in 600ms tap-debounce protection (`StatefulWidget`) alongside `isLoading` state handling to prevent accidental double-tap 429 rate limit errors.
+    *   `secondary_button.dart`: Outlined secondary action button using `AppTypography.bodyLg` (16px bold) type scale with icon support and built-in 600ms tap-debounce protection (`StatefulWidget`).
     *   `themed_card.dart`: Container card styled with design system tokens.
     *   `themed_text_field.dart`: Standardized input text field.
     *   `themed_section_header.dart`: Layout section header widget.
     *   `themed_loading_indicator.dart`: Standardized loading spinner with custom copy.
     *   `themed_empty_state.dart`: Standardized zero-data / unauthorized state layout.
     *   `themed_error_banner.dart`: Retryable error banner widget.
-    *   `status_badge.dart`: Styled status pill for jobs, KYC, and worker states.
+    *   `status_badge.dart`: Styled status pill supporting compact (`labelMd` 11px) and standard (`labelLg` 12px) variants for jobs, KYC, and worker states.
     *   `rating_summary_card.dart`: Rating score summary card.
     *   `cancel_job_dialog.dart`: Job cancellation confirmation dialog with mandatory reason text field.
     *   `create_ticket_dialog.dart`: Support complaint ticket submission dialog.

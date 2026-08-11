@@ -112,10 +112,10 @@ This design system provides the visual architecture and component spec for Quick
 | `AppTypography.headlineLg` | 32 | SemiBold (600) | 40/32 | Primary screen headers (desktop/tablet) |
 | `AppTypography.headlineLgMobile` | 24 | SemiBold (600) | 32/24 | Primary screen headers (mobile viewports) |
 | `AppTypography.titleMd` | 18 | SemiBold (600) | 24/18 | Section headers, card titles, dialog titles |
-| `AppTypography.bodyLg` | 16 | Regular (400) | 24/16 | Prominent body text, lead paragraph text |
+| `AppTypography.bodyLg` | 16 | Regular (400) | 24/16 | Prominent body text, lead paragraph text, primary & secondary button labels |
 | `AppTypography.bodyMd` | 14 | Regular (400) | 20/14 | Standard body paragraphs, text input text |
-| `AppTypography.labelLg` | 12 | SemiBold (600) | 16/12 | Input labels, primary button text, section tags |
-| `AppTypography.labelMd` | 11 | Medium (500) | 14/11 | Metadata timestamps, status badge text, captions |
+| `AppTypography.labelLg` | 12 | SemiBold (600) | 16/12 | Input labels, section tags, standard status badges |
+| `AppTypography.labelMd` | 11 | Medium (500) | 14/11 | Metadata timestamps, compact status badge text, captions |
 
 ---
 

@@ -272,7 +272,29 @@ void main() {
     });
   });
 
-  group('PrimaryButton & SecondaryButton Debounce Tests', () {
+  group('PrimaryButton & SecondaryButton Tests', () {
+    testWidgets('PrimaryButton and SecondaryButton use bodyLg (16px) typography scale',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                PrimaryButton(text: 'Primary Test', onPressed: () {}),
+                SecondaryButton(text: 'Secondary Test', onPressed: () {}),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final primaryText = tester.widget<Text>(find.text('Primary Test'));
+      final secondaryText = tester.widget<Text>(find.text('Secondary Test'));
+
+      expect(primaryText.style?.fontSize, equals(16));
+      expect(secondaryText.style?.fontSize, equals(16));
+    });
+
     testWidgets('PrimaryButton ignores rapid double taps within 600ms',
         (tester) async {
       int tapCount = 0;
