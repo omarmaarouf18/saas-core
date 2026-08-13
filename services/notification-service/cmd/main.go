@@ -9,11 +9,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/project/notification-service/internal/config"
@@ -66,7 +69,6 @@ func main() {
 		jwtutil.SetRedisClient(redisClient)
 		sseHub.SetRedisClient(redisClient)
 	}
-	defer sseHub.Close()
 
 	notifHandlers := handlers.NewNotification(sseHub, cfg, redisClient)
 
@@ -109,6 +111,22 @@ func main() {
 		TLSConfig:         tlsConfig,
 		ReadHeaderTimeout: 3 * time.Second,
 	}
+
+	// Graceful shutdown.
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+		<-sigCh
+		log.Println("[NOTIF] Shutting down...")
+
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer shutdownCancel()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("[ERROR] server shutdown error: %v", err)
+		}
+		sseHub.Close()
+	}()
 
 	log.Printf("Notification Service listening on %s (HTTPS/SSE)", addr)
 	log.Printf("Endpoints: GET /notifications/stream, POST /notifications/send, POST /notifications/broadcast/job-alert")

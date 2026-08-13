@@ -275,6 +275,12 @@ If a deployment fails the automated health check or exhibits runtime regressions
    ```
    Or manually check out the previous compose file tag on the host and run `docker compose up -d --remove-orphans`.
 
+### 7.5 Graceful Shutdown & Signal Handling Across All 5 Microservices
+All 5 microservices (`api-gateway`, `auth-service`, `chat-service`, `notification-service`, and `user-service`) implement a standardized, non-disruptive graceful shutdown protocol on receiving `SIGINT` or `SIGTERM` signals (such as during `docker compose stop`, `docker compose down`, or rolling deployments):
+- **Signal Handling & Timeout**: Each service intercepts `SIGINT`/`SIGTERM` via `signal.Notify` and logs `[<SERVICE_TAG>] Shutting down...` before executing `http.Server.Shutdown()` with a 10-second context timeout (`context.WithTimeout(10*time.Second)`), allowing in-flight HTTP requests to complete.
+- **WebSocket Connection Teardown (`chat-service`)**: `chat-service`'s `Hub.Close()` iterates over all connected WebSocket clients, closing their outbound `Send` channels. This causes each client's `writePump` loop to transmit a clean WebSocket close frame (`1000 CloseNormalClosure`) to active clients before closing socket descriptors, avoiding abrupt TCP resets.
+- **SSE Stream Cleanup (`notification-service`)**: `notification-service` cancels `r.Context()` on `http.Server.Shutdown()` and `SSEHub.Close()` closes active `Send` channels across `SSEHub.clients`, prompting active `/notifications/stream` loops to exit cleanly.
+
 ---
 
 ## 8. Public Reverse Proxy (Caddy), Custom Domain & Firewall

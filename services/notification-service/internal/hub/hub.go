@@ -87,12 +87,17 @@ func (h *SSEHub) SetRedisClient(rdb *redis.Client) {
 	log.Printf("[SSE-HUB] Connected to Redis Pub/Sub for cross-replica notification fan-out")
 }
 
-// Close gracefully stops the Redis Pub/Sub subscriber loop.
+// Close gracefully stops the Redis Pub/Sub subscriber loop and closes all connected SSE client channels.
 func (h *SSEHub) Close() {
 	h.stopOnce.Do(func() {
 		h.mu.Lock()
 		cancel := h.cancel
 		pubsub := h.pubsub
+
+		for client := range h.clients {
+			close(client.Send)
+			delete(h.clients, client)
+		}
 		h.mu.Unlock()
 
 		if cancel != nil {

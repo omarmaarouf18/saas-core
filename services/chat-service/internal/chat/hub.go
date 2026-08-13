@@ -95,12 +95,19 @@ func (h *Hub) SetRedisClient(rdb *redis.Client) {
 	log.Printf("[HUB] Connected to Redis Pub/Sub for cross-replica chat fan-out (Instance ID: %s)", h.instanceID)
 }
 
-// Close gracefully stops the Redis Pub/Sub subscriber loop.
+// Close gracefully stops the Redis Pub/Sub subscriber loop and closes all active WebSocket client connections.
 func (h *Hub) Close() {
 	h.stopOnce.Do(func() {
 		h.mu.Lock()
 		cancel := h.subCancel
 		pubsub := h.pubsub
+
+		for client := range h.clients {
+			close(client.Send)
+			delete(h.clients, client)
+		}
+		h.channels = make(map[string]map[*Client]bool)
+		h.activeSubs = make(map[string]int)
 		h.mu.Unlock()
 
 		if cancel != nil {

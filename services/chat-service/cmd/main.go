@@ -23,6 +23,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/project/chat-service/internal/chat"
@@ -84,7 +86,6 @@ func main() {
 		jwtutil.SetRedisClient(redisClient)
 		hub.SetRedisClient(redisClient)
 	}
-	defer hub.Close()
 
 	// Create handler group and register routes.
 	chatHandlers := handlers.NewChat(hub, mongoStore, cfg, redisClient)
@@ -123,6 +124,25 @@ func main() {
 		TLSConfig:         tlsConfig,
 		ReadHeaderTimeout: 3 * time.Second,
 	}
+
+	// Graceful shutdown.
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+		<-sigCh
+		log.Println("[CHAT] Shutting down...")
+
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer shutdownCancel()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("[ERROR] server shutdown error: %v", err)
+		}
+		hub.Close()
+		if err := mongoStore.Close(shutdownCtx); err != nil {
+			log.Printf("[ERROR] mongo store close error: %v", err)
+		}
+	}()
 
 	log.Printf("Chat Service listening on %s (HTTPS)", addr)
 	log.Printf("WebSocket endpoint: GET /chat/ws?token=<user_token>")

@@ -32,3 +32,4 @@ services/*/data/documents/
 dummy.png
 .last_push_verified
 scratch/
+tools/docgen/docgen

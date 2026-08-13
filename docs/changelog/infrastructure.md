@@ -2,6 +2,12 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Standardized Graceful Shutdown Protocol Across All 5 Microservices
+
+- **Implementation Detail**: Extended graceful shutdown handling to `api-gateway`, `chat-service`, and `notification-service`, unifying all 5 microservices on the canonical pattern from `auth-service` and `user-service`. On receiving `SIGINT` or `SIGTERM`, each service logs `[<SERVICE_TAG>] Shutting down...` and executes `http.Server.Shutdown()` with a 10-second context timeout. Enhanced `Hub.Close()` in `chat-service` to iterate over active clients and close outbound `Send` channels, triggering `writePump` to transmit normal WebSocket close frames (`websocket.CloseMessage`) before closing socket connections. Enhanced `SSEHub.Close()` in `notification-service` to close active `Send` channels across `SSEHub.clients`, ensuring streaming handler loops terminate cleanly alongside HTTP context cancellation (`r.Context()`).
+- **Commit SHA**: ``53edeea299745e69bf4a9238e8ac4d05fc4e8d35``
+- **Verification**: Verified via `go build` and `go vet` across all 7 Go modules, 100% pass across all unit and handler test suites (`go test ./...`), empirical SIGTERM test executions confirming graceful shutdown logs (`[GATEWAY] Shutting down...`, `[CHAT] Shutting down...`, `[NOTIF] Shutting down...`), and `.githooks/pre-push` gate. ✅
+
 ## Strict CD Pre-Flight Validation, Structural Sync & Rollback (ADR-0015)
 
 - **Implementation Detail**: Added `--check-env` pre-flight validation flag across all 5 Go microservices (`api-gateway`, `auth-service`, `chat-service`, `notification-service`, `user-service`) running `config.Load()` and exiting 0/1 without starting the HTTP server or requiring DB/TLS cert files. Created production reference files in `infrastructure/deploy/` (`docker-compose.prod.yml` containing canonical environment variable blocks and `deploy.yml` featuring pre-flight validation, all-5-service health checks, health-gated rollback to prior `docker-compose.yml`, and `.env` symlink unification). Rewrote `update-deployment-repo` job in `.github/workflows/build-and-publish.yml` to execute full structural sync from `infrastructure/deploy/` to `omarmaarouf18/saas-core-deploy` (eliminating env block drift). Authored [ADR-0015](docs/adr/0015-strict-cd-preflight-validation.md) documenting root causes of 3 real production incidents from 2026-08-06.

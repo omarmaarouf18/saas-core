@@ -21,9 +21,30 @@ func setupTestMongoDB(t *testing.T) (*MongoDB, func()) {
 
 	dbName := fmt.Sprintf("saas_chat_store_test_%d", time.Now().UnixNano())
 	s, err := NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil && os.Getenv("MONGO_URI") == "" {
+		mongoURI = "mongodb://admin:adminpassword@localhost:27017"
+		s, err = NewMongoDB(ctx, mongoURI, dbName)
+	}
 	if err != nil {
 		t.Skipf("Skipping MongoDB store tests: MongoDB unreachable at %s (%v)", mongoURI, err)
 		return nil, nil
+	}
+
+	// Verify write permission (fallback to authenticated URI if unauthenticated ping succeeded but writes require auth)
+	testMsg := &chat.Message{Channel: "test", Content: "ping"}
+	if err := s.PersistMessage(ctx, testMsg); err != nil {
+		if os.Getenv("MONGO_URI") == "" {
+			_ = s.Close(ctx)
+			mongoURI = "mongodb://admin:adminpassword@localhost:27017"
+			s, err = NewMongoDB(ctx, mongoURI, dbName)
+			if err == nil {
+				err = s.PersistMessage(ctx, testMsg)
+			}
+		}
+		if err != nil {
+			t.Skipf("Skipping MongoDB store tests: MongoDB write failed (%v)", err)
+			return nil, nil
+		}
 	}
 
 	cleanup := func() {

@@ -592,6 +592,7 @@ func setupTestChat(t *testing.T) (*Chat, *store.MongoDB, func()) {
 
 	c := NewChat(hub, s, cfg, rdb)
 	cleanup := func() {
+		hub.Close()
 		_ = s.DropDatabase(context.Background())
 		_ = s.Close(context.Background())
 		mr.Close()

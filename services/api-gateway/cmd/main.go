@@ -5,11 +5,14 @@
 package main
 
 import (
+	"context"
 	"crypto/subtle"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/project/gateway/internal/config"
@@ -121,6 +124,21 @@ func main() {
 		Handler:           logged,
 		ReadHeaderTimeout: 3 * time.Second,
 	}
+	// Graceful shutdown.
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+		<-sigCh
+		log.Println("[GATEWAY] Shutting down...")
+
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer shutdownCancel()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("[ERROR] server shutdown error: %v", err)
+		}
+	}()
+
 	if err := server.ListenAndServeTLS(cfg.ExternalTLSCertPath, cfg.ExternalTLSKeyPath); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}
