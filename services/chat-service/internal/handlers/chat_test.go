@@ -23,6 +23,24 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+func connectTestMongoDB(ctx context.Context, dbName string) (*store.MongoDB, error) {
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI != "" {
+		return store.NewMongoDB(ctx, mongoURI, dbName)
+	}
+
+	s, err := store.NewMongoDB(ctx, "mongodb://localhost:27017", dbName)
+	if err == nil {
+		testMsg := &chat.Message{Channel: "test", Content: "ping"}
+		if err := s.PersistMessage(ctx, testMsg); err == nil {
+			return s, nil
+		}
+		_ = s.Close(ctx)
+	}
+
+	return store.NewMongoDB(ctx, "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin", dbName)
+}
+
 func TestCanAccessChannel(t *testing.T) {
 	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
 	// Spin up a mock User Service to return job details
@@ -222,15 +240,11 @@ func TestGetHistoryAccessControl(t *testing.T) {
 	defer mockAuthServer.Close()
 
 	// Set up MongoDB or skip/mock if needed
-	mongoURI := os.Getenv("MONGO_URI")
-	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27017"
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("chat_platform_test_%d", time.Now().UnixNano())
-	mongoStore, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	mongoStore, err := connectTestMongoDB(ctx, dbName)
 	if err != nil {
 		t.Skipf("Skipping integration tests: MongoDB not available: %v", err)
 		return
@@ -336,15 +350,11 @@ func TestGetHistoryAccessControl(t *testing.T) {
 }
 
 func TestComplaintRoutingConcurrency(t *testing.T) {
-	mongoURI := os.Getenv("MONGO_URI")
-	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27017"
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("chat_platform_test_%d", time.Now().UnixNano())
-	mongoStore, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	mongoStore, err := connectTestMongoDB(ctx, dbName)
 	if err != nil {
 		t.Skipf("Skipping concurrency tests: MongoDB not available: %v", err)
 		return
@@ -422,15 +432,11 @@ func TestComplaintRoutingConcurrency(t *testing.T) {
 }
 
 func TestComplaintRoutingNoAgentsAvailable(t *testing.T) {
-	mongoURI := os.Getenv("MONGO_URI")
-	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27017"
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("chat_platform_test_%d", time.Now().UnixNano())
-	mongoStore, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	mongoStore, err := connectTestMongoDB(ctx, dbName)
 	if err != nil {
 		t.Skipf("Skipping tests: MongoDB not available: %v", err)
 		return
@@ -455,15 +461,11 @@ func TestComplaintRoutingNoAgentsAvailable(t *testing.T) {
 
 func TestComplaintRoutingAccessControl(t *testing.T) {
 	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
-	mongoURI := os.Getenv("MONGO_URI")
-	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27017"
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("chat_platform_test_%d", time.Now().UnixNano())
-	mongoStore, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	mongoStore, err := connectTestMongoDB(ctx, dbName)
 	if err != nil {
 		t.Skipf("Skipping tests: MongoDB not available: %v", err)
 		return
@@ -528,18 +530,13 @@ func setupTestChat(t *testing.T) (*Chat, *store.MongoDB, func()) {
 	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
 	jwtutil.Init("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
 
-	mongoURI := os.Getenv("MONGO_URI")
-	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27017"
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_chat_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := connectTestMongoDB(ctx, dbName)
 	if err != nil {
-		t.Skipf("Skipping chat-service store integration tests: MongoDB not available at %s (%v)", mongoURI, err)
+		t.Skipf("Skipping chat-service store integration tests: MongoDB not available (%v)", err)
 		return nil, nil, nil
 	}
 

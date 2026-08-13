@@ -5,7 +5,7 @@ This file tracks historical entries for the primary category: **Infrastructure &
 ## Standardized Graceful Shutdown Protocol Across All 5 Microservices
 
 - **Implementation Detail**: Extended graceful shutdown handling to `api-gateway`, `chat-service`, and `notification-service`, unifying all 5 microservices on the canonical pattern from `auth-service` and `user-service`. On receiving `SIGINT` or `SIGTERM`, each service logs `[<SERVICE_TAG>] Shutting down...` and executes `http.Server.Shutdown()` with a 10-second context timeout. Enhanced `Hub.Close()` in `chat-service` to iterate over active clients and close outbound `Send` channels, triggering `writePump` to transmit normal WebSocket close frames (`websocket.CloseMessage`) before closing socket connections. Enhanced `SSEHub.Close()` in `notification-service` to close active `Send` channels across `SSEHub.clients`, ensuring streaming handler loops terminate cleanly alongside HTTP context cancellation (`r.Context()`).
-- **Commit SHA**: ``53edeea299745e69bf4a9238e8ac4d05fc4e8d35``
+- **Commit SHA**: ``76be75daedbd88ea802d4cf381913b23d298611c``
 - **Verification**: Verified via `go build` and `go vet` across all 7 Go modules, 100% pass across all unit and handler test suites (`go test ./...`), empirical SIGTERM test executions confirming graceful shutdown logs (`[GATEWAY] Shutting down...`, `[CHAT] Shutting down...`, `[NOTIF] Shutting down...`), and `.githooks/pre-push` gate. ✅
 
 ## Strict CD Pre-Flight Validation, Structural Sync & Rollback (ADR-0015)
