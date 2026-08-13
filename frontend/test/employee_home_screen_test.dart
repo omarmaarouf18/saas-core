@@ -208,8 +208,8 @@ void main() {
     // Active job should be visible at top
     expect(find.textContaining('job-active-101'), findsOneWidget);
 
-    // Simulator card should exist on Home tab below active jobs
-    final simTitle = find.text('Employee Action Simulator');
+    // Service event log card should exist on Home tab below active jobs
+    final simTitle = find.text('Log Service Event').first;
     expect(simTitle, findsOneWidget);
 
     // Ensure scrolling to simulator card works cleanly
