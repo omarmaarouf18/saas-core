@@ -619,6 +619,12 @@ This section consolidates the resolution status for all 10 findings from the ext
 - **Commit SHA**: ``49572882a98844de0f688fa97275c9a835dc93ce``
 - **Verification**: Verified via `docker compose -f infrastructure/docker-compose.yml config` (syntactically valid), local Docker Compose startup (`saas-mongo` and `saas-redis` reporting `healthy`, all 5 microservices running), `curl -k https://localhost:8080/health` (`{"status":"ok"}`), and `.githooks/pre-push` gate passing 100%. ✅
 
+## Reviewer/Admin KYB-KYE UI Removal per ADR-0013
+
+- **Implementation Detail**: Enforced ADR-0013 security scope boundary by removing all administrative KYB/KYE reviewer screens (`kyb_kye_review_screen.dart`), document viewer dialogs (`document_viewer_dialog.dart`), AppBar actions (`reviewer_queue_button`), and dead provider methods (`fetchPendingSubmissions`, `fetchDocumentBytes`, `reviewSubmission`) from the consumer mobile app (`frontend/`). Prevents bundling reviewer/admin review workflows and administrative endpoints inside the public binary where decompilation/reverse-engineering could leak administrative review logic and API structures. Annotated `STATUS.md` and updated `ADR-0013`.
+- **Commit SHA**: ``628a86893658274b9d6b2ed7b4fa6725cb79940e``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (100% passing), `make ci`, and `make push`. ✅
+
 
 
 

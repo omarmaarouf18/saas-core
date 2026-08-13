@@ -83,8 +83,8 @@ Widget createEmployeeHomeScreenApp({
       ChangeNotifierProvider<AuthProvider>(
           create: (_) => MockAuthProviderForTest(apiClient)),
       ChangeNotifierProvider<EmployeeJobsProvider>(
-          create: (_) => MockEmployeeJobsProviderForTest(apiClient,
-              mockJobs: mockJobs)),
+          create: (_) =>
+              MockEmployeeJobsProviderForTest(apiClient, mockJobs: mockJobs)),
       ChangeNotifierProvider<EmployeeLocationProvider>(
           create: (_) => MockEmployeeLocationProviderForTest(apiClient)),
       ChangeNotifierProvider<NotificationsProvider>(
@@ -150,7 +150,8 @@ void main() {
     expect(navBar.destinations.length, equals(3));
   });
 
-  testWidgets('Tapping bottom nav tabs switches between Home, History, and Settings',
+  testWidgets(
+      'Tapping bottom nav tabs switches between Home, History, and Settings',
       (WidgetTester tester) async {
     await tester.pumpWidget(createEmployeeHomeScreenApp(
       initialTabIndex: 0,
