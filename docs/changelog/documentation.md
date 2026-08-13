@@ -185,6 +185,6 @@ This file tracks historical entries for the primary category: **Documentation Ch
 ## Comprehensive Repository Documentation Freshness Sweep
 
 - **Implementation Detail**: Resolved all documentation drift identified in the whole-repository audit. Updated `AI_CONTEXT.md`, `docs/FRONTEND_INTEGRATION_SCOPE.md`, `docs/frontend/ARCHITECTURE.md`, and `docs/frontend/DESIGN_SYSTEM.md` to annotate removed administrative reviewer components (`KybKyeReviewScreen`, `DocumentViewerDialog`, reviewer provider methods) with `[ADR-0013 REMOVED]`/`[EXCLUDED PER ADR-0013]` notes. Realigned stale file path links in `FRONTEND_INTEGRATION_SCOPE.md` to point to valid screen files (`customer_jobs_screen.dart`, `forgot_password_screen.dart`, `api_client.dart`, `my_account_screen.dart`, `employee_screen.dart`, `create_ticket_dialog.dart`). Updated `docs/APPLICATION_MAP.md` header commit SHA. Annotated cross-repo deployment SHA `c0b3f6a` with `(saas-core-deploy)` across `AI_CONTEXT.md`, `docs/CI_CD_AND_HOOKS.md`, and `docs/RUNBOOK.md`.
-- **Commit SHA**: ``PENDING_COMMIT_SHA``
+- **Commit SHA**: ``4e82d984df1561f9facf51278660ff577bca6b37``
 - **Verification**: Verified via `make docs`, `make docs-check`, `go test ./shared/infra/docgen/...`, and repo-wide markdown freshness audit script (0 remaining drift issues). ✅
 
