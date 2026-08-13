@@ -128,7 +128,6 @@ All shared widgets are located in `frontend/lib/widgets/`. Below is the complete
 | `CancelJobDialog` | `cancel_job_dialog.dart` | Job cancellation modal dialog with preset reason radios & custom input | `jobId`, `onCancelled` | `home_screen.dart`, `job_status_screen.dart` |
 | `ConfirmActionDialog` | `confirm_action_dialog.dart` | Reusable modal confirmation for destructive or financial operations | `title`, `message`, `confirmText`, `isDestructive` | `employee_jobs_screen.dart`, `owner_reconciliation_queue_screen.dart` |
 | `CreateTicketDialog` | `create_ticket_dialog.dart` | Customer/owner complaint ticket submission modal | `referenceId`, `referenceType` | `job_status_screen.dart`, `settings_screen.dart` |
-| `DocumentViewerDialog` | `document_viewer_dialog.dart` | Full-screen interactive viewer for KYB/KYE document review | `documentUrl`, `title` | `kyb_kye_review_screen.dart` |
 | `EntityAvatar` | `entity_avatar.dart` | Circular avatar widget rendering photo or initial initials with border | `imageUrl`, `name`, `radius` | `rating_screen.dart` |
 | `InfoListTile` | `info_list_tile.dart` | Key-value information list row with leading icon and optional subtitle | `label`, `value`, `icon`, `trailing` | `wallet_screen.dart` |
 | `LocationPickerMap` | `location_picker_map.dart` | Interactive OpenStreetMap coordinate picker for pickup/dropoff | `initialLocation`, `onLocationSelected` | `customer_marketplace_screen.dart` |

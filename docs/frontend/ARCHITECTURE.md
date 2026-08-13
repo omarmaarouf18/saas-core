@@ -81,9 +81,9 @@ Flutter HTTP requests map directly onto the backend's microservices through the 
     *   `POST /auth/login` -> `LoginScreen` / `AuthProvider.login`
     *   `POST /auth/verify-otp` -> `OtpScreen` / `AuthProvider.verifyOtp`
     *   `GET /auth/employees` -> `EmployeeScreen` / `OwnerProvider.fetchEmployees`
-    *   `GET /auth/kyb-kye/pending` -> `KybKyeReviewScreen` / `AuthProvider.fetchPendingSubmissions`
-    *   `GET /auth/documents/view` -> `DocumentViewerDialog` / `AuthProvider.fetchDocumentBytes`
-    *   `POST /auth/kyb-kye/review` -> `DocumentViewerDialog` / `AuthProvider.reviewSubmission`
+    *   `GET /auth/kyb-kye/pending` -> **[REMOVED PER ADR-0013]** Reserved for Support Agent Console
+    *   `GET /auth/documents/view` -> **[REMOVED PER ADR-0013]** Reserved for Support Agent Console
+    *   `POST /auth/kyb-kye/review` -> **[REMOVED PER ADR-0013]** Reserved for Support Agent Console
 
 ## Real-Time Subscriptions
 *   *WebSocket Chat*: Real-time channel messaging via `wss://` gateway proxy connection (`/chat/ws?token=<token>`). Integrated in `ChatProvider` / `ChatScreen`.

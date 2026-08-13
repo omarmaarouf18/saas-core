@@ -85,7 +85,7 @@ In the project's history, the "Verify Markdown Commit SHAs" guard has caught fab
 
 > [!CAUTION]
 > **Strict Trigger Policy & Incident Record**:
-> `workflow_dispatch` is strictly prohibited on `build-and-publish.yml` to prevent un-reviewed dev branch commits from overwriting production deployment tags. During GitHub App token testing, `workflow_dispatch` was temporarily added to `build-and-publish.yml` and dispatched on `logic-exploitation` (Run ID `30684940738`), causing `update-deployment-repo` to push out-of-policy image tags (`375a017`) to `saas-core-deploy:main`. The deployment repo was immediately rolled back to `main` HEAD (`efbe55b` via commit `c0b3f6a`), and `workflow_dispatch` was permanently removed from `build-and-publish.yml` to enforce push-to-main-only governance.
+> `workflow_dispatch` is strictly prohibited on `build-and-publish.yml` to prevent un-reviewed dev branch commits from overwriting production deployment tags. During GitHub App token testing, `workflow_dispatch` was temporarily added to `build-and-publish.yml` and dispatched on `logic-exploitation` (Run ID `30684940738`), causing `update-deployment-repo` to push out-of-policy image tags (`375a017`) to `saas-core-deploy:main`. The deployment repo was immediately rolled back to `main` HEAD (`efbe55b` via commit `c0b3f6a` (saas-core-deploy)), and `workflow_dispatch` was permanently removed from `build-and-publish.yml` to enforce push-to-main-only governance.
 
 ### Pipeline Structure
 The workflow contains two sequential jobs:

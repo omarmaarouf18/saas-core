@@ -43,7 +43,7 @@ git push origin main
 Pushes to `main` trigger `.github/workflows/build-and-publish.yml` automatically. This is the only thing that builds and publishes production images — merging alone does nothing until this workflow runs.
 
 > [!WARNING]
-> **Strict Trigger Policy**: `build-and-publish.yml` operates strictly on push-to-main triggers. `workflow_dispatch` must never be added to this workflow for ad-hoc feature branch testing (an incident occurred where dispatching on `logic-exploitation` pushed unreviewed image tags to `saas-core-deploy`, requiring an immediate rollback to `efbe55b` via commit `c0b3f6a`). All feature testing must occur via `ci.yml` and local hooks on `logic-exploitation`.
+> **Strict Trigger Policy**: `build-and-publish.yml` operates strictly on push-to-main triggers. `workflow_dispatch` must never be added to this workflow for ad-hoc feature branch testing (an incident occurred where dispatching on `logic-exploitation` pushed unreviewed image tags to `saas-core-deploy`, requiring an immediate rollback to `efbe55b` via commit `c0b3f6a` (saas-core-deploy)). All feature testing must occur via `ci.yml` and local hooks on `logic-exploitation`.
 
 ---
 

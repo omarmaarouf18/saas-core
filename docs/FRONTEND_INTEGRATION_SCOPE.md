@@ -14,10 +14,10 @@ This document outlines the scoping, backend contracts, UI requirements, and impl
   * **Response**: `200 OK` → `{"message": "successfully logged out"}`. Error `400` if Authorization header missing; `401` if token invalid/expired.
   * **Auth**: Requires valid Bearer JWT.
   * **Side Effects**: Revokes and blacklists the token via `jwtutil.RevokeToken(tokenStr)`.
-* **Which Screen(s) / Provider(s) Should Call It**: `AuthProvider` ([`frontend/lib/providers/auth_provider.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/providers/auth_provider.dart)), invoked from `ProfileScreen` ([`frontend/lib/screens/profile_screen.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/profile_screen.dart)) and the app navigation drawer logout action.
-* **UI Elements Needed**: Wire the existing "Logout" button on `ProfileScreen` and navigation drawer to call `AuthProvider.logout()`, purge local token storage (`SharedPreferences` / `FlutterSecureStorage`), and reset navigation stack to `LoginScreen`.
-* **Complexity Estimate**: **Trivial** — standard token invalidation extending existing `AuthProvider` cleanup logic.
-* **Dependencies / Ordering**: Batch 1. Core security hygiene item.
+* **Which Screen(s) / Provider(s) Should Call It**: `AuthProvider` ([`frontend/lib/providers/auth_provider.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/providers/auth_provider.dart)), invoked from `MyAccountScreen` ([`frontend/lib/screens/my_account_screen.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/my_account_screen.dart)) and the app navigation drawer logout action.
+* **UI Elements Needed**: "Logout" list tile in user settings, clearing auth tokens from `FlutterSecureStorage` and redirecting to `LoginScreen`.
+* **Complexity Estimate**: **Small** — single API call and state clear.
+* **Dependencies / Ordering**: Batch 1. Can be wired immediately.
 
 ### 1.2 `POST /auth/refresh`
 * **Backend Contract**: [`services/auth-service/internal/handlers/auth.go:957`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go#L957)
@@ -26,7 +26,7 @@ This document outlines the scoping, backend contracts, UI requirements, and impl
   * **Response**: `200 OK` → `{"status": "success", "token": "<NEW_JWT>"}`. Errors: `401` if token expired > 7 days (`7*24*time.Hour`); `403` if account frozen (`!user.IsActive`).
   * **Auth**: Accepts active or expired JWTs within a 7-day grace period.
   * **Side Effects**: Validates user active state in MongoDB and re-issues a fresh signed JWT with updated claims.
-* **Which Screen(s) / Provider(s) Should Call It**: `ApiService` ([`frontend/lib/services/api_service.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/services/api_service.dart)) via HTTP response interceptor.
+* **Which Screen(s) / Provider(s) Should Call It**: `ApiClient` ([`frontend/lib/core/api_client.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/core/api_client.dart)) via HTTP response interceptor.
 * **UI Elements Needed**: Transparent HTTP 401 retry interceptor in `api_service.dart`. On receiving HTTP 401, automatically call `/auth/refresh`; if successful, save the new token and retry the original failed HTTP request. If refresh fails (> 7 days expired), trigger `AuthProvider.logout()` and display a "Session Expired" toast.
 * **Complexity Estimate**: **Small** — networking layer interceptor pattern.
 * **Dependencies / Ordering**: Batch 1. Prevents active user sessions from abruptly disconnecting when access tokens expire.
@@ -38,8 +38,8 @@ This document outlines the scoping, backend contracts, UI requirements, and impl
   * **Response**: `200 OK` → `{"status": "success", "message": "If an account exists for this email, a reset code has been sent.", "dev_otp": "123456"}` (where `dev_otp` is present only when `APP_ENV=local`). Always returns 200 OK to prevent account enumeration.
   * **Auth**: Public / Unauthenticated.
   * **Side Effects**: Generates 6-digit OTP code, stores encrypted ciphertext in MongoDB (`SetOTP`), dispatches email via `ResendDispatcher`. Rate limited by IP and email address.
-* **Which Screen(s) / Provider(s) Should Call It**: A new `ForgotPasswordScreen` ([`frontend/lib/screens/forgot_password_screen.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/forgot_password_screen.dart)), wired to `AuthProvider`.
-* **UI Elements Needed**: "Forgot Password?" text link on `LoginScreen` ([`frontend/lib/screens/login_screen.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/login_screen.dart)), opening `ForgotPasswordScreen` with email input field, "Send Reset Code" button, loading spinner, and automatic navigation to `ResetPasswordScreen`.
+* **Which Screen(s) / Provider(s) Should Call It**: `ForgotPasswordScreen` ([`frontend/lib/screens/forgot_password_screen.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/forgot_password_screen.dart)), wired to `AuthProvider`.
+* **UI Elements Needed**: Consolidated single-step reset form on `ForgotPasswordScreen` with email, 6-digit OTP code, new password, and confirm password fields.
 * **Complexity Estimate**: **Small** — straightforward single-input form and navigation trigger.
 * **Dependencies / Ordering**: Batch 1. Precedes `POST /auth/reset-password`.
 
@@ -50,9 +50,9 @@ This document outlines the scoping, backend contracts, UI requirements, and impl
   * **Response**: `200 OK` → `{"status": "success", "message": "Password reset successfully. You can now login with your new password."}`. Error `400` if fields missing; `401` if invalid/expired OTP; `404` if user not found.
   * **Auth**: Public / Unauthenticated.
   * **Side Effects**: Verifies OTP against MongoDB (`VerifyOTP`), hashes new password with bcrypt, updates user document, and clears OTP fields (`otp_code`, `otp_verified`, `otp_expires_at`).
-* **Which Screen(s) / Provider(s) Should Call It**: A new `ResetPasswordScreen` ([`frontend/lib/screens/reset_password_screen.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/reset_password_screen.dart)), wired to `AuthProvider`.
-* **UI Elements Needed**: `ResetPasswordScreen` containing 6-digit OTP entry field (reusing `OtpInputWidget`), new password field, confirm password field, and "Reset Password" submit button. On success, displays a confirmation modal and navigates to `LoginScreen`.
-* **Complexity Estimate**: **Small** — 2-step verification form reusing existing OTP input widgets.
+* **Which Screen(s) / Provider(s) Should Call It**: `ForgotPasswordScreen` ([`frontend/lib/screens/forgot_password_screen.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/forgot_password_screen.dart)), wired to `AuthProvider`.
+* **UI Elements Needed**: Consolidated single-step reset form on `ForgotPasswordScreen` with email, 6-digit OTP code, new password, and confirm password fields.
+* **Complexity Estimate**: **Small** — consolidated 1-step reset form reusing existing OTP input widgets.
 * **Dependencies / Ordering**: Batch 1. Depends on `POST /auth/forgot-password`.
 
 ---
@@ -61,12 +61,11 @@ This document outlines the scoping, backend contracts, UI requirements, and impl
 
 ### 2.1 `GET /users/jobs/mine`
 * **Backend Contract**: [`services/user-service/internal/handlers/handlers.go:1024`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L1024)
-  * **Method**: `GET /users/jobs/mine`
-  * **Headers / Query Params**: `Authorization: Bearer <JWT>` (or query params `customer_token`, `user_token`, `requester_token`, `requester_id`, `user_id`).
-  * **Response**: `200 OK` → JSON array of Job objects created by the requesting customer.
-  * **Auth**: Requires JWT with role `user` (Customer role). Protected against IDOR (query `user_id` must match claims `UserID`). Rate limited (30 req/min).
-  * **Side Effects**: Queries MongoDB for all jobs created by the authenticated customer ID (`GetJobsByCustomer`).
-* **Which Screen(s) / Provider(s) Should Call It**: A new `CustomerOrdersScreen` ([`frontend/lib/screens/customer_orders_screen.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/customer_orders_screen.dart)) or `MarketplaceProvider` ([`frontend/lib/providers/marketplace_provider.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/providers/marketplace_provider.dart)).
+  * **Method**: `POST /users/jobs/mine` (or `GET /users/jobs/mine`)
+  * **Headers / Query Params**: `Authorization: Bearer <JWT>`
+  * **Response**: `200 OK` → List of jobs owned/booked by current user.
+  * **Auth**: Standard user Bearer token.
+* **Which Screen(s) / Provider(s) Should Call It**: `CustomerJobsScreen` ([`frontend/lib/screens/customer_jobs_screen.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/customer_jobs_screen.dart)) via `MarketplaceProvider` ([`frontend/lib/providers/marketplace_provider.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/providers/marketplace_provider.dart)).
 * **UI Elements Needed**: "My Orders / History" screen for customer role displaying a list of order cards, status badges (`pending`, `active`, `completed`, `cancelled`), service details, timestamp, and tap-to-track navigation to `JobStatusScreen`.
 * **Complexity Estimate**: **Medium** — requires new customer order list screen and provider binding.
 * **Dependencies / Ordering**: Batch 2. Core order history feature for customer role.
@@ -126,8 +125,8 @@ This document outlines the scoping, backend contracts, UI requirements, and impl
   * **Response**: `200 OK` → Array of `EmployeeResponse`: `[{"id": "...", "username": "...", "email": "...", "is_active": true/false, "created_at": "..."}]`
   * **Auth**: Must have `models.RoleOwner` ("owner" role).
   * **Side Effects**: Queries MongoDB for all employee/driver accounts associated with the requesting owner ID (`GetEmployeesByOwner`).
-* **Which Screen(s) / Provider(s) Should Call It**: `OwnerDashboardScreen` ([`frontend/lib/screens/owner_dashboard_screen.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/owner_dashboard_screen.dart)) or a new `FleetManagementScreen` ([`frontend/lib/screens/fleet_management_screen.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/fleet_management_screen.dart)), wired into `AuthProvider`.
-* **UI Elements Needed**: "Manage Drivers" card on owner dashboard opening `FleetManagementScreen`, listing registered drivers, active status toggles, creation dates, and driver addition controls.
+* **Which Screen(s) / Provider(s) Should Call It**: `EmployeeScreen` ([`frontend/lib/screens/employee_screen.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/employee_screen.dart)) or `HomeScreen` ([`frontend/lib/screens/home_screen.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/home_screen.dart)), wired into `OwnerProvider`.
+* **UI Elements Needed**: "Manage Drivers" card on owner dashboard opening `EmployeeScreen`, listing registered drivers, active status toggles, creation dates, and driver addition controls.
 * **Complexity Estimate**: **Medium** — requires new list UI view with driver status indicators for business owners.
 * **Dependencies / Ordering**: Batch 3 (Fleet Management).
 
@@ -135,42 +134,17 @@ This document outlines the scoping, backend contracts, UI requirements, and impl
 
 ## 5. Compliance & KYC Review Admin Flow Endpoints
 
-### 5.1 `GET /auth/kyb-kye/pending`
+### 5.1 `GET /auth/kyb-kye/pending` **[EXCLUDED PER ADR-0013]**
 * **Backend Contract**: [`services/auth-service/internal/handlers/auth.go:1279`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go#L1279)
-  * **Method**: `GET /auth/kyb-kye/pending`
-  * **Headers / Query Params**: `X-Reviewer-Token` (or `reviewer_token`) and `X-Internal-Token` (or `internal_token`).
-  * **Response**: `200 OK` → Array of pending submissions: `[{"user_id": "...", "email": "...", "username": "...", "role": "owner"|"driver", "kyc_status": "pending", "kye_status": "pending", "id_front_url": "...", "id_back_url": "...", "selfie_url": "...", "business_proof_url": "...", "document_errors": [...]}]`
-  * **Auth**: Requires valid reviewer token AND internal service token (`authenticateReviewer`).
-  * **Side Effects**: Generates 15-minute cryptographically signed URLs for all uploaded verification document files (`storage.GetSignedURL`).
-* **Which Screen(s) / Provider(s) Should Call It**: A new `ComplianceReviewQueueScreen` ([`frontend/lib/screens/compliance_review_queue_screen.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/compliance_review_queue_screen.dart)), backed by a new `ComplianceProvider` ([`frontend/lib/providers/compliance_provider.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/providers/compliance_provider.dart)).
-* **UI Elements Needed**: Reviewer queue screen displaying pending KYB (owner) and KYE (driver) verification applications, applicant metadata, document thumbnail preview buttons, and status filter tabs.
-* **Complexity Estimate**: **Large** — requires new admin compliance review screen, reviewer authentication state, and document preview integration.
-* **Dependencies / Ordering**: Batch 4.
+* **Which Screen(s) / Provider(s) Should Call It**: **[EXCLUDED PER ADR-0013]** Reserved for separate Support Agent Console application.
 
-### 5.2 `POST /auth/kyb-kye/review`
+### 5.2 `POST /auth/kyb-kye/review` **[EXCLUDED PER ADR-0013]**
 * **Backend Contract**: [`services/auth-service/internal/handlers/auth.go:1373`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go#L1373)
-  * **Method**: `POST /auth/kyb-kye/review`
-  * **Body**: `{"user_id": "...", "action": "approve"|"reject", "reason": "optional reason"}`
-  * **Headers / Query Params**: `X-Reviewer-Token` (or `reviewer_token`) and `X-Internal-Token` (or `internal_token`).
-  * **Response**: `200 OK` → `{"status": "reviewed", "action": "approve"|"reject"}`.
-  * **Auth**: Reviewer token + internal service token required (`authenticateReviewer`). Target user must be in `pending_approval` status.
-  * **Side Effects**: Updates user `kyc_status` / `kye_status` in MongoDB to `approved` or `rejected`, sets `reviewer_id`, `reviewed_at`, `rejection_reason`. Ships `KYC_REVIEWED` security audit event.
-* **Which Screen(s) / Provider(s) Should Call It**: `ComplianceReviewQueueScreen` ([`frontend/lib/screens/compliance_review_queue_screen.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/compliance_review_queue_screen.dart)) via `ComplianceProvider`.
-* **UI Elements Needed**: "Approve" (green) and "Reject" (red) action buttons on each submission card in the compliance queue. Tapping "Reject" opens a dialog prompting for a mandatory rejection reason string.
-* **Complexity Estimate**: **Small** — action buttons and rejection reason modal within the compliance queue screen.
-* **Dependencies / Ordering**: Batch 4. Depends on `GET /auth/kyb-kye/pending`.
+* **Which Screen(s) / Provider(s) Should Call It**: **[EXCLUDED PER ADR-0013]** Reserved for separate Support Agent Console application.
 
-### 5.3 `GET /auth/documents/view`
+### 5.3 `GET /auth/documents/view` **[EXCLUDED PER ADR-0013]**
 * **Backend Contract**: [`services/auth-service/internal/handlers/auth.go:1463`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go#L1463)
-  * **Method**: `GET /auth/documents/view`
-  * **Query Params**: `token` (signed document URL token), `reviewer_token` (or `X-Reviewer-Token`), `internal_token` (or `X-Internal-Token`).
-  * **Response**: `200 OK` → Streams binary file content (`image/jpeg`, `image/png`, or `application/pdf`).
-  * **Auth**: Reviewer authentication required (`GetReviewerByToken`) + internal token match.
-  * **Side Effects**: Ships `DOCUMENT_VIEWED` audit event log.
-* **Which Screen(s) / Provider(s) Should Call It**: `DocumentViewerDialog` / `KycDocumentPreviewScreen` within `ComplianceReviewQueueScreen`.
-* **UI Elements Needed**: Document preview modal / image viewer widget within the compliance review UI that renders images or PDFs given the signed document URL token.
-* **Complexity Estimate**: **Small** — image/PDF network viewer dialog component.
-* **Dependencies / Ordering**: Batch 4. Depends on `GET /auth/kyb-kye/pending`.
+* **Which Screen(s) / Provider(s) Should Call It**: **[EXCLUDED PER ADR-0013]** Reserved for separate Support Agent Console application.
 
 ---
 
@@ -184,8 +158,8 @@ This document outlines the scoping, backend contracts, UI requirements, and impl
   * **Response**: `201 Created` → Ticket object: `{"id": "...", "context_id": "...", "customer_id": "...", "assigned_agent_id": "...", "status": "open"|"assigned"|"queued", "created_at": "...", "updated_at": "..."}`
   * **Auth**: Any authenticated user JWT (`claims.UserID`). Rate-limited per user (`ticket_create:<user_id>`).
   * **Side Effects**: Creates support ticket in MongoDB (`CreateTicketAndAssign`), automatically assigns available support agent if online, ships `TICKET_CREATED` and `TICKET_ASSIGNED`/`TICKET_QUEUED` security events.
-* **Which Screen(s) / Provider(s) Should Call It**: `ChatProvider` ([`frontend/lib/providers/chat_provider.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/providers/chat_provider.dart)), invoked from `JobStatusScreen` ("Contact Support / File Dispute") or `SupportScreen` ([`frontend/lib/screens/support_screen.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/support_screen.dart)).
-* **UI Elements Needed**: "Open Support Ticket" button on `JobStatusScreen` and `SupportScreen` that prompts user for problem context, calls `createTicket(contextId)`, and opens a support chat session.
+* **Which Screen(s) / Provider(s) Should Call It**: `ChatProvider` ([`frontend/lib/providers/chat_provider.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/providers/chat_provider.dart)), invoked from `JobStatusScreen` ("Contact Support / File Dispute") or `CreateTicketDialog` ([`frontend/lib/widgets/create_ticket_dialog.dart`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/widgets/create_ticket_dialog.dart)).
+* **UI Elements Needed**: "Open Support Ticket" button on `JobStatusScreen` opening `CreateTicketDialog` that prompts user for problem context, calls `createTicket(contextId)`, and opens a support chat session.
 * **Complexity Estimate**: **Medium** — ticket creation flow and support chat session binding in `ChatProvider`.
 * **Dependencies / Ordering**: Batch 5.
 
