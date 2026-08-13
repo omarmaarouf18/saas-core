@@ -125,6 +125,11 @@
     *   *(a) Skeleton Shimmer Primitive & Card Geometry Skeletons*: **[VERIFIED]** Built reusable `SkeletonLoader` primitive in `frontend/lib/widgets/skeleton_loader.dart` with design system tokens (`AppColors`, `AppRadius`, `AppMotion`), and per-screen card geometry loaders (`MarketplaceCardSkeleton`, `HomeDashboardSkeleton`, `EmployeeJobCardSkeleton`, `WalletScreenSkeleton`) matching real card dimensions, padding, avatars, and layout bounds across `customer_marketplace_screen.dart`, `home_screen.dart`, `employee_jobs_screen.dart`, and `wallet_screen.dart`.
     *   *(b) Animated Cross-Fade Transitions*: **[VERIFIED]** Wired `AnimatedSwitcher` (`AppMotion.durationMedium`, `AppMotion.curveStateChange`) across initial loading states while retaining pull-to-refresh `RefreshIndicator` for subsequent updates.
     *   *(c) Automated & Verification Gates*: **[VERIFIED]** `flutter analyze` (0 issues), `flutter test` (100% pass, 186/186 tests including 9 unit & state transition widget tests in `frontend/test/skeleton_loader_test.dart`).
+    * **Phase 25: Employee Shell Restructuring & Live Navigation** — **[100% COMPLETE & VERIFIED]**
+    *   *(a) Employee Tabbed Shell Structure*: **[VERIFIED]** Restructured employee entry point from a flat screen to `EmployeeHomeScreen` (`frontend/lib/screens/employee_home_screen.dart`), matching owner and customer shell architecture with persistent 3-tab `NavigationBar` (`employee_bottom_navigation_bar`), `IndexedStack`, and lazy tab loading (`employee_nav_tab_home`, `employee_nav_tab_history`, `employee_nav_tab_settings`).
+    *   *(b) Employee History Screen*: **[VERIFIED]** Created `EmployeeHistoryScreen` (`frontend/lib/screens/employee_history_screen.dart`) displaying past/completed and cancelled jobs with status badges, customer info, payment methods, locked escrow, completion timestamps, cancellation reasons, skeleton loaders, and pull-to-refresh.
+    *   *(c) Action Simulator Demotion*: **[VERIFIED]** Refactored `EmployeeJobsScreen` (`frontend/lib/screens/employee_jobs_screen.dart`) with `isEmbeddedInTab` support, filtering active assigned jobs on Home tab and demoting action simulator card (`_buildActionSimulatorCard()`) below active jobs list.
+    *   *(d) Automated & Verification Gates*: **[VERIFIED]** Clean `flutter analyze` (0 issues), `flutter test` (100% pass, 192/192 tests passed including 6 test cases in `test/employee_home_screen_test.dart`).
 
  ---
 
@@ -210,6 +215,8 @@
    * `customer_home_screen.dart`
    * `kyb_kye_review_screen.dart`
    * `owner_history_screen.dart`
+   * `employee_home_screen.dart`
+   * `employee_history_screen.dart`
  * **Widgets**:
     * `location_picker_map.dart`
     * `rating_summary_card.dart`

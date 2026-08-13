@@ -26,7 +26,8 @@ import 'chat_screen.dart';
 import 'kyc_document_upload_screen.dart';
 
 class EmployeeJobsScreen extends StatefulWidget {
-  const EmployeeJobsScreen({super.key});
+  final bool isEmbeddedInTab;
+  const EmployeeJobsScreen({super.key, this.isEmbeddedInTab = false});
 
   @override
   State<EmployeeJobsScreen> createState() => _EmployeeJobsScreenState();
@@ -240,6 +241,59 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     final auth = Provider.of<AuthProvider>(context);
     final jobsProvider = Provider.of<EmployeeJobsProvider>(context);
 
+    final activeJobs = jobsProvider.jobs.where((j) {
+      final status = j.status.toLowerCase().trim();
+      return status != 'completed' && status != 'cancelled';
+    }).toList();
+
+    final bodyContent = RefreshIndicator(
+      onRefresh: _refreshJobs,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(auth.user?.username.isNotEmpty == true
+                ? auth.user!.username
+                : (auth.user?.email ?? '')),
+            const SizedBox(height: AppSpacing.lg),
+            ThemedSectionHeader(title: l10n.employeeJobsSectionAssigned),
+            const SizedBox(height: AppSpacing.sm),
+            AnimatedSwitcher(
+              duration: AppMotion.durationMedium,
+              switchInCurve: AppMotion.curveStateChange,
+              switchOutCurve: AppMotion.curveStateChange,
+              child: (jobsProvider.isLoading && jobsProvider.jobs.isEmpty)
+                  ? Column(
+                      key: const ValueKey('employee_jobs_skeleton_list'),
+                      children: List.generate(
+                        3,
+                        (index) => const EmployeeJobCardSkeleton(),
+                      ),
+                    )
+                  : (jobsProvider.error != null && jobsProvider.jobs.isEmpty)
+                      ? ThemedErrorBanner(
+                          key: const ValueKey('employee_jobs_error'),
+                          message: jobsProvider.error!,
+                          onRetry: _refreshJobs,
+                        )
+                      : KeyedSubtree(
+                          key: const ValueKey('employee_jobs_content'),
+                          child: _buildJobsList(activeJobs),
+                        ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            _buildActionSimulatorCard(),
+          ],
+        ),
+      ),
+    );
+
+    if (widget.isEmbeddedInTab) {
+      return bodyContent;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
@@ -284,49 +338,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshJobs,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(auth.user?.username.isNotEmpty == true
-                  ? auth.user!.username
-                  : (auth.user?.email ?? '')),
-              const SizedBox(height: AppSpacing.lg),
-              _buildActionSimulatorCard(),
-              const SizedBox(height: AppSpacing.xl),
-              ThemedSectionHeader(title: l10n.employeeJobsSectionAssigned),
-              const SizedBox(height: AppSpacing.sm),
-              AnimatedSwitcher(
-                duration: AppMotion.durationMedium,
-                switchInCurve: AppMotion.curveStateChange,
-                switchOutCurve: AppMotion.curveStateChange,
-                child: (jobsProvider.isLoading && jobsProvider.jobs.isEmpty)
-                    ? Column(
-                        key: const ValueKey('employee_jobs_skeleton_list'),
-                        children: List.generate(
-                          3,
-                          (index) => const EmployeeJobCardSkeleton(),
-                        ),
-                      )
-                    : (jobsProvider.error != null && jobsProvider.jobs.isEmpty)
-                        ? ThemedErrorBanner(
-                            key: const ValueKey('employee_jobs_error'),
-                            message: jobsProvider.error!,
-                            onRetry: _refreshJobs,
-                          )
-                        : KeyedSubtree(
-                            key: const ValueKey('employee_jobs_content'),
-                            child: _buildJobsList(jobsProvider.jobs),
-                          ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      body: bodyContent,
     );
   }
 

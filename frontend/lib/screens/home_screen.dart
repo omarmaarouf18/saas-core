@@ -18,7 +18,7 @@ import 'notifications_screen.dart';
 import 'subscription_screen.dart';
 
 import 'owner_history_screen.dart';
-import 'employee_jobs_screen.dart';
+import 'employee_home_screen.dart';
 import 'customer_home_screen.dart';
 import 'kyb_kye_review_screen.dart';
 import 'owner_reconciliation_queue_screen.dart';
@@ -159,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (!isOwner) {
       if (user.role == 'employee') {
-        return const EmployeeJobsScreen();
+        return EmployeeHomeScreen(initialTabIndex: widget.initialTabIndex);
       }
       if (user.role == 'user') {
         return const CustomerHomeScreen();

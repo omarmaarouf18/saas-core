@@ -252,7 +252,7 @@ void main() {
     expect(jobsProvider.completeJobCalled, isTrue);
     expect(jobsProvider.completedJobId, 'job-active-escrow-001');
     expect(jobsProvider.lastCashCollectedParam, isFalse);
-    expect(find.text('COMPLETED'), findsOneWidget);
+    expect(find.textContaining('job-active-escrow-001'), findsNothing);
   });
 
   testWidgets(
@@ -295,7 +295,7 @@ void main() {
     expect(jobsProvider.completeJobCalled, isTrue);
     expect(jobsProvider.completedJobId, 'job-active-cod-002');
     expect(jobsProvider.lastCashCollectedParam, isTrue);
-    expect(find.text('COMPLETED'), findsOneWidget);
+    expect(find.textContaining('job-active-cod-002'), findsNothing);
   });
 
   testWidgets('(e) On failure, friendly error message is shown inline',
