@@ -1093,14 +1093,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get employeeJobsSuggestionCompleted => 'تم إكمال الطلب';
 
   @override
-  String get employeeJobsSimulatorTitle => 'محاكي إجراءات الموظف';
+  String get employeeJobsSimulatorTitle => 'تسجيل حدث الخدمة';
 
   @override
   String get employeeJobsSimulatorDesc =>
-      'تسجيل أحداث الخدمة مباشرة في سجل مراجعة النشاط.';
+      'تسجيل تحديثات الحالة وأحداث الخدمة مباشرة في سجل تدقيق المنشأة.';
 
   @override
-  String get employeeJobsSimulatorLabel => 'نص الإجراء المحاكى';
+  String get employeeJobsSimulatorLabel => 'إجراء حدث الخدمة';
 
   @override
   String get employeeJobsSimulatorHint =>
@@ -1108,10 +1108,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get employeeJobsSimulatorValidation =>
-      'يرجى كتابة أو اختيار إجراء للمحاكاة';
+      'يرجى كتابة أو اختيار حدث خدمة لتسجيله';
 
   @override
-  String get employeeJobsSimulateButton => 'محاكاة الإجراء';
+  String get employeeJobsSimulateButton => 'تسجيل حدث الخدمة';
 
   @override
   String get employeeJobsSectionAssigned => 'الطلبات المسندة إليك';

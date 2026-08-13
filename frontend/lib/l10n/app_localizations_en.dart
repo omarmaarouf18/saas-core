@@ -1103,14 +1103,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get employeeJobsSuggestionCompleted => 'Job Completed';
 
   @override
-  String get employeeJobsSimulatorTitle => 'Employee Action Simulator';
+  String get employeeJobsSimulatorTitle => 'Log Service Event';
 
   @override
   String get employeeJobsSimulatorDesc =>
-      'Log service events directly into the tenant audit trail.';
+      'Log status updates and service events directly into the tenant audit trail.';
 
   @override
-  String get employeeJobsSimulatorLabel => 'Simulation Action Text';
+  String get employeeJobsSimulatorLabel => 'Service Event Action';
 
   @override
   String get employeeJobsSimulatorHint =>
@@ -1118,10 +1118,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get employeeJobsSimulatorValidation =>
-      'Please enter or select an action to simulate';
+      'Please enter or select a service event to log';
 
   @override
-  String get employeeJobsSimulateButton => 'Simulate Action';
+  String get employeeJobsSimulateButton => 'Log Service Event';
 
   @override
   String get employeeJobsSectionAssigned => 'Your Assigned Jobs';

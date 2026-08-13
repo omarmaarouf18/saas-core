@@ -16,6 +16,7 @@ type Config struct {
 	InternalServiceToken      string
 	AuthServiceURL            string
 	ChatServiceURL            string
+	NotificationServiceURL    string
 	CloudWatchLogGroup        string
 	TLSCertPath               string
 	TLSKeyPath                string
@@ -82,6 +83,11 @@ func Load() (*Config, error) {
 		chatServiceURL = "http://localhost:3001"
 	}
 
+	notificationServiceURL := os.Getenv("NOTIFICATION_SERVICE_URL")
+	if notificationServiceURL == "" {
+		notificationServiceURL = "http://localhost:3004"
+	}
+
 	appEnv := os.Getenv("APP_ENV")
 	if appEnv == "" {
 		appEnv = "production"
@@ -105,6 +111,7 @@ func Load() (*Config, error) {
 		InternalServiceToken:      internalServiceToken,
 		AuthServiceURL:            authServiceURL,
 		ChatServiceURL:            chatServiceURL,
+		NotificationServiceURL:    notificationServiceURL,
 		CloudWatchLogGroup:        os.Getenv("CLOUDWATCH_LOG_GROUP"),
 		TLSCertPath:               tlsCertPath,
 		TLSKeyPath:                tlsKeyPath,

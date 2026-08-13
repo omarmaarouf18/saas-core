@@ -23,6 +23,8 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
   late int _currentIndex;
   late Set<int> _visitedTabs;
 
+  NotificationsProvider? _notificationsProvider;
+
   @override
   void initState() {
     super.initState();
@@ -30,7 +32,26 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
     _visitedTabs = {_currentIndex};
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshData();
+      if (mounted) {
+        _notificationsProvider =
+            Provider.of<NotificationsProvider>(context, listen: false);
+        _notificationsProvider?.addListener(_onNotificationsChanged);
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    _notificationsProvider?.removeListener(_onNotificationsChanged);
+    super.dispose();
+  }
+
+  void _onNotificationsChanged() {
+    if (!mounted || _notificationsProvider == null) return;
+    final notifs = _notificationsProvider!.notifications;
+    if (notifs.isNotEmpty && notifs.first.type == 'job_alert') {
+      _refreshData();
+    }
   }
 
   @override

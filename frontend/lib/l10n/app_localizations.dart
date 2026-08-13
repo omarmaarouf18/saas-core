@@ -2142,19 +2142,19 @@ abstract class AppLocalizations {
   /// No description provided for @employeeJobsSimulatorTitle.
   ///
   /// In en, this message translates to:
-  /// **'Employee Action Simulator'**
+  /// **'Log Service Event'**
   String get employeeJobsSimulatorTitle;
 
   /// No description provided for @employeeJobsSimulatorDesc.
   ///
   /// In en, this message translates to:
-  /// **'Log service events directly into the tenant audit trail.'**
+  /// **'Log status updates and service events directly into the tenant audit trail.'**
   String get employeeJobsSimulatorDesc;
 
   /// No description provided for @employeeJobsSimulatorLabel.
   ///
   /// In en, this message translates to:
-  /// **'Simulation Action Text'**
+  /// **'Service Event Action'**
   String get employeeJobsSimulatorLabel;
 
   /// No description provided for @employeeJobsSimulatorHint.
@@ -2166,13 +2166,13 @@ abstract class AppLocalizations {
   /// No description provided for @employeeJobsSimulatorValidation.
   ///
   /// In en, this message translates to:
-  /// **'Please enter or select an action to simulate'**
+  /// **'Please enter or select a service event to log'**
   String get employeeJobsSimulatorValidation;
 
   /// No description provided for @employeeJobsSimulateButton.
   ///
   /// In en, this message translates to:
-  /// **'Simulate Action'**
+  /// **'Log Service Event'**
   String get employeeJobsSimulateButton;
 
   /// No description provided for @employeeJobsSectionAssigned.

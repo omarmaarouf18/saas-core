@@ -302,6 +302,7 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 type jobAlertRequest struct {
 	TenantID    string `json:"tenant_id"`
 	JobID       string `json:"job_id"`
+	EmployeeID  string `json:"employee_id,omitempty"`
 	ServiceName string `json:"service_name"`
 	Description string `json:"description"`
 }
@@ -333,6 +334,7 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 		ID:        fmt.Sprintf("job-alert-%d", time.Now().UnixNano()),
 		Type:      "job_alert",
 		TenantID:  req.TenantID,
+		UserID:    req.EmployeeID,
 		Title:     "🆕 New Job Alert",
 		Body:      fmt.Sprintf("New job %s for service %s: %s", req.JobID, req.ServiceName, req.Description),
 		Roles:     []hub.Role{hub.RoleOwner, hub.RoleEmployee, hub.RoleClient},

@@ -77,6 +77,7 @@ type UserService struct {
 	store                     *store.MongoDB
 	authServiceURL            string
 	chatServiceURL            string
+	notificationServiceURL    string
 	limiter                   *handlerutil.RateLimiter
 	readLimiter               *handlerutil.RateLimiter
 	internalServiceToken      string
@@ -85,6 +86,7 @@ type UserService struct {
 	locationInFlight          map[string]bool
 	authClient                *resilience.ResilienceClient
 	chatClient                *resilience.ResilienceClient
+	notificationClient        *resilience.ResilienceClient
 	httpClient                *http.Client
 	appEnv                    string
 	allowTestPaymentBypass    bool
@@ -154,6 +156,11 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		chatServiceURL = "http://localhost:3001"
 	}
 
+	notificationServiceURL := cfg.NotificationServiceURL
+	if notificationServiceURL == "" {
+		notificationServiceURL = "http://localhost:3004"
+	}
+
 	var client *http.Client
 	if cfg.TLSCertPath != "" && cfg.TLSKeyPath != "" && cfg.TLSCAPath != "" {
 		var err error
@@ -170,11 +177,13 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 
 	authClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
 	chatClient := resilience.NewClient(client, "chat-service", 2, 5*time.Second)
+	notificationClient := resilience.NewClient(client, "notification-service", 2, 5*time.Second)
 
 	return &UserService{
 		store:                     s,
 		authServiceURL:            cfg.AuthServiceURL,
 		chatServiceURL:            chatServiceURL,
+		notificationServiceURL:    notificationServiceURL,
 		limiter:                   handlerutil.NewRateLimiter(rl),
 		readLimiter:               handlerutil.NewRateLimiter(rlRead),
 		internalServiceToken:      cfg.InternalServiceToken,
@@ -183,6 +192,7 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		rdb:                       rdb,
 		authClient:                authClient,
 		chatClient:                chatClient,
+		notificationClient:        notificationClient,
 		httpClient:                client,
 		appEnv:                    cfg.AppEnv,
 		allowTestPaymentBypass:    cfg.AllowTestPaymentBypass,
@@ -709,6 +719,8 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
 		return
 	}
+
+	u.broadcastJobAlert(job, svc)
 
 	// For transport category jobs, skip escrow locking entirely during TrackJob regardless of payment method.
 	if isTransport {
@@ -2262,6 +2274,67 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 	}()
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "location updated"})
+}
+
+func (u *UserService) broadcastJobAlert(job *models.Job, svc *models.Service) {
+	if job == nil || job.EmployeeID == "" {
+		return
+	}
+
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("[USER] Recovered from panic in broadcastJobAlert: %v", r)
+			}
+		}()
+
+		serviceName := "General Service"
+		desc := fmt.Sprintf("Lat: %.4f, Lon: %.4f", job.Location.Latitude, job.Location.Longitude)
+		if svc != nil {
+			if svc.Name != "" {
+				serviceName = svc.Name
+			}
+			if svc.Category != "" {
+				desc = fmt.Sprintf("Category: %s (Lat: %.4f, Lon: %.4f)", svc.Category, job.Location.Latitude, job.Location.Longitude)
+			}
+		}
+
+		payload := map[string]any{
+			"tenant_id":    job.OwnerID,
+			"job_id":       job.ID,
+			"employee_id":  job.EmployeeID,
+			"service_name": serviceName,
+			"description":  desc,
+		}
+
+		bodyBytes, err := json.Marshal(payload)
+		if err != nil {
+			log.Printf("[USER] Job alert broadcast error (marshal) for job %s: %v", job.ID, err)
+			return
+		}
+
+		broadcastURL := fmt.Sprintf("%s/notifications/broadcast/job-alert", u.notificationServiceURL)
+		// #nosec G704 //nolint:gosec -- broadcastURL is constructed from internal service config
+		req, err := http.NewRequest("POST", broadcastURL, bytes.NewReader(bodyBytes))
+		if err != nil {
+			log.Printf("[USER] Job alert broadcast error (request build) for job %s: %v", job.ID, err)
+			return
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Internal-Token", u.internalServiceToken)
+
+		resp, err := u.notificationClient.Do(req)
+		if err != nil {
+			log.Printf("[USER] Job alert broadcast error (call notification-service) for job %s: %v", job.ID, err)
+			return
+		}
+		_ = resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			log.Printf("[USER] Job alert broadcast failed for job %s with status %d", job.ID, resp.StatusCode)
+		}
+	}()
 }
 
 // POST /users/jobs/cancel
