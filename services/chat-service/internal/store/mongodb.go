@@ -42,7 +42,8 @@ type MongoDB struct {
 
 // NewMongoDB connects to MongoDB and initializes collections.
 func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
-	client, err := mongo.Connect(options.Client().ApplyURI(uri))
+	opts := options.Client().ApplyURI(uri).SetMaxPoolSize(100)
+	client, err := mongo.Connect(opts)
 	if err != nil {
 		return nil, fmt.Errorf("store: failed to connect to MongoDB: %w", err)
 	}
