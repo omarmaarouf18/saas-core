@@ -348,7 +348,7 @@ This file tracks historical entries for the primary category: **New Features Cha
 ## Real-Time Job-Assignment Notifications End-to-End Wiring
 
 - **Implementation Detail**: Wired up real-time job-assignment notifications end-to-end across `user-service`, `notification-service`, and the Flutter frontend. Added `NotificationServiceURL` configuration to `user-service/internal/config/config.go` (default `http://localhost:3004`). In `user-service/internal/handlers/handlers.go`, added `notificationClient` (`resilience.NewClient` with 2 retries and 5s timeout) and `broadcastJobAlert` non-blocking helper goroutine executing on `TrackJob` when an `EmployeeID` is assigned. The request includes `X-Internal-Token` header and JSON body `{tenant_id, job_id, employee_id, service_name, description}` without delaying or failing parent job creation. In `notification-service/internal/handlers/handlers.go`, updated `jobAlertRequest` and `BroadcastJobAlert` to accept `employee_id` and assign `UserID: req.EmployeeID` on `hub.Notification` so targeted push notifications work. On the frontend (`frontend/lib/screens/employee_home_screen.dart`), wired a `NotificationsProvider` listener to reactively call `_refreshData()` whenever a `job_alert` SSE event arrives. Added integration test suite `services/user-service/internal/handlers/job_alert_broadcast_test.go`.
-- **Commit SHA**: ``bd7f554b429fb8a0651954fab84e1884d3679050``
+- **Commit SHA**: ``6b7fd32e2db76f8ca7afb337b11ec633d4ab0104``
 - **Verification**: Verified via `make ci` (0 issues across all Go services), `flutter analyze` (0 issues), `flutter test` (100% pass across 202 test cases), and `make docs-check`. ✅
 
 
