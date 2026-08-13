@@ -184,7 +184,7 @@ Following the completion of Phase 13 (Backend Endpoints Integration Sweep), the 
 *   **Customer Role**: Service directory browsing and filtering (`CustomerMarketplaceScreen`), job booking and price counter-offer negotiation, order history (`CustomerJobsScreen` / "My Orders"), active job delivery live tracking map (`CustomerJobMapScreen`), real-time channel chat (`ChatScreen`), and complaint ticket submission (`CreateTicketDialog`).
 *   **Owner Role**: Business operational dashboard (`HomeScreen`), revenue and e-wallet ledger (`WalletScreen`), worker management and registered employee roster (`EmployeeScreen`), fleet tracking map (`OwnerFleetMapScreen`), COD cash reconciliation queue (`OwnerReconciliationQueueScreen`), service directory management (`ServiceScreen`), subscription tier management (`SubscriptionScreen`), and job cancellation (`CancelJobDialog`).
 *   **Employee Role**: Direct authentication (bypassing 2FA), assigned job task roster (`EmployeeJobsScreen`), COD vs non-COD job completion with cash collection verification, and background/foreground live GPS location tracking with speed and rate-limit throttle handling (`EmployeeLocationProvider`).
-*   **Reviewer / Admin Role**: KYB/KYE verification queue roster (`KybKyeReviewScreen`), raw document image and PDF preview viewer (`DocumentViewerDialog`), and approve/reject review decisions with mandatory rejection notes.
+*   **Reviewer / Admin Role**: *Excluded from consumer app per [ADR-0013](docs/adr/0013-support-agent-console-as-separate-client-application.md)*. Administrative review tools, KYB/KYE queues, and support ticket resolution are intentionally separated into a dedicated admin console application to prevent information leakage via mobile binary decompilation.
 
 ---
 
