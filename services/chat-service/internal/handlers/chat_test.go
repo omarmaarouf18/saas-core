@@ -29,7 +29,7 @@ func connectTestMongoDB(ctx context.Context, dbName string) (*store.MongoDB, err
 		return store.NewMongoDB(ctx, mongoURI, dbName)
 	}
 
-	s, err := store.NewMongoDB(ctx, "mongodb://localhost:27017", dbName)
+	s, err := store.NewMongoDB(ctx, "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin", dbName)
 	if err == nil {
 		testMsg := &chat.Message{Channel: "test", Content: "ping"}
 		if err := s.PersistMessage(ctx, testMsg); err == nil {
@@ -38,7 +38,7 @@ func connectTestMongoDB(ctx context.Context, dbName string) (*store.MongoDB, err
 		_ = s.Close(ctx)
 	}
 
-	return store.NewMongoDB(ctx, "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin", dbName)
+	return store.NewMongoDB(ctx, "mongodb://localhost:27017", dbName)
 }
 
 func TestCanAccessChannel(t *testing.T) {
