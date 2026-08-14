@@ -35,10 +35,16 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/service ./cmd/mai
 # ---- Production Stage ----------------------------------------------------
 FROM alpine:3.20 AS prod
 
-RUN apk --no-cache add ca-certificates curl
+RUN apk --no-cache add ca-certificates curl \
+    && addgroup -S appgroup && adduser -S appuser -G appgroup
 
 COPY --from=build /bin/service /bin/service
 
 EXPOSE 3004
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 \
+  CMD curl -f -s -k --cert /app/certs/notification-service.crt --key /app/certs/notification-service.key https://localhost:3004/health || curl -f -s -k --cert /app/certs/server.crt --key /app/certs/server.key https://localhost:3004/health || curl -f -s -k https://localhost:3004/health || curl -f -s http://localhost:3004/health || exit 1
+
+USER appuser
 
 ENTRYPOINT ["/bin/service"]
