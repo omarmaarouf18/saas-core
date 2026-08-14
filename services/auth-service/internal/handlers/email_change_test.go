@@ -57,7 +57,7 @@ func TestEmailChange_FullLifecycleAndSecurity(t *testing.T) {
 	defer rdb.Close()
 
 	cfg := &config.Config{AppEnv: "local", GatewaySecret: "test-gateway-secret", InternalServiceToken: "test-internal-token-123"}
-	mockStorage, _ := storage.NewLocalStorage(t.TempDir(), "/api/v1", os.Getenv("JWT_SECRET"))
+	mockStorage, _ := storage.NewLocalStorage(t.TempDir(), "/api/v1", os.Getenv("JWT_SECRET"), "", "test")
 	a := NewAuth(s, &mockOTPDispatcher{}, cfg, rdb, mockStorage)
 
 	// Seed User A (user to change email) and User B (existing email clash)
@@ -253,7 +253,7 @@ func TestEmailChange_ExpiredOTP(t *testing.T) {
 	defer rdb.Close()
 
 	cfg := &config.Config{AppEnv: "local", GatewaySecret: "test-gateway-secret", InternalServiceToken: "test-internal-token-123"}
-	mockStorage, _ := storage.NewLocalStorage(t.TempDir(), "/api/v1", os.Getenv("JWT_SECRET"))
+	mockStorage, _ := storage.NewLocalStorage(t.TempDir(), "/api/v1", os.Getenv("JWT_SECRET"), "", "test")
 	a := NewAuth(s, &mockOTPDispatcher{}, cfg, rdb, mockStorage)
 
 	user := &models.User{
@@ -329,7 +329,7 @@ func TestEmailChange_ConcurrentConfirmRace(t *testing.T) {
 	defer rdb.Close()
 
 	cfg := &config.Config{AppEnv: "local", GatewaySecret: "test-gateway-secret", InternalServiceToken: "test-internal-token-123"}
-	mockStorage, _ := storage.NewLocalStorage(t.TempDir(), "/api/v1", os.Getenv("JWT_SECRET"))
+	mockStorage, _ := storage.NewLocalStorage(t.TempDir(), "/api/v1", os.Getenv("JWT_SECRET"), "", "test")
 	a := NewAuth(s, &mockOTPDispatcher{}, cfg, rdb, mockStorage)
 
 	user := &models.User{

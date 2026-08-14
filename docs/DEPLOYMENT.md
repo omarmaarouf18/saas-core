@@ -176,6 +176,9 @@ INTERNAL_SERVICE_TOKEN=<GENERATE_STRONG_SECRET>
 # AES-256 Key for OTP encryption at rest (64 hex chars / 32 bytes via `openssl rand -hex 32`)
 OTP_AES_KEY=<GENERATE_64_HEX_CHARS>
 
+# AES-256 Key for KYB/KYE document encryption at rest (64 hex chars / 32 bytes via `openssl rand -hex 32`)
+DOCUMENT_ENCRYPTION_KEY=<GENERATE_64_HEX_CHARS>
+
 # Optional Third-Party Services
 RESEND_API_KEY=re_your_live_key_here
 RESEND_FROM_EMAIL=Quick Delivery <noreply@yourdomain.com>
@@ -521,6 +524,18 @@ docker compose exec mongo mongosh -u root -p "$MONGO_INITDB_ROOT_PASSWORD" --aut
 '
 ```
 Expected output: `{ _id: "global", platform_fee_percentage: 0, platform_wallet_id: "platform-central" }`.
+
+### 11.2 KYB/KYE Document Encryption at Rest Migration (`encrypt-documents`)
+
+When upgrading host storage to application-level AES-256-GCM document encryption at rest, any existing unencrypted plaintext identity documents stored on local disk under `STORAGE_BASE_DIR` (e.g. `./data/documents`) must be encrypted in place using `DOCUMENT_ENCRYPTION_KEY`.
+
+Execute the one-time migration tool:
+
+```bash
+DOCUMENT_ENCRYPTION_KEY="$DOCUMENT_ENCRYPTION_KEY" go run ./services/auth-service/cmd/encrypt-documents/main.go -dir ./services/auth-service/data/documents
+```
+
+The migration command checks each file's AEAD tag header prior to encryption; files that are already encrypted are skipped, making the migration safe and idempotent.
 
 
 

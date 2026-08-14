@@ -56,7 +56,7 @@ func TestUpdateProfile_SelfServiceAndSecurity(t *testing.T) {
 	defer rdb.Close()
 
 	cfg := &config.Config{AppEnv: "local", GatewaySecret: "test-gateway-secret", InternalServiceToken: "test-internal-token-123"}
-	mockStorage, _ := storage.NewLocalStorage(t.TempDir(), "/api/v1", os.Getenv("JWT_SECRET"))
+	mockStorage, _ := storage.NewLocalStorage(t.TempDir(), "/api/v1", os.Getenv("JWT_SECRET"), "", "test")
 	mockDispatcher := &mockOTPDispatcher{}
 
 	a := NewAuth(s, mockDispatcher, cfg, rdb, mockStorage)

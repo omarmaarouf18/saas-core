@@ -152,7 +152,7 @@ func TestGetAuditLogAccessControl(t *testing.T) {
 	defer rdb.Close()
 
 	tempDir := t.TempDir()
-	storeLoc, _ := storage.NewLocalStorage(tempDir, "/api/v1", os.Getenv("JWT_SECRET"))
+	storeLoc, _ := storage.NewLocalStorage(tempDir, "/api/v1", os.Getenv("JWT_SECRET"), "", "test")
 	a := NewAuth(nil, nil, cfg, rdb, storeLoc)
 
 	token1, _ := jwtutil.GenerateToken("tenant-1", "owner", "tenant-1", "t1@example.com")
@@ -234,7 +234,7 @@ func setupTestAuth(t *testing.T) (*Auth, *store.MongoDB, func()) {
 	dispatcher := &mockOTPDispatcher{}
 
 	tempDir := t.TempDir()
-	storeLoc, _ := storage.NewLocalStorage(tempDir, "/api/v1", cfg.DocumentSigningSecret)
+	storeLoc, _ := storage.NewLocalStorage(tempDir, "/api/v1", cfg.DocumentSigningSecret, "", "test")
 	a := NewAuth(s, dispatcher, cfg, rdb, storeLoc)
 	cleanup := func() {
 		if s != nil {
@@ -1136,7 +1136,7 @@ func TestLogout_Denylist(t *testing.T) {
 		JWTSecret:            "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2",
 	}
 	tempDir := t.TempDir()
-	storeLoc, _ := storage.NewLocalStorage(tempDir, "/api/v1", cfg.JWTSecret)
+	storeLoc, _ := storage.NewLocalStorage(tempDir, "/api/v1", cfg.JWTSecret, "", "test")
 	a := NewAuth(nil, nil, cfg, rdb, storeLoc)
 
 	rec := httptest.NewRecorder()
@@ -1821,7 +1821,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 			JWTSecret:            "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2",
 		}
 		tempDir := t.TempDir()
-		storeLoc, _ := storage.NewLocalStorage(tempDir, "/api/v1", cfgLog.JWTSecret)
+		storeLoc, _ := storage.NewLocalStorage(tempDir, "/api/v1", cfgLog.JWTSecret, "", "test")
 		aLog := NewAuth(s, &mockOTPDispatcher{}, cfgLog, rdbLog, storeLoc)
 
 		user := &models.User{

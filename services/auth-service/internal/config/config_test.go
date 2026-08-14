@@ -12,6 +12,7 @@ func TestLoad_DefaultAppEnv(t *testing.T) {
 	// Set required environment variables to prevent Load() from failing
 	os.Setenv("JWT_SECRET", "dummy-jwt-secret")
 	os.Setenv("DOCUMENT_SIGNING_SECRET", "dummy-doc-signing-secret")
+	os.Setenv("DOCUMENT_ENCRYPTION_KEY", "dummy-doc-encryption-key")
 	os.Setenv("GATEWAY_SECRET", "dummy-gateway-secret")
 	os.Setenv("INTERNAL_SERVICE_TOKEN", "dummy-token")
 	os.Setenv("TLS_CERT_PATH", "dummy-cert")
@@ -25,6 +26,7 @@ func TestLoad_DefaultAppEnv(t *testing.T) {
 	defer func() {
 		os.Unsetenv("JWT_SECRET")
 		os.Unsetenv("DOCUMENT_SIGNING_SECRET")
+		os.Unsetenv("DOCUMENT_ENCRYPTION_KEY")
 		os.Unsetenv("GATEWAY_SECRET")
 		os.Unsetenv("INTERNAL_SERVICE_TOKEN")
 		os.Unsetenv("TLS_CERT_PATH")
@@ -48,9 +50,43 @@ func TestLoad_DefaultAppEnv(t *testing.T) {
 	}
 }
 
+func TestLoad_MissingDocumentEncryptionKeyInProduction(t *testing.T) {
+	os.Setenv("JWT_SECRET", "dummy-jwt-secret")
+	os.Setenv("DOCUMENT_SIGNING_SECRET", "dummy-doc-signing-secret")
+	os.Setenv("GATEWAY_SECRET", "dummy-gateway-secret")
+	os.Setenv("INTERNAL_SERVICE_TOKEN", "dummy-token")
+	os.Setenv("TLS_CERT_PATH", "dummy-cert")
+	os.Setenv("TLS_KEY_PATH", "dummy-key")
+	os.Setenv("TLS_CA_PATH", "dummy-ca")
+	os.Setenv("REDIS_URI", "redis://localhost:6379")
+	os.Setenv("APP_ENV", "production")
+	os.Unsetenv("DOCUMENT_ENCRYPTION_KEY")
+
+	defer func() {
+		os.Unsetenv("JWT_SECRET")
+		os.Unsetenv("DOCUMENT_SIGNING_SECRET")
+		os.Unsetenv("GATEWAY_SECRET")
+		os.Unsetenv("INTERNAL_SERVICE_TOKEN")
+		os.Unsetenv("TLS_CERT_PATH")
+		os.Unsetenv("TLS_KEY_PATH")
+		os.Unsetenv("TLS_CA_PATH")
+		os.Unsetenv("REDIS_URI")
+		os.Unsetenv("APP_ENV")
+	}()
+
+	_, err := config.Load()
+	if err == nil {
+		t.Fatalf("expected error when DOCUMENT_ENCRYPTION_KEY is missing in production mode, got nil")
+	}
+	if !strings.Contains(err.Error(), "DOCUMENT_ENCRYPTION_KEY") {
+		t.Errorf("expected error to mention DOCUMENT_ENCRYPTION_KEY, got %v", err)
+	}
+}
+
 func TestLoad_ResendConfig(t *testing.T) {
 	os.Setenv("JWT_SECRET", "dummy-jwt-secret")
 	os.Setenv("DOCUMENT_SIGNING_SECRET", "dummy-doc-signing-secret")
+	os.Setenv("DOCUMENT_ENCRYPTION_KEY", "dummy-doc-encryption-key")
 	os.Setenv("GATEWAY_SECRET", "dummy-gateway-secret")
 	os.Setenv("INTERNAL_SERVICE_TOKEN", "dummy-token")
 	os.Setenv("TLS_CERT_PATH", "dummy-cert")
@@ -61,6 +97,7 @@ func TestLoad_ResendConfig(t *testing.T) {
 	defer func() {
 		os.Unsetenv("JWT_SECRET")
 		os.Unsetenv("DOCUMENT_SIGNING_SECRET")
+		os.Unsetenv("DOCUMENT_ENCRYPTION_KEY")
 		os.Unsetenv("GATEWAY_SECRET")
 		os.Unsetenv("INTERNAL_SERVICE_TOKEN")
 		os.Unsetenv("TLS_CERT_PATH")
@@ -103,6 +140,7 @@ func TestLoad_ResendConfig(t *testing.T) {
 func TestLoad_MongoDatabaseDefaults(t *testing.T) {
 	os.Setenv("JWT_SECRET", "dummy-jwt-secret")
 	os.Setenv("DOCUMENT_SIGNING_SECRET", "dummy-doc-signing-secret")
+	os.Setenv("DOCUMENT_ENCRYPTION_KEY", "dummy-doc-encryption-key")
 	os.Setenv("GATEWAY_SECRET", "dummy-gateway-secret")
 	os.Setenv("INTERNAL_SERVICE_TOKEN", "dummy-token")
 	os.Setenv("TLS_CERT_PATH", "dummy-cert")
@@ -113,6 +151,7 @@ func TestLoad_MongoDatabaseDefaults(t *testing.T) {
 	defer func() {
 		os.Unsetenv("JWT_SECRET")
 		os.Unsetenv("DOCUMENT_SIGNING_SECRET")
+		os.Unsetenv("DOCUMENT_ENCRYPTION_KEY")
 		os.Unsetenv("GATEWAY_SECRET")
 		os.Unsetenv("INTERNAL_SERVICE_TOKEN")
 		os.Unsetenv("TLS_CERT_PATH")

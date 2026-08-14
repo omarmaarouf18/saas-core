@@ -19,7 +19,8 @@ func TestLocalStorage(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	secret := "super-secret-jwt-key-32-bytes-long!!"
-	store, err := NewLocalStorage(tempDir, "http://localhost:8080", secret)
+	encKey := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" // 64 hex chars
+	store, err := NewLocalStorage(tempDir, "http://localhost:8080", secret, encKey, "test")
 	if err != nil {
 		t.Fatalf("failed to create LocalStorage: %v", err)
 	}
@@ -97,15 +98,92 @@ func TestLocalStorage(t *testing.T) {
 	}
 
 	// 8. Test Invalid Signature Token
-	otherStore, _ := NewLocalStorage(tempDir, "http://localhost:8080", "different-secret-key-32-bytes!!")
+	otherStore, _ := NewLocalStorage(tempDir, "http://localhost:8080", "different-secret-key-32-bytes!!", encKey, "test")
 	_, err = otherStore.ValidateSignedURLToken(tokenStr)
 	if err == nil {
 		t.Errorf("Expected error validating token signed with wrong secret, got nil")
 	}
 }
 
+func TestLocalStorage_EncryptionRoundTripAndDiskVerification(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "storage-enc-test-*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	secret := "super-secret-jwt-key-32-bytes-long!!"
+	encKey := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+	store, err := NewLocalStorage(tempDir, "http://localhost:8080", secret, encKey, "test")
+	if err != nil {
+		t.Fatalf("failed to create LocalStorage: %v", err)
+	}
+
+	ctx := context.Background()
+
+	// Recognizable JPEG header + payload
+	jpegHeader := []byte{0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01}
+	plaintext := append(jpegHeader, []byte("CONFIDENTIAL-IDENTITY-DOCUMENT-PAYLOAD-12345")...)
+	key := "kyb/tenant-99/id_card.jpg"
+
+	// 1. Upload encrypted file
+	if err := store.Upload(ctx, key, bytes.NewReader(plaintext), "image/jpeg"); err != nil {
+		t.Fatalf("Upload failed: %v", err)
+	}
+
+	// 2. OpenFile transparent decryption round-trip
+	rc, err := store.OpenFile(key)
+	if err != nil {
+		t.Fatalf("OpenFile failed: %v", err)
+	}
+	defer rc.Close()
+
+	decryptedBytes, err := io.ReadAll(rc)
+	if err != nil {
+		t.Fatalf("ReadAll failed: %v", err)
+	}
+	if !bytes.Equal(decryptedBytes, plaintext) {
+		t.Fatalf("Decrypted bytes do not match original plaintext! Round-trip failed")
+	}
+
+	// 3. Inspect raw disk file to verify actual encryption at rest
+	diskFilePath := filepath.Join(tempDir, key)
+	diskBytes, err := os.ReadFile(diskFilePath)
+	if err != nil {
+		t.Fatalf("Failed to read raw disk file: %v", err)
+	}
+
+	// Disk file size must be larger than plaintext due to nonce + GCM tag
+	if len(diskBytes) <= len(plaintext) {
+		t.Errorf("Expected raw disk size (%d) to exceed plaintext size (%d) due to GCM overhead", len(diskBytes), len(plaintext))
+	}
+
+	// Disk file must NOT start with the JPEG header
+	if bytes.HasPrefix(diskBytes, jpegHeader) {
+		t.Errorf("SECURITY CRITICAL: Raw disk file starts with unencrypted JPEG header! Encryption at rest failed!")
+	}
+
+	// Disk file must NOT contain the plaintext secret string
+	if bytes.Contains(diskBytes, []byte("CONFIDENTIAL-IDENTITY-DOCUMENT-PAYLOAD-12345")) {
+		t.Errorf("SECURITY CRITICAL: Raw disk file contains raw plaintext payload string!")
+	}
+}
+
+func TestLocalStorage_ProductionModeMissingKey(t *testing.T) {
+	tempDir := t.TempDir()
+	secret := "super-secret-jwt-key-32-bytes-long!!"
+
+	// Calling NewLocalStorage with empty encKey in production mode must fail
+	_, err := NewLocalStorage(tempDir, "http://localhost:8080", secret, "", "production")
+	if err == nil {
+		t.Fatalf("Expected NewLocalStorage to fail when DOCUMENT_ENCRYPTION_KEY is empty in production mode, got nil")
+	}
+	if !strings.Contains(err.Error(), "DOCUMENT_ENCRYPTION_KEY") {
+		t.Errorf("Expected error to mention DOCUMENT_ENCRYPTION_KEY, got %v", err)
+	}
+}
+
 func TestLocalStorage_NewError(t *testing.T) {
-	// Try creating storage in a path that cannot be created (file instead of directory)
 	tempFile, err := os.CreateTemp("", "storage-file-*")
 	if err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
@@ -114,7 +192,7 @@ func TestLocalStorage_NewError(t *testing.T) {
 	tempFile.Close()
 
 	invalidDir := filepath.Join(tempFile.Name(), "subdir")
-	_, err = NewLocalStorage(invalidDir, "http://localhost", "secret")
+	_, err = NewLocalStorage(invalidDir, "http://localhost", "secret", "", "test")
 	if err == nil {
 		t.Errorf("Expected error when baseDir cannot be created, got nil")
 	}
@@ -127,7 +205,7 @@ func TestLocalStorage_UploadWriterFail(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir)
 
-	store, _ := NewLocalStorage(tempDir, "http://localhost:8080", "secret")
+	store, _ := NewLocalStorage(tempDir, "http://localhost:8080", "secret", "", "test")
 	ctx := context.Background()
 
 	// Pass a reader that fails midway

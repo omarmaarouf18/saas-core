@@ -14,6 +14,7 @@ type Config struct {
 	InternalServiceToken  string
 	JWTSecret             string
 	DocumentSigningSecret string
+	DocumentEncryptionKey string
 	OTPAESKey             string
 	CloudWatchLogGroup    string
 	TLSCertPath           string
@@ -91,6 +92,11 @@ func Load() (*Config, error) {
 		appEnv = "production"
 	}
 
+	docEncryptionKey := os.Getenv("DOCUMENT_ENCRYPTION_KEY")
+	if docEncryptionKey == "" && appEnv == "production" {
+		return nil, errors.New("config: required env var DOCUMENT_ENCRYPTION_KEY is empty in production")
+	}
+
 	storageBaseDir := os.Getenv("STORAGE_BASE_DIR")
 	if storageBaseDir == "" {
 		storageBaseDir = "./data/documents"
@@ -121,6 +127,7 @@ func Load() (*Config, error) {
 		InternalServiceToken:  internalServiceToken,
 		JWTSecret:             jwtSecret,
 		DocumentSigningSecret: docSigningSecret,
+		DocumentEncryptionKey: docEncryptionKey,
 		OTPAESKey:             os.Getenv("OTP_AES_KEY"),
 		CloudWatchLogGroup:    os.Getenv("CLOUDWATCH_LOG_GROUP"),
 		TLSCertPath:           tlsCertPath,

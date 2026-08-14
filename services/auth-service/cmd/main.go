@@ -116,8 +116,8 @@ func main() {
 	}
 	jwtutil.SetRedisClient(redisClient)
 
-	// Initialize local document storage for KYB/KYE with dedicated signing secret
-	docStorage, err := storage.NewLocalStorage(cfg.StorageBaseDir, cfg.StorageBaseURL, cfg.DocumentSigningSecret)
+	// Initialize local document storage for KYB/KYE with dedicated signing secret & AES-256-GCM encryption key
+	docStorage, err := storage.NewLocalStorage(cfg.StorageBaseDir, cfg.StorageBaseURL, cfg.DocumentSigningSecret, cfg.DocumentEncryptionKey, cfg.AppEnv)
 	if err != nil {
 		log.Fatalf("[AUTH] Failed to initialize storage: %v", err)
 	}
