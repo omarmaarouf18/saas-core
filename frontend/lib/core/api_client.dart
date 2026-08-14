@@ -28,12 +28,16 @@ class ApiClient {
   final String baseUrl;
   late final http.Client _client;
   String? _jwtToken;
+  String _appVersion = '1.0.0+1';
 
   /// Callback fired when a token is successfully refreshed during HTTP 401 retry.
   Future<void> Function(String newToken)? onTokenRefreshed;
 
   /// Callback fired when token refresh fails or session is expired (>7 days / frozen).
   Future<void> Function()? onAuthFailed;
+
+  /// Callback fired when backend returns HTTP 426 Upgrade Required.
+  Future<void> Function(Map<String, dynamic>? info)? onUpdateRequired;
 
   bool _isRefreshing = false;
   Completer<String?>? _refreshCompleter;
@@ -43,7 +47,11 @@ class ApiClient {
       'API_BASE_URL',
       defaultValue: 'https://localhost:8080/api/v1',
     ),
+    String? appVersion,
   }) {
+    if (appVersion != null && appVersion.isNotEmpty) {
+      _appVersion = appVersion;
+    }
     // Setup security overrides for local developer self-signed certificates.
     final httpClient = HttpClient();
     httpClient.badCertificateCallback = bypassBadCertificate;
@@ -54,6 +62,14 @@ class ApiClient {
     _jwtToken = token;
   }
 
+  void setAppVersion(String version) {
+    if (version.isNotEmpty) {
+      _appVersion = version;
+    }
+  }
+
+  String get appVersion => _appVersion;
+
   String? get currentToken => _jwtToken;
 
   Map<String, String> _getHeaders(
@@ -61,6 +77,7 @@ class ApiClient {
     final headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'X-App-Version': _appVersion,
     };
     final tokenToUse = overrideToken ?? _jwtToken;
     if (tokenToUse != null && tokenToUse.isNotEmpty) {
@@ -298,6 +315,19 @@ class ApiClient {
         path.startsWith('/auth/logout') ||
         path.startsWith('/auth/forgot-password') ||
         path.startsWith('/auth/reset-password');
+
+    if (response.statusCode == 426) {
+      final info = body is Map<String, dynamic> ? body : null;
+      onUpdateRequired?.call(info);
+      String? errorMsg;
+      if (body is Map) {
+        errorMsg = body['message'] ?? body['error'];
+      }
+      throw ApiClientException(
+        errorMsg ?? 'App update required',
+        statusCode: 426,
+      );
+    }
 
     if (response.statusCode == 401 && !isAuthEndpoint && onRetry != null) {
       final refreshedToken = await _attemptTokenRefresh();

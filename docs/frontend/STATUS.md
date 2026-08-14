@@ -216,6 +216,7 @@
    * `owner_history_screen.dart`
    * `employee_home_screen.dart`
    * `employee_history_screen.dart`
+   * `update_required_screen.dart`
  * **Widgets**:
     * `location_picker_map.dart`
     * `rating_summary_card.dart`
