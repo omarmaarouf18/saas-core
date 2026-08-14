@@ -2,6 +2,15 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
+## AES-256-GCM Encryption at Rest for KYB/KYE Identity Documents on Local Storage
+
+- **Implementation Detail**:
+  - **Application-Level Storage Encryption (`services/auth-service/internal/storage/storage.go`)**: Enforced AES-256-GCM encryption at rest for all uploaded KYB/KYE identity documents (ID front/back, business proof, selfies). `LocalStorage.Upload()` generates a fresh 12-byte random nonce per file and encrypts raw file bytes via `cipher.AEAD.Seal(nonce, nonce, plaintext, nil)` prior to writing to disk. `LocalStorage.OpenFile()` transparently reads and decrypts ciphertext via `cipher.AEAD.Open(nil, nonce, ciphertext, nil)`, keeping reviewer-facing document viewing flows (`GetSignedURL` -> `ValidateSignedURLToken` -> `OpenFile`) fully operational without API-shape changes. Preserved strict path traversal validation (`strings.HasPrefix(absDest, absBase)`).
+  - **Cryptographic Key Separation (`DOCUMENT_ENCRYPTION_KEY`)**: Added a dedicated `DOCUMENT_ENCRYPTION_KEY` environment variable and `Config.DocumentEncryptionKey` field in `services/auth-service/internal/config/config.go`, enforcing key separation from `OTP_AES_KEY`, `DOCUMENT_SIGNING_SECRET`, and `JWTSecret`. Enforced fail-fast validation in production mode (`appEnv == "production"`), returning a startup error if empty, with safe 32-byte key handling for local/test execution. Updated `infrastructure/.env.example`, `infrastructure/docker-compose.yml`, and `infrastructure/deploy/docker-compose.prod.yml`.
+  - **Idempotent Data Migration Tool (`cmd/encrypt-documents`)**: Implemented a standalone CLI migration tool in `services/auth-service/cmd/encrypt-documents/main.go` to scan `STORAGE_BASE_DIR` and encrypt existing unencrypted plaintext documents in place. The tool validates AEAD tags prior to encryption; already-encrypted documents are safely skipped. Executed migration tool on existing repository sample documents (`services/auth-service/data/documents/kyb/...`), verifying 8 plaintext files were encrypted in place and confirming raw disk bytes are recognized as opaque data rather than unencrypted image/PDF headers.
+- **Commit SHA**: ``b21628d916753a3eb753195e418cc297f2f99a99``
+- **Verification**: Verified via `go test ./...` in `auth-service` (100% pass including `TestLocalStorage_EncryptionRoundTripAndDiskVerification` and `TestLocalStorage_ProductionModeMissingKey`), `make ci` gate, `make docs-check`, and `gosec` static security scans. ✅
+
 ## Go Stdlib Vulnerability Mitigation & Explicit Toolchain Patch Pinning (go1.26.6)
 
 - **Implementation Detail**:
