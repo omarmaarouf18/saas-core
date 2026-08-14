@@ -9,7 +9,7 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
   - **Single Tenant-Scoped Check for `GetLedger` (`services/user-service/internal/handlers/handlers.go`)**: Removed redundant pre-authentication IP rate-limit check (`"get_ledger_ip:" + ip`) in `GetLedger`. Token resolution and role validation (`resolveTokenWithRole`) now execute first. Validated requests are evaluated against a single tenant-scoped check (`ledger_tenant:<tenantID>`), eliminating the double-charge bug that previously deducted 2 credits per request.
   - **Nil Receiver Store Safety (`services/user-service/internal/store/mongodb.go`)**: Added nil receiver checks (`if s == nil || s.ledger == nil`) to `store.MongoDB` read methods (`GetLedger`, `GetJobsByOwner`, `GetJobsByCustomer`, `GetRatingsForUser`) preventing nil pointer panics during isolated unit test execution.
   - **Cross-Service Audit & Dedicated Unit Test Suite**: Audited `chat-service`, `notification-service`, `auth-service`, and `api-gateway`, confirming no shared-bucket patterns exist in other services. Added `services/user-service/internal/handlers/read_rate_limiters_test.go` with `TestGetLedger_SingleRateLimitCheck` and `TestReadRateLimiters_Independence`.
-- **Commit SHA**: ``59a3493514f08fff31cdc5017cc7f4d048954690``
+- **Commit SHA**: ``d743f8109416b9104e73b18867201c004c112be5``
 - **Verification**: Verified via `go build ./...`, `go vet ./...`, `go test ./...` (100% pass across all 6 modules), `make docs-check`, and pre-push hooks gate. ✅
 
 ## Remediation & Removal of Unnecessary Test Retry Loop in Chat Service Concurrency Test
