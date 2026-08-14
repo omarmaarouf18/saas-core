@@ -38,11 +38,13 @@ jobs:
         run: |
           flutter build apk --release --dart-define=API_BASE_URL="${API_BASE_URL}"
 
-      - name: Determine Short SHA
+      - name: Determine Version & Short SHA
         id: vars
         run: |
           SHORT_SHA=$(git rev-parse --short HEAD)
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
@@ -58,8 +60,8 @@ jobs:
           TAG="app-release-${{ steps.vars.outputs.short_sha }}"
           gh release create "$TAG" build/app/outputs/flutter-apk/app-release.apk \
             --repo omarmaarouf18/quick-delivery-mobile \
-            --title "App Release ${{ steps.vars.outputs.short_sha }}" \
-            --notes "Automated release built from commit ${{ steps.vars.outputs.short_sha }}" \
+            --title "App Release ${{ steps.vars.outputs.version }} (${{ steps.vars.outputs.short_sha }})" \
+            --notes "Automated release built from version ${{ steps.vars.outputs.version }} (commit ${{ steps.vars.outputs.short_sha }})" \
             || gh release upload "$TAG" build/app/outputs/flutter-apk/app-release.apk \
                --repo omarmaarouf18/quick-delivery-mobile \
                --clobber
@@ -88,7 +90,8 @@ jobs:
           cd /tmp/logiclinc
           cat > app-release.json <<EOF
           {
-            "version": "${{ steps.vars.outputs.short_sha }}",
+            "version": "${{ steps.vars.outputs.version }}",
+            "build_sha": "${{ steps.vars.outputs.short_sha }}",
             "apk_url": "${{ steps.release.outputs.apk_url }}",
             "build_date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
             "size_mb": "${{ steps.release.outputs.size_mb }}"
