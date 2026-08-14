@@ -2,6 +2,14 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Remediation & Removal of Unnecessary Test Retry Loop in Chat Service Concurrency Test
+
+- **Implementation Detail**:
+  - **Removal of Unnecessary Test Retry Loop (`services/chat-service/internal/handlers/chat_test.go`)**: Audit of commit `1e49e77...` revealed that the 3-attempt retry loop with `10ms` sleep added around `CreateTicketAndAssign` in `TestComplaintRoutingConcurrency` was a misdiagnosis. The underlying test failure was caused by unauthenticated connection ordering in `connectTestMongoDB`, which was already resolved by commit `cc54b63...`. Removed the retry loop, restoring direct single-call execution. Verified 20/20 clean passes under `go test -v -race -count=20`.
+  - **Revert of Inert `SetMaxPoolSize(100)` & CAS Audit Comment (`services/chat-service/internal/store/mongodb.go`)**: Reverted redundant `SetMaxPoolSize(100)` in `NewMongoDB` because 100 is already the mongo-driver v2 (`go.mongodb.org/mongo-driver/v2`) default, making `SetMaxPoolSize(100)` a complete no-op. Audited `CreateTicketAndAssign` and confirmed its single-document `FindOneAndUpdate` is a verified atomic Compare-And-Swap (CAS) operation that cleanly handles `mongo.ErrNoDocuments` without race conditions. Added explicit audit documentation comment above `FindOneAndUpdate`.
+- **Commit SHA**: ``94fe6e43987396fb609c62185bb254db953a2a3f``
+- **Verification**: Verified via `gofmt`, `go vet ./...`, and `go test -v -race -count=20 ./...` (20/20 pass). ✅
+
 ## Business Location Map Selection in Owner Configuration & Services Directory Distance Filter Fix (BUG 1 & BUG 2)
 
 - **Implementation Detail**:
