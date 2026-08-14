@@ -73,3 +73,35 @@ We chose to explicitly prioritize legitimate user experience over a uniform, max
 
 - **Backend Rate Limit Separation**: Implemented in commit [`131a8a8133b8a4b7f58ada9a92cb0ed0cc0e6e96`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/chat-service/internal/handlers/chat.go). Verified via unit tests (`TestHandleWebSocket_RateLimiting`, `TestGetJobsByOwner`, `TestGetJobsByCustomer`, `TestRateJob_RateLimiting`, `TestGetLedger_RateLimiting`, `TestGetReconciliationQueue`), `gofmt`, `go build`, and `go vet`.
 - **Frontend Button Tap Debounce**: Implemented in commit [`901eefab742e44f443e54231fe8867e194e2ef2f`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/widgets/primary_button.dart). Verified via `dart format`, `flutter analyze` (0 issues), and `flutter test` (159/159 full suite pass).
+
+---
+
+## Addendum: Independent Per-Endpoint Limiters & Ledger Double-Charge Resolution (2026-08-14)
+
+### Problem Identified
+During a systematic audit of rate-limiting telemetry in `user-service`, two critical flaws were discovered in the initial implementation of ADR-0016:
+
+1. **Shared Counter Across Unrelated Read Endpoints**:
+   A single shared `readLimiter` instance (`user:read`, 30 req/min) was passed to `GetOwnerJobs`, `GetCustomerJobs`, `GetLedger`, `GetRatings`, and `GetReconciliationQueue`. As a result, standard user navigation across screens (e.g. checking Wallet, viewing Job History, viewing Ratings) drained a single common 30-request counter. Hitting the limit on one screen blocked navigation on all other screens.
+
+2. **Double-Charge Bug in `GetLedger`**:
+   `GetLedger` executed two consecutive `CheckAndRecord` calls against the same `readLimiter` instance—first with `"get_ledger_ip:" + ip` and then with `tenantKey`. Every single HTTP request to `GET /users/ledger` deducted 2 tokens from the 30-req quota, effectively halving the endpoint's actual capacity to 15 req/min.
+
+### Refactored Architecture
+1. **Independent `RateLimiter` Instances**:
+   Replaced the single `readLimiter` field in `UserService` with dedicated, decoupled limiter instances:
+   - `ownerJobsLimiter` (`user:owner_jobs`, 60 req/min)
+   - `customerJobsLimiter` (`user:customer_jobs`, 60 req/min)
+   - `ledgerLimiter` (`user:ledger`, 60 req/min)
+   - `ratingsLimiter` (`user:ratings`, 30 req/min)
+   - `reconciliationLimiter` (`user:reconciliation`, 30 req/min)
+
+2. **Single Tenant-Scoped Rate-Limit Check for `GetLedger`**:
+   Removed the redundant IP pre-check in `GetLedger`. Token resolution and role validation (`resolveTokenWithRole`) now execute first. Validated requests are evaluated against a single tenant-scoped check (`ledger_tenant:<tenantID>`). Unauthenticated or invalid token requests are rejected before touching Redis rate limiters. Edge DDoS protection remains handled by `api-gateway` (100 req/min per IP).
+
+3. **Cross-Service Audit**:
+   Confirmed that `chat-service`, `notification-service`, `auth-service`, and `api-gateway` do not share rate limiters across unrelated endpoints. `user-service` was the sole service requiring structural limiter separation.
+
+4. **Automated Test Coverage**:
+   Added `TestGetLedger_SingleRateLimitCheck` and `TestReadRateLimiters_Independence` in `services/user-service/internal/handlers/read_rate_limiters_test.go`, explicitly verifying that `GetLedger` performs exactly 1 rate-limit check per request and that exhausting the budget on one endpoint (e.g., `GetRatings`) does NOT impact the budget of another endpoint (e.g., `GetOwnerJobs`).
+

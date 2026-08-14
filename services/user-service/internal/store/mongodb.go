@@ -300,6 +300,9 @@ func (s *MongoDB) GetJobsByEmployee(ctx context.Context, employeeID string) ([]*
 }
 
 func (s *MongoDB) GetJobsByOwner(ctx context.Context, ownerID string) ([]*models.Job, error) {
+	if s == nil || s.jobs == nil {
+		return []*models.Job{}, nil
+	}
 	var jobs []*models.Job
 	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).SetLimit(100)
 	cursor, err := s.jobs.Find(ctx, bson.M{"owner_id": ownerID}, opts)
@@ -317,6 +320,9 @@ func (s *MongoDB) GetJobsByOwner(ctx context.Context, ownerID string) ([]*models
 }
 
 func (s *MongoDB) GetJobsByCustomer(ctx context.Context, customerID string) ([]*models.Job, error) {
+	if s == nil || s.jobs == nil {
+		return []*models.Job{}, nil
+	}
 	var jobs []*models.Job
 	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).SetLimit(100)
 	cursor, err := s.jobs.Find(ctx, bson.M{"user_id": customerID}, opts)
@@ -754,6 +760,9 @@ func (s *MongoDB) GetPayoutRequests(ctx context.Context, tenantID string) ([]*mo
 }
 
 func (s *MongoDB) GetLedger(ctx context.Context, tenantID string) []models.TransactionLedger {
+	if s == nil || s.ledger == nil {
+		return nil
+	}
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}})
 	cursor, err := s.ledger.Find(ctx, bson.M{"tenant_id": tenantID}, opts)
 	if err != nil {
@@ -847,6 +856,9 @@ func (s *MongoDB) CreateRating(ctx context.Context, r *models.Rating) error {
 
 // GetRatingsForUser returns all ratings received by a user.
 func (s *MongoDB) GetRatingsForUser(ctx context.Context, userID string) ([]*models.Rating, error) {
+	if s == nil || s.ratings == nil {
+		return []*models.Rating{}, nil
+	}
 	cursor, err := s.ratings.Find(ctx, bson.M{"rated_user": userID})
 	if err != nil {
 		return nil, err

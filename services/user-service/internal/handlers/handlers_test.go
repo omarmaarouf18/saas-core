@@ -3282,12 +3282,11 @@ func TestGetJobsByOwner(t *testing.T) {
 		}
 	})
 
-	// 4. Rate Limiting: 31st request receives 429
+	// 4. Rate Limiting: 61st request receives 429
 	t.Run("Rate Limiting", func(t *testing.T) {
-		rateLimitOwnerID := "owner-ratelimit-300"
-		tokenRateLimit, _ := jwtutil.GenerateToken(rateLimitOwnerID, "owner", rateLimitOwnerID, "rate@example.com")
-
-		for i := 0; i < 30; i++ {
+		// Rate limit is 60 requests per minute per owner
+		tokenRateLimit, _ := jwtutil.GenerateToken("rate-owner-123", "owner", "rate-owner-123", "owner@example.com")
+		for i := 0; i < 60; i++ {
 			req := httptest.NewRequest("GET", "/users/jobs/owner", nil)
 			req.Header.Set("Authorization", "Bearer "+tokenRateLimit)
 			rec := httptest.NewRecorder()
@@ -3297,14 +3296,14 @@ func TestGetJobsByOwner(t *testing.T) {
 			}
 		}
 
-		// 31st request must trigger 429
+		// 61st request must trigger 429
 		reqLimit := httptest.NewRequest("GET", "/users/jobs/owner", nil)
 		reqLimit.Header.Set("Authorization", "Bearer "+tokenRateLimit)
 		recLimit := httptest.NewRecorder()
 		u.GetOwnerJobs(recLimit, reqLimit)
 
 		if recLimit.Code != http.StatusTooManyRequests {
-			t.Fatalf("Expected 429 Too Many Requests on 31st call, got %d. Body: %s", recLimit.Code, recLimit.Body.String())
+			t.Fatalf("Expected 429 Too Many Requests on 61st call, got %d. Body: %s", recLimit.Code, recLimit.Body.String())
 		}
 		if !strings.Contains(recLimit.Body.String(), "too many requests") {
 			t.Errorf("Expected rate limit error message in body, got %s", recLimit.Body.String())
@@ -3463,7 +3462,7 @@ func TestGetJobsByCustomer(t *testing.T) {
 		rateLimitCustID := "cust-ratelimit-300"
 		tokenRateLimit, _ := jwtutil.GenerateToken(rateLimitCustID, "user", rateLimitCustID, "custrate@example.com")
 
-		for i := 0; i < 30; i++ {
+		for i := 0; i < 60; i++ {
 			req := httptest.NewRequest("GET", "/users/jobs/mine", nil)
 			req.Header.Set("Authorization", "Bearer "+tokenRateLimit)
 			rec := httptest.NewRecorder()
@@ -3473,14 +3472,14 @@ func TestGetJobsByCustomer(t *testing.T) {
 			}
 		}
 
-		// 31st request must trigger 429
+		// 61st request must trigger 429
 		reqLimit := httptest.NewRequest("GET", "/users/jobs/mine", nil)
 		reqLimit.Header.Set("Authorization", "Bearer "+tokenRateLimit)
 		recLimit := httptest.NewRecorder()
 		u.GetCustomerJobs(recLimit, reqLimit)
 
 		if recLimit.Code != http.StatusTooManyRequests {
-			t.Fatalf("Expected 429 Too Many Requests on 31st call, got %d. Body: %s", recLimit.Code, recLimit.Body.String())
+			t.Fatalf("Expected 429 Too Many Requests on 61st call, got %d. Body: %s", recLimit.Code, recLimit.Body.String())
 		}
 		if !strings.Contains(recLimit.Body.String(), "too many requests") {
 			t.Errorf("Expected rate limit error message in body, got %s", recLimit.Body.String())
@@ -3938,8 +3937,8 @@ func TestGetLedger_RateLimiting(t *testing.T) {
 
 	ownerToken, _ := jwtutil.GenerateToken("ledger-owner-1", "owner", "ledger-owner-1", "owner@example.com")
 
-	// Rate limit is 30 requests per minute per IP for GetLedger
-	for i := 0; i < 30; i++ {
+	// Rate limit is 60 requests per minute per tenant for GetLedger
+	for i := 0; i < 60; i++ {
 		req := httptest.NewRequest("GET", "/users/ledger?tenant_token="+ownerToken, nil)
 		req.RemoteAddr = "192.168.2.100:12345"
 		rec := httptest.NewRecorder()
@@ -3949,14 +3948,14 @@ func TestGetLedger_RateLimiting(t *testing.T) {
 		}
 	}
 
-	// 31st request from same IP should be rate-limited (429 Too Many Requests)
-	req31 := httptest.NewRequest("GET", "/users/ledger?tenant_token="+ownerToken, nil)
-	req31.RemoteAddr = "192.168.2.100:12345"
-	rec31 := httptest.NewRecorder()
-	u.GetLedger(rec31, req31)
+	// 61st request from same tenant should be rate-limited (429 Too Many Requests)
+	req61 := httptest.NewRequest("GET", "/users/ledger?tenant_token="+ownerToken, nil)
+	req61.RemoteAddr = "192.168.2.100:12345"
+	rec61 := httptest.NewRecorder()
+	u.GetLedger(rec61, req61)
 
-	if rec31.Code != http.StatusTooManyRequests {
-		t.Fatalf("Expected status 429 Too Many Requests for GetLedger rate limit, got %d. Body: %s", rec31.Code, rec31.Body.String())
+	if rec61.Code != http.StatusTooManyRequests {
+		t.Fatalf("Expected status 429 Too Many Requests for GetLedger rate limit, got %d. Body: %s", rec61.Code, rec61.Body.String())
 	}
 }
 

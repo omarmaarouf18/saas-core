@@ -2,6 +2,16 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Shared-Bucket Rate Limiter Refactoring & GetLedger Double-Charge Resolution
+
+- **Implementation Detail**:
+  - **Independent Rate Limiter Instances (`services/user-service/internal/handlers/handlers.go`)**: Replaced single shared `readLimiter` (`user:read`, 30 req/min) in `UserService` struct and `NewUserService` with 5 independent `RateLimiter` instances: `ownerJobsLimiter` (`user:owner_jobs`, 60 req/min), `customerJobsLimiter` (`user:customer_jobs`, 60 req/min), `ledgerLimiter` (`user:ledger`, 60 req/min), `ratingsLimiter` (`user:ratings`, 30 req/min), and `reconciliationLimiter` (`user:reconciliation`, 30 req/min). Navigating one screen (e.g. Wallet) no longer drains the rate budget of unrelated screens (e.g. Job History).
+  - **Single Tenant-Scoped Check for `GetLedger` (`services/user-service/internal/handlers/handlers.go`)**: Removed redundant pre-authentication IP rate-limit check (`"get_ledger_ip:" + ip`) in `GetLedger`. Token resolution and role validation (`resolveTokenWithRole`) now execute first. Validated requests are evaluated against a single tenant-scoped check (`ledger_tenant:<tenantID>`), eliminating the double-charge bug that previously deducted 2 credits per request.
+  - **Nil Receiver Store Safety (`services/user-service/internal/store/mongodb.go`)**: Added nil receiver checks (`if s == nil || s.ledger == nil`) to `store.MongoDB` read methods (`GetLedger`, `GetJobsByOwner`, `GetJobsByCustomer`, `GetRatingsForUser`) preventing nil pointer panics during isolated unit test execution.
+  - **Cross-Service Audit & Dedicated Unit Test Suite**: Audited `chat-service`, `notification-service`, `auth-service`, and `api-gateway`, confirming no shared-bucket patterns exist in other services. Added `services/user-service/internal/handlers/read_rate_limiters_test.go` with `TestGetLedger_SingleRateLimitCheck` and `TestReadRateLimiters_Independence`.
+- **Commit SHA**: ``59a3493514f08fff31cdc5017cc7f4d048954690``
+- **Verification**: Verified via `go build ./...`, `go vet ./...`, `go test ./...` (100% pass across all 6 modules), `make docs-check`, and pre-push hooks gate. ✅
+
 ## Remediation & Removal of Unnecessary Test Retry Loop in Chat Service Concurrency Test
 
 - **Implementation Detail**:
