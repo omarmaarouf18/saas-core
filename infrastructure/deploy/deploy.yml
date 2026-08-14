@@ -253,27 +253,86 @@ jobs:
       - name: Rollback on Health Failure
         if: failure() && steps.health-check.outcome == 'failure'
         run: |
+          set -euo pipefail
+
           echo "================================================================="
           echo "ROLLBACK: Attempting to restore previous deployment..."
           echo "================================================================="
 
           FAILED="${{ steps.health-check.outputs.FAILED_SERVICES }}"
 
-          if git show HEAD~1:docker-compose.yml > /dev/null 2>&1; then
-            echo "Restoring docker-compose.yml from previous commit..."
-            git checkout HEAD~1 -- docker-compose.yml
-            docker compose up -d --force-recreate --remove-orphans
-
-            echo "================================================================="
-            echo "ROLLED BACK: Services${FAILED:- (unknown)} failed health check."
-            echo "Restored previous docker-compose.yml from git history."
-            echo "Previous image tags:"
-            cat /tmp/previous-images.txt 2>/dev/null || echo "(not available)"
-            echo "================================================================="
-          else
-            echo "::error::Cannot rollback — no previous commit in git history."
-            echo "Manual intervention required."
+          if ! git show HEAD~1:docker-compose.yml > /dev/null 2>&1; then
+            echo "::error::Cannot rollback — no previous commit in git history. Manual intervention required immediately."
+            exit 1
           fi
+
+          echo "Restoring docker-compose.yml from previous commit..."
+          git checkout HEAD~1 -- docker-compose.yml
+
+          if ! docker compose up -d --force-recreate --remove-orphans; then
+            echo "::error::ROLLBACK COMMAND ITSELF FAILED — manual intervention required immediately"
+            exit 1
+          fi
+
+          verify_service_health() {
+            echo "================================================================="
+            echo "POST-ROLLBACK: Verifying health for restored services"
+            echo "================================================================="
+
+            SERVICES="api-gateway:8080 auth-service:3002 chat-service:3001 notification-service:3004 user-service:3003"
+            FAILED_SERVICES=""
+            MAX_RETRIES=12
+            RETRY_DELAY=5
+
+            for entry in $SERVICES; do
+              SVC=$(echo $entry | cut -d: -f1)
+              PORT=$(echo $entry | cut -d: -f2)
+              CONTAINER="saas-${SVC}"
+              echo "Checking health of $SVC on port $PORT..."
+
+              SUCCESS=0
+              for i in $(seq 1 $MAX_RETRIES); do
+                HTTP_STATUS=$(docker exec $CONTAINER curl -s -k --cert "/app/certs/${SVC}.crt" --key "/app/certs/${SVC}.key" -o /dev/null -w "%{http_code}" "https://localhost:${PORT}/health" 2>/dev/null || echo "000")
+                if [ "$HTTP_STATUS" = "000" ] || [ "$HTTP_STATUS" = "400" ]; then
+                  HTTP_STATUS=$(docker exec $CONTAINER curl -s -k -o /dev/null -w "%{http_code}" "https://localhost:${PORT}/health" 2>/dev/null || echo "000")
+                fi
+                if [ "$HTTP_STATUS" = "000" ] || [ "$HTTP_STATUS" = "400" ]; then
+                  HTTP_STATUS=$(docker exec $CONTAINER curl -s -k -o /dev/null -w "%{http_code}" "http://localhost:${PORT}/health" 2>/dev/null || echo "000")
+                fi
+
+                if [ "$HTTP_STATUS" = "200" ]; then
+                  echo "$SVC health check passed (HTTP 200)"
+                  SUCCESS=1
+                  break
+                fi
+                echo "$SVC attempt $i/$MAX_RETRIES returned HTTP $HTTP_STATUS, waiting ${RETRY_DELAY}s..."
+                sleep $RETRY_DELAY
+              done
+
+              if [ $SUCCESS -ne 1 ]; then
+                FAILED_SERVICES="$FAILED_SERVICES $SVC"
+                echo "::error::$SVC health check FAILED after $MAX_RETRIES attempts"
+              fi
+            done
+
+            if [ -n "$FAILED_SERVICES" ]; then
+              return 1
+            fi
+            return 0
+          }
+
+          echo "Re-verifying health of restored containers..."
+          if ! verify_service_health; then
+            echo "::error::CRITICAL: ROLLBACK FAILED HEALTH CHECK TOO — service is down, manual intervention required NOW"
+            exit 1
+          fi
+
+          echo "================================================================="
+          echo "ROLLED BACK: Services${FAILED:- (unknown)} failed health check."
+          echo "Restored previous docker-compose.yml from git history and successfully verified all services healthy."
+          echo "Previous image tags:"
+          cat /tmp/previous-images.txt 2>/dev/null || echo "(not available)"
+          echo "================================================================="
 
       - name: Reset File Ownership for Workspace
         if: always()
