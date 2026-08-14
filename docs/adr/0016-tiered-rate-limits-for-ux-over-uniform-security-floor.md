@@ -87,21 +87,22 @@ During a systematic audit of rate-limiting telemetry in `user-service`, two crit
 2. **Double-Charge Bug in `GetLedger`**:
    `GetLedger` executed two consecutive `CheckAndRecord` calls against the same `readLimiter` instance—first with `"get_ledger_ip:" + ip` and then with `tenantKey`. Every single HTTP request to `GET /users/ledger` deducted 2 tokens from the 30-req quota, effectively halving the endpoint's actual capacity to 15 req/min.
 
-### Refactored Architecture
+### Refactored Architecture & Correction
 1. **Independent `RateLimiter` Instances**:
    Replaced the single `readLimiter` field in `UserService` with dedicated, decoupled limiter instances:
    - `ownerJobsLimiter` (`user:owner_jobs`, 60 req/min)
    - `customerJobsLimiter` (`user:customer_jobs`, 60 req/min)
    - `ledgerLimiter` (`user:ledger`, 60 req/min)
+   - `ledgerIPLimiter` (`user:ledger_ip`, 60 req/min)
    - `ratingsLimiter` (`user:ratings`, 30 req/min)
    - `reconciliationLimiter` (`user:reconciliation`, 30 req/min)
 
-2. **Single Tenant-Scoped Rate-Limit Check for `GetLedger`**:
-   Removed the redundant IP pre-check in `GetLedger`. Token resolution and role validation (`resolveTokenWithRole`) now execute first. Validated requests are evaluated against a single tenant-scoped check (`ledger_tenant:<tenantID>`). Unauthenticated or invalid token requests are rejected before touching Redis rate limiters. Edge DDoS protection remains handled by `api-gateway` (100 req/min per IP).
+2. **Correction — Independent Dual-Layer Protection for `GetLedger`**:
+   The initial refactoring in commit `45431d5` removed the IP-based rate-limit check on `GetLedger` entirely, relying solely on tenant-scoped checks and edge gateway limits. This was an unauthorized deviation from the target architecture. The IP-based check has been restored via `ledgerIPLimiter` (`user:ledger_ip`, 60 req/min), running BEFORE token/role resolution to protect against unauthenticated ledger-scraping attempts. The tenant-based check (`ledgerLimiter`, 60 req/min) runs AFTER resolution. Crucially, each layer operates on its own dedicated `RateLimiter` instance, providing true dual-layer protection without double-charging a single counter.
 
 3. **Cross-Service Audit**:
    Confirmed that `chat-service`, `notification-service`, `auth-service`, and `api-gateway` do not share rate limiters across unrelated endpoints. `user-service` was the sole service requiring structural limiter separation.
 
 4. **Automated Test Coverage**:
-   Added `TestGetLedger_SingleRateLimitCheck` and `TestReadRateLimiters_Independence` in `services/user-service/internal/handlers/read_rate_limiters_test.go`, explicitly verifying that `GetLedger` performs exactly 1 rate-limit check per request and that exhausting the budget on one endpoint (e.g., `GetRatings`) does NOT impact the budget of another endpoint (e.g., `GetOwnerJobs`).
+   Added `TestGetLedger_IPRateLimitCheck`, `TestGetLedger_TenantRateLimitCheck`, and `TestReadRateLimiters_Independence` in `services/user-service/internal/handlers/read_rate_limiters_test.go`, explicitly verifying that IP-based rate limiting (keyed by IP) and tenant-based rate limiting (keyed by tenant ID) trigger independently without interfering with each other or unrelated endpoints.
 

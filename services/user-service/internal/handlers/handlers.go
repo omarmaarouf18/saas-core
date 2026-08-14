@@ -82,6 +82,7 @@ type UserService struct {
 	ownerJobsLimiter          *handlerutil.RateLimiter
 	customerJobsLimiter       *handlerutil.RateLimiter
 	ledgerLimiter             *handlerutil.RateLimiter
+	ledgerIPLimiter           *handlerutil.RateLimiter
 	ratingsLimiter            *handlerutil.RateLimiter
 	reconciliationLimiter     *handlerutil.RateLimiter
 	internalServiceToken      string
@@ -180,6 +181,7 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 	rlOwnerJobs := ratelimit.NewRateLimiter(rdb, 60, 1*time.Minute, "user:owner_jobs")
 	rlCustomerJobs := ratelimit.NewRateLimiter(rdb, 60, 1*time.Minute, "user:customer_jobs")
 	rlLedger := ratelimit.NewRateLimiter(rdb, 60, 1*time.Minute, "user:ledger")
+	rlLedgerIP := ratelimit.NewRateLimiter(rdb, 60, 1*time.Minute, "user:ledger_ip")
 	rlRatings := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "user:ratings")
 	rlReconciliation := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "user:reconciliation")
 
@@ -196,6 +198,7 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		ownerJobsLimiter:          handlerutil.NewRateLimiter(rlOwnerJobs),
 		customerJobsLimiter:       handlerutil.NewRateLimiter(rlCustomerJobs),
 		ledgerLimiter:             handlerutil.NewRateLimiter(rlLedger),
+		ledgerIPLimiter:           handlerutil.NewRateLimiter(rlLedgerIP),
 		ratingsLimiter:            handlerutil.NewRateLimiter(rlRatings),
 		reconciliationLimiter:     handlerutil.NewRateLimiter(rlReconciliation),
 		internalServiceToken:      cfg.InternalServiceToken,
@@ -1421,6 +1424,14 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------------------
 
 func (u *UserService) GetLedger(w http.ResponseWriter, r *http.Request) {
+	ip := handlerutil.GetIP(r)
+	if limited, remaining := u.ledgerIPLimiter.CheckAndRecord("get_ledger_ip:" + ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
 	if r.Method != http.MethodGet {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
 		return
