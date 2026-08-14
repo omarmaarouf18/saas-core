@@ -237,6 +237,17 @@ curl -k https://localhost:8080/health
 ```
 Output: `{"status":"ok"}`
 
+### Step 6.4: Non-Root Container Execution & Docker Native HEALTHCHECK Directives
+All 5 production microservice Dockerfiles (`api-gateway`, `auth-service`, `chat-service`, `notification-service`, `user-service`) enforce non-root runtime execution and container-level liveness monitoring:
+* **Non-Root Execution (`USER appuser`)**: Production container stages create a dedicated `appgroup` (GID 101) and `appuser` (UID 100). All binary execution runs as `appuser`. Write directories (such as `auth-service`'s `/app/data`) are explicitly created and assigned `appuser:appgroup` ownership during image build.
+* **Native Docker HEALTHCHECK Directives**: Each production image incorporates a native `HEALTHCHECK` directive (running every 10s with 5s timeout, 5s start-period, and 3 retries) using `curl -f -s -k` pointing to its respective `/health` endpoint over HTTPS/mTLS with fallback options:
+  - `api-gateway`: `HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 CMD curl -f -s -k https://localhost:8080/health ...`
+  - `auth-service`: `HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 CMD curl -f -s -k --cert /app/certs/auth-service.crt --key /app/certs/auth-service.key https://localhost:3002/health ...`
+  - `chat-service`: `HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 CMD curl -f -s -k --cert /app/certs/chat-service.crt --key /app/certs/chat-service.key https://localhost:3001/health ...`
+  - `notification-service`: `HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 CMD curl -f -s -k --cert /app/certs/notification-service.crt --key /app/certs/notification-service.key https://localhost:3004/health ...`
+  - `user-service`: `HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 CMD curl -f -s -k --cert /app/certs/user-service.crt --key /app/certs/user-service.key https://localhost:3003/health ...`
+* **Unprivileged Port Verification**: All 5 services bind to unprivileged ports above 1024 (`8080`, `3002`, `3001`, `3004`, `3003`), allowing non-root `appuser` to bind network sockets without requiring `CAP_NET_BIND_SERVICE` or root privileges.
+
 ---
 
 ## 7. Automated Upgrades & Continuous Deployment (Self-Hosted Runner CD)

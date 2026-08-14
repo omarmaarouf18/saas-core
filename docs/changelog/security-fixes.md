@@ -2,6 +2,15 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
+## Production Container Non-Root Security Hardening & Native Docker HEALTHCHECK Directives
+
+- **Implementation Detail**:
+  - **Non-Root Runtime Execution (`USER appuser`)**: Updated production container stages across all 5 microservices (`api-gateway`, `auth-service`, `chat-service`, `notification-service`, `user-service`) to create a dedicated system group `appgroup` (GID 101) and system user `appuser` (UID 100). Placed `USER appuser` as the final instruction before `ENTRYPOINT`. In `auth-service/Dockerfile`, created `/app/data` with explicit `appuser:appgroup` ownership, resolving non-root permission denied errors on local file storage directory creation.
+  - **Native Container HEALTHCHECK Directives**: Added Docker native `HEALTHCHECK` directives to each Dockerfile (`--interval=10s --timeout=5s --start-period=5s --retries=3`) executing `curl -f -s -k` pointing to each service's respective `/health` endpoint with fallback mTLS client cert arguments (`--cert /app/certs/<SVC>.crt --key /app/certs/<SVC>.key`).
+  - **Unprivileged Port Verification**: Verified all 5 microservices listen on unprivileged ports (`8080`, `3002`, `3001`, `3004`, `3003`), confirming `appuser` binds network sockets cleanly without requiring `CAP_NET_BIND_SERVICE` or root privileges. Tested all 5 containers simultaneously on a shared Docker network, confirming `docker ps` status transitions to `healthy` across all 5 containers and `docker exec <container> id` outputs `uid=100(appuser) gid=101(appgroup)`.
+- **Commit SHA**: ``a7e7ecfb2fcf634a933fc1960f9baf8eddb85cf3``
+- **Verification**: Verified via local `docker build --target prod`, `docker run`, `docker inspect`, `docker ps` (all 5 containers `healthy`), `docker exec id` (UID 100), `go test ./...` across all 5 Go modules (100% pass), and `make docs-check`. ✅
+
 ## External Security & Architecture Review — Resolution Summary (2026-08-06)
 
 This section consolidates the resolution status for all 10 findings from the external security and architecture findings report (`security-and-architecture-findings.md` on branch `logic-exploitation` @ `30ae8ce`). 9 of 10 findings have been resolved (Findings #1–#8 code-remediated; Finding #9 documented as an accepted architectural decision), and 1 finding remains explicitly open/deferred (Finding #10).
