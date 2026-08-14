@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"crypto/subtle"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"github.com/project/gateway/internal/config"
 	"github.com/project/gateway/internal/middleware"
 	"github.com/project/gateway/internal/proxy"
+	"github.com/project/gateway/internal/version"
 	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/ratelimit"
 	"github.com/project/shared/infra/resilience"
@@ -62,6 +64,9 @@ func main() {
 		clientTransport = http.DefaultTransport
 	}
 
+	// ---- Initialize App Version Store ----
+	versionStore := version.NewStore(nil, "")
+
 	mux := http.NewServeMux()
 
 	// ---- Health check endpoint ----
@@ -82,6 +87,42 @@ func main() {
 			"status":       "ok",
 			"dependencies": resilience.GetBreakerStats(),
 		})
+	})
+
+	// ---- Admin App Version Configuration Endpoint ----
+	mux.HandleFunc("/api/v1/admin/version-config", func(w http.ResponseWriter, r *http.Request) {
+		gotToken := r.Header.Get("X-Internal-Token")
+		if subtle.ConstantTimeCompare([]byte(gotToken), []byte(cfg.InternalServiceToken)) != 1 {
+			handlerutil.WriteJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: invalid internal token"})
+			return
+		}
+
+		if r.Method == http.MethodGet {
+			vConfig, err := versionStore.GetConfig(r.Context())
+			if err != nil {
+				handlerutil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteJSON(w, http.StatusOK, vConfig)
+			return
+		}
+
+		if r.Method == http.MethodPut {
+			var req version.PlatformVersions
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				handlerutil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
+				return
+			}
+			updated, err := versionStore.UpdateConfig(r.Context(), req)
+			if err != nil {
+				handlerutil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteJSON(w, http.StatusOK, map[string]any{"message": "version configuration updated successfully", "config": updated})
+			return
+		}
+
+		handlerutil.WriteJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 	})
 
 	// ---- Service info endpoint ----
@@ -109,10 +150,11 @@ func main() {
 		log.Printf("Route registered: %s → %s (env: %s)", route.Prefix, route.Target, route.EnvKey)
 	}
 
-	// ---- Wrap with global rate limiting and logging middleware ----
+	// ---- Wrap with version gate, rate limiting, and logging middleware ----
 	rl := ratelimit.NewRateLimiter(redisClient, 100, 1*time.Minute, "gateway")
 	limiter := middleware.NewRateLimiter(rl, cfg.TrustedProxyIPs)
-	rateLimited := middleware.RateLimit(limiter)(mux)
+	versionGated := middleware.VersionGate(versionStore)(mux)
+	rateLimited := middleware.RateLimit(limiter)(versionGated)
 	logged := middleware.Logging(cfg.AllowedOrigin)(rateLimited)
 
 	// ---- Start server ----
