@@ -2,6 +2,18 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Strict CD Rollback Hardening & Post-Rollback Health Verification (ADR-0015)
+
+- **Implementation Detail**: Remediated silent failure vulnerabilities in `infrastructure/deploy/deploy.yml`'s "Rollback on Health Failure" step:
+  - Added `set -euo pipefail` to ensure command failures halt workflow step execution immediately.
+  - Hardened missing previous commit check (`if ! git show HEAD~1:docker-compose.yml > /dev/null 2>&1`), outputting `::error::Cannot rollback — no previous commit in git history. Manual intervention required immediately.` and exiting with code 1.
+  - Added explicit status check on `docker compose up -d --force-recreate --remove-orphans`, logging `::error::ROLLBACK COMMAND ITSELF FAILED — manual intervention required immediately` and exiting 1 on failure.
+  - Integrated `verify_service_health` re-verification loop (12 attempts * 5s) against restored containers. Only logs success if post-rollback health checks pass.
+  - Logged distinct critical alert `::error::CRITICAL: ROLLBACK FAILED HEALTH CHECK TOO — service is down, manual intervention required NOW` and exited 1 if post-rollback health checks fail.
+  - Updated [ADR-0015](docs/adr/0015-strict-cd-preflight-validation.md) with post-audit addendum.
+- **Commit SHA**: ``b2b2a380b977582a11989e8e767e597f13b18087``
+- **Verification**: Verified via Python YAML syntax parser, shell execution flow trace, `make docs-check`, `.githooks/pre-push` gate, and full git audit. ✅
+
 ## Standardized Graceful Shutdown Protocol Across All 5 Microservices
 
 - **Implementation Detail**: Extended graceful shutdown handling to `api-gateway`, `chat-service`, and `notification-service`, unifying all 5 microservices on the canonical pattern from `auth-service` and `user-service`. On receiving `SIGINT` or `SIGTERM`, each service logs `[<SERVICE_TAG>] Shutting down...` and executes `http.Server.Shutdown()` with a 10-second context timeout. Enhanced `Hub.Close()` in `chat-service` to iterate over active clients and close outbound `Send` channels, triggering `writePump` to transmit normal WebSocket close frames (`websocket.CloseMessage`) before closing socket connections. Enhanced `SSEHub.Close()` in `notification-service` to close active `Send` channels across `SSEHub.clients`, ensuring streaming handler loops terminate cleanly alongside HTTP context cancellation (`r.Context()`).

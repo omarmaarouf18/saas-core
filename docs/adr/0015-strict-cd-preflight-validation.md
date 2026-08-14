@@ -77,3 +77,18 @@ The CD workflow now symlinks the workspace `.env` to `/home/deploybot/.env` inst
 - **Approach (b): Static `required-env.json` manifest**: Rejected because conditional validation rules (like `RESEND_FROM_EMAIL` required only when `RESEND_API_KEY` is set) would need to be duplicated outside Go, creating a second source of truth that can drift.
 - **Blue-green deployment**: Out of scope for single-VM Docker Compose architecture. Would require container orchestration (Kubernetes, Docker Swarm) not currently in use.
 - **GitHub Secrets for `.env`**: Rejected per ADR-0010/0012 — single-VM deployment deliberately avoids storing long-lived production secrets in GitHub.
+
+## Post-Audit Addendum: Strict Rollback Hardening & Post-Rollback Health Verification (2026-08-14)
+
+### Problem Addressed
+Audit of `infrastructure/deploy/deploy.yml`'s "Rollback on Health Failure" step revealed a critical silent failure gap:
+1. Shell errors in the rollback step did not halt execution (no `set -euo pipefail`), permitting failing `git checkout` or `docker compose up` commands to be ignored while printing a false "ROLLED BACK" success message.
+2. The rollback step did not re-verify the health of restored containers. If restored containers failed startup or health checks, the workflow masked the failure.
+3. If `git show HEAD~1:docker-compose.yml` failed (e.g. no previous commit in history), the step logged an error but exited with code 0.
+
+### Remediation
+1. **Strict Shell Failure (`set -euo pipefail`)**: Added `set -euo pipefail` to the top of the step's run block so any failing command halts step execution immediately.
+2. **Explicit Rollback Command Exit Check**: Checked the exit status of `docker compose up -d --force-recreate --remove-orphans`. On non-zero exit, logs `::error::ROLLBACK COMMAND ITSELF FAILED — manual intervention required immediately` and exits 1.
+3. **Post-Rollback Health Verification (`verify_service_health`)**: Re-runs the full 5-service mTLS health check retry loop (12 attempts * 5s) against restored containers. Only logs `ROLLED BACK: ... successfully restored and verified healthy` if post-rollback health checks pass.
+4. **Post-Rollback Double Failure Alert**: If post-rollback health checks fail, logs `::error::CRITICAL: ROLLBACK FAILED HEALTH CHECK TOO — service is down, manual intervention required NOW` and exits 1.
+5. **No Previous Commit Hard Stop**: If `git show HEAD~1:docker-compose.yml` fails, logs `::error::Cannot rollback — no previous commit in git history. Manual intervention required immediately.` and exits 1.
