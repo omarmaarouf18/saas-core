@@ -385,15 +385,7 @@ func TestComplaintRoutingConcurrency(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			var ticket *store.ComplaintTicket
-			var err error
-			for attempt := 0; attempt < 3; attempt++ {
-				ticket, err = mongoStore.CreateTicketAndAssign(context.Background(), fmt.Sprintf("customer-%d", idx), "context-xyz")
-				if err == nil {
-					break
-				}
-				time.Sleep(10 * time.Millisecond)
-			}
+			ticket, err := mongoStore.CreateTicketAndAssign(context.Background(), fmt.Sprintf("customer-%d", idx), "context-xyz")
 			if err != nil {
 				t.Errorf("failed to create ticket: %v", err)
 				return

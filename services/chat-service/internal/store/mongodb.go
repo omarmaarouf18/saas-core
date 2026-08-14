@@ -42,8 +42,7 @@ type MongoDB struct {
 
 // NewMongoDB connects to MongoDB and initializes collections.
 func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
-	opts := options.Client().ApplyURI(uri).SetMaxPoolSize(100)
-	client, err := mongo.Connect(opts)
+	client, err := mongo.Connect(options.Client().ApplyURI(uri))
 	if err != nil {
 		return nil, fmt.Errorf("store: failed to connect to MongoDB: %w", err)
 	}
@@ -252,6 +251,7 @@ func (s *MongoDB) CreateTicketAndAssign(ctx context.Context, customerID, context
 		CreatedAt:  time.Now().UTC(),
 	}
 
+	// Atomic Compare-And-Swap (CAS): FindOneAndUpdate claims an available support agent single-document atomically.
 	filter := bson.M{"status": "available"}
 	update := bson.M{
 		"$set": bson.M{
