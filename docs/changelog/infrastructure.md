@@ -2,6 +2,16 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Client Application Semantic Versioning & Version-Gating Middleware (ADR-0018)
+
+- **Implementation Detail**:
+  - **CI/CD Semver Integration (`build-apk.yml`)**: Updated `frontend/.github/workflows/build-apk.yml` to extract `version` directly from `pubspec.yaml` and publish `app-release.json` with real semver `"version"` (e.g. `"1.0.0"`) and `"build_sha"` (e.g. `"ed2afc4"`) fields on `logiclinc`. (Commit ``ed2afc4``).
+  - **MongoDB Version Registry & API Gateway `VersionGate` (`api-gateway`)**: Added `platform_versions` MongoDB collection and `version.Store` tracking `latest_version`, `minimum_supported_version`, `enforce_minimum_version`, and `download_url`. Implemented zero-dependency semver parser `version.ParseSemVer` and `middleware.VersionGate` intercepting `X-App-Version` headers. Safe rollout policy allows missing headers during grace period when `enforce_minimum_version == false`, and rejects out-of-date clients with HTTP `426 Upgrade Required` when enforcing. Added admin configuration endpoints `GET / PUT /api/v1/admin/version-config` gated by `X-Internal-Token`. (Commit ``2dcb97e``).
+  - **Flutter Header Injection & HTTP 426 Global Interception (`frontend`)**: Integrated `package_info_plus` in `pubspec.yaml`, injected `X-App-Version` into all `ApiClient` requests, and intercepted HTTP 426 responses globally to trigger `onUpdateRequired` callback displaying `UpdateRequiredScreen` (`update_required_screen.dart`). Added unit/widget tests in `api_client_version_test.dart` and `update_required_screen_test.dart`. Updated `docs/frontend/STATUS.md`. (Commit ``34915b7``).
+  - **Architectural Documentation**: Authored [ADR-0018](docs/adr/0018-client-app-semantic-versioning-and-enforcement-gate.md) and updated `docs/DEPLOYMENT.md` Section 11.3.
+- **Commit SHA**: ``34915b7``
+- **Verification**: Verified via `go test ./...` in `api-gateway` (100% pass), `flutter analyze` (0 issues), `flutter test` (191/191 pass), `make ci`, `make docs-check`, and `.githooks/pre-push` gate exit code 0. ✅
+
 ## Strict CD Rollback Hardening & Post-Rollback Health Verification (ADR-0015)
 
 - **Implementation Detail**: Remediated silent failure vulnerabilities in `infrastructure/deploy/deploy.yml`'s "Rollback on Health Failure" step:

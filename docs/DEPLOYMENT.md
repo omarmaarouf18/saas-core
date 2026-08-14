@@ -537,6 +537,25 @@ DOCUMENT_ENCRYPTION_KEY="$DOCUMENT_ENCRYPTION_KEY" go run ./services/auth-servic
 
 The migration command checks each file's AEAD tag header prior to encryption; files that are already encrypted are skipped, making the migration safe and idempotent.
 
+### 11.3 App Version Management & Minimum Version Enforcement (`platform_versions`)
+
+To manage supported mobile client versions and enforce minimum required version gating at the API Gateway (ADR-0018), query or update the `platform_versions` configuration via the admin endpoint or MongoDB:
+
+```bash
+# Fetch current app version registry configuration
+curl -s -H "X-Internal-Token: $INTERNAL_SERVICE_TOKEN" https://localhost:8080/api/v1/admin/version-config
+
+# Update minimum supported version and enable enforcement
+curl -s -X PUT -H "Content-Type: application/json" -H "X-Internal-Token: $INTERNAL_SERVICE_TOKEN" \
+  -d '{
+    "latest_version": "1.2.0",
+    "minimum_supported_version": "1.1.0",
+    "enforce_minimum_version": true,
+    "download_url": "https://github.com/omarmaarouf18/quick-delivery-mobile/releases/latest/download/app-release.apk"
+  }' \
+  https://localhost:8080/api/v1/admin/version-config
+```
+
 
 
 
