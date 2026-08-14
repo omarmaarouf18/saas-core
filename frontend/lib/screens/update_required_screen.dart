@@ -92,14 +92,17 @@ class UpdateRequiredScreen extends StatelessWidget {
                       children: [
                         _buildVersionRow(
                           context,
-                          label: isArabic ? 'الإصدار الحالي' : 'Installed Version',
+                          label:
+                              isArabic ? 'الإصدار الحالي' : 'Installed Version',
                           value: curVer,
                           isHighlight: false,
                         ),
                         const Divider(height: 20),
                         _buildVersionRow(
                           context,
-                          label: isArabic ? 'الحد الأدنى المطلوب' : 'Minimum Required',
+                          label: isArabic
+                              ? 'الحد الأدنى المطلوب'
+                              : 'Minimum Required',
                           value: minVer,
                           isHighlight: true,
                         ),
@@ -107,7 +110,9 @@ class UpdateRequiredScreen extends StatelessWidget {
                           const Divider(height: 20),
                           _buildVersionRow(
                             context,
-                            label: isArabic ? 'أحدث إصدار متاء' : 'Latest Available',
+                            label: isArabic
+                                ? 'أحدث إصدار متاء'
+                                : 'Latest Available',
                             value: latVer,
                             isHighlight: false,
                           ),
@@ -128,9 +133,10 @@ class UpdateRequiredScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      onPressed: onUpdatePressed ?? () {
-                        // Action callback or URL launch
-                      },
+                      onPressed: onUpdatePressed ??
+                          () {
+                            // Action callback or URL launch
+                          },
                       icon: const Icon(Icons.download_rounded),
                       label: Text(
                         isArabic ? 'تحديث الآن' : 'Update Now',

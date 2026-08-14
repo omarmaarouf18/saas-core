@@ -5,7 +5,8 @@ import 'package:frontend/providers/locale_provider.dart';
 import 'package:frontend/screens/update_required_screen.dart';
 
 void main() {
-  testWidgets('UpdateRequiredScreen renders version info and update button', (WidgetTester tester) async {
+  testWidgets('UpdateRequiredScreen renders version info and update button',
+      (WidgetTester tester) async {
     bool updateClicked = false;
 
     await tester.pumpWidget(
