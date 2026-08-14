@@ -2,6 +2,16 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
+## Go Stdlib Vulnerability Mitigation & Explicit Toolchain Patch Pinning (go1.26.6)
+
+- **Implementation Detail**:
+  - **Explicit Toolchain Pinning (`toolchain go1.26.6`)**: Added `toolchain go1.26.6` directive to `go.work` and all 7 `go.mod` files (`services/api-gateway`, `services/auth-service`, `services/chat-service`, `services/notification-service`, `services/user-service`, `shared/infra`, `tools/docgen`). This explicitly pins the Go toolchain patch version used for builds to 1.26.6 while retaining `go 1.26` language floor compatibility, remediating 6 recurring Go stdlib vulnerabilities (`GO-2026-6218`, `GO-2026-6090`, `GO-2026-6089`, `GO-2026-6088`, `GO-2026-5972`, `GO-2026-5026`).
+  - **Dockerfile Base Image Pinning**: Updated all 5 microservice Dockerfiles (`services/*/Dockerfile`) across both `AS dev` and `AS build` multi-stage build targets to pin base image `golang:1.26.6-alpine`.
+  - **CI Workflow Pinning**: Updated `.github/workflows/ci.yml` `actions/setup-go@v5` steps to pin `go-version: '1.26.6'`.
+  - **Automated Drift Guard Extension**: Extended the Go Version Consistency Drift Guard in `.github/workflows/ci.yml` and `.githooks/pre-push` to enforce strict consistency for standard language floor (`1.26`), toolchain directive (`go1.26.6`), CI version (`1.26.6`), and Dockerfile base image patch versions (`1.26.6`).
+- **Commit SHA**: ``277011c67ed17707f8d903a6bf8f797c7d371c80``
+- **Verification**: Verified via `govulncheck` (0 vulnerabilities across all services), `go test ./...` across all 6 Go modules (100% pass), `flutter test` (189/189 pass), `.githooks/pre-push` drift guard execution, and `make docs-check`. ✅
+
 ## Production Container Non-Root Security Hardening & Native Docker HEALTHCHECK Directives
 
 - **Implementation Detail**:
