@@ -2,6 +2,15 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Restoration of Independent Dual-Layer Rate Limiting for GetLedger (Correction to `45431d5`)
+
+- **Implementation Detail**:
+  - **Correction — Independent IP Rate Limiter (`services/user-service/internal/handlers/handlers.go`)**: Restored the pre-authentication IP-based rate limiter on `GetLedger` (`ledgerIPLimiter`, `user:ledger_ip`, 60 req/min) using a dedicated, decoupled `handlerutil.RateLimiter` field on `UserService`. This corrects the unauthorized removal of the IP check in commit `45431d5` while preserving true dual-layer protection.
+  - **Dual-Layer Execution Model**: `GetLedger` evaluates `ledgerIPLimiter` (`get_ledger_ip:` + ip) BEFORE token resolution to guard against unauthenticated ledger scraping attempts. Validated requests are subsequently evaluated against `ledgerLimiter` (`ledger_tenant:` + tenantID) AFTER token resolution. Both limiters operate on completely independent Redis budgets (separate key namespaces and limiter instances), eliminating the single-bucket double-charge bug.
+  - **Independent Test Suite (`services/user-service/internal/handlers/read_rate_limiters_test.go`)**: Added `TestGetLedger_IPRateLimitCheck` (verifying `ledgerIPLimiter` independently triggers HTTP 429 across different tenants) and `TestGetLedger_TenantRateLimitCheck` (verifying `ledgerLimiter` independently triggers HTTP 429 across different IPs), while re-confirming `TestReadRateLimiters_Independence`.
+- **Commit SHA**: ``8c6d982c3aba99642ffc3d11cf5c9ec22f21d577``
+- **Verification**: Verified via `go build ./...`, `go vet ./...`, `go test ./...` (100% pass across all 6 modules), `make docs-check`, and pre-push hooks gate. ✅
+
 ## Shared-Bucket Rate Limiter Refactoring & GetLedger Double-Charge Resolution
 
 - **Implementation Detail**:
