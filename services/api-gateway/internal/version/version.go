@@ -36,9 +36,9 @@ func DefaultVersions() PlatformVersions {
 
 // Store handles persistence and thread-safe caching of version configuration.
 type Store struct {
-	mu           sync.RWMutex
-	cached       PlatformVersions
-	collection   *mongo.Collection
+	mu          sync.RWMutex
+	cached      PlatformVersions
+	collection  *mongo.Collection
 	useInMemory bool
 }
 
