@@ -2,6 +2,8 @@ module github.com/project/shared/infra
 
 go 1.26
 
+toolchain go1.26.6
+
 require (
 	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/aws/aws-sdk-go-v2 v1.42.1

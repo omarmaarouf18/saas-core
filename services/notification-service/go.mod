@@ -2,6 +2,8 @@ module github.com/project/notification-service
 
 go 1.26
 
+toolchain go1.26.6
+
 require (
 	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
