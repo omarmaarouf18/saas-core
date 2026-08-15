@@ -2,6 +2,17 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Subscription Screen Design System Migration
+
+- **Implementation Detail**:
+  - **Pending Payment Banner (`frontend/lib/screens/subscription_screen.dart`)**: Replaced hand-coded pending payment container with `ThemedWarningBanner` (semantically accurate for the non-blocking "Pending activation. Please contact support to complete payment." warning state).
+  - **Plan Card Highlights (`frontend/lib/screens/subscription_screen.dart`)**: Migrated `_buildPlanCard` to use `ThemedCard(variant: highlighted ? ThemedCardVariant.highlighted : ThemedCardVariant.normal)` eliminating manual border-side and shadow overrides.
+  - **Current Plan Inverted Header Card (`frontend/lib/screens/subscription_screen.dart`)**: Preserved intentional inverted solid primary styling (`ThemedCard(color: AppColors.primary)`) as it represents a dark hero container rather than an outlined card.
+  - **Typography Standardization (`frontend/lib/screens/subscription_screen.dart`)**: Replaced raw `fontSize: 36` with `AppTypography.headlineLg.copyWith(fontWeight: FontWeight.bold)` (32pt headline token).
+  - **Widget Test Coverage (`frontend/test/subscription_screen_test.dart`)**: Added automated widget test suite testing free tier active state, highlighted professional card, pending payment warning banner, and tier upgrade actions.
+- **Commit SHA**: ``de9f1e93f787d12eadf9fdc10814bf592adc83d3``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (209/209 pass), `make docs-check`, and pre-push hooks gate. ✅
+
 ## KYC Document Upload & Owner Reconciliation Design System Migration
 
 - **Implementation Detail**:
