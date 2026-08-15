@@ -2,6 +2,12 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Standalone Container Build Dependency Resolution for API Gateway
+
+- **Implementation Detail**: Added `go.mongodb.org/mongo-driver/v2` dependencies to `services/api-gateway/go.mod` (introduced by version-gating MongoDB client initialization in `internal/version/version.go`). In multi-module monorepos, `go.work` resolves sibling modules during local development, but container builds (`services/api-gateway/Dockerfile`) build in module isolation where all direct dependencies must be present in the module's `go.mod`.
+- **Commit SHA**: ``36c776b1beda5c43158d6310d155469fbc94b610``
+- **Verification**: Verified via `GOWORK=off go build ./cmd/main.go` across all 5 microservices, `make docs-check`, and pre-push hook validation. ✅
+
 ## Restoration of Independent Dual-Layer Rate Limiting for GetLedger (Correction to `45431d5`)
 
 - **Implementation Detail**:
