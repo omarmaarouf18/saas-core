@@ -2,6 +2,19 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Owner Reconciliation Queue Refresh & Retry Wiring Fix
+
+- **Implementation Detail**:
+  - **Provider Refresh Connection (`frontend/lib/screens/owner_reconciliation_queue_screen.dart`)**: Resolved a functional defect identified during the UI consistency audit where `_onRefresh` was stubbed as an empty static function (`static Future<void> _onRefresh() async {}`), causing both pull-to-refresh and the empty-state "Refresh Queue" / "Retry" action to be silent no-ops.
+  - **Dynamic State Scope (`frontend/lib/screens/owner_reconciliation_queue_screen.dart`)**: Converted `_onRefresh` into a non-static instance method on `_OwnerReconciliationQueueScreenState` that accesses `BuildContext` and invokes `Provider.of<ReconciliationProvider>(context, listen: false).fetchQueue()`, ensuring proper reloading and UI state re-rendering across empty, error, and populated states.
+  - **Behavioral Regression Test Suite (`frontend/test/reconciliation_queue_test.dart`)**: Added tests `(f)`, `(g)`, `(h)`, and `(i)` verifying:
+    - Empty-state "Refresh Queue" button triggers `fetchQueue()` and transitions UI to populated job list upon data arrival.
+    - Pull-to-refresh on empty queue triggers `fetchQueue()`.
+    - Pull-to-refresh on populated queue triggers `fetchQueue()`.
+    - Error-state "Retry" button triggers `fetchQueue()` and transitions UI from error message to loaded state.
+- **Commit SHA**: ``ade35b15e893175b263cb6c9a07489480d6a8046``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (196/196 pass), `make docs-check`, and pre-push hooks gate. ✅
+
 ## SegmentedButton Contrast Defect Resolution & Typography Refinement
 
 - **Implementation Detail**:
