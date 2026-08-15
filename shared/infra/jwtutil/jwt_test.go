@@ -1,10 +1,12 @@
 package jwtutil
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"errors"
 	"math"
+	"sync"
 	"testing"
 	"time"
 
@@ -434,4 +436,218 @@ func TestGenerateSecureToken(t *testing.T) {
 	if len(tok) != 64 {
 		t.Errorf("Expected hex string of length 64 (32 bytes), got length %d", len(tok))
 	}
+}
+
+type failNHook struct {
+	mu          sync.Mutex
+	failCount   int
+	maxFailures int
+	failMessage string
+}
+
+func (h *failNHook) DialHook(next redis.DialHook) redis.DialHook { return next }
+func (h *failNHook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
+	return func(ctx context.Context, cmd redis.Cmder) error {
+		h.mu.Lock()
+		if h.failCount < h.maxFailures {
+			h.failCount++
+			h.mu.Unlock()
+			return errors.New(h.failMessage)
+		}
+		h.mu.Unlock()
+		return next(ctx, cmd)
+	}
+}
+func (h *failNHook) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.ProcessPipelineHook {
+	return next
+}
+
+type customCmdHook struct {
+	onProcess func(ctx context.Context, cmd redis.Cmder) error
+}
+
+func (h *customCmdHook) DialHook(next redis.DialHook) redis.DialHook { return next }
+func (h *customCmdHook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
+	return func(ctx context.Context, cmd redis.Cmder) error {
+		if h.onProcess != nil {
+			if err := h.onProcess(ctx, cmd); err != nil {
+				return err
+			}
+		}
+		return next(ctx, cmd)
+	}
+}
+func (h *customCmdHook) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.ProcessPipelineHook {
+	return next
+}
+
+func TestValidateToken_GracefulDegradation(t *testing.T) {
+	Init("super-secret-key-that-is-at-least-thirty-two-bytes-long")
+
+	// 1. Single transient connectivity blip is absorbed on retry and token validates successfully
+	t.Run("TransientBlipAbsorbed", func(t *testing.T) {
+		mr, err := miniredis.Run()
+		if err != nil {
+			t.Fatalf("failed to start miniredis: %v", err)
+		}
+		defer mr.Close()
+
+		rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+		defer rdb.Close()
+
+		// Add hook that fails exactly once with a connection reset error
+		hook := &failNHook{
+			maxFailures: 1,
+			failMessage: "read: connection reset by peer (transient blip)",
+		}
+		rdb.AddHook(hook)
+
+		SetRedisClient(rdb)
+		defer SetRedisClient(nil)
+		ResetHealthTracker()
+
+		tokenStr, err := GenerateToken("user-blip-1", "customer", "tenant-1", "blip@example.com")
+		if err != nil {
+			t.Fatalf("failed to generate token: %v", err)
+		}
+
+		// ValidateToken should catch the 1st failure, retry immediately, succeed, and return valid claims
+		claims, err := ValidateToken(tokenStr)
+		if err != nil {
+			t.Fatalf("expected transient blip to be absorbed and token validated successfully, got error: %v", err)
+		}
+		if claims == nil || claims.UserID != "user-blip-1" {
+			t.Errorf("expected valid claims with UserID 'user-blip-1', got: %+v", claims)
+		}
+
+		lastSuccess, failures := GetHealthTrackerStats()
+		if failures != 0 {
+			t.Errorf("expected consecutiveFailures to be 0 after absorbed blip and successful retry, got %d", failures)
+		}
+		if lastSuccess.IsZero() {
+			t.Error("expected lastSuccessTime to be recorded after successful retry")
+		}
+	})
+
+	// 2. Genuine sustained outage fails closed and preserves security guarantees
+	t.Run("SustainedOutageFailsClosed", func(t *testing.T) {
+		mr, err := miniredis.Run()
+		if err != nil {
+			t.Fatalf("failed to start miniredis: %v", err)
+		}
+		defer mr.Close()
+
+		rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+		defer rdb.Close()
+
+		// Add hook that fails all requests (simulating sustained network partition / dead cluster)
+		hook := &failNHook{
+			maxFailures: 1000,
+			failMessage: "dial tcp 127.0.0.1:6379: connect: connection refused (sustained outage)",
+		}
+		rdb.AddHook(hook)
+
+		SetRedisClient(rdb)
+		defer SetRedisClient(nil)
+		ResetHealthTracker()
+
+		tokenStr, err := GenerateToken("user-outage-1", "customer", "tenant-1", "outage@example.com")
+		if err != nil {
+			t.Fatalf("failed to generate token: %v", err)
+		}
+
+		// First call: tries initial + 1 retry, both fail -> fails closed
+		claims, err := ValidateToken(tokenStr)
+		if err == nil {
+			t.Fatal("expected ValidateToken to fail closed on sustained Redis outage, but it succeeded")
+		}
+		if claims != nil {
+			t.Errorf("expected nil claims on fail-closed rejection, got: %+v", claims)
+		}
+
+		// Check consecutive failures recorded
+		_, failures := GetHealthTrackerStats()
+		if failures < 2 {
+			t.Errorf("expected at least 2 recorded failures from initial + retry attempt, got %d", failures)
+		}
+
+		// Subsequent call when threshold exceeded should fail closed
+		_, err2 := ValidateToken(tokenStr)
+		if err2 == nil {
+			t.Fatal("expected second call during sustained outage to fail closed, but it succeeded")
+		}
+	})
+
+	// 3. User Invalidation Check absorbs transient blip on retry
+	t.Run("UserInvalidationTransientBlipAbsorbed", func(t *testing.T) {
+		mr, err := miniredis.Run()
+		if err != nil {
+			t.Fatalf("failed to start miniredis: %v", err)
+		}
+		defer mr.Close()
+
+		rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+		defer rdb.Close()
+
+		// Hook that fails only on "get" command (per-user check), exactly once
+		var getFailCount int
+		var getMu sync.Mutex
+		hook := &customCmdHook{
+			onProcess: func(ctx context.Context, cmd redis.Cmder) error {
+				if cmd.Name() == "get" {
+					getMu.Lock()
+					defer getMu.Unlock()
+					if getFailCount == 0 {
+						getFailCount++
+						return errors.New("temporary redis timeout on get")
+					}
+				}
+				return nil
+			},
+		}
+		rdb.AddHook(hook)
+
+		SetRedisClient(rdb)
+		defer SetRedisClient(nil)
+		ResetHealthTracker()
+
+		tokenStr, err := GenerateToken("user-blip-usercheck", "customer", "tenant-1", "usercheck@example.com")
+		if err != nil {
+			t.Fatalf("failed to generate token: %v", err)
+		}
+
+		claims, err := ValidateToken(tokenStr)
+		if err != nil {
+			t.Fatalf("expected transient blip on user invalidation check to be absorbed, got: %v", err)
+		}
+		if claims == nil || claims.UserID != "user-blip-usercheck" {
+			t.Errorf("expected valid claims, got: %+v", claims)
+		}
+	})
+
+	// 4. Write path RevokeAllUserTokens fails loudly without silent degradation
+	t.Run("WritePathFailsLoudlyOnOutage", func(t *testing.T) {
+		mr, err := miniredis.Run()
+		if err != nil {
+			t.Fatalf("failed to start miniredis: %v", err)
+		}
+		defer mr.Close()
+
+		rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+		defer rdb.Close()
+
+		hook := &failNHook{
+			maxFailures: 10,
+			failMessage: "redis: connection closed",
+		}
+		rdb.AddHook(hook)
+
+		SetRedisClient(rdb)
+		defer SetRedisClient(nil)
+
+		err = RevokeAllUserTokens("user-write-test")
+		if err == nil {
+			t.Fatal("expected RevokeAllUserTokens write path to fail loudly on Redis error")
+		}
+	})
 }

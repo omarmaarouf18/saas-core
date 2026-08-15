@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -30,6 +31,60 @@ type Claims struct {
 
 var jwtSecret []byte
 var redisClient *redis.Client
+
+type redisHealthTracker struct {
+	mu                  sync.Mutex
+	lastSuccessTime     time.Time
+	consecutiveFailures int
+	maxBlipFailures     int
+	maxBlipWindow       time.Duration
+	retryTimeout        time.Duration
+}
+
+var healthTracker = &redisHealthTracker{
+	maxBlipFailures: 3,
+	maxBlipWindow:   5 * time.Second,
+	retryTimeout:    500 * time.Millisecond,
+}
+
+func (t *redisHealthTracker) recordSuccess() {
+	t.mu.Lock()
+	t.lastSuccessTime = time.Now()
+	t.consecutiveFailures = 0
+	t.mu.Unlock()
+}
+
+func (t *redisHealthTracker) recordFailure() {
+	t.mu.Lock()
+	t.consecutiveFailures++
+	t.mu.Unlock()
+}
+
+func (t *redisHealthTracker) canRetryBlip() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.consecutiveFailures < t.maxBlipFailures {
+		if t.lastSuccessTime.IsZero() || time.Since(t.lastSuccessTime) <= t.maxBlipWindow {
+			return true
+		}
+	}
+	return false
+}
+
+// ResetHealthTracker resets health tracking metrics (used in tests).
+func ResetHealthTracker() {
+	healthTracker.mu.Lock()
+	healthTracker.lastSuccessTime = time.Time{}
+	healthTracker.consecutiveFailures = 0
+	healthTracker.mu.Unlock()
+}
+
+// GetHealthTrackerStats returns the current health metrics (used in tests).
+func GetHealthTrackerStats() (time.Time, int) {
+	healthTracker.mu.Lock()
+	defer healthTracker.mu.Unlock()
+	return healthTracker.lastSuccessTime, healthTracker.consecutiveFailures
+}
 
 func Init(secret string) {
 	if secret == "" {
@@ -115,12 +170,34 @@ func ValidateToken(tokenStr string) (*Claims, error) {
 	// We explicitly fail-closed if Redis is unreachable to maintain security integrity.
 	if redisClient != nil && claims.RegisteredClaims.ID != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
 		isDenylisted, err := redisClient.Exists(ctx, "jwt:denylist:"+claims.RegisteredClaims.ID).Result()
+		cancel()
+
 		if err != nil {
-			log.Printf("[SECURITY CRITICAL] Redis error checking JWT denylist (FAIL CLOSED): %v. Rejecting token jti: %s", err, claims.RegisteredClaims.ID)
-			return nil, fmt.Errorf("jwtutil: security check failed (denylist unreachable): %w", err)
+			healthTracker.recordFailure()
+			if healthTracker.canRetryBlip() {
+				retryCtx, retryCancel := context.WithTimeout(context.Background(), healthTracker.retryTimeout)
+				retryDenylisted, retryErr := redisClient.Exists(retryCtx, "jwt:denylist:"+claims.RegisteredClaims.ID).Result()
+				retryCancel()
+
+				if retryErr == nil {
+					healthTracker.recordSuccess()
+					log.Printf("[REDIS] Transient connectivity blip absorbed, denylist check succeeded on retry for jti: %s", claims.RegisteredClaims.ID)
+					isDenylisted = retryDenylisted
+					err = nil
+				} else {
+					healthTracker.recordFailure()
+					log.Printf("[SECURITY CRITICAL] Redis error checking JWT denylist (FAIL CLOSED after retry): %v. Rejecting token jti: %s", retryErr, claims.RegisteredClaims.ID)
+					return nil, fmt.Errorf("jwtutil: security check failed (denylist unreachable): %w", retryErr)
+				}
+			} else {
+				log.Printf("[SECURITY CRITICAL] Redis error checking JWT denylist (FAIL CLOSED): %v. Rejecting token jti: %s", err, claims.RegisteredClaims.ID)
+				return nil, fmt.Errorf("jwtutil: security check failed (denylist unreachable): %w", err)
+			}
+		} else {
+			healthTracker.recordSuccess()
 		}
+
 		if isDenylisted > 0 {
 			return nil, errors.New("jwtutil: token has been revoked")
 		}
@@ -130,12 +207,34 @@ func ValidateToken(tokenStr string) (*Claims, error) {
 	// We explicitly fail-closed if Redis is unreachable to maintain security integrity.
 	if redisClient != nil && claims.UserID != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
 		invalidatedStr, err := redisClient.Get(ctx, "jwt:invalidated_before:"+claims.UserID).Result()
+		cancel()
+
 		if err != nil && !errors.Is(err, redis.Nil) {
-			log.Printf("[SECURITY CRITICAL] Redis error checking user token invalidation (FAIL CLOSED): %v. Rejecting user_id: %s", err, claims.UserID)
-			return nil, fmt.Errorf("jwtutil: security check failed (user invalidation lookup unreachable): %w", err)
+			healthTracker.recordFailure()
+			if healthTracker.canRetryBlip() {
+				retryCtx, retryCancel := context.WithTimeout(context.Background(), healthTracker.retryTimeout)
+				retryStr, retryErr := redisClient.Get(retryCtx, "jwt:invalidated_before:"+claims.UserID).Result()
+				retryCancel()
+
+				if retryErr == nil || errors.Is(retryErr, redis.Nil) {
+					healthTracker.recordSuccess()
+					log.Printf("[REDIS] Transient connectivity blip absorbed, user invalidation check succeeded on retry for user_id: %s", claims.UserID)
+					invalidatedStr = retryStr
+					err = retryErr
+				} else {
+					healthTracker.recordFailure()
+					log.Printf("[SECURITY CRITICAL] Redis error checking user token invalidation (FAIL CLOSED after retry): %v. Rejecting user_id: %s", retryErr, claims.UserID)
+					return nil, fmt.Errorf("jwtutil: security check failed (user invalidation lookup unreachable): %w", retryErr)
+				}
+			} else {
+				log.Printf("[SECURITY CRITICAL] Redis error checking user token invalidation (FAIL CLOSED): %v. Rejecting user_id: %s", err, claims.UserID)
+				return nil, fmt.Errorf("jwtutil: security check failed (user invalidation lookup unreachable): %w", err)
+			}
+		} else {
+			healthTracker.recordSuccess()
 		}
+
 		if err == nil && invalidatedStr != "" {
 			ts, parseErr := strconv.ParseInt(invalidatedStr, 10, 64)
 			if parseErr != nil {

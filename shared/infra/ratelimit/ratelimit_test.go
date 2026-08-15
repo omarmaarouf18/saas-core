@@ -1,6 +1,8 @@
 package ratelimit
 
 import (
+	"context"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -377,6 +379,86 @@ func TestRateLimiter_ExtraCoverage(t *testing.T) {
 		}
 		if backoff <= 0 {
 			t.Errorf("expected positive lockout duration, got %v", backoff)
+		}
+	})
+}
+
+func TestNewRedisClient_SentinelAndStandaloneBranching(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+
+	// 1. Standalone branch when REDIS_SENTINEL_ADDRS is empty
+	t.Run("StandaloneFallback", func(t *testing.T) {
+		env := map[string]string{
+			"REDIS_SENTINEL_ADDRS": "",
+		}
+		getenv := func(key string) string {
+			return env[key]
+		}
+
+		client, err := NewRedisClientFromEnv(mr.Addr(), getenv)
+		if err != nil {
+			t.Fatalf("expected NewRedisClientFromEnv to succeed with standalone miniredis, got: %v", err)
+		}
+		defer client.Close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if err := client.Ping(ctx).Err(); err != nil {
+			t.Errorf("expected ping to succeed on standalone client, got: %v", err)
+		}
+	})
+
+	// 2. Sentinel branch when REDIS_SENTINEL_ADDRS is configured
+	t.Run("SentinelConfigurationBranching", func(t *testing.T) {
+		env := map[string]string{
+			"REDIS_SENTINEL_ADDRS":       " 127.0.0.1:26379 , 127.0.0.1:26380 ",
+			"REDIS_SENTINEL_MASTER_NAME": "mymaster-prod",
+			"REDIS_PASSWORD":             "secretpass",
+			"REDIS_SENTINEL_PASSWORD":    "sentinelpass",
+		}
+		getenv := func(key string) string {
+			return env[key]
+		}
+
+		// When sentinel addresses are provided but unreachable in unit test, it should branch to NewFailoverClient and fail ping with sentinel master error
+		client, err := NewRedisClientFromEnv("redis://ignored:6379", getenv)
+		if err == nil {
+			if client != nil {
+				client.Close()
+			}
+			t.Fatal("expected connection error for unreachable sentinel addresses")
+		}
+
+		expectedSubstr := "ratelimit: failed to connect to Redis Sentinel master (mymaster-prod)"
+		if !strings.Contains(err.Error(), expectedSubstr) {
+			t.Errorf("expected error containing %q, got %v", expectedSubstr, err)
+		}
+	})
+
+	// 3. Password extracted from URI if REDIS_PASSWORD not in env
+	t.Run("PasswordFromURIInSentinelMode", func(t *testing.T) {
+		env := map[string]string{
+			"REDIS_SENTINEL_ADDRS": "127.0.0.1:26379",
+		}
+		getenv := func(key string) string {
+			return env[key]
+		}
+
+		client, err := NewRedisClientFromEnv("redis://:uri-secret@127.0.0.1:6379", getenv)
+		if err == nil {
+			if client != nil {
+				client.Close()
+			}
+			t.Fatal("expected connection error for unreachable sentinel")
+		}
+
+		expectedSubstr := "ratelimit: failed to connect to Redis Sentinel master (mymaster)"
+		if !strings.Contains(err.Error(), expectedSubstr) {
+			t.Errorf("expected default master name 'mymaster' in error, got %v", err)
 		}
 	})
 }

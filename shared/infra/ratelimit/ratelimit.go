@@ -4,13 +4,64 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 )
 
 // NewRedisClient creates and pings a Redis client to ensure reachability.
+// It is Sentinel-aware: if REDIS_SENTINEL_ADDRS is set, it constructs a failover client
+// (redis.NewFailoverClient) monitoring REDIS_SENTINEL_MASTER_NAME (defaulting to "mymaster");
+// otherwise it connects to redisURI directly.
 func NewRedisClient(redisURI string) (*redis.Client, error) {
+	return NewRedisClientFromEnv(redisURI, os.Getenv)
+}
+
+// NewRedisClientFromEnv is a Sentinel-aware factory function that resolves configuration via a custom getenv function.
+func NewRedisClientFromEnv(redisURI string, getenv func(string) string) (*redis.Client, error) {
+	sentinelAddrsEnv := strings.TrimSpace(getenv("REDIS_SENTINEL_ADDRS"))
+	if sentinelAddrsEnv != "" {
+		var sentinelAddrs []string
+		for _, addr := range strings.Split(sentinelAddrsEnv, ",") {
+			trimmed := strings.TrimSpace(addr)
+			if trimmed != "" {
+				sentinelAddrs = append(sentinelAddrs, trimmed)
+			}
+		}
+
+		if len(sentinelAddrs) > 0 {
+			masterName := strings.TrimSpace(getenv("REDIS_SENTINEL_MASTER_NAME"))
+			if masterName == "" {
+				masterName = "mymaster"
+			}
+			password := getenv("REDIS_PASSWORD")
+			if password == "" && redisURI != "" {
+				if uOpts, err := redis.ParseURL(redisURI); err == nil && uOpts.Password != "" {
+					password = uOpts.Password
+				}
+			}
+
+			sentinelPassword := getenv("REDIS_SENTINEL_PASSWORD")
+
+			rdb := redis.NewFailoverClient(&redis.FailoverOptions{
+				MasterName:       masterName,
+				SentinelAddrs:    sentinelAddrs,
+				Password:         password,
+				SentinelPassword: sentinelPassword,
+			})
+
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := rdb.Ping(ctx).Err(); err != nil {
+				_ = rdb.Close()
+				return nil, fmt.Errorf("ratelimit: failed to connect to Redis Sentinel master (%s): %w", masterName, err)
+			}
+			return rdb, nil
+		}
+	}
+
 	opts, err := redis.ParseURL(redisURI)
 	if err != nil {
 		opts = &redis.Options{
@@ -21,6 +72,7 @@ func NewRedisClient(redisURI string) (*redis.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := rdb.Ping(ctx).Err(); err != nil {
+		_ = rdb.Close()
 		return nil, err
 	}
 	return rdb, nil
