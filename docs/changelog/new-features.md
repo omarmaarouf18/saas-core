@@ -2,6 +2,26 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Maps, Dialogs & Update Required Screen Design System Migration
+
+- **Implementation Detail**:
+  - **Live Tracking & Fleet Maps (`frontend/lib/screens/customer_job_map_screen.dart`, `frontend/lib/screens/owner_fleet_map_screen.dart`)**:
+    - Replaced raw `CircularProgressIndicator` with `ThemedLoadingIndicator`.
+    - Replaced raw `Material` floating overlay notices with `ThemedCard(variant: ThemedCardVariant.elevated)`.
+    - Replaced raw marker typography styles with tokenized `AppTypography.labelMd.copyWith(fontSize: 10, fontWeight: FontWeight.bold)`.
+    - Replaced raw reconnecting/error banners with `ThemedWarningBanner` and `ThemedErrorBanner`.
+  - **Dialog Components (`frontend/lib/widgets/cancel_job_dialog.dart`, `frontend/lib/widgets/confirm_action_dialog.dart`)**:
+    - `CancelJobDialog`: Replaced raw `TextField` with `ThemedTextField`; replaced raw action buttons with `SecondaryButton(isFullWidth: false)` and `PrimaryButton(isFullWidth: false, isDestructive: true, isLoading: _isSubmitting)`; replaced inline error text with `ThemedErrorBanner`.
+    - `ConfirmActionDialog`: Replaced raw `TextButton`/`ElevatedButton` with `SecondaryButton(isFullWidth: false)` and `PrimaryButton(isFullWidth: false, isDestructive: isDestructive)`.
+    - `PrimaryButton` (`frontend/lib/widgets/primary_button.dart`): Added `isDestructive: bool = false` parameter rendering filled `AppColors.error` background for destructive confirmation actions.
+  - **Update Required Screen (`frontend/lib/screens/update_required_screen.dart`)**:
+    - Replaced version comparison container with `ThemedCard`.
+    - Replaced raw `ElevatedButton.icon` with `PrimaryButton`.
+    - Replaced hardcoded padding and border radii with `AppSpacing` and `AppRadius` tokens.
+  - **Widget Test Coverage (`frontend/test/cancel_job_dialog_test.dart`, `frontend/test/job_cancellation_test.dart`)**: Added automated tests covering `CancelJobDialog` rendering, validation, submission, and error states; updated button widget finders.
+- **Commit SHA**: ``0091b8eb23f3be77f0681d976a08a7dcc1ecd825``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (212/212 pass), `make docs-check`, and pre-push hooks gate. ✅
+
 ## Subscription Screen Design System Migration
 
 - **Implementation Detail**:
