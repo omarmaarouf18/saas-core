@@ -2,6 +2,16 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## SegmentedButton Contrast Defect Resolution & Typography Refinement
+
+- **Implementation Detail**:
+  - **Color Contrast Resolution (`frontend/lib/core/theme.dart`, `frontend/lib/screens/settings_screen.dart`)**: Fixed real, screenshot-confirmed contrast and legibility defect in `SegmentedButton` (Theme Mode and Language selectors in `SettingsScreen`). Previously, unselected segments relied on Material 3 default color resolution, which rendered text and icons in low-contrast, washed-out pale gray. Added explicit `segmentedButtonTheme` to both `quickDeliveryTheme` (Light) and `quickDeliveryDarkTheme` (Dark) and explicit `_segmentedButtonStyle(context)` in `SettingsScreen` resolving unselected foreground to `AppColors.onSurface` (Light: `#1A1C1C` on `#EEEEEE` container, 13.1:1 contrast) and `0xFFF8FAFC` (Dark: on `#1E293B` container, 11.5:1 contrast), exceeding WCAG AA minimums (>= 4.5:1).
+  - **Typography & Font Size Optimization**: Reduced segment label font size from default 14sp to compact 12sp (`AppTypography.labelLg` scale) and applied bold font weight (`FontWeight.bold` / `FontWeight.w700`), reinforcing legibility and tactile visual hierarchy without overflowing mobile viewports.
+  - **Theme-Aware Icon & Background Alignment**: Updated `SettingsScreen` scaffold, app bar, and list tile leading/trailing icons to dynamic `Theme.of(context).colorScheme` values (`colorScheme.primary`, `colorScheme.outline`, `scaffoldBackgroundColor`), ensuring consistent high-contrast rendering across light and dark themes.
+  - **Automated Contrast Ratio & Style Test Suite (`frontend/test/settings_screen_test.dart`)**: Added widget test `(f)` calculating mathematical relative luminance contrast ratios for both unselected and selected states in Light and Dark mode, asserting compliance with WCAG AA (>= 4.5:1), 12sp font size, and bold font weight.
+- **Commit SHA**: ``c3fd65b3aa35cfc376394a8eb29d0900259d3799``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (197/197 pass), `make docs-check`, and pre-push hooks gate. ✅
+
 ## Standalone Container Build Dependency Resolution for API Gateway
 
 - **Implementation Detail**: Added `go.mongodb.org/mongo-driver/v2` dependencies to `services/api-gateway/go.mod` (introduced by version-gating MongoDB client initialization in `internal/version/version.go`). In multi-module monorepos, `go.work` resolves sibling modules during local development, but container builds (`services/api-gateway/Dockerfile`) build in module isolation where all direct dependencies must be present in the module's `go.mod`.
