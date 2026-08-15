@@ -2,6 +2,15 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Redis Sentinel High Availability Support & JWT Validation Graceful Degradation
+
+- **Implementation Detail**:
+  - **Sentinel-Aware Client Factory (`shared/infra/ratelimit/ratelimit.go`)**: Extended `NewRedisClient(redisURI string)` and added `NewRedisClientFromEnv(redisURI string, getenv func(string) string)` to support Redis Sentinel high availability while preserving 100% backward compatibility for all 5 calling microservices (`api-gateway`, `auth-service`, `chat-service`, `notification-service`, `user-service`). When `REDIS_SENTINEL_ADDRS` is provided (comma-separated list of sentinel nodes), it constructs a failover client via `redis.NewFailoverClient` with `MasterName` (from `REDIS_SENTINEL_MASTER_NAME`, defaulting to `"mymaster"`), `Password` (from `REDIS_PASSWORD` or parsed from `redisURI`), and `SentinelPassword` (from `REDIS_SENTINEL_PASSWORD`), automatically handling master failovers transparently. When `REDIS_SENTINEL_ADDRS` is unset, it falls back to standalone Redis instance connectivity. Updated `infrastructure/.env.example` with Sentinel configuration documentation.
+  - **Graceful Degradation & Blip Absorption in JWT Validation (`shared/infra/jwtutil/jwt.go`)**: Refined the fail-closed Redis denylist and per-user token revocation checks in `ValidateToken` to absorb transient network blips and Sentinel failover windows without rejecting valid users or logging them out prematurely. Implemented thread-safe `redisHealthTracker` tracking `lastSuccessTime` and `consecutiveFailures`. When a Redis error occurs during revocation/denylist lookups within the blip tolerance threshold (< 3 consecutive failures and within 5 seconds of last success or initial attempt), `ValidateToken` executes a single immediate retry with a 500ms timeout. If the retry succeeds, it logs `[REDIS] Transient connectivity blip absorbed, ... succeeded on retry` and completes token validation normally. If the retry fails or the sustained failure threshold is exceeded, it preserves the strict security guarantee by failing closed with `[SECURITY CRITICAL]` logs. The write path in `RevokeAllUserTokens` strictly fails loudly without silent degradation.
+  - **Automated Regression & Unit Test Suites (`ratelimit_test.go` & `jwt_test.go`)**: Added `TestNewRedisClient_SentinelAndStandaloneBranching` in `ratelimit_test.go` testing standalone fallback, Sentinel configuration parsing, and URI password extraction. Added `TestValidateToken_GracefulDegradation` in `jwt_test.go` verifying that single transient network drops on both denylist and per-user revocation checks are absorbed on retry, genuine sustained outages fail closed preserving security integrity, and write-path revocations fail loudly on Redis outages.
+- **Commit SHA**: ``a606943d7760dca45274fff88c0eeafd688326cf``
+- **Verification**: Verified via `go test ./...` across all 7 Go modules (100% pass), `go build ./...`, `go vet ./...`, and `gofmt -l .`. ✅
+
 ## Client Application Semantic Versioning & Version-Gating Middleware (ADR-0018)
 
 - **Implementation Detail**:
