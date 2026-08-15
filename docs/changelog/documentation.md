@@ -4,6 +4,19 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## Full Repository Documentation Freshness Re-Audit & Remediation
+
+- **Implementation Detail**: Executed a comprehensive documentation freshness audit across all 55 markdown documents in the repository following significant backend, infrastructure, and architectural landings (handlers modularization, Redis Sentinel HA support, graceful shutdown across all 5 services, CD health rollback hardening, KYC document encryption at rest, rate limiter decoupling, and zero-commission model). Remediated all identified discrepancies:
+  1. Updated `docs/APPLICATION_MAP.md` and `docs/REPOSITORY_MAP.md` headers with current Git commit pins.
+  2. Updated `docs/DEPLOYMENT.md` §5.2 to document Redis Sentinel environment variables (`REDIS_SENTINEL_ADDRS`, `REDIS_SENTINEL_MASTER_NAME`, `REDIS_SENTINEL_PASSWORD`) and updated §7.4 to document automated health-gated CD rollback (`set -euo pipefail`, compose rollback, container recreation, `verify_service_health`).
+  3. Standardized `docs/adr/0018-client-app-semantic-versioning-and-enforcement-gate.md` status line and added ADR-0018 to `docs/adr/README.md` index.
+  4. Updated user-service handler citations across `docs/frontend/STATUS.md`, `docs/FRONTEND_INTEGRATION_SCOPE.md`, `docs/BUSINESS_LOGIC_AUDIT.md`, `docs/audit/shared-module-review.md`, `DESIGN.md`, and `IMPLEMENTATION.md` to reference post-refactoring domain-scoped handler files (`jobs_handlers.go`, `wallet_handlers.go`, `services_handlers.go`, `subscription_handlers.go`, `ratings_handlers.go`).
+  5. Corrected Phase 2 status in `docs/frontend/UI_UX_ENTERPRISE_ROADMAP.md` executive summary table to `[100% COMPLETE & VERIFIED]`.
+  6. Updated database reference in `docs/local/APP_MAP.md` architecture diagram from legacy `saas_platform` to isolated `user_db`.
+  7. Corrected documentation link in `frontend/CONNECTING_TO_BACKEND.md` pointing to `docs/DEPLOYMENT.md`.
+- **Commit SHA**: ``01096e2ebb43ef8e9f5540fa5ff5a2951433f6d5``
+- **Verification**: Verified via `make docs-check` (all commit SHAs valid, all markdown links consistent), `git cat-file -e`, and full test suite passes across all microservices and frontend. ✅
+
 ## Visual Hierarchy & Card Presentation Overhaul (Phase 4)
 
 - **Implementation Detail**: Extended `ThemedCard` with explicit `elevation` parameter support. Standardized static/resting cards to `AppElevation.shadowLevel1List` (control panel, empty containers, job details, worker info, audit logs) and interactive/tappable cards to `AppElevation.shadowLevel2List` (marketplace service booking cards, price counter-offer card, worker registration form, worker status form, employee active job cards) across 5 target screens (`customer_marketplace_screen.dart`, `job_status_screen.dart`, `wallet_screen.dart`, `employee_screen.dart`, `employee_jobs_screen.dart`). Re-ran `scratch/audit_hierarchy.py` confirming **0** remaining findings. Updated `docs/frontend/DESIGN_SYSTEM.md`, `docs/frontend/UI_UX_ENTERPRISE_ROADMAP.md` (Phase 4 evidence), `docs/frontend/STATUS.md` (Phase 23 entry), and `AI_CONTEXT.md`.
