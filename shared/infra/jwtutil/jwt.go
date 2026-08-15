@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -125,6 +126,28 @@ func ValidateToken(tokenStr string) (*Claims, error) {
 		}
 	}
 
+	// Redis-backed per-user token invalidation check (tokens issued before stored timestamp).
+	// We explicitly fail-closed if Redis is unreachable to maintain security integrity.
+	if redisClient != nil && claims.UserID != "" {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		invalidatedStr, err := redisClient.Get(ctx, "jwt:invalidated_before:"+claims.UserID).Result()
+		if err != nil && !errors.Is(err, redis.Nil) {
+			log.Printf("[SECURITY CRITICAL] Redis error checking user token invalidation (FAIL CLOSED): %v. Rejecting user_id: %s", err, claims.UserID)
+			return nil, fmt.Errorf("jwtutil: security check failed (user invalidation lookup unreachable): %w", err)
+		}
+		if err == nil && invalidatedStr != "" {
+			ts, parseErr := strconv.ParseInt(invalidatedStr, 10, 64)
+			if parseErr != nil {
+				log.Printf("[SECURITY CRITICAL] Redis error parsing user token invalidation timestamp (FAIL CLOSED): %v. Rejecting user_id: %s", parseErr, claims.UserID)
+				return nil, fmt.Errorf("jwtutil: security check failed (invalid timestamp format): %w", parseErr)
+			}
+			if claims.IssuedAt == nil || claims.IssuedAt.Time.Unix() < ts {
+				return nil, errors.New("jwtutil: token has been revoked")
+			}
+		}
+	}
+
 	if isExpired {
 		return claims, ErrExpiredToken
 	}
@@ -134,6 +157,34 @@ func ValidateToken(tokenStr string) (*Claims, error) {
 	}
 
 	return claims, nil
+}
+
+// RevokeAllUserTokens invalidates all tokens issued for a specific user prior to the current timestamp.
+// It sets a Redis key jwt:invalidated_before:<user_id> to the current Unix timestamp.
+func RevokeAllUserTokens(userID string) error {
+	if userID == "" {
+		return errors.New("jwtutil: missing user_id")
+	}
+	if redisClient == nil {
+		return errors.New("jwtutil: redis client not initialized")
+	}
+
+	now := time.Now()
+	timestamp := now.Unix()
+
+	// TTL: 24h token expiry + 7-day refresh window (matches RevokeToken TTL pattern)
+	ttl := 24*time.Hour + 7*24*time.Hour
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	key := "jwt:invalidated_before:" + userID
+	err := redisClient.Set(ctx, key, strconv.FormatInt(timestamp, 10), ttl).Err()
+	if err != nil {
+		log.Printf("[SECURITY CRITICAL] Redis error storing user token invalidation timestamp (FAIL CLOSED): %v. User ID: %s", err, userID)
+		return fmt.Errorf("jwtutil: revoke all user tokens failed: %w", err)
+	}
+	return nil
 }
 
 // RevokeToken denylists a token's jti in Redis.

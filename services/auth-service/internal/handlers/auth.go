@@ -2111,10 +2111,15 @@ func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.store.UpdateUser(ctx, user.ID, update); err != nil {
+		log.Printf("[AUTH] Failed to update user password for user %s: %v", user.ID, err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "failed to update password: " + err.Error(),
+			"error": "failed to update password",
 		})
 		return
+	}
+
+	if err := jwtutil.RevokeAllUserTokens(user.ID); err != nil {
+		log.Printf("[SECURITY WARNING] Failed to revoke user tokens after password reset for user_id=%s: %v", user.ID, err)
 	}
 
 	log.Printf("[AUTH] Password reset successfully for email=%s user_id=%s", user.Email, user.ID)

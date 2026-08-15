@@ -3117,6 +3117,162 @@ func TestResetPassword_OTPReusePrevention(t *testing.T) {
 	}
 }
 
+// TestResetPassword_SessionInvalidation verifies that resetting a password invalidates all previously issued JWT tokens for that user
+func TestResetPassword_SessionInvalidation(t *testing.T) {
+	a, mongoStore, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	jwtutil.SetRedisClient(rdb)
+	defer jwtutil.SetRedisClient(nil)
+
+	ctx := context.Background()
+	email := "sessioninvalidation@example.com"
+	oldPassword := "OldPassword123"
+	newPassword := "NewPassword456"
+
+	hashedOld, _ := bcrypt.GenerateFromPassword([]byte(oldPassword), bcrypt.DefaultCost)
+	user := &models.User{
+		ID:        "user-session-invalidation-1",
+		Email:     email,
+		Username:  "sessioninvuser",
+		Password:  string(hashedOld),
+		Role:      models.RoleUser,
+		IsActive:  true,
+		CreatedAt: time.Now().UTC(),
+	}
+	if err := mongoStore.CreateUser(ctx, user); err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	// Issue token BEFORE password reset
+	tokenBeforeReset, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.ID, user.Email)
+	if err != nil {
+		t.Fatalf("Failed to generate token before reset: %v", err)
+	}
+
+	// Validate tokenBeforeReset before password reset -> MUST SUCCEED
+	claimsBefore, err := jwtutil.ValidateToken(tokenBeforeReset)
+	if err != nil {
+		t.Fatalf("Expected token issued before reset to be valid prior to reset, got: %v", err)
+	}
+	if claimsBefore.UserID != user.ID {
+		t.Errorf("Expected claims UserID %s, got %s", user.ID, claimsBefore.UserID)
+	}
+
+	// Ensure token issuance timestamp is strictly before the reset timestamp
+	time.Sleep(1 * time.Second)
+
+	// Set OTP and reset password
+	otpCode := "123456"
+	if err := mongoStore.SetOTP(ctx, email, otpCode); err != nil {
+		t.Fatalf("Failed to set OTP: %v", err)
+	}
+
+	resetBody := fmt.Sprintf(`{"email":%q,"otp":%q,"new_password":%q}`, email, otpCode, newPassword)
+	req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
+	rec := httptest.NewRecorder()
+	a.ResetPassword(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK on reset password, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// Validate tokenBeforeReset after password reset -> MUST BE REJECTED with "jwtutil: token has been revoked"
+	_, err = jwtutil.ValidateToken(tokenBeforeReset)
+	if err == nil || err.Error() != "jwtutil: token has been revoked" {
+		t.Fatalf("Expected token issued before password reset to be rejected after reset with 'jwtutil: token has been revoked', got: %v", err)
+	}
+
+	// Issue token AFTER password reset -> MUST BE VALID
+	tokenAfterReset, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.ID, user.Email)
+	if err != nil {
+		t.Fatalf("Failed to generate token after reset: %v", err)
+	}
+
+	claimsAfter, err := jwtutil.ValidateToken(tokenAfterReset)
+	if err != nil {
+		t.Fatalf("Expected token issued after password reset to be valid, got: %v", err)
+	}
+	if claimsAfter.UserID != user.ID {
+		t.Errorf("Expected claims UserID %s, got %s", user.ID, claimsAfter.UserID)
+	}
+}
+
+// TestResetPassword_DBErrorGenericMessage verifies that MongoDB update failure returns generic error message without leaking driver details
+func TestResetPassword_DBErrorGenericMessage(t *testing.T) {
+	a, mongoStore, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	email := "dberrorleak@example.com"
+	user := &models.User{
+		ID:        "user-dberror-1",
+		Email:     email,
+		Username:  "dberroruser",
+		Password:  "OldPass123",
+		Role:      models.RoleUser,
+		IsActive:  true,
+		CreatedAt: time.Now().UTC(),
+	}
+	if err := mongoStore.CreateUser(ctx, user); err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	otpCode := "999888"
+	if err := mongoStore.SetOTP(ctx, email, otpCode); err != nil {
+		t.Fatalf("Failed to set OTP: %v", err)
+	}
+
+	// Set a schema validator on the users collection to force UpdateUser to fail with a MongoDB WriteError (Document failed validation)
+	if err := mongoStore.DatabaseForTesting().RunCommand(ctx, bson.D{
+		{Key: "collMod", Value: "users"},
+		{Key: "validator", Value: bson.M{
+			"otp_verified": true, // VerifyOTP sets otp_verified: true (passes), UpdateUser sets otp_verified: false (fails validation)
+		}},
+		{Key: "validationAction", Value: "error"},
+	}).Err(); err != nil {
+		t.Fatalf("Failed to set collMod validator on users collection: %v", err)
+	}
+
+	resetBody := fmt.Sprintf(`{"email":%q,"otp":%q,"new_password":"NewPassword123"}`, email, otpCode)
+	req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
+	rec := httptest.NewRecorder()
+	a.ResetPassword(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("Expected 500 Internal Server Error when DB operation fails, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	var resp map[string]string
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("Failed to unmarshal error response JSON: %v", err)
+	}
+
+	if resp["error"] != "failed to update password" {
+		t.Errorf("Expected generic error 'failed to update password', got %q", resp["error"])
+	}
+
+	// Confirm no raw driver error strings leaked in the response body
+	bodyStr := rec.Body.String()
+	if strings.Contains(bodyStr, "Document failed validation") || strings.Contains(bodyStr, "WriteError") || strings.Contains(bodyStr, "mongo") {
+		t.Errorf("Security Leak: raw MongoDB error details leaked in response body: %s", bodyStr)
+	}
+}
+
 // TestDeviceToken_RegistrationAndUpsert tests registering, updating, and deduplicating FCM device tokens
 func TestDeviceToken_RegistrationAndUpsert(t *testing.T) {
 	a, mongoStore, cleanup := setupTestAuth(t)

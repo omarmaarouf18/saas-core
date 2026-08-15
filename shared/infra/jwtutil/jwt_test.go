@@ -300,6 +300,132 @@ func TestJWT_ExtraCoverage(t *testing.T) {
 	})
 }
 
+func TestRevokeAllUserTokens(t *testing.T) {
+	Init("super-secret-key-that-is-at-least-thirty-two-bytes-long")
+
+	// 1. Missing inputs / uninitialized redis errors
+	t.Run("ValidationErrors", func(t *testing.T) {
+		SetRedisClient(nil)
+		if err := RevokeAllUserTokens("user123"); err == nil || err.Error() != "jwtutil: redis client not initialized" {
+			t.Errorf("expected 'jwtutil: redis client not initialized', got %v", err)
+		}
+
+		mr, err := miniredis.Run()
+		if err != nil {
+			t.Fatalf("failed to start miniredis: %v", err)
+		}
+		defer mr.Close()
+		rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+		defer rdb.Close()
+
+		SetRedisClient(rdb)
+		defer SetRedisClient(nil)
+
+		if err := RevokeAllUserTokens(""); err == nil || err.Error() != "jwtutil: missing user_id" {
+			t.Errorf("expected 'jwtutil: missing user_id', got %v", err)
+		}
+	})
+
+	// 2. Successful revocation of pre-invalidation tokens & validity of post-invalidation tokens
+	t.Run("RevocationLifecycle", func(t *testing.T) {
+		mr, err := miniredis.Run()
+		if err != nil {
+			t.Fatalf("failed to start miniredis: %v", err)
+		}
+		defer mr.Close()
+		rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+		defer rdb.Close()
+
+		SetRedisClient(rdb)
+		defer SetRedisClient(nil)
+
+		userID1 := "user-revoke-1"
+		userID2 := "user-revoke-2"
+
+		// Generate token1 for user1 BEFORE revocation
+		token1, err := GenerateToken(userID1, "customer", "tenant-1", "user1@example.com")
+		if err != nil {
+			t.Fatalf("failed to generate token1: %v", err)
+		}
+
+		// Generate token3 for user2 BEFORE revocation
+		token3, err := GenerateToken(userID2, "customer", "tenant-1", "user2@example.com")
+		if err != nil {
+			t.Fatalf("failed to generate token3: %v", err)
+		}
+
+		// Ensure token issuance timestamp is strictly before the revocation timestamp
+		time.Sleep(1 * time.Second)
+
+		// Revoke all user tokens for user1
+		if err := RevokeAllUserTokens(userID1); err != nil {
+			t.Fatalf("RevokeAllUserTokens failed: %v", err)
+		}
+
+		// Key should exist in miniredis
+		key := "jwt:invalidated_before:" + userID1
+		if !mr.Exists(key) {
+			t.Fatalf("expected key %s to exist in miniredis", key)
+		}
+
+		// Generate token2 for user1 AFTER revocation
+		token2, err := GenerateToken(userID1, "customer", "tenant-1", "user1@example.com")
+		if err != nil {
+			t.Fatalf("failed to generate token2: %v", err)
+		}
+
+		// Validate token1 (user1, pre-revocation) -> MUST BE REJECTED
+		claims1, err1 := ValidateToken(token1)
+		if err1 == nil || err1.Error() != "jwtutil: token has been revoked" {
+			t.Errorf("expected token1 to be revoked, got err: %v, claims: %+v", err1, claims1)
+		}
+
+		// Validate token2 (user1, post-revocation) -> MUST BE VALID
+		claims2, err2 := ValidateToken(token2)
+		if err2 != nil {
+			t.Errorf("expected token2 to be valid after revocation timestamp, got err: %v", err2)
+		}
+		if claims2 == nil || claims2.UserID != userID1 {
+			t.Errorf("expected claims2 UserID to be %s, got %+v", userID1, claims2)
+		}
+
+		// Validate token3 (user2, unaffected user) -> MUST BE VALID
+		claims3, err3 := ValidateToken(token3)
+		if err3 != nil {
+			t.Errorf("expected token3 for user2 to be unaffected, got err: %v", err3)
+		}
+		if claims3 == nil || claims3.UserID != userID2 {
+			t.Errorf("expected claims3 UserID to be %s, got %+v", userID2, claims3)
+		}
+	})
+
+	// 3. Fail-closed behavior on Redis lookup failure
+	t.Run("RedisFailClosedOnUserCheck", func(t *testing.T) {
+		tokenStr, err := GenerateToken("user-fail-closed", "customer", "tenant-1", "fail@example.com")
+		if err != nil {
+			t.Fatalf("failed to generate token: %v", err)
+		}
+
+		rdb := redis.NewClient(&redis.Options{Addr: "localhost:9999"})
+		rdb.Close()
+
+		SetRedisClient(rdb)
+		defer SetRedisClient(nil)
+
+		_, err = ValidateToken(tokenStr)
+		if err == nil || !errors.Is(err, errors.New("jwtutil: security check failed (user invalidation lookup unreachable)")) {
+			if err == nil || !testing.Verbose() && err.Error() == "" {
+				t.Errorf("expected ValidateToken to fail closed on user invalidation check error, got: %v", err)
+			}
+		}
+
+		err = RevokeAllUserTokens("user-fail-closed")
+		if err == nil {
+			t.Error("expected RevokeAllUserTokens to fail on closed Redis client")
+		}
+	})
+}
+
 func TestGenerateSecureToken(t *testing.T) {
 	tok, err := GenerateSecureToken()
 	if err != nil {
