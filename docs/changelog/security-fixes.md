@@ -2,6 +2,17 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
+## ResetPassword Per-User Session Invalidation & Raw MongoDB Error Sanitization
+
+- **Severity**: High (Session-hijacking mitigation gap & raw database error leakage; new, previously-unaudited finding distinct from original external report Finding #6)
+- **Implementation Detail**:
+  - **Per-User Token Invalidation Mechanism (`shared/infra/jwtutil/jwt.go`)**: Added `RevokeAllUserTokens(userID string) error` to `shared/infra/jwtutil`, which sets a Redis key `jwt:invalidated_before:<user_id>` to the current Unix timestamp with an 8-day TTL (24h token lifetime + 7-day refresh window, matching `RevokeToken` TTL logic). Updated `ValidateToken` to check `jwt:invalidated_before:<claims.UserID>` after the per-JTI denylist check and reject tokens if `claims.IssuedAt.Time` is before the stored timestamp with `jwtutil: token has been revoked`. Maintained security posture by failing closed on Redis lookup errors during verification.
+  - **Password Reset Session Invalidation (`services/auth-service/internal/handlers/auth.go`)**: Updated `ResetPassword` to invoke `jwtutil.RevokeAllUserTokens(user.ID)` immediately after successful password update in MongoDB, invalidating all sessions issued prior to the reset moment.
+  - **Raw Database Error Leakage Remediation**: Fixed raw MongoDB driver error leakage in `ResetPassword`. Replaced `"error": "failed to update password: " + err.Error()` with a generic user-facing message `{"error": "failed to update password"}`, logging the underlying MongoDB error server-side only (`log.Printf(...)`), matching the pattern established for Finding #6 in `UpdateProfile`.
+  - **Regression Test Coverage (`shared/infra/jwtutil/jwt_test.go` & `services/auth-service/internal/handlers/auth_test.go`)**: Added `TestRevokeAllUserTokens` in `jwt_test.go` verifying invalidation timestamp storage, pre-invalidation token rejection, post-invalidation token validity, and fail-closed Redis lookup errors. Added `TestResetPassword_SessionInvalidation` and `TestResetPassword_DBErrorGenericMessage` in `auth_test.go` confirming tokens issued before password reset are rejected after reset while post-reset tokens remain valid, and verifying that MongoDB update failures return generic HTTP 500 error responses without leaking driver details.
+- **Commit SHA**: `d04e6a3830dc0df781babb8cf315c9faea4763d9`
+- **Verification**: Verified via `go test ./...` in `shared/infra` and `services/auth-service` (100% pass), `go build ./...`, `go vet ./...`, and `gofmt -l .`. ✅
+
 ## AES-256-GCM Encryption at Rest for KYB/KYE Identity Documents on Local Storage
 
 - **Implementation Detail**:
