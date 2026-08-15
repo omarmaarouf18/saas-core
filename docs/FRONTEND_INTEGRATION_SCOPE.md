@@ -60,7 +60,7 @@ This document outlines the scoping, backend contracts, UI requirements, and impl
 ## 2. Job Lifecycle & Customer Order Management Endpoints
 
 ### 2.1 `GET /users/jobs/mine`
-* **Backend Contract**: [`services/user-service/internal/handlers/handlers.go:1024`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L1024)
+* **Backend Contract**: [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (`GetCustomerJobs`)
   * **Method**: `POST /users/jobs/mine` (or `GET /users/jobs/mine`)
   * **Headers / Query Params**: `Authorization: Bearer <JWT>`
   * **Response**: `200 OK` → List of jobs owned/booked by current user.
@@ -71,7 +71,7 @@ This document outlines the scoping, backend contracts, UI requirements, and impl
 * **Dependencies / Ordering**: Batch 2. Core order history feature for customer role.
 
 ### 2.2 `POST /users/jobs/cancel`
-* **Backend Contract**: [`services/user-service/internal/handlers/handlers.go:2101`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L2101)
+* **Backend Contract**: [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (`CancelJob`)
   * **Method**: `POST /users/jobs/cancel`
   * **Body**: `{"job_id": "...", "reason": "...", "requester_id": "optional_token_or_id"}`
   * **Headers / Query Params**: `Authorization: Bearer <JWT>` (or query param `requester_id`).
@@ -84,7 +84,7 @@ This document outlines the scoping, backend contracts, UI requirements, and impl
 * **Dependencies / Ordering**: Batch 2.
 
 ### 2.3 `POST /users/jobs/complete`
-* **Backend Contract**: [`services/user-service/internal/handlers/handlers.go:643`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L643)
+* **Backend Contract**: [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (`CompleteJob`)
   * **Method**: `POST /users/jobs/complete`
   * **Body**: `{"job_id": "...", "requester_id": "optional_token_or_id"}` (`CompleteJobRequest`)
   * **Headers / Query Params**: `Authorization: Bearer <JWT>` (or query param `requester_id`).
@@ -101,14 +101,14 @@ This document outlines the scoping, backend contracts, UI requirements, and impl
 ## 3. Discrepancy Audits & Corrections
 
 ### 3.1 Discrepancy 1: `home_screen.dart` Active Jobs Placeholder vs `GET /users/jobs/owner`
-* **Backend Contract**: `GET /users/jobs/owner?active_only=true` (or `filter=active`) is fully implemented in [`services/user-service/internal/handlers/handlers.go:975`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L975). It returns an array of `OwnerJobResponse` objects owned by the authenticated business owner.
+* **Backend Contract**: `GET /users/jobs/owner?active_only=true` (or `filter=active`) is fully implemented in [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (`GetOwnerJobs`). It returns an array of `OwnerJobResponse` objects owned by the authenticated business owner.
 * **Frontend Code Status**: [`frontend/lib/providers/map_tracking_provider.dart:56`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/providers/map_tracking_provider.dart#L56) ALREADY calls `/users/jobs/owner?active_only=true` in `fetchOwnerJobs()`. However, [`frontend/lib/screens/home_screen.dart:512`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/home_screen.dart#L512) displays a static placeholder card with a comment claiming *"the user-service does not currently expose an API endpoint to list active jobs for owners"*.
 * **Root Cause & Resolution**: The inline comment and static empty state in `home_screen.dart` are **stale technical debt**. `home_screen.dart` should be refactored to consume `MapTrackingProvider` (or `MarketplaceProvider`), invoke `fetchOwnerJobs()`, and render dynamic active job cards displaying live job status, assigned driver name, and direct tracking buttons.
 * **Complexity Estimate**: **Small** — replace static placeholder card in `home_screen.dart` with a dynamic `ListView` bound to `MapTrackingProvider.fetchOwnerJobs()`.
 * **Dependencies / Ordering**: Batch 2. High priority — removes visible placeholder defect for business owners.
 
 ### 3.2 Discrepancy 2: `notifications_screen.dart` `placeholderJob` vs `GET /users/jobs/get`
-* **Backend Contract**: `GET /users/jobs/get?job_id=...` (or `id=...`) is fully implemented in [`services/user-service/internal/handlers/handlers.go:870`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L870). It returns the full `Job` model from MongoDB.
+* **Backend Contract**: `GET /users/jobs/get?job_id=...` (or `id=...`) is fully implemented in [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (`GetJob`). It returns the full `Job` model from MongoDB.
 * **Frontend Code Status**: [`frontend/lib/screens/notifications_screen.dart:343`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/frontend/lib/screens/notifications_screen.dart#L343) constructs a hardcoded `final placeholderJob = Job(id: extractedJobId!, ownerId: '', userId: '', serviceId: '', status: 'pending', location: JobLocation(latitude: 0, longitude: 0), paymentMethod: 'cod')` when a user taps "Track Shipment" on a notification, passing incomplete dummy data (including (0,0) coordinates) to `JobStatusScreen`.
 * **Root Cause & Resolution**: `notifications_screen.dart` bypasses backend data fetching. When "Track Shipment" is tapped, `notifications_screen.dart` should call `MarketplaceProvider.fetchJobStatus(extractedJobId!, userToken)`, display a brief loading spinner, and upon receiving the real `Job` object from `GET /users/jobs/get`, navigate to `JobStatusScreen(job: realJob)`.
 * **Complexity Estimate**: **Small** — replace inline dummy constructor in `notifications_screen.dart` with `MarketplaceProvider.fetchJobStatus()` async call and loading overlay.
@@ -177,7 +177,7 @@ This document outlines the scoping, backend contracts, UI requirements, and impl
 * **Dependencies / Ordering**: Batch 5. Depends on `POST /chat/tickets`.
 
 ### 6.3 `POST /users/jobs/location/update`
-* **Backend Contract**: [`services/user-service/internal/handlers/handlers.go:1788`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L1788)
+* **Backend Contract**: [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (`UpdateJobLocation`)
   * **Method**: `POST /users/jobs/location/update`
   * **Body**: `{"job_id": "...", "requester_id": "...", "latitude": 30.0444, "longitude": 31.2357}`
   * **Headers**: `Authorization: Bearer <JWT>`
@@ -190,7 +190,7 @@ This document outlines the scoping, backend contracts, UI requirements, and impl
 * **Dependencies / Ordering**: Batch 5.
 
 ### 6.4 `GET /users/platform/config`
-* **Backend Contract**: [`services/user-service/internal/handlers/handlers.go:1275`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L1275)
+* **Backend Contract**: [`services/user-service/internal/handlers/services_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/services_handlers.go) (`GetPlatformConfig`)
   * **Method**: `GET /users/platform/config`
   * **Request**: None
   * **Response**: `200 OK` → `{"id": "...", "platform_fee_percentage": 5.0, "platform_wallet_id": "..."}`

@@ -1,7 +1,7 @@
 # ADR-0018: Client Application Semantic Versioning & Version-Gating Middleware
 
-* **Status**: Accepted
-* **Date**: 2026-08-14
+- **Status**: Accepted
+- **Date**: 2026-08-14
 * **Deciders**: Architecture Team, Mobile Lead, Security Lead
 * **Technical Area**: Cross-cutting / Mobile Version Control & API Gateway Middleware
 

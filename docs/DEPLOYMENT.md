@@ -146,6 +146,11 @@ MONGO_URI=mongodb://root:<MONGO_INITDB_ROOT_PASSWORD>@mongo:27017/?authSource=ad
 REDIS_PASSWORD=<GENERATE_STRONG_SECRET> # e.g. `openssl rand -hex 24`
 REDIS_URI=redis://:<REDIS_PASSWORD>@redis:6379
 
+# Optional Redis Sentinel High Availability Configuration (Overrides REDIS_URI if set)
+# REDIS_SENTINEL_ADDRS=sentinel1:26379,sentinel2:26379,sentinel3:26379
+# REDIS_SENTINEL_MASTER_NAME=mymaster
+# REDIS_SENTINEL_PASSWORD=<SENTINEL_AUTH_PASSWORD>
+
 # -----------------------------------------------------------------------------
 # Service Ports & Internal Routing
 # -----------------------------------------------------------------------------
@@ -278,16 +283,30 @@ docker compose ps
 curl -k https://localhost:8080/health
 ```
 
-### 7.4 Manual Rollback Procedure
-If a deployment fails the automated health check or exhibits runtime regressions:
-1. `deploy.yml` will fail loudly, stop execution, and print the last 50 lines of container logs without auto-reverting.
-2. To roll back, operator reverts the offending commit in `saas-core-deploy`:
+### 7.4 Rollback Procedures (Automated & Manual)
+
+#### Automated Health-Failure Rollback (Continuous Deployment)
+When `.github/workflows/deploy.yml` detects a health check failure across any of the 5 microservices during deployment, it triggers the automated `Rollback on Health Failure` step:
+1. **Strict Shell Failure Mode (`set -euo pipefail`)**: Halts execution on any sub-command error, preventing silent masking of failed restore steps.
+2. **Compose Manifest Checkout**: Restores the previous working `docker-compose.yml` directly from Git history (`git checkout HEAD~1 -- docker-compose.yml`).
+3. **Container Recreation**: Forces recreation of running containers with the previous image tags (`docker compose up -d --force-recreate --remove-orphans`).
+4. **Post-Rollback Health Verification (`verify_service_health`)**: Re-runs the full 5-service health retry loop against restored containers to verify recovery before exiting. If rollback containers also fail health checks, exits with code 1 and outputs `::error::CRITICAL: ROLLBACK FAILED HEALTH CHECK TOO`.
+
+#### Emergency Manual Rollback Procedure
+If automated deployment is interrupted, or if an issue requires manual operator intervention:
+1. SSH into the production VM:
    ```bash
    cd /opt/saas-platform
    git revert HEAD -m "revert: rollback failed deployment"
    git push origin main
    ```
-   Or manually check out the previous compose file tag on the host and run `docker compose up -d --remove-orphans`.
+2. Or manually checkout the previous working image tags and redeploy:
+   ```bash
+   git checkout HEAD~1 -- docker-compose.yml
+   docker compose up -d --force-recreate --remove-orphans
+   docker compose ps
+   curl -k https://localhost:8080/health
+   ```
 
 ### 7.5 Graceful Shutdown & Signal Handling Across All 5 Microservices
 All 5 microservices (`api-gateway`, `auth-service`, `chat-service`, `notification-service`, and `user-service`) implement a standardized, non-disruptive graceful shutdown protocol on receiving `SIGINT` or `SIGTERM` signals (such as during `docker compose stop`, `docker compose down`, or rolling deployments):

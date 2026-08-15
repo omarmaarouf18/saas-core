@@ -46,6 +46,7 @@ When adding a new ADR, use the following template:
 *   [ADR-0015: Strict CD Pre-Flight Validation (Pre-Flight Env Check, Health-Gated Rollback)](0015-strict-cd-preflight-validation.md)
 *   [ADR-0016: Tiered Rate Limits for UX over Uniform Security Floor](0016-tiered-rate-limits-for-ux-over-uniform-security-floor.md)
 *   [ADR-0017: Zero-Commission Subscription-Only Revenue Model](0017-zero-commission-subscription-only-revenue-model.md)
+*   [ADR-0018: Client Application Semantic Versioning & Version-Gating Middleware](0018-client-app-semantic-versioning-and-enforcement-gate.md)
 
 
 

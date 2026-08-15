@@ -109,14 +109,14 @@ The Flutter client interacts with backend microservices routed through the Gatew
 - **Header Structure**: All authenticated service endpoints require `Authorization: Bearer <JWT_TOKEN>`. The backend validates the HS256 signature and expiry locally using the shared `JWT_SECRET`.
 
 ### 2. Jobs & Services Flow
-- **Browse**: Calls [ListServices](services/user-service/internal/handlers/handlers.go#L133) (`GET /api/v1/users/services?sort_by=price&near_by=true&lat=30&lon=31`).
-- **Create Service**: Calls [CreateService](services/user-service/internal/handlers/handlers.go#L155) (`POST /api/v1/users/services`). Gated by [checkKYC](services/user-service/internal/handlers/handlers.go#L919) (Owner KYC must be approved).
-- **Track/Book Job**: Calls [TrackJob](services/user-service/internal/handlers/handlers.go#L220) (`POST /api/v1/users/jobs/track`). Requires `payment_method: "cod"`. Other payment methods are blocked client-side.
-- **Complete Job**: Calls [CompleteJob](services/user-service/internal/handlers/handlers.go#L453) (`POST /api/v1/users/jobs/complete`). For COD, requires `cash_collected: true`. Triggering completion logs the cash collection event with 0% platform fee per ADR-0017.
+- **Browse**: Calls [ListServices](services/user-service/internal/handlers/services_handlers.go) (`GET /api/v1/users/services?sort_by=price&near_by=true&lat=30&lon=31`).
+- **Create Service**: Calls [CreateService](services/user-service/internal/handlers/services_handlers.go) (`POST /api/v1/users/services`). Gated by [checkKYC](services/user-service/internal/handlers/handlers.go) (Owner KYC must be approved).
+- **Track/Book Job**: Calls [TrackJob](services/user-service/internal/handlers/jobs_handlers.go) (`POST /api/v1/users/jobs/track`). Requires `payment_method: "cod"`. Other payment methods are blocked client-side.
+- **Complete Job**: Calls [CompleteJob](services/user-service/internal/handlers/jobs_handlers.go) (`POST /api/v1/users/jobs/complete`). For COD, requires `cash_collected: true`. Triggering completion logs the cash collection event with 0% platform fee per ADR-0017.
 - **Cancel Job**: Calls `POST /api/v1/users/jobs/cancel`. Pending jobs can be cancelled by the owner or customer. Active jobs can only be cancelled by the owner; active cancellation by a customer is rejected with `403 Forbidden` (directing them to the complaint ticket flow). Cancellation of completed or already cancelled jobs is rejected with `409 Conflict`. For non-COD jobs, cancellation refunds the escrow amount back to the owner's withdrawable balance.
 
 ### 3. Subscription Flow
-- **Upgrade**: Calls [Subscription POST](services/user-service/internal/handlers/handlers.go#L1011) (`POST /api/v1/users/subscription`) with `tier: "paid"`. Returns `202 Accepted` and transitions to `pending_payment` status. The UI displays "upgrade pending, contact support" status.
+- **Upgrade**: Calls [Subscription POST](services/user-service/internal/handlers/subscription_handlers.go) (`POST /api/v1/users/subscription`) with `tier: "paid"`. Returns `202 Accepted` and transitions to `pending_payment` status. The UI displays "upgrade pending, contact support" status.
 
 ### 4. Real-time Communications Flow
 - **SSE Stream**: Subscribes to [Stream](services/notification-service/internal/handlers/handlers.go#L76) (`GET /api/v1/notifications/stream?token=<jwt_token>`). Pushes alerts client-side.

@@ -49,8 +49,8 @@ We will proceed in the following order:
     *   Grid view containing wallet balance, current subscription status (Free/Paid), employee counts, and active jobs list.
 
 2.  **Wallet Management**:
-    *   Visual representation of balance and transactions history from [GetWallet](services/user-service/internal/handlers/handlers.go#L705) and [GetLedger](services/user-service/internal/handlers/handlers.go#L837).
-    *   Deposit dialog calling [WalletDeposit](services/user-service/internal/handlers/handlers.go#L736) (requires approved KYC).
+    *   Visual representation of balance and transactions history from [GetWallet](services/user-service/internal/handlers/wallet_handlers.go) and [GetLedger](services/user-service/internal/handlers/wallet_handlers.go).
+    *   Deposit dialog calling [WalletDeposit](services/user-service/internal/handlers/wallet_handlers.go) (requires approved KYC).
 
 3.  **Employee Management**:
     *   Register new employee (automates password generation and sets current tenant ID binding).
@@ -58,7 +58,7 @@ We will proceed in the following order:
     *   Audit Log list calling [GetAuditLog](services/auth-service/internal/handlers/auth.go#L890).
 
 4.  **Service Directory Configuration**:
-    *   Add service (category choice of `shipping`, `delivery`, `transport`, coordinates, rates) calling [CreateService](services/user-service/internal/handlers/handlers.go#L155). Gated by KYC.
+    *   Add service (category choice of `shipping`, `delivery`, `transport`, coordinates, rates) calling [CreateService](services/user-service/internal/handlers/services_handlers.go). Gated by KYC.
 
 ---
 
@@ -79,12 +79,12 @@ We will proceed in the following order:
 1.  **Marketplace Directory**:
     *   Map and list views querying services near a custom latitude/longitude coordinate.
     *   Provides exactly 3 service categories (Delivery, Ride, Shipping — "Ride" is the UI label for the backend's `transport` category).
-    *   Sort and filter selectors (by base price, category) calling [ListServices](services/user-service/internal/handlers/handlers.go#L133).
+    *   Sort and filter selectors (by base price, category) calling [ListServices](services/user-service/internal/handlers/services_handlers.go).
 
 2.  **Booking Workflow (COD Only)**:
     *   Book service button.
     *   Forced payment method selection: "Cash on Delivery (COD)" only. Clarifies that escrow payments are currently deferred.
-    *   Creates job by calling [TrackJob](services/user-service/internal/handlers/handlers.go#L220).
+    *   Creates job by calling [TrackJob](services/user-service/internal/handlers/jobs_handlers.go).
 
 3.  **Real-Time Status Screen**:
     *   Visual progress indicator (Pending -> Active -> Completed) linking directly to live job updates.
@@ -120,13 +120,13 @@ We will proceed in the following order:
 
 1.  **Upgrade Page**:
     *   "Upgrade to Paid" tier button on the Owner dashboard.
-    *   Submits subscription change request via [Subscription POST](services/user-service/internal/handlers/handlers.go#L1011).
+    *   Submits subscription change request via [Subscription POST](services/user-service/internal/handlers/subscription_handlers.go).
     *   Honest pending payment screen display informing owner to contact platform administrators for manual processing (no simulated fake checkouts).
 
 2.  **Job Rating Forms**:
     *   On job completion (where COD cash has been confirmed by Owner), prompts a rating screen.
-    *   Owner rates Employee and Employee rates Owner via [RateJob](services/user-service/internal/handlers/handlers.go#L1155).
-    *   Display averages using [GetRatings](services/user-service/internal/handlers/handlers.go#L1249).
+    *   Owner rates Employee and Employee rates Owner via [RateJob](services/user-service/internal/handlers/ratings_handlers.go).
+    *   Display averages using [GetRatings](services/user-service/internal/handlers/ratings_handlers.go).
 
 ---
 

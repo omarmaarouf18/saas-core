@@ -27,7 +27,7 @@ This review was concentrated on the highest-financial-risk surface (job lifecycl
 * **Citations**:
   * Store Implementation: [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L903-L917) (`CancelJob` lines 903–917)
   * Store Comparisons: [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L531-L565) (`ReleaseEscrowWithSplit` lines 531–565), [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go) (legacy COD fee deduction), [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L920-L948) (`RefundEscrow` lines 920–948)
-  * Handler Implementation: [`services/user-service/internal/handlers/handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L2379-L2415) (`CancelJob` lines 2379–2415)
+  * Handler Implementation: [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (`CancelJob` — *originally `handlers.go` lines 2379–2415 before handlers decomposition*)
 
 > [!NOTE]
 > **Business Model Update**: Root cause identified — see [ADR-0017](adr/0017-zero-commission-subscription-only-revenue-model.md) for the corrected business model; code remediation tracked separately.
@@ -67,9 +67,9 @@ The query filters strictly on `{"_id": id}` with **no status precondition**.
 * **Severity**: Medium
 * **Status**: Confirmed
 * **Citations**:
-  * `CompleteJob` Handler: [`services/user-service/internal/handlers/handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L888-L892) (lines 888–892)
-  * `CancelJob` Handler: [`services/user-service/internal/handlers/handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L2385-L2409) (lines 2385–2409)
-  * Escrow Locking (`RespondPrice`): [`services/user-service/internal/handlers/handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L2744-L2784) (lines 2744–2784)
+  * `CompleteJob` Handler: [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (originally `handlers.go` lines 888–892)
+  * `CancelJob` Handler: [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (originally `handlers.go` lines 2385–2409)
+  * Escrow Locking (`RespondPrice`): [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (originally `handlers.go` lines 2744–2784)
   * Store Refund (`RefundEscrow`): [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L932-L950) (lines 932–950)
 
 > [!NOTE]

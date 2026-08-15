@@ -2,7 +2,7 @@
 
 > [!NOTE]
 > **Documentation Freshness Pinning**:
-> This document maps the architecture, cross-repository push pipelines, PAT secret scopes, and operational runbooks for the Quick Delivery multi-repository ecosystem as of Git commit `15b6559`. This document must be updated whenever GitHub Action workflow triggers, repository structures, or secret scopes are modified.
+> This document maps the architecture, cross-repository push pipelines, PAT secret scopes, and operational runbooks for the Quick Delivery multi-repository ecosystem as of Git commit `0c5fcf7`. This document must be updated whenever GitHub Action workflow triggers, repository structures, or secret scopes are modified.
 
 ---
 

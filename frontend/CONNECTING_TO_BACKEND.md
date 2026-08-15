@@ -17,7 +17,7 @@ curl -k https://localhost:8080/health
 **Expected Response**: `{"status":"ok"}`
 
 > [!IMPORTANT]
-> If `curl -k https://localhost:8080/health` fails or returns a connection error, the problem is in the backend stack, not the Flutter client. Resolve backend startup or Docker container issues first before testing the Flutter app (refer to `infrastructure/README.md` and `AI_CONTEXT.md`).
+> If `curl -k https://localhost:8080/health` fails or returns a connection error, the problem is in the backend stack, not the Flutter client. Resolve backend startup or Docker container issues first before testing the Flutter app (refer to `docs/DEPLOYMENT.md` and `AI_CONTEXT.md`).
 
 ---
 
