@@ -15,6 +15,7 @@ import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_section_header.dart';
+import '../widgets/themed_success_banner.dart';
 
 /// Descriptor for a picked file to be uploaded.
 class PickedDocumentFile {
@@ -289,28 +290,8 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
   }
 
   Widget _buildApprovedLockedBanner() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.success.withValues(alpha: 0.1),
-        borderRadius: AppRadius.smBorder,
-        border: Border.all(color: AppColors.success, width: 1),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.check_circle, color: AppColors.success),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text(
-              "Documents are locked because your account is approved.",
-              style: AppTypography.bodyMd.copyWith(
-                color: AppColors.success,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return const ThemedSuccessBanner(
+      message: "Documents are locked because your account is approved.",
     );
   }
 
@@ -374,47 +355,17 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                             ),
                           ),
                           if (isUploaded)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.sm,
-                                vertical: AppSpacing.xs / 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    AppColors.success.withValues(alpha: 0.12),
-                                borderRadius: AppRadius.smBorder,
-                                border: Border.all(
-                                  color: AppColors.success,
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.check_circle,
-                                    size: 14,
-                                    color: AppColors.success,
-                                  ),
-                                  const SizedBox(width: AppSpacing.xs),
-                                  Text(
-                                    "Uploaded",
-                                    style: AppTypography.labelMd.copyWith(
-                                      color: AppColors.success,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            const StatusBadge(
+                              status: 'uploaded',
+                              compact: true,
                             ),
                         ],
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         subtitle,
-                        style: AppTypography.bodyMd.copyWith(
+                        style: AppTypography.bodySm.copyWith(
                           color: AppColors.onSurfaceVariant,
-                          fontSize: 13,
                         ),
                       ),
                     ],
@@ -472,23 +423,35 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                               )
                             else
                               const Icon(
-                                Icons.image,
+                                Icons.insert_drive_file,
                                 size: 40,
                                 color: AppColors.primary,
                               ),
                             const SizedBox(width: AppSpacing.md),
                             Expanded(
                               child: Text(
-                                localPicked?.filename ??
-                                    existingPath ??
-                                    "Document file attached",
+                                localPicked != null
+                                    ? localPicked.filename
+                                    : "Document on file (${existingPath!.split('/').last})",
                                 style: AppTypography.bodyMd.copyWith(
                                   fontWeight: FontWeight.w600,
                                 ),
-                                maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            if (!isApproved)
+                              IconButton(
+                                icon: const Icon(Icons.close, size: 18),
+                                color: AppColors.error,
+                                tooltip: "Remove selection",
+                                onPressed: isUploading
+                                    ? null
+                                    : () {
+                                        setState(() {
+                                          _pickedFiles.remove(slotKey);
+                                        });
+                                      },
+                              ),
                           ],
                         ),
                       ),
@@ -519,39 +482,29 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
               duration: AppMotion.durationMedium,
               switchInCurve: AppMotion.curveStateChange,
               switchOutCurve: AppMotion.curveStateChange,
-              child: isUploading
-                  ? const Padding(
-                      key: ValueKey('slot_loading'),
-                      padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                      child: Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                                AppColors.primary),
-                          ),
-                        ),
-                      ),
-                    )
-                  : (!isApproved
-                      ? (isUploaded
-                          ? SecondaryButton(
-                              key: ValueKey('btn_replace_$slotKey'),
-                              text: "Replace Document",
-                              icon: Icons.refresh,
-                              onPressed: () =>
+              child: !isApproved
+                  ? (isUploaded
+                      ? SecondaryButton(
+                          key: ValueKey('btn_replace_$slotKey'),
+                          text: "Replace Document",
+                          icon: Icons.refresh,
+                          isLoading: isUploading,
+                          onPressed: isUploading
+                              ? null
+                              : () =>
                                   _handleSlotUpload(slotKey, title, allowPdf),
-                            )
-                          : PrimaryButton(
-                              key: ValueKey('btn_upload_$slotKey'),
-                              text: "Upload Document",
-                              icon: Icons.upload_file,
-                              onPressed: () =>
+                        )
+                      : PrimaryButton(
+                          key: ValueKey('btn_upload_$slotKey'),
+                          text: "Upload Document",
+                          icon: Icons.upload_file,
+                          isLoading: isUploading,
+                          onPressed: isUploading
+                              ? null
+                              : () =>
                                   _handleSlotUpload(slotKey, title, allowPdf),
-                            ))
-                      : const SizedBox.shrink(key: ValueKey('slot_approved'))),
+                        ))
+                  : const SizedBox.shrink(key: ValueKey('slot_approved')),
             ),
           ],
         ),

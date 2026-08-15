@@ -243,7 +243,7 @@ void main() {
     expect(mockAuth.uploadDocumentCalled, isTrue);
     expect(mockAuth.lastDocType, 'id_front');
     expect(mockAuth.lastFilename, 'id_front_sample.png');
-    expect(find.text('Uploaded'), findsWidgets);
+    expect(find.text('UPLOADED'), findsWidgets);
     expect(find.text('Replace Document'), findsWidgets);
   });
 

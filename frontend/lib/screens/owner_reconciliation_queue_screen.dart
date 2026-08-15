@@ -5,9 +5,12 @@ import '../core/theme.dart';
 import '../models/reconciliation_job.dart';
 import '../providers/reconciliation_provider.dart';
 import '../widgets/confirm_action_dialog.dart';
+import '../widgets/primary_button.dart';
+import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_success_banner.dart';
 
 class OwnerReconciliationQueueScreen extends StatefulWidget {
@@ -100,9 +103,7 @@ class _OwnerReconciliationQueueScreenState
         builder: (context, provider, child) {
           if (provider.isLoading && provider.queue.isEmpty) {
             return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-              ),
+              child: ThemedLoadingIndicator(),
             );
           }
 
@@ -189,10 +190,9 @@ class _OwnerReconciliationQueueScreenState
                 Expanded(
                   child: Text(
                     '${l10n.customerJobsOrder}${job.id}',
-                    style: AppTypography.headlineLgMobile.copyWith(
+                    style: AppTypography.titleMd.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
                     ),
                   ),
                 ),
@@ -237,19 +237,12 @@ class _OwnerReconciliationQueueScreenState
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.undo, color: AppColors.error),
-                    label: Text(
-                      l10n.reconciliationRefundCustomer,
-                      style:
-                          AppTypography.bodyMd.copyWith(color: AppColors.error),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.error),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppSpacing.md,
-                      ),
-                    ),
+                  child: SecondaryButton(
+                    isFullWidth: false,
+                    isOutlined: true,
+                    isDestructive: true,
+                    icon: Icons.undo,
+                    text: l10n.reconciliationRefundCustomer,
                     onPressed: () {
                       _showConfirmationDialog(
                         context: context,
@@ -261,16 +254,10 @@ class _OwnerReconciliationQueueScreenState
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.check_circle_outline),
-                    label: Text(l10n.reconciliationReleaseEmployee),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.onPrimary,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppSpacing.md,
-                      ),
-                    ),
+                  child: PrimaryButton(
+                    isFullWidth: false,
+                    icon: Icons.check_circle_outline,
+                    text: l10n.reconciliationReleaseEmployee,
                     onPressed: () {
                       _showConfirmationDialog(
                         context: context,

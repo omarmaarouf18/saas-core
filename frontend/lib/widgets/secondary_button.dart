@@ -6,6 +6,7 @@ class SecondaryButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final bool isLoading;
   final bool isOutlined;
+  final bool isDestructive;
   final bool isFullWidth;
   final double? height;
   final IconData? icon;
@@ -18,6 +19,7 @@ class SecondaryButton extends StatefulWidget {
     this.onPressed,
     this.isLoading = false,
     this.isOutlined = false,
+    this.isDestructive = false,
     this.isFullWidth = true,
     this.height = 52,
     this.icon,
@@ -47,15 +49,17 @@ class _SecondaryButtonState extends State<SecondaryButton> {
 
   @override
   Widget build(BuildContext context) {
+    final Color buttonColor = widget.isDestructive
+        ? AppColors.error
+        : (widget.isOutlined ? AppColors.primary : AppColors.onSecondary);
+
     final Widget buttonChild = widget.isLoading
         ? SizedBox(
             width: 20,
             height: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                widget.isOutlined ? AppColors.primary : AppColors.onSecondary,
-              ),
+              valueColor: AlwaysStoppedAnimation<Color>(buttonColor),
             ),
           )
         : Row(
@@ -67,9 +71,7 @@ class _SecondaryButtonState extends State<SecondaryButton> {
                 Icon(
                   widget.icon,
                   size: 20,
-                  color: widget.isOutlined
-                      ? AppColors.primary
-                      : AppColors.onSecondary,
+                  color: buttonColor,
                 ),
                 const SizedBox(width: AppSpacing.base),
               ],
@@ -83,9 +85,7 @@ class _SecondaryButtonState extends State<SecondaryButton> {
                     maxLines: widget.maxLines,
                     textAlign: TextAlign.center,
                     style: AppTypography.bodyLg.copyWith(
-                      color: widget.isOutlined
-                          ? AppColors.primary
-                          : AppColors.onSecondary,
+                      color: buttonColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -96,8 +96,8 @@ class _SecondaryButtonState extends State<SecondaryButton> {
 
     final style = widget.isOutlined
         ? OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary, width: 1),
+            foregroundColor: buttonColor,
+            side: BorderSide(color: buttonColor, width: 1),
             shape: RoundedRectangleBorder(
               borderRadius: AppRadius.defaultBorder,
             ),
@@ -107,8 +107,10 @@ class _SecondaryButtonState extends State<SecondaryButton> {
             ),
           )
         : ElevatedButton.styleFrom(
-            backgroundColor: AppColors.secondary,
-            foregroundColor: AppColors.onSecondary,
+            backgroundColor: widget.isDestructive
+                ? AppColors.error.withValues(alpha: 0.12)
+                : AppColors.secondary,
+            foregroundColor: buttonColor,
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: AppRadius.defaultBorder,

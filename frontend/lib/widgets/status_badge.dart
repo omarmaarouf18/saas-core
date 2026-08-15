@@ -33,6 +33,7 @@ class StatusBadge extends StatelessWidget {
       case 'completed':
       case 'approved':
       case 'paid':
+      case 'uploaded':
         return AppColors.success;
       case 'active':
         return AppColors.primary;
@@ -59,6 +60,7 @@ class StatusBadge extends StatelessWidget {
   static IconData getStatusIcon(String status) {
     switch (status.toLowerCase().trim()) {
       case 'completed':
+      case 'uploaded':
         return Icons.check_circle_outline;
       case 'paid':
         return Icons.payments_outlined;
@@ -100,6 +102,9 @@ class StatusBadge extends StatelessWidget {
     switch (status.toLowerCase().trim()) {
       case 'completed':
         label = l10n.statusCompleted;
+        break;
+      case 'uploaded':
+        label = "Uploaded";
         break;
       case 'paid':
         label = l10n.statusPaid;

@@ -245,6 +245,13 @@ class AppTypography {
         height: 20 / 14,
       );
 
+  /// Small body text / secondary descriptions (13pt)
+  static TextStyle get bodySm => GoogleFonts.poppins(
+        fontSize: 13,
+        fontWeight: FontWeight.normal,
+        height: 18 / 13,
+      );
+
   /// Input labels, button titles, pill badges (12pt)
   static TextStyle get labelLg => GoogleFonts.poppins(
         fontSize: 12,
