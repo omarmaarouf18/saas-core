@@ -2,6 +2,22 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## KYC Document Upload & Owner Reconciliation Design System Migration
+
+- **Implementation Detail**:
+  - **KYC Upload Screen Standardization (`frontend/lib/screens/kyc_document_upload_screen.dart`)**:
+    - Replaced hand-rolled `_buildApprovedLockedBanner` container with tokenized `ThemedSuccessBanner`.
+    - Standardized hand-rolled "Uploaded" green status pill with tokenized `StatusBadge(status: 'uploaded', compact: true)` (extended `StatusBadge` in `frontend/lib/widgets/status_badge.dart` to support the `'uploaded'` status key).
+    - Replaced raw `fontSize: 13` font override with formal token `AppTypography.bodySm` (added to `AppTypography` in `frontend/lib/core/theme.dart`).
+    - Replaced raw `CircularProgressIndicator` box in slot action buttons with `SecondaryButton(isLoading: isUploading)` / `PrimaryButton(isLoading: isUploading)`.
+  - **Owner Reconciliation Queue Screen Standardization (`frontend/lib/screens/owner_reconciliation_queue_screen.dart`)**:
+    - Replaced raw `CircularProgressIndicator` with `ThemedLoadingIndicator`.
+    - Replaced raw `fontSize: 18` override on order header with `AppTypography.titleMd.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)`.
+    - Replaced raw `OutlinedButton.icon` / `ElevatedButton.icon` pair with `SecondaryButton(isFullWidth: false, isOutlined: true, isDestructive: true, icon: Icons.undo)` and `PrimaryButton(isFullWidth: false, icon: Icons.check_circle_outline)` side-by-side in `Row`. Extended `SecondaryButton` (`frontend/lib/widgets/secondary_button.dart`) to support `isDestructive` styling with `AppColors.error`.
+  - **Test Suite Updates (`frontend/test/kyc_document_upload_screen_test.dart`, `reconciliation_queue_test.dart`)**: Updated KYC upload widget tests to verify standardized uppercase `StatusBadge` `'UPLOADED'` rendering alongside `ThemedSuccessBanner` lock state.
+- **Commit SHA**: ``95ec302c6464f225d7602a2081791d5b28563bb5``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (205/205 pass), `make docs-check`, and pre-push hooks gate. ✅
+
 ## Design System Component Extensions (In-Row Sizing, ThemedCardVariant, ThemedBanner)
 
 - **Implementation Detail**:
