@@ -6,6 +6,9 @@ import 'package:frontend/l10n/l10n.dart';
 import '../core/constants.dart';
 import '../core/theme.dart';
 import '../providers/map_tracking_provider.dart';
+import '../widgets/themed_card.dart';
+import '../widgets/themed_error_banner.dart';
+import '../widgets/themed_loading_indicator.dart';
 
 class OwnerFleetMapScreen extends StatefulWidget {
   final String ownerId;
@@ -58,9 +61,8 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
         builder: (context, provider, child) {
           if (provider.isLoading && provider.markersList.isEmpty) {
             return const Center(
-              child: CircularProgressIndicator(
+              child: ThemedLoadingIndicator(
                 key: Key('fleet_map_loading'),
-                color: AppColors.secondary,
               ),
             );
           }
@@ -115,7 +117,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
                                 m.employeeId.length > 12
                                     ? m.employeeId.substring(0, 12)
                                     : m.employeeId,
-                                style: const TextStyle(
+                                style: AppTypography.labelMd.copyWith(
                                   color: Colors.white,
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
@@ -139,34 +141,27 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
               // Empty fleet state notice
               if (markers.isEmpty && !provider.isLoading)
                 Positioned(
-                  top: 16,
-                  left: 16,
-                  right: 16,
-                  child: Material(
-                    elevation: 4,
-                    borderRadius:
-                        BorderRadius.circular(AppRadius.radiusDefault),
-                    child: Container(
-                      padding: const EdgeInsetsDirectional.all(AppSpacing.sm),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.radiusDefault),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.info_outline,
-                              color: AppColors.primary),
-                          const SizedBox(width: AppSpacing.base),
-                          Expanded(
-                            child: Text(
-                              'No active employees transmitting location.',
-                              style:
-                                  AppTypography.labelLg.copyWith(fontSize: 13),
+                  top: AppSpacing.md,
+                  left: AppSpacing.md,
+                  right: AppSpacing.md,
+                  child: ThemedCard(
+                    variant: ThemedCardVariant.elevated,
+                    padding: AppSpacing.sm,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline,
+                            color: AppColors.primary),
+                        const SizedBox(width: AppSpacing.base),
+                        Expanded(
+                          child: Text(
+                            'No active employees transmitting location.',
+                            style: AppTypography.bodySm.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.onSurface,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -174,48 +169,16 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
               // Connection status / error banner
               if (!provider.isConnected && !provider.isLoading)
                 Positioned(
-                  bottom: 16,
-                  left: 16,
-                  right: 16,
-                  child: Material(
-                    elevation: 4,
-                    borderRadius:
-                        BorderRadius.circular(AppRadius.radiusDefault),
-                    child: Container(
-                      padding:
-                          const EdgeInsetsDirectional.all(AppSpacing.baseSm),
-                      decoration: BoxDecoration(
-                        color: provider.subscriptionError != null
-                            ? AppColors.danger
-                            : AppColors.warning,
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.radiusDefault),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            provider.subscriptionError != null
-                                ? Icons.lock
-                                : Icons.wifi_off,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                          const SizedBox(width: AppSpacing.base),
-                          Expanded(
-                            child: Text(
-                              provider.subscriptionError ??
-                                  'Reconnecting live tracking stream...',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  bottom: AppSpacing.md,
+                  left: AppSpacing.md,
+                  right: AppSpacing.md,
+                  child: provider.subscriptionError != null
+                      ? ThemedErrorBanner(
+                          message: provider.subscriptionError!,
+                        )
+                      : const ThemedWarningBanner(
+                          message: 'Reconnecting live tracking stream...',
+                        ),
                 ),
             ],
           );

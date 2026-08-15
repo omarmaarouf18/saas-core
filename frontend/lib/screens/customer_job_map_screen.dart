@@ -6,6 +6,9 @@ import 'package:frontend/l10n/l10n.dart';
 import '../core/constants.dart';
 import '../core/theme.dart';
 import '../providers/map_tracking_provider.dart';
+import '../widgets/themed_card.dart';
+import '../widgets/themed_error_banner.dart';
+import '../widgets/themed_loading_indicator.dart';
 
 class CustomerJobMapScreen extends StatefulWidget {
   final String jobId;
@@ -54,9 +57,8 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
         builder: (context, provider, child) {
           if (provider.isLoading && provider.markersList.isEmpty) {
             return const Center(
-              child: CircularProgressIndicator(
+              child: ThemedLoadingIndicator(
                 key: Key('customer_job_map_loading'),
-                color: AppColors.secondary,
               ),
             );
           }
@@ -95,11 +97,11 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(AppRadius.radiusSm),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Pickup',
-                        style: TextStyle(
+                        style: AppTypography.labelMd.copyWith(
                           color: AppColors.onPrimary,
-                          fontSize: 9,
+                          fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -136,7 +138,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                         m.employeeId.length > 12
                             ? m.employeeId.substring(0, 12)
                             : m.employeeId,
-                        style: const TextStyle(
+                        style: AppTypography.labelMd.copyWith(
                           color: AppColors.primary,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -176,34 +178,27 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
               // Empty courier position notice
               if (markers.isEmpty && !provider.isLoading)
                 Positioned(
-                  top: 16,
-                  left: 16,
-                  right: 16,
-                  child: Material(
-                    elevation: 4,
-                    borderRadius:
-                        BorderRadius.circular(AppRadius.radiusDefault),
-                    child: Container(
-                      padding: const EdgeInsetsDirectional.all(AppSpacing.sm),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.radiusDefault),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.directions_car_outlined,
-                              color: AppColors.primary),
-                          const SizedBox(width: AppSpacing.base),
-                          Expanded(
-                            child: Text(
-                              'Waiting for courier location updates...',
-                              style:
-                                  AppTypography.labelLg.copyWith(fontSize: 13),
+                  top: AppSpacing.md,
+                  left: AppSpacing.md,
+                  right: AppSpacing.md,
+                  child: ThemedCard(
+                    variant: ThemedCardVariant.elevated,
+                    padding: AppSpacing.sm,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.directions_car_outlined,
+                            color: AppColors.primary),
+                        const SizedBox(width: AppSpacing.base),
+                        Expanded(
+                          child: Text(
+                            'Waiting for courier location updates...',
+                            style: AppTypography.bodySm.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.onSurface,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -211,48 +206,16 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
               // Connection status / error banner
               if (!provider.isConnected && !provider.isLoading)
                 Positioned(
-                  bottom: 16,
-                  left: 16,
-                  right: 16,
-                  child: Material(
-                    elevation: 4,
-                    borderRadius:
-                        BorderRadius.circular(AppRadius.radiusDefault),
-                    child: Container(
-                      padding:
-                          const EdgeInsetsDirectional.all(AppSpacing.baseSm),
-                      decoration: BoxDecoration(
-                        color: provider.subscriptionError != null
-                            ? AppColors.danger
-                            : AppColors.warning,
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.radiusDefault),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            provider.subscriptionError != null
-                                ? Icons.lock
-                                : Icons.wifi_off,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                          const SizedBox(width: AppSpacing.base),
-                          Expanded(
-                            child: Text(
-                              provider.subscriptionError ??
-                                  'Reconnecting live tracking stream...',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  bottom: AppSpacing.md,
+                  left: AppSpacing.md,
+                  right: AppSpacing.md,
+                  child: provider.subscriptionError != null
+                      ? ThemedErrorBanner(
+                          message: provider.subscriptionError!,
+                        )
+                      : const ThemedWarningBanner(
+                          message: 'Reconnecting live tracking stream...',
+                        ),
                 ),
             ],
           );

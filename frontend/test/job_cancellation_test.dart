@@ -14,6 +14,7 @@ import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/screens/home_screen.dart';
 import 'package:frontend/screens/job_status_screen.dart';
 import 'package:frontend/widgets/create_ticket_dialog.dart';
+import 'package:frontend/widgets/primary_button.dart';
 
 class MockAuthProviderForTest extends AuthProvider {
   final UserProfile? mockUser;
@@ -285,7 +286,7 @@ void main() {
     expect(confirmButton, findsOneWidget);
 
     // Verify confirm button is initially DISABLED (reason field is empty)
-    ElevatedButton buttonWidget = tester.widget(confirmButton);
+    PrimaryButton buttonWidget = tester.widget(confirmButton);
     expect(buttonWidget.onPressed, isNull);
 
     // Enter whitespace reason only

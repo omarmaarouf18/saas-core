@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme.dart';
 import '../providers/locale_provider.dart';
+import '../widgets/primary_button.dart';
+import '../widgets/themed_card.dart';
 
 class UpdateRequiredScreen extends StatelessWidget {
   final String? currentVersion;
@@ -20,7 +23,6 @@ class UpdateRequiredScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
     final isArabic = localeProvider.locale?.languageCode == 'ar';
 
@@ -38,11 +40,11 @@ class UpdateRequiredScreen extends StatelessWidget {
     return PopScope(
       canPop: false, // Non-dismissible
       child: Scaffold(
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: AppColors.surface,
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.all(AppSpacing.xl),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -51,43 +53,36 @@ class UpdateRequiredScreen extends StatelessWidget {
                     width: 96,
                     height: 96,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
+                      color: AppColors.secondary.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.system_update_rounded,
                       size: 48,
-                      color: theme.colorScheme.primary,
+                      color: AppColors.primary,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.xl),
                   Text(
                     titleText,
-                    style: theme.textTheme.headlineMedium?.copyWith(
+                    style: AppTypography.headlineLgMobile.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
+                      color: AppColors.onSurface,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     subtitleText,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
                       height: 1.5,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 28),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: theme.colorScheme.outlineVariant,
-                      ),
-                    ),
+                  const SizedBox(height: AppSpacing.xl),
+                  ThemedCard(
+                    padding: AppSpacing.md,
                     child: Column(
                       children: [
                         _buildVersionRow(
@@ -97,7 +92,10 @@ class UpdateRequiredScreen extends StatelessWidget {
                           value: curVer,
                           isHighlight: false,
                         ),
-                        const Divider(height: 20),
+                        const Divider(
+                          height: AppSpacing.lg,
+                          color: AppColors.outlineVariant,
+                        ),
                         _buildVersionRow(
                           context,
                           label: isArabic
@@ -107,11 +105,14 @@ class UpdateRequiredScreen extends StatelessWidget {
                           isHighlight: true,
                         ),
                         if (latVer != minVer) ...[
-                          const Divider(height: 20),
+                          const Divider(
+                            height: AppSpacing.lg,
+                            color: AppColors.outlineVariant,
+                          ),
                           _buildVersionRow(
                             context,
                             label: isArabic
-                                ? 'أحدث إصدار متاء'
+                                ? 'أحدث إصدار متاح'
                                 : 'Latest Available',
                             value: latVer,
                             isHighlight: false,
@@ -120,38 +121,18 @@ class UpdateRequiredScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton.icon(
-                      key: const Key('update_now_button'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: theme.colorScheme.onPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: onUpdatePressed ??
-                          () {
-                            // Action callback or URL launch
-                          },
-                      icon: const Icon(Icons.download_rounded),
-                      label: Text(
-                        isArabic ? 'تحديث الآن' : 'Update Now',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                  const SizedBox(height: AppSpacing.xl),
+                  PrimaryButton(
+                    key: const Key('update_now_button'),
+                    icon: Icons.download_rounded,
+                    text: isArabic ? 'تحديث الآن' : 'Update Now',
+                    onPressed: onUpdatePressed ?? () {},
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     url,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.outline,
+                    style: AppTypography.labelMd.copyWith(
+                      color: AppColors.outline,
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 1,
@@ -172,31 +153,37 @@ class UpdateRequiredScreen extends StatelessWidget {
     required String value,
     required bool isHighlight,
   }) {
-    final theme = Theme.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+          style: AppTypography.bodySm.copyWith(
+            color: AppColors.onSurfaceVariant,
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.baseSm,
+            vertical: AppSpacing.xs,
+          ),
           decoration: BoxDecoration(
             color: isHighlight
-                ? theme.colorScheme.errorContainer
-                : theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8),
+                ? AppColors.error.withValues(alpha: 0.12)
+                : AppColors.surfaceContainerHighest,
+            borderRadius: AppRadius.defaultBorder,
+            border: isHighlight
+                ? Border.all(
+                    color: AppColors.error.withValues(alpha: 0.3),
+                    width: 1,
+                  )
+                : null,
           ),
           child: Text(
             value,
-            style: theme.textTheme.labelMedium?.copyWith(
+            style: AppTypography.labelLg.copyWith(
               fontWeight: FontWeight.bold,
-              color: isHighlight
-                  ? theme.colorScheme.onErrorContainer
-                  : theme.colorScheme.onSurface,
+              color: isHighlight ? AppColors.error : AppColors.onSurface,
             ),
           ),
         ),

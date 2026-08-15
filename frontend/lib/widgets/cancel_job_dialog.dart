@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
+import 'primary_button.dart';
+import 'secondary_button.dart';
+import 'themed_error_banner.dart';
+import 'themed_text_field.dart';
 
 class CancelJobDialog extends StatefulWidget {
   final String jobId;
@@ -55,41 +59,43 @@ class _CancelJobDialogState extends State<CancelJobDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               "Please provide a reason for cancelling this job. A valid cancellation reason is required.",
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              key: const Key('cancel_reason_input'),
-              controller: _reasonController,
-              autofocus: true,
-              maxLines: 3,
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                labelText: l10n.cancelJobReasonLabel,
-                hintText: l10n.cancelJobReasonHint,
-                border: const OutlineInputBorder(),
+              style: AppTypography.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
               ),
             ),
+            const SizedBox(height: AppSpacing.md),
+            ThemedTextField(
+              key: const Key('cancel_reason_input'),
+              controller: _reasonController,
+              labelText: l10n.cancelJobReasonLabel,
+              hintText: l10n.cancelJobReasonHint,
+              maxLines: 3,
+              onChanged: (_) => setState(() {}),
+            ),
             if (_inlineError != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                _inlineError!,
-                style: const TextStyle(color: AppColors.error, fontSize: 13),
+              const SizedBox(height: AppSpacing.sm),
+              ThemedErrorBanner(
+                message: _inlineError!,
               ),
             ],
           ],
         ),
       ),
       actions: [
-        TextButton(
+        SecondaryButton(
+          text: l10n.cancelJobKeep,
+          isFullWidth: false,
           onPressed:
               _isSubmitting ? null : () => Navigator.of(context).pop(false),
-          child: Text(l10n.cancelJobKeep),
         ),
-        ElevatedButton(
+        PrimaryButton(
           key: const Key('confirm_cancel_button'),
+          text: l10n.cancelJobConfirm,
+          isFullWidth: false,
+          isDestructive: true,
+          isLoading: _isSubmitting,
           onPressed: (isReasonEmpty || _isSubmitting)
               ? null
               : () async {
@@ -111,20 +117,6 @@ class _CancelJobDialogState extends State<CancelJobDialog> {
                     }
                   }
                 },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.error,
-            foregroundColor: AppColors.onPrimary,
-          ),
-          child: _isSubmitting
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Text(l10n.cancelJobConfirm),
         ),
       ],
     );

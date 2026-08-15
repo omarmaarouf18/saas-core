@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
+import 'primary_button.dart';
+import 'secondary_button.dart';
 
 class ConfirmActionDialog extends StatelessWidget {
   final String title;
@@ -76,36 +78,16 @@ class ConfirmActionDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        TextButton(
+        SecondaryButton(
+          text: cancelLabel,
+          isFullWidth: false,
           onPressed: () => Navigator.of(context).pop(false),
-          child: Text(
-            cancelLabel,
-            style: AppTypography.bodyMd.copyWith(
-              color: AppColors.outline,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
         ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: confirmColor,
-            foregroundColor: AppColors.onPrimary,
-            shape: RoundedRectangleBorder(
-              borderRadius: AppRadius.defaultBorder,
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-          ),
+        PrimaryButton(
+          text: confirmLabel,
+          isFullWidth: false,
+          isDestructive: isDestructive,
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text(
-            confirmLabel,
-            style: AppTypography.bodyMd.copyWith(
-              color: AppColors.onPrimary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
         ),
       ],
     );

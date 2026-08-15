@@ -5,6 +5,7 @@ class PrimaryButton extends StatefulWidget {
   final String text;
   final VoidCallback? onPressed;
   final bool isLoading;
+  final bool isDestructive;
   final bool isFullWidth;
   final double? height;
   final IconData? icon;
@@ -16,6 +17,7 @@ class PrimaryButton extends StatefulWidget {
     required this.text,
     this.onPressed,
     this.isLoading = false,
+    this.isDestructive = false,
     this.isFullWidth = true,
     this.height = 52,
     this.icon,
@@ -45,6 +47,9 @@ class _PrimaryButtonState extends State<PrimaryButton> {
 
   @override
   Widget build(BuildContext context) {
+    final Color bgColor =
+        widget.isDestructive ? AppColors.error : AppColors.primary;
+
     final Widget buttonChild = widget.isLoading
         ? const SizedBox(
             width: 20,
@@ -110,7 +115,7 @@ class _PrimaryButtonState extends State<PrimaryButton> {
           child: ElevatedButton(
             onPressed: isEnabled ? _handleTap : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: bgColor,
               foregroundColor: AppColors.onPrimary,
               elevation: 0,
               shape: RoundedRectangleBorder(
