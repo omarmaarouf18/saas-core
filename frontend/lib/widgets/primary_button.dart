@@ -5,6 +5,8 @@ class PrimaryButton extends StatefulWidget {
   final String text;
   final VoidCallback? onPressed;
   final bool isLoading;
+  final bool isFullWidth;
+  final double? height;
   final IconData? icon;
   final int maxLines;
   final DateTime Function()? nowProvider;
@@ -14,6 +16,8 @@ class PrimaryButton extends StatefulWidget {
     required this.text,
     this.onPressed,
     this.isLoading = false,
+    this.isFullWidth = true,
+    this.height = 52,
     this.icon,
     this.maxLines = 2,
     this.nowProvider,
@@ -52,7 +56,8 @@ class _PrimaryButtonState extends State<PrimaryButton> {
           )
         : Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.max,
+            mainAxisSize:
+                widget.isFullWidth ? MainAxisSize.max : MainAxisSize.min,
             children: [
               if (widget.icon != null) ...[
                 Icon(widget.icon, size: 20),
@@ -100,8 +105,8 @@ class _PrimaryButtonState extends State<PrimaryButton> {
         duration: AppMotion.durationFast,
         curve: AppMotion.curveStateChange,
         child: SizedBox(
-          width: double.infinity,
-          height: 52,
+          width: widget.isFullWidth ? double.infinity : null,
+          height: widget.height,
           child: ElevatedButton(
             onPressed: isEnabled ? _handleTap : null,
             style: ElevatedButton.styleFrom(
@@ -111,9 +116,9 @@ class _PrimaryButtonState extends State<PrimaryButton> {
               shape: RoundedRectangleBorder(
                 borderRadius: AppRadius.defaultBorder,
               ),
-              padding: const EdgeInsets.symmetric(
+              padding: EdgeInsets.symmetric(
                 vertical: AppSpacing.sm,
-                horizontal: AppSpacing.md,
+                horizontal: widget.isFullWidth ? AppSpacing.md : AppSpacing.lg,
               ),
             ),
             child: buttonChild,

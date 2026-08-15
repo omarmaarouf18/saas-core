@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frontend/core/theme.dart';
 import 'package:frontend/widgets/confirm_action_dialog.dart';
 import 'package:frontend/widgets/entity_avatar.dart';
 import 'package:frontend/widgets/info_list_tile.dart';
@@ -7,6 +8,7 @@ import 'package:frontend/widgets/primary_button.dart';
 import 'package:frontend/widgets/secondary_button.dart';
 import 'package:frontend/widgets/stat_card.dart';
 import 'package:frontend/widgets/status_badge.dart';
+import 'package:frontend/widgets/themed_card.dart';
 import 'package:frontend/widgets/themed_empty_state.dart';
 import 'package:frontend/widgets/themed_error_banner.dart';
 import 'package:frontend/widgets/themed_success_banner.dart';
@@ -564,6 +566,268 @@ void main() {
 
       expect(find.text('Payment processed successfully'), findsOneWidget);
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+    });
+
+    testWidgets('ThemedSnackBar.showWarning displays floating warning toast',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => ThemedSnackBar.showWarning(
+                  context,
+                  'Caution: Unsaved changes will be lost',
+                ),
+                child: const Text('Show Warning Toast'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Show Warning Toast'));
+      await tester.pumpAndSettle();
+
+      expect(
+          find.text('Caution: Unsaved changes will be lost'), findsOneWidget);
+      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+    });
+
+    testWidgets('ThemedSnackBar.showInfo displays floating info toast',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => ThemedSnackBar.showInfo(
+                  context,
+                  'New updates are available in your area',
+                ),
+                child: const Text('Show Info Toast'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Show Info Toast'));
+      await tester.pumpAndSettle();
+
+      expect(
+          find.text('New updates are available in your area'), findsOneWidget);
+      expect(find.byIcon(Icons.info_outline), findsOneWidget);
+    });
+
+    testWidgets(
+        'ThemedWarningBanner renders warning message, icon, and dismiss button',
+        (tester) async {
+      bool dismissed = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ThemedWarningBanner(
+              title: 'Pending Activation',
+              message: 'Please complete payment to activate subscription.',
+              onDismiss: () => dismissed = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Pending Activation'), findsOneWidget);
+      expect(find.text('Please complete payment to activate subscription.'),
+          findsOneWidget);
+      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.close));
+      expect(dismissed, isTrue);
+    });
+
+    testWidgets('ThemedInfoBanner renders info message and custom retry action',
+        (tester) async {
+      bool retryClicked = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ThemedInfoBanner(
+              title: 'Courier En Route',
+              message: 'Courier is currently 2.5 km away from pickup.',
+              onRetry: () => retryClicked = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Courier En Route'), findsOneWidget);
+      expect(find.text('Courier is currently 2.5 km away from pickup.'),
+          findsOneWidget);
+      expect(find.byIcon(Icons.info_outline), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+
+      await tester.tap(find.text('Retry'));
+      expect(retryClicked, isTrue);
+    });
+  });
+
+  group('ThemedCard Variant Widget Tests', () {
+    testWidgets(
+        'ThemedCard defaults to normal variant with standard border and shadow',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ThemedCard(
+              child: Text('Normal Card Content'),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Normal Card Content'), findsOneWidget);
+      final container = tester.widget<Container>(find.byType(Container));
+      final decoration = container.decoration as BoxDecoration;
+      final border = decoration.border as Border;
+      expect(border.top.width, 1.0);
+      expect(decoration.boxShadow, isNotNull);
+    });
+
+    testWidgets(
+        'ThemedCard highlighted variant renders 2px secondary border and level 2 shadow',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ThemedCard(
+              variant: ThemedCardVariant.highlighted,
+              child: Text('Highlighted Tier Card'),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Highlighted Tier Card'), findsOneWidget);
+      final container = tester.widget<Container>(find.byType(Container));
+      final decoration = container.decoration as BoxDecoration;
+      final border = decoration.border as Border;
+      expect(border.top.width, 2.0);
+      expect(border.top.color, AppColors.secondary);
+    });
+
+    testWidgets(
+        'ThemedCard elevated variant renders level 3 shadow for floating overlays',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ThemedCard(
+              variant: ThemedCardVariant.elevated,
+              child: Text('Elevated Overlay Card'),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Elevated Overlay Card'), findsOneWidget);
+      final container = tester.widget<Container>(find.byType(Container));
+      final decoration = container.decoration as BoxDecoration;
+      expect(decoration.boxShadow, isNotNull);
+    });
+  });
+
+  group('Button isFullWidth Parameter Widget Tests', () {
+    testWidgets(
+        'PrimaryButton defaults to full width and supports isFullWidth: false for in-row layout',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                PrimaryButton(
+                  key: const Key('full_width_primary'),
+                  text: 'Full Width Action',
+                  onPressed: () {},
+                ),
+                PrimaryButton(
+                  key: const Key('compact_primary'),
+                  text: 'Compact Action',
+                  isFullWidth: false,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final fullWidthSizedBox = tester.widget<SizedBox>(
+        find
+            .descendant(
+              of: find.byKey(const Key('full_width_primary')),
+              matching: find.byType(SizedBox),
+            )
+            .first,
+      );
+      expect(fullWidthSizedBox.width, double.infinity);
+
+      final compactSizedBox = tester.widget<SizedBox>(
+        find
+            .descendant(
+              of: find.byKey(const Key('compact_primary')),
+              matching: find.byType(SizedBox),
+            )
+            .first,
+      );
+      expect(compactSizedBox.width, isNull);
+    });
+
+    testWidgets(
+        'SecondaryButton defaults to full width and supports isFullWidth: false',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                SecondaryButton(
+                  key: const Key('full_width_secondary'),
+                  text: 'Full Width Secondary',
+                  onPressed: () {},
+                ),
+                SecondaryButton(
+                  key: const Key('compact_secondary'),
+                  text: 'Compact Secondary',
+                  isFullWidth: false,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final fullWidthSizedBox = tester.widget<SizedBox>(
+        find
+            .descendant(
+              of: find.byKey(const Key('full_width_secondary')),
+              matching: find.byType(SizedBox),
+            )
+            .first,
+      );
+      expect(fullWidthSizedBox.width, double.infinity);
+
+      final compactSizedBox = tester.widget<SizedBox>(
+        find
+            .descendant(
+              of: find.byKey(const Key('compact_secondary')),
+              matching: find.byType(SizedBox),
+            )
+            .first,
+      );
+      expect(compactSizedBox.width, isNull);
     });
   });
 }

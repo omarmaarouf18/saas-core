@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
+import 'themed_banner.dart';
+
+export 'themed_banner.dart'
+    show ThemedBanner, ThemedBannerType, ThemedWarningBanner, ThemedInfoBanner;
 
 /// Reusable inline success banner container following the design system tokens.
 class ThemedSuccessBanner extends StatelessWidget {
@@ -16,62 +20,11 @@ class ThemedSuccessBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.success.withValues(alpha: 0.1),
-        borderRadius: AppRadius.defaultBorder,
-        border: Border.all(
-          color: AppColors.success.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.check_circle_outline,
-            size: AppIconSize.md,
-            color: AppColors.success,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (title != null) ...[
-                  Text(
-                    title!,
-                    style: AppTypography.labelLg.copyWith(
-                      color: AppColors.success,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                ],
-                Text(
-                  message,
-                  style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (onDismiss != null) ...[
-            const SizedBox(width: AppSpacing.md),
-            IconButton(
-              onPressed: onDismiss,
-              icon: const Icon(Icons.close, size: 18),
-              color: AppColors.success,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              splashRadius: 20,
-            ),
-          ],
-        ],
-      ),
+    return ThemedBanner(
+      type: ThemedBannerType.success,
+      message: message,
+      title: title,
+      onDismiss: onDismiss,
     );
   }
 }
@@ -139,6 +92,74 @@ class ThemedSnackBar {
           children: [
             const Icon(
               Icons.error_outline,
+              color: Colors.white,
+              size: AppIconSize.md,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(
+                message,
+                style: AppTypography.bodyMd.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static void showWarning(BuildContext context, String message, {Key? key}) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        key: key,
+        duration: AppMotion.snackBarDisplay,
+        backgroundColor: AppColors.warning,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.defaultBorder,
+        ),
+        content: Row(
+          children: [
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.white,
+              size: AppIconSize.md,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(
+                message,
+                style: AppTypography.bodyMd.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static void showInfo(BuildContext context, String message, {Key? key}) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        key: key,
+        duration: AppMotion.snackBarDisplay,
+        backgroundColor: AppColors.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.defaultBorder,
+        ),
+        content: Row(
+          children: [
+            const Icon(
+              Icons.info_outline,
               color: Colors.white,
               size: AppIconSize.md,
             ),

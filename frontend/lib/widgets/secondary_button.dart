@@ -6,6 +6,8 @@ class SecondaryButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final bool isLoading;
   final bool isOutlined;
+  final bool isFullWidth;
+  final double? height;
   final IconData? icon;
   final int maxLines;
   final DateTime Function()? nowProvider;
@@ -16,6 +18,8 @@ class SecondaryButton extends StatefulWidget {
     this.onPressed,
     this.isLoading = false,
     this.isOutlined = false,
+    this.isFullWidth = true,
+    this.height = 52,
     this.icon,
     this.maxLines = 2,
     this.nowProvider,
@@ -56,7 +60,8 @@ class _SecondaryButtonState extends State<SecondaryButton> {
           )
         : Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize:
+                widget.isFullWidth ? MainAxisSize.max : MainAxisSize.min,
             children: [
               if (widget.icon != null) ...[
                 Icon(
@@ -96,9 +101,9 @@ class _SecondaryButtonState extends State<SecondaryButton> {
             shape: RoundedRectangleBorder(
               borderRadius: AppRadius.defaultBorder,
             ),
-            padding: const EdgeInsets.symmetric(
+            padding: EdgeInsets.symmetric(
               vertical: AppSpacing.sm,
-              horizontal: AppSpacing.md,
+              horizontal: widget.isFullWidth ? AppSpacing.md : AppSpacing.lg,
             ),
           )
         : ElevatedButton.styleFrom(
@@ -108,9 +113,9 @@ class _SecondaryButtonState extends State<SecondaryButton> {
             shape: RoundedRectangleBorder(
               borderRadius: AppRadius.defaultBorder,
             ),
-            padding: const EdgeInsets.symmetric(
+            padding: EdgeInsets.symmetric(
               vertical: AppSpacing.sm,
-              horizontal: AppSpacing.md,
+              horizontal: widget.isFullWidth ? AppSpacing.md : AppSpacing.lg,
             ),
           );
 
@@ -138,8 +143,8 @@ class _SecondaryButtonState extends State<SecondaryButton> {
         duration: AppMotion.durationFast,
         curve: AppMotion.curveStateChange,
         child: SizedBox(
-          width: double.infinity,
-          height: 52,
+          width: widget.isFullWidth ? double.infinity : null,
+          height: widget.height,
           child: widget.isOutlined
               ? OutlinedButton(
                   onPressed: effectiveOnPressed,

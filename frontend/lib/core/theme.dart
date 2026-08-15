@@ -155,6 +155,8 @@ class AppElevation {
 
   static List<BoxShadow> get shadowLevel1List => [shadowLevel1];
   static List<BoxShadow> get shadowLevel2List => [shadowLevel2];
+  static List<BoxShadow> get shadowLevel3List => [shadowLevel3];
+  static List<BoxShadow> get shadowLevel4List => [shadowLevel4];
 }
 
 // Backwards-compatible AppShadows class
