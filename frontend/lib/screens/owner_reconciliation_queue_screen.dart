@@ -153,7 +153,7 @@ class _OwnerReconciliationQueueScreenState
           }
 
           return RefreshIndicator(
-            onRefresh: () => provider.fetchQueue(),
+            onRefresh: _onRefresh,
             child: ListView.builder(
               padding: const EdgeInsets.all(AppSpacing.md),
               itemCount: provider.queue.length,
@@ -168,7 +168,10 @@ class _OwnerReconciliationQueueScreenState
     );
   }
 
-  static Future<void> _onRefresh() async {}
+  Future<void> _onRefresh() async {
+    await Provider.of<ReconciliationProvider>(context, listen: false)
+        .fetchQueue();
+  }
 
   Widget _buildReconciliationCard(
       BuildContext context, ReconciliationJob job, AppLocalizations l10n) {

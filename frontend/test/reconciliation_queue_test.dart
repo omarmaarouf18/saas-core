@@ -11,12 +11,14 @@ import 'package:frontend/screens/owner_reconciliation_queue_screen.dart';
 
 class MockReconciliationProvider extends ReconciliationProvider {
   final List<ReconciliationJob> initialJobs;
-  final bool mockFetchError;
+  bool mockFetchError;
   final bool mockResolveConflict;
-  bool fetchQueueCalled = false;
+  int fetchQueueCallCount = 0;
+  bool get fetchQueueCalled => fetchQueueCallCount > 0;
   bool resolveJobCalled = false;
   String? lastResolvedJobId;
   String? lastResolvedDecision;
+  List<ReconciliationJob>? nextJobsOnFetch;
 
   MockReconciliationProvider(
     super.apiClient, {
@@ -25,21 +27,42 @@ class MockReconciliationProvider extends ReconciliationProvider {
     this.mockResolveConflict = false,
   }) {
     _testQueue = List.from(initialJobs);
+    if (mockFetchError) {
+      _testError = 'Access denied: owner authorization required';
+    }
   }
 
   late List<ReconciliationJob> _testQueue;
+  String? _testError;
 
   @override
   List<ReconciliationJob> get queue => List.unmodifiable(_testQueue);
+
+  @override
+  String? get error => _testError;
 
   @override
   bool get isLoading => false;
 
   @override
   Future<void> fetchQueue() async {
-    fetchQueueCalled = true;
+    fetchQueueCallCount++;
     if (mockFetchError) {
-      setErrorForTest('Access denied: owner authorization required');
+      _testError = 'Access denied: owner authorization required';
+    } else {
+      _testError = null;
+      if (nextJobsOnFetch != null) {
+        _testQueue = List.from(nextJobsOnFetch!);
+      }
+    }
+    notifyListeners();
+  }
+
+  void setNextFetchResult(
+      {List<ReconciliationJob>? jobs, bool hasError = false}) {
+    mockFetchError = hasError;
+    if (jobs != null) {
+      nextJobsOnFetch = jobs;
     }
   }
 
@@ -53,7 +76,8 @@ class MockReconciliationProvider extends ReconciliationProvider {
     lastResolvedDecision = decision;
 
     if (mockResolveConflict) {
-      setError('Job already resolved');
+      _testError = 'Job already resolved';
+      notifyListeners();
       return false;
     }
 
@@ -62,8 +86,16 @@ class MockReconciliationProvider extends ReconciliationProvider {
     return true;
   }
 
-  void setErrorForTest(String err) {
-    // Accessing internal error via reflection or clear logic
+  @override
+  void setError(String? err) {
+    _testError = err;
+    notifyListeners();
+  }
+
+  @override
+  void clearError() {
+    _testError = null;
+    notifyListeners();
   }
 }
 
@@ -227,5 +259,114 @@ void main() {
 
     // Verify 409 conflict message appears in SnackBar
     expect(find.text('Job already resolved'), findsOneWidget);
+  });
+
+  testWidgets(
+      '(f) Empty state Refresh Queue action button actually invokes fetchQueue and transitions UI to loaded state',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockProvider = MockReconciliationProvider(
+      apiClient,
+      initialJobs: [],
+    );
+
+    await tester.pumpWidget(buildReconciliationApp(mockProvider));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No jobs pending reconciliation'), findsOneWidget);
+    expect(mockProvider.fetchQueueCallCount, 1); // initial initState load
+
+    // Configure next fetch to return a job
+    mockProvider.setNextFetchResult(jobs: [testJob]);
+
+    // Tap 'Refresh Queue' action button inside ThemedEmptyState
+    final refreshBtn = find.text('Refresh Queue');
+    expect(refreshBtn, findsOneWidget);
+    await tester.tap(refreshBtn);
+    await tester.pumpAndSettle();
+
+    // Verify fetchQueue was called again
+    expect(mockProvider.fetchQueueCallCount, 2);
+
+    // Verify UI transitioned from empty state to populated job card
+    expect(find.text('No jobs pending reconciliation'), findsNothing);
+    expect(find.text('Order #job-test-101'), findsOneWidget);
+  });
+
+  testWidgets('(g) Pull-to-refresh on empty queue invokes fetchQueue',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockProvider = MockReconciliationProvider(
+      apiClient,
+      initialJobs: [],
+    );
+
+    await tester.pumpWidget(buildReconciliationApp(mockProvider));
+    await tester.pumpAndSettle();
+
+    expect(mockProvider.fetchQueueCallCount, 1);
+
+    // Perform pull-down gesture on the RefreshIndicator
+    await tester.fling(
+        find.byType(SingleChildScrollView), const Offset(0, 300), 1000);
+    await tester.pumpAndSettle();
+
+    expect(mockProvider.fetchQueueCallCount, 2);
+  });
+
+  testWidgets('(h) Pull-to-refresh on populated queue invokes fetchQueue',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockProvider = MockReconciliationProvider(
+      apiClient,
+      initialJobs: [testJob],
+    );
+
+    await tester.pumpWidget(buildReconciliationApp(mockProvider));
+    await tester.pumpAndSettle();
+
+    expect(mockProvider.fetchQueueCallCount, 1);
+    expect(find.text('Order #job-test-101'), findsOneWidget);
+
+    // Perform pull-down gesture on the ListView
+    await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
+    await tester.pumpAndSettle();
+
+    expect(mockProvider.fetchQueueCallCount, 2);
+  });
+
+  testWidgets(
+      '(i) Error state Retry button invokes fetchQueue and transitions UI to loaded state',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockProvider = MockReconciliationProvider(
+      apiClient,
+      initialJobs: [],
+      mockFetchError: true,
+    );
+
+    await tester.pumpWidget(buildReconciliationApp(mockProvider));
+    await tester.pumpAndSettle();
+
+    // Verify initial load resulted in error UI
+    expect(find.text('Access denied: owner authorization required'),
+        findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+    expect(mockProvider.fetchQueueCallCount, 1);
+
+    // Set mock to succeed on retry and provide job
+    mockProvider.setNextFetchResult(jobs: [testJob], hasError: false);
+
+    // Tap Retry
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+
+    // Verify fetchQueue was called again
+    expect(mockProvider.fetchQueueCallCount, 2);
+
+    // Verify UI transitioned from error state to loaded job card
+    expect(
+        find.text('Access denied: owner authorization required'), findsNothing);
+    expect(find.text('Order #job-test-101'), findsOneWidget);
   });
 }
