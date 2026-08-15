@@ -107,37 +107,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     ],
                   ),
                   if (currentTier == 'pending_payment') ...[
-                    const SizedBox(height: AppSpacing.sm),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm, vertical: AppSpacing.base),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        border: Border.all(
-                          color: AppColors.error.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.info_outline,
-                            color: AppColors.error,
-                            size: 18,
-                          ),
-                          const SizedBox(width: AppSpacing.base),
-                          Expanded(
-                            child: Text(
-                              'Pending activation. Please contact support to complete payment.',
-                              style: AppTypography.bodyMd.copyWith(
-                                fontSize: 12,
-                                color: AppColors.error,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: AppSpacing.md),
+                    const ThemedWarningBanner(
+                      message:
+                          'Pending activation. Please contact support to complete payment.',
                     ),
                   ],
                 ],
@@ -219,16 +192,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     final bool isThisPlanLoading = _isSubmitting && !isCurrent;
 
     return ThemedCard(
-      hasShadow: true,
-      color: AppColors.surface,
+      variant: highlighted
+          ? ThemedCardVariant.highlighted
+          : ThemedCardVariant.normal,
       borderRadius: AppRadius.lg,
       padding: AppSpacing.lg,
-      borderSide: BorderSide(
-        color: highlighted
-            ? AppColors.secondary
-            : AppColors.outlineVariant.withValues(alpha: 0.3),
-        width: highlighted ? 2 : 1,
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -237,7 +205,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               alignment: Alignment.centerLeft,
               child: Container(
                 padding: const EdgeInsetsDirectional.symmetric(
-                    horizontal: AppSpacing.baseSm, vertical: AppSpacing.xs),
+                  horizontal: AppSpacing.baseSm,
+                  vertical: AppSpacing.xs,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.secondary,
                   borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -267,8 +237,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             children: [
               Text(
                 price,
-                style: AppTypography.displayLg.copyWith(
-                  fontSize: 36,
+                style: AppTypography.headlineLg.copyWith(
                   fontWeight: FontWeight.bold,
                   color:
                       highlighted ? AppColors.secondary : AppColors.onSurface,
