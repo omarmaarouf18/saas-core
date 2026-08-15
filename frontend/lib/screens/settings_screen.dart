@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
@@ -17,6 +18,47 @@ class SettingsScreen extends StatelessWidget {
   final bool isEmbeddedInTab;
   const SettingsScreen({super.key, this.isEmbeddedInTab = false});
 
+  ButtonStyle _segmentedButtonStyle(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ButtonStyle(
+      textStyle: WidgetStatePropertyAll(
+        GoogleFonts.poppins(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.selected)) {
+          return isDark ? AppColors.secondary : AppColors.primary;
+        }
+        return isDark ? const Color(0xFF1E293B) : AppColors.surfaceContainer;
+      }),
+      foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.selected)) {
+          return isDark ? const Color(0xFF0F172A) : AppColors.onPrimary;
+        }
+        return isDark ? const Color(0xFFF8FAFC) : AppColors.onSurface;
+      }),
+      iconColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.selected)) {
+          return isDark ? const Color(0xFF0F172A) : AppColors.onPrimary;
+        }
+        return isDark ? const Color(0xFFF8FAFC) : AppColors.onSurface;
+      }),
+      side: WidgetStatePropertyAll(
+        BorderSide(
+          color: isDark ? const Color(0xFF475569) : AppColors.outlineVariant,
+          width: 1.0,
+        ),
+      ),
+      shape: WidgetStatePropertyAll(
+        RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.defaultValue),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
@@ -24,6 +66,7 @@ class SettingsScreen extends StatelessWidget {
     final localeProvider = Provider.of<LocaleProvider?>(context);
     final l10n = context.l10n;
     final user = auth.user;
+    final theme = Theme.of(context);
 
     final currentLangVal = localeProvider?.locale == null
         ? 'auto'
@@ -36,7 +79,7 @@ class SettingsScreen extends StatelessWidget {
     final bool isKycPending = user?.kycStatus == 'pending_super_admin_approval';
 
     String kycSubtitle = l10n.settingsKycSubtitleDefault;
-    Color kycIconColor = AppColors.primary;
+    Color kycIconColor = theme.colorScheme.primary;
     if (isKycRejected) {
       kycSubtitle = l10n.settingsKycSubtitleRejected;
       kycIconColor = AppColors.error;
@@ -46,13 +89,13 @@ class SettingsScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: isEmbeddedInTab
           ? null
           : AppBar(
               title: Text(l10n.settingsTitle),
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.onPrimary,
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
             ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -75,36 +118,58 @@ class SettingsScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   SegmentedButton<ThemeMode>(
                     key: const Key('theme_mode_selector'),
+                    style: _segmentedButtonStyle(context),
                     segments: [
                       ButtonSegment(
                         value: ThemeMode.light,
                         label: Text(
                           l10n.themeLight,
                           key: const Key('theme_light_button'),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        icon: const Icon(Icons.light_mode_outlined),
+                        icon: const Icon(
+                          Icons.light_mode_outlined,
+                          size: AppIconSize.sm,
+                        ),
                       ),
                       ButtonSegment(
                         value: ThemeMode.dark,
                         label: Text(
                           l10n.themeDark,
                           key: const Key('theme_dark_button'),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        icon: const Icon(Icons.dark_mode_outlined),
+                        icon: const Icon(
+                          Icons.dark_mode_outlined,
+                          size: AppIconSize.sm,
+                        ),
                       ),
                       ButtonSegment(
                         value: ThemeMode.system,
                         label: Text(
                           l10n.themeSystem,
                           key: const Key('theme_system_button'),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        icon: const Icon(Icons.brightness_auto_outlined),
+                        icon: const Icon(
+                          Icons.brightness_auto_outlined,
+                          size: AppIconSize.sm,
+                        ),
                       ),
                     ],
                     selected: {themeProvider.themeMode},
@@ -122,26 +187,38 @@ class SettingsScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   SegmentedButton<String>(
                     key: const Key('language_selector'),
+                    style: _segmentedButtonStyle(context),
                     segments: [
                       ButtonSegment(
                         value: 'auto',
                         label: Text(
                           l10n.langAuto,
                           key: const Key('lang_auto_button'),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        icon: const Icon(Icons.brightness_auto_outlined),
+                        icon: const Icon(
+                          Icons.brightness_auto_outlined,
+                          size: AppIconSize.sm,
+                        ),
                       ),
                       ButtonSegment(
                         value: 'en',
                         label: Text(
                           l10n.langEnglish,
                           key: const Key('lang_en_button'),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       ButtonSegment(
@@ -149,6 +226,10 @@ class SettingsScreen extends StatelessWidget {
                         label: Text(
                           l10n.langArabic,
                           key: const Key('lang_ar_button'),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -186,12 +267,16 @@ class SettingsScreen extends StatelessWidget {
                     if (user?.role == 'owner') ...[
                       ListTile(
                         key: const Key('owner_config_setting_row'),
-                        leading: const Icon(Icons.business_outlined,
-                            color: AppColors.primary),
+                        leading: Icon(
+                          Icons.business_outlined,
+                          color: theme.colorScheme.primary,
+                        ),
                         title: Text(l10n.settingsOwnerConfig),
                         subtitle: Text(l10n.settingsOwnerConfigSub),
-                        trailing: const Icon(Icons.chevron_right,
-                            color: AppColors.outline),
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: theme.colorScheme.outline,
+                        ),
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
@@ -205,12 +290,16 @@ class SettingsScreen extends StatelessWidget {
                     ] else if (user?.role == 'user') ...[
                       ListTile(
                         key: const Key('my_account_setting_row'),
-                        leading: const Icon(Icons.person_outlined,
-                            color: AppColors.primary),
+                        leading: Icon(
+                          Icons.person_outlined,
+                          color: theme.colorScheme.primary,
+                        ),
                         title: Text(l10n.settingsMyAccount),
                         subtitle: Text(l10n.settingsMyAccountSub),
-                        trailing: const Icon(Icons.chevron_right,
-                            color: AppColors.outline),
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: theme.colorScheme.outline,
+                        ),
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
@@ -230,8 +319,10 @@ class SettingsScreen extends StatelessWidget {
                         ),
                         title: Text(l10n.settingsKycRowTitle),
                         subtitle: Text(kycSubtitle),
-                        trailing: const Icon(Icons.chevron_right,
-                            color: AppColors.outline),
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: theme.colorScheme.outline,
+                        ),
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
@@ -259,12 +350,16 @@ class SettingsScreen extends StatelessWidget {
                 color: Colors.transparent,
                 child: ListTile(
                   key: const Key('customer_service_setting_row'),
-                  leading: const Icon(Icons.support_agent_outlined,
-                      color: AppColors.primary),
+                  leading: Icon(
+                    Icons.support_agent_outlined,
+                    color: theme.colorScheme.primary,
+                  ),
                   title: Text(l10n.settingsCustomerService),
                   subtitle: Text(l10n.settingsCustomerServiceSub),
-                  trailing:
-                      const Icon(Icons.chevron_right, color: AppColors.outline),
+                  trailing: Icon(
+                    Icons.chevron_right,
+                    color: theme.colorScheme.outline,
+                  ),
                   onTap: () {
                     showDialog(
                       context: context,

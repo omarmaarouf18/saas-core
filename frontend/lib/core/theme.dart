@@ -300,6 +300,42 @@ final ThemeData quickDeliveryTheme = ThemeData(
     backgroundColor: AppColors.secondary,
     foregroundColor: AppColors.onSecondary,
   ),
+  segmentedButtonTheme: SegmentedButtonThemeData(
+    style: ButtonStyle(
+      textStyle: WidgetStatePropertyAll(
+        GoogleFonts.poppins(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppColors.primary;
+        }
+        return AppColors.surfaceContainer;
+      }),
+      foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppColors.onPrimary;
+        }
+        return AppColors.onSurface;
+      }),
+      iconColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppColors.onPrimary;
+        }
+        return AppColors.onSurface;
+      }),
+      side: const WidgetStatePropertyAll(
+        BorderSide(color: AppColors.outlineVariant, width: 1.0),
+      ),
+      shape: WidgetStatePropertyAll(
+        RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.defaultValue),
+        ),
+      ),
+    ),
+  ),
 );
 
 // Hand-crafted dark mode color scheme (WCAG AA compliant contrast ratios >= 4.5:1 for text, >= 3:1 for controls)
@@ -359,5 +395,41 @@ final ThemeData quickDeliveryDarkTheme = ThemeData(
   floatingActionButtonTheme: const FloatingActionButtonThemeData(
     backgroundColor: AppColors.secondary,
     foregroundColor: AppColors.onSecondary,
+  ),
+  segmentedButtonTheme: SegmentedButtonThemeData(
+    style: ButtonStyle(
+      textStyle: WidgetStatePropertyAll(
+        GoogleFonts.poppins(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppColors.secondary;
+        }
+        return const Color(0xFF1E293B);
+      }),
+      foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.selected)) {
+          return const Color(0xFF0F172A);
+        }
+        return const Color(0xFFF8FAFC);
+      }),
+      iconColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.selected)) {
+          return const Color(0xFF0F172A);
+        }
+        return const Color(0xFFF8FAFC);
+      }),
+      side: const WidgetStatePropertyAll(
+        BorderSide(color: Color(0xFF475569), width: 1.0),
+      ),
+      shape: WidgetStatePropertyAll(
+        RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.defaultValue),
+        ),
+      ),
+    ),
   ),
 );

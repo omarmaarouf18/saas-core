@@ -371,4 +371,106 @@ void main() {
 
     expect(find.byKey(const Key('kyc_verification_setting_row')), findsNothing);
   });
+
+  testWidgets(
+      '(f) SegmentedButton explicit style, contrast, font size, and bold weight verification in Light and Dark mode',
+      (WidgetTester tester) async {
+    final themeProvider = ThemeProvider(storage: FakeSecureStorage());
+    final ownerUser = UserProfile(
+      id: 'owner-1',
+      email: 'owner@example.com',
+      username: 'owner1',
+      role: 'owner',
+    );
+
+    // 1. Test Light Mode Contrast & Style
+    themeProvider.setThemeMode(ThemeMode.light);
+    await tester.pumpWidget(buildSettingsApp(
+      authProvider: MockAuthProvider(apiClient, ownerUser),
+      themeProvider: themeProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    final themeSelectorFinder = find.byKey(const Key('theme_mode_selector'));
+    expect(themeSelectorFinder, findsOneWidget);
+    final SegmentedButton<ThemeMode> lightThemeSelector =
+        tester.widget(themeSelectorFinder);
+    expect(lightThemeSelector.style, isNotNull);
+
+    final lightStyle = lightThemeSelector.style!;
+    final lightTextStyle =
+        lightStyle.textStyle?.resolve({WidgetState.selected});
+    expect(lightTextStyle?.fontSize, 12.0);
+    expect(lightTextStyle?.fontWeight, FontWeight.bold);
+
+    // Light mode unselected and selected foreground & background colors
+    final lightUnselectedBg =
+        lightStyle.backgroundColor?.resolve({WidgetState.focused});
+    final lightUnselectedFg =
+        lightStyle.foregroundColor?.resolve({WidgetState.focused});
+    final lightSelectedBg =
+        lightStyle.backgroundColor?.resolve({WidgetState.selected});
+    final lightSelectedFg =
+        lightStyle.foregroundColor?.resolve({WidgetState.selected});
+
+    expect(lightUnselectedFg, isNotNull);
+    expect(lightUnselectedBg, isNotNull);
+    expect(lightSelectedFg, isNotNull);
+    expect(lightSelectedBg, isNotNull);
+
+    // Assert high contrast between unselected text and unselected background
+    // Calculate luminance & contrast ratio: (L1 + 0.05) / (L2 + 0.05)
+    double contrastRatio(Color c1, Color c2) {
+      final lum1 = c1.computeLuminance();
+      final lum2 = c2.computeLuminance();
+      final brightest = lum1 > lum2 ? lum1 : lum2;
+      final darkest = lum1 > lum2 ? lum2 : lum1;
+      return (brightest + 0.05) / (darkest + 0.05);
+    }
+
+    final lightUnselectedRatio =
+        contrastRatio(lightUnselectedFg!, lightUnselectedBg!);
+    final lightSelectedRatio =
+        contrastRatio(lightSelectedFg!, lightSelectedBg!);
+
+    // WCAG AA requires >= 4.5:1 for normal text
+    expect(lightUnselectedRatio, greaterThanOrEqualTo(4.5));
+    expect(lightSelectedRatio, greaterThanOrEqualTo(4.5));
+
+    // 2. Test Dark Mode Contrast & Style
+    themeProvider.setThemeMode(ThemeMode.dark);
+    await tester.pumpWidget(buildSettingsApp(
+      authProvider: MockAuthProvider(apiClient, ownerUser),
+      themeProvider: themeProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    final darkThemeSelector = tester.widget<SegmentedButton<ThemeMode>>(
+        find.byKey(const Key('theme_mode_selector')));
+    final darkStyle = darkThemeSelector.style!;
+    final darkTextStyle = darkStyle.textStyle?.resolve({WidgetState.selected});
+    expect(darkTextStyle?.fontSize, 12.0);
+    expect(darkTextStyle?.fontWeight, FontWeight.bold);
+
+    final darkUnselectedBg =
+        darkStyle.backgroundColor?.resolve({WidgetState.focused});
+    final darkUnselectedFg =
+        darkStyle.foregroundColor?.resolve({WidgetState.focused});
+    final darkSelectedBg =
+        darkStyle.backgroundColor?.resolve({WidgetState.selected});
+    final darkSelectedFg =
+        darkStyle.foregroundColor?.resolve({WidgetState.selected});
+
+    expect(darkUnselectedFg, isNotNull);
+    expect(darkUnselectedBg, isNotNull);
+    expect(darkSelectedFg, isNotNull);
+    expect(darkSelectedBg, isNotNull);
+
+    final darkUnselectedRatio =
+        contrastRatio(darkUnselectedFg!, darkUnselectedBg!);
+    final darkSelectedRatio = contrastRatio(darkSelectedFg!, darkSelectedBg!);
+
+    expect(darkUnselectedRatio, greaterThanOrEqualTo(4.5));
+    expect(darkSelectedRatio, greaterThanOrEqualTo(4.5));
+  });
 }
