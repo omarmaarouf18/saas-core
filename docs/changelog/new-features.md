@@ -2,6 +2,17 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Design System Component Extensions (In-Row Sizing, ThemedCardVariant, ThemedBanner)
+
+- **Implementation Detail**:
+  - **In-Row Button Sizing (`frontend/lib/widgets/primary_button.dart`, `frontend/lib/widgets/secondary_button.dart`)**: Added `isFullWidth: bool = true` and `height: double? = 52` parameters to `PrimaryButton` and `SecondaryButton`. When `isFullWidth` is `false`, the button sizes to its intrinsic content width using `MainAxisSize.min` and unconstrained width, enabling side-by-side row placements while preserving full-width block defaults for all existing call sites.
+  - **ThemedCard Variants (`frontend/lib/widgets/themed_card.dart`)**: Introduced `ThemedCardVariant` enum (`normal`, `highlighted`, `elevated`) with automatic token-driven border and elevation resolution. `highlighted` renders a 2px `AppColors.secondary` amber border with `shadowLevel2` (for featured subscription plans and promo cards); `elevated` renders `shadowLevel3` for floating map overlays; `normal` preserves 1px `outlineVariant` border with `shadowLevel1` by default.
+  - **Unified ThemedBanner & Warning/Info Banners (`frontend/lib/widgets/themed_banner.dart`, `themed_error_banner.dart`, `themed_success_banner.dart`)**: Added unified `ThemedBanner` supporting `ThemedBannerType.error`, `ThemedBannerType.success`, `ThemedBannerType.warning`, and `ThemedBannerType.info` alongside dedicated `ThemedWarningBanner` and `ThemedInfoBanner` widgets with tokenized amber/blue styling, action buttons, and dismiss callbacks. Refactored `ThemedErrorBanner` and `ThemedSuccessBanner` to delegate to `ThemedBanner` with zero breaking changes to existing call sites.
+  - **ThemedSnackBar Extensions (`frontend/lib/widgets/themed_success_banner.dart`)**: Added `ThemedSnackBar.showWarning` and `ThemedSnackBar.showInfo` floating toasts.
+  - **Automated Widget Test Suite (`frontend/test/shared_widgets_test.dart`)**: Added test coverage verifying `isFullWidth` toggle, `ThemedCardVariant` styling/shadow levels, `ThemedWarningBanner`/`ThemedInfoBanner` dismiss/retry actions, and floating warning/info snackbars.
+- **Commit SHA**: ``d7418b73176a14b05cba92d4119e7ad05a750dd0``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (205/205 pass), `make docs-check`, and pre-push hooks gate. ✅
+
 ## OTP-Verified Email Change Flow (POST /auth/email-change/request & POST /auth/email-change/confirm)
 
 - **Implementation Detail**:
