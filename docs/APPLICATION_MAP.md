@@ -116,7 +116,14 @@ The platform is comprised of **5 microservices** and **1 compile-time shared pac
   * `wallets`: Stores tenant e-wallet balances (`total_balance`, `withdrawable_balance`).
   * `ledger`: Stores accounting journal entries for auditability.
   * `subscriptions`: Stores tenant subscription statuses and plans.
-  * `ratings`: Stores double-blind ratings and stars.
+* **Internal Handler Architecture (`internal/handlers/`)**:
+  * `handlers.go`: Service receiver struct (`UserService`), constructor (`NewUserService`), route registration (`RegisterRoutes`), and cross-domain shared utility helpers (`resolveClaims`, `resolveTokenWithRole`, `writeJSON`, `generateID`, `haversineKm`, `checkKYC`, `verifyEmployeeAssignment`, `requireTier`).
+  * `services_handlers.go`: Service catalogue management and platform configuration (`ListServices`, `CreateService`, `UpdateService`, `GetPlatformConfig`).
+  * `jobs_handlers.go`: Core job lifecycle, escrow locking/settlement, live location updates, and price negotiation (`TrackJob`, `CompleteJob`, `GetJob`, `GetOwnerJobs`, `GetCustomerJobs`, `UpdateJobLocation`, `CancelJob`, `ProposePrice`, `RespondPrice`).
+  * `wallet_handlers.go`: Tenant balance, ledger audit trails, deposit bypass, and payout requests (`GetWallet`, `WalletDeposit`, `GetLedger`, `RequestPayout`, `GetPayoutRequests`).
+  * `subscription_handlers.go`: Tenant subscription tier status and upgrade requests (`Subscription`).
+  * `ratings_handlers.go`: Blind rating submissions and aggregated score lookups (`RateJob`, `GetRatings`).
+  * `reconciliation_handlers.go`: Disputed escrow reconciliation queue and resolution (`GetReconciliationQueue`, `ResolveReconciliation`).
 * **Security & TLS Policy**: Internal mTLS-only server.
 * **Inbound HTTP calls**:
   * `api-gateway` (public routes).
