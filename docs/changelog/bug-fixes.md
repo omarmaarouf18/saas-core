@@ -11,7 +11,7 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
   - **`customer_job_map_screen.dart`**: Replaced magic padding number `horizontal: 6` with canonical token `AppSpacing.xs`, removed un-tokenized `fontSize: 10` overrides from marker labels, adjusted Marker bounds to `60.0` with `MainAxisSize.min` Column to prevent flex overflows, and verified strict `AppColors` token adoption.
   - **`owner_fleet_map_screen.dart`**: Replaced raw `Colors.white` with `AppColors.onPrimary`, replaced magic padding `horizontal: 6` with `AppSpacing.xs`, removed `fontSize: 10` override, and standardized Marker bounds to `60.0` with `MainAxisSize.min`.
   - **`employee_home_screen.dart`, `employee_jobs_screen.dart`, `home_screen.dart`**: Removed `fontSize: 10` overrides on unread notification badges so standard `AppTypography.labelMd` applies.
-- **Commit SHA**: ``b65b8a139aa92398e0965e648ea40fbf285f5e5a``
+- **Commit SHA**: ``b65b8a1f0100c4c7bd1db3758f842a1993c524d7``
 - **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), and `flutter test` (100% pass, 267/267 tests passed). ✅
 
 ## Restored KYB/KYE Reviewer Screen & Routing (Revert Mistaken Scope Removal)
@@ -23,7 +23,7 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
   - **`home_screen.dart`**: Restored `KybKyeReviewScreen` import and 3 navigation/routing call sites (`if (user.role == 'reviewer' || user.role == 'admin') return const KybKyeReviewScreen();` root route, and `reviewer_queue_button` AppBar action in both the basic dashboard and owner home shell).
   - **`auth_provider.dart`**: Restored `fetchPendingSubmissions`, `fetchDocumentBytes`, and `reviewSubmission` provider methods.
   - **`kyb_kye_review_screen_test.dart`**: Restored full 13-test test suite (`frontend/test/kyb_kye_review_screen_test.dart`).
-- **Commit SHA**: ``ab9073a5a7ad8d68962fa9cfa749df67d1fc0d1e``
+- **Commit SHA**: ``ab9073ab497d26a30b67c4bcf53ae045eec5cab0``
 - **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (100% pass, 267/267 tests passed including 13 tests in `test/kyb_kye_review_screen_test.dart`), and `make docs-check`. ✅
 
 ## Owner Operations & Service Management (Consistency Audit Batch 4)
