@@ -20,7 +20,6 @@ import 'subscription_screen.dart';
 import 'owner_history_screen.dart';
 import 'employee_home_screen.dart';
 import 'customer_home_screen.dart';
-import 'kyb_kye_review_screen.dart';
 import 'owner_reconciliation_queue_screen.dart';
 import '../providers/marketplace_provider.dart';
 import '../widgets/rating_summary_card.dart';
@@ -163,9 +162,6 @@ class _HomeScreenState extends State<HomeScreen> {
       if (user.role == 'user') {
         return const CustomerHomeScreen();
       }
-      if (user.role == 'reviewer' || user.role == 'admin') {
-        return const KybKyeReviewScreen();
-      }
       // Non-owner basic dashboard
       return Scaffold(
         backgroundColor: AppColors.scaffoldBackground,
@@ -199,19 +195,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 .copyWith(color: Theme.of(context).colorScheme.onSurface),
           ),
           actions: [
-            if (user.role == 'reviewer' || user.role == 'admin')
-              IconButton(
-                key: const Key('reviewer_queue_button'),
-                icon: const Icon(Icons.fact_check_outlined),
-                tooltip: l10n.ownerHomeTooltipReviewQueue,
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const KybKyeReviewScreen(),
-                    ),
-                  );
-                },
-              ),
             _buildNotificationBell(context),
             IconButton(
               key: const Key('settings_button'),
@@ -304,19 +287,6 @@ class _HomeScreenState extends State<HomeScreen> {
               .copyWith(color: Theme.of(context).colorScheme.onSurface),
         ),
         actions: [
-          if (user.role == 'reviewer' || user.role == 'admin')
-            IconButton(
-              key: const Key('reviewer_queue_button'),
-              icon: const Icon(Icons.fact_check_outlined),
-              tooltip: l10n.ownerHomeTooltipReviewQueue,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const KybKyeReviewScreen(),
-                  ),
-                );
-              },
-            ),
           IconButton(
             icon: const Icon(Icons.gavel_outlined),
             tooltip: l10n.ownerHomeTooltipEscrowReconciliation,

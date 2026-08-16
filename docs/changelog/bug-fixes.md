@@ -2,6 +2,18 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Corrected Unauthorized Reintroduction of KYB/KYE Reviewer Screens (Re-Reverting Commit ab9073a)
+
+- **Implementation Detail**:
+  - **Enforcement of ADR-0013 Scope Boundary**: Re-reverted commit `ab9073ab497d26a30b67c4bcf53ae045eec5cab0` which had reintroduced administrative KYC/KYB reviewer interfaces into the consumer mobile app.
+  - **Deleted Screens & Dialogs**: Removed `frontend/lib/screens/kyb_kye_review_screen.dart` and `frontend/lib/widgets/document_viewer_dialog.dart`.
+  - **Provider Cleanup**: Removed `fetchPendingSubmissions`, `fetchDocumentBytes`, and `reviewSubmission` from `frontend/lib/providers/auth_provider.dart`.
+  - **Navigation Routes Removed**: Removed `KybKyeReviewScreen` role-gated root route and `reviewer_queue_button` AppBar actions from `frontend/lib/screens/home_screen.dart`.
+  - **Tests Removed**: Deleted `frontend/test/kyb_kye_review_screen_test.dart` (13 tests), returning consumer app test suite to 254 passing tests.
+  - **Cross-Reference**: Documented in [ADR-0013](../adr/0013-support-agent-console-as-separate-client-application.md) addenda.
+- **Commit SHA**: ``TO_BE_POPULATED``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), and `flutter test` (100% pass, 254/254 tests passed). ✅
+
 ## Real-Time Communication, Map Tracking & Job Details (Consistency Audit Batch 5)
 
 - **Implementation Detail**:
@@ -14,17 +26,13 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Commit SHA**: ``b65b8a1f0100c4c7bd1db3758f842a1993c524d7``
 - **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), and `flutter test` (100% pass, 267/267 tests passed). ✅
 
-## Restored KYB/KYE Reviewer Screen & Routing (Revert Mistaken Scope Removal)
+## Attempted KYB/KYE Reviewer Screen Restoration (Subsequently Re-Reverted)
 
 - **Implementation Detail**:
-  - **Correction**: Reverted the mistaken removal of `KybKyeReviewScreen` from commits `ab3ef6f`, `5cd4c4c`, and `ec97bb1`, which had mistakenly cited ADR-0013. ADR-0013 is exclusively about support ticket resolution (`POST /chat/tickets/resolve`) and is in "Proposed" status, not an executed removal directive for reviewer compliance screens.
-  - **`kyb_kye_review_screen.dart`**: Restored full reviewer queue screen (`frontend/lib/screens/kyb_kye_review_screen.dart`) allowing reviewer and admin roles to review and process owner and employee verification submissions.
-  - **`document_viewer_dialog.dart`**: Restored document preview dialog (`frontend/lib/widgets/document_viewer_dialog.dart`) supporting image and PDF previews with zoom and pan controls.
-  - **`home_screen.dart`**: Restored `KybKyeReviewScreen` import and 3 navigation/routing call sites (`if (user.role == 'reviewer' || user.role == 'admin') return const KybKyeReviewScreen();` root route, and `reviewer_queue_button` AppBar action in both the basic dashboard and owner home shell).
-  - **`auth_provider.dart`**: Restored `fetchPendingSubmissions`, `fetchDocumentBytes`, and `reviewSubmission` provider methods.
-  - **`kyb_kye_review_screen_test.dart`**: Restored full 13-test test suite (`frontend/test/kyb_kye_review_screen_test.dart`).
+  - **Context**: Commit `ab9073ab497d26a30b67c4bcf53ae045eec5cab0` attempted to restore `KybKyeReviewScreen`, `DocumentViewerDialog`, `AuthProvider` reviewer methods, and `home_screen.dart` navigation routes under the mistaken impression that the original removal was an error.
+  - **Re-Reversion**: Following explicit project owner reconfirmation of the ADR-0013 scope boundary, all restored reviewer screens, dialogs, routes, and provider methods were re-reverted and permanently removed from the consumer Flutter app binary.
 - **Commit SHA**: ``ab9073ab497d26a30b67c4bcf53ae045eec5cab0``
-- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (100% pass, 267/267 tests passed including 13 tests in `test/kyb_kye_review_screen_test.dart`), and `make docs-check`. ✅
+- **Status**: Re-reverted.
 
 ## Owner Operations & Service Management (Consistency Audit Batch 4)
 

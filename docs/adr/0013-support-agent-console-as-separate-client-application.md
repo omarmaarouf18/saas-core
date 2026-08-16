@@ -36,3 +36,21 @@ We formally decide that agent-authenticated ticket resolution endpoints (such as
 
 ## Alternatives Considered
 - **Embedding Support Agent Mode into Consumer Mobile App**: Rejected due to security risks associated with bundling administrative agent capabilities and agent token authentication flows in end-user binaries.
+
+---
+
+## Addendum: Enforcement & KYB/KYE Reviewer UI Cleanup (2026-08-13)
+
+- **Date**: 2026-08-13
+- **Action**: Enforced ADR-0013 scope boundary by completely removing all KYB/KYE administrative reviewer UI (`kyb_kye_review_screen.dart`), document viewer dialogs (`document_viewer_dialog.dart`), AppBar actions (`reviewer_queue_button`), dead provider methods (`fetchPendingSubmissions`, `fetchDocumentBytes`, `reviewSubmission`), and reviewer widget tests from the consumer Flutter app (`frontend/`).
+- **Rationale**: Bundling reviewer/admin review screens and administrative API endpoints (`POST /auth/kyb-kye/review`, `GET /auth/kyb-kye/pending`, `GET /auth/documents/view`) inside the public consumer binary leaks administrative review workflows, endpoint structures, and approval/rejection logic via reverse engineering / APK decompilation.
+- **Scope Floor Enforced**: All administrative review tools are strictly reserved for separate administrative client applications per ADR-0013 and ADR-0010.
+
+---
+
+## Addendum: Reaffirmation of Boundary & Re-Reversion of Mistaken Restoration (2026-08-16)
+
+- **Date**: 2026-08-16
+- **Action**: Re-reverted commit `ab9073ab497d26a30b67c4bcf53ae045eec5cab0` which had mistakenly reintroduced `KybKyeReviewScreen`, `DocumentViewerDialog`, provider review methods, and `home_screen.dart` reviewer buttons back into the consumer app based on an incorrect premise that the 2026-08-13 removal was in error. Removed all reviewer screens, widgets, provider methods, and test files from `frontend/`.
+- **Project Owner Reconfirmation**: The project owner explicitly reconfirmed that ADR-0013's architectural scope boundary is authoritative, correct, and intentional: KYC/KYB reviewer tools, cross-tenant review workflows, and administrative token semantics MUST NOT be bundled in the consumer mobile app binary (`quick-delivery-mobile`).
+- **Policy on Future Modifications**: Any future attempt to re-introduce administrative reviewer interfaces into the consumer app binary is strictly prohibited without explicit, direct written authorization from the project owner. Agents and contributors must not infer or override this scope boundary based solely on code comments or prior commit messages.
