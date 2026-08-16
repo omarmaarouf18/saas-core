@@ -2,6 +2,20 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Owner Operations & Service Management (Consistency Audit Batch 4)
+
+- **Implementation Detail**:
+  - **`wallet_screen.dart`**: Replaced inline `_showPayoutRequestDialog` and `_showDepositDialog` implementations with standalone reusable `PayoutRequestDialog.show(context)` and `DepositFundsDialog.show(context)`, eliminating over 420 lines of inline boilerplate. Standardized transaction ledger job chip typography override from `fontSize: 10` to canonical `AppTypography.labelMd`.
+  - **`owner_configuration_screen.dart`**: Standardized location picker map dialog header typography to `AppTypography.titleMd.copyWith(fontWeight: FontWeight.bold)`. Replaced raw `OutlinedButton.icon` location and photo picker buttons with canonical `SecondaryButton(key: Key(...), isOutlined: true, isFullWidth: false)`.
+  - **`service_screen.dart`**: Replaced duplicate inline `_showCreateServiceDialog` implementations (~230 lines) in both the empty state and floating action button with `CreateServiceDialog.show(context, ownerId: user.id)`. Wired `ThemedSnackBar.showSuccess` and `ThemedSnackBar.showError`.
+  - **`employee_screen.dart`**: Standardized registered worker roster items using `EntityAvatar(name: username, radius: 20)` and `StatusBadge`, and tokenized email and IP address typography to `AppTypography.labelLg` and `AppTypography.labelMd`. Applied `isDestructive: !_togSetActive` to `PrimaryButton` in worker freeze/unfreeze form. Replaced raw `AlertDialog` success popup with `ThemedSnackBar.showSuccess`.
+  - **`owner_reconciliation_queue_screen.dart`**: Replaced raw error column and `ElevatedButton` with `ThemedErrorBanner(message: provider.error!, onRetry: () => provider.fetchQueue())`.
+  - **`payout_request_dialog.dart`**: Extracted standalone 2-step payout request dialog widget supporting Step 1 (amount, method dropdown, account details) and Step 2 (warning confirmation banner, account preview) with `ThemedTextField`, `ThemedErrorBanner`, `ThemedSuccessBanner`, `PrimaryButton`, `SecondaryButton`, and responsive 360dp bounding.
+  - **`deposit_funds_dialog.dart`**: Extracted standalone deposit dialog widget supporting amount input, validation (max 1M credits limit), error banner, Cancel, and Confirm `PrimaryButton` with responsive 360dp bounding.
+  - **`create_service_dialog.dart`**: Extracted standalone create service dialog widget supporting service name, category dropdown, base price, price per KM, lat/lon bounds validation (-90..90, -180..180), Cancel, and Create `PrimaryButton` with responsive 360dp bounding.
+- **Commit SHA**: ``8c864e4b3daabdffd58fe808ea7251efcd86c786``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (100% pass, 254/254 tests passed including new dedicated test suites `test/payout_request_dialog_test.dart`, `test/deposit_funds_dialog_test.dart`, and `test/create_service_dialog_test.dart`), and 360dp narrow viewport rendering tests. ✅
+
 ## Settings, Account & Notifications Center (Consistency Audit Batch 3)
 
 - **Implementation Detail**:
