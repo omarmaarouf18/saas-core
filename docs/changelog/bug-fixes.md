@@ -11,7 +11,7 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
   - **Navigation Routes Removed**: Removed `KybKyeReviewScreen` role-gated root route and `reviewer_queue_button` AppBar actions from `frontend/lib/screens/home_screen.dart`.
   - **Tests Removed**: Deleted `frontend/test/kyb_kye_review_screen_test.dart` (13 tests), returning consumer app test suite to 254 passing tests.
   - **Cross-Reference**: Documented in [ADR-0013](../adr/0013-support-agent-console-as-separate-client-application.md) addenda.
-- **Commit SHA**: ``TO_BE_POPULATED``
+- **Commit SHA**: ``54baeb8177435f29ceaa7d5ca4d84f9b8c0c45fa``
 - **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), and `flutter test` (100% pass, 254/254 tests passed). ✅
 
 ## Real-Time Communication, Map Tracking & Job Details (Consistency Audit Batch 5)
