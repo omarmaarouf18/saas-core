@@ -2,6 +2,16 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Settings, Account & Notifications Center (Consistency Audit Batch 3)
+
+- **Implementation Detail**:
+  - **`settings_screen.dart`**: Removed bespoke `_segmentedButtonStyle` with hardcoded hex colors and font sizes; aligned `SegmentedButton` directly with canonical `SegmentedButtonThemeData` from `theme.dart`. Standardized section labels and button segment typography to `AppTypography.titleMd` and `AppTypography.labelLg`. Replaced raw `ElevatedButton.icon` with `PrimaryButton(key: Key('settings_logout_button'), text: l10n.settingsLogout, icon: Icons.logout, isDestructive: true)` providing built-in 600ms tap-debounce protection (`AppMotion.debounceGuard`) and destructive styling (`AppColors.error`).
+  - **`my_account_screen.dart`**: Migrated raw "Change Email" `OutlinedButton.icon` to `SecondaryButton(key: Key('change_email_button'), isOutlined: true, isFullWidth: false)`. Migrated raw "+ Add Address" `ElevatedButton` to `PrimaryButton(key: Key('my_account_add_address_button'), isFullWidth: false)`. Extracted inline `EmailChangeDialog` into a standalone reusable widget file.
+  - **`notifications_screen.dart`**: Replaced hand-rolled `AlertDialog` clear confirmation dialog with canonical `ConfirmActionDialog.show(context, isDestructive: true)`. Standardized delete icon sizes to `AppIconSize.sm` and added `AppMotion.debounceGuard` tap-debounce protection to notification card items.
+  - **`email_change_dialog.dart`**: Extracted standalone reusable dialog widget with responsive 360dp bounds, `ThemedTextField`, `ThemedErrorBanner`, `ThemedSuccessBanner`, and `PrimaryButton`.
+- **Commit SHA**: ``6b5be11f3107687d301e00c9fbe21671c97fc968``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (100% pass, 234/234 tests passed including new dedicated test suites `test/email_change_dialog_test.dart` and `test/notifications_screen_test.dart`), and `make docs-check`. ✅
+
 ## High-Traffic Customer & Auth Experience (Consistency Audit Batch 2)
 
 - **Implementation Detail**:
