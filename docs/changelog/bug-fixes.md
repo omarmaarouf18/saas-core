@@ -2,6 +2,18 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## High-Traffic Customer & Auth Experience (Consistency Audit Batch 2)
+
+- **Implementation Detail**:
+  - **`customer_marketplace_screen.dart`**: Replaced raw `ElevatedButton` location picker with `SecondaryButton(isOutlined: true)`, standardized dialog title typography with `AppTypography.titleMd`, refactored `_BookingDialog` with `ThemedWarningBanner`, `PrimaryButton(isFullWidth: false)`, and `SecondaryButton(isFullWidth: false)` in responsive `Row`/`Wrap` layout preventing horizontal overflow on 360dp mobile viewports, and standardized category chip tokens (`AppTypography.labelLg`, `AppSpacing.base`, `AppSpacing.xxs`).
+  - **`customer_home_screen.dart`**: Standardized unread notification badge typography to `AppTypography.labelMd`, "Browse All" header action to `AppTypography.labelLg` and `AppIconSize.sm`, category tile icons to `AppIconSize.lg`, and converted `_CustomerHomeDashboardTab` into a `StatefulWidget` with `AppMotion.debounceGuard` tap-debounce protection on quick category tiles.
+  - **`customer_jobs_screen.dart`**: Migrated raw retry `ElevatedButton` to `PrimaryButton`, standardized typography to `AppTypography.bodySm`, and replaced hardcoded padding and icon dimensions with `AppSpacing.sm`, `AppIconSize.sm`, and `AppIconSize.xs`.
+  - **`login_screen.dart`**: Standardized QD logo wordmark typography to `AppTypography.titleMd` and icon size to `AppIconSize.md`, and wrapped "Forgot Password?" and "Sign Up" navigation text buttons with `AppMotion.debounceGuard`.
+  - **`signup_screen.dart`**: Wrapped "Already have an account? Sign In" navigation text button with `AppMotion.debounceGuard`.
+  - **`otp_screen.dart`**: Replaced raw `TextButton` resend code trigger with `SecondaryButton(isOutlined: true, icon: Icons.refresh)` with debounced tap protection.
+- **Commit SHA**: ``0742970a26df8d8de4331123fe4325d1532edffd``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (100% pass, 223/223 tests passed including new test suite `test/auth_screens_test.dart` and 360dp narrow viewport test in `test/customer_marketplace_screen_test.dart`). ✅
+
 ## Shared Widgets & Foundation Hardening (Consistency Audit Batch 1)
 
 - **Implementation Detail**:
