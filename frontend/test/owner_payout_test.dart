@@ -135,10 +135,10 @@ void main() {
     await tester.tap(requestBtn);
     await tester.pumpAndSettle();
 
-    // Verify dialog title inside AlertDialog
+    // Verify dialog title inside Dialog
     expect(
         find.descendant(
-            of: find.byType(AlertDialog),
+            of: find.byType(Dialog),
             matching: find.text('Request Payout')),
         findsOneWidget);
 

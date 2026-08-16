@@ -1,23 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../l10n/l10n.dart';
 import '../models/payout_request.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/deposit_funds_dialog.dart';
 import '../widgets/info_list_tile.dart';
+import '../widgets/payout_request_dialog.dart';
 import '../widgets/primary_button.dart';
-import '../widgets/secondary_button.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
-import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_section_header.dart';
-import '../widgets/themed_text_field.dart';
-import '../widgets/themed_success_banner.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -84,7 +81,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           SizedBox(
                             width: 185,
                             child: PrimaryButton(
-                              onPressed: () => _showDepositDialog(context),
+                              onPressed: () => DepositFundsDialog.show(context),
                               icon: Icons.add_card_rounded,
                               text: "Deposit Funds",
                             ),
@@ -135,7 +132,7 @@ class _WalletScreenState extends State<WalletScreen> {
                         width: double.infinity,
                         child: PrimaryButton(
                           key: const Key('request_payout_button'),
-                          onPressed: () => _showPayoutRequestDialog(context),
+                          onPressed: () => PayoutRequestDialog.show(context),
                           icon: Icons.outbox_rounded,
                           text: l10n.payoutWithdrawButton,
                         ),
@@ -175,7 +172,7 @@ class _WalletScreenState extends State<WalletScreen> {
                                 "Submitted payout requests will appear here with processing status.",
                             actionText: l10n.payoutWithdrawButton,
                             onActionPressed: () =>
-                                _showPayoutRequestDialog(context),
+                                PayoutRequestDialog.show(context),
                           ),
                         )
                       else
@@ -359,17 +356,18 @@ class _WalletScreenState extends State<WalletScreen> {
       leadingIcon: icon,
       leadingIconColor: color,
       leadingBackgroundColor: color.withValues(alpha: 0.1),
-      title: description.isNotEmpty ? description : type.toUpperCase(),
-      subtitleWidget: Row(
+      title: description.isNotEmpty
+          ? description
+          : type.replaceAll('_', ' ').toUpperCase(),
+      subtitleWidget: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             dateStr,
-            style: AppTypography.labelMd.copyWith(
-              color: AppColors.outline,
-            ),
+            style: AppTypography.labelMd.copyWith(color: AppColors.outline),
           ),
           if (jobId.isNotEmpty) ...[
-            const SizedBox(width: AppSpacing.base),
+            const SizedBox(height: AppSpacing.xs),
             Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: 6,
@@ -382,7 +380,6 @@ class _WalletScreenState extends State<WalletScreen> {
               child: Text(
                 "Job: ${jobId.substring(0, jobId.length > 8 ? 8 : jobId.length)}",
                 style: AppTypography.labelMd.copyWith(
-                  fontSize: 10,
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
                 ),
@@ -415,416 +412,4 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   String _twoDigits(int n) => n >= 10 ? "$n" : "0$n";
-
-  void _showPayoutRequestDialog(BuildContext context) {
-    final l10n = context.l10n;
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
-    final amountController = TextEditingController();
-    final accountDetailsController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    String selectedMethod = 'bank_transfer';
-    bool isConfirming = false;
-    bool isSubmitting = false;
-    String? dialogError;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            final methodLabel = selectedMethod == 'bank_transfer'
-                ? l10n.payoutMethodBankTransfer
-                : l10n.payoutMethodInstapay;
-
-            return AlertDialog(
-              backgroundColor: AppColors.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              title: Text(
-                isConfirming ? l10n.payoutConfirmTitle : l10n.payoutDialogTitle,
-                style: AppTypography.titleMd.copyWith(
-                  color: isConfirming ? AppColors.warning : AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              content: SingleChildScrollView(
-                child: isConfirming
-                    ? Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            decoration: BoxDecoration(
-                              color: AppColors.warning.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                              border: Border.all(color: AppColors.warning),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.warning_amber_rounded,
-                                    color: AppColors.warning, size: 28),
-                                const SizedBox(width: AppSpacing.sm),
-                                Expanded(
-                                  child: Text(
-                                    l10n.payoutConfirmMessage(
-                                      double.tryParse(amountController.text)
-                                              ?.toStringAsFixed(2) ??
-                                          amountController.text,
-                                      methodLabel,
-                                    ),
-                                    style: AppTypography.bodyMd.copyWith(
-                                      color: AppColors.onSurface,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          Text(
-                            "Account: ${accountDetailsController.text.trim()}",
-                            style: AppTypography.labelMd.copyWith(
-                              color: AppColors.onSurfaceVariant,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          if (dialogError != null) ...[
-                            const SizedBox(height: AppSpacing.md),
-                            ThemedErrorBanner(
-                              message: dialogError!,
-                              onRetry: () => setState(() => dialogError = null),
-                            ),
-                          ],
-                        ],
-                      )
-                    : Form(
-                        key: formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.payoutDialogDescription,
-                              style: AppTypography.bodyMd.copyWith(
-                                color: AppColors.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-
-                            // Amount Field
-                            ThemedTextField(
-                              key: const Key('payout_amount_field'),
-                              controller: amountController,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                      decimal: true),
-                              labelText: l10n.walletAmountCredits,
-                              prefixIcon: const Icon(
-                                  Icons.account_balance_wallet_outlined,
-                                  color: AppColors.outline),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return l10n.payoutErrorAmountInvalid;
-                                }
-                                final parsed = double.tryParse(value.trim());
-                                if (parsed == null || parsed <= 0) {
-                                  return l10n.payoutErrorAmountInvalid;
-                                }
-                                if (parsed >
-                                    ownerProvider.withdrawableBalance) {
-                                  return l10n.payoutErrorAmountExceeds;
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-
-                            // Payout Method Selector
-                            DropdownButtonFormField<String>(
-                              key: const Key('payout_method_dropdown'),
-                              initialValue: selectedMethod,
-                              decoration: InputDecoration(
-                                labelText: l10n.payoutMethodLabel,
-                                border: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.sm),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md,
-                                  vertical: AppSpacing.sm,
-                                ),
-                              ),
-                              items: [
-                                DropdownMenuItem(
-                                  value: 'bank_transfer',
-                                  child: Text(l10n.payoutMethodBankTransfer),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'instapay',
-                                  child: Text(l10n.payoutMethodInstapay),
-                                ),
-                              ],
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setDialogState(() {
-                                    selectedMethod = val;
-                                  });
-                                }
-                              },
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-
-                            // Account Details Field
-                            ThemedTextField(
-                              key: const Key('payout_account_details_field'),
-                              controller: accountDetailsController,
-                              labelText: l10n.payoutAccountDetailsLabel,
-                              hintText: selectedMethod == 'bank_transfer'
-                                  ? l10n.payoutAccountDetailsBankHint
-                                  : l10n.payoutAccountDetailsInstapayHint,
-                              prefixIcon: Icon(
-                                selectedMethod == 'bank_transfer'
-                                    ? Icons.account_balance_rounded
-                                    : Icons.phone_android_rounded,
-                                color: AppColors.outline,
-                              ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return l10n.payoutErrorDetailsRequired;
-                                }
-                                return null;
-                              },
-                            ),
-                            if (dialogError != null) ...[
-                              const SizedBox(height: AppSpacing.md),
-                              ThemedErrorBanner(
-                                message: dialogError!,
-                                onRetry: () =>
-                                    setState(() => dialogError = null),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-              ),
-              actionsPadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-              actions: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: SecondaryButton(
-                        text: isConfirming ? "Back" : "Cancel",
-                        isOutlined: true,
-                        onPressed: isSubmitting
-                            ? null
-                            : () {
-                                if (isConfirming) {
-                                  setDialogState(() {
-                                    isConfirming = false;
-                                  });
-                                } else {
-                                  Navigator.of(context).pop();
-                                }
-                              },
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: PrimaryButton(
-                        key: isConfirming
-                            ? const Key('payout_confirm_button')
-                            : const Key('payout_submit_button'),
-                        text: isConfirming ? "Confirm Payout" : "Continue",
-                        isLoading: isSubmitting,
-                        onPressed: () async {
-                          if (!isConfirming) {
-                            if (formKey.currentState!.validate()) {
-                              setDialogState(() {
-                                isConfirming = true;
-                                dialogError = null;
-                              });
-                            }
-                          } else {
-                            setDialogState(() {
-                              isSubmitting = true;
-                              dialogError = null;
-                            });
-
-                            try {
-                              final amount =
-                                  double.parse(amountController.text.trim());
-                              await ownerProvider.requestPayout(
-                                amount: amount,
-                                payoutMethod: selectedMethod,
-                                accountDetails:
-                                    accountDetailsController.text.trim(),
-                              );
-                              await ownerProvider
-                                  .fetchDashboardData(auth.token!);
-                              if (context.mounted) {
-                                Navigator.of(context).pop();
-                                ThemedSnackBar.showSuccess(
-                                  context,
-                                  l10n.payoutSuccessMessage,
-                                  key: const Key('payout_success_snackbar'),
-                                );
-                              }
-                            } catch (e) {
-                              debugPrint('Error requesting payout: $e');
-                              setDialogState(() {
-                                isSubmitting = false;
-                                dialogError = friendlyErrorMessage(e);
-                              });
-                            }
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showDepositDialog(BuildContext context) {
-    final l10n = context.l10n;
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
-    final amountController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    bool isSubmitting = false;
-    String? dialogError;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: AppColors.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              title: Text(
-                "Deposit Funds",
-                style: AppTypography.titleMd.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              content: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Enter the amount in credits to deposit to your wallet.",
-                      style: AppTypography.bodyMd.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    ThemedTextField(
-                      controller: amountController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      labelText: l10n.walletAmountCredits,
-                      prefixIcon: const Icon(Icons.attach_money,
-                          color: AppColors.outline),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return "Amount is required";
-                        }
-                        final amount = double.tryParse(value);
-                        if (amount == null || amount <= 0) {
-                          return "Please enter a valid positive number";
-                        }
-                        if (amount > 1000000) {
-                          return "Maximum single deposit is 1,000,000 credits";
-                        }
-                        return null;
-                      },
-                    ),
-                    if (dialogError != null) ...[
-                      const SizedBox(height: AppSpacing.md),
-                      ThemedErrorBanner(
-                        message: dialogError!,
-                        onRetry: () => setState(() => dialogError = null),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              actionsPadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-              actions: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: SecondaryButton(
-                        text: "Cancel",
-                        isOutlined: true,
-                        onPressed: isSubmitting
-                            ? null
-                            : () => Navigator.of(context).pop(),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: PrimaryButton(
-                        text: "Confirm",
-                        isLoading: isSubmitting,
-                        onPressed: () async {
-                          if (formKey.currentState!.validate()) {
-                            setDialogState(() {
-                              isSubmitting = true;
-                              dialogError = null;
-                            });
-
-                            try {
-                              final amount =
-                                  double.parse(amountController.text);
-                              await ownerProvider.deposit(auth.token!, amount);
-                              if (context.mounted) {
-                                Navigator.of(context).pop();
-                                ThemedSnackBar.showSuccess(
-                                  context,
-                                  "Successfully deposited ${amount.toStringAsFixed(2)} credits.",
-                                );
-                              }
-                            } catch (e) {
-                              debugPrint('Error making deposit: $e');
-                              setDialogState(() {
-                                isSubmitting = false;
-                                dialogError = friendlyErrorMessage(e);
-                              });
-                            }
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
 }

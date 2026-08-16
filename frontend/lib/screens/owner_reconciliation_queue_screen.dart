@@ -10,6 +10,7 @@ import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_success_banner.dart';
 
@@ -111,24 +112,10 @@ class _OwnerReconciliationQueueScreenState
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline,
-                        size: 48, color: AppColors.error),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      provider.error!,
-                      style:
-                          AppTypography.bodyMd.copyWith(color: AppColors.error),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    ElevatedButton(
-                      onPressed: () => provider.fetchQueue(),
-                      child: Text(l10n.retry),
-                    ),
-                  ],
+                child: ThemedErrorBanner(
+                  key: const Key('reconciliation_error_banner'),
+                  message: provider.error!,
+                  onRetry: () => provider.fetchQueue(),
                 ),
               ),
             );

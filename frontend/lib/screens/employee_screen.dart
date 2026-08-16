@@ -5,6 +5,7 @@ import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/entity_avatar.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
@@ -12,8 +13,8 @@ import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
-import '../widgets/themed_text_field.dart';
 import '../widgets/themed_success_banner.dart';
+import '../widgets/themed_text_field.dart';
 import 'employee_jobs_screen.dart';
 
 class EmployeeScreen extends StatefulWidget {
@@ -220,15 +221,10 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                           ),
                           child: Row(
                             children: [
-                              CircleAvatar(
-                                backgroundColor: AppColors.primary,
-                                child: Text(
-                                  username.isNotEmpty
-                                      ? username[0].toUpperCase()
-                                      : 'E',
-                                  style: const TextStyle(
-                                      color: AppColors.onPrimary),
-                                ),
+                              EntityAvatar(
+                                name:
+                                    username.isNotEmpty ? username : 'Employee',
+                                radius: 20,
                               ),
                               const SizedBox(width: AppSpacing.md),
                               Expanded(
@@ -244,9 +240,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                                     ),
                                     Text(
                                       email,
-                                      style: AppTypography.bodyMd.copyWith(
+                                      style: AppTypography.labelLg.copyWith(
                                         color: AppColors.onSurfaceVariant,
-                                        fontSize: 12,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -381,12 +376,13 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                                     _regUsernameController.clear();
                                     _regEmailController.clear();
                                     _regPasswordController.clear();
-                                    _showSuccessDialog(
-                                      title: l10n.employeeRegisteredTitle,
-                                      message:
-                                          "Successfully created employee account:\n"
-                                          "Username: ${res['username'] ?? ''}\n"
-                                          "ID: ${res['user_id'] ?? ''}",
+                                    ThemedSnackBar.showSuccess(
+                                      context,
+                                      "Successfully created employee account:\n"
+                                      "Username: ${res['username'] ?? ''}\n"
+                                      "ID: ${res['user_id'] ?? ''}",
+                                      key: const Key(
+                                          'employee_registered_snackbar'),
                                     );
                                     _refreshEmployees();
                                   }
@@ -499,6 +495,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     PrimaryButton(
+                      key: const Key('employee_toggle_submit_button'),
                       onPressed: _isTogSubmitting
                           ? null
                           : () async {
@@ -516,10 +513,12 @@ class _EmployeeScreenState extends State<EmployeeScreen>
 
                                   if (mounted) {
                                     _togPasswordController.clear();
-                                    _showSuccessDialog(
-                                      title: l10n.workerStatusUpdated,
-                                      message: res['message'] ??
+                                    ThemedSnackBar.showSuccess(
+                                      context,
+                                      res['message'] ??
                                           "Successfully changed status.",
+                                      key: const Key(
+                                          'employee_status_updated_snackbar'),
                                     );
                                     _refreshEmployees();
                                   }
@@ -540,6 +539,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                               }
                             },
                       text: _togSetActive ? "Unfreeze Worker" : "Freeze Worker",
+                      isDestructive: !_togSetActive,
                       isLoading: _isTogSubmitting,
                       icon: _togSetActive
                           ? Icons.check_circle_outline
@@ -630,9 +630,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                           const SizedBox(height: AppSpacing.xs),
                           Text(
                             "IP: $clientIp",
-                            style: AppTypography.bodyMd.copyWith(
+                            style: AppTypography.labelMd.copyWith(
                               color: AppColors.onSurfaceVariant,
-                              fontSize: 12,
                             ),
                           ),
                         ],
@@ -643,22 +642,6 @@ class _EmployeeScreenState extends State<EmployeeScreen>
               },
             ),
           );
-  }
-
-  void _showSuccessDialog({required String title, required String message}) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(AppLocalizations.of(ctx)!.ok),
-          ),
-        ],
-      ),
-    );
   }
 
   String _twoDigits(int n) => n.toString().padLeft(2, '0');

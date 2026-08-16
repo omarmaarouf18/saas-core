@@ -11,6 +11,7 @@ import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
 import '../widgets/location_picker_map.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/secondary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
@@ -165,8 +166,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                       Expanded(
                         child: Text(
                           context.l10n.customerMarketplaceChooseMap,
-                          style: const TextStyle(
-                            fontSize: 18,
+                          style: AppTypography.titleMd.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -451,19 +451,13 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: AppSpacing.sm),
-                                OutlinedButton.icon(
+                                SecondaryButton(
                                   key: const Key(
                                       'owner_config_location_picker_button'),
-                                  icon:
-                                      const Icon(Icons.map_outlined, size: 18),
-                                  label:
-                                      Text(l10n.customerMarketplaceChooseMap),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.sm,
-                                      vertical: AppSpacing.xs,
-                                    ),
-                                  ),
+                                  icon: Icons.map_outlined,
+                                  text: l10n.customerMarketplaceChooseMap,
+                                  isOutlined: true,
+                                  isFullWidth: false,
                                   onPressed: () =>
                                       _openLocationPickerDialog(context),
                                 ),
@@ -619,20 +613,13 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                                             ),
                                           ),
                                           const SizedBox(height: AppSpacing.xs),
-                                          OutlinedButton.icon(
+                                          SecondaryButton(
                                             key: const Key(
                                                 'owner_config_pick_image_button'),
-                                            icon: const Icon(
-                                                Icons.upload_file_outlined,
-                                                size: 18),
-                                            label: Text(l10n.tooltipPickImage),
-                                            style: OutlinedButton.styleFrom(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: AppSpacing.sm,
-                                                vertical: AppSpacing.xs,
-                                              ),
-                                            ),
+                                            icon: Icons.upload_file_outlined,
+                                            text: l10n.tooltipPickImage,
+                                            isOutlined: true,
+                                            isFullWidth: false,
                                             onPressed: _pickImage,
                                           ),
                                         ],

@@ -5,14 +5,11 @@ import '../core/constants.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
-import '../widgets/primary_button.dart';
-import '../widgets/secondary_button.dart';
+import '../widgets/create_service_dialog.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
-import '../widgets/themed_text_field.dart';
-import '../widgets/themed_success_banner.dart';
 
 class ServiceScreen extends StatefulWidget {
   const ServiceScreen({super.key});
@@ -95,8 +92,10 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                     description: l10n.noServicesDescription,
                                     actionText: "Create Service",
                                     onActionPressed: () =>
-                                        _showCreateServiceDialog(
-                                            context, user.id),
+                                        CreateServiceDialog.show(
+                                      context,
+                                      ownerId: user.id,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -203,8 +202,9 @@ class _ServiceScreenState extends State<ServiceScreen> {
               ),
       ),
       floatingActionButton: FloatingActionButton(
+        key: const Key('add_service_fab'),
         onPressed: isKycApproved
-            ? () => _showCreateServiceDialog(context, user.id)
+            ? () => CreateServiceDialog.show(context, ownerId: user.id)
             : null,
         backgroundColor:
             isKycApproved ? AppColors.secondary : AppColors.outline,
@@ -213,233 +213,6 @@ class _ServiceScreenState extends State<ServiceScreen> {
         tooltip: isKycApproved ? l10n.addService : l10n.kycPending,
         child: const Icon(Icons.add),
       ),
-    );
-  }
-
-  void _showCreateServiceDialog(BuildContext context, String ownerId) {
-    final l10n = context.l10n;
-    final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController();
-    final basePriceController = TextEditingController();
-    final pricePerKMController = TextEditingController();
-    final latController =
-        TextEditingController(text: "30.0444"); // Cairo default
-    final lonController = TextEditingController(text: "31.2357");
-
-    String selectedCategory = 'delivery';
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: AppColors.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              title: Text(
-                "Create New Service",
-                style: AppTypography.titleMd.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              content: SingleChildScrollView(
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ThemedTextField(
-                        controller: nameController,
-                        labelText: l10n.serviceNameLabel,
-                        validator: (value) =>
-                            value == null || value.trim().isEmpty
-                                ? "Name is required"
-                                : null,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      DropdownButtonFormField<String>(
-                        initialValue: selectedCategory,
-                        style: AppTypography.bodyMd.copyWith(
-                          color: AppColors.onSurface,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: l10n.categoryLabel,
-                          labelStyle: AppTypography.labelLg.copyWith(
-                            color: AppColors.onSurfaceVariant,
-                          ),
-                          filled: true,
-                          fillColor: AppColors.surface,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
-                            vertical: AppSpacing.md,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: AppRadius.defaultBorder,
-                            borderSide: const BorderSide(
-                              color: AppColors.outlineVariant,
-                              width: 1,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: AppRadius.defaultBorder,
-                            borderSide: const BorderSide(
-                              color: AppColors.primary,
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                        items: serviceCategoryLabels.entries.map((entry) {
-                          return DropdownMenuItem<String>(
-                            value: entry.key,
-                            child: Text(entry.value),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setDialogState(() {
-                              selectedCategory = value;
-                            });
-                          }
-                        },
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      ThemedTextField(
-                        controller: basePriceController,
-                        labelText: l10n.basePriceLabel,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return "Base price is required";
-                          }
-                          final val = double.tryParse(value);
-                          if (val == null || val < 0) {
-                            return "Invalid price";
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      ThemedTextField(
-                        controller: pricePerKMController,
-                        labelText: l10n.ratePerKmLabel,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return "Rate is required";
-                          }
-                          final val = double.tryParse(value);
-                          if (val == null || val < 0) {
-                            return "Invalid rate";
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      ThemedTextField(
-                        controller: latController,
-                        labelText: l10n.latitudeLabel,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return "Required";
-                          }
-                          final val = double.tryParse(value);
-                          if (val == null || val < -90.0 || val > 90.0) {
-                            return "Must be between -90 and 90";
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      ThemedTextField(
-                        controller: lonController,
-                        labelText: l10n.longitudeLabel,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return "Required";
-                          }
-                          final val = double.tryParse(value);
-                          if (val == null || val < -180.0 || val > 180.0) {
-                            return "Must be between -180 and 180";
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actionsPadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-              actions: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: SecondaryButton(
-                        text: "Cancel",
-                        isOutlined: true,
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: PrimaryButton(
-                        text: "Create",
-                        onPressed: () async {
-                          if (formKey.currentState?.validate() ?? false) {
-                            final provider = Provider.of<OwnerProvider>(context,
-                                listen: false);
-                            try {
-                              await provider.createService(
-                                name: nameController.text.trim(),
-                                category: selectedCategory,
-                                tenantBasePrice:
-                                    double.parse(basePriceController.text),
-                                tenantPricePerKM:
-                                    double.parse(pricePerKMController.text),
-                                latitude: double.parse(latController.text),
-                                longitude: double.parse(lonController.text),
-                                ownerId: ownerId,
-                              );
-                              if (context.mounted) {
-                                final l10n = AppLocalizations.of(context)!;
-                                Navigator.of(context).pop();
-                                ThemedSnackBar.showSuccess(
-                                  context,
-                                  l10n.serviceCreatedSuccess,
-                                );
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                final l10n = AppLocalizations.of(context)!;
-                                ThemedSnackBar.showError(
-                                  context,
-                                  l10n.serviceCreateFailed(e.toString()),
-                                );
-                              }
-                            }
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        );
-      },
     );
   }
 }
