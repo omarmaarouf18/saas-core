@@ -130,6 +130,13 @@
     *   *(b) Employee History Screen*: **[VERIFIED]** Created `EmployeeHistoryScreen` (`frontend/lib/screens/employee_history_screen.dart`) displaying past/completed and cancelled jobs with status badges, customer info, payment methods, locked escrow, completion timestamps, cancellation reasons, skeleton loaders, and pull-to-refresh.
     *   *(c) Action Simulator Demotion*: **[VERIFIED]** Refactored `EmployeeJobsScreen` (`frontend/lib/screens/employee_jobs_screen.dart`) with `isEmbeddedInTab` support, filtering active assigned jobs on Home tab and demoting action simulator card (`_buildActionSimulatorCard()`) below active jobs list.
     *   *(d) Automated & Verification Gates*: **[VERIFIED]** Clean `flutter analyze` (0 issues), `flutter test` (100% pass, 192/192 tests passed including 6 test cases in `test/employee_home_screen_test.dart`).
+    * **Phase 26: Frontend Consistency Audit & Design System Remediation** — **[AUDIT COMPLETED, REMEDIATION PLANNED]**
+    *   *(a) Frontend Consistency Audit Specification*: **[VERIFIED]** Conducted comprehensive line-by-line audit of all 28 screens and 20 reusable widgets against design tokens in `theme.dart`, cataloguing 48 findings across raw-widget-usage (16), hardcoded-values (15), pattern-divergence (9), missing-debounce-protection (6), and dialog-sizing-risk (2). Authored `docs/FRONTEND_CONSISTENCY_AUDIT.md`.
+    *   *(b) Batch 1: Shared Widgets & Foundation Hardening*: **[PLANNED, NOT STARTED]** Clean internal inconsistencies in `create_ticket_dialog.dart`, `entity_avatar.dart`, `rating_summary_card.dart`, `stat_card.dart`, `status_badge.dart`, and `location_picker_map.dart`.
+    *   *(c) Batch 2: High-Traffic Customer & Auth Experience*: **[PLANNED, NOT STARTED]** Migrate raw buttons, custom inputs, and handrolled booking dialog across `customer_marketplace_screen.dart`, `customer_home_screen.dart`, `customer_jobs_screen.dart`, `login_screen.dart`, `signup_screen.dart`, and `otp_screen.dart`.
+    *   *(d) Batch 3: Settings, Account & Notifications Center*: **[PLANNED, NOT STARTED]** Standardize segmented styles, destructive primary buttons, and extract `EmailChangeDialog` across `settings_screen.dart`, `my_account_screen.dart`, and `notifications_screen.dart`.
+    *   *(e) Batch 4: Owner Operations & Service Management*: **[PLANNED, NOT STARTED]** Extract `PayoutRequestDialog`, `DepositFundsDialog`, and `CreateServiceDialog`, and standardize worker management in `wallet_screen.dart`, `owner_configuration_screen.dart`, `service_screen.dart`, `employee_screen.dart`, and `owner_reconciliation_queue_screen.dart`.
+    *   *(f) Batch 5: Real-Time Communication, Map Tracking & Job Details*: **[PLANNED, NOT STARTED]** Migrate counter-offer input to `ThemedTextField`, typography tokens in `rating_screen.dart`, `owner_history_screen.dart`, `customer_job_map_screen.dart`, `owner_fleet_map_screen.dart`, `employee_home_screen.dart`, and `employee_jobs_screen.dart`.
 
  ---
 
@@ -162,8 +169,11 @@
  The following Dart implementation files are currently active in the codebase and tracked by the structural drift check:
  * **Core**:
    * `api_client.dart`
+   * `constants.dart`
    * `error_messages.dart`
    * `location_permission.dart`
+ * **Utils**:
+   * `logout_helper.dart`
  * **Models**:
    * `user_profile.dart`
    * `job.dart`
@@ -179,6 +189,7 @@
    * `push_notification_service.dart`
  * **Providers**:
    * `theme_provider.dart`
+   * `locale_provider.dart`
    * `auth_provider.dart`
    * `owner_provider.dart`
    * `employee_jobs_provider.dart`
@@ -218,19 +229,26 @@
    * `employee_history_screen.dart`
    * `update_required_screen.dart`
  * **Widgets**:
-    * `location_picker_map.dart`
-    * `rating_summary_card.dart`
+   * `cancel_job_dialog.dart`
+   * `confirm_action_dialog.dart`
+   * `create_ticket_dialog.dart`
+   * `entity_avatar.dart`
+   * `info_list_tile.dart`
+   * `location_picker_map.dart`
    * `primary_button.dart`
+   * `rating_summary_card.dart`
    * `secondary_button.dart`
    * `skeleton_loader.dart`
-   * `themed_text_field.dart`
+   * `stat_card.dart`
+   * `status_badge.dart`
+   * `themed_banner.dart`
    * `themed_card.dart`
-   * `themed_section_header.dart`
-   * `themed_loading_indicator.dart`
    * `themed_empty_state.dart`
    * `themed_error_banner.dart`
-   * `cancel_job_dialog.dart`
-   * `create_ticket_dialog.dart`
+   * `themed_loading_indicator.dart`
+   * `themed_section_header.dart`
+   * `themed_success_banner.dart`
+   * `themed_text_field.dart`
 
 ---
 
