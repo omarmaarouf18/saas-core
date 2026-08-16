@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
-import '../providers/notifications_provider.dart';
 import '../models/notification_model.dart';
 import '../providers/auth_provider.dart';
+import '../providers/notifications_provider.dart';
+import '../widgets/confirm_action_dialog.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 
@@ -17,6 +18,7 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   String _selectedCategory = 'All';
+  DateTime? _lastCardTapTime;
 
   final List<String> _categories = ['All', 'Jobs', 'System', 'Alerts'];
 
@@ -52,6 +54,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return list;
   }
 
+  void _handleCardTap(String notifId, NotificationsProvider provider) {
+    final now = DateTime.now();
+    if (_lastCardTapTime != null &&
+        now.difference(_lastCardTapTime!) < AppMotion.debounceGuard) {
+      return;
+    }
+    _lastCardTapTime = now;
+    provider.markAsRead(notifId);
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<NotificationsProvider>(context);
@@ -84,44 +96,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           IconButton(
             icon: const Icon(Icons.delete_sweep),
             tooltip: l10n.notificationsClear,
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: AppColors.surface,
-                  title: Text(
-                    l10n.notificationsClear,
-                    style: AppTypography.titleMd
-                        .copyWith(color: AppColors.onSurface),
-                  ),
-                  content: Text(
-                    l10n.notificationsTitle,
-                    style: AppTypography.bodyMd
-                        .copyWith(color: AppColors.onSurfaceVariant),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(
-                        l10n.cancel,
-                        style: AppTypography.bodyMd
-                            .copyWith(color: AppColors.primary),
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        provider.clearAll();
-                        Navigator.of(context).pop();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.onPrimary,
-                      ),
-                      child: Text(l10n.notificationsClear),
-                    ),
-                  ],
-                ),
+            onPressed: () async {
+              final confirmed = await ConfirmActionDialog.show(
+                context,
+                title: l10n.notificationsClear,
+                message: "${l10n.notificationsClear}?",
+                confirmLabel: l10n.notificationsClear,
+                cancelLabel: l10n.cancel,
+                isDestructive: true,
               );
+              if (confirmed == true && mounted) {
+                provider.clearAll();
+              }
             },
           ),
         ],
@@ -143,7 +129,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   color: provider.isConnected
                       ? AppColors.success
                       : AppColors.error,
-                  size: 20,
+                  size: AppIconSize.sm,
                 ),
                 const SizedBox(width: AppSpacing.base),
                 Expanded(
@@ -269,9 +255,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         borderRadius: AppRadius.md,
         child: InkWell(
           borderRadius: AppRadius.mdBorder,
-          onTap: () {
-            provider.markAsRead(notif.id);
-          },
+          onTap: () => _handleCardTap(notif.id, provider),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -309,7 +293,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 18),
+                    icon:
+                        const Icon(Icons.delete_outline, size: AppIconSize.sm),
                     tooltip: context.l10n.tooltipDismiss,
                     color: AppColors.onSurfaceVariant,
                     onPressed: () => provider.dismiss(notif.id),

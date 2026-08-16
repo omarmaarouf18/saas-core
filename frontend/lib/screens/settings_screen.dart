@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
@@ -8,6 +7,7 @@ import '../providers/locale_provider.dart';
 import '../providers/theme_provider.dart';
 import '../utils/logout_helper.dart';
 import '../widgets/create_ticket_dialog.dart';
+import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
 import 'kyc_document_upload_screen.dart';
@@ -17,47 +17,6 @@ import 'owner_configuration_screen.dart';
 class SettingsScreen extends StatelessWidget {
   final bool isEmbeddedInTab;
   const SettingsScreen({super.key, this.isEmbeddedInTab = false});
-
-  ButtonStyle _segmentedButtonStyle(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return ButtonStyle(
-      textStyle: WidgetStatePropertyAll(
-        GoogleFonts.poppins(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-        if (states.contains(WidgetState.selected)) {
-          return isDark ? AppColors.secondary : AppColors.primary;
-        }
-        return isDark ? const Color(0xFF1E293B) : AppColors.surfaceContainer;
-      }),
-      foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-        if (states.contains(WidgetState.selected)) {
-          return isDark ? const Color(0xFF0F172A) : AppColors.onPrimary;
-        }
-        return isDark ? const Color(0xFFF8FAFC) : AppColors.onSurface;
-      }),
-      iconColor: WidgetStateProperty.resolveWith<Color?>((states) {
-        if (states.contains(WidgetState.selected)) {
-          return isDark ? const Color(0xFF0F172A) : AppColors.onPrimary;
-        }
-        return isDark ? const Color(0xFFF8FAFC) : AppColors.onSurface;
-      }),
-      side: WidgetStatePropertyAll(
-        BorderSide(
-          color: isDark ? const Color(0xFF475569) : AppColors.outlineVariant,
-          width: 1.0,
-        ),
-      ),
-      shape: WidgetStatePropertyAll(
-        RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.defaultValue),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,24 +74,21 @@ class SettingsScreen extends StatelessWidget {
                 children: [
                   Text(
                     l10n.settingsThemeMode,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                    style: AppTypography.titleMd.copyWith(
                       color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   SegmentedButton<ThemeMode>(
                     key: const Key('theme_mode_selector'),
-                    style: _segmentedButtonStyle(context),
                     segments: [
                       ButtonSegment(
                         value: ThemeMode.light,
                         label: Text(
                           l10n.themeLight,
                           key: const Key('theme_light_button'),
-                          style: const TextStyle(
-                            fontSize: 12,
+                          style: AppTypography.labelLg.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -146,8 +102,7 @@ class SettingsScreen extends StatelessWidget {
                         label: Text(
                           l10n.themeDark,
                           key: const Key('theme_dark_button'),
-                          style: const TextStyle(
-                            fontSize: 12,
+                          style: AppTypography.labelLg.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -161,8 +116,7 @@ class SettingsScreen extends StatelessWidget {
                         label: Text(
                           l10n.themeSystem,
                           key: const Key('theme_system_button'),
-                          style: const TextStyle(
-                            fontSize: 12,
+                          style: AppTypography.labelLg.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -184,24 +138,21 @@ class SettingsScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     l10n.settingsLanguage,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                    style: AppTypography.titleMd.copyWith(
                       color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   SegmentedButton<String>(
                     key: const Key('language_selector'),
-                    style: _segmentedButtonStyle(context),
                     segments: [
                       ButtonSegment(
                         value: 'auto',
                         label: Text(
                           l10n.langAuto,
                           key: const Key('lang_auto_button'),
-                          style: const TextStyle(
-                            fontSize: 12,
+                          style: AppTypography.labelLg.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -215,8 +166,7 @@ class SettingsScreen extends StatelessWidget {
                         label: Text(
                           l10n.langEnglish,
                           key: const Key('lang_en_button'),
-                          style: const TextStyle(
-                            fontSize: 12,
+                          style: AppTypography.labelLg.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -226,8 +176,7 @@ class SettingsScreen extends StatelessWidget {
                         label: Text(
                           l10n.langArabic,
                           key: const Key('lang_ar_button'),
-                          style: const TextStyle(
-                            fontSize: 12,
+                          style: AppTypography.labelLg.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -372,31 +321,14 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.xl),
 
             // 4. Logout Section
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                key: const Key('settings_logout_button'),
-                icon: const Icon(Icons.logout, size: 20),
-                label: Text(
-                  l10n.settingsLogout,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.defaultValue),
-                  ),
-                ),
-                onPressed: () async {
-                  await logoutAndClearProviders(context);
-                },
-              ),
+            PrimaryButton(
+              key: const Key('settings_logout_button'),
+              text: l10n.settingsLogout,
+              icon: Icons.logout,
+              isDestructive: true,
+              onPressed: () async {
+                await logoutAndClearProviders(context);
+              },
             ),
           ],
         ),

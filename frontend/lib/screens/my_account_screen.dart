@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/email_change_dialog.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/secondary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
@@ -202,19 +204,16 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                               color: AppColors.onSurfaceVariant,
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.xs),
+                          const SizedBox(height: AppSpacing.sm),
                           Align(
                             alignment: Alignment.centerLeft,
-                            child: OutlinedButton.icon(
+                            child: SecondaryButton(
                               key: const Key('change_email_button'),
+                              text: l10n.changeEmailButton,
+                              icon: Icons.email_outlined,
+                              isOutlined: true,
+                              isFullWidth: false,
                               onPressed: () => _showEmailChangeDialog(context),
-                              icon: const Icon(Icons.email_outlined, size: 18),
-                              label: Text(l10n.changeEmailButton),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.primary,
-                                side:
-                                    const BorderSide(color: AppColors.primary),
-                              ),
                             ),
                           ),
                           const SizedBox(height: AppSpacing.md),
@@ -271,18 +270,11 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                                 ),
                               ),
                               const SizedBox(width: AppSpacing.sm),
-                              ElevatedButton(
+                              PrimaryButton(
                                 key: const Key('my_account_add_address_button'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: AppColors.onPrimary,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.md,
-                                    vertical: AppSpacing.md,
-                                  ),
-                                ),
+                                text: l10n.myAccountAddButton,
+                                isFullWidth: false,
                                 onPressed: _addAddress,
-                                child: Text(l10n.myAccountAddButton),
                               ),
                             ],
                           ),
@@ -349,223 +341,6 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   }
 
   Future<void> _showEmailChangeDialog(BuildContext context) async {
-    await showDialog(
-      context: context,
-      builder: (context) => const EmailChangeDialog(),
-    );
-  }
-}
-
-class EmailChangeDialog extends StatefulWidget {
-  const EmailChangeDialog({super.key});
-
-  @override
-  State<EmailChangeDialog> createState() => _EmailChangeDialogState();
-}
-
-class _EmailChangeDialogState extends State<EmailChangeDialog> {
-  final _emailFormKey = GlobalKey<FormState>();
-  final _otpFormKey = GlobalKey<FormState>();
-  final _newEmailController = TextEditingController();
-  final _otpController = TextEditingController();
-
-  int _step = 1;
-  bool _isLoading = false;
-  String? _errorMessage;
-  String? _devOtp;
-  String? _targetEmail;
-
-  @override
-  void dispose() {
-    _newEmailController.dispose();
-    _otpController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleRequestCode() async {
-    setState(() => _errorMessage = null);
-    if (!_emailFormKey.currentState!.validate()) return;
-
-    final newEmail = _newEmailController.text.trim();
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    setState(() => _isLoading = true);
-
-    try {
-      final devOtp = await authProvider.requestEmailChange(newEmail);
-      if (mounted) {
-        setState(() {
-          _step = 2;
-          _targetEmail = newEmail;
-          _devOtp = devOtp;
-          if (devOtp != null && devOtp.isNotEmpty) {
-            _otpController.text = devOtp;
-          }
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = authProvider.error ?? friendlyErrorMessage(e);
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Future<void> _handleConfirmOtp() async {
-    final l10n = context.l10n;
-    setState(() => _errorMessage = null);
-    if (!_otpFormKey.currentState!.validate()) return;
-
-    final otp = _otpController.text.trim();
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    setState(() => _isLoading = true);
-
-    try {
-      await authProvider.confirmEmailChange(otp);
-      if (mounted) {
-        ThemedSnackBar.showSuccess(context, l10n.emailChangeSuccess);
-        Navigator.of(context).pop();
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = authProvider.error ?? friendlyErrorMessage(e);
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.mdBorder,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      _step == 1 ? l10n.changeEmailButton : "Verify New Email",
-                      style: AppTypography.titleMd.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    key: const Key('close_email_change_dialog'),
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              if (_errorMessage != null) ...[
-                ThemedErrorBanner(
-                  key: const Key('email_change_error_banner'),
-                  message: _errorMessage!,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-              ],
-              if (_step == 1) ...[
-                Text(
-                  l10n.enterNewEmailPrompt,
-                  style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Form(
-                  key: _emailFormKey,
-                  child: ThemedTextField(
-                    key: const Key('new_email_input'),
-                    labelText: l10n.newEmailLabel,
-                    controller: _newEmailController,
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) {
-                        return l10n.invalidEmailError;
-                      }
-                      if (!v.contains('@') || !v.contains('.')) {
-                        return l10n.invalidEmailError;
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                PrimaryButton(
-                  key: const Key('send_email_code_button'),
-                  text: l10n.sendVerificationCode,
-                  isLoading: _isLoading,
-                  onPressed: _handleRequestCode,
-                ),
-              ] else ...[
-                Text(
-                  "Enter the 6-digit verification code sent to $_targetEmail.",
-                  style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-                if (_devOtp != null && _devOtp!.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  ThemedSuccessBanner(
-                    key: const Key('dev_otp_banner'),
-                    title: "Dev Mode OTP",
-                    message: "Verification code: $_devOtp",
-                  ),
-                ],
-                const SizedBox(height: AppSpacing.md),
-                Form(
-                  key: _otpFormKey,
-                  child: ThemedTextField(
-                    key: const Key('email_change_otp_input'),
-                    labelText: "Verification Code",
-                    controller: _otpController,
-                    keyboardType: TextInputType.number,
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) {
-                        return "Verification code is required";
-                      }
-                      if (v.trim().length < 6) {
-                        return "Enter complete 6-digit code";
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                PrimaryButton(
-                  key: const Key('confirm_email_change_button'),
-                  text: l10n.confirmEmailChangeButton,
-                  isLoading: _isLoading,
-                  onPressed: _handleConfirmOtp,
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
+    await EmailChangeDialog.show(context);
   }
 }

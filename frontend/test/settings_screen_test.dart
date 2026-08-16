@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:frontend/core/api_client.dart';
+import 'package:frontend/core/theme.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
@@ -92,6 +93,8 @@ void main() {
         ),
       ],
       child: MaterialApp(
+        theme: quickDeliveryTheme,
+        darkTheme: quickDeliveryDarkTheme,
         themeMode: themeProvider.themeMode,
         home: const SettingsScreen(),
       ),
@@ -395,9 +398,11 @@ void main() {
     expect(themeSelectorFinder, findsOneWidget);
     final SegmentedButton<ThemeMode> lightThemeSelector =
         tester.widget(themeSelectorFinder);
-    expect(lightThemeSelector.style, isNotNull);
+    final lightStyle = lightThemeSelector.style ??
+        Theme.of(tester.element(themeSelectorFinder))
+            .segmentedButtonTheme
+            .style!;
 
-    final lightStyle = lightThemeSelector.style!;
     final lightTextStyle =
         lightStyle.textStyle?.resolve({WidgetState.selected});
     expect(lightTextStyle?.fontSize, 12.0);
@@ -447,7 +452,10 @@ void main() {
 
     final darkThemeSelector = tester.widget<SegmentedButton<ThemeMode>>(
         find.byKey(const Key('theme_mode_selector')));
-    final darkStyle = darkThemeSelector.style!;
+    final darkStyle = darkThemeSelector.style ??
+        Theme.of(tester.element(find.byKey(const Key('theme_mode_selector'))))
+            .segmentedButtonTheme
+            .style!;
     final darkTextStyle = darkStyle.textStyle?.resolve({WidgetState.selected});
     expect(darkTextStyle?.fontSize, 12.0);
     expect(darkTextStyle?.fontWeight, FontWeight.bold);
