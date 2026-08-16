@@ -11,7 +11,7 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
   - **`home_screen.dart`**: Restored `KybKyeReviewScreen` import and 3 navigation/routing call sites (`if (user.role == 'reviewer' || user.role == 'admin') return const KybKyeReviewScreen();` root route, and `reviewer_queue_button` AppBar action in both the basic dashboard and owner home shell).
   - **`auth_provider.dart`**: Restored `fetchPendingSubmissions`, `fetchDocumentBytes`, and `reviewSubmission` provider methods.
   - **`kyb_kye_review_screen_test.dart`**: Restored full 13-test test suite (`frontend/test/kyb_kye_review_screen_test.dart`).
-- **Commit SHA**: ``TO_BE_POPULATED``
+- **Commit SHA**: ``ab9073a5a7ad8d68962fa9cfa749df67d1fc0d1e``
 - **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (100% pass, 267/267 tests passed including 13 tests in `test/kyb_kye_review_screen_test.dart`), and `make docs-check`. ✅
 
 ## Owner Operations & Service Management (Consistency Audit Batch 4)
