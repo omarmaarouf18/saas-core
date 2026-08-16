@@ -138,8 +138,7 @@ void main() {
     // Verify dialog title inside Dialog
     expect(
         find.descendant(
-            of: find.byType(Dialog),
-            matching: find.text('Request Payout')),
+            of: find.byType(Dialog), matching: find.text('Request Payout')),
         findsOneWidget);
 
     // Enter amount greater than withdrawable balance (200.0) -> e.g. 500.0

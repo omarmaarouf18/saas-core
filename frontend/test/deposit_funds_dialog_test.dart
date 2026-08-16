@@ -125,8 +125,7 @@ void main() {
     await tester.tap(find.text('Open Deposit Dialog'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-        find.byKey(const Key('deposit_amount_field')), '0');
+    await tester.enterText(find.byKey(const Key('deposit_amount_field')), '0');
     await tester.tap(find.byKey(const Key('deposit_confirm_button')));
     await tester.pumpAndSettle();
     expect(find.text('Please enter a valid positive number'), findsOneWidget);

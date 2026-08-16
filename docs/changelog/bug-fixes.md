@@ -2,6 +2,18 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Restored KYB/KYE Reviewer Screen & Routing (Revert Mistaken Scope Removal)
+
+- **Implementation Detail**:
+  - **Correction**: Reverted the mistaken removal of `KybKyeReviewScreen` from commits `ab3ef6f`, `5cd4c4c`, and `ec97bb1`, which had mistakenly cited ADR-0013. ADR-0013 is exclusively about support ticket resolution (`POST /chat/tickets/resolve`) and is in "Proposed" status, not an executed removal directive for reviewer compliance screens.
+  - **`kyb_kye_review_screen.dart`**: Restored full reviewer queue screen (`frontend/lib/screens/kyb_kye_review_screen.dart`) allowing reviewer and admin roles to review and process owner and employee verification submissions.
+  - **`document_viewer_dialog.dart`**: Restored document preview dialog (`frontend/lib/widgets/document_viewer_dialog.dart`) supporting image and PDF previews with zoom and pan controls.
+  - **`home_screen.dart`**: Restored `KybKyeReviewScreen` import and 3 navigation/routing call sites (`if (user.role == 'reviewer' || user.role == 'admin') return const KybKyeReviewScreen();` root route, and `reviewer_queue_button` AppBar action in both the basic dashboard and owner home shell).
+  - **`auth_provider.dart`**: Restored `fetchPendingSubmissions`, `fetchDocumentBytes`, and `reviewSubmission` provider methods.
+  - **`kyb_kye_review_screen_test.dart`**: Restored full 13-test test suite (`frontend/test/kyb_kye_review_screen_test.dart`).
+- **Commit SHA**: ``TO_BE_POPULATED``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (100% pass, 267/267 tests passed including 13 tests in `test/kyb_kye_review_screen_test.dart`), and `make docs-check`. ✅
+
 ## Owner Operations & Service Management (Consistency Audit Batch 4)
 
 - **Implementation Detail**:

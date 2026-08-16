@@ -36,12 +36,3 @@ We formally decide that agent-authenticated ticket resolution endpoints (such as
 
 ## Alternatives Considered
 - **Embedding Support Agent Mode into Consumer Mobile App**: Rejected due to security risks associated with bundling administrative agent capabilities and agent token authentication flows in end-user binaries.
-
----
-
-## Addendum: Enforcement & KYB/KYE Reviewer UI Cleanup (2026-08-13)
-
-- **Date**: 2026-08-13
-- **Action**: Enforced ADR-0013 scope boundary by completely removing all KYB/KYE administrative reviewer UI (`kyb_kye_review_screen.dart`), document viewer dialogs (`document_viewer_dialog.dart`), AppBar actions (`reviewer_queue_button`), dead provider methods (`fetchPendingSubmissions`, `fetchDocumentBytes`, `reviewSubmission`), and reviewer widget tests from the consumer Flutter app (`frontend/`).
-- **Rationale**: Bundling reviewer/admin review screens and administrative API endpoints (`POST /auth/kyb-kye/review`, `GET /auth/kyb-kye/pending`, `GET /auth/documents/view`) inside the public consumer binary leaks administrative review workflows, endpoint structures, and approval/rejection logic via reverse engineering / APK decompilation.
-- **Scope Floor Enforced**: All administrative review tools are strictly reserved for separate administrative client applications per ADR-0013 and ADR-0010.
