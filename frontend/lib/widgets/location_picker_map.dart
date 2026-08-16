@@ -6,6 +6,7 @@ import 'package:frontend/l10n/l10n.dart';
 import '../core/constants.dart';
 import '../core/location_permission.dart';
 import '../core/theme.dart';
+import 'themed_success_banner.dart';
 
 class LocationPickerMap extends StatefulWidget {
   final LatLng? initialLocation;
@@ -69,22 +70,18 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
       } else {
         if (mounted) {
           final l10n = AppLocalizations.of(context)!;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.locationPermissionDeniedDefault),
-              duration: AppMotion.snackBarDisplay,
-            ),
+          ThemedSnackBar.showError(
+            context,
+            l10n.locationPermissionDeniedDefault,
           );
         }
       }
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.locationFetchError(e.toString())),
-            duration: AppMotion.snackBarDisplay,
-          ),
+        ThemedSnackBar.showError(
+          context,
+          l10n.locationFetchError(e.toString()),
         );
       }
     } finally {
@@ -161,9 +158,9 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
                     ),
                   )
                 : const Icon(Icons.my_location, size: 20),
-            label: const Text(
+            label: Text(
               "Use My Location",
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: AppTypography.labelLg.copyWith(color: AppColors.onPrimary),
             ),
             onPressed: _isLoadingLocation ? null : _fetchAndSetCurrentLocation,
           ),

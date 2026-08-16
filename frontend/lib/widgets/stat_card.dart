@@ -48,7 +48,7 @@ class StatCard extends StatelessWidget {
               Icon(
                 icon,
                 color: effectiveIconColor,
-                size: 24,
+                size: AppIconSize.md,
               ),
             ],
           ],
@@ -69,10 +69,10 @@ class StatCard extends StatelessWidget {
               if (isPositiveTrend != null)
                 Icon(
                   isPositiveTrend! ? Icons.trending_up : Icons.trending_down,
-                  size: 14,
+                  size: AppIconSize.xs,
                   color: isPositiveTrend! ? AppColors.success : AppColors.error,
                 ),
-              if (isPositiveTrend != null) const SizedBox(width: 4),
+              if (isPositiveTrend != null) const SizedBox(width: AppSpacing.xs),
               Text(
                 trend!,
                 style: AppTypography.labelMd.copyWith(

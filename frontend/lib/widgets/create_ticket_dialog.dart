@@ -8,6 +8,7 @@ import '../providers/chat_provider.dart';
 import 'primary_button.dart';
 import 'secondary_button.dart';
 import 'themed_error_banner.dart';
+import 'themed_success_banner.dart';
 import 'themed_text_field.dart';
 
 class CreateTicketDialog extends StatefulWidget {
@@ -63,13 +64,9 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> {
 
       if (mounted) {
         Navigator.of(context).pop(res);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              "Ticket submitted successfully! (Ticket ID: ${res['id'] ?? ''})",
-            ),
-            backgroundColor: AppColors.primary,
-          ),
+        ThemedSnackBar.showSuccess(
+          context,
+          "Ticket submitted successfully! (Ticket ID: ${res['id'] ?? ''})",
         );
       }
     } catch (e) {
@@ -105,9 +102,8 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> {
               if (hasContextId) ...[
                 Text(
                   "Reference ID: #${widget.contextId!.length > 8 ? widget.contextId!.substring(0, 8) : widget.contextId}",
-                  style: AppTypography.bodyMd.copyWith(
+                  style: AppTypography.bodySm.copyWith(
                     color: AppColors.onSurfaceVariant,
-                    fontSize: 12,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -150,22 +146,18 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> {
         ),
       ),
       actions: [
-        SizedBox(
-          width: 100,
-          child: SecondaryButton(
-            text: l10n.cancel,
-            isOutlined: true,
-            onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
-          ),
+        SecondaryButton(
+          text: l10n.cancel,
+          isOutlined: true,
+          isFullWidth: false,
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
         ),
-        SizedBox(
-          width: 130,
-          child: PrimaryButton(
-            key: const Key('submit_ticket_button'),
-            text: l10n.submit,
-            isLoading: _isSubmitting,
-            onPressed: _isSubmitting ? null : _submitTicket,
-          ),
+        PrimaryButton(
+          key: const Key('submit_ticket_button'),
+          text: l10n.submit,
+          isLoading: _isSubmitting,
+          isFullWidth: false,
+          onPressed: _isSubmitting ? null : _submitTicket,
         ),
       ],
     );

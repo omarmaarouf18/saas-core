@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frontend/core/api_client.dart';
 import 'package:frontend/core/theme.dart';
+import 'package:frontend/l10n/l10n.dart';
+import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/chat_provider.dart';
 import 'package:frontend/widgets/confirm_action_dialog.dart';
+import 'package:frontend/widgets/create_ticket_dialog.dart';
 import 'package:frontend/widgets/entity_avatar.dart';
 import 'package:frontend/widgets/info_list_tile.dart';
 import 'package:frontend/widgets/primary_button.dart';
+import 'package:frontend/widgets/rating_summary_card.dart';
 import 'package:frontend/widgets/secondary_button.dart';
 import 'package:frontend/widgets/stat_card.dart';
 import 'package:frontend/widgets/status_badge.dart';
@@ -12,6 +18,8 @@ import 'package:frontend/widgets/themed_card.dart';
 import 'package:frontend/widgets/themed_empty_state.dart';
 import 'package:frontend/widgets/themed_error_banner.dart';
 import 'package:frontend/widgets/themed_success_banner.dart';
+import 'package:frontend/widgets/themed_text_field.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   group('StatusBadge Widget Tests', () {
@@ -110,6 +118,40 @@ void main() {
 
       await tester.tap(find.byType(EntityAvatar));
       expect(tapped, isTrue);
+    });
+
+    testWidgets('Enforces 600ms tap debounce guard', (tester) async {
+      int tapCount = 0;
+      DateTime simulatedTime = DateTime(2026, 8, 16, 12, 0, 0);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: EntityAvatar(
+              name: 'Debounce User',
+              nowProvider: () => simulatedTime,
+              onTap: () => tapCount++,
+            ),
+          ),
+        ),
+      );
+
+      // First tap -> executes
+      await tester.tap(find.byType(EntityAvatar));
+      await tester.pump();
+      expect(tapCount, 1);
+
+      // Rapid second tap at +200ms -> debounced
+      simulatedTime = simulatedTime.add(const Duration(milliseconds: 200));
+      await tester.tap(find.byType(EntityAvatar));
+      await tester.pump();
+      expect(tapCount, 1);
+
+      // Third tap at +700ms -> allowed
+      simulatedTime = simulatedTime.add(const Duration(milliseconds: 500));
+      await tester.tap(find.byType(EntityAvatar));
+      await tester.pump();
+      expect(tapCount, 2);
     });
   });
 
@@ -828,6 +870,93 @@ void main() {
             .first,
       );
       expect(compactSizedBox.width, isNull);
+    });
+  });
+
+  group('RatingSummaryCard Widget Tests', () {
+    testWidgets('Renders score, stars, and tokenized typography',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: RatingSummaryCard(
+              averageRating: 4.5,
+              ratingCount: 128,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('4.5'), findsOneWidget);
+      expect(find.text('Verified Service Score'), findsOneWidget);
+      expect(find.text('Based on 128 ratings'), findsOneWidget);
+      expect(find.byIcon(Icons.star), findsNWidgets(4));
+      expect(find.byIcon(Icons.star_half), findsOneWidget);
+    });
+  });
+
+  group('StatCard Widget Tests', () {
+    testWidgets('Renders label, value, icon, and positive trend',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: StatCard(
+              label: 'Total Revenue',
+              value: '\$12,450',
+              icon: Icons.attach_money,
+              trend: '+15.4%',
+              isPositiveTrend: true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Total Revenue'), findsOneWidget);
+      expect(find.text('\$12,450'), findsOneWidget);
+      expect(find.text('+15.4%'), findsOneWidget);
+      expect(find.byIcon(Icons.attach_money), findsOneWidget);
+      expect(find.byIcon(Icons.trending_up), findsOneWidget);
+    });
+  });
+
+  group('CreateTicketDialog Widget Tests', () {
+    testWidgets(
+        'Renders overflow-free at narrow 360dp mobile viewport and uses compact action buttons',
+        (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final apiClient = ApiClient();
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => AuthProvider(apiClient)),
+            ChangeNotifierProvider(create: (_) => ChatProvider(apiClient)),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: CreateTicketDialog(contextId: 'test-job-12345'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Open Complaint Ticket'), findsOneWidget);
+      expect(find.text('Reference ID: #test-job'), findsOneWidget);
+      expect(find.byType(ThemedTextField), findsNWidgets(2));
+      expect(find.byKey(const Key('submit_ticket_button')), findsOneWidget);
+      expect(find.byType(SecondaryButton), findsOneWidget);
+
+      // Verify no RenderFlex overflow
+      expect(tester.takeException(), isNull);
     });
   });
 }

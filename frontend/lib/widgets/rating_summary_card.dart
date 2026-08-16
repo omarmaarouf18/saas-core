@@ -25,13 +25,14 @@ class RatingSummaryCard extends StatelessWidget {
 
     for (int i = 1; i <= 5; i++) {
       if (i <= fullStars) {
-        stars.add(const Icon(Icons.star, color: AppColors.secondary, size: 20));
+        stars.add(const Icon(Icons.star,
+            color: AppColors.secondary, size: AppIconSize.md));
       } else if (i == fullStars + 1 && hasHalfStar) {
-        stars.add(
-            const Icon(Icons.star_half, color: AppColors.secondary, size: 20));
+        stars.add(const Icon(Icons.star_half,
+            color: AppColors.secondary, size: AppIconSize.md));
       } else {
         stars.add(const Icon(Icons.star_border,
-            color: AppColors.outlineVariant, size: 20));
+            color: AppColors.outlineVariant, size: AppIconSize.md));
       }
     }
 
@@ -59,7 +60,7 @@ class RatingSummaryCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(children: stars),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppSpacing.xxs),
                   Text(
                     'Verified Service Score',
                     style: AppTypography.labelMd.copyWith(
@@ -71,16 +72,15 @@ class RatingSummaryCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.base + 2),
+          const SizedBox(height: AppSpacing.baseSm),
           Divider(
             height: 1,
             color: AppColors.outlineVariant.withValues(alpha: 0.2),
           ),
-          const SizedBox(height: AppSpacing.base + 2),
+          const SizedBox(height: AppSpacing.baseSm),
           Text(
             'Based on $ratingCount ratings',
-            style: AppTypography.bodyMd.copyWith(
-              fontSize: 13,
+            style: AppTypography.bodySm.copyWith(
               color: AppColors.onSurfaceVariant,
               fontWeight: FontWeight.w400,
             ),

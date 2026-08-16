@@ -150,7 +150,8 @@ void main() {
     expect(find.text('Active Plan'), findsOneWidget);
   });
 
-  testWidgets('(d) Tapping Upgrade to Professional triggers subscription update',
+  testWidgets(
+      '(d) Tapping Upgrade to Professional triggers subscription update',
       (WidgetTester tester) async {
     final apiClient = ApiClient();
     final auth = MockAuthProvider(apiClient);

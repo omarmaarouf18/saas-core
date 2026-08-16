@@ -168,9 +168,9 @@ class StatusBadge extends StatelessWidget {
     final config = getConfig(context, status);
     final badgeColor = customColor ?? config.color;
 
-    final verticalPadding = compact ? AppSpacing.xs / 2 : AppSpacing.xs;
-    final horizontalPadding = compact ? AppSpacing.base / 2 : AppSpacing.sm;
-    final iconSize = compact ? 14.0 : 16.0;
+    final verticalPadding = compact ? AppSpacing.xxs : AppSpacing.xs;
+    final horizontalPadding = compact ? AppSpacing.xs : AppSpacing.sm;
+    final iconSize = compact ? AppIconSize.xs : AppIconSize.sm;
     final textStyle = compact
         ? AppTypography.labelMd.copyWith(
             color: badgeColor,
