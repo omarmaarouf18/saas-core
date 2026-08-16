@@ -10,8 +10,8 @@
 
 | Severity | Count | Status | Description |
 | :--- | :--- | :--- | :--- |
-| **Critical** | 1 | **Confirmed** | COD job `CompleteJob` vs `CancelJob` race condition permitting balance mutation on cancelled jobs. |
-| **Medium** | 1 | **Confirmed** | Negotiated `AgreedPrice` ignored in `CancelJob` escrow refund calculation, resulting in locked fund leakage. |
+| **Critical** | 1 | **Resolved** | COD job `CompleteJob` vs `CancelJob` race condition permitting balance mutation on cancelled jobs (Remediated via CAS status guard in `store.CancelJob`). |
+| **Medium** | 1 | **Resolved** | Negotiated `AgreedPrice` ignored in `CancelJob` escrow refund calculation, resulting in locked fund leakage (Remediated via `AgreedPrice` check in `CancelJob`). |
 | **Sound / Safe** | 4 | **Verified Safe** | Escrow release double-complete protection, backend KYC enforcement, tenant scope isolation, and employee IDOR protection. |
 
 ### Scope Statement
@@ -23,7 +23,7 @@ This review was concentrated on the highest-financial-risk surface (job lifecycl
 
 * **Title**: Cash on Delivery (COD) Job `CancelJob` vs `CompleteJob` Race Condition
 * **Severity**: Critical
-* **Status**: Confirmed
+* **Status**: Resolved (Remediated & Verified in Code)
 * **Citations**:
   * Store Implementation: [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L903-L917) (`CancelJob` lines 903–917)
   * Store Comparisons: [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L531-L565) (`ReleaseEscrowWithSplit` lines 531–565), [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go) (legacy COD fee deduction), [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L920-L948) (`RefundEscrow` lines 920–948)
@@ -65,7 +65,7 @@ The query filters strictly on `{"_id": id}` with **no status precondition**.
 
 * **Title**: Negotiated `AgreedPrice` Omitted from `CancelJob` Refund Calculation
 * **Severity**: Medium
-* **Status**: Confirmed
+* **Status**: Resolved (Remediated & Verified in Code)
 * **Citations**:
   * `CompleteJob` Handler: [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (originally `handlers.go` lines 888–892)
   * `CancelJob` Handler: [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (originally `handlers.go` lines 2385–2409)

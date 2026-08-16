@@ -4,6 +4,19 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## Full Repository Documentation Freshness Audit & Gap-Filling Pass
+
+- **Implementation Detail**: Completed a comprehensive, repository-wide documentation freshness audit and gap-filling sweep across all architectural specifications, ADRs, application maps, deployment guides, audit logs, and changelog indices:
+  1. Updated `shared/infra/docgen/generator.go` and regenerated `docs/APPLICATION_MAP.md` via `make docs`: added complete descriptions, exact caller permissions, and storage targets for 9 recently introduced or updated endpoints (`POST/DELETE /auth/device-token`, `POST /auth/email-change/request`, `POST /auth/email-change/confirm`, `POST /users/wallet/payout/request`, `GET /users/wallet/payout/requests`, `PATCH /users/services`, `GET /api/v1/admin/version-config`, `PUT /api/v1/admin/version-config`), eliminating all `<!-- TODO: verify manually -->` placeholders and default `Public` tags.
+  2. Updated ADR statuses: transitioned `ADR-0007` (GPS trail settlement reconciliation) to `Accepted` reflecting complete implementation in `CompleteJob`, and transitioned `ADR-0013` (Support agent console separate app) to `Accepted (Scope Boundary Enforced)` reflecting owner confirmation and reviewer screen removal.
+  3. Disambiguated duplicate Phase 15 entries in `docs/frontend/STATUS.md` into `Phase 15A` and `Phase 15B`, and clarified the subsequent re-reversion of reviewer screens per ADR-0013.
+  4. Updated `docs/REPOSITORY_MAP.md`: refreshed header commit pin, documented strict CD pre-flight and health-gated rollback per ADR-0015, and replaced deprecated `DEPLOY_REPO_PAT` triage references with GitHub App credentials (`APP_ID` / `APP_PRIVATE_KEY`).
+  5. Updated `docs/BUSINESS_LOGIC_AUDIT.md`: transitioned Finding 1 (COD race condition) and Finding 2 (AgreedPrice escrow refund) to `Resolved (Remediated & Verified in Code)` with citations to `mongodb.CancelJob` CAS status guard and `CancelJob` handler math.
+  6. Updated `docs/FRONTEND_CONSISTENCY_AUDIT.md`: transitioned status to `COMPLETED & 100% IMPLEMENTED (All 5 Remediation Batches Landed & Verified)` citing all 5 batch commit SHAs and test pass metrics.
+  7. Refreshed category entry counts across `docs/changelog/README.md` and `AI_CONTEXT.md` to reflect actual index counts (104 security fixes, 56 new features, 49 infrastructure, 55 bug fixes, 33 documentation, 4 localization, 2 refactoring).
+- **Commit SHA**: ``c793624ec63c61199f7cb7641b6bb85d6db68e27``
+- **Verification**: Verified via `make docs-check`, `go test ./...` in shared/infra, and full git commit SHA reachability check (`FAILED_SHA=0`). ✅
+
 ## Full Repository Documentation Freshness Re-Audit & Remediation
 
 - **Implementation Detail**: Executed a comprehensive documentation freshness audit across all 55 markdown documents in the repository following significant backend, infrastructure, and architectural landings (handlers modularization, Redis Sentinel HA support, graceful shutdown across all 5 services, CD health rollback hardening, KYC document encryption at rest, rate limiter decoupling, and zero-commission model). Remediated all identified discrepancies:

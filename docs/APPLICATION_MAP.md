@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`0c5fcf7`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`8f9aa91`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -163,13 +163,15 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | Method + Path | Owning Service | Caller Permissions | Core Functionality | Read / Write Target & Downstream Actions |
 | :--- | :--- | :--- | :--- | :--- |
 | **`GET /`** | `api-gateway` | Public | Root index. | None. |
+| **`GET /api/v1/admin/version-config`** | `api-gateway` | `X-Internal-Token` | Fetches current mobile client minimum and latest version enforcement configuration. | Reads `version_config` collection. |
+| **`PUT /api/v1/admin/version-config`** | `api-gateway` | `X-Internal-Token` | Updates mobile client minimum and latest version enforcement configuration. | Updates `version_config` collection. |
 | **`GET /health`** | `api-gateway` | Public | Public gateway health status. | None. |
 | **`GET /health/internal`** | `api-gateway` | `X-Internal-Token` | Returns circuit breaker metrics. | Reads breaker memory. |
 | **`GET /auth/audit-log`** | `auth-service` | Tenant Owner JWT | Fetches tenant security audit logs. Accepts requester_id (legacy) or requester_token (preferred). | Reads `audit_logs` collection. |
-| **`DELETE /auth/device-token`** | `auth-service` | User JWT | DeviceToken handles registration, update, and removal of client device tokens. | <!-- TODO: verify manually --> |
+| **`DELETE /auth/device-token`** | `auth-service` | Authenticated User JWT | Unregisters client push notification device token. | Updates `users` collection (`device_tokens`). |
 | **`GET /auth/documents/view`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Validates signed URL token and streams/serves the uploaded document file. | Streams file content. |
-| **`POST /auth/email-change/confirm`** | `auth-service` | User JWT | ConfirmEmailChange verifies the OTP sent to the new email address, updates the user's | <!-- TODO: verify manually --> |
-| **`POST /auth/email-change/request`** | `auth-service` | User JWT | RequestEmailChange accepts a new email address, validates its format and availability, | <!-- TODO: verify manually --> |
+| **`POST /auth/email-change/confirm`** | `auth-service` | Authenticated User JWT | Verifies OTP and commits updated email address to user profile, issuing fresh JWT. | Updates `users` collection, clears pending change, issues new JWT. |
+| **`POST /auth/email-change/request`** | `auth-service` | Authenticated User JWT | Initiates email change request, validates format and availability, and dispatches OTP to new email. | Writes `pending_email_changes` in `users` collection, dispatches OTP. |
 | **`POST /auth/employee/action`** | `auth-service` | Target Employee JWT | Records a simulated worker activity. | Writes `audit_logs` collection. |
 | **`POST /auth/employee/toggle`** | `auth-service` | Owner JWT (KYC Approved) | Activates/deactivates employee account. | Reads `users` (owner/employee), updates `users`. |
 | **`GET /auth/employees`** | `auth-service` | Owner JWT | GetEmployees returns all employees registered under the caller's tenant owner account. | Reads `users` collection by `tenant_id`. Returns JSON array of `EmployeeResponse` (`ID`, `Username`, `Email`, `IsActive`, `CreatedAt`). Rate-limited per owner ID. |
@@ -212,7 +214,7 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`GET /users/platform/config`** | `user-service` | Public | Fetches global fees configuration. | Reads `platform_config` collection. |
 | **`GET /users/ratings`** | `user-service` | Owner, Employee, User, or Customer JWT | Returns ratings count and average. Accepts user_id (legacy) or user_token (preferred). | Reads `ratings` collection. |
 | **`GET /users/services`** | `user-service` | Public | Spatial search on services directory. | Reads `services` collection. |
-| **`PATCH /users/services`** | `user-service` | Public | <!-- TODO: verify manually --> | <!-- TODO: verify manually --> |
+| **`PATCH /users/services`** | `user-service` | Owner JWT (KYC Approved) | Updates an existing service listing (photo, address, working hours, coverage radius, prices, category). | Downstream: calls `auth-service/auth/user`. Updates `services` collection. |
 | **`POST /users/services`** | `user-service` | Owner JWT (KYC Approved) | Inserts service listing. | Downstream: calls `auth-service/auth/user`. Writes `services` collection. |
 | **`PUT /users/services`** | `user-service` | Owner JWT (KYC Approved) | Updates an existing service listing (photo, address, working hours, coverage radius, prices, category). | Downstream: calls `auth-service/auth/user`. Updates `services` collection. |
 | **`PATCH /users/services/update`** | `user-service` | Owner JWT (KYC Approved) | Updates an existing service listing (photo, address, working hours, coverage radius, prices, category). | Downstream: calls `auth-service/auth/user`. Updates `services` collection. |
@@ -221,8 +223,8 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`POST /users/subscription`** | `user-service` | Owner JWT (KYC Approved) | Subscribes/renews SaaS tier. Accepts tenant_id (legacy) or tenant_token (preferred), and requester_id (legacy) or requester_token (preferred). | Updates `subscriptions`, writes `wallets`, writes `ledger`. |
 | **`GET /users/wallet`** | `user-service` | Owner JWT | Fetches active balance details. Accepts tenant_id (legacy) or tenant_token (preferred). | Reads `wallets` collection. |
 | **`POST /users/wallet/deposit`** | `user-service` | Owner JWT | Loads funds up to maximum limits. Accepts tenant_id (legacy) or tenant_token (preferred). | Updates `wallets` collection. |
-| **`POST /users/wallet/payout/request`** | `user-service` | Public | RequestPayout processes a tenant owner's withdrawal request (POST /users/wallet/payout/request). | <!-- TODO: verify manually --> |
-| **`GET /users/wallet/payout/requests`** | `user-service` | Public | GetPayoutRequests retrieves historical payout requests for a tenant owner (GET /users/wallet/payout/requests). | <!-- TODO: verify manually --> |
+| **`POST /users/wallet/payout/request`** | `user-service` | Owner JWT | Processes a tenant owner withdrawal request for electronic wallet balance. | Reads `wallets` collection, writes `payout_requests` collection. |
+| **`GET /users/wallet/payout/requests`** | `user-service` | Owner JWT | Retrieves historical payout requests for authenticated tenant owner. | Reads `payout_requests` collection. |
 <!-- GENERATED:ENDPOINTS:END -->
 
 ### Standalone Operations (CLI Tool)

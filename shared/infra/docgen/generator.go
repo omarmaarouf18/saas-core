@@ -41,6 +41,16 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Returns circuit breaker metrics.",
 		Targets:     "Reads breaker memory.",
 	},
+	"GET /api/v1/admin/version-config": {
+		Permissions: "`X-Internal-Token`",
+		Function:    "Fetches current mobile client minimum and latest version enforcement configuration.",
+		Targets:     "Reads `version_config` collection.",
+	},
+	"PUT /api/v1/admin/version-config": {
+		Permissions: "`X-Internal-Token`",
+		Function:    "Updates mobile client minimum and latest version enforcement configuration.",
+		Targets:     "Updates `version_config` collection.",
+	},
 	"GET /": {
 		Permissions: "Public",
 		Function:    "Root index.",
@@ -158,6 +168,26 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Returns only non-sensitive, public profile fields (ID and username). Accepts id (legacy) or user_token (preferred), and requester_id (legacy) or requester_token (preferred).",
 		Targets:     "Reads `users` collection.",
 	},
+	"POST /auth/device-token": {
+		Permissions: "Authenticated User JWT",
+		Function:    "Registers or updates client push notification device token.",
+		Targets:     "Writes `users` collection (`device_tokens`).",
+	},
+	"DELETE /auth/device-token": {
+		Permissions: "Authenticated User JWT",
+		Function:    "Unregisters client push notification device token.",
+		Targets:     "Updates `users` collection (`device_tokens`).",
+	},
+	"POST /auth/email-change/request": {
+		Permissions: "Authenticated User JWT",
+		Function:    "Initiates email change request, validates format and availability, and dispatches OTP to new email.",
+		Targets:     "Writes `pending_email_changes` in `users` collection, dispatches OTP.",
+	},
+	"POST /auth/email-change/confirm": {
+		Permissions: "Authenticated User JWT",
+		Function:    "Verifies OTP and commits updated email address to user profile, issuing fresh JWT.",
+		Targets:     "Updates `users` collection, clears pending change, issues new JWT.",
+	},
 
 	// chat-service
 	"GET /health (chat-service)": {
@@ -249,6 +279,11 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Updates an existing service listing (photo, address, working hours, coverage radius, prices, category).",
 		Targets:     "Downstream: calls `auth-service/auth/user`. Updates `services` collection.",
 	},
+	"PATCH /users/services": {
+		Permissions: "Owner JWT (KYC Approved)",
+		Function:    "Updates an existing service listing (photo, address, working hours, coverage radius, prices, category).",
+		Targets:     "Downstream: calls `auth-service/auth/user`. Updates `services` collection.",
+	},
 	"POST /users/services/update": {
 		Permissions: "Owner JWT (KYC Approved)",
 		Function:    "Updates an existing service listing (photo, address, working hours, coverage radius, prices, category).",
@@ -293,6 +328,16 @@ var KnownEndpoints = map[string]struct {
 		Permissions: "Owner JWT",
 		Function:    "Loads funds up to maximum limits. Accepts tenant_id (legacy) or tenant_token (preferred).",
 		Targets:     "Updates `wallets` collection.",
+	},
+	"POST /users/wallet/payout/request": {
+		Permissions: "Owner JWT",
+		Function:    "Processes a tenant owner withdrawal request for electronic wallet balance.",
+		Targets:     "Reads `wallets` collection, writes `payout_requests` collection.",
+	},
+	"GET /users/wallet/payout/requests": {
+		Permissions: "Owner JWT",
+		Function:    "Retrieves historical payout requests for authenticated tenant owner.",
+		Targets:     "Reads `payout_requests` collection.",
 	},
 	"GET /users/ledger": {
 		Permissions: "Owner JWT",
@@ -402,6 +447,8 @@ func GenerateEndpointsList(repoRoot string) ([]Endpoint, error) {
 	// Add api-gateway static endpoints
 	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/health", Service: "api-gateway", Permissions: "Public", Function: "Public gateway health status.", Targets: "None.", HandlerName: "GatewayHealth"})
 	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/health/internal", Service: "api-gateway", Permissions: "`X-Internal-Token`", Function: "Returns circuit breaker metrics.", Targets: "Reads breaker memory.", HandlerName: "GatewayInternalHealth"})
+	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/api/v1/admin/version-config", Service: "api-gateway", Permissions: "`X-Internal-Token`", Function: "Fetches current mobile client minimum and latest version enforcement configuration.", Targets: "Reads `version_config` collection.", HandlerName: "GetVersionConfig"})
+	endpoints = append(endpoints, Endpoint{Method: "PUT", Path: "/api/v1/admin/version-config", Service: "api-gateway", Permissions: "`X-Internal-Token`", Function: "Updates mobile client minimum and latest version enforcement configuration.", Targets: "Updates `version_config` collection.", HandlerName: "UpdateVersionConfig"})
 	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/", Service: "api-gateway", Permissions: "Public", Function: "Root index.", Targets: "None.", HandlerName: "GatewayIndex"})
 
 	services := []struct {

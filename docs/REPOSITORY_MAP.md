@@ -2,7 +2,7 @@
 
 > [!NOTE]
 > **Documentation Freshness Pinning**:
-> This document maps the architecture, cross-repository push pipelines, PAT secret scopes, and operational runbooks for the Quick Delivery multi-repository ecosystem as of Git commit `0c5fcf7`. This document must be updated whenever GitHub Action workflow triggers, repository structures, or secret scopes are modified.
+> This document maps the architecture, cross-repository push pipelines, PAT secret scopes, and operational runbooks for the Quick Delivery multi-repository ecosystem as of Git commit `8f9aa91`. This document must be updated whenever GitHub Action workflow triggers, repository structures, or secret scopes are modified.
 
 ---
 
@@ -117,7 +117,7 @@ git checkout logic-exploitation
 ```
 
 ### 4.2 Production VM Stack Deployment (`quickdelivery-vm`)
-Deployment is **automated** via the self-hosted GitHub Actions runner (`saas-vm-runner`) on `quickdelivery-vm`. When `saas-core` pushes to `main`, `build-and-publish.yml` updates `saas-core-deploy:main`, triggering `deploy.yml` on the production VM to execute `docker compose pull`, `docker compose up -d --remove-orphans`, and `/health` verification.
+Deployment is **automated** via the self-hosted GitHub Actions runner (`saas-vm-runner`) on `quickdelivery-vm`. When `saas-core` pushes to `main`, `build-and-publish.yml` updates `saas-core-deploy:main`, triggering `deploy.yml` on the production VM. Per [ADR-0015](adr/0015-strict-cd-preflight-validation.md), the pipeline executes strict pre-flight environment checks (`--check-env`), full structural file synchronization (`rsync -a`), `docker compose pull`, `docker compose up -d --remove-orphans`, health checks across all services, and automated health-gated rollback on failure.
 
 #### Manual Fallback (if runner is offline or undergoing maintenance)
 ```bash
@@ -143,7 +143,7 @@ Expected output: `ghcr.io/omarmaarouf18/saas-core-api-gateway:<40-char-sha>`
 | :--- | :--- | :--- | :--- |
 | **OTP Emails / SMS Not Arriving** | `auth-service` Container Logs | `docker compose logs -f auth-service` | Verify `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are configured in `.env`. Confirm Resend API domain status is verified. |
 | **Public Domain Not Resolving / HTTP 502 / Connection Refused** | `saas-caddy` Container Status & Logs | `docker compose ps caddy` <br> `docker compose logs -f caddy` | Ensure `saas-caddy` container is running (see [DEPLOYMENT.md §10.5](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/DEPLOYMENT.md#105-missing-or-orphaned-saas-caddy-container-causing-public-domain-outage)). Confirm `Caddyfile` reverse_proxy target is `api-gateway:8080` over `saas-net`. |
-| **Production Containers Not Updating After Push** | GitHub Actions `build-and-publish.yml` Log & `saas-core-deploy` Commits | Check [GitHub Actions Runs](https://github.com/omarmaarouf18/saas-core/actions) and [saas-core-deploy Commits](https://github.com/omarmaarouf18/saas-core-deploy/commits/main) | Verify push occurred to `main` (not `logic-exploitation` alone). Ensure `DEPLOY_REPO_PAT` secret is valid. Run `docker compose pull` on the host. |
+| **Production Containers Not Updating After Push** | GitHub Actions `build-and-publish.yml` Log & `saas-core-deploy` Commits | Check [GitHub Actions Runs](https://github.com/omarmaarouf18/saas-core/actions) and [saas-core-deploy Commits](https://github.com/omarmaarouf18/saas-core-deploy/commits/main) | Verify push occurred to `main` (not `logic-exploitation` alone). Ensure GitHub App credentials (`APP_ID` and `APP_PRIVATE_KEY`) are valid. Run `docker compose pull` on the host. |
 
 ---
 
