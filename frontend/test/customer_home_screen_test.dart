@@ -200,4 +200,28 @@ void main() {
 
     expect(find.byType(SettingsScreen), findsOneWidget);
   });
+
+  testWidgets(
+      'Tapping quick access category tile switches to Services tab with debounce protection',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+        createTestApp(child: const CustomerHomeScreen(initialTabIndex: 0)));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final deliveryTile = find.byKey(const Key('category_tile_delivery'));
+    expect(deliveryTile, findsOneWidget);
+
+    // Rapid double-tap to verify debounce guard
+    await tester.tap(deliveryTile);
+    await tester.tap(deliveryTile);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Verify switched to Services tab
+    expect(find.byType(CustomerMarketplaceScreen), findsOneWidget);
+  });
 }

@@ -9,6 +9,7 @@ import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/screens/customer_marketplace_screen.dart';
+import 'package:frontend/widgets/themed_error_banner.dart';
 
 class MockAuthProviderForTest extends AuthProvider {
   final UserProfile _user;
@@ -24,11 +25,12 @@ class MockAuthProviderForTest extends AuthProvider {
 
 class MockMarketplaceProviderForTest extends MarketplaceProvider {
   bool? lastFetchNearBy;
+  List<MarketplaceService> mockServices = [];
 
   MockMarketplaceProviderForTest(super.apiClient);
 
   @override
-  List<MarketplaceService> get services => [];
+  List<MarketplaceService> get services => mockServices;
 
   @override
   bool get isLoading => false;
@@ -45,6 +47,11 @@ class MockMarketplaceProviderForTest extends MarketplaceProvider {
     String sortBy = 'price',
   }) async {
     lastFetchNearBy = nearBy;
+  }
+
+  @override
+  Future<Map<String, dynamic>> fetchRatings(String tenantId) async {
+    return {'average': 4.8, 'count': 25};
   }
 }
 
@@ -181,5 +188,68 @@ void main() {
 
     // 4. Verify fetchServices was called with nearBy = true
     expect(mockMarketplaceProvider.lastFetchNearBy, isTrue);
+  });
+
+  testWidgets(
+      'BookingDialog renders overflow-free on narrow 360x800 mobile viewport and displays ThemedWarningBanner',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final customerUser = UserProfile(
+      id: 'cust-1',
+      email: 'customer@example.com',
+      username: 'cust_user',
+      role: 'user',
+    );
+
+    mockMarketplaceProvider.mockServices = [
+      MarketplaceService(
+        id: 'srv-123',
+        tenantId: 'tenant-456',
+        name: 'Express Delivery',
+        category: 'delivery',
+        basePrice: 20.0,
+        tenantBasePrice: 20.0,
+        tenantPricePerKM: 3.5,
+        latitude: 30.0444,
+        longitude: 31.2357,
+        distanceKM: 4.2,
+        finalPrice: 35.0,
+      ),
+    ];
+
+    await tester.pumpWidget(buildMarketplaceApp(
+      MockAuthProviderForTest(apiClient, customerUser),
+    ));
+    await tester.pumpAndSettle();
+
+    // Tap Book button to open _BookingDialog
+    final bookBtn = find.text("Book");
+    expect(bookBtn, findsOneWidget);
+    await tester.tap(bookBtn);
+    await tester.pumpAndSettle();
+
+    // Verify dialog title, content, warning banner, and actions
+    expect(find.text("Confirm Booking"), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.text("Express Delivery")),
+        findsOneWidget);
+    expect(find.byType(ThemedWarningBanner), findsOneWidget);
+    expect(
+        find.text(
+            "Note: Escrow payments and wallet deductions are currently deferred for this beta launch."),
+        findsOneWidget);
+    expect(find.byKey(const Key('confirm_booking_button')), findsOneWidget);
+    expect(find.text("Cancel"), findsOneWidget);
+
+    // Verify zero RenderFlex overflow
+    expect(tester.takeException(), isNull);
   });
 }

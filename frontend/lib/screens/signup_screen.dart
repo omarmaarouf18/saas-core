@@ -23,6 +23,17 @@ class _SignupScreenState extends State<SignupScreen> {
   final _passwordController = TextEditingController();
   String _selectedRole = "owner"; // Standard default
   TextDirection? _usernameDirection;
+  DateTime? _lastNavTime;
+
+  void _debouncedNav(VoidCallback navAction) {
+    final now = DateTime.now();
+    if (_lastNavTime != null &&
+        now.difference(_lastNavTime!) < AppMotion.debounceGuard) {
+      return;
+    }
+    _lastNavTime = now;
+    navAction();
+  }
 
   @override
   void dispose() {
@@ -246,7 +257,9 @@ class _SignupScreenState extends State<SignupScreen> {
                         const SizedBox(height: AppSpacing.md),
                         TextButton(
                           onPressed: () {
-                            Navigator.of(context).pop();
+                            _debouncedNav(() {
+                              Navigator.of(context).pop();
+                            });
                           },
                           child: Text(
                             "${l10n.signupHasAccount} ${l10n.signupSignIn}",

@@ -125,7 +125,6 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
                       style: AppTypography.labelMd.copyWith(
                         color: AppColors.onPrimary,
                         fontWeight: FontWeight.bold,
-                        fontSize: 10,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -235,7 +234,7 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
   }
 }
 
-class _CustomerHomeDashboardTab extends StatelessWidget {
+class _CustomerHomeDashboardTab extends StatefulWidget {
   final ValueChanged<String> onCategorySelected;
   final VoidCallback onGoToServices;
   final VoidCallback onGoToHistory;
@@ -245,6 +244,24 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
     required this.onGoToServices,
     required this.onGoToHistory,
   });
+
+  @override
+  State<_CustomerHomeDashboardTab> createState() =>
+      _CustomerHomeDashboardTabState();
+}
+
+class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
+  DateTime? _lastTileTapTime;
+
+  void _handleDebouncedTap(VoidCallback action) {
+    final now = DateTime.now();
+    if (_lastTileTapTime != null &&
+        now.difference(_lastTileTapTime!) < AppMotion.debounceGuard) {
+      return;
+    }
+    _lastTileTapTime = now;
+    action();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -297,7 +314,7 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
                     title: l10n.customerHomeCatDelivery,
                     icon: Icons.delivery_dining,
                     color: AppColors.success,
-                    onTap: () => onCategorySelected('delivery'),
+                    onTap: () => widget.onCategorySelected('delivery'),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
@@ -308,7 +325,7 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
                     title: l10n.customerHomeCatRide,
                     icon: Icons.directions_car,
                     color: AppColors.primary,
-                    onTap: () => onCategorySelected('transport'),
+                    onTap: () => widget.onCategorySelected('transport'),
                   ),
                 ),
               ],
@@ -326,7 +343,7 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
                     title: l10n.customerHomeCatShipping,
                     icon: Icons.local_shipping,
                     color: AppColors.warning,
-                    onTap: () => onCategorySelected('shipping'),
+                    onTap: () => widget.onCategorySelected('shipping'),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
@@ -337,7 +354,7 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
                     title: l10n.customerHomeCatBrowseAll,
                     icon: Icons.grid_view_rounded,
                     color: AppColors.primary,
-                    onTap: () => onCategorySelected('all'),
+                    onTap: () => widget.onCategorySelected('all'),
                   ),
                 ),
               ],
@@ -363,9 +380,16 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
                     ),
                     TextButton.icon(
                       key: const Key('view_all_orders_button'),
-                      onPressed: onGoToHistory,
-                      icon: const Icon(Icons.arrow_forward, size: 16),
-                      label: Text(l10n.customerHomeCatBrowseAll),
+                      onPressed: widget.onGoToHistory,
+                      icon:
+                          const Icon(Icons.arrow_forward, size: AppIconSize.sm),
+                      label: Text(
+                        l10n.customerHomeCatBrowseAll,
+                        style: AppTypography.labelLg.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -474,7 +498,7 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
                   child: PrimaryButton(
                     key: const Key('quick_book_now_button'),
                     text: l10n.customerHomeQuickBookBtn,
-                    onPressed: onGoToServices,
+                    onPressed: widget.onGoToServices,
                   ),
                 ),
               ],
@@ -499,7 +523,7 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap,
+          onTap: () => _handleDebouncedTap(onTap),
           borderRadius: BorderRadius.circular(AppRadius.sm),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -511,7 +535,7 @@ class _CustomerHomeDashboardTab extends StatelessWidget {
                   color: color.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: color, size: 28),
+                child: Icon(icon, color: color, size: AppIconSize.lg),
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(

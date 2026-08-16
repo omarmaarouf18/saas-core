@@ -26,6 +26,18 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  DateTime? _lastNavTime;
+
+  void _debouncedNav(VoidCallback navAction) {
+    final now = DateTime.now();
+    if (_lastNavTime != null &&
+        now.difference(_lastNavTime!) < AppMotion.debounceGuard) {
+      return;
+    }
+    _lastNavTime = now;
+    navAction();
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -100,19 +112,18 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: AppColors.primary,
                           borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.storefront,
                               color: AppColors.secondary,
-                              size: 20,
+                              size: AppIconSize.md,
                             ),
-                            SizedBox(width: AppSpacing.xs),
+                            const SizedBox(width: AppSpacing.xs),
                             Text(
                               "QD",
-                              style: TextStyle(
-                                fontSize: 18,
+                              style: AppTypography.titleMd.copyWith(
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.onPrimary,
                                 letterSpacing: 1.0,
@@ -206,12 +217,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           alignment: AlignmentDirectional.centerEnd,
                           child: TextButton(
                             onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ForgotPasswordScreen(),
-                                ),
-                              );
+                              _debouncedNav(() {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const ForgotPasswordScreen(),
+                                  ),
+                                );
+                              });
                             },
                             child: Text(
                               l10n.loginForgotPassword,
@@ -231,11 +244,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: AppSpacing.md),
                         TextButton(
                           onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const SignupScreen(),
-                              ),
-                            );
+                            _debouncedNav(() {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const SignupScreen(),
+                                ),
+                              );
+                            });
                           },
                           child: Text(
                             "${l10n.loginNoAccount} ${l10n.loginSignUp}",

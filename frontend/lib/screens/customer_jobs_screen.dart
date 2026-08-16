@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
+import '../widgets/primary_button.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
@@ -28,11 +29,12 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
     });
   }
 
-  void _loadCustomerJobs() {
+  Future<void> _loadCustomerJobs() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    final marketplace =
-        Provider.of<MarketplaceProvider>(context, listen: false);
-    marketplace.fetchCustomerJobs(auth.token);
+    if (auth.token != null) {
+      await Provider.of<MarketplaceProvider>(context, listen: false)
+          .fetchCustomerJobs(auth.token!);
+    }
   }
 
   @override
@@ -70,11 +72,12 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                     onRetry: _loadCustomerJobs,
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  ElevatedButton.icon(
+                  PrimaryButton(
                     key: const Key('retry_customer_jobs_button'),
                     onPressed: _loadCustomerJobs,
-                    icon: const Icon(Icons.refresh),
-                    label: Text(l10n.retry),
+                    icon: Icons.refresh,
+                    text: l10n.retry,
+                    isFullWidth: false,
                   ),
                 ],
               ),
@@ -149,15 +152,14 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                             children: [
                               const Icon(
                                 Icons.payment,
-                                size: 16,
+                                size: AppIconSize.sm,
                                 color: AppColors.onSurfaceVariant,
                               ),
                               const SizedBox(width: AppSpacing.xs),
                               Text(
                                 "Payment: ${job.paymentMethod.toUpperCase()}",
-                                style: AppTypography.bodyMd.copyWith(
+                                style: AppTypography.bodySm.copyWith(
                                   color: AppColors.onSurfaceVariant,
-                                  fontSize: 12,
                                 ),
                               ),
                               if (displayPrice != null) ...[
@@ -177,7 +179,7 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                               job.cancellationReason!.isNotEmpty) ...[
                             const SizedBox(height: AppSpacing.sm),
                             Container(
-                              padding: const EdgeInsets.all(AppSpacing.xs + 2),
+                              padding: const EdgeInsets.all(AppSpacing.sm),
                               decoration: BoxDecoration(
                                 color: AppColors.error.withValues(alpha: 0.1),
                                 borderRadius:
@@ -187,16 +189,15 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                                 children: [
                                   const Icon(
                                     Icons.info_outline,
-                                    size: 14,
+                                    size: AppIconSize.xs,
                                     color: AppColors.error,
                                   ),
                                   const SizedBox(width: AppSpacing.xs),
                                   Expanded(
                                     child: Text(
                                       "Reason: ${job.cancellationReason!}",
-                                      style: AppTypography.bodyMd.copyWith(
+                                      style: AppTypography.bodySm.copyWith(
                                         color: AppColors.error,
-                                        fontSize: 12,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,

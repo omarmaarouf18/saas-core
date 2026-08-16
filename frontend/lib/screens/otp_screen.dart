@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/secondary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_text_field.dart';
 import '../widgets/themed_success_banner.dart';
@@ -201,15 +202,13 @@ class _OtpScreenState extends State<OtpScreen> {
                           onPressed: _submit,
                         ),
                         const SizedBox(height: AppSpacing.md),
-                        TextButton(
-                          onPressed: auth.isLoading ? null : _resendCode,
-                          child: Text(
-                            l10n.otpResendButton,
-                            style: AppTypography.bodyMd.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                        SecondaryButton(
+                          key: const Key('otp_resend_button'),
+                          text: l10n.otpResendButton,
+                          icon: Icons.refresh,
+                          isLoading: auth.isLoading,
+                          isOutlined: true,
+                          onPressed: _resendCode,
                         ),
                       ],
                     ),

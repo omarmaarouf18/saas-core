@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
-import 'dart:math' as math;
 import '../core/constants.dart';
 import '../core/theme.dart';
 import '../models/marketplace_service.dart';
@@ -200,27 +199,11 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                   children: [
                     Expanded(
                       flex: 2,
-                      child: OutlinedButton.icon(
+                      child: SecondaryButton(
                         key: const Key('choose_location_map_button'),
-                        icon: const Icon(Icons.map_outlined,
-                            color: AppColors.primary),
-                        label: Text(
-                          l10n.customerMarketplaceChooseMap,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.bodyMd
-                              .copyWith(fontWeight: FontWeight.w600),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.md,
-                            horizontal: AppSpacing.sm,
-                          ),
-                          side:
-                              const BorderSide(color: AppColors.outlineVariant),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadius.defaultBorder,
-                          ),
-                        ),
+                        isOutlined: true,
+                        icon: Icons.map_outlined,
+                        text: l10n.customerMarketplaceChooseMap,
                         onPressed: () => _openLocationPickerDialog(context),
                       ),
                     ),
@@ -446,13 +429,18 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                                           ),
                                         ),
                                         const SizedBox(height: AppSpacing.xs),
-                                        Row(
+                                        Wrap(
+                                          spacing: AppSpacing.base,
+                                          runSpacing: AppSpacing.xxs,
+                                          crossAxisAlignment:
+                                              WrapCrossAlignment.center,
                                           children: [
                                             Container(
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 2),
+                                                horizontal: AppSpacing.base,
+                                                vertical: AppSpacing.xxs,
+                                              ),
                                               decoration: BoxDecoration(
                                                 color: AppColors.primary
                                                     .withValues(alpha: 0.1),
@@ -462,16 +450,13 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                                               ),
                                               child: Text(
                                                 categoryLabel,
-                                                style: AppTypography.labelMd
+                                                style: AppTypography.labelLg
                                                     .copyWith(
-                                                  fontSize: 12,
                                                   fontWeight: FontWeight.bold,
                                                   color: AppColors.primary,
                                                 ),
                                               ),
                                             ),
-                                            const SizedBox(
-                                                width: AppSpacing.base),
                                             Text(
                                               "${service.distanceKM} km away",
                                               style:
@@ -480,8 +465,6 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                                                     AppColors.onSurfaceVariant,
                                               ),
                                             ),
-                                            const SizedBox(
-                                                width: AppSpacing.base),
                                             ServiceRatingWidget(
                                                 tenantId: service.tenantId),
                                           ],
@@ -547,14 +530,14 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
 
   void _openLocationPickerDialog(BuildContext context) {
     LatLng tempLocation = LatLng(_customerLat, _customerLon);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final dialogWidth = screenWidth > 600 ? 500.0 : screenWidth * 0.95;
+    final dialogHeight = screenHeight > 800 ? 600.0 : screenHeight * 0.75;
 
     showDialog(
       context: context,
       builder: (dialogCtx) {
-        final screenSize = MediaQuery.of(dialogCtx).size;
-        final dialogWidth = math.min(500.0, screenSize.width * 0.9);
-        final dialogHeight = math.min(550.0, screenSize.height * 0.8);
-
         return Dialog(
           key: const Key('location_picker_dialog'),
           insetPadding: const EdgeInsets.all(AppSpacing.md),
@@ -572,11 +555,10 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           "Choose Search Location",
-                          style: TextStyle(
-                            fontSize: 18,
+                          style: AppTypography.titleMd.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -699,6 +681,8 @@ class _BookingDialogState extends State<_BookingDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final dialogWidth = screenWidth > 600 ? 500.0 : screenWidth * 0.92;
     final categoryLabel = serviceCategoryLabels[widget.service.category] ??
         widget.service.category;
     return AlertDialog(
@@ -713,110 +697,107 @@ class _BookingDialogState extends State<_BookingDialog> {
           fontWeight: FontWeight.bold,
         ),
       ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              widget.service.name,
-              style: AppTypography.headlineLgMobile.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.onSurface,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              "Category: $categoryLabel",
-              style: AppTypography.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            const Divider(color: AppColors.outlineVariant),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Pickup Distance:",
-                  style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.onSurface,
-                  ),
-                ),
-                Text(
-                  "${widget.service.distanceKM} km",
-                  style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.onSurface,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Estimated Total:",
-                  style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.onSurface,
-                  ),
-                ),
-                Text(
-                  "\$${widget.service.finalPrice}",
-                  style: AppTypography.titleMd.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.onSurface,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            ThemedSectionHeader(
-              title: l10n.paymentMethodLabel,
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            // Forced Option: Cash on Delivery (COD)
-            ListTile(
-              leading: const Icon(
-                Icons.radio_button_checked,
-                color: AppColors.primary,
-              ),
-              title: Text(
-                "Cash on Delivery (COD)",
-                style: AppTypography.bodyMd.copyWith(
+      content: SizedBox(
+        width: dialogWidth,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                widget.service.name,
+                style: AppTypography.headlineLgMobile.copyWith(
                   fontWeight: FontWeight.bold,
+                  color: AppColors.onSurface,
                 ),
               ),
-              subtitle: Text(
-                "Pay in cash directly to the driver upon arrival",
-                style: AppTypography.labelMd.copyWith(
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                "Category: $categoryLabel",
+                style: AppTypography.bodyMd.copyWith(
                   color: AppColors.onSurfaceVariant,
                 ),
               ),
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            // Inline note explaining escrow/other methods are deferred
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.1),
-                border: Border.all(
-                  color: AppColors.warning.withValues(alpha: 0.3),
-                ),
-                borderRadius: AppRadius.defaultBorder,
+              const SizedBox(height: AppSpacing.md),
+              const Divider(color: AppColors.outlineVariant),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      "Pickup Distance:",
+                      style: AppTypography.bodyMd.copyWith(
+                        color: AppColors.onSurface,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    "${widget.service.distanceKM} km",
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-              child: Text(
-                "Note: Escrow payments and wallet deductions are currently deferred for this beta launch.",
-                style: AppTypography.labelMd.copyWith(
-                  color: AppColors.warning,
-                ),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      "Estimated Total:",
+                      style: AppTypography.bodyMd.copyWith(
+                        color: AppColors.onSurface,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    "\$${widget.service.finalPrice}",
+                    style: AppTypography.titleMd.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: AppSpacing.lg),
+              ThemedSectionHeader(
+                title: l10n.paymentMethodLabel,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              // Forced Option: Cash on Delivery (COD)
+              ListTile(
+                leading: const Icon(
+                  Icons.radio_button_checked,
+                  color: AppColors.primary,
+                ),
+                title: Text(
+                  "Cash on Delivery (COD)",
+                  style: AppTypography.bodyMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: Text(
+                  "Pay in cash directly to the driver upon arrival",
+                  style: AppTypography.labelMd.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              // Inline note explaining escrow/other methods are deferred
+              const ThemedWarningBanner(
+                message:
+                    "Note: Escrow payments and wallet deductions are currently deferred for this beta launch.",
+              ),
+            ],
+          ),
         ),
       ),
       actionsPadding: const EdgeInsets.symmetric(
@@ -828,18 +809,21 @@ class _BookingDialogState extends State<_BookingDialog> {
           children: [
             Expanded(
               child: SecondaryButton(
-                text: "Cancel",
+                text: l10n.cancel,
                 isOutlined: true,
+                isFullWidth: false,
                 onPressed:
                     _isSubmitting ? null : () => Navigator.of(context).pop(),
               ),
             ),
-            const SizedBox(width: AppSpacing.md),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: PrimaryButton(
+                key: const Key('confirm_booking_button'),
                 text: "Confirm & Request",
                 isLoading: _isSubmitting,
-                onPressed: _confirmBooking,
+                isFullWidth: false,
+                onPressed: _isSubmitting ? null : _confirmBooking,
               ),
             ),
           ],
