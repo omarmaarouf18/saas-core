@@ -121,7 +121,7 @@ The detailed project history is distributed across categorized changelog files. 
 *   [New Features](docs/changelog/new-features.md) — 56 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters, username propagation, version gating, zero-commission model, owner payout requests).
 *   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 49 tooling, CI/CD hardening, module refactoring, and onboarding CLI tools (including strict CD preflight validation per ADR-0015).
 *   [Bug Fixes](docs/changelog/bug-fixes.md) — 55 corrections to non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic, frontend consistency audit batches 1–5, SegmentedButton contrast).
-*   [Documentation](docs/changelog/documentation.md) — 33 documentation-only updates (e.g. Business Logic Audit Report, Application Map auto-sync, Frontend Consistency Audit, Four-Repo Deployment Map).
+*   [Documentation](docs/changelog/documentation.md) — 34 documentation-only updates (e.g. Business Logic Audit Report, Application Map auto-sync, Frontend Consistency Audit, Four-Repo Deployment Map).
 *   [Localization Infrastructure](docs/changelog/localization-infrastructure.md) — 4 entries covering Egyptian Colloquial Arabic (ar_EG) i18n and RTL layout architecture.
 *   [Refactoring](docs/changelog/refactoring.md) — 2 entries documenting handler modularization and architecture alignments.
 

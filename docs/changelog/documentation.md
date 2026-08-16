@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## API Gateway Version Gating Collection Alignment in Docgen & Application Map
+
+- **Implementation Detail**: Aligned the MongoDB collection target for the mobile version gating admin endpoints (`GET /api/v1/admin/version-config` and `PUT /api/v1/admin/version-config`) in `shared/infra/docgen/generator.go` and `docs/APPLICATION_MAP.md` from `version_config` to `platform_versions` to match `services/api-gateway/internal/version/version.go`, ADR-0018 §2.2, and `docs/DEPLOYMENT.md` §11.3. Updated `api-gateway`'s inventory description in Section 1 to document MongoDB `platform_versions` database persistence and minimum version gating responsibilities.
+- **Commit SHA**: ``dbd3ee56aa73ea82b4aaa92d465b4e6aafc196ae``
+- **Verification**: Verified via `make docs`, `make docs-check`, `gofmt -l .`, and `go test ./...` in `shared/infra/docgen`. ✅
+
 ## Full Repository Documentation Freshness Audit & Gap-Filling Pass
 
 - **Implementation Detail**: Completed a comprehensive, repository-wide documentation freshness audit and gap-filling sweep across all architectural specifications, ADRs, application maps, deployment guides, audit logs, and changelog indices:
