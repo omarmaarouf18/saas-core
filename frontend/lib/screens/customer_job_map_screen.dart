@@ -82,13 +82,14 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
           if (provider.customerJobLocation != null) {
             mapMarkers.add(
               Marker(
-                width: 70.0,
-                height: 45.0,
+                width: 80.0,
+                height: 60.0,
                 point: LatLng(
                   provider.customerJobLocation!.latitude,
                   provider.customerJobLocation!.longitude,
                 ),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
                       padding: const EdgeInsetsDirectional.symmetric(
@@ -101,7 +102,6 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                         'Pickup',
                         style: AppTypography.labelMd.copyWith(
                           color: AppColors.onPrimary,
-                          fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -109,7 +109,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                     const Icon(
                       Icons.flag,
                       color: AppColors.primary,
-                      size: 24.0,
+                      size: AppIconSize.md,
                     ),
                   ],
                 ),
@@ -122,13 +122,14 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
             mapMarkers.add(
               Marker(
                 width: 90.0,
-                height: 50.0,
+                height: 60.0,
                 point: LatLng(m.latitude, m.longitude),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
                       padding: const EdgeInsetsDirectional.symmetric(
-                          horizontal: 6, vertical: AppSpacing.xxs),
+                          horizontal: AppSpacing.xs, vertical: AppSpacing.xxs),
                       decoration: BoxDecoration(
                         color: AppColors.secondary,
                         borderRadius: BorderRadius.circular(AppRadius.radiusSm),
@@ -140,7 +141,6 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                             : m.employeeId,
                         style: AppTypography.labelMd.copyWith(
                           color: AppColors.primary,
-                          fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
                         overflow: TextOverflow.ellipsis,

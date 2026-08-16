@@ -2,6 +2,18 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Real-Time Communication, Map Tracking & Job Details (Consistency Audit Batch 5)
+
+- **Implementation Detail**:
+  - **`job_status_screen.dart`**: Migrated raw `TextField` with custom `InputDecoration` on counter-offer input to `ThemedTextField(key: const Key('counter_offer_input'), controller: _counterOfferController, prefixIcon: Icon(Icons.attach_money, size: AppIconSize.sm, color: AppColors.outline))` with inline `_proposalError` messaging.
+  - **`rating_screen.dart`**: Replaced un-tokenized `AppTypography.bodyMd.copyWith(fontSize: 13, color: AppColors.onSurfaceVariant)` with canonical `AppTypography.bodySm.copyWith(color: AppColors.onSurfaceVariant)`.
+  - **`owner_history_screen.dart`**: Standardized TabBar typography to `AppTypography.bodySm.copyWith(fontWeight: FontWeight.bold)` and `AppTypography.bodySm` across both tab shells, and standardized spacing from magic numbers to `AppSpacing.xxs`.
+  - **`customer_job_map_screen.dart`**: Replaced magic padding number `horizontal: 6` with canonical token `AppSpacing.xs`, removed un-tokenized `fontSize: 10` overrides from marker labels, adjusted Marker bounds to `60.0` with `MainAxisSize.min` Column to prevent flex overflows, and verified strict `AppColors` token adoption.
+  - **`owner_fleet_map_screen.dart`**: Replaced raw `Colors.white` with `AppColors.onPrimary`, replaced magic padding `horizontal: 6` with `AppSpacing.xs`, removed `fontSize: 10` override, and standardized Marker bounds to `60.0` with `MainAxisSize.min`.
+  - **`employee_home_screen.dart`, `employee_jobs_screen.dart`, `home_screen.dart`**: Removed `fontSize: 10` overrides on unread notification badges so standard `AppTypography.labelMd` applies.
+- **Commit SHA**: ``TO_BE_POPULATED``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), and `flutter test` (100% pass, 267/267 tests passed). ✅
+
 ## Restored KYB/KYE Reviewer Screen & Routing (Revert Mistaken Scope Removal)
 
 - **Implementation Detail**:

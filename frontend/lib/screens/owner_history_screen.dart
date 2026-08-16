@@ -92,11 +92,10 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
         indicatorWeight: 3,
         labelColor: AppColors.onPrimary,
         unselectedLabelColor: AppColors.onPrimary.withValues(alpha: 0.7),
-        labelStyle: AppTypography.titleMd.copyWith(
+        labelStyle: AppTypography.bodySm.copyWith(
           fontWeight: FontWeight.bold,
-          fontSize: 13,
         ),
-        unselectedLabelStyle: AppTypography.titleMd.copyWith(fontSize: 13),
+        unselectedLabelStyle: AppTypography.bodySm,
         tabs: [
           Tab(
             key: const Key('history_tab_activity'),
@@ -462,7 +461,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    const SizedBox(height: 2),
+                                    const SizedBox(height: AppSpacing.xxs),
                                     Text(
                                       l10n.ownerHistoryBalanceAfter(
                                           balanceAfter.toStringAsFixed(2),
@@ -473,7 +472,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                                         color: AppColors.onSurfaceVariant,
                                       ),
                                     ),
-                                    const SizedBox(height: 2),
+                                    const SizedBox(height: AppSpacing.xxs),
                                     Text(
                                       dateStr,
                                       style: AppTypography.labelMd.copyWith(
@@ -540,6 +539,10 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
           indicatorWeight: 3,
           labelColor: AppColors.onPrimary,
           unselectedLabelColor: AppColors.onPrimary.withValues(alpha: 0.7),
+          labelStyle: AppTypography.bodySm.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+          unselectedLabelStyle: AppTypography.bodySm,
           tabs: [
             Tab(
               key: const Key('history_tab_activity'),

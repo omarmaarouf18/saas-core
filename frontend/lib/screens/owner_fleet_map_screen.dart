@@ -100,13 +100,15 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
                     markers: markers.map((m) {
                       return Marker(
                         width: 90.0,
-                        height: 50.0,
+                        height: 60.0,
                         point: LatLng(m.latitude, m.longitude),
                         child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
                               padding: const EdgeInsetsDirectional.symmetric(
-                                  horizontal: 6, vertical: AppSpacing.xxs),
+                                  horizontal: AppSpacing.xs,
+                                  vertical: AppSpacing.xxs),
                               decoration: BoxDecoration(
                                 color: AppColors.primary,
                                 borderRadius:
@@ -118,8 +120,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
                                     ? m.employeeId.substring(0, 12)
                                     : m.employeeId,
                                 style: AppTypography.labelMd.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 10,
+                                  color: AppColors.onPrimary,
                                   fontWeight: FontWeight.bold,
                                 ),
                                 overflow: TextOverflow.ellipsis,
@@ -128,7 +129,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
                             const Icon(
                               Icons.location_on,
                               color: AppColors.secondary,
-                              size: 26.0,
+                              size: AppIconSize.md,
                             ),
                           ],
                         ),

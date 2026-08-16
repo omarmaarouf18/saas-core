@@ -16,6 +16,7 @@ import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_success_banner.dart';
+import '../widgets/themed_text_field.dart';
 import 'chat_screen.dart';
 import 'rating_screen.dart';
 
@@ -818,20 +819,32 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: TextField(
-                    key: const Key('counter_offer_input'),
-                    controller: _counterOfferController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(
-                      hintText: l10n
-                          .negotiationHintExample(suggested.toStringAsFixed(2)),
-                      prefixText: "\$ ",
-                      errorText: _proposalError,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
-                      border: const OutlineInputBorder(),
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ThemedTextField(
+                        key: const Key('counter_offer_input'),
+                        controller: _counterOfferController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        hintText: l10n.negotiationHintExample(
+                            suggested.toStringAsFixed(2)),
+                        prefixIcon: const Icon(
+                          Icons.attach_money,
+                          size: AppIconSize.sm,
+                          color: AppColors.outline,
+                        ),
+                      ),
+                      if (_proposalError != null) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          _proposalError!,
+                          style: AppTypography.labelMd.copyWith(
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),

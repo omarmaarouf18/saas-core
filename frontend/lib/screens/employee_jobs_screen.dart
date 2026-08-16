@@ -223,7 +223,6 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                     style: AppTypography.labelMd.copyWith(
                       color: AppColors.onPrimary,
                       fontWeight: FontWeight.bold,
-                      fontSize: 10,
                     ),
                     textAlign: TextAlign.center,
                   ),

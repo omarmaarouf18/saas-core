@@ -394,8 +394,7 @@ class _RatingScreenState extends State<RatingScreen> {
             Text(
               "The other party has submitted their rating. Both feedbacks are now visible under profile summary.",
               textAlign: TextAlign.center,
-              style: AppTypography.bodyMd.copyWith(
-                fontSize: 13,
+              style: AppTypography.bodySm.copyWith(
                 color: AppColors.onSurfaceVariant,
               ),
             ),
@@ -434,8 +433,7 @@ class _RatingScreenState extends State<RatingScreen> {
             Text(
               "The other party has not yet rated this transaction. Your ratings will remain hidden until they submit.",
               textAlign: TextAlign.center,
-              style: AppTypography.bodyMd.copyWith(
-                fontSize: 13,
+              style: AppTypography.bodySm.copyWith(
                 color: AppColors.onSurfaceVariant,
               ),
             ),

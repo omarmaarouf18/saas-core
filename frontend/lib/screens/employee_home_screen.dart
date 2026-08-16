@@ -132,7 +132,6 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
                     style: AppTypography.labelMd.copyWith(
                       color: AppColors.onPrimary,
                       fontWeight: FontWeight.bold,
-                      fontSize: 10,
                     ),
                     textAlign: TextAlign.center,
                   ),
