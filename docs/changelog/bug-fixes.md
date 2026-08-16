@@ -2,6 +2,18 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Shared Widgets & Foundation Hardening (Consistency Audit Batch 1)
+
+- **Implementation Detail**:
+  - **`create_ticket_dialog.dart`**: Removed fixed `SizedBox(width: 100/130)` button wrappers, utilizing `SecondaryButton(isFullWidth: false)` and `PrimaryButton(isFullWidth: false)` to prevent RenderFlex horizontal overflows on narrow 360dp mobile viewports. Standardized reference ID metadata text to `AppTypography.bodySm` and replaced raw `ScaffoldMessenger` SnackBar with `ThemedSnackBar.showSuccess`.
+  - **`entity_avatar.dart`**: Replaced raw `TextStyle` definitions with `GoogleFonts.poppins(color: fg, fontWeight: FontWeight.bold, fontSize: radius * 0.8)`. Wrapped `onTap` callback with 600ms tap-debounce protection (`AppMotion.debounceGuard`) to prevent double-submit and race conditions during async navigation.
+  - **`rating_summary_card.dart`**: Replaced hardcoded star icon sizes with `AppIconSize.md`, vertical divider spacing arithmetic with `AppSpacing.baseSm`, sub-element spacing with `AppSpacing.xxs`, and score summary text to `AppTypography.bodySm`.
+  - **`stat_card.dart`**: Standardized header icon size to `AppIconSize.md`, trend indicator icon size to `AppIconSize.xs`, and trend label gap to `AppSpacing.xs`.
+  - **`status_badge.dart`**: Replaced spacing arithmetic and hardcoded icon dimensions with canonical tokens: `compact ? AppSpacing.xxs : AppSpacing.xs` vertical padding, `compact ? AppSpacing.xs : AppSpacing.sm` horizontal padding, and `compact ? AppIconSize.xs : AppIconSize.sm` icon size.
+  - **`location_picker_map.dart`**: Replaced raw `ScaffoldMessenger` SnackBars with `ThemedSnackBar.showError` and standardized floating action button label to `AppTypography.labelLg.copyWith(color: AppColors.onPrimary)`.
+- **Commit SHA**: ``4f4623c0a7f287942d7845ac81ff1cc0fa376022``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (100% pass, 216/216 tests passed including 35 unit/widget tests in `test/shared_widgets_test.dart`), and 360dp narrow viewport rendering test. ✅
+
 ## Owner Reconciliation Queue Refresh & Retry Wiring Fix
 
 - **Implementation Detail**:
