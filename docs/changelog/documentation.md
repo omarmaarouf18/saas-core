@@ -14,7 +14,7 @@ This file tracks historical entries for the primary category: **Documentation Ch
   5. Updated `docs/BUSINESS_LOGIC_AUDIT.md`: transitioned Finding 1 (COD race condition) and Finding 2 (AgreedPrice escrow refund) to `Resolved (Remediated & Verified in Code)` with citations to `mongodb.CancelJob` CAS status guard and `CancelJob` handler math.
   6. Updated `docs/FRONTEND_CONSISTENCY_AUDIT.md`: transitioned status to `COMPLETED & 100% IMPLEMENTED (All 5 Remediation Batches Landed & Verified)` citing all 5 batch commit SHAs and test pass metrics.
   7. Refreshed category entry counts across `docs/changelog/README.md` and `AI_CONTEXT.md` to reflect actual index counts (104 security fixes, 56 new features, 49 infrastructure, 55 bug fixes, 33 documentation, 4 localization, 2 refactoring).
-- **Commit SHA**: ``c793624ec63c61199f7cb7641b6bb85d6db68e27``
+- **Commit SHA**: ``855bcf9e8049bc14b236a6ecef60444d76914787``
 - **Verification**: Verified via `make docs-check`, `go test ./...` in shared/infra, and full git commit SHA reachability check (`FAILED_SHA=0`). ✅
 
 ## Full Repository Documentation Freshness Re-Audit & Remediation
