@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`8f9aa91`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`7f06440`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -56,8 +56,8 @@ flowchart TD
 The platform is comprised of **5 microservices** and **1 compile-time shared package**. Below is the detailed inventory of each component, its database ownership, port mappings, and HTTP routing policies.
 
 ### 1. `api-gateway` (Port: `8080`)
-* **Core Responsibility**: The public-facing reverse proxy and routing edge for all client-facing traffic. Terminals SSL/TLS on the internet boundary, enforces edge rate limiting via Redis, rewrites request paths, and strips unsafe incoming headers.
-* **Database & Collections**: None. Maintains edge rate limit buckets inside Redis.
+* **Core Responsibility**: The public-facing reverse proxy and routing edge for all client-facing traffic. Terminates SSL/TLS on the internet boundary, enforces edge rate limiting via Redis, enforces minimum client version gating (`VersionGate` middleware), rewrites request paths, and strips unsafe incoming headers.
+* **Database & Collections**: MongoDB (`platform_versions` for ADR-0018 client version gating configuration; in-memory fallback in local/test mode). Maintains edge rate limit buckets inside Redis.
 * **Security & TLS Policy**: 
   * Inbound: Serves public traffic over HTTPS (`http.ListenAndServeTLS` using `EXTERNAL_TLS_CERT_PATH` and `EXTERNAL_TLS_KEY_PATH`).
   * Outbound: Calls downstream services using mTLS (`tlsutil.LoadClientTLSConfig`).
@@ -163,8 +163,8 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | Method + Path | Owning Service | Caller Permissions | Core Functionality | Read / Write Target & Downstream Actions |
 | :--- | :--- | :--- | :--- | :--- |
 | **`GET /`** | `api-gateway` | Public | Root index. | None. |
-| **`GET /api/v1/admin/version-config`** | `api-gateway` | `X-Internal-Token` | Fetches current mobile client minimum and latest version enforcement configuration. | Reads `version_config` collection. |
-| **`PUT /api/v1/admin/version-config`** | `api-gateway` | `X-Internal-Token` | Updates mobile client minimum and latest version enforcement configuration. | Updates `version_config` collection. |
+| **`GET /api/v1/admin/version-config`** | `api-gateway` | `X-Internal-Token` | Fetches current mobile client minimum and latest version enforcement configuration. | Reads `platform_versions` collection. |
+| **`PUT /api/v1/admin/version-config`** | `api-gateway` | `X-Internal-Token` | Updates mobile client minimum and latest version enforcement configuration. | Updates `platform_versions` collection. |
 | **`GET /health`** | `api-gateway` | Public | Public gateway health status. | None. |
 | **`GET /health/internal`** | `api-gateway` | `X-Internal-Token` | Returns circuit breaker metrics. | Reads breaker memory. |
 | **`GET /auth/audit-log`** | `auth-service` | Tenant Owner JWT | Fetches tenant security audit logs. Accepts requester_id (legacy) or requester_token (preferred). | Reads `audit_logs` collection. |
