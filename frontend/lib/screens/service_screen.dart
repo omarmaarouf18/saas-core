@@ -8,7 +8,6 @@ import '../providers/owner_provider.dart';
 import '../widgets/create_service_dialog.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
-import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 
 class ServiceScreen extends StatefulWidget {
@@ -29,6 +28,19 @@ class _ServiceScreenState extends State<ServiceScreen> {
 
   Future<void> _loadServices() async {
     await Provider.of<OwnerProvider>(context, listen: false).fetchServices();
+  }
+
+  IconData _getCategoryIcon(String? category) {
+    switch (category?.toLowerCase()) {
+      case 'delivery':
+        return Icons.local_shipping_outlined;
+      case 'transport':
+        return Icons.directions_car_outlined;
+      case 'shipping':
+        return Icons.inventory_2_outlined;
+      default:
+        return Icons.store_outlined;
+    }
   }
 
   @override
@@ -63,142 +75,278 @@ class _ServiceScreenState extends State<ServiceScreen> {
         onRefresh: _loadServices,
         child: owner.isLoading && myServices.isEmpty
             ? ThemedLoadingIndicator(message: l10n.loadingServices)
-            : Column(
-                children: [
-                  if (!isKycApproved)
-                    Padding(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      child: ThemedErrorBanner(
-                        message:
-                            "KYC Approval Pending: You cannot publish new services until your profile is approved by an administrator.",
-                        onRetry: _loadServices,
+            : SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header Title & Description
+                    Text(
+                      "Service Management",
+                      style: AppTypography.headlineLgMobile.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
                       ),
                     ),
-                  Expanded(
-                    child: myServices.isEmpty
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: [
-                              const SizedBox(height: AppSpacing.xxxl),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.lg),
-                                child: ThemedCard(
-                                  borderRadius: AppRadius.md,
-                                  padding: AppSpacing.lg,
-                                  child: ThemedEmptyState(
-                                    icon: Icons.design_services_outlined,
-                                    title: l10n.noServicesConfigured,
-                                    description: l10n.noServicesDescription,
-                                    actionText: "Create Service",
-                                    onActionPressed: () =>
-                                        CreateServiceDialog.show(
-                                      context,
-                                      ownerId: user.id,
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      "Configure and monitor active logistics services.",
+                      style: AppTypography.bodyMd.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    if (!isKycApproved) ...[
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(
+                            color:
+                                AppColors.outlineVariant.withValues(alpha: 0.5),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.lock_outline,
+                              color: AppColors.outline,
+                              size: 22,
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Verification Required",
+                                    style: AppTypography.titleMd.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.onSurface,
                                     ),
                                   ),
-                                ),
+                                  const SizedBox(height: AppSpacing.xxs),
+                                  Text(
+                                    "Please complete KYC verification to create new services or modify existing ones.",
+                                    style: AppTypography.bodyMd.copyWith(
+                                      color: AppColors.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          )
-                        : ListView.builder(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            itemCount: myServices.length,
-                            itemBuilder: (context, index) {
-                              final svc = myServices[index];
-                              final categoryLabel =
-                                  serviceCategoryLabels[svc['category']] ??
-                                      svc['category'];
-                              return Padding(
-                                padding: const EdgeInsets.only(
-                                    bottom: AppSpacing.sm),
-                                child: ThemedCard(
-                                  borderRadius: AppRadius.md,
-                                  padding: AppSpacing.md,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+
+                    if (myServices.isEmpty)
+                      ThemedCard(
+                        borderRadius: AppRadius.md,
+                        padding: AppSpacing.lg,
+                        child: ThemedEmptyState(
+                          icon: Icons.design_services_outlined,
+                          title: l10n.noServicesConfigured,
+                          description: l10n.noServicesDescription,
+                          actionText: "Create Service",
+                          onActionPressed: () => CreateServiceDialog.show(
+                            context,
+                            ownerId: user.id,
+                          ),
+                        ),
+                      )
+                    else
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: myServices.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AppSpacing.md),
+                        itemBuilder: (context, index) {
+                          final svc = myServices[index];
+                          final category = svc['category']?.toString();
+                          final categoryLabel =
+                              serviceCategoryLabels[category] ?? category ?? '';
+                          final basePrice =
+                              (svc['tenant_base_price'] as num?)?.toDouble() ??
+                                  0.0;
+                          final pricePerKm =
+                              (svc['tenant_price_per_km'] as num?)
+                                      ?.toDouble() ??
+                                  0.0;
+                          final lat = (svc['latitude'] as num?)?.toDouble();
+                          final lon = (svc['longitude'] as num?)?.toDouble();
+
+                          return ThemedCard(
+                            borderRadius: AppRadius.md,
+                            padding: AppSpacing.md,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryContainer,
+                                        borderRadius:
+                                            BorderRadius.circular(AppRadius.sm),
+                                      ),
+                                      child: Center(
+                                        child: Icon(
+                                          _getCategoryIcon(category),
+                                          color: AppColors.secondary,
+                                          size: 22,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: AppSpacing.md),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          Expanded(
-                                            child: Text(
-                                              svc['name'] ?? '',
-                                              style: AppTypography.titleMd
-                                                  .copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                color: AppColors.primary,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
+                                          Text(
+                                            svc['name'] ?? '',
+                                            style:
+                                                AppTypography.titleMd.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primary,
                                             ),
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                          const SizedBox(width: AppSpacing.sm),
+                                          const SizedBox(height: 2),
                                           Container(
                                             padding: const EdgeInsetsDirectional
                                                 .symmetric(
                                               horizontal: AppSpacing.baseSm,
-                                              vertical: AppSpacing.xs,
+                                              vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: AppColors.primary
-                                                  .withValues(alpha: 0.1),
+                                              color: AppColors.secondary
+                                                  .withValues(alpha: 0.15),
                                               borderRadius:
                                                   BorderRadius.circular(
-                                                      AppRadius.radiusLgXl),
+                                                      AppRadius.full),
                                             ),
                                             child: Text(
                                               categoryLabel,
-                                              style: AppTypography.labelMd
+                                              style: AppTypography.caption
                                                   .copyWith(
-                                                color: AppColors.primary,
+                                                color: AppColors
+                                                    .onSecondaryContainer,
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
                                           ),
                                         ],
                                       ),
-                                      const Divider(
-                                        height: AppSpacing.lg,
-                                        color: AppColors.outlineVariant,
-                                      ),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                    ),
+                                  ],
+                                ),
+                                const Divider(
+                                  height: AppSpacing.lg,
+                                  color: AppColors.outlineVariant,
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(AppSpacing.sm),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surfaceContainerLow,
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.sm),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            "Base Price: \$${(svc['tenant_base_price'] as num?)?.toStringAsFixed(2) ?? '0.00'}",
+                                            "BASE PRICE",
                                             style:
-                                                AppTypography.bodyMd.copyWith(
-                                              color: AppColors.onSurface,
+                                                AppTypography.caption.copyWith(
+                                              color: AppColors.onSurfaceVariant,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                           ),
+                                          const SizedBox(height: 2),
                                           Text(
-                                            "Rate per KM: \$${(svc['tenant_price_per_km'] as num?)?.toStringAsFixed(2) ?? '0.00'}",
+                                            "\$${basePrice.toStringAsFixed(2)}",
                                             style:
-                                                AppTypography.bodyMd.copyWith(
-                                              color: AppColors.onSurface,
+                                                AppTypography.titleMd.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primary,
                                             ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: AppSpacing.xs),
+                                      Container(
+                                        height: 28,
+                                        width: 1,
+                                        color: AppColors.outlineVariant
+                                            .withValues(alpha: 0.4),
+                                      ),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "RATE PER KM",
+                                            style:
+                                                AppTypography.caption.copyWith(
+                                              color: AppColors.onSurfaceVariant,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            "\$${pricePerKm.toStringAsFixed(2)}",
+                                            style:
+                                                AppTypography.titleMd.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (lat != null && lon != null) ...[
+                                  const SizedBox(height: AppSpacing.sm),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.location_on_outlined,
+                                        color: AppColors.outline,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: AppSpacing.xs),
                                       Text(
-                                        "📍 Service Location",
+                                        "Location: (${lat.toStringAsFixed(4)}, ${lon.toStringAsFixed(4)})",
                                         style: AppTypography.labelMd.copyWith(
                                           color: AppColors.outline,
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ],
+                                ],
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
               ),
       ),
       floatingActionButton: FloatingActionButton(

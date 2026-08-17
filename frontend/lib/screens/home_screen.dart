@@ -16,6 +16,7 @@ import 'service_screen.dart';
 import 'settings_screen.dart';
 import 'notifications_screen.dart';
 import 'subscription_screen.dart';
+import 'owner_configuration_screen.dart';
 
 import 'owner_history_screen.dart';
 import 'employee_home_screen.dart';
@@ -379,6 +380,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ? AppColors.primary
             : AppColors.warning);
 
+    final totalEmployees = ownerProvider.employees.length;
+    final activeEmployees =
+        ownerProvider.employees.where((e) => e['is_active'] == true).length;
+    final fleetPercent = totalEmployees > 0
+        ? (activeEmployees / totalEmployees).clamp(0.0, 1.0)
+        : 1.0;
+
     return RefreshIndicator(
       onRefresh: _refreshData,
       child: SingleChildScrollView(
@@ -409,75 +417,232 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header Section with Welcome Greeting & Compact Wallet Balance Badge
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
+                      // 1. Stitch Hero Welcome Banner (Deep Navy + Gold Accent)
+                      ThemedCard(
+                        borderRadius: AppRadius.lg,
+                        topAccentColor: AppColors.secondary,
+                        topAccentHeight: 3,
+                        color: AppColors.primaryContainer,
+                        padding: AppSpacing.lg,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  l10n.ownerHomeWelcomeUser(
-                                      authUser.username.isNotEmpty
-                                          ? authUser.username
-                                          : authUser.email),
-                                  style:
-                                      AppTypography.headlineLgMobile.copyWith(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.bold,
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.secondary
+                                        .withValues(alpha: 0.15),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: AppColors.secondary
+                                          .withValues(alpha: 0.4),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.admin_panel_settings_rounded,
+                                      color: AppColors.secondary,
+                                      size: 26,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: AppSpacing.xs),
-                                Text(
-                                  l10n.ownerHomeTenantId(authUser.id),
-                                  style: AppTypography.bodyMd.copyWith(
-                                    color: AppColors.onSurfaceVariant,
+                                const SizedBox(width: AppSpacing.md),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        l10n.ownerHomeWelcomeUser(
+                                            authUser.username.isNotEmpty
+                                                ? authUser.username
+                                                : authUser.email),
+                                        style: AppTypography.headlineLgMobile
+                                            .copyWith(
+                                          color: AppColors.onPrimary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: AppSpacing.xxs),
+                                      Text(
+                                        l10n.ownerHomeTenantId(authUser.id),
+                                        style: AppTypography.bodyMd.copyWith(
+                                          color: AppColors.onPrimaryContainer,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                InkWell(
+                                  key:
+                                      const Key('owner_dashboard_wallet_badge'),
+                                  onTap: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const WalletScreen(),
+                                      ),
+                                    );
+                                  },
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.full),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.md,
+                                      vertical: AppSpacing.sm,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.secondary
+                                          .withValues(alpha: 0.2),
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.full),
+                                      border: Border.all(
+                                        color: AppColors.secondary,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.account_balance_wallet,
+                                          color: AppColors.secondary,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: AppSpacing.xs),
+                                        Text(
+                                          walletText,
+                                          style: AppTypography.labelLg.copyWith(
+                                            color: AppColors.secondary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          InkWell(
-                            key: const Key('owner_dashboard_wallet_badge'),
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => const WalletScreen(),
-                                ),
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(AppRadius.full),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.md,
-                                vertical: AppSpacing.sm,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.1),
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.full),
-                                border: Border.all(
-                                  color:
-                                      AppColors.primary.withValues(alpha: 0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // 2. Stitch Metrics Bento Grid
+                      Row(
+                        children: [
+                          // Metric Card 1: Today's / Active Jobs
+                          Expanded(
+                            child: ThemedCard(
+                              borderRadius: AppRadius.md,
+                              padding: AppSpacing.md,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(
-                                    Icons.account_balance_wallet,
-                                    color: AppColors.primary,
-                                    size: 18,
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        l10n.ownerHomeOwnerJobs.toUpperCase(),
+                                        style: AppTypography.labelMd.copyWith(
+                                          color: AppColors.onSurfaceVariant,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.assignment_outlined,
+                                        color: AppColors.outline,
+                                        size: 18,
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: AppSpacing.xs),
+                                  const SizedBox(height: AppSpacing.xs),
                                   Text(
-                                    walletText,
-                                    style: AppTypography.labelLg.copyWith(
-                                      color: AppColors.primary,
+                                    '${ownerProvider.ownerJobs.length}',
+                                    style:
+                                        AppTypography.headlineLgMobile.copyWith(
                                       fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xxs),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.trending_up,
+                                        color: AppColors.success,
+                                        size: 14,
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        "+12% vs last week",
+                                        style: AppTypography.caption.copyWith(
+                                          color: AppColors.success,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          // Metric Card 2: Active Fleet / Workers
+                          Expanded(
+                            child: ThemedCard(
+                              borderRadius: AppRadius.md,
+                              padding: AppSpacing.md,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        "ACTIVE FLEET",
+                                        style: AppTypography.labelMd.copyWith(
+                                          color: AppColors.onSurfaceVariant,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.local_shipping_outlined,
+                                        color: AppColors.outline,
+                                        size: 18,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  Text(
+                                    '$activeEmployees / $totalEmployees',
+                                    style:
+                                        AppTypography.headlineLgMobile.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: LinearProgressIndicator(
+                                      value: fleetPercent,
+                                      backgroundColor:
+                                          AppColors.surfaceContainerHighest,
+                                      valueColor:
+                                          const AlwaysStoppedAnimation<Color>(
+                                        AppColors.secondary,
+                                      ),
+                                      minHeight: 4,
                                     ),
                                   ),
                                 ],
@@ -489,7 +654,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       const SizedBox(height: AppSpacing.lg),
 
-                      // Compact Inline Summary Card replacing dense StatCard grid
+                      // 3. Compact Inline Summary Bar
                       ThemedCard(
                         borderRadius: AppRadius.md,
                         padding: AppSpacing.md,
@@ -652,7 +817,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
 
                       const SizedBox(height: AppSpacing.lg),
-                      // Quick Access Management Cards
+
+                      // 4. Quick Access Management Cards (Wallet & Services & Configuration)
                       Row(
                         children: [
                           Expanded(
@@ -788,6 +954,70 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
 
                       const SizedBox(height: AppSpacing.lg),
+
+                      // Business Configuration Card
+                      InkWell(
+                        key: const Key('owner_dashboard_config_card'),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const OwnerConfigurationScreen(),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        child: ThemedCard(
+                          padding: AppSpacing.md,
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(AppSpacing.sm),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryContainer,
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.sm),
+                                ),
+                                child: const Icon(
+                                  Icons.business_outlined,
+                                  color: AppColors.secondary,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.ownerConfigTitle,
+                                      style: AppTypography.titleMd.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      "Configure business profile, rates & coverage",
+                                      style: AppTypography.labelMd.copyWith(
+                                        color: AppColors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(
+                                Icons.chevron_right,
+                                color: AppColors.onSurfaceVariant,
+                                size: 18,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // 5. Service Reputation
                       FutureBuilder<Map<String, dynamic>>(
                         future: Provider.of<MarketplaceProvider>(context,
                                 listen: false)
@@ -831,7 +1061,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
 
-                      const SizedBox(height: AppSpacing.xl),
+                      const SizedBox(height: AppSpacing.lg),
                       ThemedSectionHeader(title: l10n.ownerHomeOwnerJobs),
                       const SizedBox(height: AppSpacing.sm),
 
@@ -859,6 +1089,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             final job = ownerProvider.ownerJobs[index];
                             final canCancel = job.status == 'pending' ||
                                 job.status == 'active';
+                            final displayJobId = job.id.length > 8
+                                ? job.id.substring(0, 8).toUpperCase()
+                                : job.id.toUpperCase();
                             return Padding(
                               padding:
                                   const EdgeInsets.only(bottom: AppSpacing.md),
@@ -872,13 +1105,21 @@ class _HomeScreenState extends State<HomeScreen> {
                                           MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          l10n.ownerHomeJobId(job.id),
+                                          "#QD-$displayJobId",
                                           style: AppTypography.titleMd.copyWith(
                                             fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
                                           ),
                                         ),
                                         StatusBadge(status: job.status),
                                       ],
+                                    ),
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Text(
+                                      l10n.ownerHomeJobId(job.id),
+                                      style: AppTypography.caption.copyWith(
+                                        color: AppColors.outline,
+                                      ),
                                     ),
                                     const SizedBox(height: AppSpacing.xs),
                                     Text(

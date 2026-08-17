@@ -283,20 +283,28 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                         final username = emp['username']?.toString() ?? '';
                         final email = emp['email']?.toString() ?? '';
                         final isActive = emp['is_active'] == true;
+                        final displayId = empId.length > 8
+                            ? empId.substring(0, 8).toUpperCase()
+                            : empId.toUpperCase();
 
                         return Container(
                           key: Key('employee_item_$empId'),
                           padding: const EdgeInsets.all(AppSpacing.md),
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            border: Border.all(
+                              color: AppColors.outlineVariant
+                                  .withValues(alpha: 0.3),
+                              width: 1,
+                            ),
                           ),
                           child: Row(
                             children: [
                               EntityAvatar(
                                 name:
                                     username.isNotEmpty ? username : 'Employee',
-                                radius: 20,
+                                radius: 22,
                               ),
                               const SizedBox(width: AppSpacing.md),
                               Expanded(
@@ -307,15 +315,25 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                                       username,
                                       style: AppTypography.titleMd.copyWith(
                                         fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
+                                    const SizedBox(height: 2),
                                     Text(
                                       email,
-                                      style: AppTypography.labelLg.copyWith(
+                                      style: AppTypography.bodyMd.copyWith(
                                         color: AppColors.onSurfaceVariant,
                                       ),
                                       overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      "ID: #QD-$displayId",
+                                      style: AppTypography.caption.copyWith(
+                                        color: AppColors.outline,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ],
                                 ),

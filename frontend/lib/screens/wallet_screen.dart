@@ -71,15 +71,31 @@ class _WalletScreenState extends State<WalletScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            "My Wallet",
-                            style: AppTypography.headlineLgMobile.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "My Wallet",
+                                  style:
+                                      AppTypography.headlineLgMobile.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.xxs),
+                                Text(
+                                  "Manage corporate finances and payouts.",
+                                  style: AppTypography.bodyMd.copyWith(
+                                    color: AppColors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                          const SizedBox(width: AppSpacing.sm),
                           SizedBox(
-                            width: 185,
+                            width: 160,
                             child: PrimaryButton(
                               onPressed: () => DepositFundsDialog.show(context),
                               icon: Icons.add_card_rounded,
@@ -89,6 +105,81 @@ class _WalletScreenState extends State<WalletScreen> {
                         ],
                       ),
                       const SizedBox(height: AppSpacing.lg),
+
+                      // Stitch Hero Balance Card (Deep Navy + Gold Accent)
+                      ThemedCard(
+                        borderRadius: AppRadius.lg,
+                        topAccentColor: AppColors.secondary,
+                        topAccentHeight: 3,
+                        color: AppColors.primaryContainer,
+                        padding: AppSpacing.lg,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "AVAILABLE BALANCE",
+                                  style: AppTypography.labelMd.copyWith(
+                                    color: AppColors.onPrimaryContainer,
+                                    letterSpacing: 1.0,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.baseSm,
+                                    vertical: AppSpacing.xxs,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.success
+                                        .withValues(alpha: 0.2),
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.full),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.trending_up,
+                                        color: AppColors.success,
+                                        size: 14,
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        "+8.4% vs last mo",
+                                        style: AppTypography.caption.copyWith(
+                                          color: AppColors.success,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              "\$${ownerProvider.withdrawableBalance.toStringAsFixed(2)}",
+                              style: AppTypography.headlineLg.copyWith(
+                                color: AppColors.secondary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 32,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              "Total Portfolio: \$${ownerProvider.walletBalance.toStringAsFixed(2)} Credits",
+                              style: AppTypography.bodyMd.copyWith(
+                                color:
+                                    AppColors.onPrimary.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
 
                       // Balance Display Cards
                       Row(

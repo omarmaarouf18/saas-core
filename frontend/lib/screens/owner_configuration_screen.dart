@@ -351,11 +351,132 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                       ),
                       const SizedBox(height: AppSpacing.md),
                     ],
+                    // Section 1: Business Identity Card
                     ThemedCard(
+                      borderRadius: AppRadius.md,
                       padding: AppSpacing.lg,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryContainer,
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.sm),
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.storefront_outlined,
+                                    color: AppColors.secondary,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Business Identity",
+                                      style: AppTypography.titleMd.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    Text(
+                                      "Company details and classification",
+                                      style: AppTypography.caption.copyWith(
+                                        color: AppColors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(
+                            height: AppSpacing.lg,
+                            color: AppColors.outlineVariant,
+                          ),
+                          // Photo Picker
+                          Row(
+                            children: [
+                              Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceContainerHigh,
+                                  borderRadius: AppRadius.smBorder,
+                                  border: Border.all(
+                                    color: AppColors.outlineVariant,
+                                  ),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: _photoUrlController.text.isNotEmpty
+                                    ? (_photoUrlController.text
+                                            .startsWith('http')
+                                        ? Image.network(
+                                            _photoUrlController.text,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                const Icon(
+                                              Icons.business_outlined,
+                                              color: AppColors.primary,
+                                              size: 32,
+                                            ),
+                                          )
+                                        : const Icon(
+                                            Icons.image_outlined,
+                                            color: AppColors.primary,
+                                            size: 32,
+                                          ))
+                                    : const Icon(
+                                        Icons.add_a_photo_outlined,
+                                        color: AppColors.outline,
+                                        size: 32,
+                                      ),
+                              ),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _photoUrlController.text.isNotEmpty
+                                          ? _photoUrlController.text
+                                          : l10n.ownerConfigPhotoUrlHint,
+                                      key: const Key(
+                                          'owner_config_photo_url_field'),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTypography.bodyMd.copyWith(
+                                        color:
+                                            _photoUrlController.text.isNotEmpty
+                                                ? AppColors.onSurface
+                                                : AppColors.outline,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.xs),
+                                    SecondaryButton(
+                                      key: const Key(
+                                          'owner_config_pick_image_button'),
+                                      icon: Icons.upload_file_outlined,
+                                      text: l10n.tooltipPickImage,
+                                      isOutlined: true,
+                                      isFullWidth: false,
+                                      onPressed: _pickImage,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.md),
                           ThemedTextField(
                             key: const Key('owner_config_name_field'),
                             labelText: l10n.ownerConfigNameLabel,
@@ -408,7 +529,64 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                               }
                             },
                           ),
-                          const SizedBox(height: AppSpacing.md),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Section 2: Location & Operations Card
+                    ThemedCard(
+                      borderRadius: AppRadius.md,
+                      padding: AppSpacing.lg,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryContainer,
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.sm),
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.location_on_outlined,
+                                    color: AppColors.secondary,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Location & Operations",
+                                      style: AppTypography.titleMd.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    Text(
+                                      "Headquarters and coverage boundary",
+                                      style: AppTypography.caption.copyWith(
+                                        color: AppColors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(
+                            height: AppSpacing.lg,
+                            color: AppColors.outlineVariant,
+                          ),
                           ThemedTextField(
                             key: const Key('owner_config_address_field'),
                             labelText: l10n.ownerConfigAddressLabel,
@@ -423,10 +601,16 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.xs),
-                          ThemedCard(
-                            hasShadow: false,
-                            borderRadius: AppRadius.md,
-                            padding: AppSpacing.md,
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceContainerLow,
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              border: Border.all(
+                                color: AppColors.outlineVariant
+                                    .withValues(alpha: 0.4),
+                              ),
+                            ),
                             child: Row(
                               children: [
                                 const Icon(
@@ -488,7 +672,64 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: AppSpacing.md),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Section 3: Pricing & Rates Card
+                    ThemedCard(
+                      borderRadius: AppRadius.md,
+                      padding: AppSpacing.lg,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryContainer,
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.sm),
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.payments_outlined,
+                                    color: AppColors.secondary,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Pricing & Rates",
+                                      style: AppTypography.titleMd.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    Text(
+                                      "Base fare and distance-based fees",
+                                      style: AppTypography.caption.copyWith(
+                                        color: AppColors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(
+                            height: AppSpacing.lg,
+                            color: AppColors.outlineVariant,
+                          ),
                           Row(
                             children: [
                               Expanded(
@@ -534,98 +775,6 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                                     }
                                     return null;
                                   },
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                l10n.ownerConfigPhotoUrlLabel,
-                                style: AppTypography.labelLg.copyWith(
-                                  color: AppColors.onSurfaceVariant,
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.xs),
-                              ThemedCard(
-                                hasShadow: false,
-                                borderRadius: AppRadius.md,
-                                padding: AppSpacing.md,
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 64,
-                                      height: 64,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.surfaceContainerHigh,
-                                        borderRadius: AppRadius.smBorder,
-                                        border: Border.all(
-                                          color: AppColors.outlineVariant,
-                                        ),
-                                      ),
-                                      clipBehavior: Clip.antiAlias,
-                                      child: _photoUrlController.text.isNotEmpty
-                                          ? (_photoUrlController.text
-                                                  .startsWith('http')
-                                              ? Image.network(
-                                                  _photoUrlController.text,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (_, __, ___) =>
-                                                      const Icon(
-                                                    Icons.business_outlined,
-                                                    color: AppColors.primary,
-                                                    size: 32,
-                                                  ),
-                                                )
-                                              : const Icon(
-                                                  Icons.image_outlined,
-                                                  color: AppColors.primary,
-                                                  size: 32,
-                                                ))
-                                          : const Icon(
-                                              Icons.add_a_photo_outlined,
-                                              color: AppColors.outline,
-                                              size: 32,
-                                            ),
-                                    ),
-                                    const SizedBox(width: AppSpacing.md),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            _photoUrlController.text.isNotEmpty
-                                                ? _photoUrlController.text
-                                                : l10n.ownerConfigPhotoUrlHint,
-                                            key: const Key(
-                                                'owner_config_photo_url_field'),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style:
-                                                AppTypography.bodyMd.copyWith(
-                                              color: _photoUrlController
-                                                      .text.isNotEmpty
-                                                  ? AppColors.onSurface
-                                                  : AppColors.outline,
-                                            ),
-                                          ),
-                                          const SizedBox(height: AppSpacing.xs),
-                                          SecondaryButton(
-                                            key: const Key(
-                                                'owner_config_pick_image_button'),
-                                            icon: Icons.upload_file_outlined,
-                                            text: l10n.tooltipPickImage,
-                                            isOutlined: true,
-                                            isFullWidth: false,
-                                            onPressed: _pickImage,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
                                 ),
                               ),
                             ],
