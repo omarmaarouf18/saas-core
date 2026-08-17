@@ -48,15 +48,17 @@ class _PrimaryButtonState extends State<PrimaryButton> {
   @override
   Widget build(BuildContext context) {
     final Color bgColor =
-        widget.isDestructive ? AppColors.error : AppColors.primary;
+        widget.isDestructive ? AppColors.error : AppColors.secondary;
+    final Color textColor =
+        widget.isDestructive ? AppColors.onPrimary : AppColors.onSecondary;
 
     final Widget buttonChild = widget.isLoading
-        ? const SizedBox(
+        ? SizedBox(
             width: 20,
             height: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              valueColor: AlwaysStoppedAnimation<Color>(textColor),
             ),
           )
         : Row(
@@ -65,7 +67,7 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                 widget.isFullWidth ? MainAxisSize.max : MainAxisSize.min,
             children: [
               if (widget.icon != null) ...[
-                Icon(widget.icon, size: 20),
+                Icon(widget.icon, size: 20, color: textColor),
                 const SizedBox(width: AppSpacing.base),
               ],
               Flexible(
@@ -78,7 +80,7 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                     maxLines: widget.maxLines,
                     textAlign: TextAlign.center,
                     style: AppTypography.bodyLg.copyWith(
-                      color: AppColors.onPrimary,
+                      color: textColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -116,7 +118,7 @@ class _PrimaryButtonState extends State<PrimaryButton> {
             onPressed: isEnabled ? _handleTap : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: bgColor,
-              foregroundColor: AppColors.onPrimary,
+              foregroundColor: textColor,
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: AppRadius.defaultBorder,

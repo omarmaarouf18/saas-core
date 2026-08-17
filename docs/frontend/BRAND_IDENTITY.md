@@ -15,10 +15,10 @@ The QuickDelivery color palette balances enterprise-grade industrial reliability
 
 * **Primary — Deep Navy (`#0D1321` / `AppColors.primary`)**:
   * **Personality**: Enterprise trust, architectural stability, precision, and security.
-  * **Role**: Primary brand color used for dominant headers, primary action buttons, dark mode surfaces, and primary typography. Communicates industrial logistics rigor.
+  * **Role**: Structural and architectural brand color used for dominant headers, dark mode surfaces, primary typography, and dark container backgrounds. Communicates industrial logistics rigor.
 * **Secondary — Amber Gold (`#FFC107` / `AppColors.secondary`)**:
   * **Personality**: High-visibility energy, nocturnal movement, speed, and premium execution.
-  * **Role**: Accent color reserved for key visual anchors, active state indicators, call-to-action highlights, interactive focus states, and badge highlights.
+  * **Role**: Confirmed primary CTA and conversion action color across all primary action buttons (`PrimaryButton`), high-visibility anchors, active state indicators, call-to-action highlights, interactive focus states, and badge highlights.
 * **Surfaces & Backgrounds**:
   * **Scaffold Background (`#E5E7EB` / `AppColors.scaffoldBackground`)**: Neutral cool gray providing clean separation between elevated content cards.
   * **Surface Container (`#FFFFFF` / `AppColors.surface`)**: Pure white card container background maximizing readability and contrast.

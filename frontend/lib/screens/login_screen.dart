@@ -174,7 +174,25 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.xl),
+                  const SizedBox(height: AppSpacing.lg),
+                  // External Headline & Subtitle
+                  Text(
+                    l10n.loginTitle,
+                    style: AppTypography.headlineLgMobile.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    l10n.loginSubtitle,
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
                   ThemedCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -198,9 +216,47 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                         ),
                         const SizedBox(height: AppSpacing.md),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              l10n.loginPasswordLabel,
+                              style: AppTypography.labelLg.copyWith(
+                                color: AppColors.onSurfaceVariant,
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () {
+                                _debouncedNav(() {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const ForgotPasswordScreen(),
+                                    ),
+                                  );
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(AppRadius.xs),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.xxs,
+                                  horizontal: AppSpacing.xs,
+                                ),
+                                child: Text(
+                                  l10n.loginForgotPassword,
+                                  style: AppTypography.labelLg.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
                         ThemedTextField(
                           controller: _passwordController,
-                          labelText: l10n.loginPasswordLabel,
                           hintText: l10n.loginPasswordHint,
                           prefixIcon: const Icon(Icons.lock_outline),
                           obscureText: true,
@@ -212,55 +268,39 @@ class _LoginScreenState extends State<LoginScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Align(
-                          alignment: AlignmentDirectional.centerEnd,
-                          child: TextButton(
-                            onPressed: () {
-                              _debouncedNav(() {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const ForgotPasswordScreen(),
-                                  ),
-                                );
-                              });
-                            },
-                            child: Text(
-                              l10n.loginForgotPassword,
-                              style: AppTypography.bodyMd.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
+                        const SizedBox(height: AppSpacing.lg),
                         PrimaryButton(
                           text: l10n.loginSubmitButton,
                           isLoading: auth.isLoading,
                           onPressed: _submit,
                         ),
-                        const SizedBox(height: AppSpacing.md),
-                        TextButton(
-                          onPressed: () {
-                            _debouncedNav(() {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => const SignupScreen(),
-                                ),
-                              );
-                            });
-                          },
-                          child: Text(
-                            "${l10n.loginNoAccount} ${l10n.loginSignUp}",
-                            style: AppTypography.bodyMd.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  // External Footer Navigation Link
+                  Center(
+                    child: InkWell(
+                      onTap: () {
+                        _debouncedNav(() {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const SignupScreen(),
                             ),
+                          );
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.xs),
+                        child: Text(
+                          "${l10n.loginNoAccount} ${l10n.loginSignUp}",
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ],

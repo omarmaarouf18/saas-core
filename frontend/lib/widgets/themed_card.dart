@@ -16,6 +16,7 @@ class ThemedCard extends StatelessWidget {
   final List<BoxShadow>? elevation;
   final Color? color;
   final BorderSide? borderSide;
+  final VoidCallback? onTap;
 
   const ThemedCard({
     super.key,
@@ -27,6 +28,7 @@ class ThemedCard extends StatelessWidget {
     this.elevation,
     this.color,
     this.borderSide,
+    this.onTap,
   });
 
   @override
@@ -78,17 +80,32 @@ class ThemedCard extends StatelessWidget {
       }
     }
 
-    return Container(
+    final cardRadius = BorderRadius.circular(
+      borderRadius ?? AppRadius.defaultValue,
+    );
+
+    final cardContent = Container(
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: color ?? AppColors.surface,
-        borderRadius: BorderRadius.circular(
-          borderRadius ?? AppRadius.defaultValue,
-        ),
+        borderRadius: cardRadius,
         border: resolvedBorder,
         boxShadow: resolvedShadow,
       ),
       child: child,
     );
+
+    if (onTap != null) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: cardRadius,
+          child: cardContent,
+        ),
+      );
+    }
+
+    return cardContent;
   }
 }

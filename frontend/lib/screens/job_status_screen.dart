@@ -10,7 +10,9 @@ import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../widgets/cancel_job_dialog.dart';
 import '../widgets/create_ticket_dialog.dart';
+import '../widgets/entity_avatar.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/route_timeline.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
@@ -342,6 +344,176 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Map Preview Header Card
+            ThemedCard(
+              borderRadius: AppRadius.md,
+              padding: 0.0,
+              child: Stack(
+                children: [
+                  Container(
+                    height: 140,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.06),
+                      borderRadius: AppRadius.defaultBorder,
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.sm),
+                            decoration: BoxDecoration(
+                              color: AppColors.secondary.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.map_outlined,
+                              size: 32,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            "Live Route Tracking",
+                            style: AppTypography.labelMd.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  PositionedDirectional(
+                    top: AppSpacing.sm,
+                    end: AppSpacing.sm,
+                    child: StatusBadge(status: _currentJob.status),
+                  ),
+                  PositionedDirectional(
+                    bottom: AppSpacing.sm,
+                    start: AppSpacing.sm,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xxs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: AppRadius.smBorder,
+                        boxShadow: AppElevation.shadowLevel1List,
+                      ),
+                      child: Text(
+                        "Job ID: #${_currentJob.id.length > 8 ? _currentJob.id.substring(0, 8) : _currentJob.id}",
+                        style: AppTypography.labelSm.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            // Route Timeline Card
+            const ThemedCard(
+              borderRadius: AppRadius.md,
+              padding: AppSpacing.lg,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ThemedSectionHeader(
+                    title: "Route & Delivery Details",
+                  ),
+                  SizedBox(height: AppSpacing.md),
+                  RouteTimeline(
+                    pickupAddress: "Origin / Pickup Location",
+                    pickupDetail: "Dock / Gate Access Available",
+                    dropoffAddress: "Delivery Destination",
+                    dropoffDetail: "Direct Handover / COD",
+                    distanceText: "Estimated 4.5 km",
+                    timeText: "15-20 mins",
+                    cargoText: "Standard Delivery",
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            // Assigned Courier Driver Card (if assigned)
+            if (_currentJob.employeeId != null) ...[
+              ThemedCard(
+                borderRadius: AppRadius.md,
+                padding: AppSpacing.md,
+                child: Row(
+                  children: [
+                    EntityAvatar(
+                      name: _resolvedUsername ?? "Courier Driver",
+                      radius: 24,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _resolvedUsername != null &&
+                                    _resolvedUsername!.isNotEmpty
+                                ? _resolvedUsername!
+                                : "Assigned Courier",
+                            style: AppTypography.bodyLg.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xxs),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.xs,
+                                  vertical: AppSpacing.xxs / 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      AppColors.success.withValues(alpha: 0.12),
+                                  borderRadius: AppRadius.smBorder,
+                                ),
+                                child: Text(
+                                  "Verified Courier",
+                                  style: AppTypography.labelSm.copyWith(
+                                    color: AppColors.success,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.chat_outlined,
+                        color: AppColors.primary,
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ChatScreen(jobId: _currentJob.id),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
+
             // Status Banner Card
             ThemedCard(
               borderRadius: AppRadius.md,

@@ -3,10 +3,10 @@ import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/otp_pin_input.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/themed_card.dart';
-import '../widgets/themed_text_field.dart';
 import '../widgets/themed_success_banner.dart';
 import 'home_screen.dart';
 
@@ -115,55 +115,90 @@ class _OtpScreenState extends State<OtpScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(
-                    Icons.security_outlined,
-                    size: 64,
-                    color: AppColors.primary,
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.security_outlined,
+                        size: 36,
+                        color: AppColors.primary,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     l10n.otpTitle,
-                    style: AppTypography.headlineLg.copyWith(
+                    style: AppTypography.headlineLgMobile.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: AppSpacing.base),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
-                    "${l10n.otpSubtitle}:\n${widget.email}",
-                    style: AppTypography.bodyLg.copyWith(
+                    "${l10n.otpSubtitle}\n${widget.email}",
+                    style: AppTypography.bodyMd.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: AppSpacing.xl),
+                  const SizedBox(height: AppSpacing.lg),
                   ThemedCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        ThemedTextField(
-                          controller: _otpController,
-                          labelText: l10n.otpCodeLabel,
-                          hintText: "000000",
-                          prefixIcon: const Icon(Icons.pin_outlined),
-                          keyboardType: TextInputType.number,
-                          maxLength: 6,
-                          counterText: "",
-                          textAlign: TextAlign.center,
-                          style: AppTypography.headlineLgMobile.copyWith(
-                            color: AppColors.onSurface,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 8,
+                        Text(
+                          l10n.otpCodeLabel,
+                          style: AppTypography.labelLg.copyWith(
+                            color: AppColors.onSurfaceVariant,
                           ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        FormField<String>(
+                          initialValue: _otpController.text,
                           validator: (val) {
-                            if (val == null || val.trim().isEmpty) {
-                              return l10n.otpCodeLabel;
-                            }
-                            if (val.trim().length != 6) {
+                            final code = (val != null && val.isNotEmpty)
+                                ? val.trim()
+                                : _otpController.text.trim();
+                            if (code.length != 6) {
                               return "OTP must be exactly 6 digits";
                             }
                             return null;
+                          },
+                          builder: (state) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                OtpPinInput(
+                                  controller: _otpController,
+                                  hasError: state.hasError,
+                                  onChanged: (code) {
+                                    state.didChange(code);
+                                  },
+                                  onCompleted: (code) {
+                                    state.didChange(code);
+                                    _submit();
+                                  },
+                                ),
+                                if (state.hasError) ...[
+                                  const SizedBox(height: AppSpacing.xs),
+                                  Center(
+                                    child: Text(
+                                      state.errorText ?? '',
+                                      style: AppTypography.bodySm.copyWith(
+                                        color: AppColors.danger,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            );
                           },
                         ),
                         if (_currentDevOtp != null) ...[

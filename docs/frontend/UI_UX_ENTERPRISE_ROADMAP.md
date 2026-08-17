@@ -15,7 +15,8 @@
 | **Phase 3** | **Empty, Error & Success State Polish** | Elevate placeholder graphics, error banners, and success feedback | `ThemedEmptyState`, `ThemedErrorBanner`, `ThemedLoadingIndicator`, `ThemedSuccessBanner` | **[100% COMPLETE & VERIFIED]** |
 | **Phase 4** | **Visual Hierarchy & Card Presentation Overhaul** | Refine card layouts, elevation shadows, and primary action hierarchy | Marketplace, Job Status, Wallet, Employee screens | **[100% COMPLETE & VERIFIED]** |
 | **Phase 5** | **Performance Perception & Skeleton States** | Replace blocking spinners with skeleton shimmer loaders | Marketplace, Home, Employee Jobs, Wallet screens | **[100% COMPLETE & VERIFIED]** |
-| **Phase 6** | **Multi-Viewport & Real-Device QA Pass** | Validate touch targets, multi-screen scaling, dark mode, RTL layout | Physical iOS/Android devices & Web viewports | **[PLANNED]** |
+| **Phase 6** | **Google Stitch Visual Redesign Implementation** | Implement all 65 Stitch design brief findings across Batches A–E with Amber Gold CTA tokens | All 28 screens in `frontend/lib/screens/` | **[100% COMPLETE & VERIFIED]** |
+| **Phase 7** | **Multi-Viewport & Real-Device QA Pass** | Validate touch targets, multi-screen scaling, dark mode, RTL layout | Physical iOS/Android devices & Web viewports | **[PLANNED]** |
 
 ---
 
@@ -88,7 +89,21 @@
 
 ---
 
-### Phase 6: Multi-Viewport & Real-Device QA Pass
+### Phase 6: Google Stitch Visual Redesign Implementation — **[100% COMPLETE & VERIFIED]**
+* **Goal**: Implement all 65 visual findings from the Google Stitch design export across Batches A–E, establishing high-contrast Amber Gold (`#FFC107`) primary CTA buttons, Deep Navy structural surfaces, modern Bento-grid dashboards, discrete PIN entry, pill filter chips, and 2-point route timelines.
+* **Scope**: All 28 screens in `frontend/lib/screens/`, `theme.dart`, `primary_button.dart`, `themed_card.dart`, `otp_pin_input.dart`, `pill_filter_bar.dart`, `route_timeline.dart`.
+* **Verification Evidence**:
+  1. Primary CTA Color Token Evolution: `PrimaryButton` default fill updated to `AppColors.secondary` (Amber Gold `#FFC107`) with `AppColors.onSecondary` (Deep Navy `#0D1321`) text, while preserving crimson red `AppColors.error` for destructive actions.
+  2. Modern Reusable UI Components: Built `OtpPinInput`, `PillFilterBar`, `RouteTimeline`, and `ThemedCard(onTap: ...)`.
+  3. Batch A–E Full Rollout: Upgraded 28 screens across Auth/Onboarding, Customer Marketplace & Tracking, Owner Operations & Services, Financial Management & Fleet Oversight, and Employee Shell & Communication.
+  4. `flutter analyze`: **0 issues**.
+  5. `flutter test`: **100% pass (259/259 tests passed)**.
+  6. Arabic RTL Compliance: Verified via `localization_test.dart` with `ar_EG` text directions.
+  7. Live Backend Connectivity: Verified against `https://api.logiclinkeg.tech` endpoints (`/health`, `/api/v1/auth/login`, `/api/v1/auth/forgot-password`).
+
+---
+
+### Phase 7: Multi-Viewport & Real-Device QA Pass
 * **Goal**: Validate responsive layout scaling, touch target sizes ($\ge 48\times 48\text{ dp}$), RTL Arabic directional flips, and dark mode contrast across physical iOS, Android, and web viewports.
 * **Scope**: Execute manual real-device testing matrix and automated Golden widget visual regression tests across mobile ($360\text{dp}$), tablet ($768\text{dp}$), and desktop ($1280\text{dp}$) viewports.
 * **Definition of Done**:

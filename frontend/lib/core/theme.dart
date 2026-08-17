@@ -224,6 +224,13 @@ class AppTypography {
         height: 32 / 24,
       );
 
+  /// Secondary headings, PIN entry numerals, modal subtitles (20pt)
+  static TextStyle get headlineMd => GoogleFonts.poppins(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        height: 28 / 20,
+      );
+
   /// Card titles, section headers, dialog titles (18pt)
   static TextStyle get titleMd => GoogleFonts.poppins(
         fontSize: 18,
@@ -265,6 +272,13 @@ class AppTypography {
         fontSize: 11,
         fontWeight: FontWeight.w500,
         height: 14 / 11,
+      );
+
+  /// Micro badges, detail notes, count tags (10pt)
+  static TextStyle get labelSm => GoogleFonts.poppins(
+        fontSize: 10,
+        fontWeight: FontWeight.w500,
+        height: 12 / 10,
       );
 }
 

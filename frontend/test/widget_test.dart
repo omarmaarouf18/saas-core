@@ -13,6 +13,7 @@ import 'package:frontend/providers/employee_jobs_provider.dart';
 import 'package:frontend/providers/chat_provider.dart';
 import 'package:frontend/models/chat_message.dart';
 import 'package:frontend/models/user_profile.dart';
+import 'package:frontend/widgets/otp_pin_input.dart';
 import 'package:frontend/screens/otp_screen.dart';
 import 'package:frontend/screens/signup_screen.dart';
 import 'package:frontend/screens/chat_screen.dart';
@@ -158,19 +159,21 @@ void main() {
       ),
     );
 
-    // 1. Assert the TextFormField's maxLength property is exactly 6
-    final textFieldFinder = find.byType(TextField);
-    expect(textFieldFinder, findsOneWidget);
+    // 1. Assert OtpPinInput has exactly 6 discrete boxes
+    final otpPinFinder = find.byType(OtpPinInput);
+    expect(otpPinFinder, findsOneWidget);
+    final otpPinWidget = tester.widget<OtpPinInput>(otpPinFinder);
+    expect(otpPinWidget.length, 6);
 
-    final textField = tester.widget<TextField>(textFieldFinder);
-    expect(textField.maxLength, 6);
+    final textFieldsFinder = find.byType(TextField);
+    expect(textFieldsFinder, findsNWidgets(6));
 
-    // 2. Validate the validator function logic
-    final textFormFieldFinder = find.byType(TextFormField);
-    expect(textFormFieldFinder, findsOneWidget);
+    // 2. Validate the FormField validator function logic
+    final formFieldFinder = find.byType(FormField<String>);
+    expect(formFieldFinder, findsOneWidget);
 
-    final textFormField = tester.widget<TextFormField>(textFormFieldFinder);
-    final validator = textFormField.validator!;
+    final formField = tester.widget<FormField<String>>(formFieldFinder);
+    final validator = formField.validator!;
 
     // Test a 5-digit string -> error message
     expect(validator('12345'), 'OTP must be exactly 6 digits');

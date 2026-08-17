@@ -3,6 +3,7 @@ import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/otp_pin_input.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/themed_card.dart';
@@ -125,10 +126,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        title: Text(l10n.forgotPasswordTitle),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
+        backgroundColor: Colors.transparent,
+        foregroundColor: AppColors.primary,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.onBackground),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -141,36 +145,48 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(
-                    Icons.lock_reset_outlined,
-                    size: 64,
-                    color: AppColors.primary,
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.lock_reset_outlined,
+                        size: 36,
+                        color: AppColors.primary,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     l10n.forgotPasswordTitle,
-                    style: AppTypography.headlineLg.copyWith(
+                    style: AppTypography.headlineLgMobile.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: AppSpacing.base),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     l10n.forgotPasswordSubtitle,
-                    style: AppTypography.bodyLg.copyWith(
+                    style: AppTypography.bodyMd.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: AppSpacing.xl),
+                  const SizedBox(height: AppSpacing.lg),
                   if (_currentDevOtp != null) ...[
                     Container(
                       padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(20),
+                        color: AppColors.secondary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(AppRadius.sm),
-                        border: Border.all(color: AppColors.primary),
+                        border: Border.all(
+                          color: AppColors.secondary.withValues(alpha: 0.4),
+                        ),
                       ),
                       child: Text(
                         "Dev OTP Code: $_currentDevOtp",
@@ -225,23 +241,44 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           ),
                         ),
                         const SizedBox(height: AppSpacing.md),
-                        ThemedTextField(
+                        Text(
+                          l10n.otpCodeLabel,
+                          style: AppTypography.labelLg.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        FormField<String>(
                           key: const Key('forgot_password_otp_field'),
-                          controller: _otpController,
-                          labelText: l10n.otpCodeLabel,
-                          hintText: "000000",
-                          prefixIcon: const Icon(Icons.pin_outlined),
-                          keyboardType: TextInputType.number,
-                          maxLength: 6,
-                          counterText: "",
+                          initialValue: _otpController.text,
                           validator: (val) {
-                            if (val == null || val.trim().isEmpty) {
-                              return "Enter 6-digit OTP code";
-                            }
-                            if (val.trim().length != 6) {
+                            final code = _otpController.text.trim();
+                            if (code.isEmpty || code.length != 6) {
                               return "Enter 6-digit OTP code";
                             }
                             return null;
+                          },
+                          builder: (state) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                OtpPinInput(
+                                  controller: _otpController,
+                                  hasError: state.hasError,
+                                  onChanged: (code) => state.didChange(code),
+                                  onCompleted: (code) => state.didChange(code),
+                                ),
+                                if (state.hasError) ...[
+                                  const SizedBox(height: AppSpacing.xs),
+                                  Text(
+                                    state.errorText ?? '',
+                                    style: AppTypography.bodySm.copyWith(
+                                      color: AppColors.danger,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            );
                           },
                         ),
                         const SizedBox(height: AppSpacing.md),
@@ -291,6 +328,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           onPressed: _submitReset,
                         ),
                       ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Center(
+                    child: InkWell(
+                      onTap: () => Navigator.of(context).pop(),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.xs),
+                        child: Text(
+                          "${l10n.signupHasAccount} ${l10n.signupSignIn}",
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],

@@ -7,6 +7,7 @@ import '../providers/locale_provider.dart';
 import '../providers/theme_provider.dart';
 import '../utils/logout_helper.dart';
 import '../widgets/create_ticket_dialog.dart';
+import '../widgets/entity_avatar.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
@@ -61,6 +62,65 @@ class SettingsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Top User Profile Card
+            if (user != null) ...[
+              ThemedCard(
+                padding: AppSpacing.md,
+                child: Row(
+                  children: [
+                    EntityAvatar(
+                      name: user.username.isNotEmpty
+                          ? user.username
+                          : (user.email.isNotEmpty ? user.email : 'User'),
+                      radius: 28,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user.username.isNotEmpty
+                                ? user.username
+                                : 'Quick Delivery User',
+                            style: AppTypography.titleMd.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xxs),
+                          Text(
+                            user.email,
+                            style: AppTypography.labelMd.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xxs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: AppRadius.smBorder,
+                      ),
+                      child: Text(
+                        user.role.toUpperCase(),
+                        style: AppTypography.labelSm.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+
             // 1. Consolidated Appearance & Preferences Section
             ThemedSectionHeader(
               title: l10n.settingsPreferences,

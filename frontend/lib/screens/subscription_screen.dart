@@ -281,13 +281,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               )),
           const SizedBox(height: AppSpacing.lg),
           highlighted
-              ? SecondaryButton(
+              ? PrimaryButton(
                   text: buttonText,
                   onPressed: onPressed,
                   isLoading: isThisPlanLoading,
                 )
-              : PrimaryButton(
+              : SecondaryButton(
                   text: buttonText,
+                  isOutlined: true,
                   onPressed: onPressed,
                   isLoading: isThisPlanLoading,
                 ),

@@ -283,7 +283,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
           // Greeting Header
           Text(
             "${l10n.customerHomeGreeting} $username!",
-            style: AppTypography.headlineLg.copyWith(
+            style: AppTypography.headlineLgMobile.copyWith(
               color: AppColors.primary,
               fontWeight: FontWeight.bold,
             ),
@@ -296,6 +296,87 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
+
+          // Quick Booking "Where to?" Module
+          ThemedCard(
+            key: const Key('customer_quick_booking_card'),
+            padding: AppSpacing.md,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.xs),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(AppRadius.xs),
+                      ),
+                      child: const Icon(
+                        Icons.near_me,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      "Where to deliver?",
+                      style: AppTypography.titleMd.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                InkWell(
+                  onTap: widget.onGoToServices,
+                  borderRadius:
+                      BorderRadius.circular(AppRadius.defaultBorder.topLeft.x),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerLow,
+                      borderRadius: AppRadius.defaultBorder,
+                      border: Border.all(
+                        color: AppColors.outlineVariant,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.search,
+                          color: AppColors.onSurfaceVariant,
+                          size: AppIconSize.md,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            "Enter destination or pickup area...",
+                            style: AppTypography.bodyMd.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                PrimaryButton(
+                  key: const Key('find_couriers_button'),
+                  text: "Find Nearby Couriers",
+                  icon: Icons.local_shipping_outlined,
+                  onPressed: widget.onGoToServices,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
 
           // Quick Access Categories
           ThemedSectionHeader(

@@ -6,6 +6,7 @@ import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
 import '../widgets/entity_avatar.dart';
+import '../widgets/pill_filter_bar.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
@@ -38,6 +39,9 @@ class _EmployeeScreenState extends State<EmployeeScreen>
   final _togEmailController = TextEditingController();
   final _togPasswordController = TextEditingController();
   bool _togSetActive = true;
+
+  final _searchController = TextEditingController();
+  String _statusFilter = 'all';
 
   bool _isRegSubmitting = false;
   bool _isTogSubmitting = false;
@@ -87,6 +91,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
   void dispose() {
     _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
+    _searchController.dispose();
     _regEmailController.dispose();
     _regUsernameController.dispose();
     _regPasswordController.dispose();
@@ -139,6 +144,27 @@ class _EmployeeScreenState extends State<EmployeeScreen>
     final auth = Provider.of<AuthProvider>(context);
     final ownerProvider = Provider.of<OwnerProvider>(context);
 
+    final query = _searchController.text.trim().toLowerCase();
+    final filteredEmployees = ownerProvider.employees.where((emp) {
+      final username = (emp['username']?.toString() ?? '').toLowerCase();
+      final email = (emp['email']?.toString() ?? '').toLowerCase();
+      final isActive = emp['is_active'] == true;
+
+      final matchesQuery =
+          query.isEmpty || username.contains(query) || email.contains(query);
+
+      if (!matchesQuery) return false;
+
+      if (_statusFilter == 'active') return isActive;
+      if (_statusFilter == 'frozen') return !isActive;
+      return true;
+    }).toList();
+
+    final activeCount =
+        ownerProvider.employees.where((e) => e['is_active'] == true).length;
+    final frozenCount =
+        ownerProvider.employees.where((e) => e['is_active'] != true).length;
+
     return RefreshIndicator(
       onRefresh: _refreshEmployees,
       child: SingleChildScrollView(
@@ -174,6 +200,39 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     height: AppSpacing.lg,
                     color: AppColors.outlineVariant,
                   ),
+                  // Search and Filter Bar
+                  ThemedTextField(
+                    key: const Key('employee_search_field'),
+                    controller: _searchController,
+                    hintText: "Search workers by name or email...",
+                    prefixIcon:
+                        const Icon(Icons.search, color: AppColors.outline),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  PillFilterBar<String>(
+                    padding: EdgeInsets.zero,
+                    items: [
+                      PillFilterItem(
+                        label: "All",
+                        value: "all",
+                        count: ownerProvider.employees.length,
+                      ),
+                      PillFilterItem(
+                        label: "Active",
+                        value: "active",
+                        count: activeCount,
+                      ),
+                      PillFilterItem(
+                        label: "Frozen",
+                        value: "frozen",
+                        count: frozenCount,
+                      ),
+                    ],
+                    selectedValue: _statusFilter,
+                    onSelected: (val) => setState(() => _statusFilter = val),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
                   if (ownerProvider.isLoading &&
                       ownerProvider.employees.isEmpty)
                     ThemedLoadingIndicator(
@@ -197,16 +256,29 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                       actionText: "Add Worker",
                       onActionPressed: () => _tabController.animateTo(1),
                     )
+                  else if (filteredEmployees.isEmpty)
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                      child: Center(
+                        child: Text(
+                          "No workers found matching your filter.",
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    )
                   else
                     ListView.separated(
                       key: const Key('employees_list_view'),
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: ownerProvider.employees.length,
+                      itemCount: filteredEmployees.length,
                       separatorBuilder: (_, __) =>
                           const SizedBox(height: AppSpacing.sm),
                       itemBuilder: (context, index) {
-                        final emp = ownerProvider.employees[index];
+                        final emp = filteredEmployees[index];
                         final empId = emp['id']?.toString() ?? '';
                         final username = emp['username']?.toString() ?? '';
                         final email = emp['email']?.toString() ?? '';

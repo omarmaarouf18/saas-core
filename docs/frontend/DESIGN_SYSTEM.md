@@ -22,12 +22,12 @@ This design system provides the visual architecture and component spec for Quick
 
 | Token Name | Hex Code / Value | Usage & Meaning | WCAG Contrast (on White) |
 | :--- | :--- | :--- | :--- |
-| `AppColors.primary` | `#0D1321` | Deep Navy brand color for headers, primary buttons, dark mode surfaces | N/A (Dark Surface) |
-| `AppColors.secondary` | `#FFC107` | Amber Gold accent for key focal points, badges, active states | 1.34:1 (Requires dark text) |
+| `AppColors.primary` | `#0D1321` | Deep Navy brand color for structural headers, dark mode surfaces, primary typography | N/A (Dark Surface) |
+| `AppColors.secondary` | `#FFC107` | Amber Gold confirmed primary CTA/action button fill, badges, active states | 1.34:1 (Requires dark text) |
 | `AppColors.scaffoldBackground` | `#E5E7EB` | Cool gray background for app scaffold | N/A |
 | `AppColors.surface` | `#FFFFFF` | Pure white surface for cards and container backgrounds | N/A |
 | `AppColors.onPrimary` | `#FFFFFF` | Primary text color on dark navy backgrounds | 17.5:1 (AAA) |
-| `AppColors.onSecondary` | `#0D1321` | Deep navy text on gold secondary containers | 13.0:1 (AAA) |
+| `AppColors.onSecondary` | `#0D1321` | Deep navy text on gold secondary containers & primary CTA buttons | 13.0:1 (AAA) |
 | `AppColors.onSurface` | `#1A1C1C` | Charcoal body text on light surface containers | 15.8:1 (AAA) |
 | `AppColors.onSurfaceVariant` | `#45464C` | Slate gray text for secondary captions and subtitles | 9.2:1 (AAA) |
 | `AppColors.success` | `#15803D` | Dark green for completed badges, positive trends, verified tags | 5.02:1 (AA) |

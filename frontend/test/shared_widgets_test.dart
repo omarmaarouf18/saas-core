@@ -9,8 +9,11 @@ import 'package:frontend/widgets/confirm_action_dialog.dart';
 import 'package:frontend/widgets/create_ticket_dialog.dart';
 import 'package:frontend/widgets/entity_avatar.dart';
 import 'package:frontend/widgets/info_list_tile.dart';
+import 'package:frontend/widgets/otp_pin_input.dart';
+import 'package:frontend/widgets/pill_filter_bar.dart';
 import 'package:frontend/widgets/primary_button.dart';
 import 'package:frontend/widgets/rating_summary_card.dart';
+import 'package:frontend/widgets/route_timeline.dart';
 import 'package:frontend/widgets/secondary_button.dart';
 import 'package:frontend/widgets/stat_card.dart';
 import 'package:frontend/widgets/status_badge.dart';
@@ -338,6 +341,54 @@ void main() {
 
       expect(primaryText.style?.fontSize, equals(16));
       expect(secondaryText.style?.fontSize, equals(16));
+    });
+
+    testWidgets(
+        'PrimaryButton renders with Amber Gold secondary fill and Navy text, and respects isDestructive',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                PrimaryButton(text: 'Standard Action', onPressed: () {}),
+                PrimaryButton(
+                  text: 'Destructive Action',
+                  isDestructive: true,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final standardElevatedButton = tester.widget<ElevatedButton>(
+        find.ancestor(
+          of: find.text('Standard Action'),
+          matching: find.byType(ElevatedButton),
+        ),
+      );
+      expect(
+        standardElevatedButton.style?.backgroundColor?.resolve({}),
+        equals(AppColors.secondary),
+      );
+      final standardText = tester.widget<Text>(find.text('Standard Action'));
+      expect(standardText.style?.color, equals(AppColors.onSecondary));
+
+      final destructiveElevatedButton = tester.widget<ElevatedButton>(
+        find.ancestor(
+          of: find.text('Destructive Action'),
+          matching: find.byType(ElevatedButton),
+        ),
+      );
+      expect(
+        destructiveElevatedButton.style?.backgroundColor?.resolve({}),
+        equals(AppColors.error),
+      );
+      final destructiveText =
+          tester.widget<Text>(find.text('Destructive Action'));
+      expect(destructiveText.style?.color, equals(AppColors.onPrimary));
     });
 
     testWidgets('PrimaryButton ignores rapid double taps within 600ms',
@@ -956,6 +1007,135 @@ void main() {
       expect(find.byType(SecondaryButton), findsOneWidget);
 
       // Verify no RenderFlex overflow
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('OtpPinInput Widget Tests', () {
+    testWidgets(
+        'Renders 6 discrete input boxes and auto-advances on digit entry',
+        (tester) async {
+      String currentCode = '';
+      String? completedCode;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: OtpPinInput(
+              length: 6,
+              onChanged: (val) => currentCode = val,
+              onCompleted: (val) => completedCode = val,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(TextField), findsNWidgets(6));
+
+      // Enter digits into each box
+      for (int i = 0; i < 6; i++) {
+        await tester.enterText(find.byKey(Key('otp_box_$i')), '${i + 1}');
+        await tester.pump();
+      }
+
+      expect(currentCode, equals('123456'));
+      expect(completedCode, equals('123456'));
+    });
+
+    testWidgets('Populates boxes from external controller dynamically',
+        (tester) async {
+      final controller = TextEditingController();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: OtpPinInput(
+              length: 6,
+              controller: controller,
+            ),
+          ),
+        ),
+      );
+
+      controller.text = '654321';
+      await tester.pump();
+
+      for (int i = 0; i < 6; i++) {
+        final tf = tester.widget<TextField>(find.byKey(Key('otp_box_$i')));
+        expect(tf.controller?.text, equals('${6 - i}'));
+      }
+    });
+  });
+
+  group('PillFilterBar Widget Tests', () {
+    testWidgets('Renders filter chips and triggers onSelected callback',
+        (tester) async {
+      String selected = 'all';
+
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) {
+            return MaterialApp(
+              home: Scaffold(
+                body: PillFilterBar<String>(
+                  items: const [
+                    PillFilterItem(label: 'All', value: 'all'),
+                    PillFilterItem(
+                      label: 'Active',
+                      value: 'active',
+                      count: 3,
+                    ),
+                    PillFilterItem(label: 'Completed', value: 'completed'),
+                  ],
+                  selectedValue: selected,
+                  onSelected: (val) {
+                    setState(() => selected = val);
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      );
+
+      expect(find.text('All'), findsOneWidget);
+      expect(find.text('Active'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
+      expect(find.text('Completed'), findsOneWidget);
+
+      await tester.tap(find.text('Active'));
+      await tester.pumpAndSettle();
+
+      expect(selected, equals('active'));
+    });
+  });
+
+  group('RouteTimeline Widget Tests', () {
+    testWidgets('Renders pickup, dropoff, and metrics row cleanly',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: RouteTimeline(
+              pickupAddress: '731 Logistics Center Pkwy',
+              pickupDetail: 'Dock 4 • Bay 12',
+              dropoffAddress: '192 Retail District Blvd',
+              dropoffDetail: 'Back Entrance',
+              distanceText: '4.2 km',
+              timeText: '18 mins',
+              cargoText: '2 Pallets',
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('731 Logistics Center Pkwy'), findsOneWidget);
+      expect(find.text('Dock 4 • Bay 12'), findsOneWidget);
+      expect(find.text('192 Retail District Blvd'), findsOneWidget);
+      expect(find.text('Back Entrance'), findsOneWidget);
+      expect(find.text('4.2 km'), findsOneWidget);
+      expect(find.text('18 mins'), findsOneWidget);
+      expect(find.text('2 Pallets'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

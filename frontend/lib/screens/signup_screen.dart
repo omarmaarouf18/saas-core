@@ -90,30 +90,64 @@ class _SignupScreenState extends State<SignupScreen> {
                 children: [
                   Text(
                     l10n.signupTitle,
-                    style: AppTypography.headlineLg.copyWith(
+                    style: AppTypography.headlineLgMobile.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: AppSpacing.base),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     l10n.signupSubtitle,
-                    style: AppTypography.bodyLg.copyWith(
+                    style: AppTypography.bodyMd.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: AppSpacing.xl),
+                  const SizedBox(height: AppSpacing.lg),
                   ThemedCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // Visual Role Selector (2-Card Interactive Radio Group)
+                        Text(
+                          l10n.signupRoleLabel,
+                          style: AppTypography.labelLg.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildRoleCard(
+                                key: const Key('signup_role_customer'),
+                                title: l10n.signupRoleCustomer,
+                                icon: Icons.person_outline,
+                                isSelected: _selectedRole == "user",
+                                onTap: () =>
+                                    setState(() => _selectedRole = "user"),
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: _buildRoleCard(
+                                key: const Key('signup_role_owner'),
+                                title: l10n.signupRoleOwner,
+                                icon: Icons.storefront_outlined,
+                                isSelected: _selectedRole == "owner",
+                                onTap: () =>
+                                    setState(() => _selectedRole = "owner"),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.md),
                         ThemedTextField(
                           controller: _usernameController,
                           labelText: l10n.signupUsernameLabel,
                           hintText: l10n.signupUsernameHint,
-                          prefixIcon: const Icon(Icons.person_outline),
+                          prefixIcon: const Icon(Icons.badge_outlined),
                           textDirection: _usernameDirection,
                           onChanged: (val) {
                             if (val.isNotEmpty) {
@@ -190,91 +224,95 @@ class _SignupScreenState extends State<SignupScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: AppSpacing.md),
-                        // Account Role dropdown styled with design system tokens
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.signupRoleLabel,
-                              style: AppTypography.labelLg.copyWith(
-                                color: AppColors.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.base),
-                            DropdownButtonFormField<String>(
-                              initialValue: _selectedRole,
-                              decoration: InputDecoration(
-                                prefixIcon: const Icon(Icons.badge_outlined),
-                                filled: true,
-                                fillColor: AppColors.surface,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md,
-                                  vertical: AppSpacing.md,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: AppRadius.defaultBorder,
-                                  borderSide: const BorderSide(
-                                    color: AppColors.outlineVariant,
-                                    width: 1,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: AppRadius.defaultBorder,
-                                  borderSide: const BorderSide(
-                                    color: AppColors.primary,
-                                    width: 1.5,
-                                  ),
-                                ),
-                              ),
-                              style: AppTypography.bodyMd.copyWith(
-                                color: AppColors.onSurface,
-                              ),
-                              items: [
-                                DropdownMenuItem(
-                                    value: "owner",
-                                    child: Text(l10n.signupRoleOwner)),
-                                DropdownMenuItem(
-                                    value: "user",
-                                    child: Text(l10n.signupRoleCustomer)),
-                              ],
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setState(() {
-                                    _selectedRole = val;
-                                  });
-                                }
-                              },
-                            ),
-                          ],
-                        ),
                         const SizedBox(height: AppSpacing.lg),
                         PrimaryButton(
                           text: l10n.signupSubmitButton,
                           isLoading: auth.isLoading,
                           onPressed: _submit,
                         ),
-                        const SizedBox(height: AppSpacing.md),
-                        TextButton(
-                          onPressed: () {
-                            _debouncedNav(() {
-                              Navigator.of(context).pop();
-                            });
-                          },
-                          child: Text(
-                            "${l10n.signupHasAccount} ${l10n.signupSignIn}",
-                            style: AppTypography.bodyMd.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  // External Footer Link
+                  Center(
+                    child: InkWell(
+                      onTap: () {
+                        _debouncedNav(() {
+                          Navigator.of(context).pop();
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.xs),
+                        child: Text(
+                          "${l10n.signupHasAccount} ${l10n.signupSignIn}",
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleCard({
+    required Key key,
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      key: key,
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.defaultBorder.topLeft.x),
+        child: AnimatedContainer(
+          duration: AppMotion.durationFast,
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.sm,
+            horizontal: AppSpacing.xs,
+          ),
+          decoration: BoxDecoration(
+            color:
+                isSelected ? AppColors.surfaceContainerLow : AppColors.surface,
+            borderRadius: AppRadius.defaultBorder,
+            border: Border.all(
+              color: isSelected ? AppColors.primary : AppColors.outlineVariant,
+              width: isSelected ? 2.0 : 1.0,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color:
+                    isSelected ? AppColors.primary : AppColors.onSurfaceVariant,
+                size: AppIconSize.md,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                title,
+                style: AppTypography.labelLg.copyWith(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
       ),
