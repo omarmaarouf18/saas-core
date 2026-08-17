@@ -95,12 +95,17 @@ Detailed CI/CD pipeline mechanics and sync architecture are documented in [docs/
 
 ## 5. UI Architecture & Design System
 
-All UI components adhere strictly to the design tokens declared in `lib/core/theme.dart` (`AppColors`, `AppSpacing`, `AppRadius`, `AppShadows`, `AppTypography`). Shared UI components reside under `lib/widgets/`:
-* `StatusBadge`: Renders canonical badge styling across all 6 job status types (`pending`, `awaiting_price_response`, `active`, `completed`, `cancelled`, `escrow_reconciliation_required`).
-* `EntityAvatar`: Fallback-safe user avatar rendering.
-* `InfoListTile`: Standardized list-row widget for notifications, ratings, and job entries.
-* `StatCard`: Dashboard metric card.
-* `ConfirmActionDialog`: Standard modal confirmation dialogs.
+All UI components adhere strictly to the design tokens declared in `lib/core/theme.dart` (`AppColors`, `AppSpacing`, `AppRadius`, `AppElevation`, `AppMotion`, `AppIconSize`, `AppTypography`). Shared UI components reside under `lib/widgets/`:
+* `PrimaryButton` / `SecondaryButton`: Amber Gold primary and outlined secondary action buttons with built-in tap-debounce protection.
+* `ThemedCard`: Styled container cards with elevation and top-accent support.
+* `ThemedTextField`: Standardized text input fields with focus indicators and password toggles.
+* `StatusBadge`: Canonical badge styling across all job, KYC, and worker status types.
+* `EntityAvatar`: Fallback-safe user avatar rendering with role iconography.
+* `OtpPinInput`: 6-digit discrete PIN input with auto-advance and clipboard support.
+* `PillFilterBar`: Horizontal category and status filter bar with badge counts.
+* `RouteTimeline`: 2-point vertical route connector for pickup and dropoff itinerary.
+* `ThemedEmptyState` / `ThemedErrorBanner` / `ThemedLoadingIndicator`: Standardized state feedback components.
+* `ConfirmActionDialog` / `CancelJobDialog`: Standard modal dialogs for critical flows.
 
-<!-- Trigger sync workflow verification -->
+For full design system specifications and component catalog, consult **[`docs/frontend/DESIGN_SYSTEM.md`](../docs/frontend/DESIGN_SYSTEM.md)** and **[`docs/frontend/ARCHITECTURE.md`](../docs/frontend/ARCHITECTURE.md)**.
 

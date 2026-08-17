@@ -1,6 +1,10 @@
 # Frontend Implementation Plan: Quick Delivery Marketplace
 
-This document details the step-by-step implementation plan for the Flutter frontend client. To ensure stability and ease of integration, features are built sequentially.
+This document details the historical step-by-step implementation plan for the Flutter frontend client (Phases 1–7).
+
+> [!NOTE]
+> **Canonical Implementation Status**:
+> For the complete, living implementation record covering all completed phases (Phases 1–28) including the Stitch Unified UI Redesign (Batches 1–5), consult the canonical status document: **[`docs/frontend/STATUS.md`](docs/frontend/STATUS.md)**.
 
 ---
 

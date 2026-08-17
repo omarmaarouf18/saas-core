@@ -23,15 +23,19 @@ This design system provides the visual architecture and component spec for Quick
 | Token Name | Hex Code / Value | Usage & Meaning | WCAG Contrast (on White) |
 | :--- | :--- | :--- | :--- |
 | `AppColors.primary` | `#0D1321` | Deep Navy brand color for structural headers, dark mode surfaces, primary typography | N/A (Dark Surface) |
-| `AppColors.secondary` | `#FFC107` | Amber Gold confirmed primary CTA/action button fill, badges, active states | 1.34:1 (Requires dark text) |
+| `AppColors.primaryContainer` | `#151B2A` | Dark Slate/Navy container for hero cards, balance banners, active role cards | N/A (Dark Container) |
+| `AppColors.secondary` | `#FFC107` | Amber Gold primary CTA button fill, active highlights, star ratings | 1.34:1 (Requires dark text) |
+| `AppColors.secondaryContainer` | `#FDC003` | Amber Gold CTA button container | 1.34:1 (Requires dark text) |
 | `AppColors.scaffoldBackground` | `#E5E7EB` | Cool gray background for app scaffold | N/A |
 | `AppColors.surface` | `#FFFFFF` | Pure white surface for cards and container backgrounds | N/A |
+| `AppColors.surfaceContainerLow` | `#F3F3F4` | Light gray container fill for nested cards and blind status blocks | N/A |
 | `AppColors.onPrimary` | `#FFFFFF` | Primary text color on dark navy backgrounds | 17.5:1 (AAA) |
 | `AppColors.onSecondary` | `#0D1321` | Deep navy text on gold secondary containers & primary CTA buttons | 13.0:1 (AAA) |
 | `AppColors.onSurface` | `#1A1C1C` | Charcoal body text on light surface containers | 15.8:1 (AAA) |
 | `AppColors.onSurfaceVariant` | `#45464C` | Slate gray text for secondary captions and subtitles | 9.2:1 (AAA) |
 | `AppColors.success` | `#15803D` | Dark green for completed badges, positive trends, verified tags | 5.02:1 (AA) |
-| `AppColors.danger` | `#BA1A1A` | Dark red for errors, destructive buttons, cancelled statuses | 10.1:1 (AAA) |
+| `AppColors.danger` / `AppColors.error` | `#BA1A1A` | Dark red for errors, destructive buttons, cancelled statuses | 10.1:1 (AAA) |
+| `AppColors.errorContainer` | `#FFDAD6` | Light pink background fill for error banners | N/A |
 | `AppColors.warning` | `#B45309` | Warm amber-700 for pending reviews, warnings, hold alerts | 5.02:1 (AA) |
 | `AppColors.outline` | `#57585E` | Dark gray for active input borders and icon outlines | 7.09:1 (AAA) |
 | `AppColors.outlineVariant` | `#8E8F95` | Mid gray for subtle card dividers and passive borders | 3.34:1 (UI Component) |
@@ -111,41 +115,54 @@ This design system provides the visual architecture and component spec for Quick
 | `AppTypography.displayLg` | 48 | Bold (700) | 56/48 | Hero stat numbers, large marketing headlines |
 | `AppTypography.headlineLg` | 32 | SemiBold (600) | 40/32 | Primary screen headers (desktop/tablet) |
 | `AppTypography.headlineLgMobile` | 24 | SemiBold (600) | 32/24 | Primary screen headers (mobile viewports) |
+| `AppTypography.headlineMd` | 20 | SemiBold (600) | 28/20 | Secondary headings, modal subtitles |
 | `AppTypography.titleMd` | 18 | SemiBold (600) | 24/18 | Section headers, card titles, dialog titles |
 | `AppTypography.bodyLg` | 16 | Regular (400) | 24/16 | Prominent body text, lead paragraph text, primary & secondary button labels |
 | `AppTypography.bodyMd` | 14 | Regular (400) | 20/14 | Standard body paragraphs, text input text |
+| `AppTypography.bodySm` | 13 | Regular (400) | 18/13 | Small body text, secondary descriptions |
 | `AppTypography.labelLg` | 12 | SemiBold (600) | 16/12 | Input labels, section tags, standard status badges |
-| `AppTypography.labelMd` | 11 | Medium (500) | 14/11 | Metadata timestamps, compact status badge text, captions |
+| `AppTypography.labelMd` | 11 | Medium (500) | 14/11 | Metadata timestamps, compact status badge text |
+| `AppTypography.labelSm` | 10 | Medium (500) | 12/10 | Micro badges, detail notes, count tags |
+| `AppTypography.caption` | 11 | Regular (400) | 14/11 | Caption text, informational notes |
 
 ---
 
 ## 3. Shared Component Library Reference
 
-All shared widgets are located in `frontend/lib/widgets/`. Below is the complete catalog:
+All shared widgets are located in `frontend/lib/widgets/`. Below is the complete catalog of 27 widgets:
 
 | Widget Class Name | File Path | Visual Role & Purpose | Key Constructor Parameters | Primary Screen Usages |
 | :--- | :--- | :--- | :--- | :--- |
 | `CancelJobDialog` | `cancel_job_dialog.dart` | Job cancellation modal dialog with preset reason radios & custom input | `jobId`, `onCancelled` | `home_screen.dart`, `job_status_screen.dart` |
-| `ConfirmActionDialog` | `confirm_action_dialog.dart` | Reusable modal confirmation for destructive or financial operations | `title`, `message`, `confirmText`, `isDestructive` | `employee_jobs_screen.dart`, `owner_reconciliation_queue_screen.dart` |
+| `ConfirmActionDialog` | `confirm_action_dialog.dart` | Reusable modal confirmation for destructive or financial operations | `title`, `message`, `confirmText`, `isDestructive` | `employee_jobs_screen.dart`, `owner_reconciliation_queue_screen.dart`, `notifications_screen.dart` |
+| `CreateServiceDialog` | `create_service_dialog.dart` | Owner service creation modal with category selector and pricing fields | `onServiceCreated` | `service_screen.dart` |
 | `CreateTicketDialog` | `create_ticket_dialog.dart` | Customer/owner complaint ticket submission modal | `referenceId`, `referenceType` | `job_status_screen.dart`, `settings_screen.dart` |
-| `EntityAvatar` | `entity_avatar.dart` | Circular avatar widget rendering photo or initial initials with border | `imageUrl`, `name`, `radius` | `rating_screen.dart` |
-| `InfoListTile` | `info_list_tile.dart` | Key-value information list row with leading icon and optional subtitle | `label`, `value`, `icon`, `trailing` | `wallet_screen.dart` |
-| `LocationPickerMap` | `location_picker_map.dart` | Interactive OpenStreetMap coordinate picker for pickup/dropoff | `initialLocation`, `onLocationSelected` | `customer_marketplace_screen.dart` |
-| `PrimaryButton` | `primary_button.dart` | Full-width high-contrast action button with loading spinner state | `text`, `onPressed`, `isLoading`, `icon` | Used across 16 screens |
-| `RatingSummaryCard` | `rating_summary_card.dart` | Rating breakdown card displaying star average, progress bars & counts | `averageRating`, `totalReviews` | `home_screen.dart` |
-| `SecondaryButton` | `secondary_button.dart` | Tonal / outlined secondary action button for non-primary choices | `text`, `onPressed`, `isLoading`, `icon` | Used across 9 screens |
+| `DepositFundsDialog` | `deposit_funds_dialog.dart` | Owner e-wallet deposit modal with amount presets | `onDepositSubmitted` | `wallet_screen.dart` |
+| `EmailChangeDialog` | `email_change_dialog.dart` | Secure 2-step email change modal with OTP verification | `currentEmail`, `onEmailChanged` | `my_account_screen.dart` |
+| `EntityAvatar` | `entity_avatar.dart` | Circular avatar widget rendering photo or initial initials with border | `imageUrl`, `name`, `radius` | `rating_screen.dart`, `employee_screen.dart`, `job_status_screen.dart` |
+| `InfoListTile` | `info_list_tile.dart` | Key-value information list row with leading icon and optional subtitle | `label`, `value`, `icon`, `trailing` | `wallet_screen.dart`, `owner_history_screen.dart` |
+| `LocationPickerMap` | `location_picker_map.dart` | Interactive OpenStreetMap coordinate picker for pickup/dropoff | `initialLocation`, `onLocationSelected` | `customer_marketplace_screen.dart`, `owner_configuration_screen.dart` |
+| `OtpPinInput` | `otp_pin_input.dart` | 6-digit discrete PIN input boxes with auto-advance and clipboard support | `controller`, `onCompleted` | `otp_screen.dart`, `forgot_password_screen.dart` |
+| `PayoutRequestDialog` | `payout_request_dialog.dart` | Owner payout withdrawal request modal with bank/Instapay methods | `withdrawableBalance`, `onPayoutRequested` | `wallet_screen.dart` |
+| `PillFilterBar` | `pill_filter_bar.dart` | Horizontal scrollable category and status filter chips with badge counts | `items`, `selectedValue`, `onSelected` | `customer_jobs_screen.dart`, `notifications_screen.dart`, `owner_history_screen.dart`, `owner_fleet_map_screen.dart` |
+| `PrimaryButton` | `primary_button.dart` | Amber Gold primary CTA button with built-in 600ms tap debounce | `text`, `onPressed`, `isLoading`, `icon`, `isDestructive` | Used across 28 screens |
+| `RatingSummaryCard` | `rating_summary_card.dart` | Rating breakdown card displaying star average, progress bars & counts | `averageRating`, `totalReviews` | `home_screen.dart`, `customer_marketplace_screen.dart` |
+| `RouteTimeline` | `route_timeline.dart` | 2-point vertical route connector for pickup and dropoff itinerary | `pickup`, `dropoff`, `metrics` | `job_status_screen.dart`, `employee_jobs_screen.dart` |
+| `SecondaryButton` | `secondary_button.dart` | Tonal / outlined secondary action button for non-primary choices | `text`, `onPressed`, `isLoading`, `icon`, `isOutlined` | Used across 20 screens |
 | `SkeletonLoader` | `skeleton_loader.dart` | Reusable shimmer-animated block & per-screen card geometry loaders | `width`, `height`, `borderRadius`, `margin` | `customer_marketplace_screen.dart`, `home_screen.dart`, `employee_jobs_screen.dart`, `wallet_screen.dart` |
 | `StatCard` | `stat_card.dart` | Metric card with icon, title, bold value, and trend indicator | `title`, `value`, `icon`, `subtitle` | `home_screen.dart`, `wallet_screen.dart` |
-| `StatusBadge` | `status_badge.dart` | Localized pill badge mapping job/kyc/payout status to color/icon | `status` | Used across 10 screens |
-| `ThemedCard` | `themed_card.dart` | Surface card container with radius, ambient elevation & border | `child`, `padding`, `margin`, `onTap` | Used across 23 screens |
-| `ThemedEmptyState` | `themed_empty_state.dart` | Centered graphic placeholder for empty lists with action button | `icon`, `title`, `description`, `action` | Used across 12 screens |
-| `ThemedErrorBanner` | `themed_error_banner.dart` | Dismissible alert card displaying operational errors or warnings | `message`, `onDismiss`, `onRetry` | Used across 12 screens |
-| `ThemedLoadingIndicator` | `themed_loading_indicator.dart` | Brand-tinted progress spinner with optional progress label | `message` | Used across 12 screens |
-| `ThemedSectionHeader` | `themed_section_header.dart` | Section header row with title and optional trailing action button | `title`, `actionText`, `onActionTap` | Used across 10 screens |
-| `ThemedTextField` | `themed_text_field.dart` | Input field with floating label, validation error text & prefix icon | `label`, `controller`, `validator`, `prefixIcon` | Used across 13 screens |
+| `StatusBadge` | `status_badge.dart` | Localized pill badge mapping job/kyc/payout status to color/icon | `status` | Used across 15 screens |
+| `ThemedBanner` | `themed_banner.dart` | Full-width contextual informational and alert banner | `message`, `type` | Used across 8 screens |
+| `ThemedCard` | `themed_card.dart` | Surface card container with radius, ambient elevation & topAccent | `child`, `padding`, `margin`, `onTap`, `topAccentColor` | Used across 28 screens |
+| `ThemedEmptyState` | `themed_empty_state.dart` | Centered graphic placeholder for empty lists with action button | `icon`, `title`, `description`, `action` | Used across 14 screens |
+| `ThemedErrorBanner` | `themed_error_banner.dart` | Dismissible alert card displaying operational errors or warnings | `message`, `onDismiss`, `onRetry` | Used across 18 screens |
+| `ThemedLoadingIndicator` | `themed_loading_indicator.dart` | Brand-tinted progress spinner with optional progress label | `message` | Used across 16 screens |
+| `ThemedSectionHeader` | `themed_section_header.dart` | Section header row with title and optional trailing action button | `title`, `actionText`, `onActionTap` | Used across 12 screens |
+| `ThemedSuccessBanner` | `themed_success_banner.dart` | Floating toast/banner for positive operation confirmations | `message` | Used across 14 screens |
+| `ThemedTextField` | `themed_text_field.dart` | Input field with floating label, focus indicator & password toggle | `label`, `controller`, `validator`, `prefixIcon` | Used across 20 screens |
 
 > [!RULE]
-> **Component Propose Rule**: If a developer requires a visual pattern not fulfilled by the 18 shared widgets above, they must propose and implement a new shared widget under `frontend/lib/widgets/` rather than adding custom inline container styling inside a screen file.
+> **Component Propose Rule**: If a developer requires a visual pattern not fulfilled by the 27 shared widgets above, they must propose and implement a new shared widget under `frontend/lib/widgets/` rather than adding custom inline container styling inside a screen file.
 
 ---
 

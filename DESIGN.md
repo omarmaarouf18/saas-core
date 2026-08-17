@@ -3,8 +3,8 @@
 This document outlines the architectural and user interface design for the Flutter frontend client of the Quick Delivery marketplace services platform. The frontend coordinates with the Go microservices backend exposed via the API Gateway.
 
 > [!NOTE]
-> **Planned vs. Current Architecture**: The directory structure and provider file tree detailed in Section 1 (such as `screens/shared/`, `screens/owner/`, `screens/employee/`, `screens/user/`, and `chat_provider.dart` / `sse_provider.dart`) represent the **target/planned architecture** for the production launch.
-> The actual current frontend implementation consists of a flat screens directory (containing 14 screens: `chat_screen.dart`, `customer_marketplace_screen.dart`, `employee_jobs_screen.dart`, `employee_screen.dart`, `home_screen.dart`, `job_status_screen.dart`, `login_screen.dart`, `notifications_screen.dart`, `otp_screen.dart`, `rating_screen.dart`, `service_screen.dart`, `signup_screen.dart`, `subscription_screen.dart`, and `wallet_screen.dart`) and is documented in [docs/frontend/STATUS.md](docs/frontend/STATUS.md). Please consult it for the current state of development.
+> **Planned vs. Current Architecture**: The directory structure and provider file tree detailed in Section 1 (such as `screens/shared/`, `screens/owner/`, `screens/employee/`, `screens/user/`, and `chat_provider.dart` / `sse_provider.dart`) represent the **target/planned modular packaging architecture** for the production launch.
+> The actual production-ready frontend implementation consists of 28 active screens in `frontend/lib/screens/`, 11 providers in `frontend/lib/providers/`, and 27 reusable widgets in `frontend/lib/widgets/` following the complete Stitch Unified UI redesign (Batches 1–5), fully documented in [docs/frontend/STATUS.md](docs/frontend/STATUS.md) and [docs/frontend/ARCHITECTURE.md](docs/frontend/ARCHITECTURE.md). Please consult those documents for the canonical live state.
 
 ---
 
