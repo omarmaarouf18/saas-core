@@ -470,6 +470,30 @@ class AppLocalizationsAr extends AppLocalizations {
   String get customerJobsTitle => 'طلباتي';
 
   @override
+  String get customerJobsSub => 'تتبع وإدارة سجل طلباتك.';
+
+  @override
+  String get customerJobsSearchHint => 'ابحث برقم الطلب أو الموقع...';
+
+  @override
+  String get customerJobsInvoiceAvailable => 'الفاتورة متوفرة';
+
+  @override
+  String get customerJobsInTransit => 'في الطريق';
+
+  @override
+  String get customerJobsOrderPlaced => 'تم إنشاء الطلب';
+
+  @override
+  String get customerJobsPayment => 'طريقة الدفع';
+
+  @override
+  String get customerJobsPrice => 'السعر';
+
+  @override
+  String get customerJobsReason => 'السبب';
+
+  @override
   String get customerJobsOrder => 'طلب #';
 
   @override

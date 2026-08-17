@@ -104,7 +104,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
 
           final List<Marker> mapMarkers = [];
 
-          // Add Pickup / Job location marker (Deep Navy Container)
+          // Add Pickup / Job location marker (Deep Navy Container with Pin Dot)
           if (provider.customerJobLocation != null) {
             mapMarkers.add(
               Marker(
@@ -273,13 +273,13 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
               // Floating Map Controls (Zoom In / Zoom Out / My Location)
               PositionedDirectional(
                 end: AppSpacing.md,
-                bottom: 160.0,
+                bottom: 180.0,
                 child: Column(
                   children: [
                     Container(
                       decoration: BoxDecoration(
                         color: AppColors.surface,
-                        borderRadius: AppRadius.defaultBorder,
+                        borderRadius: AppRadius.smBorder,
                         boxShadow: AppElevation.shadowLevel2List,
                         border: Border.all(color: AppColors.outlineVariant),
                       ),

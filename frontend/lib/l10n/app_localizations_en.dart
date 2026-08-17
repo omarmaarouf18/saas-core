@@ -473,6 +473,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customerJobsTitle => 'My Orders';
 
   @override
+  String get customerJobsSub => 'Track and manage your delivery history.';
+
+  @override
+  String get customerJobsSearchHint => 'Search by Order ID, Location...';
+
+  @override
+  String get customerJobsInvoiceAvailable => 'Invoice Available';
+
+  @override
+  String get customerJobsInTransit => 'In Transit';
+
+  @override
+  String get customerJobsOrderPlaced => 'Order Placed';
+
+  @override
+  String get customerJobsPayment => 'Payment';
+
+  @override
+  String get customerJobsPrice => 'Price';
+
+  @override
+  String get customerJobsReason => 'Reason';
+
+  @override
   String get customerJobsOrder => 'Order #';
 
   @override

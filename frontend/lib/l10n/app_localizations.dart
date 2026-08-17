@@ -1004,6 +1004,54 @@ abstract class AppLocalizations {
   /// **'My Orders'**
   String get customerJobsTitle;
 
+  /// No description provided for @customerJobsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Track and manage your delivery history.'**
+  String get customerJobsSub;
+
+  /// No description provided for @customerJobsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by Order ID, Location...'**
+  String get customerJobsSearchHint;
+
+  /// No description provided for @customerJobsInvoiceAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice Available'**
+  String get customerJobsInvoiceAvailable;
+
+  /// No description provided for @customerJobsInTransit.
+  ///
+  /// In en, this message translates to:
+  /// **'In Transit'**
+  String get customerJobsInTransit;
+
+  /// No description provided for @customerJobsOrderPlaced.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Placed'**
+  String get customerJobsOrderPlaced;
+
+  /// No description provided for @customerJobsPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get customerJobsPayment;
+
+  /// No description provided for @customerJobsPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get customerJobsPrice;
+
+  /// No description provided for @customerJobsReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get customerJobsReason;
+
   /// No description provided for @customerJobsOrder.
   ///
   /// In en, this message translates to:

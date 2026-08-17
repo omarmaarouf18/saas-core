@@ -158,9 +158,14 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
 
     final bodyContent = Column(
       children: [
-        // Filter & Coordinates Control Panel
+        // Filter & Coordinates Control Panel (Stitch Filter Card)
         Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.xs,
+          ),
           child: ThemedCard(
             elevation: AppElevation.shadowLevel1List,
             borderRadius: AppRadius.md,
@@ -187,7 +192,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                       l10n.customerMarketplaceFilterNearby,
                       style: AppTypography.bodyMd.copyWith(
                         color: AppColors.onSurface,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -390,7 +395,9 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                     : ListView.builder(
                         key: const ValueKey('marketplace_services_list'),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md),
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.xs,
+                        ),
                         itemCount: filteredServices.length,
                         itemBuilder: (context, index) {
                           final service = filteredServices[index];
@@ -400,101 +407,148 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
 
                           return Padding(
                             padding:
-                                const EdgeInsets.only(bottom: AppSpacing.sm),
+                                const EdgeInsets.only(bottom: AppSpacing.md),
                             child: ThemedCard(
-                              elevation: AppElevation.shadowLevel2List,
+                              elevation: AppElevation.shadowLevel1List,
                               borderRadius: AppRadius.md,
                               padding: AppSpacing.md,
-                              child: Row(
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  CircleAvatar(
-                                    backgroundColor: AppColors.secondary
-                                        .withValues(alpha: 0.2),
-                                    foregroundColor: AppColors.primary,
-                                    child: Icon(
-                                        _getCategoryIcon(service.category)),
-                                  ),
-                                  const SizedBox(width: AppSpacing.md),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          service.name,
-                                          style: AppTypography.titleMd.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.primary,
-                                          ),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        width: 44,
+                                        height: 44,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.secondary
+                                              .withValues(alpha: 0.15),
+                                          shape: BoxShape.circle,
                                         ),
-                                        const SizedBox(height: AppSpacing.xs),
-                                        Wrap(
-                                          spacing: AppSpacing.base,
-                                          runSpacing: AppSpacing.xxs,
+                                        child: Icon(
+                                          _getCategoryIcon(service.category),
+                                          color: AppColors.primary,
+                                          size: 22,
+                                        ),
+                                      ),
+                                      const SizedBox(width: AppSpacing.md),
+                                      Expanded(
+                                        child: Column(
                                           crossAxisAlignment:
-                                              WrapCrossAlignment.center,
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: AppSpacing.base,
-                                                vertical: AppSpacing.xxs,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: AppColors.primary
-                                                    .withValues(alpha: 0.1),
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                        AppRadius.sm),
-                                              ),
-                                              child: Text(
-                                                categoryLabel,
-                                                style: AppTypography.labelLg
-                                                    .copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: AppColors.primary,
-                                                ),
+                                            Text(
+                                              service.name,
+                                              style: AppTypography.titleMd
+                                                  .copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.onSurface,
                                               ),
                                             ),
+                                            const SizedBox(
+                                                height: AppSpacing.xs),
+                                            Wrap(
+                                              spacing: AppSpacing.sm,
+                                              runSpacing: AppSpacing.xxs,
+                                              crossAxisAlignment:
+                                                  WrapCrossAlignment.center,
+                                              children: [
+                                                Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: AppSpacing.sm,
+                                                    vertical: 2,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors
+                                                        .surfaceContainerHigh,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            AppRadius.xs),
+                                                  ),
+                                                  child: Text(
+                                                    categoryLabel,
+                                                    style: AppTypography.caption
+                                                        .copyWith(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: AppColors
+                                                          .onSurfaceVariant,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Text(
+                                                  "${service.distanceKM} km away",
+                                                  style: AppTypography.bodySm
+                                                      .copyWith(
+                                                    color: AppColors
+                                                        .onSurfaceVariant,
+                                                  ),
+                                                ),
+                                                ServiceRatingWidget(
+                                                  tenantId: service.tenantId,
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  const Divider(
+                                    height: 1,
+                                    color: AppColors.outlineVariant,
+                                  ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
                                             Text(
-                                              "${service.distanceKM} km away",
-                                              style:
-                                                  AppTypography.bodyMd.copyWith(
+                                              "Base: \$${service.tenantBasePrice} + \$${service.tenantPricePerKM}/km",
+                                              style: AppTypography.caption
+                                                  .copyWith(
                                                 color:
                                                     AppColors.onSurfaceVariant,
                                               ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                            ServiceRatingWidget(
-                                                tenantId: service.tenantId),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              "Est. Price: \$${service.finalPrice}",
+                                              style: AppTypography.titleMd
+                                                  .copyWith(
+                                                color: AppColors.primary,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
                                           ],
                                         ),
-                                        const SizedBox(height: AppSpacing.base),
-                                        Text(
-                                          "Base: \$${service.tenantBasePrice} + \$${service.tenantPricePerKM}/km",
-                                          style: AppTypography.bodyMd.copyWith(
-                                            color: AppColors.onSurfaceVariant,
+                                      ),
+                                      const SizedBox(width: AppSpacing.sm),
+                                      SizedBox(
+                                        width: 80,
+                                        child: PrimaryButton(
+                                          text: "Book",
+                                          isFullWidth: false,
+                                          onPressed: () => _showBookingDialog(
+                                            context,
+                                            service,
+                                            auth.token!,
                                           ),
                                         ),
-                                        const SizedBox(height: AppSpacing.xs),
-                                        Text(
-                                          "Est. Price: \$${service.finalPrice}",
-                                          style: AppTypography.titleMd.copyWith(
-                                            color: AppColors.secondary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: AppSpacing.sm),
-                                  SizedBox(
-                                    width: 80,
-                                    child: PrimaryButton(
-                                      text: "Book",
-                                      onPressed: () => _showBookingDialog(
-                                          context, service, auth.token!),
-                                    ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),

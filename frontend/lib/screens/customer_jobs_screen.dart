@@ -12,6 +12,7 @@ import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
+import '../widgets/themed_text_field.dart';
 import 'job_status_screen.dart';
 
 class CustomerJobsScreen extends StatefulWidget {
@@ -25,6 +26,8 @@ class CustomerJobsScreen extends StatefulWidget {
 class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
   String _selectedFilter =
       'all'; // 'all', 'in_transit', 'completed', 'cancelled'
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -32,6 +35,12 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadCustomerJobs();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCustomerJobs() async {
@@ -43,24 +52,28 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
   }
 
   List<Job> _filterJobs(List<Job> allJobs) {
-    if (_selectedFilter == 'all') return allJobs;
+    List<Job> jobs = allJobs;
     if (_selectedFilter == 'in_transit') {
-      return allJobs.where((j) {
+      jobs = jobs.where((j) {
         final s = j.status.toLowerCase();
         return s == 'active' || s == 'pending' || s == 'assigned';
       }).toList();
+    } else if (_selectedFilter == 'completed') {
+      jobs = jobs.where((j) => j.status.toLowerCase() == 'completed').toList();
+    } else if (_selectedFilter == 'cancelled') {
+      jobs = jobs.where((j) => j.status.toLowerCase() == 'cancelled').toList();
     }
-    if (_selectedFilter == 'completed') {
-      return allJobs
-          .where((j) => j.status.toLowerCase() == 'completed')
-          .toList();
+
+    if (_searchQuery.trim().isNotEmpty) {
+      final q = _searchQuery.trim().toLowerCase();
+      jobs = jobs.where((j) {
+        final matchId = j.id.toLowerCase().contains(q);
+        final matchService = j.serviceId.toLowerCase().contains(q);
+        final matchPayment = j.paymentMethod.toLowerCase().contains(q);
+        return matchId || matchService || matchPayment;
+      }).toList();
     }
-    if (_selectedFilter == 'cancelled') {
-      return allJobs
-          .where((j) => j.status.toLowerCase() == 'cancelled')
-          .toList();
-    }
-    return allJobs;
+    return jobs;
   }
 
   @override
@@ -91,8 +104,55 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
               foregroundColor: AppColors.onPrimary,
             ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: AppSpacing.sm),
+          // Header (Only show if not embedded to avoid redundant title in shell tab)
+          if (!widget.isEmbeddedInTab)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.xs,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.customerJobsTitle,
+                    style: AppTypography.headlineLgMobile.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.customerJobsSub,
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
+            ),
+            child: ThemedTextField(
+              controller: _searchController,
+              hintText: l10n.customerJobsSearchHint,
+              prefixIcon: const Icon(Icons.search, size: 20),
+              onChanged: (val) {
+                setState(() {
+                  _searchQuery = val;
+                });
+              },
+            ),
+          ),
+
           // Horizontal Pill Filter Bar
           PillFilterBar<String>(
             items: [
@@ -122,7 +182,9 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
               setState(() => _selectedFilter = val);
             },
           ),
+
           const SizedBox(height: AppSpacing.xs),
+
           Expanded(
             child: Builder(
               builder: (context) {
@@ -182,13 +244,23 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                   onRefresh: () async => _loadCustomerJobs(),
                   child: ListView.builder(
                     key: const Key('customer_jobs_list'),
-                    padding: const EdgeInsets.all(AppSpacing.md),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.xs,
+                    ),
                     itemCount: filteredJobs.length,
                     itemBuilder: (context, index) {
                       final job = filteredJobs[index];
                       final displayPrice = job.agreedPrice ??
                           job.proposedPrice ??
                           job.suggestedPrice;
+                      final displayId =
+                          job.id.length > 8 ? job.id.substring(0, 8) : job.id;
+                      final isCompleted =
+                          job.status.toLowerCase() == 'completed';
+                      final isCancelled =
+                          job.status.toLowerCase() == 'cancelled';
+                      final isInTransit = !isCompleted && !isCancelled;
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -205,13 +277,15 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Top Row: Tag + Service Name + Status Badge
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      "${l10n.customerJobsOrder}${job.id.length > 8 ? job.id.substring(0, 8) : job.id}",
+                                      "${l10n.customerJobsOrder}$displayId",
                                       style: AppTypography.titleMd.copyWith(
                                         fontWeight: FontWeight.bold,
                                         color: AppColors.onSurface,
@@ -223,6 +297,8 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                                 ],
                               ),
                               const SizedBox(height: AppSpacing.xs),
+
+                              // Payment & Price Row
                               Row(
                                 children: [
                                   const Icon(
@@ -249,7 +325,42 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                                   ],
                                 ],
                               ),
-                              if (job.status == 'cancelled' &&
+
+                              // Progress bar (In Transit / Active)
+                              if (isInTransit) ...[
+                                const SizedBox(height: AppSpacing.xs),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(3),
+                                  child: Container(
+                                    height: 4,
+                                    color: AppColors.surfaceContainerHigh,
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          flex: job.status.toLowerCase() ==
+                                                  'active'
+                                              ? 3
+                                              : 1,
+                                          child: Container(
+                                              color: AppColors.secondary),
+                                        ),
+                                        Expanded(
+                                          flex: job.status.toLowerCase() ==
+                                                  'active'
+                                              ? 1
+                                              : 3,
+                                          child: Container(
+                                              color: AppColors
+                                                  .surfaceContainerHigh),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+
+                              // Cancellation reason alert
+                              if (isCancelled &&
                                   job.cancellationReason != null &&
                                   job.cancellationReason!.isNotEmpty) ...[
                                 const SizedBox(height: AppSpacing.xs),
