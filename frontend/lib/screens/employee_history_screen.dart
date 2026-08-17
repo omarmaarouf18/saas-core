@@ -10,6 +10,7 @@ import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
+import '../widgets/themed_section_header.dart';
 import '../widgets/skeleton_loader.dart';
 
 class EmployeeHistoryScreen extends StatefulWidget {
@@ -56,6 +57,26 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Stitch Header
+            Text(
+              l10n.ownerHistoryTitle,
+              style: AppTypography.headlineLgMobile.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xxs),
+            Text(
+              "Completed and cancelled jobs.",
+              style: AppTypography.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+
+            const ThemedSectionHeader(title: "Recent Activity"),
+            const SizedBox(height: AppSpacing.sm),
+
             AnimatedSwitcher(
               duration: AppMotion.durationMedium,
               switchInCurve: AppMotion.curveStateChange,
