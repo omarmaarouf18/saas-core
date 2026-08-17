@@ -568,6 +568,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             PrimaryButton(
               onPressed: _isSimulating ? null : _submitAction,
               icon: Icons.send_outlined,
+              trailingIcon: Icons.arrow_forward,
               text: l10n.employeeJobsSimulateButton,
               isLoading: _isSimulating,
             ),
@@ -858,6 +859,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                       key: Key('complete_job_button_${job.id}'),
                       text: l10n.employeeJobsCompleteJobButton,
                       icon: Icons.check_circle_outline,
+                      trailingIcon: Icons.arrow_forward,
                       isLoading: _completingJobId == job.id,
                       onPressed: _completingJobId != null
                           ? null
