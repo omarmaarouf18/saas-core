@@ -371,6 +371,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                   key: const Key('find_couriers_button'),
                   text: "Find Nearby Couriers",
                   icon: Icons.local_shipping_outlined,
+                  trailingIcon: Icons.arrow_forward,
                   onPressed: widget.onGoToServices,
                 ),
               ],
@@ -579,6 +580,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                   child: PrimaryButton(
                     key: const Key('quick_book_now_button'),
                     text: l10n.customerHomeQuickBookBtn,
+                    trailingIcon: Icons.arrow_forward,
                     onPressed: widget.onGoToServices,
                   ),
                 ),

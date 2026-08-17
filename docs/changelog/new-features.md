@@ -2,6 +2,20 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Stitch Unified UI Implementation — Batch C (Customer Experience)
+
+- **Implementation Detail**:
+  - **Batch C Target Screens (6 Screens Verified Against `logistics_core_unified` including 2 `_final_fidelity` references)**:
+    - [`customer_home_screen.dart`](../../frontend/lib/screens/customer_home_screen.dart) (`customer_home/`): Integrated Deep Navy header bar with QuickDelivery branding and notification badge, Quick Booking "Where to?" search affordance with `PrimaryButton` trailing arrow icon, 4-category bento tiles, and live active activity summary card with instant navigation to orders.
+    - [`customer_jobs_screen.dart`](../../frontend/lib/screens/customer_jobs_screen.dart) (`my_jobs/`): Preserved `PillFilterBar` with dynamic counts across status tabs (`All`, `In Transit`, `Completed`, `Cancelled`), unified job cards with `ThemedCard`, price chips in Amber Gold, and cancellation reason highlights.
+    - [`customer_marketplace_screen.dart`](../../frontend/lib/screens/customer_marketplace_screen.dart) (`marketplace/`): Refined location picker dialog and booking confirmation modal with `PrimaryButton(trailingIcon: Icons.arrow_forward)`, service category badges, rating indicators, and COD payment terms.
+    - [`job_status_screen.dart`](../../frontend/lib/screens/job_status_screen.dart) (`job_status_final_fidelity/` - **Authoritative Final Fidelity**): Connected Live Route Tracking card with `onTap` to push full interactive `CustomerJobMapScreen`, preserved Fulfillment Progress timeline with Amber pulse container for active transit, verified courier driver card with direct Chat Support link, negotiable price proposal countdown and counter-offer flow, and `PrimaryButton` with `trailingIcon: Icons.arrow_forward` for rating completion.
+    - [`customer_job_map_screen.dart`](../../frontend/lib/screens/customer_job_map_screen.dart) (`customer_job_map_final_fidelity/` - **Authoritative Final Fidelity**): Built fullscreen live map canvas with OpenStreetMap tile layer, custom Deep Navy pickup marker and Amber Gold pulse courier marker, floating zoom in/out and target center controls, and rounded bottom sheet overlay with job ID, live status, and "Back to Status" action button.
+    - [`rating_screen.dart`](../../frontend/lib/screens/rating_screen.dart) (`customer_rating/`): Refined blind rating presentation with job context header, driver avatar (`EntityAvatar`), 5-star Amber Gold rating picker, multiline feedback text field, blind lock-in visualizer, and `PrimaryButton(trailingIcon: Icons.arrow_forward)`.
+  - **Automated Test Coverage**: Verified 100% pass across all 260 unit and widget tests in Flutter test suite.
+- **Commit SHA**: ``7a8f307a7eb6c865a3bf211757bf1d3c901fc9a6``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (260/260 pass), and pre-push hooks gate. ✅
+
 ## Stitch Unified UI Implementation — Batch B (Global & Communication Screens)
 
 - **Implementation Detail**:
@@ -11,7 +25,7 @@ This file tracks historical entries for the primary category: **New Features Cha
     - [`notifications_screen.dart`](../../frontend/lib/screens/notifications_screen.dart) (`notifications/`): Adopted `PillFilterBar` category chips (`All`, `Jobs`, `System`, `Alerts`), chronological sections (`Today`, `Yesterday`, `Earlier`), unread left amber accent indicator bars, type-specific icon containers (`Icons.local_shipping_outlined`, `Icons.warning_amber_rounded`, `Icons.system_update_alt_rounded`), and tap-to-read / dismiss actions.
     - [`chat_screen.dart`](../../frontend/lib/screens/chat_screen.dart) (`chat/`): Aligned message bubbles to Stitch dark slate container (`AppColors.primaryContainer` for sender with `rounded-tr-none`, `AppColors.surface` for receiver with `rounded-tl-none`), preserved critical `sender_username` display semantics, and updated send button to Amber Gold `AppColors.secondary`.
   - **Automated Test Coverage**: Verified 100% pass across all 260 unit and widget tests in Flutter test suite.
-- **Commit SHA**: ``8c9068089f28194bb90f09cbf32a7f227ebacec9``
+- **Commit SHA**: ``7a8f307a7eb6c865a3bf211757bf1d3c901fc9a6``
 - **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (260/260 pass), and pre-push hooks gate. ✅
 
 ## Stitch Unified UI Implementation — Batch A (Foundation & Auth/Global Screens)

@@ -350,6 +350,7 @@ class _RatingScreenState extends State<RatingScreen> {
 
         PrimaryButton(
           text: "Submit Blind Rating",
+          trailingIcon: Icons.arrow_forward,
           onPressed: _submitRating,
           isLoading: _isSubmitting,
         ),

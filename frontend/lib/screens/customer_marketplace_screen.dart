@@ -585,6 +585,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                   PrimaryButton(
                     key: const Key('confirm_location_button'),
                     text: "Confirm Location",
+                    trailingIcon: Icons.arrow_forward,
                     onPressed: () {
                       setState(() {
                         _customerLat = tempLocation.latitude;
@@ -821,6 +822,7 @@ class _BookingDialogState extends State<_BookingDialog> {
               child: PrimaryButton(
                 key: const Key('confirm_booking_button'),
                 text: "Confirm & Request",
+                trailingIcon: Icons.arrow_forward,
                 isLoading: _isSubmitting,
                 isFullWidth: false,
                 onPressed: _isSubmitting ? null : _confirmBooking,

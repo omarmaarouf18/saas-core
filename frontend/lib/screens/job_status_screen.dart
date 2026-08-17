@@ -20,6 +20,7 @@ import '../widgets/themed_section_header.dart';
 import '../widgets/themed_success_banner.dart';
 import '../widgets/themed_text_field.dart';
 import 'chat_screen.dart';
+import 'customer_job_map_screen.dart';
 import 'rating_screen.dart';
 
 class JobStatusScreen extends StatefulWidget {
@@ -348,6 +349,19 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             ThemedCard(
               borderRadius: AppRadius.md,
               padding: 0.0,
+              onTap: () {
+                final auth = Provider.of<AuthProvider>(context, listen: false);
+                if (auth.token != null) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => CustomerJobMapScreen(
+                        jobId: _currentJob.id,
+                        token: auth.token!,
+                      ),
+                    ),
+                  );
+                }
+              },
               child: Stack(
                 children: [
                   Container(
@@ -661,6 +675,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               PrimaryButton(
                 text: "Rate Your Experience",
                 icon: Icons.star_outline,
+                trailingIcon: Icons.arrow_forward,
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
