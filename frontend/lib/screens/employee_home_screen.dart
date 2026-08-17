@@ -22,7 +22,6 @@ class EmployeeHomeScreen extends StatefulWidget {
 class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
   late int _currentIndex;
   late Set<int> _visitedTabs;
-
   NotificationsProvider? _notificationsProvider;
 
   @override
@@ -95,6 +94,72 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
     }
   }
 
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return Scaffold(
+      backgroundColor: AppColors.scaffoldBackground,
+      appBar: _buildAppBar(context, l10n),
+      body: _buildTabBody(),
+      bottomNavigationBar: _buildBottomNavigationBar(l10n),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(
+      BuildContext context, AppLocalizations l10n) {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
+      foregroundColor: Theme.of(context).colorScheme.onSurface,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: AppSpacing.sm),
+        child: Center(
+          child: Container(
+            key: const Key('app_header_logo'),
+            padding: const EdgeInsets.all(AppSpacing.xs),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: const Icon(
+              Icons.storefront,
+              color: AppColors.secondary,
+              size: 18,
+            ),
+          ),
+        ),
+      ),
+      title: Text(
+        _getTabTitle(context, _currentIndex),
+        style: AppTypography.titleMd.copyWith(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      actions: [
+        IconButton(
+          key: const Key('employee_verification_button'),
+          icon: Icon(
+            Icons.verified_user_outlined,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+          tooltip: l10n.employeeJobsTooltipVerification,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const KycDocumentUploadScreen(),
+              ),
+            );
+          },
+        ),
+        _buildNotificationBell(context),
+      ],
+    );
+  }
+
   Widget _buildNotificationBell(BuildContext context) {
     final l10n = context.l10n;
     return Consumer<NotificationsProvider>(
@@ -143,99 +208,48 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
+  Widget _buildTabBody() {
+    return IndexedStack(
+      index: _currentIndex,
+      children: [
+        _visitedTabs.contains(0)
+            ? const EmployeeJobsScreen(isEmbeddedInTab: true)
+            : const SizedBox.shrink(),
+        _visitedTabs.contains(1)
+            ? const EmployeeHistoryScreen(isEmbeddedInTab: true)
+            : const SizedBox.shrink(),
+        _visitedTabs.contains(2)
+            ? const SettingsScreen(isEmbeddedInTab: true)
+            : const SizedBox.shrink(),
+      ],
+    );
+  }
 
-    return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.sm),
-          child: Center(
-            child: Container(
-              key: const Key('app_header_logo'),
-              padding: const EdgeInsets.all(AppSpacing.xs),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: const Icon(
-                Icons.storefront,
-                color: AppColors.secondary,
-                size: 18,
-              ),
-            ),
-          ),
+  Widget _buildBottomNavigationBar(AppLocalizations l10n) {
+    return NavigationBar(
+      key: const Key('employee_bottom_navigation_bar'),
+      selectedIndex: _currentIndex,
+      onDestinationSelected: onTabTapped,
+      destinations: [
+        NavigationDestination(
+          key: const Key('employee_nav_tab_home'),
+          icon: const Icon(Icons.assignment_outlined),
+          selectedIcon: const Icon(Icons.assignment),
+          label: l10n.employeeJobsTitle,
         ),
-        title: Text(
-          _getTabTitle(context, _currentIndex),
-          style: AppTypography.titleMd.copyWith(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-          ),
+        NavigationDestination(
+          key: const Key('employee_nav_tab_history'),
+          icon: const Icon(Icons.history_outlined),
+          selectedIcon: const Icon(Icons.history),
+          label: l10n.ownerHistoryTitle,
         ),
-        actions: [
-          IconButton(
-            key: const Key('employee_verification_button'),
-            icon: Icon(Icons.verified_user_outlined,
-                color: Theme.of(context).colorScheme.onSurface),
-            tooltip: l10n.employeeJobsTooltipVerification,
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const KycDocumentUploadScreen(),
-                ),
-              );
-            },
-          ),
-          _buildNotificationBell(context),
-        ],
-      ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          _visitedTabs.contains(0)
-              ? const EmployeeJobsScreen(isEmbeddedInTab: true)
-              : const SizedBox.shrink(),
-          _visitedTabs.contains(1)
-              ? const EmployeeHistoryScreen(isEmbeddedInTab: true)
-              : const SizedBox.shrink(),
-          _visitedTabs.contains(2)
-              ? const SettingsScreen(isEmbeddedInTab: true)
-              : const SizedBox.shrink(),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        key: const Key('employee_bottom_navigation_bar'),
-        selectedIndex: _currentIndex,
-        onDestinationSelected: onTabTapped,
-        destinations: [
-          NavigationDestination(
-            key: const Key('employee_nav_tab_home'),
-            icon: const Icon(Icons.assignment_outlined),
-            selectedIcon: const Icon(Icons.assignment),
-            label: l10n.employeeJobsTitle,
-          ),
-          NavigationDestination(
-            key: const Key('employee_nav_tab_history'),
-            icon: const Icon(Icons.history_outlined),
-            selectedIcon: const Icon(Icons.history),
-            label: l10n.ownerHistoryTitle,
-          ),
-          NavigationDestination(
-            key: const Key('employee_nav_tab_settings'),
-            icon: const Icon(Icons.settings_outlined),
-            selectedIcon: const Icon(Icons.settings),
-            label: l10n.settingsTitle,
-          ),
-        ],
-      ),
+        NavigationDestination(
+          key: const Key('employee_nav_tab_settings'),
+          icon: const Icon(Icons.settings_outlined),
+          selectedIcon: const Icon(Icons.settings),
+          label: l10n.settingsTitle,
+        ),
+      ],
     );
   }
 }
