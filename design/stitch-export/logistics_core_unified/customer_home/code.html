@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QuickDelivery - Customer Home</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline-variant": "#c6c6cc",
+                    "on-secondary": "#ffffff",
+                    "tertiary": "#000000",
+                    "secondary-fixed-dim": "#fabd00",
+                    "primary": "#000000",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-fixed": "#00210a",
+                    "on-primary": "#ffffff",
+                    "on-secondary-fixed": "#261a00",
+                    "inverse-surface": "#2f3036",
+                    "surface": "#faf8ff",
+                    "inverse-on-surface": "#f1f0f7",
+                    "on-primary-fixed": "#151b2a",
+                    "on-background": "#1a1b21",
+                    "surface-tint": "#585e6f",
+                    "surface-container": "#eeedf4",
+                    "secondary": "#785900",
+                    "error": "#ba1a1a",
+                    "on-surface": "#1a1b21",
+                    "secondary-container": "#fdc003",
+                    "tertiary-fixed-dim": "#79db8d",
+                    "primary-container": "#151b2a",
+                    "on-error": "#ffffff",
+                    "on-primary-container": "#7e8395",
+                    "primary-fixed": "#dde2f6",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-container": "#339650",
+                    "surface-variant": "#e2e2e9",
+                    "background": "#faf8ff",
+                    "surface-container-high": "#e8e7ef",
+                    "tertiary-container": "#00210a",
+                    "surface-dim": "#dad9e1",
+                    "inverse-primary": "#c1c6da",
+                    "surface-container-low": "#f4f3fa",
+                    "on-secondary-container": "#6c5000",
+                    "tertiary-fixed": "#95f8a7",
+                    "secondary-fixed": "#ffdf9e",
+                    "on-surface-variant": "#45464c",
+                    "surface-bright": "#faf8ff",
+                    "surface-container-highest": "#e2e2e9",
+                    "outline": "#76777d",
+                    "primary-fixed-dim": "#c1c6da",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed-variant": "#005323",
+                    "error-container": "#ffdad6",
+                    "on-secondary-fixed-variant": "#5b4300",
+                    "on-primary-fixed-variant": "#414657"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "margin-mobile": "16px",
+                    "lg": "24px",
+                    "sm": "8px",
+                    "base": "8px",
+                    "xs": "4px",
+                    "margin-desktop": "32px",
+                    "md": "16px",
+                    "xl": "32px"
+            },
+            "fontFamily": {
+                    "body-md": [
+                            "Poppins"
+                    ],
+                    "title-md": [
+                            "Poppins"
+                    ],
+                    "body-lg": [
+                            "Poppins"
+                    ],
+                    "headline-lg": [
+                            "Poppins"
+                    ],
+                    "label-md": [
+                            "Poppins"
+                    ],
+                    "headline-lg-mobile": [
+                            "Poppins"
+                    ],
+                    "display-lg": [
+                            "Poppins"
+                    ],
+                    "caption": [
+                            "Poppins"
+                    ]
+            },
+            "fontSize": {
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "title-md": [
+                            "18px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "label-md": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "56px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "caption": [
+                            "11px",
+                            {
+                                    "lineHeight": "14px",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+        },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #E5E7EB; /* Level 0 Canvas */
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-body-md text-on-background min-h-screen pb-24 md:pb-0">
+<!-- TopAppBar (Mobile) -->
+<header class="md:hidden bg-background dark:bg-background flex justify-between items-center px-margin-mobile py-base w-full z-50 sticky top-0 flat no shadows text-primary dark:text-primary font-title-md text-title-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary dark:text-primary">QuickDelivery</div>
+<div class="flex items-center">
+<span class="material-symbols-outlined hover:bg-surface-variant p-2 rounded-full cursor-pointer transition-colors" data-icon="notifications">notifications</span>
+</div>
+</header>
+<!-- TopAppBar (Desktop / NavigationDrawer Context) -->
+<div class="hidden md:flex flex-row min-h-screen">
+<!-- Sidebar Navigation -->
+<nav class="bg-surface dark:bg-surface h-full w-72 rounded-r-xl shadow-md flex flex-col py-lg sticky top-0 shrink-0">
+<div class="px-margin-desktop mb-xl">
+<div class="font-headline-lg text-headline-lg font-bold text-primary dark:text-primary mb-md flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+                      QuickDelivery
+                 </div>
+<div class="flex items-center gap-sm mt-lg mb-lg">
+<div class="w-12 h-12 rounded-full overflow-hidden bg-surface-variant flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant">person</span>
+</div>
+<div>
+<div class="font-title-md text-title-md text-primary dark:text-primary">QuickDelivery Admin</div>
+<div class="font-body-md text-body-md text-on-surface-variant">Owner Account</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-sm flex-grow px-margin-desktop">
+<a class="flex items-center gap-md bg-secondary-container text-on-secondary-container font-bold rounded-full mx-2 px-4 py-3 Active: translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-full mx-2 transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>Employees</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-full mx-2 transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<span>History</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-full mx-2 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas (Desktop) -->
+<main class="flex-grow p-margin-desktop overflow-y-auto w-full">
+<div class="max-w-6xl mx-auto space-y-xl">
+<!-- Welcome Banner -->
+<div class="bg-primary-container text-on-primary-container rounded-xl p-lg flex flex-col md:flex-row justify-between items-start md:items-center relative overflow-hidden">
+<div class="z-10 relative">
+<h1 class="font-display-lg text-display-lg mb-xs">Welcome back, Admin.</h1>
+<p class="font-body-lg text-body-lg text-on-primary-container opacity-80">Here is your operational overview for today.</p>
+</div>
+<div class="z-10 mt-md md:mt-0 relative">
+<button class="bg-secondary-container text-primary font-title-md text-title-md px-lg py-sm rounded-lg hover:opacity-90 transition-opacity shadow-sm">
+                              New Shipment
+                          </button>
+</div>
+<!-- Decorative abstract shape -->
+<div class="absolute -right-20 -top-20 w-64 h-64 bg-secondary-container opacity-20 rounded-full blur-3xl"></div>
+</div>
+<!-- Core Services Grid -->
+<section>
+<h2 class="font-title-md text-title-md text-primary mb-md">Core Services</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<!-- Service Card 1 -->
+<div class="bg-surface shadow-[0px_2px_4px_rgba(13,19,33,0.08)] rounded-[12px] p-md hover:shadow-[0px_4px_12px_rgba(13,19,33,0.12)] transition-shadow cursor-pointer flex flex-col gap-sm border border-transparent hover:border-primary-container">
+<div class="w-12 h-12 bg-secondary-container/20 rounded-lg flex items-center justify-center text-secondary-container mb-xs">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+</div>
+<h3 class="font-title-md text-title-md text-primary">Transport</h3>
+<p class="font-body-md text-body-md text-on-surface-variant flex-grow">Book long-haul freight and specialized transport vehicles.</p>
+</div>
+<!-- Service Card 2 -->
+<div class="bg-surface shadow-[0px_2px_4px_rgba(13,19,33,0.08)] rounded-[12px] p-md hover:shadow-[0px_4px_12px_rgba(13,19,33,0.12)] transition-shadow cursor-pointer flex flex-col gap-sm border border-transparent hover:border-primary-container">
+<div class="w-12 h-12 bg-primary-container/10 rounded-lg flex items-center justify-center text-primary-container mb-xs">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+</div>
+<h3 class="font-title-md text-title-md text-primary">Delivery</h3>
+<p class="font-body-md text-body-md text-on-surface-variant flex-grow">Schedule last-mile delivery for parcels and urgent documents.</p>
+</div>
+<!-- Service Card 3 -->
+<div class="bg-surface shadow-[0px_2px_4px_rgba(13,19,33,0.08)] rounded-[12px] p-md hover:shadow-[0px_4px_12px_rgba(13,19,33,0.12)] transition-shadow cursor-pointer flex flex-col gap-sm border border-transparent hover:border-primary-container">
+<div class="w-12 h-12 bg-tertiary-container/10 rounded-lg flex items-center justify-center text-tertiary-container mb-xs">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warehouse</span>
+</div>
+<h3 class="font-title-md text-title-md text-primary">Logistics</h3>
+<p class="font-body-md text-body-md text-on-surface-variant flex-grow">Manage warehousing, inventory, and supply chain operations.</p>
+</div>
+</div>
+</section>
+<!-- Active Jobs Section -->
+<section>
+<div class="flex justify-between items-center mb-md">
+<h2 class="font-title-md text-title-md text-primary">Active Jobs</h2>
+<a class="font-label-md text-label-md text-secondary hover:underline" href="#">View All</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Job Card 1 -->
+<div class="bg-surface shadow-[0px_2px_4px_rgba(13,19,33,0.08)] rounded-[12px] p-md flex flex-col gap-sm relative overflow-hidden">
+<div class="flex justify-between items-start mb-sm">
+<div>
+<span class="font-label-md text-label-md text-on-surface-variant block mb-1">TRK-9928-XA</span>
+<h4 class="font-title-md text-title-md text-primary">Express Medical Supplies</h4>
+</div>
+<div class="bg-secondary-fixed text-on-secondary-fixed-variant px-2 py-1 rounded-[4px] font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span> In-Transit
+                                   </div>
+</div>
+<!-- Progress Timeline -->
+<div class="mt-xs mb-sm">
+<div class="h-2 bg-surface-variant rounded-full w-full overflow-hidden flex">
+<div class="h-full bg-primary-container w-1/2"></div>
+<div class="h-full bg-secondary-container w-1/4 animate-pulse"></div>
+</div>
+<div class="flex justify-between mt-1">
+<span class="font-caption text-caption text-on-surface-variant">Origin</span>
+<span class="font-caption text-caption text-on-surface-variant">Destination</span>
+</div>
+</div>
+<div class="flex items-center gap-sm mt-auto pt-sm border-t border-surface-variant">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">person</span>
+</div>
+<div>
+<div class="font-body-md text-body-md text-primary leading-tight">Driver: John D.</div>
+<div class="font-caption text-caption text-on-surface-variant">ETA: 45 Mins</div>
+</div>
+</div>
+</div>
+<!-- Job Card 2 -->
+<div class="bg-surface shadow-[0px_2px_4px_rgba(13,19,33,0.08)] rounded-[12px] p-md flex flex-col gap-sm relative overflow-hidden opacity-70 hover:opacity-100 transition-opacity">
+<div class="flex justify-between items-start mb-sm">
+<div>
+<span class="font-label-md text-label-md text-on-surface-variant block mb-1">TRK-4412-BB</span>
+<h4 class="font-title-md text-title-md text-primary">Heavy Machinery Parts</h4>
+</div>
+<div class="bg-surface-variant text-on-surface-variant px-2 py-1 rounded-[4px] font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Delivered
+                                   </div>
+</div>
+<!-- Progress Timeline -->
+<div class="mt-xs mb-sm">
+<div class="h-2 bg-primary-container rounded-full w-full overflow-hidden flex">
+</div>
+<div class="flex justify-between mt-1">
+<span class="font-caption text-caption text-on-surface-variant">Origin</span>
+<span class="font-caption text-caption text-on-surface-variant">Destination</span>
+</div>
+</div>
+<div class="flex items-center gap-sm mt-auto pt-sm border-t border-surface-variant">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">person</span>
+</div>
+<div>
+<div class="font-body-md text-body-md text-primary leading-tight">Driver: Sarah M.</div>
+<div class="font-caption text-caption text-on-surface-variant">Completed: 2 Hours ago</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Map / Tracking Area Placeholder (using Bento grid layout style) -->
+<section class="bg-surface shadow-[0px_2px_4px_rgba(13,19,33,0.08)] rounded-[12px] overflow-hidden flex flex-col md:flex-row h-96">
+<div class="w-full md:w-1/3 bg-surface-container-lowest p-md flex flex-col border-b md:border-b-0 md:border-r border-surface-variant">
+<h3 class="font-title-md text-title-md text-primary mb-sm">Live Tracking Overview</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">Monitor your fleet in real-time across the regional hub.</p>
+<ul class="space-y-sm flex-grow overflow-y-auto">
+<li class="flex items-center justify-between p-sm rounded bg-surface-container-low hover:bg-surface-variant cursor-pointer transition-colors">
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-secondary-container"></div>
+<span class="font-body-md text-body-md">TRK-9928-XA</span>
+</div>
+<span class="font-caption text-caption text-secondary">Active</span>
+</li>
+<li class="flex items-center justify-between p-sm rounded hover:bg-surface-variant cursor-pointer transition-colors">
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-surface-variant"></div>
+<span class="font-body-md text-body-md">TRK-4412-BB</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant">Idle</span>
+</li>
+</ul>
+<button class="mt-auto w-full border border-primary text-primary font-title-md text-title-md py-sm rounded-lg hover:bg-surface-variant transition-colors">
+                             Expand Map
+                         </button>
+</div>
+<div class="w-full md:w-2/3 h-full relative bg-surface-container-high" data-alt="A stylized, modern, light-mode digital map interface showing a regional logistics hub. Deep navy and subtle amber gold accents highlight route lines and vehicle markers against a clean, minimal light grey background. High-tech, enterprise dashboard aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDwz8pCP5VDm9ZhNcUXs1YaKrXeVO_IPXLHgygrNSnUKPJqERhJ_ladkhZitx3osPyBK3ptu6KZKejmElmOk-rxJqD1RiU91WL3tfevQqKYWyNuRFxrjQmjZdquHPq3l5Vtj7RTtqO48ukTnLYSVhZWZ62LkUEDChHOL3tWS2RV8QQ1nhWCF1hJjO4SqOCLXqXl0jPsGs9jpcs2PlPgQLmev52Sd5PssNpV2EjxnL-l-9UXvb2DAIU0')">
+<!-- Simulated map markers overlay -->
+<div class="absolute inset-0 p-lg pointer-events-none">
+<div class="absolute top-1/4 left-1/3 w-4 h-4 bg-secondary-container rounded-full shadow-[0_0_10px_rgba(253,192,3,0.8)] animate-pulse"></div>
+<div class="absolute top-1/2 right-1/4 w-3 h-3 bg-primary-container rounded-full"></div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</div>
+<!-- Main Content Canvas (Mobile - visible only when md:hidden, mirrors desktop main content logically but restyled for mobile stacking if needed. For simplicity in this demo, using one main block above that adapts responsive, but ensuring nav spacing) -->
+<div class="md:hidden p-margin-mobile space-y-lg">
+<!-- Mobile content mirrors the structure of desktop main above, let's reuse the same classes by making the main tag fluid, but adding mobile-specific bottom padding to clear the navbar -->
+<!-- The content above is already responsive, so it handles mobile naturally. Just ensuring we don't duplicate. -->
+<!-- Duplicating structure simply for explicit mobile flow if strictly needed by constraint, but modern responsive design usually handles this.
+               Given the prompt implies a single page output, I'll rely on the responsive classes already embedded in the `main` tag above,
+               which drops the sidebar on mobile and stacks content.
+               However, I need to ensure the mobile content is visible when the sidebar is hidden.
+               Actually, the desktop setup `hidden md:flex flex-row` hides the ENTIRE wrapper on mobile.
+               Let's refactor the layout to be truly responsive without duplicating content. -->
+</div>
+<!-- Refactored Truly Responsive Main Layout -->
+<!-- Note: The above `<div class="hidden md:flex">` hides the main content on mobile. I will adjust the structure below to be universally visible and responsive. -->
+<!-- (Self-Correction for layout visibility) -->
+<style>
+        /* Override to make the previous block visible and structurally sound across both */
+        .hidden.md\:flex { display: flex !important; flex-direction: row; }
+        @media (max-width: 767px) {
+            .md\:hidden { display: flex !important; }
+            nav.w-72 { display: none !important; } /* Hide sidebar on mobile */
+            main.flex-grow { padding: 16px !important; padding-bottom: 96px !important; } /* Add bottom padding for mobile nav */
+        }
+    </style>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden bg-surface dark:bg-surface fixed bottom-0 full-width rounded-t-xl shadow-[0px_-2px_4px_rgba(13,19,33,0.08)] fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 font-label-md text-label-md">
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 Active: scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">home</span>
+<span>Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined mb-1">storefront</span>
+<span>Marketplace</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined mb-1">assignment</span>
+<span>Jobs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined mb-1">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+</body></html>

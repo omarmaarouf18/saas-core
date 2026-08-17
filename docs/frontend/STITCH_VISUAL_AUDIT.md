@@ -1,7 +1,11 @@
-# Stitch Visual Design Brief Comparison & Gap Audit
+# Stitch Visual Design Brief Comparison & Gap Audit (V1 — Superseded)
+
+> [!WARNING]
+> **SUPERSEDED DOCUMENT**: This V1 audit evaluated `quick_delivery_ui_brief` (18 screens, `velocity_logistics/DESIGN.md`), which was an incomplete prototype export.  
+> It has been superseded by [`STITCH_VISUAL_AUDIT_V2.md`](STITCH_VISUAL_AUDIT_V2.md), audited against the authoritative `logistics_core_unified` export containing all 40 screen folders and `logistics_core/DESIGN.md`.
 
 > **Date**: August 17, 2026  
-> **Status**: 100% IMPLEMENTED & VERIFIED (All Batches A–E Complete, 65 Findings Implemented, 259 Tests Passing, 0 Lint Issues)  
+> **Status**: SUPERSEDED BY [STITCH_VISUAL_AUDIT_V2.md](STITCH_VISUAL_AUDIT_V2.md)  
 > **Reference Brief**: `design/stitch-export/quick_delivery_ui_brief/` (Google Stitch Visual Design Export — 18 Screen Folders & `velocity_logistics/DESIGN.md`)  
 > **Target Scope**: All 28 screens in [`frontend/lib/screens/`](../../frontend/lib/screens/)  
 

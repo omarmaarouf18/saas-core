@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Customer Marketplace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline-variant": "#c6c6cc",
+                      "on-secondary": "#ffffff",
+                      "tertiary": "#000000",
+                      "secondary-fixed-dim": "#fabd00",
+                      "primary": "#000000",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-fixed": "#00210a",
+                      "on-primary": "#ffffff",
+                      "on-secondary-fixed": "#261a00",
+                      "inverse-surface": "#2f3036",
+                      "surface": "#faf8ff",
+                      "inverse-on-surface": "#f1f0f7",
+                      "on-primary-fixed": "#151b2a",
+                      "on-background": "#1a1b21",
+                      "surface-tint": "#585e6f",
+                      "surface-container": "#eeedf4",
+                      "secondary": "#785900",
+                      "error": "#ba1a1a",
+                      "on-surface": "#1a1b21",
+                      "secondary-container": "#fdc003",
+                      "tertiary-fixed-dim": "#79db8d",
+                      "primary-container": "#151b2a",
+                      "on-error": "#ffffff",
+                      "on-primary-container": "#7e8395",
+                      "primary-fixed": "#dde2f6",
+                      "surface-container-lowest": "#ffffff",
+                      "on-tertiary-container": "#339650",
+                      "surface-variant": "#e2e2e9",
+                      "background": "#faf8ff",
+                      "surface-container-high": "#e8e7ef",
+                      "tertiary-container": "#00210a",
+                      "surface-dim": "#dad9e1",
+                      "inverse-primary": "#c1c6da",
+                      "surface-container-low": "#f4f3fa",
+                      "on-secondary-container": "#6c5000",
+                      "tertiary-fixed": "#95f8a7",
+                      "secondary-fixed": "#ffdf9e",
+                      "on-surface-variant": "#45464c",
+                      "surface-bright": "#faf8ff",
+                      "surface-container-highest": "#e2e2e9",
+                      "outline": "#76777d",
+                      "primary-fixed-dim": "#c1c6da",
+                      "on-tertiary": "#ffffff",
+                      "on-tertiary-fixed-variant": "#005323",
+                      "error-container": "#ffdad6",
+                      "on-secondary-fixed-variant": "#5b4300",
+                      "on-primary-fixed-variant": "#414657"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "margin-mobile": "16px",
+                      "lg": "24px",
+                      "sm": "8px",
+                      "base": "8px",
+                      "xs": "4px",
+                      "margin-desktop": "32px",
+                      "md": "16px",
+                      "xl": "32px"
+              },
+              "fontFamily": {
+                      "body-md": [
+                              "Poppins"
+                      ],
+                      "title-md": [
+                              "Poppins"
+                      ],
+                      "body-lg": [
+                              "Poppins"
+                      ],
+                      "headline-lg": [
+                              "Poppins"
+                      ],
+                      "label-md": [
+                              "Poppins"
+                      ],
+                      "headline-lg-mobile": [
+                              "Poppins"
+                      ],
+                      "display-lg": [
+                              "Poppins"
+                      ],
+                      "caption": [
+                              "Poppins"
+                      ]
+              },
+              "fontSize": {
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "title-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "caption": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* BENTO GRID SPECIFICS */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            grid-auto-rows: minmax(150px, auto);
+        }
+
+        .bento-item-large {
+            grid-column: span 4;
+        }
+
+        .bento-item-medium {
+            grid-column: span 2;
+        }
+
+        .bento-item-small {
+            grid-column: span 1;
+        }
+
+        @media (min-width: 768px) {
+            .bento-grid {
+                grid-template-columns: repeat(12, 1fr);
+            }
+            .bento-item-large {
+                grid-column: span 8;
+                grid-row: span 2;
+            }
+            .bento-item-medium {
+                grid-column: span 4;
+            }
+            .bento-item-small {
+                grid-column: span 3;
+            }
+        }
+        
+        /* Glassmorphism utility */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased min-h-screen pb-24 md:pb-0 pt-[72px]">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-background flex justify-between items-center px-margin-mobile md:px-margin-desktop py-base h-[72px]">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary text-[24px]" data-icon="local_shipping">local_shipping</span>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg font-bold text-primary tracking-tight">QuickDelivery</h1>
+<div class="flex items-center gap-sm">
+<button class="p-2 hover:bg-surface-variant rounded-full transition-colors group">
+<span class="material-symbols-outlined text-primary group-hover:scale-95 transition-transform" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<!-- Main Content - Marketplace Bento Grid -->
+<main class="px-margin-mobile md:px-margin-desktop py-lg max-w-7xl mx-auto">
+<!-- Search & Filter Bar -->
+<div class="flex flex-col md:flex-row gap-md mb-lg">
+<div class="relative flex-grow">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant z-10" data-icon="search">search</span>
+<input class="w-full h-12 pl-10 pr-4 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none font-body-md text-body-md transition-shadow shadow-sm" placeholder="Search services..." type="text"/>
+</div>
+<button class="h-12 px-6 bg-surface border border-outline-variant rounded-lg font-title-md text-title-md text-on-surface flex items-center gap-2 hover:bg-surface-variant transition-colors shadow-sm">
+<span class="material-symbols-outlined" data-icon="filter_list">filter_list</span>
+                Filters
+            </button>
+</div>
+<!-- Section Title -->
+<div class="mb-md">
+<h2 class="font-title-md text-title-md md:font-headline-lg md:text-headline-lg font-semibold text-primary">Featured Services</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Discover logistics solutions tailored to your needs.</p>
+</div>
+<div class="bento-grid">
+<!-- Large Hero Card -->
+<div class="bento-item-large bg-surface rounded-[12px] shadow-[0px_2px_4px_rgba(13,19,33,0.08)] overflow-hidden relative group">
+<div class="absolute inset-0 bg-cover bg-center w-full h-full opacity-40 group-hover:opacity-50 transition-opacity" data-alt="A highly detailed close-up of a modern logistics delivery truck in motion, blurred background indicating speed. The truck is sleek, painted in deep navy and amber gold accents, reflecting the brand identity. Bright, sunny daylight highlights the operational efficiency. A professional, high-end corporate transportation aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCbDENMtwjETdqyOP1rLOns3fCw2QJ7b26C5Nd9dVa_-tFMzwf0vDq4ElreqZmVBm-yv0KDEEjWkJTsrJKUMbQt4Ifi9vQ3AN9D6xVaAr-RTrq2GihpM_E0iib4NKOA1hUEya-BXfNLyaioIwTxE92RdKJ-7hlReDxLzsfATWTqY-hCWqXcx8FE7_zuv7McWJyeyl6I2jucWTVjlCq5El2whedezkbos28-Te8NSXAjO8a7uVCfuj0U')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-primary-container/90 to-transparent"></div>
+<div class="relative h-full flex flex-col justify-end p-lg">
+<div class="bg-secondary-container/90 backdrop-blur-sm text-on-secondary-container rounded-[4px] px-2 py-1 w-fit mb-sm font-label-md text-label-md uppercase tracking-wider">Premium</div>
+<h3 class="font-headline-lg-mobile text-headline-lg-mobile md:font-display-lg md:text-display-lg text-on-primary font-bold mb-xs">Express Freight</h3>
+<p class="font-body-md text-body-md text-on-primary/80 mb-md max-w-md">Same-day delivery for urgent heavy cargo. Priority handling and real-time GPS tracking.</p>
+<button class="bg-secondary-container text-tertiary font-title-md text-title-md px-6 py-3 rounded-lg w-fit hover:bg-secondary-fixed transition-colors font-bold flex items-center gap-2">
+                        Book Now
+                        <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Medium Service Card 1 -->
+<div class="bento-item-medium bg-surface rounded-[12px] shadow-[0px_2px_4px_rgba(13,19,33,0.08)] p-md flex flex-col justify-between hover:shadow-[0px_4px_12px_rgba(13,19,33,0.12)] transition-shadow border border-transparent hover:border-outline-variant">
+<div>
+<div class="w-12 h-12 bg-primary-fixed rounded-full flex items-center justify-center mb-md">
+<span class="material-symbols-outlined text-primary text-[28px]" data-icon="inventory_2" data-weight="fill">inventory_2</span>
+</div>
+<h3 class="font-title-md text-title-md text-primary mb-xs">Standard Parcel</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Reliable 2-3 day delivery for standard packages under 50lbs.</p>
+</div>
+<div class="mt-md pt-md border-t border-surface-variant flex justify-between items-center">
+<span class="font-title-md text-title-md text-on-surface font-semibold">From $12</span>
+<button class="text-primary hover:text-secondary-container font-title-md text-title-md flex items-center gap-1 transition-colors">
+                        Book
+                        <span class="material-symbols-outlined text-[20px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Medium Service Card 2 -->
+<div class="bento-item-medium bg-surface rounded-[12px] shadow-[0px_2px_4px_rgba(13,19,33,0.08)] p-md flex flex-col justify-between hover:shadow-[0px_4px_12px_rgba(13,19,33,0.12)] transition-shadow border border-transparent hover:border-outline-variant">
+<div>
+<div class="w-12 h-12 bg-secondary-fixed rounded-full flex items-center justify-center mb-md">
+<span class="material-symbols-outlined text-secondary-container text-[28px]" data-icon="thermostat" data-weight="fill">thermostat</span>
+</div>
+<h3 class="font-title-md text-title-md text-primary mb-xs">Cold Chain</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Temperature-controlled transport for sensitive perishable goods.</p>
+</div>
+<div class="mt-md pt-md border-t border-surface-variant flex justify-between items-center">
+<span class="font-title-md text-title-md text-on-surface font-semibold">From $45</span>
+<button class="text-primary hover:text-secondary-container font-title-md text-title-md flex items-center gap-1 transition-colors">
+                        Book
+                        <span class="material-symbols-outlined text-[20px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Medium Service Card 3 -->
+<div class="bento-item-medium bg-surface rounded-[12px] shadow-[0px_2px_4px_rgba(13,19,33,0.08)] p-md flex flex-col justify-between hover:shadow-[0px_4px_12px_rgba(13,19,33,0.12)] transition-shadow border border-transparent hover:border-outline-variant">
+<div>
+<div class="w-12 h-12 bg-surface-container-high rounded-full flex items-center justify-center mb-md">
+<span class="material-symbols-outlined text-primary text-[28px]" data-icon="warehouse" data-weight="fill">warehouse</span>
+</div>
+<h3 class="font-title-md text-title-md text-primary mb-xs">Warehousing</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Short-term storage solutions integrated with dispatch.</p>
+</div>
+<div class="mt-md pt-md border-t border-surface-variant flex justify-between items-center">
+<span class="font-title-md text-title-md text-on-surface font-semibold">Quote</span>
+<button class="text-primary hover:text-secondary-container font-title-md text-title-md flex items-center gap-1 transition-colors">
+                        Inquire
+                        <span class="material-symbols-outlined text-[20px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Small Info Card -->
+<div class="bento-item-small bg-primary-container rounded-[12px] shadow-sm p-md flex flex-col justify-center items-center text-center relative overflow-hidden">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-secondary-container/20 rounded-full blur-xl"></div>
+<span class="material-symbols-outlined text-secondary-container text-[40px] mb-sm" data-icon="verified_user">verified_user</span>
+<h4 class="font-title-md text-title-md text-on-primary mb-xs">Fully Insured</h4>
+<p class="font-caption text-caption text-on-primary-container">All shipments covered up to $10,000.</p>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface shadow-[0px_-2px_4px_rgba(13,19,33,0.08)] rounded-t-xl md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors group" href="#">
+<div class="group-active:scale-90 duration-150 p-1">
+<span class="material-symbols-outlined text-[24px]" data-icon="home">home</span>
+</div>
+<span class="font-label-md text-label-md mt-1">Home</span>
+</a>
+<!-- Active State: Marketplace -->
+<a class="flex flex-col items-center justify-center hover:text-secondary transition-colors group" href="#">
+<div class="bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 group-active:scale-90 duration-150">
+<span class="material-symbols-outlined text-[24px]" data-icon="storefront" data-weight="fill">storefront</span>
+</div>
+<span class="font-label-md text-label-md mt-1 text-primary font-bold">Marketplace</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors group" href="#">
+<div class="group-active:scale-90 duration-150 p-1">
+<span class="material-symbols-outlined text-[24px]" data-icon="assignment">assignment</span>
+</div>
+<span class="font-label-md text-label-md mt-1">Jobs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors group" href="#">
+<div class="group-active:scale-90 duration-150 p-1">
+<span class="material-symbols-outlined text-[24px]" data-icon="settings">settings</span>
+</div>
+<span class="font-label-md text-label-md mt-1">Settings</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Employee Jobs - QuickDelivery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-variant": "#e2e2e9",
+                      "on-primary-container": "#7e8395",
+                      "on-primary-fixed-variant": "#414657",
+                      "on-tertiary-container": "#339650",
+                      "primary-fixed": "#dde2f6",
+                      "surface-bright": "#faf8ff",
+                      "outline": "#76777d",
+                      "on-tertiary-fixed-variant": "#005323",
+                      "on-error": "#ffffff",
+                      "secondary-fixed-dim": "#fabd00",
+                      "primary-container": "#151b2a",
+                      "error-container": "#ffdad6",
+                      "on-background": "#1a1b21",
+                      "tertiary": "#000000",
+                      "primary": "#000000",
+                      "inverse-surface": "#2f3036",
+                      "surface-container-highest": "#e2e2e9",
+                      "on-secondary-fixed-variant": "#5b4300",
+                      "surface-container-low": "#f4f3fa",
+                      "on-secondary-fixed": "#261a00",
+                      "on-secondary": "#ffffff",
+                      "secondary": "#785900",
+                      "on-tertiary-fixed": "#00210a",
+                      "tertiary-container": "#00210a",
+                      "on-tertiary": "#ffffff",
+                      "inverse-primary": "#c1c6da",
+                      "on-surface-variant": "#45464c",
+                      "error": "#ba1a1a",
+                      "tertiary-fixed": "#95f8a7",
+                      "primary-fixed-dim": "#c1c6da",
+                      "on-surface": "#1a1b21",
+                      "on-secondary-container": "#6c5000",
+                      "outline-variant": "#c6c6cc",
+                      "surface-container-lowest": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "surface-container-high": "#e8e7ef",
+                      "surface-tint": "#585e6f",
+                      "on-primary-fixed": "#151b2a",
+                      "surface-container": "#eeedf4",
+                      "secondary-container": "#fdc003",
+                      "surface-dim": "#dad9e1",
+                      "tertiary-fixed-dim": "#79db8d",
+                      "background": "#faf8ff",
+                      "secondary-fixed": "#ffdf9e",
+                      "on-primary": "#ffffff",
+                      "inverse-on-surface": "#f1f0f7",
+                      "surface": "#faf8ff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "xl": "32px",
+                      "base": "8px",
+                      "margin-desktop": "32px",
+                      "xs": "4px",
+                      "margin-mobile": "16px",
+                      "md": "16px",
+                      "sm": "8px",
+                      "gutter": "16px",
+                      "lg": "24px"
+              },
+              "fontFamily": {
+                      "display-lg": [
+                              "Poppins"
+                      ],
+                      "label-md": [
+                              "Poppins"
+                      ],
+                      "headline-lg-mobile": [
+                              "Poppins"
+                      ],
+                      "headline-lg": [
+                              "Poppins"
+                      ],
+                      "body-md": [
+                              "Poppins"
+                      ],
+                      "body-lg": [
+                              "Poppins"
+                      ],
+                      "title-md": [
+                              "Poppins"
+                      ],
+                      "caption": [
+                              "Poppins"
+                      ]
+              },
+              "fontSize": {
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "title-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "caption": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col md:flex-row">
+<!-- Sidebar / Drawer (Hidden on Mobile) -->
+<nav class="hidden md:flex bg-surface h-screen w-72 rounded-r-xl shadow-md flex-col py-lg z-50">
+<div class="px-margin-desktop mb-8">
+<span class="font-headline-lg font-bold text-primary">QuickDelivery</span>
+</div>
+<div class="flex-1 overflow-y-auto">
+<ul class="space-y-sm">
+<li>
+<a class="flex items-center px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-md">dashboard</span>
+<span class="font-title-md">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center mx-2 px-4 py-3 bg-secondary-container text-on-secondary-container font-bold rounded-full transition-transform translate-x-1" href="#">
+<span class="material-symbols-outlined mr-md">assignment</span>
+<span class="font-title-md">Jobs</span>
+</a>
+</li>
+<li>
+<a class="flex items-center px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-md">history</span>
+<span class="font-title-md">History</span>
+</a>
+</li>
+<li>
+<a class="flex items-center px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-md">settings</span>
+<span class="font-title-md">Settings</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-screen overflow-hidden">
+<!-- TopAppBar (Web & Mobile) -->
+<header class="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-base w-full z-50 bg-background md:bg-transparent border-b border-surface-variant md:border-none">
+<div class="flex items-center">
+<button class="md:hidden p-2 -ml-2 mr-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors">
+<span class="material-symbols-outlined text-2xl">menu</span>
+</button>
+<span class="font-headline-lg-mobile font-bold text-primary">Assigned Jobs</span>
+</div>
+<div class="flex items-center space-x-2">
+<div class="hidden md:flex items-center px-3 py-1 bg-[#e8f5e9] text-[#2e7d32] rounded-full mr-4">
+<span class="material-symbols-outlined text-sm mr-1">my_location</span>
+<span class="font-label-md">Location Sharing Active</span>
+</div>
+<button class="p-2 rounded-full hover:bg-surface-variant transition-colors relative">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-secondary-container rounded-full"></span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-variant transition-colors relative md:hidden">
+<span class="material-symbols-outlined text-on-surface-variant">my_location</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-[#2e7d32] rounded-full"></span>
+</button>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto px-margin-mobile md:px-margin-desktop pb-24 md:pb-lg pt-sm md:pt-lg space-y-lg">
+<!-- Current Active Job -->
+<section>
+<div class="flex justify-between items-end mb-md">
+<h2 class="font-title-md text-primary">Current Active Job</h2>
+<span class="bg-secondary-container text-on-secondary-container px-sm py-xs rounded-[4px] font-label-md">In-Transit</span>
+</div>
+<div class="bg-surface rounded-[12px] shadow-[0px_2px_4px_rgba(13,19,33,0.08)] overflow-hidden flex flex-col border border-outline-variant">
+<!-- Job Details -->
+<div class="p-md space-y-md">
+<div class="flex justify-between items-start border-b border-surface-variant pb-md">
+<div>
+<span class="font-caption text-on-surface-variant block">Job ID</span>
+<span class="font-title-md text-primary font-bold">JOB-982-441</span>
+<span class="font-body-md text-on-surface-variant block mt-xs">Customer: Jane Smith</span>
+</div>
+<div class="text-right">
+<span class="font-caption text-on-surface-variant block">Est. Arrival</span>
+<span class="font-body-md text-primary font-semibold text-secondary-container">14:30 PM</span>
+</div>
+</div>
+<div class="space-y-sm">
+<div class="flex items-start">
+<span class="material-symbols-outlined text-on-surface-variant mr-sm mt-1 text-sm">storefront</span>
+<div>
+<span class="font-caption text-on-surface-variant block">Pickup</span>
+<span class="font-body-md text-on-background">1200 West Logistics Blvd, Dock 4</span>
+</div>
+</div>
+<div class="flex items-start">
+<span class="material-symbols-outlined text-secondary mr-sm mt-1 text-sm">location_on</span>
+<div>
+<span class="font-caption text-on-surface-variant block">Destination</span>
+<span class="font-body-md text-on-background font-medium">850 North Enterprise Way, Suite 200</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-low p-sm rounded-lg flex justify-between items-center border border-surface-variant">
+<div class="flex items-center text-on-surface">
+<span class="material-symbols-outlined mr-sm">payments</span>
+<span class="font-body-md font-medium">Cash on Delivery (COD)</span>
+</div>
+<span class="font-title-md text-primary font-bold">$125.50</span>
+</div>
+<div class="grid grid-cols-2 gap-md pt-sm">
+<button class="bg-surface-container-highest text-on-surface font-bold py-sm rounded-lg hover:bg-surface-dim transition-colors flex items-center justify-center h-[48px]">
+<span class="material-symbols-outlined mr-xs text-xl">chat</span>
+                            Dispatcher
+                        </button>
+<button class="bg-secondary-container text-primary font-bold py-sm rounded-lg hover:bg-secondary-fixed transition-colors flex items-center justify-center h-[48px]">
+<span class="material-symbols-outlined mr-xs text-xl">check_circle</span>
+                            Complete Job
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Upcoming Jobs -->
+<section>
+<div class="flex justify-between items-center mb-md mt-lg">
+<h2 class="font-title-md text-primary">Assigned Queue</h2>
+</div>
+<div class="space-y-sm">
+<!-- Job Card 1 -->
+<div class="bg-surface rounded-[12px] p-md shadow-sm flex items-center justify-between border border-transparent hover:border-outline-variant transition-colors cursor-pointer border-outline-variant/30">
+<div class="flex items-start space-x-md w-full">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant text-lg">package_2</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start w-full">
+<span class="font-title-md text-primary block leading-tight">JOB-881-229</span>
+<span class="bg-[#fff3e0] text-[#ef6c00] px-sm py-xs rounded-[4px] font-label-md text-[10px]">Next</span>
+</div>
+<span class="font-body-md text-on-surface-variant block mt-xs">Cust: Robert Davis</span>
+<div class="flex items-center mt-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px] mr-1">location_on</span>
+<span class="font-caption truncate">442 W Grand Ave, Apt 3B</span>
+</div>
+<div class="flex items-center mt-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px] mr-1">credit_card</span>
+<span class="font-caption">Pre-paid</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Job Card 2 -->
+<div class="bg-surface rounded-[12px] p-md shadow-sm flex items-center justify-between border border-transparent hover:border-outline-variant transition-colors cursor-pointer border-outline-variant/30 opacity-70">
+<div class="flex items-start space-x-md w-full">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant text-lg">pallet</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start w-full">
+<span class="font-title-md text-primary block leading-tight">JOB-774-110</span>
+<span class="bg-surface-variant text-on-surface-variant px-sm py-xs rounded-[4px] font-label-md text-[10px]">Queued</span>
+</div>
+<span class="font-body-md text-on-surface-variant block mt-xs">Cust: Sarah Jenkins</span>
+<div class="flex items-center mt-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px] mr-1">location_on</span>
+<span class="font-caption truncate">901 N Halsted St</span>
+</div>
+<div class="flex items-center mt-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px] mr-1">payments</span>
+<span class="font-caption">COD ($45.00)</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface shadow-[0px_-2px_4px_rgba(13,19,33,0.08)] rounded-t-xl border-t border-surface-variant">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors w-16 h-16" href="#">
+<span class="material-symbols-outlined text-2xl mb-1">home</span>
+<span class="font-label-md">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-90 duration-150 h-[48px]" href="#">
+<span class="material-symbols-outlined text-2xl mb-1">assignment</span>
+<span class="font-label-md">Jobs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors w-16 h-16" href="#">
+<span class="material-symbols-outlined text-2xl mb-1">history</span>
+<span class="font-label-md">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors w-16 h-16" href="#">
+<span class="material-symbols-outlined text-2xl mb-1">person</span>
+<span class="font-label-md">Profile</span>
+</a>
+</nav>
+</body></html>

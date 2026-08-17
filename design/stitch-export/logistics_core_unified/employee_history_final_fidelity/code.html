@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Employee History - QuickDelivery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#e2e2e9",
+                        "on-primary-container": "#7e8395",
+                        "on-primary-fixed-variant": "#414657",
+                        "on-tertiary-container": "#339650",
+                        "primary-fixed": "#dde2f6",
+                        "surface-bright": "#faf8ff",
+                        "outline": "#76777d",
+                        "on-tertiary-fixed-variant": "#005323",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#fabd00",
+                        "primary-container": "#151b2a",
+                        "error-container": "#ffdad6",
+                        "on-background": "#1a1b21",
+                        "tertiary": "#000000",
+                        "primary": "#000000",
+                        "inverse-surface": "#2f3036",
+                        "surface-container-highest": "#e2e2e9",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "surface-container-low": "#f4f3fa",
+                        "on-secondary-fixed": "#261a00",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#785900",
+                        "on-tertiary-fixed": "#00210a",
+                        "tertiary-container": "#00210a",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#c1c6da",
+                        "on-surface-variant": "#45464c",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#95f8a7",
+                        "primary-fixed-dim": "#c1c6da",
+                        "on-surface": "#1a1b21",
+                        "on-secondary-container": "#6c5000",
+                        "outline-variant": "#c6c6cc",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface-container-high": "#e8e7ef",
+                        "surface-tint": "#585e6f",
+                        "on-primary-fixed": "#151b2a",
+                        "surface-container": "#eeedf4",
+                        "secondary-container": "#fdc003",
+                        "surface-dim": "#dad9e1",
+                        "tertiary-fixed-dim": "#79db8d",
+                        "background": "#faf8ff",
+                        "secondary-fixed": "#ffdf9e",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f1f0f7",
+                        "surface": "#faf8ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "base": "8px",
+                        "margin-desktop": "32px",
+                        "xs": "4px",
+                        "margin-mobile": "16px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Poppins"],
+                        "label-md": ["Poppins"],
+                        "headline-lg-mobile": ["Poppins"],
+                        "headline-lg": ["Poppins"],
+                        "body-md": ["Poppins"],
+                        "body-lg": ["Poppins"],
+                        "title-md": ["Poppins"],
+                        "caption": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "title-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "caption": ["11px", { "lineHeight": "14px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col md:flex-row font-body-md">
+<!-- Mobile Top App Bar (Hidden on Desktop) -->
+<header class="md:hidden bg-background text-primary flex justify-between items-center px-margin-mobile py-base w-full z-50 sticky top-0 flat no shadows">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary hover:bg-surface-variant p-sm rounded-full cursor-pointer" data-icon="local_shipping">local_shipping</span>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary">QuickDelivery</h1>
+</div>
+<span class="material-symbols-outlined text-primary hover:bg-surface-variant p-sm rounded-full cursor-pointer" data-icon="notifications">notifications</span>
+</header>
+<!-- Desktop Navigation Drawer (Hidden on Mobile) -->
+<aside class="hidden md:flex flex-col h-full py-lg w-72 rounded-r-xl bg-surface shadow-md sticky top-0 shrink-0">
+<div class="px-margin-desktop mb-lg flex items-center gap-md">
+<img class="w-12 h-12 rounded-full object-cover shadow-sm" data-alt="A professional headshot of a logistics administrator in a brightly lit modern office setting. The photo is crisp and high-quality, embodying a corporate yet approachable aesthetic with deep navy and subtle amber background hues." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAoWi_Fw7JtE8-X0TcmzLM3tSiSNwx3ix0l4vN3qDdHOoWmqzQPt9VglVBsStJCRhOgdOkm1yZIL3xgCP_iHWBWHayFdE1PwI6a7wH10sRHgAClRGKvlGbwZf2U___s_AHJJzLcGNRjuG8WTD7G_Kay_9pcIRvyN7_2aVMw2ByJKldKCBWdEaJyBIGN1kKcpCSZ7Y3T42K7QgPxzCdkqR8pKOG8ZSspDF323ycjmjayjEnsXhlgH8xK"/>
+<div>
+<h2 class="font-title-md text-title-md font-bold text-primary">QuickDelivery Admin</h2>
+<p class="font-caption text-caption text-on-surface-variant">Owner Account</p>
+</div>
+</div>
+<nav class="flex flex-col gap-sm">
+<a class="flex items-center gap-md text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-body-md text-body-md">Employees</span>
+</a>
+<a class="flex items-center gap-md bg-secondary-container text-on-secondary-container font-bold rounded-full mx-2 px-4 py-3 transition-transform translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="history" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="font-body-md text-body-md">History</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors mt-auto" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 px-margin-mobile md:px-margin-desktop py-lg pb-32 md:pb-lg flex flex-col gap-lg max-w-5xl mx-auto w-full">
+<!-- Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-md border-b border-surface-variant pb-md">
+<div>
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-bold text-primary">Job History</h2>
+<p class="text-on-surface-variant font-body-lg text-body-lg mt-xs">Completed and cancelled jobs.</p>
+</div>
+<div class="flex items-center gap-sm bg-surface-container-low px-md py-sm rounded-lg border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="calendar_today">calendar_today</span>
+<select class="bg-transparent border-none text-on-surface font-title-md text-title-md focus:ring-0 p-0 cursor-pointer">
+<option>October 2023</option>
+<option>September 2023</option>
+<option>August 2023</option>
+</select>
+</div>
+</div>
+<!-- List Header & Filters -->
+<div class="flex justify-between items-center mt-md">
+<h3 class="font-title-md text-title-md font-bold text-primary">Recent Activity</h3>
+<button class="flex items-center gap-xs text-secondary font-label-md text-label-md hover:bg-surface-variant px-sm py-xs rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="filter_list">filter_list</span>
+                Filter
+            </button>
+</div>
+<!-- Job Cards List -->
+<div class="flex flex-col gap-sm md:gap-md">
+<!-- Card 1 -->
+<article class="bg-surface p-md rounded-[12px] shadow-[0px_2px_4px_rgba(13,19,33,0.08)] border border-surface-variant hover:shadow-[0px_4px_12px_rgba(13,19,33,0.12)] transition-shadow">
+<div class="flex justify-between items-start mb-sm">
+<div class="flex items-center gap-sm">
+<span class="font-label-md text-label-md text-on-surface-variant">ID: #TRK-9021</span>
+</div>
+<div class="bg-tertiary-fixed/20 text-on-tertiary-fixed-variant font-label-md text-label-md px-2 py-0.5 rounded-[4px] flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="done">done</span> Completed
+                        </div>
+</div>
+<div class="flex items-center gap-sm text-on-surface-variant font-caption text-caption mb-md border-b border-surface-variant pb-sm">
+<span class="material-symbols-outlined text-[16px]" data-icon="schedule">schedule</span>
+<span>Oct 24, 2023 • 14:30 PM</span>
+</div>
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant">Customer</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">Alice Smith</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant">Payment Method</span>
+<span class="font-body-md text-body-md text-on-surface">Escrow</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant">Escrow Status</span>
+<span class="font-body-md text-body-md text-on-tertiary-container font-medium">Released</span>
+</div>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="bg-surface p-md rounded-[12px] shadow-[0px_2px_4px_rgba(13,19,33,0.08)] border border-surface-variant hover:shadow-[0px_4px_12px_rgba(13,19,33,0.12)] transition-shadow">
+<div class="flex justify-between items-start mb-sm">
+<div class="flex items-center gap-sm">
+<span class="font-label-md text-label-md text-on-surface-variant">ID: #TRK-9020</span>
+</div>
+<div class="bg-error-container/50 text-on-error-container font-label-md text-label-md px-2 py-0.5 rounded-[4px] flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="close">close</span> Cancelled
+                        </div>
+</div>
+<div class="flex items-center gap-sm text-on-surface-variant font-caption text-caption mb-md border-b border-surface-variant pb-sm">
+<span class="material-symbols-outlined text-[16px]" data-icon="schedule">schedule</span>
+<span>Oct 24, 2023 • 11:15 AM</span>
+</div>
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant">Customer</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">TechCorp Inc.</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant">Payment Method</span>
+<span class="font-body-md text-body-md text-on-surface">Credit Card</span>
+</div>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="bg-surface p-md rounded-[12px] shadow-[0px_2px_4px_rgba(13,19,33,0.08)] border border-surface-variant hover:shadow-[0px_4px_12px_rgba(13,19,33,0.12)] transition-shadow">
+<div class="flex justify-between items-start mb-sm">
+<div class="flex items-center gap-sm">
+<span class="font-label-md text-label-md text-on-surface-variant">ID: #TRK-9019</span>
+</div>
+<div class="bg-tertiary-fixed/20 text-on-tertiary-fixed-variant font-label-md text-label-md px-2 py-0.5 rounded-[4px] flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="done">done</span> Completed
+                        </div>
+</div>
+<div class="flex items-center gap-sm text-on-surface-variant font-caption text-caption mb-md border-b border-surface-variant pb-sm">
+<span class="material-symbols-outlined text-[16px]" data-icon="schedule">schedule</span>
+<span>Oct 23, 2023 • 16:45 PM</span>
+</div>
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant">Customer</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">Bob Johnson</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant">Payment Method</span>
+<span class="font-body-md text-body-md text-on-surface">Escrow</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant">Escrow Status</span>
+<span class="font-body-md text-body-md text-on-tertiary-container font-medium">Released</span>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- Mobile Bottom Nav Bar (Hidden on Desktop) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface shadow-[0px_-2px_4px_rgba(13,19,33,0.08)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="assignment" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="font-label-md text-label-md">Jobs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+<span class="font-label-md text-label-md">Marketplace</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+</body></html>

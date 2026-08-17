@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Owner Subscription - QuickDelivery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#00210a",
+                        "on-primary-fixed": "#151b2a",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#414657",
+                        "tertiary-fixed-dim": "#79db8d",
+                        "surface-dim": "#dad9e1",
+                        "background": "#faf8ff",
+                        "primary-fixed-dim": "#c1c6da",
+                        "surface-container": "#eeedf4",
+                        "surface": "#faf8ff",
+                        "on-surface": "#1a1b21",
+                        "on-secondary-container": "#6c5000",
+                        "surface-container-highest": "#e2e2e9",
+                        "inverse-surface": "#2f3036",
+                        "tertiary-fixed": "#95f8a7",
+                        "on-surface-variant": "#45464c",
+                        "tertiary-container": "#00210a",
+                        "on-primary-container": "#7e8395",
+                        "tertiary": "#000000",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005323",
+                        "error": "#ba1a1a",
+                        "inverse-on-surface": "#f1f0f7",
+                        "on-secondary": "#ffffff",
+                        "primary": "#000000",
+                        "primary-container": "#151b2a",
+                        "on-tertiary-container": "#339650",
+                        "surface-container-high": "#e8e7ef",
+                        "secondary-container": "#fdc003",
+                        "secondary-fixed-dim": "#fabd00",
+                        "on-secondary-fixed": "#261a00",
+                        "on-background": "#1a1b21",
+                        "outline-variant": "#c6c6cc",
+                        "secondary-fixed": "#ffdf9e",
+                        "surface-bright": "#faf8ff",
+                        "secondary": "#785900",
+                        "primary-fixed": "#dde2f6",
+                        "surface-tint": "#585e6f",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "inverse-primary": "#c1c6da",
+                        "surface-variant": "#e2e2e9",
+                        "outline": "#76777d",
+                        "surface-container-low": "#f4f3fa"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "base": "8px",
+                        "margin-desktop": "32px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Poppins"],
+                        "headline-lg-mobile": ["Poppins"],
+                        "body-lg": ["Poppins"],
+                        "headline-lg": ["Poppins"],
+                        "caption": ["Poppins"],
+                        "title-md": ["Poppins"],
+                        "body-md": ["Poppins"],
+                        "display-lg": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "caption": ["11px", { "lineHeight": "14px", "fontWeight": "400" }],
+                        "title-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col antialiased">
+<!-- TopAppBar -->
+<header class="bg-background dark:bg-background text-primary dark:text-primary font-title-md text-title-md docked full-width top-0 flat no shadows flex justify-between items-center px-margin-mobile py-base w-full z-50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[24px]">local_shipping</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary dark:text-primary">QuickDelivery</span>
+</div>
+<button class="p-2 rounded-full hover:bg-surface-variant transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[24px]">notifications</span>
+</button>
+</header>
+<!-- Main Layout -->
+<div class="flex flex-1 overflow-hidden relative">
+<!-- NavigationDrawer (Desktop) -->
+<aside class="hidden md:flex flex-col bg-surface dark:bg-surface text-primary dark:text-primary font-body-md text-body-md h-full w-72 rounded-r-xl shadow-md py-lg z-40">
+<div class="px-4 mb-8 flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden shrink-0">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a logistics administrator in a modern corporate setting. The lighting is crisp and cool, reflecting a clean enterprise aesthetic with subtle navy blue undertones. High quality, clear focus, professional mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJepPY-LTpSTb4WcVKuEc70meN8-ry4_zsOCBX4UcnFA6QN1WsFh8NFZ5qQNhZGXljmwKoiWuBT6cna43xuii5otF7I2pMQodrQEYRqmHUd9T42WxfAAfn4s9cR_Pf1o_U5jls5gXScE2Ut12wLsQRXH5DsODIQ6vmY_sPWKO3lkOQ0tjplMgYlo78dGzfxGR-gsF9EDUOOIxqv0iv-1Fr0ulrckdkBtGufDkQwM18wSjTrzY0-kWb"/>
+</div>
+<div>
+<div class="font-title-md text-title-md">QuickDelivery Admin</div>
+<div class="font-caption text-caption text-on-surface-variant">Owner Account</div>
+</div>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">group</span>
+<span>Employees</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">history</span>
+<span>History</span>
+</a>
+<a class="flex items-center gap-3 bg-secondary-container text-on-secondary-container font-bold rounded-full mx-2 px-4 py-3 transition-transform translate-x-1" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto px-margin-mobile py-8 md:px-margin-desktop md:py-12 pb-24 md:pb-12 bg-background flex justify-center">
+<div class="max-w-[1000px] w-full flex flex-col gap-10">
+<header class="text-center flex flex-col gap-2 items-center">
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary">Owner Subscription</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-[600px]">Manage your QuickDelivery operational tier. Upgrade to unlock advanced logistics tools, employee management features, and priority enterprise support.</p>
+</header>
+<!-- Pricing Cards Container -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+<!-- Free Tier Card -->
+<div class="bg-surface rounded-xl shadow-[0px_2px_4px_rgba(13,19,33,0.08)] border border-outline-variant p-6 flex flex-col h-full relative overflow-hidden transition-all hover:shadow-[0px_4px_12px_rgba(13,19,33,0.12)]">
+<div class="flex-1 flex flex-col gap-6">
+<div>
+<h2 class="font-title-md text-title-md text-on-surface mb-1">Standard</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Essential tools for independent operators.</p>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-display-lg text-display-lg text-primary">$0</span>
+<span class="font-body-md text-body-md text-on-surface-variant">/month</span>
+</div>
+<div class="h-px w-full bg-surface-variant"></div>
+<ul class="flex flex-col gap-3 font-body-md text-body-md text-on-surface">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[20px] text-tertiary-container mt-[2px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Up to 50 deliveries per month</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[20px] text-tertiary-container mt-[2px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Basic real-time tracking</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[20px] text-tertiary-container mt-[2px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Single user account</span>
+</li>
+<li class="flex items-start gap-3 opacity-50">
+<span class="material-symbols-outlined text-[20px] text-outline mt-[2px]">cancel</span>
+<span>Advanced analytics dashboard</span>
+</li>
+<li class="flex items-start gap-3 opacity-50">
+<span class="material-symbols-outlined text-[20px] text-outline mt-[2px]">cancel</span>
+<span>Employee management tools</span>
+</li>
+</ul>
+</div>
+<div class="pt-8 mt-auto">
+<button class="w-full bg-surface-variant text-on-surface font-title-md text-title-md py-3 rounded-lg hover:bg-outline-variant transition-colors">
+                                Current Plan
+                            </button>
+</div>
+</div>
+<!-- Pro Tier Card -->
+<div class="bg-surface rounded-xl shadow-[0px_4px_12px_rgba(13,19,33,0.12)] border-2 border-secondary-container p-6 flex flex-col h-full relative overflow-hidden transition-all scale-[1.02] md:scale-105 z-10">
+<!-- Popular Badge -->
+<div class="absolute top-0 right-0 bg-secondary-container text-on-secondary-container font-label-md text-label-md px-3 py-1 rounded-bl-lg rounded-tr-xl">
+                            RECOMMENDED
+                        </div>
+<div class="flex-1 flex flex-col gap-6">
+<div>
+<h2 class="font-title-md text-title-md text-primary mb-1 flex items-center gap-2">
+                                    Enterprise Pro
+                                    <span class="material-symbols-outlined text-[20px] text-secondary-container" style="font-variation-settings: 'FILL' 1;">stars</span>
+</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Complete suite for fleet managers.</p>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-display-lg text-display-lg text-primary">$49</span>
+<span class="font-body-md text-body-md text-on-surface-variant">/month per user</span>
+</div>
+<div class="h-px w-full bg-surface-variant"></div>
+<ul class="flex flex-col gap-3 font-body-md text-body-md text-on-surface">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[20px] text-secondary-container mt-[2px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-bold text-primary">Unlimited deliveries</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[20px] text-secondary-container mt-[2px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Advanced operational analytics</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[20px] text-secondary-container mt-[2px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Full employee management suite</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[20px] text-secondary-container mt-[2px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Automated dispatch routing</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[20px] text-secondary-container mt-[2px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>24/7 Priority support</span>
+</li>
+</ul>
+</div>
+<div class="pt-8 mt-auto flex flex-col gap-3">
+<button class="w-full bg-secondary-container text-primary font-title-md text-title-md py-3 rounded-lg hover:bg-secondary-fixed transition-colors font-bold flex items-center justify-center gap-2">
+                                Upgrade to Pro
+                                <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+<p class="font-caption text-caption text-center text-on-surface-variant">Billed monthly. Cancel anytime.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden bg-surface dark:bg-surface shadow-[0px_-2px_4px_rgba(13,19,33,0.08)] fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 rounded-t-xl text-secondary dark:text-secondary-fixed font-label-md text-label-md font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary dark:text-primary">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">home</span>
+<span class="font-label-md text-label-md mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">storefront</span>
+<span class="font-label-md text-label-md mt-1">Marketplace</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">assignment</span>
+<span class="font-label-md text-label-md mt-1">Jobs</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-90 duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+<span class="font-label-md text-label-md mt-1">Settings</span>
+</a>
+</nav>
+</body></html>

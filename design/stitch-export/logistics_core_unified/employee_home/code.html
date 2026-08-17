@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Employee Home - QuickDelivery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline-variant": "#c6c6cc",
+                        "on-secondary": "#ffffff",
+                        "tertiary": "#000000",
+                        "secondary-fixed-dim": "#fabd00",
+                        "primary": "#000000",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#00210a",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed": "#261a00",
+                        "inverse-surface": "#2f3036",
+                        "surface": "#faf8ff",
+                        "inverse-on-surface": "#f1f0f7",
+                        "on-primary-fixed": "#151b2a",
+                        "on-background": "#1a1b21",
+                        "surface-tint": "#585e6f",
+                        "surface-container": "#eeedf4",
+                        "secondary": "#785900",
+                        "error": "#ba1a1a",
+                        "on-surface": "#1a1b21",
+                        "secondary-container": "#fdc003",
+                        "tertiary-fixed-dim": "#79db8d",
+                        "primary-container": "#151b2a",
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#7e8395",
+                        "primary-fixed": "#dde2f6",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#339650",
+                        "surface-variant": "#e2e2e9",
+                        "background": "#faf8ff",
+                        "surface-container-high": "#e8e7ef",
+                        "tertiary-container": "#00210a",
+                        "surface-dim": "#dad9e1",
+                        "inverse-primary": "#c1c6da",
+                        "surface-container-low": "#f4f3fa",
+                        "on-secondary-container": "#6c5000",
+                        "tertiary-fixed": "#95f8a7",
+                        "secondary-fixed": "#ffdf9e",
+                        "on-surface-variant": "#45464c",
+                        "surface-bright": "#faf8ff",
+                        "surface-container-highest": "#e2e2e9",
+                        "outline": "#76777d",
+                        "primary-fixed-dim": "#c1c6da",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005323",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "on-primary-fixed-variant": "#414657"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "margin-mobile": "16px",
+                        "lg": "24px",
+                        "sm": "8px",
+                        "base": "8px",
+                        "xs": "4px",
+                        "margin-desktop": "32px",
+                        "md": "16px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Poppins"],
+                        "title-md": ["Poppins"],
+                        "body-lg": ["Poppins"],
+                        "headline-lg": ["Poppins"],
+                        "label-md": ["Poppins"],
+                        "headline-lg-mobile": ["Poppins"],
+                        "display-lg": ["Poppins"],
+                        "caption": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "title-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "caption": ["11px", { "lineHeight": "14px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background antialiased pb-24 md:pb-0 md:pl-72 flex h-screen overflow-hidden">
+<!-- Desktop Navigation Drawer -->
+<nav class="hidden md:flex flex-col h-full w-72 rounded-r-xl bg-surface dark:bg-surface shadow-md py-lg fixed left-0 top-0 z-50">
+<div class="px-4 mb-8 flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 1;">account_circle</span>
+</div>
+<div>
+<h2 class="font-title-md text-title-md text-primary dark:text-primary">QuickDelivery Admin</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Owner Account</p>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<a class="bg-secondary-container text-on-secondary-container font-bold rounded-full mx-2 px-4 py-3 flex items-center gap-3" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<a class="text-on-surface-variant px-4 py-3 hover:bg-surface-container-high mx-2 rounded-full flex items-center gap-3 transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+                Employees
+            </a>
+<a class="text-on-surface-variant px-4 py-3 hover:bg-surface-container-high mx-2 rounded-full flex items-center gap-3 transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+                History
+            </a>
+<a class="text-on-surface-variant px-4 py-3 hover:bg-surface-container-high mx-2 rounded-full flex items-center gap-3 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+</div>
+</nav>
+<!-- Mobile Top App Bar -->
+<header class="md:hidden flex justify-between items-center px-margin-mobile py-base w-full z-50 bg-background dark:bg-background docked full-width top-0 fixed">
+<button class="text-primary dark:text-primary p-2">
+<span class="material-symbols-outlined">local_shipping</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary dark:text-primary">QuickDelivery</h1>
+<button class="text-primary dark:text-primary p-2">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto w-full pt-20 md:pt-8 px-margin-mobile md:px-margin-desktop">
+<div class="max-w-4xl mx-auto space-y-6">
+<!-- Header & Status Toggle -->
+<div class="flex justify-between items-center bg-surface p-4 rounded-xl shadow-sm">
+<div>
+<h2 class="font-title-md text-title-md text-on-surface">Good Morning, Alex</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Ready for today's routes?</p>
+</div>
+<div class="flex items-center gap-3">
+<span class="font-label-md text-label-md text-on-surface-variant" id="status-text">Online</span>
+<button class="w-14 h-8 bg-secondary-container rounded-full relative transition-colors focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2" id="status-toggle">
+<div class="w-6 h-6 bg-on-secondary-container rounded-full absolute top-1 left-1 transition-transform translate-x-6" id="status-indicator"></div>
+</button>
+</div>
+</div>
+<!-- Stats Grid -->
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface p-4 rounded-xl shadow-sm flex flex-col justify-center items-center">
+<span class="material-symbols-outlined text-secondary-container text-3xl mb-2" style="font-variation-settings: 'FILL' 1;">payments</span>
+<p class="font-title-md text-title-md text-on-surface">$142.50</p>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Today's Earnings</p>
+</div>
+<div class="bg-surface p-4 rounded-xl shadow-sm flex flex-col justify-center items-center">
+<span class="material-symbols-outlined text-tertiary-container text-3xl mb-2" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<p class="font-title-md text-title-md text-on-surface">8</p>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Completed Jobs</p>
+</div>
+</div>
+<!-- Next Assigned Job Card -->
+<section>
+<h3 class="font-title-md text-title-md text-on-background mb-4">Next Assigned Job</h3>
+<div class="bg-surface rounded-xl shadow-sm overflow-hidden border border-surface-variant">
+<div class="bg-secondary-container px-4 py-3 flex justify-between items-center">
+<span class="font-label-md text-label-md text-on-secondary-container uppercase tracking-wider">Job #JD-9942</span>
+<span class="font-label-md text-label-md text-on-secondary-container bg-surface/30 px-2 py-1 rounded-sm">High Priority</span>
+</div>
+<div class="p-4 space-y-6">
+<!-- Route Timeline -->
+<div class="relative pl-6 space-y-6">
+<!-- Timeline Line -->
+<div class="absolute left-2.5 top-2 bottom-2 w-0.5 bg-surface-variant"></div>
+<!-- Pickup -->
+<div class="relative">
+<div class="absolute -left-6 top-0.5 w-3 h-3 rounded-full bg-primary z-10 border-2 border-surface"></div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase mb-1">Pickup • 10:30 AM</p>
+<p class="font-title-md text-title-md text-on-surface">142 Logistics Blvd, Warehouse C</p>
+<p class="font-body-md text-body-md text-on-surface-variant">Contact: Sarah Manager (555-0192)</p>
+</div>
+<!-- Dropoff -->
+<div class="relative">
+<div class="absolute -left-6 top-0.5 w-3 h-3 rounded-full bg-surface border-2 border-outline-variant z-10"></div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase mb-1">Dropoff • Est. 11:15 AM</p>
+<p class="font-title-md text-title-md text-on-surface">884 Enterprise Way, Suite 200</p>
+<p class="font-body-md text-body-md text-on-surface-variant">Requires signature</p>
+</div>
+</div>
+<!-- Package Details -->
+<div class="bg-surface-container-low p-3 rounded-lg flex justify-between items-center border border-surface-variant">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">inventory_2</span>
+<div>
+<p class="font-body-md text-body-md text-on-surface font-semibold">2x Pallets (Medical Supplies)</p>
+<p class="font-caption text-caption text-on-surface-variant">Total Weight: 450 lbs</p>
+</div>
+</div>
+</div>
+<!-- Action -->
+<button class="w-full bg-secondary-container hover:bg-secondary text-on-secondary-container hover:text-on-secondary font-title-md text-title-md py-3 rounded-lg transition-colors flex justify-center items-center gap-2">
+<span class="material-symbols-outlined">play_arrow</span>
+                            Start Job
+                        </button>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Mobile Bottom Navigation Bar -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface dark:bg-surface shadow-[0px_-2px_4px_rgba(13,19,33,0.08)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-md text-label-md mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined">storefront</span>
+<span class="font-label-md text-label-md mt-1">Marketplace</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="font-label-md text-label-md mt-1">Jobs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md mt-1">Settings</span>
+</a>
+</nav>
+<script>
+        // Simple toggle logic for the status button
+        const toggleBtn = document.getElementById('status-toggle');
+        const indicator = document.getElementById('status-indicator');
+        const statusText = document.getElementById('status-text');
+        let isOnline = true;
+
+        toggleBtn.addEventListener('click', () => {
+            isOnline = !isOnline;
+            if (isOnline) {
+                toggleBtn.classList.remove('bg-surface-variant');
+                toggleBtn.classList.add('bg-secondary-container');
+                indicator.classList.remove('translate-x-0', 'bg-on-surface-variant');
+                indicator.classList.add('translate-x-6', 'bg-on-secondary-container');
+                statusText.textContent = 'Online';
+            } else {
+                toggleBtn.classList.remove('bg-secondary-container');
+                toggleBtn.classList.add('bg-surface-variant');
+                indicator.classList.remove('translate-x-6', 'bg-on-secondary-container');
+                indicator.classList.add('translate-x-0', 'bg-on-surface-variant');
+                statusText.textContent = 'Offline';
+            }
+        });
+    </script>
+</body></html>

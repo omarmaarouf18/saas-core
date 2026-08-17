@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Owner Reconciliation Queue</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary": "#000000",
+                    "primary-container": "#151b2a",
+                    "secondary-fixed-dim": "#fabd00",
+                    "inverse-surface": "#2f3036",
+                    "on-primary-container": "#7e8395",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-high": "#e8e7ef",
+                    "error": "#ba1a1a",
+                    "tertiary-fixed": "#95f8a7",
+                    "on-primary-fixed": "#151b2a",
+                    "on-background": "#1a1b21",
+                    "primary-fixed-dim": "#c1c6da",
+                    "primary-fixed": "#dde2f6",
+                    "surface-tint": "#585e6f",
+                    "surface-container-low": "#f4f3fa",
+                    "secondary": "#785900",
+                    "on-tertiary-fixed-variant": "#005323",
+                    "on-surface": "#1a1b21",
+                    "surface-container": "#eeedf4",
+                    "surface-bright": "#faf8ff",
+                    "surface": "#faf8ff",
+                    "on-secondary-container": "#6c5000",
+                    "surface-variant": "#e2e2e9",
+                    "on-secondary-fixed": "#261a00",
+                    "primary": "#000000",
+                    "secondary-fixed": "#ffdf9e",
+                    "secondary-container": "#fdc003",
+                    "surface-container-highest": "#e2e2e9",
+                    "outline": "#76777d",
+                    "on-error": "#ffffff",
+                    "on-surface-variant": "#45464c",
+                    "on-error-container": "#93000a",
+                    "inverse-primary": "#c1c6da",
+                    "tertiary-container": "#00210a",
+                    "surface-dim": "#dad9e1",
+                    "background": "#faf8ff",
+                    "outline-variant": "#c6c6cc",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed-dim": "#79db8d",
+                    "on-tertiary-container": "#339650",
+                    "error-container": "#ffdad6",
+                    "on-secondary-fixed-variant": "#5b4300",
+                    "on-tertiary-fixed": "#00210a",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "inverse-on-surface": "#f1f0f7",
+                    "on-primary-fixed-variant": "#414657"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "xs": "4px",
+                    "xl": "32px",
+                    "margin-mobile": "16px",
+                    "base": "8px",
+                    "sm": "8px",
+                    "margin-desktop": "32px",
+                    "lg": "24px",
+                    "md": "16px"
+            },
+            "fontFamily": {
+                    "body-md": ["Poppins"],
+                    "title-md": ["Poppins"],
+                    "headline-lg": ["Poppins"],
+                    "body-lg": ["Poppins"],
+                    "caption": ["Poppins"],
+                    "headline-lg-mobile": ["Poppins"],
+                    "label-md": ["Poppins"],
+                    "display-lg": ["Poppins"]
+            },
+            "fontSize": {
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "title-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "caption": ["11px", {"lineHeight": "14px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col md:flex-row">
+<!-- Navigation Drawer (Desktop) -->
+<aside class="hidden md:flex flex-col h-full py-lg bg-surface dark:bg-surface w-72 rounded-r-xl shadow-md fixed left-0 top-0 z-40">
+<div class="px-4 mb-8">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary dark:text-primary">QuickDelivery</h1>
+</div>
+<div class="px-4 py-3 flex items-center gap-3 mb-6">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold">
+                QA
+            </div>
+<div>
+<p class="font-title-md text-title-md text-primary dark:text-primary">QuickDelivery Admin</p>
+<p class="font-body-md text-body-md text-on-surface-variant">Owner Account</p>
+</div>
+</div>
+<nav class="flex-1 space-y-2 px-2">
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-full" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 bg-secondary-container text-on-secondary-container font-bold rounded-full mx-2 px-4 py-3" href="#">
+<span class="material-symbols-outlined">assignment</span>
+                Reconciliation
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-full" href="#">
+<span class="material-symbols-outlined">group</span>
+                Employees
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-full" href="#">
+<span class="material-symbols-outlined">history</span>
+                History
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-full" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+</nav>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-72 flex flex-col min-h-screen pb-24 md:pb-0">
+<!-- Top App Bar (Mobile) -->
+<header class="md:hidden bg-background dark:bg-background flex justify-between items-center px-margin-mobile py-base w-full z-50 docked full-width top-0">
+<button class="text-primary dark:text-primary p-2">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary dark:text-primary">QuickDelivery</h1>
+<button class="text-primary dark:text-primary p-2">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<!-- Top App Bar (Desktop) -->
+<header class="hidden md:flex justify-between items-center px-margin-desktop py-base w-full z-50 bg-background dark:bg-background">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary dark:text-primary text-3xl">assignment</span>
+<h2 class="font-headline-lg text-headline-lg text-primary">Reconciliation Queue</h2>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="material-symbols-outlined text-on-surface-variant absolute left-3 top-1/2 transform -translate-y-1/2">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container rounded-lg border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md w-64" placeholder="Search tracking ID..." type="text"/>
+</div>
+<button class="text-on-surface-variant hover:bg-surface-variant p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+</header>
+<div class="p-margin-mobile md:p-margin-desktop flex-1">
+<!-- Dashboard Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md mb-lg">
+<div class="bg-surface rounded-xl p-md shadow-sm border border-surface-variant">
+<p class="font-label-md text-label-md text-on-surface-variant mb-1">Total Locked Escrow</p>
+<p class="font-display-lg text-display-lg text-primary">$4,250.00</p>
+</div>
+<div class="bg-surface rounded-xl p-md shadow-sm border border-surface-variant">
+<p class="font-label-md text-label-md text-on-surface-variant mb-1">Total Pending</p>
+<p class="font-display-lg text-display-lg text-secondary-container">12</p>
+</div>
+<div class="bg-surface rounded-xl p-md shadow-sm border border-surface-variant">
+<p class="font-label-md text-label-md text-on-surface-variant mb-1">High Risk Items</p>
+<p class="font-display-lg text-display-lg text-error">3</p>
+</div>
+</div>
+<!-- Queue List -->
+<div class="space-y-md">
+<!-- Queue Item 1 (High Risk) -->
+<div class="bg-surface rounded-[12px] p-0 shadow-sm border border-error-container overflow-hidden">
+<div class="bg-error-container px-md py-sm flex justify-between items-center border-b border-error/20">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-label-md text-label-md text-on-error-container uppercase">High Risk - Disputed Delivery</span>
+</div>
+<span class="font-title-md text-title-md text-on-error-container">Job ID: TRK-982-XJ</span>
+</div>
+<div class="p-md grid grid-cols-1 md:grid-cols-12 gap-md items-start">
+<div class="md:col-span-8 space-y-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-title-md text-title-md text-primary">Industrial Generator Parts</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1"><span class="font-semibold">Failure Reason:</span> Receiver claims damage.</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-sm">
+<div>
+<p class="font-caption text-caption text-on-surface-variant uppercase">Service Type</p>
+<p class="font-body-md text-body-md font-medium text-on-surface">Heavy Freight</p>
+</div>
+<div>
+<p class="font-caption text-caption text-on-surface-variant uppercase">Customer</p>
+<p class="font-body-md text-body-md font-medium text-on-surface">TechCorp Industries</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-sm rounded-lg border border-surface-variant">
+<p class="font-caption text-caption text-on-surface-variant uppercase mb-1">Notes</p>
+<p class="font-body-sm text-on-surface">GPS logs show driver was at location. No signature obtained. Requires manual review of dashcam footage before release.</p>
+</div>
+</div>
+<div class="md:col-span-4 bg-surface-container rounded-lg p-md flex flex-col justify-between h-full">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant text-center mb-1">Locked Escrow</p>
+<p class="font-headline-lg text-headline-lg text-primary text-center mb-4">$1,200.00</p>
+</div>
+<div class="flex flex-col gap-sm mt-auto">
+<button class="w-full bg-secondary-container text-on-secondary-container font-title-md text-title-md py-2 rounded-lg hover:bg-secondary-fixed transition-colors flex justify-center items-center gap-2">
+                                    Release Funds
+                                    <span class="material-symbols-outlined">check_circle</span>
+</button>
+<button class="w-full bg-error text-on-error font-title-md text-title-md py-2 rounded-lg hover:bg-error/90 transition-colors flex justify-center items-center gap-2">
+                                    Refund Client
+                                    <span class="material-symbols-outlined">undo</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Queue Item 2 (Standard) -->
+<div class="bg-surface rounded-[12px] p-0 shadow-sm border border-surface-variant overflow-hidden">
+<div class="bg-surface-container px-md py-sm flex justify-between items-center border-b border-surface-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">info</span>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase">Standard Review - Missing Signature</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface">Job ID: TRK-105-BB</span>
+</div>
+<div class="p-md grid grid-cols-1 md:grid-cols-12 gap-md items-start">
+<div class="md:col-span-8 space-y-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-title-md text-title-md text-primary">Office Supplies Bulk Order</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1"><span class="font-semibold">Failure Reason:</span> App timeout during signature capture.</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-sm">
+<div>
+<p class="font-caption text-caption text-on-surface-variant uppercase">Service Type</p>
+<p class="font-body-md text-body-md font-medium text-on-surface">Standard Delivery</p>
+</div>
+<div>
+<p class="font-caption text-caption text-on-surface-variant uppercase">Customer</p>
+<p class="font-body-md text-body-md font-medium text-on-surface">Staple Solutions</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-sm rounded-lg border border-surface-variant">
+<p class="font-caption text-caption text-on-surface-variant uppercase mb-1">Notes</p>
+<p class="font-body-sm text-on-surface">Photo evidence provided shows goods safely placed at dock 4. Client has not raised dispute after 48h.</p>
+</div>
+</div>
+<div class="md:col-span-4 bg-surface-container rounded-lg p-md flex flex-col justify-between h-full">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant text-center mb-1">Locked Escrow</p>
+<p class="font-headline-lg text-headline-lg text-primary text-center mb-4">$450.00</p>
+</div>
+<div class="flex flex-col gap-sm mt-auto">
+<button class="w-full bg-secondary-container text-on-secondary-container font-title-md text-title-md py-2 rounded-lg hover:bg-secondary-fixed transition-colors flex justify-center items-center gap-2">
+                                    Release Funds
+                                    <span class="material-symbols-outlined">check_circle</span>
+</button>
+<button class="w-full bg-surface text-on-surface border border-outline font-title-md text-title-md py-2 rounded-lg hover:bg-surface-variant transition-colors flex justify-center items-center gap-2">
+                                    Refund Client
+                                    <span class="material-symbols-outlined">undo</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Loading State (Hidden by default) -->
+<div class="hidden bg-surface rounded-[12px] p-0 shadow-sm border border-surface-variant overflow-hidden animate-pulse">
+<div class="bg-surface-container px-md py-sm flex justify-between items-center border-b border-surface-variant h-12">
+<div class="h-4 bg-surface-variant rounded w-1/3"></div>
+<div class="h-4 bg-surface-variant rounded w-1/4"></div>
+</div>
+<div class="p-md grid grid-cols-1 md:grid-cols-12 gap-md items-start">
+<div class="md:col-span-8 space-y-4">
+<div class="h-6 bg-surface-variant rounded w-2/3"></div>
+<div class="h-4 bg-surface-variant rounded w-full"></div>
+<div class="h-4 bg-surface-variant rounded w-5/6"></div>
+<div class="grid grid-cols-2 gap-sm pt-4">
+<div class="space-y-2">
+<div class="h-3 bg-surface-variant rounded w-1/2"></div>
+<div class="h-4 bg-surface-variant rounded w-3/4"></div>
+</div>
+<div class="space-y-2">
+<div class="h-3 bg-surface-variant rounded w-1/2"></div>
+<div class="h-4 bg-surface-variant rounded w-3/4"></div>
+</div>
+</div>
+</div>
+<div class="md:col-span-4 bg-surface-container rounded-lg p-md flex flex-col h-full min-h-[160px]">
+<div class="h-4 bg-surface-variant rounded w-1/2 mx-auto mb-2"></div>
+<div class="h-8 bg-surface-variant rounded w-2/3 mx-auto mb-4"></div>
+<div class="mt-auto space-y-2">
+<div class="h-10 bg-surface-variant rounded w-full"></div>
+<div class="h-10 bg-surface-variant rounded w-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Empty State (Hidden by default) -->
+<div class="hidden bg-surface rounded-[12px] p-xl flex flex-col items-center justify-center border border-surface-variant text-center border-dashed py-16">
+<span class="material-symbols-outlined text-5xl text-surface-tint mb-4 opacity-70">task</span>
+<h3 class="font-title-md text-title-md text-primary mb-2">No pending reconciliations</h3>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-sm mx-auto">You're all caught up! Escrow funds and disputes have been successfully managed.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Nav Bar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface dark:bg-surface shadow-[0px_-2px_4px_rgba(13,19,33,0.08)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant" href="#">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1" href="#">
+<span class="material-symbols-outlined mb-1">assignment</span>
+<span class="font-label-md text-label-md">Reconciliation</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant" href="#">
+<span class="material-symbols-outlined mb-1">group</span>
+<span class="font-label-md text-label-md">Employees</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant" href="#">
+<span class="material-symbols-outlined mb-1">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+</body></html>

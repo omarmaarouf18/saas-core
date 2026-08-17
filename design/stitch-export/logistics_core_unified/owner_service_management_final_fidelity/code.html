@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Owner Service Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-variant": "#e2e2e9",
+                      "on-primary-container": "#7e8395",
+                      "on-primary-fixed-variant": "#414657",
+                      "on-tertiary-container": "#339650",
+                      "primary-fixed": "#dde2f6",
+                      "surface-bright": "#faf8ff",
+                      "outline": "#76777d",
+                      "on-tertiary-fixed-variant": "#005323",
+                      "on-error": "#ffffff",
+                      "secondary-fixed-dim": "#fabd00",
+                      "primary-container": "#151b2a",
+                      "error-container": "#ffdad6",
+                      "on-background": "#1a1b21",
+                      "tertiary": "#000000",
+                      "primary": "#000000",
+                      "inverse-surface": "#2f3036",
+                      "surface-container-highest": "#e2e2e9",
+                      "on-secondary-fixed-variant": "#5b4300",
+                      "surface-container-low": "#f4f3fa",
+                      "on-secondary-fixed": "#261a00",
+                      "on-secondary": "#ffffff",
+                      "secondary": "#785900",
+                      "on-tertiary-fixed": "#00210a",
+                      "tertiary-container": "#00210a",
+                      "on-tertiary": "#ffffff",
+                      "inverse-primary": "#c1c6da",
+                      "on-surface-variant": "#45464c",
+                      "error": "#ba1a1a",
+                      "tertiary-fixed": "#95f8a7",
+                      "primary-fixed-dim": "#c1c6da",
+                      "on-surface": "#1a1b21",
+                      "on-secondary-container": "#6c5000",
+                      "outline-variant": "#c6c6cc",
+                      "surface-container-lowest": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "surface-container-high": "#e8e7ef",
+                      "surface-tint": "#585e6f",
+                      "on-primary-fixed": "#151b2a",
+                      "surface-container": "#eeedf4",
+                      "secondary-container": "#fdc003",
+                      "surface-dim": "#dad9e1",
+                      "tertiary-fixed-dim": "#79db8d",
+                      "background": "#faf8ff",
+                      "secondary-fixed": "#ffdf9e",
+                      "on-primary": "#ffffff",
+                      "inverse-on-surface": "#f1f0f7",
+                      "surface": "#faf8ff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "xl": "32px",
+                      "base": "8px",
+                      "margin-desktop": "32px",
+                      "xs": "4px",
+                      "margin-mobile": "16px",
+                      "md": "16px",
+                      "sm": "8px",
+                      "gutter": "16px",
+                      "lg": "24px"
+              },
+              "fontFamily": {
+                      "display-lg": [
+                              "Poppins"
+                      ],
+                      "label-md": [
+                              "Poppins"
+                      ],
+                      "headline-lg-mobile": [
+                              "Poppins"
+                      ],
+                      "headline-lg": [
+                              "Poppins"
+                      ],
+                      "body-md": [
+                              "Poppins"
+                      ],
+                      "body-lg": [
+                              "Poppins"
+                      ],
+                      "title-md": [
+                              "Poppins"
+                      ],
+                      "caption": [
+                              "Poppins"
+                      ]
+              },
+              "fontSize": {
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "title-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "caption": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen flex flex-col md:flex-row overflow-hidden">
+<!-- TopAppBar (Mobile) -->
+<header class="md:hidden flex justify-between items-center px-margin-mobile py-base w-full z-50 bg-background dark:bg-background flat no shadows">
+<button aria-label="Menu" class="text-primary dark:text-primary p-2 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary dark:text-primary text-center flex-1">QuickDelivery</h1>
+<button aria-label="Notifications" class="text-primary dark:text-primary p-2 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- NavigationDrawer (Desktop) -->
+<aside class="hidden md:flex flex-col h-full py-lg w-72 rounded-r-xl bg-surface dark:bg-surface shadow-md flex-shrink-0 z-40">
+<div class="px-lg pb-md mb-md border-b border-surface-variant flex items-center space-x-md">
+<div class="w-12 h-12 rounded-full overflow-hidden bg-primary-container flex items-center justify-center text-on-primary-container font-title-md">
+                QA
+            </div>
+<div>
+<h2 class="font-title-md text-title-md text-primary dark:text-primary">QuickDelivery Admin</h2>
+<p class="font-caption text-caption text-on-surface-variant">Owner Account</p>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto space-y-sm px-sm">
+<a class="flex items-center px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors group" href="#">
+<span class="material-symbols-outlined mr-md" data-icon="dashboard">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors group" href="#">
+<span class="material-symbols-outlined mr-md" data-icon="group">group</span>
+<span class="font-body-md text-body-md">Employees</span>
+</a>
+<a class="flex items-center px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors group" href="#">
+<span class="material-symbols-outlined mr-md" data-icon="history">history</span>
+<span class="font-body-md text-body-md">History</span>
+</a>
+<a class="flex items-center bg-secondary-container text-on-secondary-container font-bold rounded-full mx-2 px-4 py-3 group" href="#">
+<span class="material-symbols-outlined mr-md" data-icon="settings" data-weight="fill">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- Header Section -->
+<div class="px-margin-mobile md:px-margin-desktop py-lg border-b border-surface-variant bg-surface sticky top-0 z-10 flex flex-col md:flex-row md:items-center justify-between gap-md">
+<div>
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary font-bold">Service Management</h2>
+<p class="text-on-surface-variant font-body-md text-body-md mt-xs">Configure and monitor active logistics services.</p>
+</div>
+</div>
+<!-- Scrollable Content Canvas -->
+<div class="flex-1 overflow-y-auto p-margin-mobile md:p-margin-desktop bg-background pb-32 md:pb-lg">
+<!-- KYC Banner -->
+<div class="bg-surface-container-low border border-surface-variant rounded-xl p-md mb-lg flex items-start gap-sm">
+<span class="material-symbols-outlined text-outline">lock</span>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface font-semibold">Verification Required</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Please complete KYC verification to create new services or modify existing ones.</p>
+</div>
+</div>
+<!-- Bento Grid Layout for Services -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Service Card 1: Express Freight -->
+<div class="bg-surface rounded-xl shadow-sm border border-surface-variant overflow-hidden hover:shadow-md transition-shadow flex flex-col group relative">
+<div class="p-md border-b border-surface-variant flex justify-between items-start bg-surface-bright">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+</div>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface font-semibold">Express Freight</h3>
+<div class="flex items-center gap-xs mt-xs">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span>
+<span class="font-caption text-caption text-on-surface-variant uppercase tracking-wider">Active</span>
+</div>
+</div>
+</div>
+<button class="text-outline hover:text-primary transition-colors p-1 rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<div class="p-md flex-1 flex flex-col justify-between">
+<div class="space-y-sm mb-md">
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">High-priority, time-sensitive freight delivery for critical supply chain needs.</p>
+<div class="grid grid-cols-2 gap-sm mt-md bg-surface-container-low p-sm rounded-lg">
+<div>
+<span class="font-caption text-caption text-on-surface-variant block">Base Rate</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold">$150.00</span>
+</div>
+<div>
+<span class="font-caption text-caption text-on-surface-variant block">Per KM</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold">$2.50</span>
+</div>
+</div>
+</div>
+<button class="w-full py-2 bg-secondary text-on-secondary rounded-lg font-label-md text-label-md uppercase tracking-wider hover:bg-primary hover:text-on-primary transition-colors flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span> Edit Service
+                        </button>
+</div>
+</div>
+<!-- Service Card 2: Standard Parcel -->
+<div class="bg-surface rounded-xl shadow-sm border border-surface-variant overflow-hidden hover:shadow-md transition-shadow flex flex-col group relative">
+<div class="p-md border-b border-surface-variant flex justify-between items-start bg-surface-bright">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+</div>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface font-semibold">Standard Parcel</h3>
+<div class="flex items-center gap-xs mt-xs">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span>
+<span class="font-caption text-caption text-on-surface-variant uppercase tracking-wider">Active</span>
+</div>
+</div>
+</div>
+<button class="text-outline hover:text-primary transition-colors p-1 rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<div class="p-md flex-1 flex flex-col justify-between">
+<div class="space-y-sm mb-md">
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Economical delivery for standard packages under 50kg. Optimized routing.</p>
+<div class="grid grid-cols-2 gap-sm mt-md bg-surface-container-low p-sm rounded-lg">
+<div>
+<span class="font-caption text-caption text-on-surface-variant block">Base Rate</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold">$25.00</span>
+</div>
+<div>
+<span class="font-caption text-caption text-on-surface-variant block">Per KM</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold">$0.80</span>
+</div>
+</div>
+</div>
+<button class="w-full py-2 bg-surface-container-high text-on-surface rounded-lg font-label-md text-label-md uppercase tracking-wider hover:bg-surface-variant transition-colors flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span> Edit Service
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface dark:bg-surface shadow-[0px_-2px_4px_rgba(13,19,33,0.08)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors w-16 group" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform" data-icon="home">home</span>
+<span class="font-label-md text-label-md text-[10px]">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors w-16 group" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform" data-icon="storefront">storefront</span>
+<span class="font-label-md text-label-md text-[10px]">Market</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors w-16 group" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform" data-icon="assignment">assignment</span>
+<span class="font-label-md text-label-md text-[10px]">Jobs</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 hover:text-secondary transition-colors w-20 scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="settings" data-weight="fill">settings</span>
+<span class="font-label-md text-label-md text-[10px]">Settings</span>
+</a>
+</nav>
+</body></html>

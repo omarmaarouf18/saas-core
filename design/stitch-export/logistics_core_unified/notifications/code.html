@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QuickDelivery - Notifications</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#00210a",
+                        "on-primary-fixed": "#151b2a",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#414657",
+                        "tertiary-fixed-dim": "#79db8d",
+                        "surface-dim": "#dad9e1",
+                        "background": "#faf8ff",
+                        "primary-fixed-dim": "#c1c6da",
+                        "surface-container": "#eeedf4",
+                        "surface": "#faf8ff",
+                        "on-surface": "#1a1b21",
+                        "on-secondary-container": "#6c5000",
+                        "surface-container-highest": "#e2e2e9",
+                        "inverse-surface": "#2f3036",
+                        "tertiary-fixed": "#95f8a7",
+                        "on-surface-variant": "#45464c",
+                        "tertiary-container": "#00210a",
+                        "on-primary-container": "#7e8395",
+                        "tertiary": "#000000",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005323",
+                        "error": "#ba1a1a",
+                        "inverse-on-surface": "#f1f0f7",
+                        "on-secondary": "#ffffff",
+                        "primary": "#000000",
+                        "primary-container": "#151b2a",
+                        "on-tertiary-container": "#339650",
+                        "surface-container-high": "#e8e7ef",
+                        "secondary-container": "#fdc003",
+                        "secondary-fixed-dim": "#fabd00",
+                        "on-secondary-fixed": "#261a00",
+                        "on-background": "#1a1b21",
+                        "outline-variant": "#c6c6cc",
+                        "secondary-fixed": "#ffdf9e",
+                        "surface-bright": "#faf8ff",
+                        "secondary": "#785900",
+                        "primary-fixed": "#dde2f6",
+                        "surface-tint": "#585e6f",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "inverse-primary": "#c1c6da",
+                        "surface-variant": "#e2e2e9",
+                        "outline": "#76777d",
+                        "surface-container-low": "#f4f3fa"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "base": "8px",
+                        "margin-desktop": "32px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Poppins"],
+                        "headline-lg-mobile": ["Poppins"],
+                        "body-lg": ["Poppins"],
+                        "headline-lg": ["Poppins"],
+                        "caption": ["Poppins"],
+                        "title-md": ["Poppins"],
+                        "body-md": ["Poppins"],
+                        "display-lg": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "caption": ["11px", { "lineHeight": "14px", "fontWeight": "400" }],
+                        "title-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen pb-24 md:pb-0 md:flex">
+<!-- Mobile Top App Bar -->
+<header class="md:hidden flex justify-between items-center px-margin-mobile py-base w-full z-50 bg-background dark:bg-background sticky top-0">
+<button aria-label="Menu" class="text-primary dark:text-primary p-2 -ml-2 rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary dark:text-primary">QuickDelivery</h1>
+<button aria-label="Notifications" class="text-primary dark:text-primary p-2 -mr-2 rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined filled">notifications</span>
+</button>
+</header>
+<!-- Desktop Side Nav / Drawer Placeholder -->
+<nav class="hidden md:flex flex-col h-screen w-72 rounded-r-xl bg-surface dark:bg-surface shadow-md py-lg flex-shrink-0 sticky top-0">
+<div class="px-margin-desktop mb-8">
+<h1 class="font-headline-lg text-headline-lg font-bold text-primary dark:text-primary">QuickDelivery</h1>
+</div>
+<div class="flex flex-col flex-grow">
+<!-- Navigation items would go here. Intent is transactional/sub-page for notifications, but showing drawer for context if needed, though strictly it might be suppressed. Keeping structural anchor. -->
+<a class="flex items-center px-4 py-3 mx-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors mb-2" href="#">
+<span class="material-symbols-outlined mr-4">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center px-4 py-3 mx-2 bg-secondary-container text-on-secondary-container font-bold rounded-full transition-colors mb-2" href="#">
+<span class="material-symbols-outlined filled mr-4">notifications</span>
+<span class="font-label-md text-label-md">Notifications</span>
+</a>
+<a class="flex items-center px-4 py-3 mx-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors mb-2" href="#">
+<span class="material-symbols-outlined mr-4">group</span>
+<span class="font-label-md text-label-md">Employees</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full max-w-5xl mx-auto px-margin-mobile md:px-margin-desktop py-md">
+<!-- Header & Filters -->
+<div class="mb-lg">
+<h2 class="font-headline-lg text-headline-lg font-bold text-primary mb-md md:hidden">Notifications</h2>
+<div class="flex overflow-x-auto pb-2 -mx-margin-mobile px-margin-mobile md:mx-0 md:px-0 hide-scrollbar gap-sm">
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md flex-shrink-0 border border-transparent">All</button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface text-on-surface-variant font-label-md text-label-md flex-shrink-0 border border-outline-variant hover:bg-surface-container-high transition-colors">Jobs</button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface text-on-surface-variant font-label-md text-label-md flex-shrink-0 border border-outline-variant hover:bg-surface-container-high transition-colors">System</button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface text-on-surface-variant font-label-md text-label-md flex-shrink-0 border border-outline-variant hover:bg-surface-container-high transition-colors">Alerts</button>
+</div>
+</div>
+<!-- Connectivity Banner (Example) -->
+<div class="bg-error-container text-on-error-container p-sm rounded-lg flex items-center gap-sm mb-lg border border-error/20">
+<span class="material-symbols-outlined">wifi_off</span>
+<span class="font-body-md text-body-md flex-1">Sync paused. Showing offline notifications.</span>
+<button class="font-label-md text-label-md uppercase tracking-wider text-on-error-container">Retry</button>
+</div>
+<!-- Notification List -->
+<div class="space-y-lg">
+<!-- Group: Today -->
+<section>
+<h3 class="font-title-md text-title-md text-on-surface-variant mb-sm">Today</h3>
+<div class="space-y-sm">
+<!-- Unread Alert Notification -->
+<div class="bg-surface rounded-xl p-md shadow-sm border border-transparent hover:shadow-md transition-shadow relative overflow-hidden group cursor-pointer flex gap-md items-start">
+<!-- Unread Indicator -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary-container"></div>
+<div class="bg-error-container/20 p-2 rounded-full flex-shrink-0 mt-1">
+<span class="material-symbols-outlined text-error">warning</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<span class="font-label-md text-label-md text-error bg-error-container px-2 py-0.5 rounded uppercase tracking-wider">Delay Alert</span>
+<span class="font-caption text-caption text-on-surface-variant">10:42 AM</span>
+</div>
+<h4 class="font-title-md text-title-md text-on-surface mb-1 truncate">Route Blockage - I-95 North</h4>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Significant delays expected due to multi-vehicle accident. Rerouting recommended for active jobs in sector 4.</p>
+</div>
+</div>
+<!-- Unread Job Notification -->
+<div class="bg-surface rounded-xl p-md shadow-sm border border-transparent hover:shadow-md transition-shadow relative overflow-hidden group cursor-pointer flex gap-md items-start">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary-container"></div>
+<div class="bg-surface-container-high p-2 rounded-full flex-shrink-0 mt-1">
+<span class="material-symbols-outlined text-primary">local_shipping</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<span class="font-label-md text-label-md text-primary bg-primary-fixed px-2 py-0.5 rounded uppercase tracking-wider">New Job Assigned</span>
+<span class="font-caption text-caption text-on-surface-variant">09:15 AM</span>
+</div>
+<h4 class="font-title-md text-title-md text-on-surface mb-1 truncate">Express Delivery #QD-8821</h4>
+<p class="font-body-md text-body-md text-on-surface-variant mb-3">Pickup at Central Warehouse. Deliver to Downtown Hub before 14:00.</p>
+<button class="bg-primary text-on-primary font-label-md text-label-md px-4 py-2 rounded-full hover:bg-primary/90 transition-colors inline-flex items-center gap-2">
+<span>View Details</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Group: Yesterday -->
+<section>
+<h3 class="font-title-md text-title-md text-on-surface-variant mb-sm">Yesterday</h3>
+<div class="space-y-sm">
+<!-- Read System Notification -->
+<div class="bg-surface rounded-xl p-md shadow-sm border border-outline-variant/30 hover:shadow-md transition-shadow flex gap-md items-start opacity-75 hover:opacity-100">
+<div class="bg-surface-container-high p-2 rounded-full flex-shrink-0 mt-1">
+<span class="material-symbols-outlined text-on-surface-variant">update</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">System Update</span>
+<span class="font-caption text-caption text-on-surface-variant">Yesterday, 11:30 PM</span>
+</div>
+<h4 class="font-title-md text-title-md text-on-surface mb-1 truncate">Maintenance Completed</h4>
+<p class="font-body-md text-body-md text-on-surface-variant">The scheduled system maintenance for the routing engine has been successfully completed.</p>
+</div>
+</div>
+<!-- Read Job Notification -->
+<div class="bg-surface rounded-xl p-md shadow-sm border border-outline-variant/30 hover:shadow-md transition-shadow flex gap-md items-start opacity-75 hover:opacity-100">
+<div class="bg-tertiary-container/10 p-2 rounded-full flex-shrink-0 mt-1">
+<span class="material-symbols-outlined text-tertiary-container">check_circle</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<span class="font-label-md text-label-md text-tertiary-container bg-tertiary-fixed px-2 py-0.5 rounded uppercase tracking-wider">Job Completed</span>
+<span class="font-caption text-caption text-on-surface-variant">Yesterday, 04:45 PM</span>
+</div>
+<h4 class="font-title-md text-title-md text-on-surface mb-1 truncate">Delivery #QD-8819</h4>
+<p class="font-body-md text-body-md text-on-surface-variant">Successfully delivered to Riverside Facility. Signature acquired.</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Mobile Bottom Nav Bar -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface dark:bg-surface shadow-[0px_-2px_4px_rgba(13,19,33,0.08)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors w-16" href="#">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-label-md text-label-md text-[10px]">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors w-16" href="#">
+<span class="material-symbols-outlined mb-1">assignment</span>
+<span class="font-label-md text-label-md text-[10px]">Jobs</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-90 duration-150 w-20" href="#">
+<span class="material-symbols-outlined filled mb-1">notifications</span>
+<span class="font-label-md text-label-md text-[10px]">Alerts</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors w-16" href="#">
+<span class="material-symbols-outlined mb-1">settings</span>
+<span class="font-label-md text-label-md text-[10px]">Settings</span>
+</a>
+</nav>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</body></html>

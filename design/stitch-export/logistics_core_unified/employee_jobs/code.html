@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Employee Jobs - QuickDelivery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-variant": "#e2e2e9",
+                      "on-primary-container": "#7e8395",
+                      "on-primary-fixed-variant": "#414657",
+                      "on-tertiary-container": "#339650",
+                      "primary-fixed": "#dde2f6",
+                      "surface-bright": "#faf8ff",
+                      "outline": "#76777d",
+                      "on-tertiary-fixed-variant": "#005323",
+                      "on-error": "#ffffff",
+                      "secondary-fixed-dim": "#fabd00",
+                      "primary-container": "#151b2a",
+                      "error-container": "#ffdad6",
+                      "on-background": "#1a1b21",
+                      "tertiary": "#000000",
+                      "primary": "#000000",
+                      "inverse-surface": "#2f3036",
+                      "surface-container-highest": "#e2e2e9",
+                      "on-secondary-fixed-variant": "#5b4300",
+                      "surface-container-low": "#f4f3fa",
+                      "on-secondary-fixed": "#261a00",
+                      "on-secondary": "#ffffff",
+                      "secondary": "#785900",
+                      "on-tertiary-fixed": "#00210a",
+                      "tertiary-container": "#00210a",
+                      "on-tertiary": "#ffffff",
+                      "inverse-primary": "#c1c6da",
+                      "on-surface-variant": "#45464c",
+                      "error": "#ba1a1a",
+                      "tertiary-fixed": "#95f8a7",
+                      "primary-fixed-dim": "#c1c6da",
+                      "on-surface": "#1a1b21",
+                      "on-secondary-container": "#6c5000",
+                      "outline-variant": "#c6c6cc",
+                      "surface-container-lowest": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "surface-container-high": "#e8e7ef",
+                      "surface-tint": "#585e6f",
+                      "on-primary-fixed": "#151b2a",
+                      "surface-container": "#eeedf4",
+                      "secondary-container": "#fdc003",
+                      "surface-dim": "#dad9e1",
+                      "tertiary-fixed-dim": "#79db8d",
+                      "background": "#faf8ff",
+                      "secondary-fixed": "#ffdf9e",
+                      "on-primary": "#ffffff",
+                      "inverse-on-surface": "#f1f0f7",
+                      "surface": "#faf8ff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "xl": "32px",
+                      "base": "8px",
+                      "margin-desktop": "32px",
+                      "xs": "4px",
+                      "margin-mobile": "16px",
+                      "md": "16px",
+                      "sm": "8px",
+                      "gutter": "16px",
+                      "lg": "24px"
+              },
+              "fontFamily": {
+                      "display-lg": [
+                              "Poppins"
+                      ],
+                      "label-md": [
+                              "Poppins"
+                      ],
+                      "headline-lg-mobile": [
+                              "Poppins"
+                      ],
+                      "headline-lg": [
+                              "Poppins"
+                      ],
+                      "body-md": [
+                              "Poppins"
+                      ],
+                      "body-lg": [
+                              "Poppins"
+                      ],
+                      "title-md": [
+                              "Poppins"
+                      ],
+                      "caption": [
+                              "Poppins"
+                      ]
+              },
+              "fontSize": {
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "title-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "caption": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col md:flex-row">
+<!-- Sidebar / Drawer (Hidden on Mobile) -->
+<nav class="hidden md:flex bg-surface h-screen w-72 rounded-r-xl shadow-md flex-col py-lg z-50">
+<div class="px-margin-desktop mb-8">
+<span class="font-headline-lg font-bold text-primary">QuickDelivery</span>
+</div>
+<div class="flex-1 overflow-y-auto">
+<ul class="space-y-sm">
+<li>
+<a class="flex items-center px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-md">dashboard</span>
+<span class="font-title-md">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center mx-2 px-4 py-3 bg-secondary-container text-on-secondary-container font-bold rounded-full transition-transform translate-x-1" href="#">
+<span class="material-symbols-outlined mr-md">assignment</span>
+<span class="font-title-md">Jobs</span>
+</a>
+</li>
+<li>
+<a class="flex items-center px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-md">history</span>
+<span class="font-title-md">History</span>
+</a>
+</li>
+<li>
+<a class="flex items-center px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-md">settings</span>
+<span class="font-title-md">Settings</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-screen overflow-hidden">
+<!-- TopAppBar (Web & Mobile) -->
+<header class="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-base w-full z-50 bg-background md:bg-transparent">
+<div class="flex items-center md:hidden">
+<span class="material-symbols-outlined text-primary mr-sm text-2xl">local_shipping</span>
+<span class="font-headline-lg-mobile font-bold text-primary">QuickDelivery</span>
+</div>
+<div class="hidden md:flex"></div>
+<div>
+<button class="p-2 rounded-full hover:bg-surface-variant transition-colors relative">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-secondary-container rounded-full"></span>
+</button>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto px-margin-mobile md:px-margin-desktop pb-24 md:pb-lg pt-sm space-y-lg">
+<div class="mb-md">
+<h1 class="font-headline-lg-mobile md:font-headline-lg font-bold text-primary">My Jobs</h1>
+<p class="text-on-surface-variant font-body-md mt-xs">Manage your field operations.</p>
+</div>
+<!-- Current Active Job -->
+<section>
+<h2 class="font-title-md text-primary mb-md">Current Active Job</h2>
+<div class="bg-surface rounded-[12px] shadow-[0px_2px_4px_rgba(13,19,33,0.08)] overflow-hidden flex flex-col">
+<!-- Map Preview -->
+<div class="h-48 w-full bg-surface-container relative">
+<img class="w-full h-full object-cover" data-alt="A stylized, high-contrast digital map rendering showing a delivery route in a dense urban environment like Chicago. The map uses a deep navy blue background with bright amber gold lines indicating the active route. Small, precise geometric markers indicate pickup and drop-off points. The overall style is modern, technical, and reminiscent of high-end logistics software dashboards." data-location="Chicago" src="https://lh3.googleusercontent.com/aida-public/AB6AXuALqz_CfZB5V4ttQ1YNOuYqdKPk_638qbgECX00uehjSJ0dC_2M8djTeQ0kQ09ZKXcqWtjDCKX4P-U1qQVcaZDS8x7TVUo-Ysb3ZlfA1Wng6K0n8ML5sEn8L7jSChC--l_BPBp2M-J5h5FAMnOe8SBKf1sankVz7xv__mUXtnnwcE06cQ3Wv8w-oR9ATbrgtEr74pQew_YyCiRVAQeXZliPb97skgm-_-5WcVHK1DVdb1gbbm9tCeGr"/>
+<div class="absolute top-md right-md bg-secondary-container text-on-secondary-container px-sm py-xs rounded-[4px] font-label-md shadow-sm">
+                            In-Transit
+                        </div>
+</div>
+<!-- Job Details -->
+<div class="p-md space-y-md">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-caption text-on-surface-variant block">Tracking #</span>
+<span class="font-title-md text-primary font-bold">TRK-982-441-A</span>
+</div>
+<div class="text-right">
+<span class="font-caption text-on-surface-variant block">Est. Arrival</span>
+<span class="font-body-md text-primary font-semibold text-secondary-container">14:30 PM</span>
+</div>
+</div>
+<div class="space-y-sm">
+<div class="flex items-start">
+<span class="material-symbols-outlined text-on-surface-variant mr-sm mt-1 text-sm">my_location</span>
+<div>
+<span class="font-caption text-on-surface-variant block">Pickup</span>
+<span class="font-body-md text-on-background">1200 West Logistics Blvd, Dock 4</span>
+</div>
+</div>
+<div class="flex items-start">
+<span class="material-symbols-outlined text-secondary mr-sm mt-1 text-sm">location_on</span>
+<div>
+<span class="font-caption text-on-surface-variant block">Dropoff</span>
+<span class="font-body-md text-on-background">850 North Enterprise Way, Suite 200</span>
+</div>
+</div>
+</div>
+<button class="w-full bg-secondary-container text-primary font-bold py-sm rounded-lg hover:bg-secondary-fixed transition-colors flex items-center justify-center h-[48px]">
+<span class="material-symbols-outlined mr-xs text-xl">directions</span>
+                            View Details &amp; Action
+                        </button>
+</div>
+</div>
+</section>
+<!-- Upcoming Jobs -->
+<section>
+<div class="flex justify-between items-center mb-md">
+<h2 class="font-title-md text-primary">Upcoming Jobs</h2>
+<button class="text-secondary font-label-md hover:underline">View All</button>
+</div>
+<div class="space-y-sm">
+<!-- Job Card 1 -->
+<div class="bg-surface rounded-[12px] p-md shadow-sm flex items-center justify-between border border-transparent hover:border-outline-variant transition-colors cursor-pointer">
+<div class="flex items-center space-x-md">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">package_2</span>
+</div>
+<div>
+<span class="font-title-md text-primary block">TRK-881-229-C</span>
+<span class="font-caption text-on-surface-variant">Scheduled: 15:45 PM</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="bg-[#e8f5e9] text-[#2e7d32] px-sm py-xs rounded-[4px] font-label-md">Assigned</span>
+</div>
+</div>
+<!-- Job Card 2 -->
+<div class="bg-surface rounded-[12px] p-md shadow-sm flex items-center justify-between border border-transparent hover:border-outline-variant transition-colors cursor-pointer">
+<div class="flex items-center space-x-md">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">pallet</span>
+</div>
+<div>
+<span class="font-title-md text-primary block">TRK-774-110-F</span>
+<span class="font-caption text-on-surface-variant">Scheduled: 17:00 PM</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="bg-[#fff3e0] text-[#ef6c00] px-sm py-xs rounded-[4px] font-label-md">Pending</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface shadow-[0px_-2px_4px_rgba(13,19,33,0.08)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors w-16 h-16" href="#">
+<span class="material-symbols-outlined text-2xl mb-1">home</span>
+<span class="font-label-md">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors w-16 h-16" href="#">
+<span class="material-symbols-outlined text-2xl mb-1">storefront</span>
+<span class="font-label-md">Marketplace</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-90 duration-150 h-[48px]" href="#">
+<span class="material-symbols-outlined text-2xl mb-1">assignment</span>
+<span class="font-label-md">Jobs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors w-16 h-16" href="#">
+<span class="material-symbols-outlined text-2xl mb-1">settings</span>
+<span class="font-label-md">Settings</span>
+</a>
+</nav>
+</body></html>

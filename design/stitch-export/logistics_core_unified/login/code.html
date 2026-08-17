@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QuickDelivery - Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#000000",
+                        "surface-container-high": "#e8e7ef",
+                        "on-tertiary-fixed": "#00210a",
+                        "on-tertiary-fixed-variant": "#005323",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed": "#ffdf9e",
+                        "primary-fixed": "#dde2f6",
+                        "on-background": "#1a1b21",
+                        "error": "#ba1a1a",
+                        "on-error-container": "#93000a",
+                        "secondary": "#785900",
+                        "surface-tint": "#585e6f",
+                        "tertiary-fixed-dim": "#79db8d",
+                        "outline": "#76777d",
+                        "tertiary-container": "#00210a",
+                        "outline-variant": "#c6c6cc",
+                        "background": "#faf8ff",
+                        "surface": "#faf8ff",
+                        "surface-bright": "#faf8ff",
+                        "inverse-on-surface": "#f1f0f7",
+                        "secondary-container": "#fdc003",
+                        "inverse-surface": "#2f3036",
+                        "primary-container": "#151b2a",
+                        "on-primary": "#ffffff",
+                        "on-primary-container": "#7e8395",
+                        "surface-container-low": "#f4f3fa",
+                        "primary": "#000000",
+                        "secondary-fixed-dim": "#fabd00",
+                        "surface-variant": "#e2e2e9",
+                        "on-secondary-container": "#6c5000",
+                        "primary-fixed-dim": "#c1c6da",
+                        "surface-dim": "#dad9e1",
+                        "surface-container": "#eeedf4",
+                        "surface-container-highest": "#e2e2e9",
+                        "inverse-primary": "#c1c6da",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed-variant": "#414657",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#45464c",
+                        "on-tertiary-container": "#339650",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#95f8a7",
+                        "on-surface": "#1a1b21",
+                        "on-primary-fixed": "#151b2a",
+                        "on-secondary-fixed": "#261a00"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "margin-desktop": "32px",
+                        "xs": "4px",
+                        "base": "8px",
+                        "lg": "24px",
+                        "gutter": "16px",
+                        "margin-mobile": "16px",
+                        "sm": "8px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Poppins"],
+                        "body-lg": ["Poppins"],
+                        "headline-lg": ["Poppins"],
+                        "display-lg": ["Poppins"],
+                        "label-md": ["Poppins"],
+                        "body-md": ["Poppins"],
+                        "title-md": ["Poppins"],
+                        "caption": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "title-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "caption": ["11px", { "lineHeight": "14px", "fontWeight": "400" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-lg antialiased min-h-screen flex items-center justify-center p-margin-mobile md:p-margin-desktop">
+<div class="w-full max-w-md bg-surface-container-lowest rounded-xl shadow-[0px_4px_12px_rgba(13,19,33,0.12)] p-lg md:p-xl relative overflow-hidden">
+<!-- Decorative Header -->
+<div class="absolute top-0 left-0 w-full h-2 bg-secondary-container"></div>
+<!-- Brand Header -->
+<div class="text-center mb-xl">
+<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-container text-on-primary mb-md">
+<span class="material-symbols-outlined text-4xl" data-icon="local_shipping" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+</div>
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary tracking-tight">QuickDelivery</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-sm">Secure Fleet Management</p>
+</div>
+<!-- Login Form -->
+<form class="space-y-lg" id="loginForm">
+<!-- Email Field -->
+<div class="space-y-sm">
+<label class="block font-label-md text-label-md text-on-surface" for="email">Email or Username</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none text-on-surface-variant">
+<span class="material-symbols-outlined text-xl" data-icon="person">person</span>
+</div>
+<input class="block w-full pl-[44px] pr-md py-sm font-body-md text-body-md bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary-container focus:border-primary-container transition-shadow text-on-surface" id="email" name="email" placeholder="driver@quickdelivery.com" required="" type="text"/>
+</div>
+</div>
+<!-- Password Field -->
+<div class="space-y-sm">
+<div class="flex justify-between items-center">
+<label class="block font-label-md text-label-md text-on-surface" for="password">Password</label>
+<a class="font-label-md text-label-md text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary-container rounded" href="#">Forgot password?</a>
+</div>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none text-on-surface-variant">
+<span class="material-symbols-outlined text-xl" data-icon="lock">lock</span>
+</div>
+<input class="block w-full pl-[44px] pr-md py-sm font-body-md text-body-md bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary-container focus:border-primary-container transition-shadow text-on-surface" id="password" name="password" placeholder="••••••••" required="" type="password"/>
+<button aria-label="Toggle password visibility" class="absolute inset-y-0 right-0 pr-md flex items-center text-on-surface-variant hover:text-primary focus:outline-none" type="button">
+<span class="material-symbols-outlined text-xl" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<!-- Error Message (Hidden by default) -->
+<div class="hidden flex items-start gap-sm p-sm rounded-lg bg-error-container text-on-error-container font-body-md text-body-md" id="errorMessage">
+<span class="material-symbols-outlined text-xl shrink-0" data-icon="error">error</span>
+<p>Invalid credentials. Please verify your access details and try again.</p>
+</div>
+<!-- Submit Button -->
+<button class="w-full flex items-center justify-center gap-sm bg-secondary-container text-on-secondary-container hover:bg-secondary-fixed-dim active:scale-95 transition-all py-md rounded-lg font-title-md text-title-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary-container" id="submitBtn" type="submit">
+<span id="submitText">Sign In</span>
+<span class="material-symbols-outlined text-xl" data-icon="arrow_forward" id="submitIcon">arrow_forward</span>
+<!-- Loading Spinner (Hidden by default) -->
+<svg class="hidden animate-spin h-5 w-5 text-on-secondary-container" fill="none" id="loadingSpinner" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"></path>
+</svg>
+</button>
+</form>
+<!-- Signup Link -->
+<div class="mt-lg text-center">
+<p class="font-body-md text-body-md text-on-surface-variant">
+                New to the fleet? 
+                <a class="font-title-md text-title-md text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary-container rounded ml-xs" href="#">Request Access</a>
+</p>
+</div>
+</div>
+<script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submitBtn');
+            const text = document.getElementById('submitText');
+            const icon = document.getElementById('submitIcon');
+            const spinner = document.getElementById('loadingSpinner');
+            const errorMsg = document.getElementById('errorMessage');
+            
+            // Simulate loading state
+            btn.disabled = true;
+            btn.classList.add('opacity-80', 'cursor-not-allowed');
+            text.textContent = 'Authenticating...';
+            icon.classList.add('hidden');
+            spinner.classList.remove('hidden');
+            errorMsg.classList.add('hidden');
+            
+            // Simulate network request
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.classList.remove('opacity-80', 'cursor-not-allowed');
+                text.textContent = 'Sign In';
+                icon.classList.remove('hidden');
+                spinner.classList.add('hidden');
+                
+                // Simulate error for demonstration
+                errorMsg.classList.remove('hidden');
+                
+                // Shake effect on error
+                const container = btn.closest('.max-w-md');
+                container.classList.add('animate-[shake_0.5s_ease-in-out]');
+                setTimeout(() => container.classList.remove('animate-[shake_0.5s_ease-in-out]'), 500);
+            }, 1500);
+        });
+
+        // Add shake animation to tailwind manually via style tag for simplicity in this demo
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+                20%, 40%, 60%, 80% { transform: translateX(4px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body></html>

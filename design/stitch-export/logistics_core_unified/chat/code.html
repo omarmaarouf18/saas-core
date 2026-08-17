@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QuickDelivery - Chat</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed": "#00210a",
+                      "on-primary-fixed": "#151b2a",
+                      "on-primary": "#ffffff",
+                      "surface-container-lowest": "#ffffff",
+                      "on-primary-fixed-variant": "#414657",
+                      "tertiary-fixed-dim": "#79db8d",
+                      "surface-dim": "#dad9e1",
+                      "background": "#faf8ff",
+                      "primary-fixed-dim": "#c1c6da",
+                      "surface-container": "#eeedf4",
+                      "surface": "#faf8ff",
+                      "on-surface": "#1a1b21",
+                      "on-secondary-container": "#6c5000",
+                      "surface-container-highest": "#e2e2e9",
+                      "inverse-surface": "#2f3036",
+                      "tertiary-fixed": "#95f8a7",
+                      "on-surface-variant": "#45464c",
+                      "tertiary-container": "#00210a",
+                      "on-primary-container": "#7e8395",
+                      "tertiary": "#000000",
+                      "on-error": "#ffffff",
+                      "on-tertiary": "#ffffff",
+                      "on-tertiary-fixed-variant": "#005323",
+                      "error": "#ba1a1a",
+                      "inverse-on-surface": "#f1f0f7",
+                      "on-secondary": "#ffffff",
+                      "primary": "#000000",
+                      "primary-container": "#151b2a",
+                      "on-tertiary-container": "#339650",
+                      "surface-container-high": "#e8e7ef",
+                      "secondary-container": "#fdc003",
+                      "secondary-fixed-dim": "#fabd00",
+                      "on-secondary-fixed": "#261a00",
+                      "on-background": "#1a1b21",
+                      "outline-variant": "#c6c6cc",
+                      "secondary-fixed": "#ffdf9e",
+                      "surface-bright": "#faf8ff",
+                      "secondary": "#785900",
+                      "primary-fixed": "#dde2f6",
+                      "surface-tint": "#585e6f",
+                      "error-container": "#ffdad6",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#5b4300",
+                      "inverse-primary": "#c1c6da",
+                      "surface-variant": "#e2e2e9",
+                      "outline": "#76777d",
+                      "surface-container-low": "#f4f3fa"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "margin-mobile": "16px",
+                      "xl": "32px",
+                      "sm": "8px",
+                      "base": "8px",
+                      "margin-desktop": "32px",
+                      "gutter": "16px",
+                      "lg": "24px",
+                      "md": "16px",
+                      "xs": "4px"
+              },
+              "fontFamily": {
+                      "label-md": [
+                              "Poppins"
+                      ],
+                      "headline-lg-mobile": [
+                              "Poppins"
+                      ],
+                      "body-lg": [
+                              "Poppins"
+                      ],
+                      "headline-lg": [
+                              "Poppins"
+                      ],
+                      "caption": [
+                              "Poppins"
+                      ],
+                      "title-md": [
+                              "Poppins"
+                      ],
+                      "body-md": [
+                              "Poppins"
+                      ],
+                      "display-lg": [
+                              "Poppins"
+                      ]
+              },
+              "fontSize": {
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "caption": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "title-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col antialiased">
+<!-- TopAppBar -->
+<header class="bg-background dark:bg-background text-primary dark:text-primary font-title-md text-title-md flex justify-between items-center px-margin-mobile py-base w-full z-50 sticky top-0 bg-background dark:bg-background flat no shadows">
+<button class="text-on-surface-variant hover:bg-surface-variant p-sm rounded-full Active: scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+</button>
+<span class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary dark:text-primary">QuickDelivery</span>
+<button class="text-on-surface-variant hover:bg-surface-variant p-sm rounded-full Active: scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- Chat Area -->
+<main class="flex-grow flex flex-col px-margin-mobile pb-[80px] md:pb-lg pt-sm md:pt-md overflow-hidden relative">
+<!-- Chat Header (Context) -->
+<div class="bg-surface shadow-sm rounded-xl p-md mb-md flex items-center justify-between shrink-0">
+<div class="flex items-center gap-md">
+<img class="w-12 h-12 rounded-full object-cover shadow-sm" data-alt="A close up professional headshot of a logistics dispatcher in a modern, brightly lit office environment with deep navy and amber accents, conveying reliability and focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBm2JUKMTBYF0cJBDkekO2Ijw1GXm5GLg5vuLy5Nin8Unr59zcCgcfQlQmFz2SVEbE0IH2xInKTTTJ4_KuUojrWr9f9g-xBjCDuORSsYctJU8Xf_8QqpgwVgRCfnwnZk7PmBuqMJlSOhQuC1BipKS0sInq-aq90vgEXLTa9EEdHGro5MAyIpDxfq8QoKOHAgQTqJ0pqgMqlWJnMwKATWrJWZUf9Ri6f82ccpOuzrXU2qgCE31OQUBNa"/>
+<div>
+<h2 class="font-title-md text-title-md text-on-surface">Dispatcher Mike</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Shipment #TRK-9942</p>
+</div>
+</div>
+<div class="flex gap-sm">
+<button class="p-sm text-on-surface-variant bg-surface-container-low rounded-full hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined">call</span>
+</button>
+<button class="p-sm text-on-surface-variant bg-surface-container-low rounded-full hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined">info</span>
+</button>
+</div>
+</div>
+<!-- Message List -->
+<div class="flex-grow overflow-y-auto flex flex-col gap-md pb-xl scroll-smooth">
+<!-- Date Divider -->
+<div class="flex justify-center my-sm">
+<span class="font-caption text-caption text-on-surface-variant bg-surface-container-highest px-md py-xs rounded-full">Today, 09:41 AM</span>
+</div>
+<!-- Receiver Message -->
+<div class="flex flex-col items-start max-w-[85%] self-start">
+<div class="bg-surface-container-high text-on-surface p-md rounded-xl rounded-tl-none shadow-sm relative">
+<p class="font-body-md text-body-md">Good morning. Please confirm you have picked up the cargo for TRK-9942.</p>
+</div>
+<span class="font-caption text-caption text-on-surface-variant mt-xs ml-xs">09:41 AM</span>
+</div>
+<!-- Sender Message (Deep Navy) -->
+<div class="flex flex-col items-end max-w-[85%] self-end">
+<div class="bg-primary-container text-on-primary p-md rounded-xl rounded-tr-none shadow-sm">
+<p class="font-body-md text-body-md">Yes, cargo secured. Leaving the depot now.</p>
+</div>
+<span class="font-caption text-caption text-on-surface-variant mt-xs mr-xs">09:45 AM</span>
+</div>
+<!-- Receiver Message -->
+<div class="flex flex-col items-start max-w-[85%] self-start">
+<div class="bg-surface-container-high text-on-surface p-md rounded-xl rounded-tl-none shadow-sm">
+<p class="font-body-md text-body-md">Excellent. Traffic on I-95 North is heavy. Suggest rerouting via Route 1 if possible.</p>
+</div>
+<span class="font-caption text-caption text-on-surface-variant mt-xs ml-xs">09:48 AM</span>
+</div>
+<!-- Sender Message (Deep Navy) with Attachment -->
+<div class="flex flex-col items-end max-w-[85%] self-end">
+<div class="bg-primary-container text-on-primary p-md rounded-xl rounded-tr-none shadow-sm flex flex-col gap-sm">
+<p class="font-body-md text-body-md">Understood. Taking Route 1. Attached is the updated ETA manifest.</p>
+<div class="bg-surface/10 rounded-lg p-sm flex items-center gap-sm border border-white/20 backdrop-blur-sm cursor-pointer hover:bg-surface/20 transition-colors">
+<span class="material-symbols-outlined text-secondary-container">description</span>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md">ETA_Update.pdf</span>
+<span class="font-caption text-caption opacity-80">1.2 MB</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-xs mt-xs mr-xs">
+<span class="font-caption text-caption text-on-surface-variant">09:52 AM</span>
+<span class="material-symbols-outlined text-secondary-container" style="font-size: 14px;">done_all</span>
+</div>
+</div>
+</div>
+<!-- Input Area (Sticky Bottom within relative container) -->
+<div class="absolute bottom-0 left-0 right-0 bg-surface border-t border-surface-variant p-md flex items-end gap-sm shadow-[0px_-4px_12px_rgba(13,19,33,0.05)] z-20">
+<button class="p-sm text-on-surface-variant hover:text-primary transition-colors flex-shrink-0 mb-1">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+<div class="flex-grow bg-surface-container-lowest border border-outline-variant rounded-xl focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all flex items-center min-h-[48px]">
+<textarea class="w-full bg-transparent border-none focus:ring-0 resize-none font-body-md text-body-md py-sm px-md text-on-surface placeholder:text-on-surface-variant max-h-32 overflow-y-auto" placeholder="Type a message..." rows="1" style="scrollbar-width: thin;"></textarea>
+</div>
+<button class="p-sm bg-secondary-container text-on-secondary-container rounded-full hover:bg-secondary-fixed-dim transition-colors flex-shrink-0 mb-1 shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</main>
+<!-- BottomNavBar (Hidden on md and up, only if relevant, but suppressed here as chat is a focused task) -->
+<!-- Navigation suppressed per logic: Chat is a task-focused screen implying departure from main nav flow -->
+<script>
+        // Auto-resize textarea
+        const textarea = document.querySelector('textarea');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+    </script>
+</body></html>

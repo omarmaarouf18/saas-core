@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QuickDelivery - Signup</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#5b4300",
+                    "surface-container-lowest": "#ffffff",
+                    "tertiary": "#000000",
+                    "surface-container-high": "#e8e7ef",
+                    "on-tertiary-fixed": "#00210a",
+                    "on-tertiary-fixed-variant": "#005323",
+                    "error-container": "#ffdad6",
+                    "secondary-fixed": "#ffdf9e",
+                    "primary-fixed": "#dde2f6",
+                    "on-background": "#1a1b21",
+                    "error": "#ba1a1a",
+                    "on-error-container": "#93000a",
+                    "secondary": "#785900",
+                    "surface-tint": "#585e6f",
+                    "tertiary-fixed-dim": "#79db8d",
+                    "outline": "#76777d",
+                    "tertiary-container": "#00210a",
+                    "outline-variant": "#c6c6cc",
+                    "background": "#faf8ff",
+                    "surface": "#faf8ff",
+                    "surface-bright": "#faf8ff",
+                    "inverse-on-surface": "#f1f0f7",
+                    "secondary-container": "#fdc003",
+                    "inverse-surface": "#2f3036",
+                    "primary-container": "#151b2a",
+                    "on-primary": "#ffffff",
+                    "on-primary-container": "#7e8395",
+                    "surface-container-low": "#f4f3fa",
+                    "primary": "#000000",
+                    "secondary-fixed-dim": "#fabd00",
+                    "surface-variant": "#e2e2e9",
+                    "on-secondary-container": "#6c5000",
+                    "primary-fixed-dim": "#c1c6da",
+                    "surface-dim": "#dad9e1",
+                    "surface-container": "#eeedf4",
+                    "surface-container-highest": "#e2e2e9",
+                    "inverse-primary": "#c1c6da",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed-variant": "#414657",
+                    "on-error": "#ffffff",
+                    "on-surface-variant": "#45464c",
+                    "on-tertiary-container": "#339650",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed": "#95f8a7",
+                    "on-surface": "#1a1b21",
+                    "on-primary-fixed": "#151b2a",
+                    "on-secondary-fixed": "#261a00"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "md": "16px",
+                    "margin-desktop": "32px",
+                    "xs": "4px",
+                    "base": "8px",
+                    "lg": "24px",
+                    "gutter": "16px",
+                    "margin-mobile": "16px",
+                    "sm": "8px",
+                    "xl": "32px"
+            },
+            "fontFamily": {
+                    "headline-lg-mobile": [
+                            "Poppins"
+                    ],
+                    "body-lg": [
+                            "Poppins"
+                    ],
+                    "headline-lg": [
+                            "Poppins"
+                    ],
+                    "display-lg": [
+                            "Poppins"
+                    ],
+                    "label-md": [
+                            "Poppins"
+                    ],
+                    "body-md": [
+                            "Poppins"
+                    ],
+                    "title-md": [
+                            "Poppins"
+                    ],
+                    "caption": [
+                            "Poppins"
+                    ]
+            },
+            "fontSize": {
+                    "headline-lg-mobile": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "56px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-md": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "title-md": [
+                            "18px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "caption": [
+                            "11px",
+                            {
+                                    "lineHeight": "14px",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bg-pattern {
+            background-image: radial-gradient(#151b2a 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-color: #faf8ff;
+        }
+    </style>
+</head>
+<body class="bg-pattern min-h-screen flex items-center justify-center p-margin-mobile md:p-margin-desktop font-body-md text-on-surface">
+<main class="w-full max-w-md bg-surface-container-lowest rounded-[12px] shadow-[0px_4px_12px_rgba(13,19,33,0.12)] p-lg md:p-xl relative overflow-hidden">
+<!-- Header -->
+<div class="flex flex-col items-center mb-xl">
+<div class="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center mb-md">
+<span class="material-symbols-outlined text-[32px] text-secondary-fixed-dim" style="font-variation-settings: 'FILL' 1;">
+                    local_shipping
+                </span>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary text-center">
+                Create Account
+            </h1>
+<p class="font-body-md text-body-md text-on-surface-variant text-center mt-sm">
+                Join QuickDelivery to manage your logistics.
+            </p>
+</div>
+<!-- Form -->
+<form class="space-y-md">
+<!-- Name -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface" for="name">Full Name</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-sm flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">person</span>
+</div>
+<input class="w-full pl-[36px] pr-sm py-sm bg-surface-container-lowest border border-outline-variant rounded-[8px] focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary font-body-md text-body-md text-on-surface placeholder:text-outline-variant transition-colors" id="name" name="name" placeholder="John Doe" type="text"/>
+</div>
+</div>
+<!-- Email -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface" for="email">Email Address</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-sm flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">mail</span>
+</div>
+<input class="w-full pl-[36px] pr-sm py-sm bg-surface-container-lowest border border-outline-variant rounded-[8px] focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary font-body-md text-body-md text-on-surface placeholder:text-outline-variant transition-colors" id="email" name="email" placeholder="john@example.com" type="email"/>
+</div>
+</div>
+<!-- Phone -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface" for="phone">Phone Number</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-sm flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">phone</span>
+</div>
+<input class="w-full pl-[36px] pr-sm py-sm bg-surface-container-lowest border border-outline-variant rounded-[8px] focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary font-body-md text-body-md text-on-surface placeholder:text-outline-variant transition-colors" id="phone" name="phone" placeholder="+1 (555) 000-0000" type="tel"/>
+</div>
+</div>
+<!-- Password -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface" for="password">Password</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-sm flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">lock</span>
+</div>
+<input class="w-full pl-[36px] pr-[36px] py-sm bg-surface-container-lowest border border-outline-variant rounded-[8px] focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary font-body-md text-body-md text-on-surface placeholder:text-outline-variant transition-colors" id="password" name="password" placeholder="••••••••" type="password"/>
+<button class="absolute inset-y-0 right-0 pr-sm flex items-center text-outline hover:text-on-surface transition-colors focus:outline-none" type="button">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+<!-- Validation/Hint example -->
+<p class="font-caption text-caption text-outline mt-xs">Must be at least 8 characters long.</p>
+</div>
+<!-- Role Selection -->
+<div class="flex flex-col gap-xs pt-sm">
+<label class="font-label-md text-label-md text-on-surface">Select Role</label>
+<div class="grid grid-cols-2 gap-md">
+<!-- Customer Role -->
+<label class="cursor-pointer relative">
+<input checked="" class="peer sr-only" name="role" type="radio" value="customer"/>
+<div class="p-md border border-outline-variant rounded-[8px] flex flex-col items-center gap-sm peer-checked:border-primary peer-checked:bg-surface-container-low transition-colors text-on-surface-variant peer-checked:text-primary">
+<span class="material-symbols-outlined text-[24px]">person</span>
+<span class="font-title-md text-title-md">Customer</span>
+</div>
+</label>
+<!-- Owner Role -->
+<label class="cursor-pointer relative">
+<input class="peer sr-only" name="role" type="radio" value="owner"/>
+<div class="p-md border border-outline-variant rounded-[8px] flex flex-col items-center gap-sm peer-checked:border-primary peer-checked:bg-surface-container-low transition-colors text-on-surface-variant peer-checked:text-primary">
+<span class="material-symbols-outlined text-[24px]">storefront</span>
+<span class="font-title-md text-title-md">Owner</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Submit Button -->
+<div class="pt-md">
+<button class="w-full bg-secondary-fixed-dim text-primary font-title-md text-title-md py-sm px-md rounded-[8px] hover:bg-secondary-container transition-colors shadow-sm flex justify-center items-center gap-sm" type="submit">
+                    Create Account
+                    <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</div>
+</form>
+<!-- Footer Links -->
+<div class="mt-lg text-center">
+<p class="font-body-md text-body-md text-on-surface-variant">
+                Already have an account? 
+                <a class="text-primary font-bold hover:underline" href="#">Log in</a>
+</p>
+</div>
+</main>
+</body></html>

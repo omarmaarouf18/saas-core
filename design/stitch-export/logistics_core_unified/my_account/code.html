@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>My Account - QuickDelivery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#00210a",
+                        "on-primary-fixed": "#151b2a",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#414657",
+                        "tertiary-fixed-dim": "#79db8d",
+                        "surface-dim": "#dad9e1",
+                        "background": "#faf8ff",
+                        "primary-fixed-dim": "#c1c6da",
+                        "surface-container": "#eeedf4",
+                        "surface": "#faf8ff",
+                        "on-surface": "#1a1b21",
+                        "on-secondary-container": "#6c5000",
+                        "surface-container-highest": "#e2e2e9",
+                        "inverse-surface": "#2f3036",
+                        "tertiary-fixed": "#95f8a7",
+                        "on-surface-variant": "#45464c",
+                        "tertiary-container": "#00210a",
+                        "on-primary-container": "#7e8395",
+                        "tertiary": "#000000",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005323",
+                        "error": "#ba1a1a",
+                        "inverse-on-surface": "#f1f0f7",
+                        "on-secondary": "#ffffff",
+                        "primary": "#000000",
+                        "primary-container": "#151b2a",
+                        "on-tertiary-container": "#339650",
+                        "surface-container-high": "#e8e7ef",
+                        "secondary-container": "#fdc003",
+                        "secondary-fixed-dim": "#fabd00",
+                        "on-secondary-fixed": "#261a00",
+                        "on-background": "#1a1b21",
+                        "outline-variant": "#c6c6cc",
+                        "secondary-fixed": "#ffdf9e",
+                        "surface-bright": "#faf8ff",
+                        "secondary": "#785900",
+                        "primary-fixed": "#dde2f6",
+                        "surface-tint": "#585e6f",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "inverse-primary": "#c1c6da",
+                        "surface-variant": "#e2e2e9",
+                        "outline": "#76777d",
+                        "surface-container-low": "#f4f3fa"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "base": "8px",
+                        "margin-desktop": "32px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Poppins"],
+                        "headline-lg-mobile": ["Poppins"],
+                        "body-lg": ["Poppins"],
+                        "headline-lg": ["Poppins"],
+                        "caption": ["Poppins"],
+                        "title-md": ["Poppins"],
+                        "body-md": ["Poppins"],
+                        "display-lg": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "caption": ["11px", { "lineHeight": "14px", "fontWeight": "400" }],
+                        "title-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Poppins', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased flex flex-col min-h-screen">
+<!-- Desktop Drawer Placeholder -->
+<div class="hidden md:flex flex-row flex-1">
+<nav class="h-full w-72 rounded-r-xl bg-surface shadow-md flex flex-col py-lg shrink-0 border-r border-outline-variant">
+<div class="px-margin-desktop mb-8">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden bg-surface-container-high border-2 border-outline-variant">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A close up professional headshot of an individual in a bright, modern office setting with natural light, wearing smart casual attire. The image adheres strictly to the Deep Navy and Amber Gold subtle accents of the QuickDelivery brand identity, evoking enterprise trust and operational stability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDW4giiRgltjBj_T6kHg6EC32-h98c__3Mx_PucR35wH1jQQVQ3zfrsEgIsPlAFc8uAiK0WluQzC75ZfeRqmIlUa-o7Mk5koize2N2bbigznCGafzbeFCgLJSErEMNJBNeg8ql0gnglh6-Ayp2NgCq5q_B4sUw5K_KwwgU1uGXY0RoyWqggtP-fxO9Dp-S8GE0eCfYeMXFdWC68g9hHfGProRZl5w2lFLLUAKw0nt7M_0E963ezwps7"/>
+</div>
+<div>
+<h2 class="font-title-md text-title-md text-primary">QuickDelivery Admin</h2>
+<p class="font-caption text-caption text-on-surface-variant">Owner Account</p>
+</div>
+</div>
+</div>
+<ul class="flex-1 space-y-2">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high mx-2 rounded-full transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high mx-2 rounded-full transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span>Employees</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high mx-2 rounded-full transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span>History</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 bg-secondary-container text-on-secondary-container font-bold rounded-full mx-2 px-4 py-3 translate-x-1 transition-transform font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="settings" data-weight="fill" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span>Settings</span>
+</a>
+</li>
+</ul>
+</nav>
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+<header class="hidden md:flex justify-between items-center px-margin-desktop py-base w-full z-50 bg-background text-primary">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-2xl" data-icon="local_shipping">local_shipping</span>
+<h1 class="font-headline-lg text-headline-lg font-bold text-primary">QuickDelivery</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-2xl cursor-pointer hover:bg-surface-variant p-2 rounded-full transition-colors" data-icon="notifications">notifications</span>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto px-margin-desktop py-lg max-w-4xl mx-auto w-full">
+<div class="mb-8">
+<h2 class="font-display-lg text-display-lg text-primary mb-2">My Account</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Manage your profile details and frequently used addresses to ensure smooth operations.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<div class="md:col-span-2 space-y-lg">
+<div class="bg-surface rounded-xl p-lg shadow-[0px_2px_4px_rgba(13,19,33,0.08)]">
+<h3 class="font-title-md text-title-md text-primary mb-md pb-md border-b border-surface-variant">Profile Information</h3>
+<form class="space-y-md">
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-xs" for="username">Username</label>
+<input class="w-full rounded-[8px] bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary px-4 py-2 font-body-md text-body-md text-on-surface transition-shadow" id="username" name="username" placeholder="Enter your username" type="text" value="admin_user_01"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-xs" for="phone">Phone Number</label>
+<input class="w-full rounded-[8px] bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary px-4 py-2 font-body-md text-body-md text-on-surface transition-shadow" id="phone" name="phone" placeholder="Enter your phone number" type="tel" value="+1 (555) 019-2834"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-xs flex items-center gap-2" for="email">
+                                        Email Address 
+                                        <span class="material-symbols-outlined text-[16px]" data-icon="lock">lock</span>
+</label>
+<input class="w-full rounded-[8px] bg-surface-container text-on-surface-variant border border-outline-variant px-4 py-2 font-body-md text-body-md opacity-70 cursor-not-allowed" disabled="" id="email" name="email" type="email" value="admin@quickdelivery.com"/>
+<p class="font-caption text-caption text-on-surface-variant mt-xs">Email cannot be changed directly. Contact support for assistance.</p>
+</div>
+<div class="pt-md mt-md border-t border-surface-variant flex justify-end">
+<button class="bg-secondary-container text-on-secondary-container font-label-md text-label-md px-lg py-3 rounded-full hover:bg-secondary hover:text-on-secondary transition-colors shadow-sm font-bold flex items-center gap-2" type="button">
+<span class="material-symbols-outlined" data-icon="save">save</span>
+                                        Update Profile
+                                    </button>
+</div>
+</form>
+</div>
+</div>
+<div class="md:col-span-1 space-y-lg">
+<div class="bg-surface rounded-xl p-lg shadow-[0px_2px_4px_rgba(13,19,33,0.08)] flex flex-col items-center text-center">
+<div class="w-24 h-24 rounded-full overflow-hidden mb-4 relative group cursor-pointer border-4 border-surface-variant">
+<img alt="Profile Picture" class="w-full h-full object-cover" data-alt="A close up professional headshot of an individual in a bright, modern office setting with natural light, wearing smart casual attire. The image adheres strictly to the Deep Navy and Amber Gold subtle accents of the QuickDelivery brand identity, evoking enterprise trust and operational stability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZIKjvwsSJv0AkYh3fZv8kSD9XMZwqWn8Xa4taNyKBQmSE0Ldv33BOTcngdH7CSn6QtNNkj31C94YQvyALDqQ9HX7MjpvrHuuTH14fVq8PpwyThvUFRSlSfUguLNXxXBZOXeIOWN28wGYY4XFRNDi4_YoLKMt4gP4If98ws2tGv4aZ6Eiw60DVbjJQmHDXMEgY5AN2hF85VRbwSdHbw4LLHTjFMwN5CFAFYBgCaFBeJjTMWTExlmro"/>
+<div class="absolute inset-0 bg-primary/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-white" data-icon="photo_camera">photo_camera</span>
+</div>
+</div>
+<h4 class="font-title-md text-title-md text-primary">admin_user_01</h4>
+<span class="inline-block mt-2 px-3 py-1 bg-tertiary-fixed-dim text-on-tertiary-fixed rounded-[4px] font-label-md text-label-md uppercase">Active Status</span>
+</div>
+<div class="bg-surface rounded-xl p-lg shadow-[0px_2px_4px_rgba(13,19,33,0.08)]">
+<div class="flex justify-between items-center mb-md pb-md border-b border-surface-variant">
+<h3 class="font-title-md text-title-md text-primary">Frequent Addresses</h3>
+<button class="text-secondary p-1 hover:bg-surface-variant rounded-full transition-colors" title="Add Address" type="button">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+<ul class="space-y-4">
+<li class="flex items-start gap-3 p-3 rounded-lg hover:bg-surface-container-low border border-transparent hover:border-outline-variant transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-on-surface-variant mt-1" data-icon="location_on">location_on</span>
+<div class="flex-1">
+<h5 class="font-body-md text-body-md font-semibold text-on-surface">HQ Distribution Center</h5>
+<p class="font-caption text-caption text-on-surface-variant">1200 Logistics Blvd, Warehouse A</p>
+</div>
+<button class="text-on-surface-variant hover:text-error transition-colors p-1" title="Remove">
+<span class="material-symbols-outlined text-[20px]" data-icon="delete">delete</span>
+</button>
+</li>
+<li class="flex items-start gap-3 p-3 rounded-lg hover:bg-surface-container-low border border-transparent hover:border-outline-variant transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-on-surface-variant mt-1" data-icon="home">home</span>
+<div class="flex-1">
+<h5 class="font-body-md text-body-md font-semibold text-on-surface">Regional Office (North)</h5>
+<p class="font-caption text-caption text-on-surface-variant">8834 Transit Way, Suite 400</p>
+</div>
+<button class="text-on-surface-variant hover:text-error transition-colors p-1" title="Remove">
+<span class="material-symbols-outlined text-[20px]" data-icon="delete">delete</span>
+</button>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Mobile Shell View -->
+<div class="md:hidden flex flex-col h-screen">
+<header class="flex justify-between items-center px-margin-mobile py-base w-full z-50 bg-background text-primary">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="local_shipping">local_shipping</span>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary">QuickDelivery</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="notifications">notifications</span>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto px-margin-mobile py-lg pb-24">
+<div class="mb-6">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-primary mb-1">My Account</h2>
+</div>
+<div class="space-y-lg">
+<div class="bg-surface rounded-xl p-md shadow-[0px_2px_4px_rgba(13,19,33,0.08)]">
+<h3 class="font-title-md text-title-md text-primary mb-md pb-sm border-b border-surface-variant">Profile Information</h3>
+<form class="space-y-md">
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-xs">Username</label>
+<input class="w-full rounded-[8px] bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary px-3 py-2 font-body-md text-body-md" type="text" value="admin_user_01"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-xs">Phone Number</label>
+<input class="w-full rounded-[8px] bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary px-3 py-2 font-body-md text-body-md" type="tel" value="+1 (555) 019-2834"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-xs flex items-center gap-1">Email <span class="material-symbols-outlined text-[14px]" data-icon="lock">lock</span></label>
+<input class="w-full rounded-[8px] bg-surface-container text-on-surface-variant border border-outline-variant px-3 py-2 font-body-md text-body-md opacity-70" disabled="" type="email" value="admin@quickdelivery.com"/>
+</div>
+<div class="pt-4">
+<button class="w-full bg-secondary-container text-on-secondary-container font-label-md text-label-md py-3 rounded-full font-bold" type="button">Update Profile</button>
+</div>
+</form>
+</div>
+<div class="bg-surface rounded-xl p-md shadow-[0px_2px_4px_rgba(13,19,33,0.08)]">
+<div class="flex justify-between items-center mb-md pb-sm border-b border-surface-variant">
+<h3 class="font-title-md text-title-md text-primary">Frequent Addresses</h3>
+<span class="material-symbols-outlined text-secondary" data-icon="add">add</span>
+</div>
+<ul class="space-y-3">
+<li class="flex items-start gap-3 p-2 bg-surface-container-low rounded-lg">
+<span class="material-symbols-outlined text-on-surface-variant mt-0.5" data-icon="location_on">location_on</span>
+<div class="flex-1">
+<h5 class="font-body-md text-body-md font-semibold">HQ Distribution Center</h5>
+<p class="font-caption text-caption text-on-surface-variant">1200 Logistics Blvd, Warehouse A</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</main>
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface shadow-[0px_-2px_4px_rgba(13,19,33,0.08)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-label-md text-label-md text-[10px]">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="storefront">storefront</span>
+<span class="font-label-md text-label-md text-[10px]">Marketplace</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="assignment">assignment</span>
+<span class="font-label-md text-label-md text-[10px]">Jobs</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="settings" data-weight="fill" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-md text-label-md text-[10px]">Settings</span>
+</a>
+</nav>
+</div>
+</body></html>

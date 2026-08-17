@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QuickDelivery - OTP Verification</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#000000",
+                        "surface-container-high": "#e8e7ef",
+                        "on-tertiary-fixed": "#00210a",
+                        "on-tertiary-fixed-variant": "#005323",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed": "#ffdf9e",
+                        "primary-fixed": "#dde2f6",
+                        "on-background": "#1a1b21",
+                        "error": "#ba1a1a",
+                        "on-error-container": "#93000a",
+                        "secondary": "#785900",
+                        "surface-tint": "#585e6f",
+                        "tertiary-fixed-dim": "#79db8d",
+                        "outline": "#76777d",
+                        "tertiary-container": "#00210a",
+                        "outline-variant": "#c6c6cc",
+                        "background": "#faf8ff",
+                        "surface": "#faf8ff",
+                        "surface-bright": "#faf8ff",
+                        "inverse-on-surface": "#f1f0f7",
+                        "secondary-container": "#fdc003",
+                        "inverse-surface": "#2f3036",
+                        "primary-container": "#151b2a",
+                        "on-primary": "#ffffff",
+                        "on-primary-container": "#7e8395",
+                        "surface-container-low": "#f4f3fa",
+                        "primary": "#000000",
+                        "secondary-fixed-dim": "#fabd00",
+                        "surface-variant": "#e2e2e9",
+                        "on-secondary-container": "#6c5000",
+                        "primary-fixed-dim": "#c1c6da",
+                        "surface-dim": "#dad9e1",
+                        "surface-container": "#eeedf4",
+                        "surface-container-highest": "#e2e2e9",
+                        "inverse-primary": "#c1c6da",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed-variant": "#414657",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#45464c",
+                        "on-tertiary-container": "#339650",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#95f8a7",
+                        "on-surface": "#1a1b21",
+                        "on-primary-fixed": "#151b2a",
+                        "on-secondary-fixed": "#261a00"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "margin-desktop": "32px",
+                        "xs": "4px",
+                        "base": "8px",
+                        "lg": "24px",
+                        "gutter": "16px",
+                        "margin-mobile": "16px",
+                        "sm": "8px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Poppins"],
+                        "body-lg": ["Poppins"],
+                        "headline-lg": ["Poppins"],
+                        "display-lg": ["Poppins"],
+                        "label-md": ["Poppins"],
+                        "body-md": ["Poppins"],
+                        "title-md": ["Poppins"],
+                        "caption": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "title-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "caption": ["11px", { "lineHeight": "14px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        .otp-input:focus {
+            outline: none;
+            border-color: #000000;
+            border-width: 2px;
+            box-shadow: 0px 4px 12px rgba(13, 19, 33, 0.12);
+        }
+
+        .otp-input.error {
+            border-color: #ba1a1a;
+            color: #ba1a1a;
+            background-color: #ffdad6;
+        }
+
+        .otp-input.success {
+            border-color: #339650;
+            color: #339650;
+            background-color: #95f8a7;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col justify-center items-center p-margin-mobile md:p-margin-desktop font-body-md">
+<!-- Transactional Screen - No Nav Shells -->
+<main class="w-full max-w-md">
+<!-- Logo / Brand Anchor -->
+<div class="flex justify-center mb-xl">
+<div class="flex items-center gap-base">
+<span class="material-symbols-outlined text-4xl text-primary" data-icon="local_shipping" data-weight="fill">local_shipping</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-primary">QuickDelivery</span>
+</div>
+</div>
+<!-- Glassmorphism Main Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_12px_rgba(13,19,33,0.12)] p-xl border border-outline-variant/30 backdrop-blur-sm">
+<header class="text-center mb-lg">
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-xs">Verify Your Account</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">We sent a 4-digit code to <br/><span class="font-bold text-on-surface">+1 (555) 123-4567</span></p>
+</header>
+<!-- OTP Input Form -->
+<form class="flex flex-col gap-lg" id="otpForm">
+<!-- Code Inputs -->
+<div class="flex justify-between gap-base md:gap-md" id="otp-container">
+<input aria-label="Digit 1" autofocus="" class="otp-input w-16 h-16 text-center font-display-lg text-display-lg rounded-xl border border-outline-variant bg-surface text-on-surface transition-all duration-200 focus:bg-surface-container-lowest" inputmode="numeric" maxlength="1" pattern="[0-9]" required="" type="text"/>
+<input aria-label="Digit 2" class="otp-input w-16 h-16 text-center font-display-lg text-display-lg rounded-xl border border-outline-variant bg-surface text-on-surface transition-all duration-200 focus:bg-surface-container-lowest" inputmode="numeric" maxlength="1" pattern="[0-9]" required="" type="text"/>
+<input aria-label="Digit 3" class="otp-input w-16 h-16 text-center font-display-lg text-display-lg rounded-xl border border-outline-variant bg-surface text-on-surface transition-all duration-200 focus:bg-surface-container-lowest" inputmode="numeric" maxlength="1" pattern="[0-9]" required="" type="text"/>
+<input aria-label="Digit 4" class="otp-input w-16 h-16 text-center font-display-lg text-display-lg rounded-xl border border-outline-variant bg-surface text-on-surface transition-all duration-200 focus:bg-surface-container-lowest" inputmode="numeric" maxlength="1" pattern="[0-9]" required="" type="text"/>
+</div>
+<!-- Status Message Area (Hidden by default) -->
+<div class="hidden flex items-center justify-center gap-xs font-label-md text-label-md" id="statusMessage">
+<span class="material-symbols-outlined text-lg" id="statusIcon"></span>
+<span id="statusText"></span>
+</div>
+<!-- Primary Action Button -->
+<button class="w-full bg-secondary-container text-on-secondary-container hover:bg-secondary-fixed hover:text-on-secondary-fixed transition-colors duration-200 rounded-lg py-md font-title-md text-title-md flex items-center justify-center gap-sm shadow-sm hover:shadow-[0px_4px_12px_rgba(13,19,33,0.12)]" id="verifyBtn" type="submit">
+                    Verify Code
+                    <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</form>
+<!-- Resend Section -->
+<div class="mt-lg text-center">
+<p class="font-body-md text-body-md text-on-surface-variant mb-xs">Didn't receive the code?</p>
+<!-- Countdown State -->
+<div class="flex justify-center items-center gap-xs text-on-surface-variant font-label-md text-label-md" id="countdownState">
+<span class="material-symbols-outlined text-sm" data-icon="timer">timer</span>
+<span>Resend available in <span class="font-bold text-primary" id="timer">00:30</span></span>
+</div>
+<!-- Resend Action State (Hidden initially) -->
+<button class="hidden text-primary hover:text-secondary font-title-md text-title-md transition-colors duration-200 underline decoration-2 underline-offset-4 decoration-secondary-container" id="resendBtn">
+                    Resend OTP
+                </button>
+</div>
+</div>
+<!-- Contextual Help / Decorative Background Image -->
+<div class="mt-xl rounded-xl overflow-hidden shadow-sm relative h-32 w-full">
+<div class="absolute inset-0 bg-cover bg-center w-full h-full opacity-40" data-alt="A macro shot of a sleek, modern mobile phone screen showing a secure padlock icon glowing softly in ambient lighting. The background is a blurred corporate office setting with subtle navy and warm amber lighting reflections, conveying trust, security, and modern logistics technology." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD5mTvdcE9J8IDXOruSGsQEdYhKUfpqaEo9FPy0SiZ50XkcLVIcwp02ThDOB-ZEg0AAqZLP0ucmMpmd2M6qgmTKkcODy0-U7YlLzXBtFiRwUWrhRA9z6MsAQsrFSooFS_s2X__BXJVI7Ji9IAoahLE28umHBeA8gJyyWWyjXl5RgiNeecCjRGHqLyn_AESHd6X-TdaAGy99U_U3POf6rslC5ojI5c9SBJQB3KsbcF_e0ca7MaBxWL8T')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
+<div class="absolute bottom-md left-md right-md flex items-center justify-center gap-sm text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-sm" data-icon="security">security</span>
+               Secured by Enterprise Trust Protocol
+            </div>
+</div>
+</main>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputs = document.querySelectorAll('.otp-input');
+            const form = document.getElementById('otpForm');
+            const timerSpan = document.getElementById('timer');
+            const countdownState = document.getElementById('countdownState');
+            const resendBtn = document.getElementById('resendBtn');
+            const verifyBtn = document.getElementById('verifyBtn');
+            const statusMessage = document.getElementById('statusMessage');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusText = document.getElementById('statusText');
+
+            // Auto-focus and navigation logic for OTP inputs
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', (e) => {
+                    if (e.target.value.length === 1) {
+                        // Move to next input if available
+                        if (index < inputs.length - 1) {
+                            inputs[index + 1].focus();
+                        } else {
+                            // If it's the last input, optionally auto-submit or just blur
+                            input.blur();
+                        }
+                    }
+                    
+                    // Reset styling on input change
+                    resetInputStyles();
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                        inputs[index - 1].focus();
+                        inputs[index - 1].value = '';
+                    }
+                });
+            });
+
+            function resetInputStyles() {
+                inputs.forEach(input => {
+                    input.classList.remove('error', 'success');
+                });
+                statusMessage.classList.add('hidden');
+                verifyBtn.innerHTML = 'Verify Code <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>';
+                verifyBtn.disabled = false;
+            }
+
+            // Mock Validation Logic
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                let code = '';
+                inputs.forEach(input => code += input.value);
+
+                if(code.length !== 4) return;
+
+                // Simulate API call
+                verifyBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span> Verifying...';
+                verifyBtn.disabled = true;
+
+                setTimeout(() => {
+                    if (code === '1234') { // Success condition
+                        inputs.forEach(input => input.classList.add('success'));
+                        statusMessage.classList.remove('hidden');
+                        statusMessage.className = 'flex items-center justify-center gap-xs font-label-md text-label-md text-on-tertiary-container mt-sm';
+                        statusIcon.textContent = 'check_circle';
+                        statusText.textContent = 'Verification Successful!';
+                        verifyBtn.innerHTML = 'Success <span class="material-symbols-outlined">check</span>';
+                        // Redirect would happen here
+                    } else { // Error condition
+                        inputs.forEach(input => {
+                            input.classList.add('error');
+                            // Add a subtle shake animation manually if desired, omitting for brevity
+                        });
+                        statusMessage.classList.remove('hidden');
+                        statusMessage.className = 'flex items-center justify-center gap-xs font-label-md text-label-md text-error mt-sm';
+                        statusIcon.textContent = 'error';
+                        statusText.textContent = 'Incorrect code. Please try again.';
+                        verifyBtn.innerHTML = 'Verify Code <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>';
+                        verifyBtn.disabled = false;
+                        inputs[0].focus(); // Focus back on first input for retry
+                        inputs.forEach(input => input.value = ''); // Clear inputs
+                    }
+                }, 1500);
+            });
+
+            // Timer Logic
+            let timeLeft = 30;
+            const timerInterval = setInterval(() => {
+                timeLeft--;
+                const seconds = timeLeft < 10 ? `0${timeLeft}` : timeLeft;
+                timerSpan.textContent = `00:${seconds}`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    countdownState.classList.add('hidden');
+                    resendBtn.classList.remove('hidden');
+                }
+            }, 1000);
+
+            // Resend Logic
+            resendBtn.addEventListener('click', () => {
+                // Simulate resend action
+                resendBtn.classList.add('hidden');
+                countdownState.classList.remove('hidden');
+                timeLeft = 30;
+                timerSpan.textContent = `00:30`;
+                
+                // Restart timer
+                const newInterval = setInterval(() => {
+                    timeLeft--;
+                    const seconds = timeLeft < 10 ? `0${timeLeft}` : timeLeft;
+                    timerSpan.textContent = `00:${seconds}`;
+                    if (timeLeft <= 0) {
+                        clearInterval(newInterval);
+                        countdownState.classList.add('hidden');
+                        resendBtn.classList.remove('hidden');
+                    }
+                }, 1000);
+                
+                resetInputStyles();
+                inputs.forEach(input => input.value = '');
+                inputs[0].focus();
+            });
+        });
+    </script>
+</body></html>

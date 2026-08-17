@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Owner Configuration - QuickDelivery</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#00210a",
+                        "on-primary-fixed": "#151b2a",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#414657",
+                        "tertiary-fixed-dim": "#79db8d",
+                        "surface-dim": "#dad9e1",
+                        "background": "#faf8ff",
+                        "primary-fixed-dim": "#c1c6da",
+                        "surface-container": "#eeedf4",
+                        "surface": "#faf8ff",
+                        "on-surface": "#1a1b21",
+                        "on-secondary-container": "#6c5000",
+                        "surface-container-highest": "#e2e2e9",
+                        "inverse-surface": "#2f3036",
+                        "tertiary-fixed": "#95f8a7",
+                        "on-surface-variant": "#45464c",
+                        "tertiary-container": "#00210a",
+                        "on-primary-container": "#7e8395",
+                        "tertiary": "#000000",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005323",
+                        "error": "#ba1a1a",
+                        "inverse-on-surface": "#f1f0f7",
+                        "on-secondary": "#ffffff",
+                        "primary": "#000000",
+                        "primary-container": "#151b2a",
+                        "on-tertiary-container": "#339650",
+                        "surface-container-high": "#e8e7ef",
+                        "secondary-container": "#fdc003",
+                        "secondary-fixed-dim": "#fabd00",
+                        "on-secondary-fixed": "#261a00",
+                        "on-background": "#1a1b21",
+                        "outline-variant": "#c6c6cc",
+                        "secondary-fixed": "#ffdf9e",
+                        "surface-bright": "#faf8ff",
+                        "secondary": "#785900",
+                        "primary-fixed": "#dde2f6",
+                        "surface-tint": "#585e6f",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "inverse-primary": "#c1c6da",
+                        "surface-variant": "#e2e2e9",
+                        "outline": "#76777d",
+                        "surface-container-low": "#f4f3fa"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "base": "8px",
+                        "margin-desktop": "32px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Poppins"],
+                        "headline-lg-mobile": ["Poppins"],
+                        "body-lg": ["Poppins"],
+                        "headline-lg": ["Poppins"],
+                        "caption": ["Poppins"],
+                        "title-md": ["Poppins"],
+                        "body-md": ["Poppins"],
+                        "display-lg": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "caption": ["11px", { "lineHeight": "14px", "fontWeight": "400" }],
+                        "title-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col md:flex-row">
+<!-- TopAppBar (Mobile Only) -->
+<header class="md:hidden flex justify-between items-center px-margin-mobile py-base w-full z-50 bg-background text-primary font-title-md sticky top-0 border-b border-outline-variant/30">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-xl" data-icon="local_shipping">local_shipping</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary">QuickDelivery</span>
+</div>
+<button class="p-2 hover:bg-surface-variant rounded-full transition-colors group">
+<span class="material-symbols-outlined group-hover:scale-95 transition-transform" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- NavigationDrawer (Desktop Only) -->
+<aside class="hidden md:flex flex-col h-full w-72 rounded-r-xl bg-surface shadow-md py-lg sticky top-0">
+<div class="px-lg mb-8 flex items-center gap-3">
+<img class="w-12 h-12 rounded-full object-cover" data-alt="A professional headshot of a business owner in a well-lit, modern corporate office. They are wearing a sharp navy blue blazer and a crisp white shirt, exuding confidence and operational expertise. The background is slightly blurred with subtle ambient amber lighting reflecting off glass panels, emphasizing an enterprise logistics aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4nWpor832bsn8tEnAqaDjGrIU2Df1OAk2DbwIaElGSq0Lo1evDeDv5N7Qo8CxAamtrSV25ZdhSnk9kOyIa45-O-CBE7G6vQhj3zWs3HocTclNO1rQqnGZ7IL71Q_z-B6aQ442QSYQC1zbiQ9m5A1zNeyV5fk5wOVpLJUeKSr75RV53vG3reXuRAQUYpjY9mRReZ9RW4KmesxnU8y0_RIv_ghftdDt_7clCStQFPx73xAPZ8RrrUUU"/>
+<div>
+<h2 class="font-title-md text-title-md text-primary font-bold">QuickDelivery Admin</h2>
+<p class="font-caption text-caption text-on-surface-variant">Owner Account</p>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-2 px-2">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-md text-label-md">Employees</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-label-md text-label-md">History</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container font-bold rounded-full mx-2 translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-lg pb-32 md:pb-lg flex flex-col gap-lg">
+<header class="mb-4">
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-bold text-primary">Owner Configuration</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-2">Manage your business profile, service details, and pricing structures.</p>
+</header>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Column 1: Identity & Services (7 cols) -->
+<div class="lg:col-span-7 flex flex-col gap-gutter">
+<!-- Business Identity Card -->
+<section class="bg-surface rounded-[12px] p-lg shadow-[0px_2px_4px_rgba(13,19,33,0.08)]">
+<h2 class="font-title-md text-title-md text-primary mb-md border-b border-surface-variant pb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" data-icon="store">store</span>
+                        Business Identity
+                    </h2>
+<div class="flex flex-col md:flex-row gap-lg items-start">
+<!-- Photo Upload Area -->
+<div class="flex-shrink-0 flex flex-col items-center gap-3">
+<div class="relative w-32 h-32 rounded-full overflow-hidden border-2 border-outline-variant bg-surface-container flex items-center justify-center group cursor-pointer hover:border-secondary transition-colors">
+<img class="w-full h-full object-cover" data-alt="A clean, modern logo placeholder image for a logistics company. It features a stylized, abstract geometric shape resembling a moving box or arrow, rendered in deep navy blue and vibrant amber gold. The background is pristine white, creating a high-contrast, professional corporate identity mark." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZGIlYmGlM9IsV0s91ONA0F3SLWYtWhDJqAwmtDj0kSFeaCaBx8tX-OsFKErAwFA0JWOFXmkjTS7VRvAakCOoeooTOvHULfsaPB491vNZCqxwX96iu48tCPsYwJoJPkZWhPpRUrwWa0W04rGCUKwHy3rpFvPI8qlUTikm9q2OqruiLazafzdQSa7giLPOU0CHbZZmm9K9NPL2hqwK7zAnFCE1oc8JjlSsfXk0XH5ZjaNmDwZMow74Z"/>
+<div class="absolute inset-0 bg-primary/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-on-primary" data-icon="photo_camera">photo_camera</span>
+</div>
+</div>
+<span class="font-caption text-caption text-on-surface-variant">Update Logo</span>
+</div>
+<!-- Core Details -->
+<div class="flex-1 w-full space-y-md">
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Business Name</label>
+<input class="w-full h-10 px-3 rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary text-on-surface font-body-md transition-shadow" type="text" value="QuickDelivery Global"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Service Category</label>
+<select class="w-full h-10 px-3 rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary text-on-surface font-body-md">
+<option>Same-Day Logistics</option>
+<option>Freight Forwarding</option>
+<option>Last-Mile Delivery</option>
+<option>Cold Chain Transport</option>
+</select>
+</div>
+</div>
+</div>
+</section>
+<!-- Location & Operations Card -->
+<section class="bg-surface rounded-[12px] p-lg shadow-[0px_2px_4px_rgba(13,19,33,0.08)]">
+<h2 class="font-title-md text-title-md text-primary mb-md border-b border-surface-variant pb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" data-icon="location_on">location_on</span>
+                        Location &amp; Operations
+                    </h2>
+<div class="space-y-md">
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Headquarters Address</label>
+<input class="w-full h-10 px-3 rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary text-on-surface font-body-md" type="text" value="100 Logistics Blvd, Suite 400, Chicago, IL 60601"/>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Coverage Radius (KM)</label>
+<div class="relative">
+<input class="w-full h-10 px-3 pr-10 rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary text-on-surface font-body-md" type="number" value="150"/>
+<span class="absolute right-3 top-2.5 font-label-md text-outline">KM</span>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Working Hours</label>
+<div class="flex items-center gap-2">
+<input class="w-full h-10 px-2 rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary text-on-surface font-body-md text-sm" type="time" value="06:00"/>
+<span class="text-on-surface-variant font-body-md">to</span>
+<input class="w-full h-10 px-2 rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary text-on-surface font-body-md text-sm" type="time" value="22:00"/>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Column 2: Pricing & Actions (5 cols) -->
+<div class="lg:col-span-5 flex flex-col gap-gutter">
+<!-- Pricing Structure Card -->
+<section class="bg-surface rounded-[12px] p-lg shadow-[0px_2px_4px_rgba(13,19,33,0.08)] border-t-4 border-secondary">
+<h2 class="font-title-md text-title-md text-primary mb-md flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" data-icon="payments">payments</span>
+                        Pricing Structure
+                    </h2>
+<div class="space-y-lg">
+<!-- Base Price -->
+<div class="bg-surface-container-low p-md rounded-lg">
+<label class="block font-label-md text-label-md text-on-surface mb-2">Base Price (Fixed Rate)</label>
+<div class="flex items-center">
+<span class="bg-surface-variant text-on-surface px-4 py-2 h-10 rounded-l-lg border border-r-0 border-outline-variant font-title-md font-bold">$</span>
+<input class="w-full h-10 px-3 rounded-r-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary text-on-surface font-body-md text-lg" step="0.01" type="number" value="25.00"/>
+</div>
+<p class="font-caption text-caption text-on-surface-variant mt-1">Applied automatically to every new order.</p>
+</div>
+<!-- Distance Pricing -->
+<div class="bg-surface-container-low p-md rounded-lg">
+<label class="block font-label-md text-label-md text-on-surface mb-2">Price per Kilometer</label>
+<div class="flex items-center">
+<span class="bg-surface-variant text-on-surface px-4 py-2 h-10 rounded-l-lg border border-r-0 border-outline-variant font-title-md font-bold">$</span>
+<input class="w-full h-10 px-3 rounded-r-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary text-on-surface font-body-md text-lg" step="0.01" type="number" value="1.75"/>
+</div>
+<p class="font-caption text-caption text-on-surface-variant mt-1">Calculated linearly beyond the first 5 KM.</p>
+</div>
+<!-- Preview -->
+<div class="pt-4 border-t border-outline-variant/30 flex justify-between items-center">
+<span class="font-label-md text-label-md text-on-surface-variant">Est. 10KM Delivery:</span>
+<span class="font-title-md text-title-md text-secondary font-bold">$42.50</span>
+</div>
+</div>
+</section>
+<!-- Action Area -->
+<section class="mt-auto bg-surface rounded-[12px] p-md shadow-[0px_2px_4px_rgba(13,19,33,0.08)] flex flex-col gap-3">
+<button class="w-full py-3 bg-secondary-container hover:bg-secondary-fixed-dim text-on-secondary-container font-label-md text-label-md rounded-lg shadow-sm transition-all duration-200 active:scale-[0.98] flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="save">save</span>
+                        Save Configuration
+                    </button>
+<button class="w-full py-3 bg-transparent hover:bg-surface-variant text-primary font-label-md text-label-md rounded-lg transition-colors border border-outline-variant flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="restart_alt">restart_alt</span>
+                        Discard Changes
+                    </button>
+</section>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface shadow-[0px_-2px_4px_rgba(13,19,33,0.08)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-md text-label-md mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+<span class="font-label-md text-label-md mt-1">Marketplace</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+<span class="font-label-md text-label-md mt-1">Jobs</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md mt-1">Settings</span>
+</a>
+</nav>
+</body></html>

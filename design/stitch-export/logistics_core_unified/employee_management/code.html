@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Employee Management - QuickDelivery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#00210a",
+                        "on-primary-fixed": "#151b2a",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#414657",
+                        "tertiary-fixed-dim": "#79db8d",
+                        "surface-dim": "#dad9e1",
+                        "background": "#faf8ff",
+                        "primary-fixed-dim": "#c1c6da",
+                        "surface-container": "#eeedf4",
+                        "surface": "#faf8ff",
+                        "on-surface": "#1a1b21",
+                        "on-secondary-container": "#6c5000",
+                        "surface-container-highest": "#e2e2e9",
+                        "inverse-surface": "#2f3036",
+                        "tertiary-fixed": "#95f8a7",
+                        "on-surface-variant": "#45464c",
+                        "tertiary-container": "#00210a",
+                        "on-primary-container": "#7e8395",
+                        "tertiary": "#000000",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005323",
+                        "error": "#ba1a1a",
+                        "inverse-on-surface": "#f1f0f7",
+                        "on-secondary": "#ffffff",
+                        "primary": "#000000",
+                        "primary-container": "#151b2a",
+                        "on-tertiary-container": "#339650",
+                        "surface-container-high": "#e8e7ef",
+                        "secondary-container": "#fdc003",
+                        "secondary-fixed-dim": "#fabd00",
+                        "on-secondary-fixed": "#261a00",
+                        "on-background": "#1a1b21",
+                        "outline-variant": "#c6c6cc",
+                        "secondary-fixed": "#ffdf9e",
+                        "surface-bright": "#faf8ff",
+                        "secondary": "#785900",
+                        "primary-fixed": "#dde2f6",
+                        "surface-tint": "#585e6f",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "inverse-primary": "#c1c6da",
+                        "surface-variant": "#e2e2e9",
+                        "outline": "#76777d",
+                        "surface-container-low": "#f4f3fa"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "base": "8px",
+                        "margin-desktop": "32px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Poppins"],
+                        "headline-lg-mobile": ["Poppins"],
+                        "body-lg": ["Poppins"],
+                        "headline-lg": ["Poppins"],
+                        "caption": ["Poppins"],
+                        "title-md": ["Poppins"],
+                        "body-md": ["Poppins"],
+                        "display-lg": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "caption": ["11px", { "lineHeight": "14px", "fontWeight": "400" }],
+                        "title-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #E5E7EB; /* Level 0 Background */
+        }
+        /* Custom toggle switch styling */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #0D1321;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #0D1321;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-md">
+<!-- App Layout Container -->
+<div class="flex h-screen overflow-hidden">
+<!-- NavigationDrawer (Desktop/Tablet) -->
+<nav class="hidden md:flex flex-col h-full py-lg h-full w-72 rounded-r-xl bg-surface dark:bg-surface shadow-md z-40 relative">
+<div class="px-4 mb-8 left_align">
+<div class="flex items-center gap-4 mb-4">
+<div class="w-12 h-12 rounded-full bg-surface-container-high overflow-hidden shrink-0">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a logistics manager in a high-tech control room setting. Bright, modern lighting, corporate aesthetic, highly detailed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1F8GnVs1mCRJ_hsngfpCcm8yOTYmYC9bYyvUeeJX6HNZa-QtXzV1dG9p3jV5a9Y2N4nZf2R0tMaZLwo3EjE_4dCQIc--5SKLQYM-pL7ddsuvSFCRt1z6dTSTj-93XHmXjDtC7b2GxdynKkA4yZ2oiXUAxJCRojnjpRHp0YVKtqs2u0pPu2P3LN8bl6Q202Aoyv50_VcMqoxGyiH7Za4ru2gb25-nGujXm5ZeVgO1SlSEga9PlLIIv"/>
+</div>
+<div>
+<h2 class="font-title-md text-title-md text-primary dark:text-primary">QuickDelivery Admin</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Owner Account</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-2 flex-grow">
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors mx-2 rounded-full font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 bg-secondary-container text-on-secondary-container font-bold rounded-full mx-2 px-4 py-3 hover:bg-surface-container-high transition-transform font-body-md text-body-md active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span>Employees</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors mx-2 rounded-full font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span>History</span>
+</a>
+</div>
+<div class="mt-auto">
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors mx-2 rounded-full font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- TopAppBar (Mobile & Desktop Header) -->
+<header class="flex justify-between items-center px-margin-mobile py-base w-full z-50 bg-background dark:bg-background docked full-width top-0">
+<div class="flex items-center gap-3">
+<button class="md:hidden p-2 text-primary dark:text-primary hover:bg-surface-variant rounded-full transition-colors active:scale-95">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary dark:text-primary" data-icon="local_shipping">local_shipping</span>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary dark:text-primary">QuickDelivery</h1>
+</div>
+</div>
+<button class="p-2 text-primary dark:text-primary hover:bg-surface-variant rounded-full transition-colors active:scale-95">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- Scrollable Content Canvas -->
+<div class="flex-1 overflow-y-auto p-4 md:p-margin-desktop pb-24 md:pb-8">
+<!-- Page Header & Primary Action -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-lg">
+<div>
+<h2 class="font-title-md text-title-md text-on-background font-bold">Employee Roster</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Manage delivery personnel and status.</p>
+</div>
+<button class="bg-secondary-container text-on-secondary-container font-label-md text-label-md px-lg py-sm rounded-lg flex items-center gap-2 hover:bg-secondary-fixed-dim transition-colors shadow-sm w-full sm:w-auto justify-center font-bold">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        Register Employee
+                    </button>
+</div>
+<!-- Bento Grid / Glassmorphism Layout for Employees -->
+<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-md">
+<!-- Employee Card 1: Active/In Transit -->
+<div class="bg-surface rounded-[12px] p-md shadow-[0px_2px_4px_rgba(13,19,33,0.08)] border border-outline-variant hover:shadow-[0px_4px_12px_rgba(13,19,33,0.12)] transition-shadow flex flex-col gap-4">
+<div class="flex justify-between items-start border-b border-surface-container-high pb-sm">
+<div class="flex gap-3 items-center">
+<div class="w-10 h-10 rounded-full bg-surface-container overflow-hidden">
+<img alt="Driver profile" class="w-full h-full object-cover" data-alt="A portrait of a male delivery driver wearing a high-visibility vest, bright natural lighting, professional logistics setting, crisp and detailed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaVU3mJpLcyVdY0vDGTCNWMFfogUsZkleBZ-48fixy_Khk3YVgPV5J2TQqWi8Z7UMZufSz0g5rjC9mHCfebGzCO1Tcf4o0Iwg7P3V784e4ZxWzEeWsG_PG1R__UUMm7NKIJj1i5wb-vmLsHkh1geBh9Jdy59ALtj4s0RaN3ulho-EauhJGbuPrbNCX_9o8cSEmLegy31PNnR2aVl-BdTYHyIyTfA44RFgl8b2vupeVKZJIIZBNWHI3"/>
+</div>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface font-semibold leading-tight">Marcus Johnson</h3>
+<span class="font-caption text-caption text-on-surface-variant">ID: QD-8842-A</span>
+</div>
+</div>
+<!-- Status Badge -->
+<div class="bg-tertiary-fixed text-on-tertiary-fixed font-label-md text-label-md px-2 py-1 rounded-[4px] flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-fixed"></span> Active
+                            </div>
+</div>
+<div class="flex-1 flex flex-col gap-2 font-body-md text-body-md text-on-surface-variant">
+<div class="flex justify-between">
+<span>Current Route:</span>
+<span class="font-semibold text-on-surface">Sector 7G (In Transit)</span>
+</div>
+<div class="flex justify-between">
+<span>Vehicle:</span>
+<span class="text-on-surface">Van - XYZ-123</span>
+</div>
+<div class="flex justify-between">
+<span>Today's Deliveries:</span>
+<span class="font-semibold text-secondary-container">14/22</span>
+</div>
+</div>
+<!-- Action/Toggle Row -->
+<div class="pt-sm mt-auto border-t border-surface-container-high flex justify-between items-center">
+<div class="flex items-center gap-2">
+<!-- Custom Toggle -->
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out z-10 translate-x-5 border-[#0D1321]" id="toggle1" name="toggle1" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-[#0D1321] cursor-pointer" for="toggle1"></label>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Account Enabled</span>
+</div>
+<button aria-label="More options" class="text-[#0D1321] hover:bg-surface-variant p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Employee Card 2: Off Duty/Disabled -->
+<div class="bg-surface rounded-[12px] p-md shadow-[0px_2px_4px_rgba(13,19,33,0.08)] border border-outline-variant hover:shadow-[0px_4px_12px_rgba(13,19,33,0.12)] transition-shadow flex flex-col gap-4 opacity-75">
+<div class="flex justify-between items-start border-b border-surface-container-high pb-sm">
+<div class="flex gap-3 items-center">
+<div class="w-10 h-10 rounded-full bg-surface-container overflow-hidden">
+<img alt="Driver profile" class="w-full h-full object-cover" data-alt="A portrait of a female delivery courier, casual professional attire, resting state, soft lighting, modern warehouse background, high resolution." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrXzt4KxsWKwfL_vzpklzAYIsewTXT63AlV389LyommD2u0t8LdSCvOSNt-eO98mRqD0dV2C_hIeNFgjY79Pwa6BNx2W2fklQwtnJwFZBv9JMDOvgTvjoYY7UZavC2zXWwGYHXglRfWTkDTM4LvdKygOilbv7FOLK7H_gf3MQ9Ai96Mg4N2KGFve2qzMJKF1BKlvokV_sRksecWp0QQhC23-ObUN5YzCxg_zT23j3CbAatpOX8WSw7"/>
+</div>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface font-semibold leading-tight line-through text-outline">Sarah Connor</h3>
+<span class="font-caption text-caption text-on-surface-variant">ID: QD-9921-B</span>
+</div>
+</div>
+<!-- Status Badge -->
+<div class="bg-surface-container-highest text-on-surface-variant font-label-md text-label-md px-2 py-1 rounded-[4px] flex items-center gap-1">
+                                Off Duty
+                            </div>
+</div>
+<div class="flex-1 flex flex-col gap-2 font-body-md text-body-md text-on-surface-variant">
+<div class="flex justify-between">
+<span>Last Route:</span>
+<span>Downtown Core</span>
+</div>
+<div class="flex justify-between">
+<span>Vehicle:</span>
+<span>Unassigned</span>
+</div>
+</div>
+<!-- Action/Toggle Row -->
+<div class="pt-sm mt-auto border-t border-surface-container-high flex justify-between items-center">
+<div class="flex items-center gap-2">
+<!-- Custom Toggle -->
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out z-10 border-outline" id="toggle2" name="toggle2" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-container-highest cursor-pointer border border-outline-variant" for="toggle2"></label>
+</div>
+<span class="font-label-md text-label-md text-outline">Account Suspended</span>
+</div>
+<button aria-label="More options" class="text-on-surface-variant hover:bg-surface-variant p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Employee Card 3: Standby -->
+<div class="bg-surface rounded-[12px] p-md shadow-[0px_2px_4px_rgba(13,19,33,0.08)] border border-outline-variant hover:shadow-[0px_4px_12px_rgba(13,19,33,0.12)] transition-shadow flex flex-col gap-4">
+<div class="flex justify-between items-start border-b border-surface-container-high pb-sm">
+<div class="flex gap-3 items-center">
+<div class="w-10 h-10 rounded-full bg-surface-container overflow-hidden">
+<div class="w-full h-full bg-primary-fixed flex items-center justify-center font-title-md font-bold text-on-primary-fixed">
+                                        DL
+                                     </div>
+</div>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface font-semibold leading-tight">David Lee</h3>
+<span class="font-caption text-caption text-on-surface-variant">ID: QD-1102-C</span>
+</div>
+</div>
+<!-- Status Badge -->
+<div class="bg-secondary-fixed text-on-secondary-fixed font-label-md text-label-md px-2 py-1 rounded-[4px] flex items-center gap-1">
+                                Standby
+                            </div>
+</div>
+<div class="flex-1 flex flex-col gap-2 font-body-md text-body-md text-on-surface-variant">
+<div class="flex justify-between">
+<span>Location:</span>
+<span>Hub Alpha</span>
+</div>
+<div class="flex justify-between">
+<span>Next Shift:</span>
+<span>14:00 Today</span>
+</div>
+</div>
+<!-- Action/Toggle Row -->
+<div class="pt-sm mt-auto border-t border-surface-container-high flex justify-between items-center">
+<div class="flex items-center gap-2">
+<!-- Custom Toggle -->
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out z-10 translate-x-5 border-[#0D1321]" id="toggle3" name="toggle3" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-[#0D1321] cursor-pointer" for="toggle3"></label>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Account Enabled</span>
+</div>
+<button aria-label="More options" class="text-[#0D1321] hover:bg-surface-variant p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface dark:bg-surface shadow-[0px_-2px_4px_rgba(13,19,33,0.08)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform" data-icon="home">home</span>
+<span class="font-label-md text-[10px] mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform" data-icon="storefront">storefront</span>
+<span class="font-label-md text-[10px] mt-1">Marketplace</span>
+</a>
+<!-- Active Tab: Maps to Employees/Jobs intent -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="assignment" data-weight="fill" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="font-label-md text-[10px] mt-1 font-bold">Jobs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform" data-icon="settings">settings</span>
+<span class="font-label-md text-[10px] mt-1">Settings</span>
+</a>
+</nav>
+<script>
+        // Simple logic for toggle visual state if needed beyond CSS, though CSS handles the visual translation
+        document.querySelectorAll('.toggle-checkbox').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                const label = this.closest('.flex').querySelector('span.font-label-md');
+                if(this.checked) {
+                    label.textContent = 'Account Enabled';
+                    label.classList.remove('text-outline');
+                    label.classList.add('text-on-surface-variant');
+                } else {
+                    label.textContent = 'Account Suspended';
+                    label.classList.remove('text-on-surface-variant');
+                    label.classList.add('text-outline');
+                }
+            });
+        });
+    </script>
+</body></html>

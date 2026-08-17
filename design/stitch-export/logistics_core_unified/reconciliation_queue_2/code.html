@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Owner Reconciliation Queue</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#00210a",
+                        "on-primary-fixed": "#151b2a",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#414657",
+                        "tertiary-fixed-dim": "#79db8d",
+                        "surface-dim": "#dad9e1",
+                        "background": "#faf8ff",
+                        "primary-fixed-dim": "#c1c6da",
+                        "surface-container": "#eeedf4",
+                        "surface": "#faf8ff",
+                        "on-surface": "#1a1b21",
+                        "on-secondary-container": "#6c5000",
+                        "surface-container-highest": "#e2e2e9",
+                        "inverse-surface": "#2f3036",
+                        "tertiary-fixed": "#95f8a7",
+                        "on-surface-variant": "#45464c",
+                        "tertiary-container": "#00210a",
+                        "on-primary-container": "#7e8395",
+                        "tertiary": "#000000",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005323",
+                        "error": "#ba1a1a",
+                        "inverse-on-surface": "#f1f0f7",
+                        "on-secondary": "#ffffff",
+                        "primary": "#000000",
+                        "primary-container": "#151b2a",
+                        "on-tertiary-container": "#339650",
+                        "surface-container-high": "#e8e7ef",
+                        "secondary-container": "#fdc003",
+                        "secondary-fixed-dim": "#fabd00",
+                        "on-secondary-fixed": "#261a00",
+                        "on-background": "#1a1b21",
+                        "outline-variant": "#c6c6cc",
+                        "secondary-fixed": "#ffdf9e",
+                        "surface-bright": "#faf8ff",
+                        "secondary": "#785900",
+                        "primary-fixed": "#dde2f6",
+                        "surface-tint": "#585e6f",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "inverse-primary": "#c1c6da",
+                        "surface-variant": "#e2e2e9",
+                        "outline": "#76777d",
+                        "surface-container-low": "#f4f3fa"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "base": "8px",
+                        "margin-desktop": "32px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Poppins"],
+                        "headline-lg-mobile": ["Poppins"],
+                        "body-lg": ["Poppins"],
+                        "headline-lg": ["Poppins"],
+                        "caption": ["Poppins"],
+                        "title-md": ["Poppins"],
+                        "body-md": ["Poppins"],
+                        "display-lg": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "caption": ["11px", { "lineHeight": "14px", "fontWeight": "400" }],
+                        "title-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col md:flex-row antialiased">
+<!-- Navigation Drawer (Desktop) -->
+<aside class="hidden md:flex flex-col h-full w-72 rounded-r-xl bg-surface shadow-md py-lg shrink-0 sticky top-0 h-screen z-40">
+<div class="px-4 mb-lg">
+<h2 class="font-headline-lg text-headline-lg font-bold text-primary">QuickDelivery</h2>
+</div>
+<div class="px-4 mb-xl flex items-center gap-md">
+<div class="w-12 h-12 rounded-full overflow-hidden bg-surface-container shrink-0">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a logistics administrator in a modern, brightly lit office environment. The lighting is crisp and clear, reflecting a highly organized operational setting. The individual projects authority and focus, fitting for an enterprise system owner." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAm8PZXhQS1q8A6JCw7fTDf9IpRiN7_85mChzl7yrgApbXsIEgSr1hU-5uQ0wS8i-eGUY7uo6Lm1bHyMThztvlN4TFnm4CVAySef2tAmx41ZEFsXjEBUnC9YfxTAc7dj5X7rWH-FvQThWo7f9F7lVPioR-KI9FNsdflZ4retuJr4HNb1u5Hp2GPJxCUuFj1i19xyzx5IU4d-HiUBYw7DPJAoUSi5Sax3tCHRNA7QmuL2hwKk8wD1fyt"/>
+</div>
+<div class="flex flex-col">
+<span class="font-title-md text-title-md text-primary truncate">QuickDelivery Admin</span>
+<span class="font-caption text-caption text-on-surface-variant truncate">Owner Account</span>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-sm overflow-y-auto">
+<a class="flex items-center gap-md text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md bg-secondary-container text-on-secondary-container font-bold rounded-full mx-2 px-4 py-3 hover:bg-surface-container-high transition-transform translate-x-1" href="#">
+<span class="material-symbols-outlined fill">group</span>
+<span class="font-label-md text-label-md">Employees</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-md text-label-md">History</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+</aside>
+<!-- Top App Bar (Mobile) -->
+<header class="md:hidden flex justify-between items-center px-margin-mobile py-base w-full z-50 bg-background text-primary font-title-md text-title-md docked full-width top-0 sticky">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors">
+<span class="material-symbols-outlined">local_shipping</span>
+</button>
+<span class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary">QuickDelivery</span>
+<button class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col min-w-0 pb-24 md:pb-0">
+<!-- Header Section -->
+<div class="px-margin-mobile md:px-margin-desktop py-lg md:py-xl flex flex-col md:flex-row md:items-end justify-between gap-md border-b border-surface-variant">
+<div>
+<h1 class="font-display-lg text-display-lg text-primary mb-xs">Reconciliation Queue</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Review and resolve high-priority escrow discrepancies.</p>
+</div>
+<div class="flex gap-sm">
+<button class="flex items-center gap-sm bg-surface-container text-on-surface px-md py-sm rounded-lg hover:bg-surface-container-high transition-colors font-label-md text-label-md border border-outline-variant">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                    Filter
+                </button>
+<button class="flex items-center gap-sm bg-surface-container text-on-surface px-md py-sm rounded-lg hover:bg-surface-container-high transition-colors font-label-md text-label-md border border-outline-variant">
+<span class="material-symbols-outlined text-[18px]">sort</span>
+                    Sort by Amount
+                </button>
+</div>
+</div>
+<!-- Metrics Overview -->
+<div class="px-margin-mobile md:px-margin-desktop py-lg grid grid-cols-2 md:grid-cols-4 gap-md">
+<div class="bg-surface rounded-xl p-md border border-outline-variant shadow-[0px_2px_4px_rgba(13,19,33,0.08)] flex flex-col gap-xs">
+<span class="font-caption text-caption text-on-surface-variant uppercase">Total Pending</span>
+<span class="font-headline-lg text-headline-lg text-primary">24</span>
+</div>
+<div class="bg-surface rounded-xl p-md border border-outline-variant shadow-[0px_2px_4px_rgba(13,19,33,0.08)] flex flex-col gap-xs">
+<span class="font-caption text-caption text-on-surface-variant uppercase">Escrow Locked</span>
+<span class="font-headline-lg text-headline-lg text-primary">$12,450</span>
+</div>
+<div class="bg-surface rounded-xl p-md border border-error-container shadow-[0px_2px_4px_rgba(13,19,33,0.08)] flex flex-col gap-xs relative overflow-hidden">
+<div class="absolute inset-0 bg-error/5"></div>
+<span class="font-caption text-caption text-error uppercase relative z-10">Critical Disputes</span>
+<span class="font-headline-lg text-headline-lg text-error relative z-10">7</span>
+</div>
+<div class="bg-surface rounded-xl p-md border border-outline-variant shadow-[0px_2px_4px_rgba(13,19,33,0.08)] flex flex-col gap-xs">
+<span class="font-caption text-caption text-on-surface-variant uppercase">Avg Resolution</span>
+<span class="font-headline-lg text-headline-lg text-primary">4h</span>
+</div>
+</div>
+<!-- Queue List -->
+<div class="flex-1 px-margin-mobile md:px-margin-desktop py-md flex flex-col gap-md">
+<!-- High Risk Item -->
+<div class="bg-surface rounded-xl border border-error-container shadow-[0px_2px_4px_rgba(13,19,33,0.08)] flex flex-col overflow-hidden">
+<div class="bg-error-container px-md py-sm flex justify-between items-center border-b border-error/20">
+<div class="flex items-center gap-sm text-on-error-container">
+<span class="material-symbols-outlined text-[18px]">warning</span>
+<span class="font-label-md text-label-md">HIGH RISK - DELIVERY DISPUTE</span>
+</div>
+<span class="font-caption text-caption text-on-error-container">Escalated 2h ago</span>
+</div>
+<div class="p-md flex flex-col md:flex-row gap-lg md:items-center">
+<div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-md">
+<div class="flex flex-col gap-xs">
+<span class="font-caption text-caption text-on-surface-variant">Job ID</span>
+<span class="font-title-md text-title-md text-primary">#TRK-8922-XR</span>
+<span class="font-body-md text-body-md text-on-surface-variant">Los Angeles → Seattle</span>
+</div>
+<div class="flex flex-col gap-xs">
+<span class="font-caption text-caption text-on-surface-variant">Escrow Amount</span>
+<span class="font-title-md text-title-md text-primary">$4,250.00</span>
+</div>
+<div class="flex flex-col gap-xs">
+<span class="font-caption text-caption text-on-surface-variant">Failure Reason</span>
+<span class="font-body-md text-body-md text-on-surface">Receiver claims partial damage. Driver provided photo evidence of intact seal at delivery.</span>
+</div>
+</div>
+<div class="flex flex-row md:flex-col gap-sm shrink-0 border-t md:border-t-0 md:border-l border-outline-variant pt-md md:pt-0 md:pl-lg">
+<button class="flex-1 md:flex-none bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md text-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm">
+                            Release Funds
+                        </button>
+<button class="flex-1 md:flex-none bg-error text-on-error px-lg py-sm rounded-lg font-label-md text-label-md hover:bg-error/90 transition-colors shadow-sm">
+                            Refund Sender
+                        </button>
+</div>
+</div>
+</div>
+<!-- Standard Item -->
+<div class="bg-surface rounded-xl border border-outline-variant shadow-[0px_2px_4px_rgba(13,19,33,0.08)] flex flex-col overflow-hidden">
+<div class="bg-surface-container px-md py-sm flex justify-between items-center border-b border-outline-variant/50">
+<div class="flex items-center gap-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+<span class="font-label-md text-label-md">TIMEOUT - DRIVER NO-SHOW</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant">Failed 5h ago</span>
+</div>
+<div class="p-md flex flex-col md:flex-row gap-lg md:items-center">
+<div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-md">
+<div class="flex flex-col gap-xs">
+<span class="font-caption text-caption text-on-surface-variant">Job ID</span>
+<span class="font-title-md text-title-md text-primary">#TRK-7104-BN</span>
+<span class="font-body-md text-body-md text-on-surface-variant">Chicago Local Hub</span>
+</div>
+<div class="flex flex-col gap-xs">
+<span class="font-caption text-caption text-on-surface-variant">Escrow Amount</span>
+<span class="font-title-md text-title-md text-primary">$850.00</span>
+</div>
+<div class="flex flex-col gap-xs">
+<span class="font-caption text-caption text-on-surface-variant">Failure Reason</span>
+<span class="font-body-md text-body-md text-on-surface">Pickup window expired. Driver GPS shows vehicle breakdown 12mi from facility.</span>
+</div>
+</div>
+<div class="flex flex-row md:flex-col gap-sm shrink-0 border-t md:border-t-0 md:border-l border-outline-variant pt-md md:pt-0 md:pl-lg">
+<button class="flex-1 md:flex-none bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md text-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm">
+                            Reassign Job
+                        </button>
+<button class="flex-1 md:flex-none bg-surface text-on-surface border border-outline px-lg py-sm rounded-lg font-label-md text-label-md hover:bg-surface-variant transition-colors">
+                            Refund Sender
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Nav Bar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface shadow-[0px_-2px_4px_rgba(13,19,33,0.08)] rounded-t-xl">
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-md text-label-md mt-1">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors">
+<span class="material-symbols-outlined">storefront</span>
+<span class="font-label-md text-label-md mt-1">Marketplace</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-90 duration-150">
+<span class="material-symbols-outlined fill">assignment</span>
+<span class="font-label-md text-label-md mt-1">Jobs</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md mt-1">Settings</span>
+</button>
+</nav>
+</body></html>

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QuickDelivery - Job Status</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary": "#000000",
+                      "primary-container": "#151b2a",
+                      "secondary-fixed-dim": "#fabd00",
+                      "inverse-surface": "#2f3036",
+                      "on-primary-container": "#7e8395",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-high": "#e8e7ef",
+                      "error": "#ba1a1a",
+                      "tertiary-fixed": "#95f8a7",
+                      "on-primary-fixed": "#151b2a",
+                      "on-background": "#1a1b21",
+                      "primary-fixed-dim": "#c1c6da",
+                      "primary-fixed": "#dde2f6",
+                      "surface-tint": "#585e6f",
+                      "surface-container-low": "#f4f3fa",
+                      "secondary": "#785900",
+                      "on-tertiary-fixed-variant": "#005323",
+                      "on-surface": "#1a1b21",
+                      "surface-container": "#eeedf4",
+                      "surface-bright": "#faf8ff",
+                      "surface": "#faf8ff",
+                      "on-secondary-container": "#6c5000",
+                      "surface-variant": "#e2e2e9",
+                      "on-secondary-fixed": "#261a00",
+                      "primary": "#000000",
+                      "secondary-fixed": "#ffdf9e",
+                      "secondary-container": "#fdc003",
+                      "surface-container-highest": "#e2e2e9",
+                      "outline": "#76777d",
+                      "on-error": "#ffffff",
+                      "on-surface-variant": "#45464c",
+                      "on-error-container": "#93000a",
+                      "inverse-primary": "#c1c6da",
+                      "tertiary-container": "#00210a",
+                      "surface-dim": "#dad9e1",
+                      "background": "#faf8ff",
+                      "outline-variant": "#c6c6cc",
+                      "on-primary": "#ffffff",
+                      "tertiary-fixed-dim": "#79db8d",
+                      "on-tertiary-container": "#339650",
+                      "error-container": "#ffdad6",
+                      "on-secondary-fixed-variant": "#5b4300",
+                      "on-tertiary-fixed": "#00210a",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary": "#ffffff",
+                      "inverse-on-surface": "#f1f0f7",
+                      "on-primary-fixed-variant": "#414657"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "xs": "4px",
+                      "xl": "32px",
+                      "margin-mobile": "16px",
+                      "base": "8px",
+                      "sm": "8px",
+                      "margin-desktop": "32px",
+                      "lg": "24px",
+                      "md": "16px"
+              },
+              "fontFamily": {
+                      "body-md": [
+                              "Poppins"
+                      ],
+                      "title-md": [
+                              "Poppins"
+                      ],
+                      "headline-lg": [
+                              "Poppins"
+                      ],
+                      "body-lg": [
+                              "Poppins"
+                      ],
+                      "caption": [
+                              "Poppins"
+                      ],
+                      "headline-lg-mobile": [
+                              "Poppins"
+                      ],
+                      "label-md": [
+                              "Poppins"
+                      ],
+                      "display-lg": [
+                              "Poppins"
+                      ]
+              },
+              "fontSize": {
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "title-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "caption": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill-icon {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased md:flex md:flex-row h-screen overflow-hidden">
+<!-- DESKTOP SIDE NAV -->
+<nav class="hidden md:flex flex-col h-full py-lg h-full w-72 rounded-r-xl bg-surface dark:bg-surface shadow-md flex-shrink-0">
+<!-- Header -->
+<div class="px-lg pb-lg border-b border-surface-variant flex items-center gap-md">
+<div class="h-12 w-12 rounded-full overflow-hidden flex-shrink-0 bg-surface-container-high">
+<img class="object-cover w-full h-full" data-alt="A professional headshot of a logistics administrator in a modern, brightly lit office environment. The lighting is soft and corporate, emphasizing trust and stability. The overall color palette features deep navy blues and crisp whites, aligning with a clean, light-mode enterprise aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDY8B531ss_Ua4HHiLW_QIu2tLDA6sqC5VdZVHYfQRZXa2loVLJOLTPH1kIE20bh6gu_rdkgBV7S7_psYqyVyo4s83XffUDx10t-Xoer7gKKbYZADvxNs_mXIECTNLXt3SdNVwKJeDkwuCnnScWHYayc3dhFVvbKkaW9vguPLo1bSmdydF7LJKlq7uOkTNzv3c_SPUG51ZNVKKZqH04b_qjZrlT1r-XSwCPwCvBI37ZlgntjU2RGhPi"/>
+</div>
+<div class="flex flex-col">
+<span class="font-title-md text-title-md text-primary dark:text-primary truncate w-40">QuickDelivery Admin</span>
+<span class="font-caption text-caption text-on-surface-variant">Owner Account</span>
+</div>
+</div>
+<!-- Links -->
+<div class="flex-1 overflow-y-auto py-md flex flex-col gap-sm">
+<a class="text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-full mx-2 flex items-center gap-md transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="bg-secondary-container text-on-secondary-container font-bold rounded-full mx-2 px-4 py-3 flex items-center gap-md transition-colors" href="#">
+<span class="material-symbols-outlined fill-icon" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="font-label-md text-label-md">Jobs</span>
+</a>
+<a class="text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-full mx-2 flex items-center gap-md transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md">Employees</span>
+</a>
+<a class="text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-full mx-2 flex items-center gap-md transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-md text-label-md">History</span>
+</a>
+<a class="text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-full mx-2 flex items-center gap-md transition-colors mt-auto" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+</nav>
+<!-- MAIN CONTENT AREA -->
+<div class="flex-1 flex flex-col h-full relative w-full overflow-hidden bg-background">
+<!-- MOBILE TOP APP BAR -->
+<header class="md:hidden flex justify-between items-center px-margin-mobile py-base w-full z-50 bg-background dark:bg-background flat no shadows flex-shrink-0">
+<button class="text-primary dark:text-primary p-2 -ml-2 rounded-full hover:bg-surface-variant transition-transform active:scale-95">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary dark:text-primary">Job #QD-8492</h1>
+<button class="text-primary dark:text-primary p-2 -mr-2 rounded-full hover:bg-surface-variant transition-transform active:scale-95">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</header>
+<!-- DESKTOP TOP HEADER (Contextual) -->
+<header class="hidden md:flex justify-between items-center px-margin-desktop py-lg w-full z-10 bg-background flex-shrink-0 border-b border-surface-variant">
+<div class="flex items-center gap-md">
+<button class="text-on-surface-variant p-2 rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div>
+<h1 class="font-headline-lg text-headline-lg font-bold text-primary">Job Status: Active</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Job ID: #QD-8492 • Created Today, 08:14 AM</p>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="bg-surface text-primary border border-outline font-label-md text-label-md px-lg py-sm rounded-full hover:bg-surface-variant transition-colors flex items-center gap-sm">
+<span class="material-symbols-outlined" style="font-size: 18px;">chat</span> Message Driver
+                </button>
+<button class="bg-surface text-primary border border-outline font-label-md text-label-md px-lg py-sm rounded-full hover:bg-surface-variant transition-colors flex items-center gap-sm">
+<span class="material-symbols-outlined" style="font-size: 18px;">gavel</span> Raise Dispute
+                </button>
+<button class="bg-error text-on-error font-label-md text-label-md px-lg py-sm rounded-full hover:bg-on-error-container transition-colors shadow-sm">
+                    Cancel Job
+                </button>
+</div>
+</header>
+<!-- SCROLLABLE CANVAS -->
+<main class="flex-1 overflow-y-auto p-margin-mobile md:p-margin-desktop pb-32 md:pb-lg flex flex-col md:flex-row gap-lg md:gap-xl">
+<!-- LEFT COLUMN (Details & Timeline) -->
+<div class="flex-1 flex flex-col gap-lg min-w-0">
+<!-- MOBILE STATUS HEADER -->
+<div class="md:hidden flex flex-col gap-xs mb-sm">
+<span class="font-caption text-caption text-on-surface-variant uppercase tracking-wider">Current Status</span>
+<div class="flex items-center gap-sm">
+<div class="h-3 w-3 rounded-full bg-secondary-container animate-pulse"></div>
+<h2 class="font-title-md text-title-md text-primary">In Transit</h2>
+</div>
+</div>
+<!-- PROGRESS TIMELINE CARD -->
+<div class="bg-surface-container-lowest rounded-[12px] p-lg shadow-sm border border-surface-variant relative overflow-hidden">
+<!-- Subtle ambient background -->
+<div class="absolute top-0 right-0 w-64 h-64 bg-secondary-fixed opacity-5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
+<h3 class="font-title-md text-title-md text-primary mb-lg relative z-10">Fulfillment Progress</h3>
+<!-- Horizontal Timeline (Desktop) / Vertical (Mobile) -->
+<div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-md md:gap-0 mt-md">
+<!-- Line connecting nodes (Desktop) -->
+<div class="hidden md:block absolute top-6 left-[10%] right-[10%] h-1 bg-surface-variant -z-10"></div>
+<!-- Active line overlay -->
+<div class="hidden md:block absolute top-6 left-[10%] w-[50%] h-1 bg-primary -z-10 transition-all duration-1000 ease-in-out"></div>
+<!-- Step 1: Pending (Completed) -->
+<div class="flex md:flex-col items-center gap-md md:gap-sm relative md:flex-1 md:text-center z-10">
+<!-- Mobile vertical line -->
+<div class="md:hidden absolute left-5 top-10 bottom-[-32px] w-0.5 bg-primary -z-10"></div>
+<div class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center flex-shrink-0 shadow-sm">
+<span class="material-symbols-outlined" style="font-size: 20px;">check</span>
+</div>
+<div class="flex flex-col md:items-center">
+<span class="font-label-md text-label-md text-primary">Pending</span>
+<span class="font-caption text-caption text-on-surface-variant">08:14 AM</span>
+</div>
+</div>
+<!-- Step 2: Assigned (Completed) -->
+<div class="flex md:flex-col items-center gap-md md:gap-sm relative md:flex-1 md:text-center z-10">
+<!-- Mobile vertical line -->
+<div class="md:hidden absolute left-5 top-10 bottom-[-32px] w-0.5 bg-primary -z-10"></div>
+<div class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center flex-shrink-0 shadow-sm">
+<span class="material-symbols-outlined" style="font-size: 20px;">check</span>
+</div>
+<div class="flex flex-col md:items-center">
+<span class="font-label-md text-label-md text-primary">Assigned</span>
+<span class="font-caption text-caption text-on-surface-variant">08:22 AM</span>
+</div>
+</div>
+<!-- Step 3: Active/In Transit (Current) -->
+<div class="flex md:flex-col items-center gap-md md:gap-sm relative md:flex-1 md:text-center z-10">
+<!-- Mobile vertical line -->
+<div class="md:hidden absolute left-5 top-10 bottom-[-32px] w-0.5 bg-surface-variant -z-10"></div>
+<div class="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container border-2 border-surface-container-lowest flex items-center justify-center flex-shrink-0 shadow-[0_0_12px_rgba(253,192,3,0.4)]">
+<span class="material-symbols-outlined fill-icon" style="font-size: 20px;">local_shipping</span>
+</div>
+<div class="flex flex-col md:items-center">
+<span class="font-label-md text-label-md text-primary font-bold">In Transit</span>
+<span class="font-caption text-caption text-secondary">Est. 10:15 AM</span>
+</div>
+</div>
+<!-- Step 4: Completed (Future) -->
+<div class="flex md:flex-col items-center gap-md md:gap-sm relative md:flex-1 md:text-center z-10">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest text-on-surface-variant border-2 border-surface-container-lowest flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined" style="font-size: 20px;">flag</span>
+</div>
+<div class="flex flex-col md:items-center">
+<span class="font-label-md text-label-md text-on-surface-variant">Completed</span>
+<span class="font-caption text-caption text-on-surface-variant">Pending</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ROUTE & DETAILS CARD (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Route Map Visualizer Placeholder -->
+<div class="bg-surface-container-low rounded-[12px] h-48 md:h-full min-h-[200px] relative overflow-hidden border border-surface-variant md:col-span-1">
+<!-- Simulate map background -->
+<div class="absolute inset-0 bg-cover bg-center" data-alt="A clean, minimalist high-contrast digital map interface showing a logistics route. The style is modern enterprise light-mode, with pale grey roads on a pristine white background. A distinct amber-gold path connects two deep navy blue marker pins, emphasizing clarity and operational precision." data-location="Los Angeles" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCcz6IyRfXer9jbeNr2BTcSZR2qPCenqziTy59K3wzt0NMFMxoNngDKrzLUs8JLVW7ny12F3hVkXoVx5XrHQmTz6RsN9ndQ2oNoks8KerI_QVe3rl1vyJUVs3BT7C69MDqkcULTpsbaguIRVaGMZsPB5KigKGfSD1wTOWuVCtMSfsAFAkcWMnwWqfWwAycV9OwBb1q_d2VziCHX40fYQEoJmmg7oAk1JuRpDXPRKHc3eEcT_fo6ByDN');"></div>
+<!-- Gradient Overlay -->
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+<!-- Map Controls -->
+<button class="absolute top-sm right-sm bg-surface-container-lowest/90 backdrop-blur-sm p-2 rounded-full shadow-sm text-primary hover:bg-surface-container-lowest transition-colors">
+<span class="material-symbols-outlined" style="font-size: 18px;">fullscreen</span>
+</button>
+<div class="absolute bottom-sm left-sm right-sm flex justify-between items-end">
+<div class="bg-surface-container-lowest/90 backdrop-blur-sm px-sm py-xs rounded-lg shadow-sm border border-surface-variant/50">
+<div class="font-caption text-caption text-on-surface-variant">ETA</div>
+<div class="font-title-md text-title-md text-primary">24 mins</div>
+</div>
+<div class="bg-surface-container-lowest/90 backdrop-blur-sm px-sm py-xs rounded-lg shadow-sm border border-surface-variant/50">
+<div class="font-caption text-caption text-on-surface-variant">Distance</div>
+<div class="font-title-md text-title-md text-primary">12.4 mi</div>
+</div>
+</div>
+</div>
+<!-- Logistics Details List -->
+<div class="bg-surface-container-lowest rounded-[12px] p-md shadow-sm border border-surface-variant flex flex-col gap-md md:col-span-1">
+<h3 class="font-title-md text-title-md text-primary flex items-center gap-xs">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-size: 20px;">route</span> Itinerary
+                        </h3>
+<div class="flex flex-col gap-0 relative">
+<!-- Vertical connector -->
+<div class="absolute left-[11px] top-6 bottom-6 w-[2px] bg-surface-variant"></div>
+<!-- Pickup -->
+<div class="flex items-start gap-md py-sm">
+<div class="w-6 h-6 rounded-full bg-surface-container-high border-2 border-surface-container-lowest flex items-center justify-center relative z-10 mt-1">
+<div class="w-2 h-2 rounded-full bg-on-surface-variant"></div>
+</div>
+<div class="flex-1">
+<div class="font-label-md text-label-md text-on-surface-variant">PICKUP (Completed)</div>
+<div class="font-body-md text-body-md text-primary font-medium mt-xs">1420 Industrial Pkwy, Dock B</div>
+<div class="font-caption text-caption text-on-surface-variant">Los Angeles, CA 90021</div>
+</div>
+</div>
+<!-- Dropoff -->
+<div class="flex items-start gap-md py-sm">
+<div class="w-6 h-6 rounded-full bg-secondary-container border-2 border-surface-container-lowest flex items-center justify-center relative z-10 mt-1 shadow-[0_0_8px_rgba(253,192,3,0.3)]">
+<span class="material-symbols-outlined text-on-secondary-container" style="font-size: 14px;">location_on</span>
+</div>
+<div class="flex-1">
+<div class="font-label-md text-label-md text-secondary">DROPOFF (Pending)</div>
+<div class="font-body-md text-body-md text-primary font-medium mt-xs">8850 Corporate Blvd, Suite 400</div>
+<div class="font-caption text-caption text-on-surface-variant">Santa Monica, CA 90404</div>
+</div>
+</div>
+</div>
+<!-- Cargo Summary -->
+<div class="mt-auto pt-sm border-t border-surface-variant flex gap-md">
+<div class="flex-1 bg-surface-container-low rounded-lg p-sm">
+<div class="font-caption text-caption text-on-surface-variant mb-xs">Cargo Load</div>
+<div class="font-body-md text-body-md text-primary flex items-center gap-xs">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-size: 16px;">inventory_2</span>
+                                    2 Pallets, 450 lbs
+                                </div>
+</div>
+<div class="flex-1 bg-surface-container-low rounded-lg p-sm">
+<div class="font-caption text-caption text-on-surface-variant mb-xs">Vehicle Req.</div>
+<div class="font-body-md text-body-md text-primary flex items-center gap-xs">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-size: 16px;">rv_hookup</span>
+                                    Box Truck
+                                </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN (Driver & Pricing) -->
+<div class="flex flex-col gap-lg md:w-80 lg:w-96 flex-shrink-0">
+<!-- DRIVER PROFILE CARD -->
+<div class="bg-surface-container-lowest rounded-[12px] p-md shadow-sm border border-surface-variant">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-md">Assigned Operator</h3>
+<div class="flex items-center gap-md">
+<div class="h-14 w-14 rounded-full overflow-hidden flex-shrink-0 border-2 border-surface-variant bg-surface-container-high relative">
+<img class="object-cover w-full h-full" data-alt="A close-up portrait of a professional logistics driver in uniform. The lighting is crisp and even, conveying trust and reliability. Set against a neutral light grey background consistent with a clean enterprise UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLA6ps3v3E7tLCBOGaUZiqDEl9crkoJpHcHu9_VoZEv5NVIW88opWVG3LYAGpjQM2S9UGp9Y5orxfHfsrIFJ1PjwzxmknuN7bMiP2kj4PqB3WB0tZB0GMtgY3Z2OJdEpF4R1RDTzgvx1Apju3ZvRw4xO4mW1Q4f7HTXxnGxfjWlSH3vnWES6yVZbQsf77u8sj19yQeMFpvo2C9qryFNHjQTeFGrjM8cU8nkb8WK6dfXTxkNeOhwX4H"/>
+<!-- Online badge -->
+<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-tertiary-fixed-dim border-2 border-surface-container-lowest rounded-full"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="font-title-md text-title-md text-primary truncate">Marcus Johnson</div>
+<div class="flex items-center gap-xs mt-xs">
+<span class="material-symbols-outlined text-secondary-container fill-icon" style="font-size: 16px;">star</span>
+<span class="font-body-md text-body-md text-primary">4.9</span>
+<span class="font-caption text-caption text-on-surface-variant">(142 trips)</span>
+</div>
+</div>
+<!-- Contact Action -->
+<button class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary hover:bg-surface-variant transition-colors flex-shrink-0">
+<span class="material-symbols-outlined" style="font-size: 20px;">call</span>
+</button>
+</div>
+<div class="mt-md pt-md border-t border-surface-variant grid grid-cols-2 gap-sm">
+<div>
+<div class="font-caption text-caption text-on-surface-variant">Vehicle</div>
+<div class="font-body-md text-body-md text-primary">Ford Transit</div>
+</div>
+<div>
+<div class="font-caption text-caption text-on-surface-variant">License Plate</div>
+<div class="font-body-md text-body-md text-primary font-mono bg-surface-container p-xs rounded inline-block mt-xs">7ABC123</div>
+</div>
+</div>
+</div>
+<!-- NEGOTIABLE PRICING SECTION (Active Counter-Offer State) -->
+<div class="bg-surface-container-lowest rounded-[12px] shadow-sm border-2 border-secondary-fixed/50 relative overflow-hidden flex flex-col">
+<!-- Warning / Attention header -->
+<div class="bg-secondary-fixed/20 px-md py-sm flex justify-between items-center border-b border-secondary-fixed/30">
+<div class="flex items-center gap-xs text-on-secondary-fixed font-label-md text-label-md">
+<span class="material-symbols-outlined" style="font-size: 16px;">gavel</span>
+                             COUNTER-OFFER RECEIVED
+                         </div>
+<!-- 5 Minute Countdown Timer -->
+<div class="bg-surface-container-lowest px-2 py-1 rounded text-error font-mono font-bold text-label-md flex items-center gap-xs shadow-sm animate-pulse">
+<span class="material-symbols-outlined" style="font-size: 14px;">timer</span>
+                             04:28
+                         </div>
+</div>
+<div class="p-md flex flex-col gap-md">
+<!-- Price Comparison -->
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="font-caption text-caption text-on-surface-variant line-through decoration-error">Original Offer</span>
+<span class="font-title-md text-title-md text-on-surface-variant/70 line-through decoration-error">$120.00</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-surface-variant">arrow_forward</span>
+<span class="text-error font-caption text-[10px] bg-error-container px-1 py-0.5 rounded mt-1 font-bold">+20.8%</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-caption text-caption text-secondary font-bold">Driver Counter</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-primary font-bold">$145.00</span>
+</div>
+</div>
+<!-- Driver Note -->
+<div class="bg-surface-container-low p-sm rounded-lg border border-surface-variant relative">
+<div class="absolute -top-2 left-4 w-4 h-4 bg-surface-container-low border-t border-l border-surface-variant rotate-45"></div>
+<span class="font-caption text-caption text-on-surface-variant italic relative z-10">"Heavy traffic on the 405 right now, plus waiting time at dock B was extended. Need a slight bump for the delay."</span>
+</div>
+<!-- Actions -->
+<div class="flex gap-sm mt-sm">
+<button class="flex-1 bg-surface-container-high text-primary font-label-md text-label-md py-sm rounded-lg hover:bg-surface-variant transition-colors border border-outline-variant">
+                                Decline
+                            </button>
+<button class="flex-[2] bg-secondary-container text-on-secondary-container font-label-md text-label-md py-sm rounded-lg hover:bg-secondary-fixed transition-colors shadow-sm font-bold flex justify-center items-center gap-xs">
+<span class="material-symbols-outlined" style="font-size: 18px;">handshake</span>
+                                Accept $145
+                            </button>
+</div>
+</div>
+</div>
+<!-- MOBILE ACTIONS (Cancel / Dispute) -->
+<div class="flex flex-col gap-sm mt-sm md:hidden">
+<button class="w-full bg-surface-container-high text-primary border border-outline font-label-md text-label-md py-sm rounded-lg hover:bg-surface-variant transition-colors flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined" style="font-size: 18px;">gavel</span> Raise Dispute
+    </button>
+<button class="w-full bg-error text-on-error font-label-md text-label-md py-sm rounded-lg hover:bg-on-error-container transition-colors shadow-sm">
+        Cancel Job
+    </button>
+</div>
+<!-- Expired State Example (Commented out visually, but present for structure reference) -->
+<!--
+                <div class="bg-surface-container-lowest rounded-[12px] p-md shadow-sm border border-outline-variant opacity-75 grayscale">
+                    <div class="flex justify-between items-center mb-md">
+                         <div class="font-label-md text-label-md text-on-surface-variant uppercase">Offer Expired</div>
+                         <div class="text-on-surface-variant font-mono text-label-md">00:00</div>
+                    </div>
+                    <div class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface-variant line-through">$145.00</div>
+                    <button class="w-full mt-md bg-surface-container-high text-on-surface-variant font-label-md text-label-md py-sm rounded-lg" disabled>
+                        Renegotiate
+                    </button>
+                </div>
+                -->
+</div>
+</main>
+<!-- MOBILE BOTTOM NAV BAR (Semantic Shell Mandate: Destination Check) -->
+<!-- Suppressed on this screen as it is a transactional/task-focused detailed view of a specific job, not a top-level destination. -->
+</div>
+</body></html>

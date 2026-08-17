@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QuickDelivery - KYC Verification</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#00210a",
+                        "on-primary-fixed": "#151b2a",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#414657",
+                        "tertiary-fixed-dim": "#79db8d",
+                        "surface-dim": "#dad9e1",
+                        "background": "#faf8ff",
+                        "primary-fixed-dim": "#c1c6da",
+                        "surface-container": "#eeedf4",
+                        "surface": "#faf8ff",
+                        "on-surface": "#1a1b21",
+                        "on-secondary-container": "#6c5000",
+                        "surface-container-highest": "#e2e2e9",
+                        "inverse-surface": "#2f3036",
+                        "tertiary-fixed": "#95f8a7",
+                        "on-surface-variant": "#45464c",
+                        "tertiary-container": "#00210a",
+                        "on-primary-container": "#7e8395",
+                        "tertiary": "#000000",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005323",
+                        "error": "#ba1a1a",
+                        "inverse-on-surface": "#f1f0f7",
+                        "on-secondary": "#ffffff",
+                        "primary": "#000000",
+                        "primary-container": "#151b2a",
+                        "on-tertiary-container": "#339650",
+                        "surface-container-high": "#e8e7ef",
+                        "secondary-container": "#fdc003",
+                        "secondary-fixed-dim": "#fabd00",
+                        "on-secondary-fixed": "#261a00",
+                        "on-background": "#1a1b21",
+                        "outline-variant": "#c6c6cc",
+                        "secondary-fixed": "#ffdf9e",
+                        "surface-bright": "#faf8ff",
+                        "secondary": "#785900",
+                        "primary-fixed": "#dde2f6",
+                        "surface-tint": "#585e6f",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "inverse-primary": "#c1c6da",
+                        "surface-variant": "#e2e2e9",
+                        "outline": "#76777d",
+                        "surface-container-low": "#f4f3fa"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "base": "8px",
+                        "margin-desktop": "32px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Poppins"],
+                        "headline-lg-mobile": ["Poppins"],
+                        "body-lg": ["Poppins"],
+                        "headline-lg": ["Poppins"],
+                        "caption": ["Poppins"],
+                        "title-md": ["Poppins"],
+                        "body-md": ["Poppins"],
+                        "display-lg": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "caption": ["11px", { "lineHeight": "14px", "fontWeight": "400" }],
+                        "title-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md antialiased md:flex-row">
+<!-- Top App Bar (Mobile Only for Shell) -->
+<header class="md:hidden flex justify-between items-center px-margin-mobile py-base w-full z-50 bg-background text-primary font-title-md text-title-md sticky top-0">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary">QuickDelivery</span>
+</div>
+<button class="p-2 hover:bg-surface-variant rounded-full transition-colors active:scale-95 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- Side Navigation Drawer (Desktop Only) -->
+<aside class="hidden md:flex flex-col h-screen w-72 rounded-r-xl bg-surface text-primary shadow-md sticky top-0 py-lg z-40">
+<div class="px-margin-desktop mb-lg flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" data-icon="local_shipping" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+<span class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">QuickDelivery</span>
+</div>
+<div class="px-md mb-xl flex items-center gap-md">
+<img alt="User Profile" class="w-12 h-12 rounded-full object-cover shadow-sm bg-surface-variant" data-alt="A professional headshot of a logistics manager in a high-tech corporate office setting, bright natural light, sharp focus, modern deep navy suit, trustworthy expression." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQEB8aGkbvkVClEcRW7-u2RR46xxkAx4z32HBp_D5Jy6ozp7pHOrGDEs8hfDykI8rnJhK3K3DHxuIw4yZGsBJUov9U-6zmS0tmhq8G0N2bZtYqFMqfOc46i6lXBKCe4nC-nPp3F8mm4ROFPso-AGCvJf_u6I_UWd_uK5lxNBJigHFwyImrPRjLC3xU9ld7-pduS3qE_OtQRHvwDZQ2yLzFJvokSwLBh5en8h793xGJ1XJZ57vw_rBw"/>
+<div>
+<h3 class="font-title-md text-title-md text-primary">QuickDelivery Admin</h3>
+<p class="font-caption text-caption text-on-surface-variant">Owner Account</p>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-sm">
+<a class="flex items-center gap-md text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors mx-2 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors mx-2 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-md text-label-md">Employees</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors mx-2 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-label-md text-label-md">History</span>
+</a>
+<a class="flex items-center gap-md bg-secondary-container text-on-secondary-container font-bold rounded-full mx-2 px-4 py-3 translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="settings" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 px-margin-mobile md:px-margin-desktop py-lg pb-32 md:pb-lg flex flex-col max-w-5xl mx-auto w-full">
+<div class="mb-lg">
+<div class="flex items-center gap-sm mb-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-sm" data-icon="arrow_back">arrow_back</span>
+<span class="font-label-md text-label-md cursor-pointer hover:text-primary">Back to Account</span>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg font-bold text-primary mb-xs">Identity Verification</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Upload your documents to complete the KYC process. This ensures operational security and trust.</p>
+</div>
+<div class="bg-surface rounded-[12px] p-md md:p-lg shadow-[0px_2px_4px_rgba(13,19,33,0.08)] flex flex-col gap-lg border border-surface-variant">
+<!-- Global Status Banner -->
+<div class="bg-surface-container-low border-l-4 border-secondary-container p-md rounded-r-lg flex items-start gap-md">
+<span class="material-symbols-outlined text-secondary" data-icon="info">info</span>
+<div>
+<h4 class="font-title-md text-title-md text-on-surface mb-xs">Verification Pending</h4>
+<p class="font-body-md text-body-md text-on-surface-variant">Your documents are currently under review. Please ensure all uploads are clear and legible to avoid delays.</p>
+</div>
+</div>
+<!-- ID Document Section -->
+<div>
+<h3 class="font-title-md text-title-md text-primary mb-sm flex items-center gap-sm">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+                    Government Issued ID
+                </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- ID Front -->
+<div class="border-2 border-dashed border-outline-variant rounded-xl p-md flex flex-col items-center justify-center text-center bg-surface-container-lowest hover:border-primary hover:bg-surface-container-low transition-colors cursor-pointer group relative overflow-hidden h-48">
+<div class="absolute top-sm right-sm z-10">
+<span class="bg-[#dcfce7] text-[#166534] font-label-md text-label-md px-2 py-1 rounded-[4px] flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span> Approved
+                            </span>
+</div>
+<img alt="ID Front Uploaded" class="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-multiply" data-alt="A highly detailed close-up of a blurred official ID card lying flat on a clean, modern white desk, bathed in soft, diffused studio lighting. The card has a subtle holographic sheen, emphasizing security and trust. Navy blue lanyard visible in the background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2rtnBwg4fVJzOdleIWilShA05iXIHENL0y4B7k75dtuUqzsFbY1_p_3Bg_VeNH4u6g1qKcJzanbrBiv1hIqJFYmOw8PUUlcijX3nCiJ5gBLRuQIFOqT7aKsbWe67QSw3Bb_iX396HPFfRU6PlNzwh1tmpUW8j_F7HUPJZ8ZjM2wNhAuv0ZPbUJsXIEvOPmqy3mWSJuATWslxlC8f01so-3zF0Musj530102SB4Whaa85vHB2UlSvQ"/>
+<span class="material-symbols-outlined text-4xl text-outline mb-sm group-hover:text-primary z-10" data-icon="id_card">id_card</span>
+<span class="font-title-md text-title-md text-on-surface z-10">ID Front</span>
+<span class="font-caption text-caption text-on-surface-variant z-10">JPEG, PNG up to 5MB</span>
+</div>
+<!-- ID Back -->
+<div class="border-2 border-dashed border-outline-variant rounded-xl p-md flex flex-col items-center justify-center text-center bg-surface-container-lowest hover:border-primary hover:bg-surface-container-low transition-colors cursor-pointer group h-48">
+<span class="material-symbols-outlined text-4xl text-outline mb-sm group-hover:text-primary" data-icon="credit_card">credit_card</span>
+<span class="font-title-md text-title-md text-on-surface">ID Back</span>
+<span class="font-caption text-caption text-on-surface-variant">Click to upload</span>
+<button class="mt-sm bg-surface-container-highest text-on-surface font-label-md text-label-md px-4 py-2 rounded-full hover:bg-surface-variant transition-colors">Select File</button>
+</div>
+</div>
+</div>
+<!-- Divider -->
+<hr class="border-surface-variant"/>
+<!-- Selfie Section -->
+<div>
+<h3 class="font-title-md text-title-md text-primary mb-sm flex items-center gap-sm">
+<span class="material-symbols-outlined" data-icon="face">face</span>
+                    Selfie Verification
+                </h3>
+<div class="border-2 border-dashed border-error rounded-xl p-md flex flex-col items-center justify-center text-center bg-error-container/20 h-48 relative">
+<div class="absolute top-sm right-sm z-10">
+<span class="bg-[#fee2e2] text-[#991b1b] font-label-md text-label-md px-2 py-1 rounded-[4px] flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="error">error</span> Rejected
+                            </span>
+</div>
+<span class="material-symbols-outlined text-4xl text-error mb-sm" data-icon="add_a_photo">add_a_photo</span>
+<span class="font-title-md text-title-md text-on-surface">Upload Selfie</span>
+<span class="font-caption text-caption text-error mt-xs max-w-xs">Reason: Image is too blurry. Please ensure good lighting and a clear view of your face.</span>
+<button class="mt-sm bg-primary text-on-primary font-label-md text-label-md px-4 py-2 rounded-full hover:bg-on-primary-fixed transition-colors shadow-[0px_4px_12px_rgba(13,19,33,0.12)]">Re-upload</button>
+</div>
+</div>
+<!-- Divider -->
+<hr class="border-surface-variant"/>
+<!-- Business Proof Section -->
+<div>
+<div class="flex justify-between items-center mb-sm">
+<h3 class="font-title-md text-title-md text-primary flex items-center gap-sm">
+<span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+                        Business Proof <span class="font-caption text-caption text-on-surface-variant font-normal">(Optional for Employees)</span>
+</h3>
+<span class="bg-[#fef3c7] text-[#92400e] font-label-md text-label-md px-2 py-1 rounded-[4px] flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="schedule">schedule</span> Pending
+                    </span>
+</div>
+<div class="border border-outline-variant rounded-xl p-md flex items-center justify-between bg-surface-container-low">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 bg-primary-fixed rounded-lg flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+</div>
+<div>
+<p class="font-body-md text-body-md font-semibold text-on-surface">business_license_2023.pdf</p>
+<p class="font-caption text-caption text-on-surface-variant">Uploaded today at 10:42 AM • 2.4 MB</p>
+</div>
+</div>
+<button class="text-error hover:bg-error-container p-2 rounded-full transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+<!-- Action Area -->
+<div class="flex justify-end gap-md mt-sm pt-sm border-t border-surface-variant">
+<button class="bg-surface text-primary font-label-md text-label-md px-lg py-3 rounded-full border border-outline hover:bg-surface-variant transition-colors">Save Draft</button>
+<button class="bg-secondary-container text-on-secondary-container font-label-md text-label-md px-lg py-3 rounded-full font-bold hover:brightness-95 transition-all shadow-[0px_4px_12px_rgba(13,19,33,0.12)]">Submit for Verification</button>
+</div>
+</div>
+</main>
+<!-- Bottom Nav Bar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface text-secondary shadow-[0px_-2px_4px_rgba(13,19,33,0.08)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+<span class="font-label-md text-label-md">Marketplace</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+<span class="font-label-md text-label-md">Jobs</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="settings" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+</body></html>

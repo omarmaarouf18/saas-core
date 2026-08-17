@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Customer Job Map - QuickDelivery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary": "#000000",
+                      "primary-container": "#151b2a",
+                      "secondary-fixed-dim": "#fabd00",
+                      "inverse-surface": "#2f3036",
+                      "on-primary-container": "#7e8395",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-high": "#e8e7ef",
+                      "error": "#ba1a1a",
+                      "tertiary-fixed": "#95f8a7",
+                      "on-primary-fixed": "#151b2a",
+                      "on-background": "#1a1b21",
+                      "primary-fixed-dim": "#c1c6da",
+                      "primary-fixed": "#dde2f6",
+                      "surface-tint": "#585e6f",
+                      "surface-container-low": "#f4f3fa",
+                      "secondary": "#785900",
+                      "on-tertiary-fixed-variant": "#005323",
+                      "on-surface": "#1a1b21",
+                      "surface-container": "#eeedf4",
+                      "surface-bright": "#faf8ff",
+                      "surface": "#faf8ff",
+                      "on-secondary-container": "#6c5000",
+                      "surface-variant": "#e2e2e9",
+                      "on-secondary-fixed": "#261a00",
+                      "primary": "#000000",
+                      "secondary-fixed": "#ffdf9e",
+                      "secondary-container": "#fdc003",
+                      "surface-container-highest": "#e2e2e9",
+                      "outline": "#76777d",
+                      "on-error": "#ffffff",
+                      "on-surface-variant": "#45464c",
+                      "on-error-container": "#93000a",
+                      "inverse-primary": "#c1c6da",
+                      "tertiary-container": "#00210a",
+                      "surface-dim": "#dad9e1",
+                      "background": "#faf8ff",
+                      "outline-variant": "#c6c6cc",
+                      "on-primary": "#ffffff",
+                      "tertiary-fixed-dim": "#79db8d",
+                      "on-tertiary-container": "#339650",
+                      "error-container": "#ffdad6",
+                      "on-secondary-fixed-variant": "#5b4300",
+                      "on-tertiary-fixed": "#00210a",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary": "#ffffff",
+                      "inverse-on-surface": "#f1f0f7",
+                      "on-primary-fixed-variant": "#414657"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "xs": "4px",
+                      "xl": "32px",
+                      "margin-mobile": "16px",
+                      "base": "8px",
+                      "sm": "8px",
+                      "margin-desktop": "32px",
+                      "lg": "24px",
+                      "md": "16px"
+              },
+              "fontFamily": {
+                      "body-md": ["Poppins"],
+                      "title-md": ["Poppins"],
+                      "headline-lg": ["Poppins"],
+                      "body-lg": ["Poppins"],
+                      "caption": ["Poppins"],
+                      "headline-lg-mobile": ["Poppins"],
+                      "label-md": ["Poppins"],
+                      "display-lg": ["Poppins"]
+              },
+              "fontSize": {
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "title-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "caption": ["11px", {"lineHeight": "14px", "fontWeight": "400"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .map-bg {
+            background-color: #e5e7eb;
+            background-image: radial-gradient(#d1d5db 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .pulse-marker {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(253, 192, 3, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(253, 192, 3, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(253, 192, 3, 0); }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen w-screen overflow-hidden flex flex-col relative md:flex-row">
+<!-- Mobile Top App Bar (Hidden on Desktop) -->
+<header class="md:hidden flex justify-between items-center px-margin-mobile py-base w-full z-50 bg-background text-primary absolute top-0 left-0 right-0 flat no shadows">
+<div class="flex items-center gap-2">
+<button aria-label="Back" class="p-2 hover:bg-surface-variant rounded-full text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+</button>
+<span class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary">Live Tracking</span>
+</div>
+<button aria-label="Notifications" class="p-2 hover:bg-surface-variant rounded-full text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+</button>
+</header>
+<!-- Desktop Side Nav (Hidden on Mobile) -->
+<nav class="hidden md:flex flex-col h-full py-lg w-72 rounded-r-xl bg-surface text-primary shadow-md z-40 relative">
+<div class="px-lg pb-xl border-b border-surface-variant/50">
+<div class="flex items-center gap-sm mb-lg">
+<span class="material-symbols-outlined text-[32px] text-secondary-container" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+<span class="font-title-md text-title-md font-bold text-primary">QuickDelivery</span>
+</div>
+<div class="flex items-center gap-md">
+<img class="w-12 h-12 rounded-full object-cover border-2 border-secondary-container" data-alt="A professional headshot of a female logistics manager in a modern, well-lit corporate office. She is wearing a dark navy blazer, smiling subtly. The background is slightly blurred with bright white and neutral tones. High resolution, sharp focus, capturing an atmosphere of enterprise trust and efficiency." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrtdibSg_cICfZYDxRhPGMznrAe2y3qElbfMAFbmezpNCfRHQu02iKoIArk4qSPcfVx1FU2QjGNQwb8sALPhUuiZ7BVG5lk_Wyl33cYdW8SUVZhon1Y3aTnicLm6DzEBMWMUVw2CNfQMOJP1kiWIqHH8pYCSzJ0K_E-7kwgHKWGNjOMR7ByvvlfZw5SJgyttS4qSgPqSyhh9Y22h6OlOWj6tbm89C5TUt81jH9pr5OY0eJ5dFpwIXN"/>
+<div>
+<p class="font-title-md text-title-md text-primary leading-tight">Sarah Jenkins</p>
+<p class="font-caption text-caption text-on-surface-variant">Client Account</p>
+</div>
+</div>
+</div>
+<ul class="flex flex-col gap-sm mt-lg flex-1 overflow-y-auto px-md">
+<li>
+<a class="flex items-center gap-md px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="font-body-md text-body-md group-hover:text-primary transition-colors">Home</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" style="font-variation-settings: 'FILL' 0;">assignment</span>
+<span class="font-body-md text-body-md group-hover:text-primary transition-colors">My Orders</span>
+</a>
+</li>
+<li>
+<!-- Active State -->
+<a class="flex items-center gap-md px-4 py-3 bg-secondary-container text-on-secondary-container font-bold rounded-full mx-2 Active: translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">my_location</span>
+<span class="font-body-md text-body-md font-bold">Live Tracking</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" style="font-variation-settings: 'FILL' 0;">history</span>
+<span class="font-body-md text-body-md group-hover:text-primary transition-colors">History</span>
+</a>
+</li>
+</ul>
+<div class="px-md mt-auto pt-lg border-t border-surface-variant/50">
+<a class="flex items-center gap-md px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" style="font-variation-settings: 'FILL' 0;">settings</span>
+<span class="font-body-md text-body-md group-hover:text-primary transition-colors">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Canvas: Map Area -->
+<main class="flex-1 relative w-full h-full">
+<!-- The Map Background -->
+<div class="absolute inset-0 map-bg z-0" data-alt="A highly detailed, top-down styled digital map interface showing city blocks, major arterial roads, and subtle geographic features. The map uses a sophisticated light mode palette with very subtle off-white and pale grey tones (#E5E7EB base). Arterial roads are highlighted softly. The overall aesthetic is clean, professional, and optimized for a high-end logistics dashboard. No UI elements visible in the image itself, just the map tiles." data-location="New York City" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCl7kFECSLEMbSByTPsibWTPRc3b3xODmFEAqI3x3OqJ3HVVrl1lELUwWOqPch9endiqSKm92J0frVKfAs0Yd-A1kG9jF9s4LeTx8uVVG9MVdNHuIzLtINd1keMHCup-qZ-ILo0uBHvy46c-OP3h1I9AP8hW2-CDjXc6Xh4Jq8MwzuJElD_R6WorAjmmFHS37B3zHb2oe9QpJKW8CUaRZzGF_gBUaeK1F8WTpa_ELxPeck6mYBT6k42')"></div>
+<!-- Simulated Map Markers -->
+<div class="absolute top-[45%] left-[55%] z-10 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+<div class="bg-secondary-container text-on-secondary-container rounded-full p-2 pulse-marker mb-1 shadow-md">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+</div>
+<div class="bg-surface text-on-surface px-2 py-1 rounded shadow-sm border border-outline-variant font-caption text-caption whitespace-nowrap">
+                 Driver: Marcus T.
+             </div>
+</div>
+<div class="absolute top-[30%] left-[35%] z-10 transform -translate-x-1/2 -translate-y-1/2">
+<div class="bg-error text-on-error rounded-full p-2 shadow-md">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">home</span>
+</div>
+</div>
+<!-- Dashed Line SVG connecting markers (simulated route) -->
+<svg class="absolute inset-0 w-full h-full z-[5] pointer-events-none" preserveaspectratio="none">
+<path d="M 35% 30% Q 45% 35% 55% 45%" fill="none" opacity="0.6" stroke="#7e8395" stroke-dasharray="8 8" stroke-width="3"></path>
+</svg>
+<!-- Map Controls (Desktop: Top Right, Mobile: Bottom Right above Nav/Cards) -->
+<div class="absolute right-margin-mobile md:right-margin-desktop top-[80px] md:top-lg z-20 flex flex-col gap-sm">
+<button aria-label="Zoom In" class="bg-surface text-on-surface p-2 rounded-lg shadow-[0px_4px_12px_rgba(13,19,33,0.12)] hover:bg-surface-variant transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">add</span>
+</button>
+<button aria-label="Zoom Out" class="bg-surface text-on-surface p-2 rounded-lg shadow-[0px_4px_12px_rgba(13,19,33,0.12)] hover:bg-surface-variant transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">remove</span>
+</button>
+<button aria-label="Center on Me" class="bg-surface text-on-surface p-2 rounded-lg shadow-[0px_4px_12px_rgba(13,19,33,0.12)] hover:bg-surface-variant transition-colors flex items-center justify-center mt-2">
+<span class="material-symbols-outlined text-secondary-container" style="font-variation-settings: 'FILL' 1;">my_location</span>
+</button>
+</div>
+<!-- Operational Overlay Card (Mobile: Bottom Sheet style, Desktop: Floating panel left/bottom) -->
+<div class="absolute bottom-0 md:bottom-lg left-0 md:left-lg w-full md:w-[400px] z-30 pointer-events-none flex flex-col justify-end h-full p-margin-mobile md:p-0">
+<!-- Spacer for mobile scroll-like feel if needed -->
+<div class="flex-1 hidden md:block"></div>
+<!-- The Card -->
+<div class="bg-surface text-on-surface rounded-t-[24px] md:rounded-[12px] shadow-[0px_4px_12px_rgba(13,19,33,0.12)] pointer-events-auto border border-outline-variant/30 flex flex-col relative w-full mb-16 md:mb-0">
+<!-- Mobile Drag Handle -->
+<div class="w-full flex justify-center pt-3 pb-1 md:hidden">
+<div class="w-12 h-1.5 bg-outline-variant rounded-full"></div>
+</div>
+<div class="p-lg flex flex-col gap-md">
+<!-- Header -->
+<div class="flex justify-between items-start border-b border-surface-variant pb-md">
+<div>
+<h2 class="font-title-md text-title-md font-bold text-primary">Delivery #TRK-8892A</h2>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="w-2 h-2 rounded-full bg-secondary-container"></span>
+                                 In Transit - Arriving Soon
+                             </p>
+</div>
+<div class="bg-secondary-container text-on-secondary-container font-title-md text-title-md font-bold px-3 py-1 rounded-md shadow-sm">
+                             12 min
+                         </div>
+</div>
+<!-- ETA & Status -->
+<div class="bg-surface-container-low rounded-lg p-md flex items-center gap-md">
+<div class="bg-surface text-primary p-2 rounded-full shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">schedule</span>
+</div>
+<div class="flex-1">
+<p class="font-caption text-caption text-on-surface-variant uppercase tracking-wider">Estimated Arrival</p>
+<p class="font-title-md text-title-md text-primary font-bold">2:45 PM</p>
+</div>
+</div>
+<!-- Driver Info -->
+<div class="flex items-center gap-md py-sm">
+<img class="w-12 h-12 rounded-full object-cover border border-outline-variant" data-alt="Close up portrait of a professional male delivery driver wearing a dark navy cap and uniform. He looks reliable and focused. The background is a blurred view of a logistics vehicle interior. High quality, sharp, emphasizing enterprise trust." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjr3K0IB8vpmRMSqh6jNNQIY-UehqslWy07iPvj3xOXgWVN71UgDEPBMLhVIqep2gCuaJ3wHY1ABAkcGZKa9kj3jfYnV4KKxT54ofTgt6YLiKNqK0Up2_geyTwPQ60Z6y9zT05RjzM_SlNHYbv8hamB7CMCwWaaZ9FpiwQ5tcCt1PpKVOxpVC4XYQnWk4Gwr0XlumW61hJT6F6hr2mGA8of1E2aS0eVDYmmFjsiuz2LVNfk1uOqb-k"/>
+<div class="flex-1">
+<p class="font-body-md text-body-md font-bold text-primary">Marcus T.</p>
+<div class="flex items-center gap-1 text-secondary-container font-caption text-caption">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-on-surface-variant font-bold">4.9</span>
+<span class="text-outline">(1.2k deliveries)</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button aria-label="Message Driver" class="w-10 h-10 rounded-full bg-surface-container-high text-primary flex items-center justify-center hover:bg-surface-variant transition-colors shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">chat</span>
+</button>
+<button aria-label="Call Driver" class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary-container transition-colors shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">call</span>
+</button>
+</div>
+</div>
+<!-- Primary Action -->
+<button class="w-full bg-secondary-container text-on-secondary-container font-title-md text-title-md font-bold py-3 rounded-lg shadow-sm hover:opacity-90 transition-opacity mt-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">visibility</span>
+                         View Order Details
+                     </button>
+</div>
+</div>
+</div>
+</main>
+<!-- Mobile Bottom Nav Bar (Hidden on Desktop) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface text-secondary-fixed shadow-[0px_-2px_4px_rgba(13,19,33,0.08)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform duration-150" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="font-label-md text-label-md mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform duration-150" style="font-variation-settings: 'FILL' 0;">assignment</span>
+<span class="font-label-md text-label-md mt-1">Orders</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 Active: scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">my_location</span>
+<span class="font-label-md text-label-md mt-1">Tracking</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform duration-150" style="font-variation-settings: 'FILL' 0;">settings</span>
+<span class="font-label-md text-label-md mt-1">Settings</span>
+</a>
+</nav>
+</body></html>
