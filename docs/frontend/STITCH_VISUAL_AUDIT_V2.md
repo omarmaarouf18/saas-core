@@ -72,48 +72,48 @@ The following table compares the design tokens between the old brief (`velocity_
 
 The 40 folders in `design/stitch-export/logistics_core_unified/` map to the 28 Flutter screens as follows:
 
-| # | Stitch Folder Name | Iteration Role | Authoritative Version | Target Flutter Screen File | Target Role / Route | Implementation Status on `logic-exploitation` |
-| :- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 1 | `login` | Standard | Authoritative | [`login_screen.dart`](../../frontend/lib/screens/login_screen.dart) | Auth / Login | **100% Rebuilt & Verified** (`0843a3a`) |
-| 2 | `signup` | Standard | Authoritative | [`signup_screen.dart`](../../frontend/lib/screens/signup_screen.dart) | Auth / Signup | **100% Rebuilt & Verified** (`60936b6`) |
-| 3 | `otp_verification` | Standard | Authoritative | [`otp_screen.dart`](../../frontend/lib/screens/otp_screen.dart) | Auth / 2FA OTP | **100% Rebuilt & Verified** (`6302591`) |
-| 4 | `forgot_password` | Standard | Authoritative | [`forgot_password_screen.dart`](../../frontend/lib/screens/forgot_password_screen.dart) | Auth / Password Reset | **100% Rebuilt & Verified** (`53da750`) |
-| 5 | `update_required` | Standard | Authoritative | [`update_required_screen.dart`](../../frontend/lib/screens/update_required_screen.dart) | Platform / Mandatory Update | **100% Rebuilt & Verified** (`c2764df`) |
-| 6 | `customer_home` | Standard | Authoritative | [`customer_home_screen.dart`](../../frontend/lib/screens/customer_home_screen.dart) | Customer / Home Tab | **100% Rebuilt & Verified** (`df433e7`) |
-| 7 | `my_jobs` | Standard | Authoritative | [`customer_jobs_screen.dart`](../../frontend/lib/screens/customer_jobs_screen.dart) | Customer / Orders Tab | **100% Rebuilt & Verified** (`a008e10`) |
-| 8 | `marketplace` | Standard | Authoritative | [`customer_marketplace_screen.dart`](../../frontend/lib/screens/customer_marketplace_screen.dart) | Customer / Marketplace | **100% Rebuilt & Verified** (`f30b2db`) |
-| 9 | `job_status_final_fidelity` | Final Fidelity | **AUTHORITATIVE** | [`job_status_screen.dart`](../../frontend/lib/screens/job_status_screen.dart) | Customer / Job Status | **100% Rebuilt & Verified** (`b0cb5c3`) |
-| - | `job_status_1` | Iteration 1 | Superseded by final | - | - | Superseded |
-| - | `job_status_2` | Iteration 2 | Superseded by final | - | - | Superseded |
-| - | `job_status_unified` | Unified draft | Superseded by final | - | - | Superseded |
-| 10 | `customer_job_map_final_fidelity` | Final Fidelity | **AUTHORITATIVE** | [`customer_job_map_screen.dart`](../../frontend/lib/screens/customer_job_map_screen.dart) | Customer / Live Job Tracking Map | **100% Rebuilt & Verified** (`8acbe7a`) |
-| - | `customer_job_map` | Iteration 1 | Superseded by final | - | - | Superseded |
-| - | `customer_job_map_unified` | Unified draft | Superseded by final | - | - | Superseded |
-| - | `job_tracking_map` | Alias variant | Superseded by final | - | - | Superseded |
-| 11 | `customer_rating` | Standard | Authoritative | [`rating_screen.dart`](../../frontend/lib/screens/rating_screen.dart) | Shared / Blind Rating | **100% Rebuilt & Verified** (`ec58038`) |
-| 12 | `owner_dashboard` | Standard | Authoritative | [`home_screen.dart`](../../frontend/lib/screens/home_screen.dart) | Owner / Dashboard Tab | **100% Rebuilt & Verified** (`f4dd985`) |
-| 13 | `employee_management` | Standard | Authoritative | [`employee_screen.dart`](../../frontend/lib/screens/employee_screen.dart) | Owner / Employees Tab (Worker Mgmt) | **100% Rebuilt & Verified** (`6b06162`) |
-| 14 | `owner_service_management_final_fidelity` | Final Fidelity | **AUTHORITATIVE** | [`service_screen.dart`](../../frontend/lib/screens/service_screen.dart) | Owner / Services Directory | **100% Rebuilt & Verified** (`5e5ab10`) |
-| - | `owner_service_management` | Iteration 1 | Superseded by final | - | - | Superseded |
-| 15 | `business_configuration` | Standard | Authoritative | [`owner_configuration_screen.dart`](../../frontend/lib/screens/owner_configuration_screen.dart) | Owner / Business Config | **100% Rebuilt & Verified** (`133644f`) |
-| 16 | `kyc_verification` | Standard | Authoritative | [`kyc_document_upload_screen.dart`](../../frontend/lib/screens/kyc_document_upload_screen.dart) | Owner & Employee / KYC Upload | **100% Rebuilt & Verified** (`51506a8`) |
-| 17 | `wallet_transactions` | Standard | Authoritative | [`wallet_screen.dart`](../../frontend/lib/screens/wallet_screen.dart) | Owner / Wallet & Ledger | **100% Rebuilt & Verified** (`ff6e3a1`) |
-| 18 | `subscription_plans` | Standard | Authoritative | [`subscription_screen.dart`](../../frontend/lib/screens/subscription_screen.dart) | Owner / Subscriptions | **100% Rebuilt & Verified** (`623c9f3`) |
-| 19 | `fleet_tracking_map` | Standard | Authoritative | [`owner_fleet_map_screen.dart`](../../frontend/lib/screens/owner_fleet_map_screen.dart) | Owner / Fleet Tracking Map | **100% Rebuilt & Verified** (`29c2e5e`) |
-| 20 | `owner_history` | Standard | Authoritative | [`owner_history_screen.dart`](../../frontend/lib/screens/owner_history_screen.dart) | Owner / History Tab | **100% Rebuilt & Verified** (`5c43695`) |
-| 21 | `reconciliation_queue_final_fidelity` | Final Fidelity | **AUTHORITATIVE** | [`owner_reconciliation_queue_screen.dart`](../../frontend/lib/screens/owner_reconciliation_queue_screen.dart) | Owner / Reconciliation Queue | **100% Rebuilt & Verified** (`4c2b92c`) |
-| - | `reconciliation_queue_1` | Iteration 1 | Superseded by final | - | - | Superseded |
-| - | `reconciliation_queue_2` | Iteration 2 | Superseded by final | - | - | Superseded |
-| - | `owner_reconciliation_queue_unified` | Unified draft | Superseded by final | - | - | Superseded |
-| 22 | `employee_home` | Standard | Authoritative | [`employee_home_screen.dart`](../../frontend/lib/screens/employee_home_screen.dart) | Employee / Tab Shell Container | **100% Rebuilt & Verified** (`1880fca`) |
-| 23 | `employee_jobs_final_fidelity` | Final Fidelity | **AUTHORITATIVE** | [`employee_jobs_screen.dart`](../../frontend/lib/screens/employee_jobs_screen.dart) | Employee / Assigned Jobs Tab | **100% Rebuilt & Verified** (`8a67d78`) |
-| - | `employee_jobs` | Iteration 1 | Superseded by final | - | - | Superseded |
-| 24 | `employee_history_final_fidelity` | Final Fidelity | **AUTHORITATIVE** | [`employee_history_screen.dart`](../../frontend/lib/screens/employee_history_screen.dart) | Employee / Job History Tab | **100% Rebuilt & Verified** (`b8c58fa`) |
-| - | `employee_history` | Iteration 1 | Superseded by final | - | - | Superseded |
-| 25 | `settings` | Standard | Authoritative | [`settings_screen.dart`](../../frontend/lib/screens/settings_screen.dart) | Shared / Settings | **100% Rebuilt & Verified** (`29cf47b`) |
-| 26 | `my_account` | Standard | Authoritative | [`my_account_screen.dart`](../../frontend/lib/screens/my_account_screen.dart) | Shared / My Account Profile | **100% Rebuilt & Verified** (`228899c`) |
-| 27 | `notifications` | Standard | Authoritative | [`notifications_screen.dart`](../../frontend/lib/screens/notifications_screen.dart) | Shared / Notifications | **100% Rebuilt & Verified** (`126189e`) |
-| 28 | `chat` | Standard | Authoritative | [`chat_screen.dart`](../../frontend/lib/screens/chat_screen.dart) | Shared / Real-Time Job Chat | **100% Rebuilt & Verified** (`246ac83`) |
+| # | Stitch Folder Name | Iteration Role | Authoritative Version | Target Flutter Screen File | Target Role / Route | Verified Diff Stat | Scope Classification | Dedicated Commit |
+| :- | :--- | :--- | :--- | :--- | :--- | :---: | :--- | :---: |
+| 1 | `login` | Standard | Authoritative | [`login_screen.dart`](../../frontend/lib/screens/login_screen.dart) | Auth / Login | +253 -235 (67.1% del) | Ground-Up Rebuild | [`0843a3a`](https://github.com/omarmaarouf18/saas-core/commit/0843a3a) |
+| 2 | `signup` | Standard | Authoritative | [`signup_screen.dart`](../../frontend/lib/screens/signup_screen.dart) | Auth / Signup | +215 -198 (55.6% del) | Ground-Up Rebuild | [`60936b6`](https://github.com/omarmaarouf18/saas-core/commit/60936b6) |
+| 3 | `otp_verification` | Standard | Authoritative | [`otp_screen.dart`](../../frontend/lib/screens/otp_screen.dart) | Auth / 2FA OTP | +209 -168 (56.6% del) | Ground-Up Rebuild | [`6302591`](https://github.com/omarmaarouf18/saas-core/commit/6302591) |
+| 4 | `forgot_password` | Standard | Authoritative | [`forgot_password_screen.dart`](../../frontend/lib/screens/forgot_password_screen.dart) | Auth / Password Reset | +249 -216 (57.3% del) | Ground-Up Rebuild | [`53da750`](https://github.com/omarmaarouf18/saas-core/commit/53da750) |
+| 5 | `update_required` | Standard | Authoritative | [`update_required_screen.dart`](../../frontend/lib/screens/update_required_screen.dart) | Platform / Mandatory Update | +244 -217 (56.7% del) | Ground-Up Rebuild | [`c2764df`](https://github.com/omarmaarouf18/saas-core/commit/c2764df) |
+| 6 | `customer_home` | Standard | Authoritative | [`customer_home_screen.dart`](../../frontend/lib/screens/customer_home_screen.dart) | Customer / Home Tab | +397 -371 (48.7% del) | Major Redesign & Bento Layout | [`df433e7`](https://github.com/omarmaarouf18/saas-core/commit/df433e7) |
+| 7 | `my_jobs` | Standard | Authoritative | [`customer_jobs_screen.dart`](../../frontend/lib/screens/customer_jobs_screen.dart) | Customer / Orders Tab | +246 -221 (53.8% del) | Major Redesign & Matrix Layout | [`a008e10`](https://github.com/omarmaarouf18/saas-core/commit/a008e10) |
+| 8 | `marketplace` | Standard | Authoritative | [`customer_marketplace_screen.dart`](../../frontend/lib/screens/customer_marketplace_screen.dart) | Customer / Marketplace | +390 -391 (40.8% del) | Major Redesign & Bento Layout | [`f30b2db`](https://github.com/omarmaarouf18/saas-core/commit/f30b2db) |
+| 9 | `job_status_final_fidelity` | Final Fidelity | **AUTHORITATIVE** | [`job_status_screen.dart`](../../frontend/lib/screens/job_status_screen.dart) | Customer / Job Status | +525 -487 (38.4% del) | Targeted Presentation Refactor | [`b0cb5c3`](https://github.com/omarmaarouf18/saas-core/commit/b0cb5c3) |
+| - | `job_status_1` | Iteration 1 | Superseded by final | - | - | - | Superseded | - |
+| - | `job_status_2` | Iteration 2 | Superseded by final | - | - | - | Superseded | - |
+| - | `job_status_unified` | Unified draft | Superseded by final | - | - | - | Superseded | - |
+| 10 | `customer_job_map_final_fidelity` | Final Fidelity | **AUTHORITATIVE** | [`customer_job_map_screen.dart`](../../frontend/lib/screens/customer_job_map_screen.dart) | Customer / Live Job Tracking Map | +344 -290 (69.7% del) | Ground-Up Rebuild | [`8acbe7a`](https://github.com/omarmaarouf18/saas-core/commit/8acbe7a) |
+| - | `customer_job_map` | Iteration 1 | Superseded by final | - | - | - | Superseded | - |
+| - | `customer_job_map_unified` | Unified draft | Superseded by final | - | - | - | Superseded | - |
+| - | `job_tracking_map` | Alias variant | Superseded by final | - | - | - | Superseded | - |
+| 11 | `customer_rating` | Standard | Authoritative | [`rating_screen.dart`](../../frontend/lib/screens/rating_screen.dart) | Shared / Blind Rating | +170 -146 (27.3% del) | Targeted Presentation Refactor | [`ec58038`](https://github.com/omarmaarouf18/saas-core/commit/ec58038) |
+| 12 | `owner_dashboard` | Standard | Authoritative | [`home_screen.dart`](../../frontend/lib/screens/home_screen.dart) | Owner / Dashboard Tab | +1080 -828 (68.3% del) | Ground-Up Rebuild | [`f4dd985`](https://github.com/omarmaarouf18/saas-core/commit/f4dd985) |
+| 13 | `employee_management` | Standard | Authoritative | [`employee_screen.dart`](../../frontend/lib/screens/employee_screen.dart) | Owner / Employees Tab (Worker Mgmt) | +385 -358 (48.4% del) | Major Redesign & Roster Layout | [`6b06162`](https://github.com/omarmaarouf18/saas-core/commit/6b06162) |
+| 14 | `owner_service_management_final_fidelity` | Final Fidelity | **AUTHORITATIVE** | [`service_screen.dart`](../../frontend/lib/screens/service_screen.dart) | Owner / Services Directory | +271 -250 (68.3% del) | Ground-Up Rebuild | [`5e5ab10`](https://github.com/omarmaarouf18/saas-core/commit/5e5ab10) |
+| - | `owner_service_management` | Iteration 1 | Superseded by final | - | - | - | Superseded | - |
+| 15 | `business_configuration` | Standard | Authoritative | [`owner_configuration_screen.dart`](../../frontend/lib/screens/owner_configuration_screen.dart) | Owner / Business Config | +461 -428 (53.6% del) | Major Redesign & Form Layout | [`133644f`](https://github.com/omarmaarouf18/saas-core/commit/133644f) |
+| 16 | `kyc_verification` | Standard | Authoritative | [`kyc_document_upload_screen.dart`](../../frontend/lib/screens/kyc_document_upload_screen.dart) | Owner & Employee / KYC Upload | +70 -23 (3.6% del) | Incremental Stitch Alignment | [`51506a8`](https://github.com/omarmaarouf18/saas-core/commit/51506a8) |
+| 17 | `wallet_transactions` | Standard | Authoritative | [`wallet_screen.dart`](../../frontend/lib/screens/wallet_screen.dart) | Owner / Wallet & Ledger | +260 -225 (44.4% del) | Major Redesign & Balance Hero | [`ff6e3a1`](https://github.com/omarmaarouf18/saas-core/commit/ff6e3a1) |
+| 18 | `subscription_plans` | Standard | Authoritative | [`subscription_screen.dart`](../../frontend/lib/screens/subscription_screen.dart) | Owner / Subscriptions | +438 -178 (59.3% del) | Ground-Up Rebuild | [`623c9f3`](https://github.com/omarmaarouf18/saas-core/commit/623c9f3) |
+| 19 | `fleet_tracking_map` | Standard | Authoritative | [`owner_fleet_map_screen.dart`](../../frontend/lib/screens/owner_fleet_map_screen.dart) | Owner / Fleet Tracking Map | +356 -250 (65.1% del) | Ground-Up Rebuild | [`29c2e5e`](https://github.com/omarmaarouf18/saas-core/commit/29c2e5e) |
+| 20 | `owner_history` | Standard | Authoritative | [`owner_history_screen.dart`](../../frontend/lib/screens/owner_history_screen.dart) | Owner / History Tab | +291 -290 (45.2% del) | Major Redesign & 3-Tab Architecture | [`5c43695`](https://github.com/omarmaarouf18/saas-core/commit/5c43695) |
+| 21 | `reconciliation_queue_final_fidelity` | Final Fidelity | **AUTHORITATIVE** | [`owner_reconciliation_queue_screen.dart`](../../frontend/lib/screens/owner_reconciliation_queue_screen.dart) | Owner / Reconciliation Queue | +24 -7 (1.7% del) | Incremental Stitch Alignment | [`4c2b92c`](https://github.com/omarmaarouf18/saas-core/commit/4c2b92c) |
+| - | `reconciliation_queue_1` | Iteration 1 | Superseded by final | - | - | - | Superseded | - |
+| - | `reconciliation_queue_2` | Iteration 2 | Superseded by final | - | - | - | Superseded | - |
+| - | `owner_reconciliation_queue_unified` | Unified draft | Superseded by final | - | - | - | Superseded | - |
+| 22 | `employee_home` | Standard | Authoritative | [`employee_home_screen.dart`](../../frontend/lib/screens/employee_home_screen.dart) | Employee / Tab Shell Container | +105 -91 (37.8% del) | Targeted Presentation Refactor | [`1880fca`](https://github.com/omarmaarouf18/saas-core/commit/1880fca) |
+| 23 | `employee_jobs_final_fidelity` | Final Fidelity | **AUTHORITATIVE** | [`employee_jobs_screen.dart`](../../frontend/lib/screens/employee_jobs_screen.dart) | Employee / Assigned Jobs Tab | +100 -89 (9.8% del) | Incremental Stitch Alignment | [`8a67d78`](https://github.com/omarmaarouf18/saas-core/commit/8a67d78) |
+| - | `employee_jobs` | Iteration 1 | Superseded by final | - | - | - | Superseded | - |
+| 24 | `employee_history_final_fidelity` | Final Fidelity | **AUTHORITATIVE** | [`employee_history_screen.dart`](../../frontend/lib/screens/employee_history_screen.dart) | Employee / Job History Tab | +114 -104 (36.1% del) | Targeted Presentation Refactor | [`b8c58fa`](https://github.com/omarmaarouf18/saas-core/commit/b8c58fa) |
+| - | `employee_history` | Iteration 1 | Superseded by final | - | - | - | Superseded | - |
+| 25 | `settings` | Standard | Authoritative | [`settings_screen.dart`](../../frontend/lib/screens/settings_screen.dart) | Shared / Settings | +63 -11 (2.7% del) | Incremental Stitch Alignment | [`29cf47b`](https://github.com/omarmaarouf18/saas-core/commit/29cf47b) |
+| 26 | `my_account` | Standard | Authoritative | [`my_account_screen.dart`](../../frontend/lib/screens/my_account_screen.dart) | Shared / My Account Profile | +382 -163 (47.0% del) | Major Redesign & Form Layout | [`228899c`](https://github.com/omarmaarouf18/saas-core/commit/228899c) |
+| 27 | `notifications` | Standard | Authoritative | [`notifications_screen.dart`](../../frontend/lib/screens/notifications_screen.dart) | Shared / Notifications | +212 -139 (36.7% del) | Targeted Presentation Refactor | [`126189e`](https://github.com/omarmaarouf18/saas-core/commit/126189e) |
+| 28 | `chat` | Standard | Authoritative | [`chat_screen.dart`](../../frontend/lib/screens/chat_screen.dart) | Shared / Real-Time Job Chat | +207 -67 (20.4% del) | Targeted Presentation Refactor | [`246ac83`](https://github.com/omarmaarouf18/saas-core/commit/246ac83) |
 
 ---
 
