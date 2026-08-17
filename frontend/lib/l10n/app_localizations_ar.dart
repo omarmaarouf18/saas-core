@@ -226,7 +226,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownerConfigNameLabel => 'اسم المحل أو الخدمة';
 
   @override
-  String get ownerConfigNameHint => 'مثلاً: النسر للشحن السريع';
+  String get ownerConfigNameHint => 'مثلاً: النسر للخدمات السريعة';
 
   @override
   String get ownerConfigNameReq => 'لازم تكتب اسم المحل أو الخدمة.';

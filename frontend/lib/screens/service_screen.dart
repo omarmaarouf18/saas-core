@@ -91,7 +91,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                     ),
                     const SizedBox(height: AppSpacing.xxs),
                     Text(
-                      "Configure and monitor active logistics services.",
+                      "Configure and monitor active business services.",
                       style: AppTypography.bodyMd.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),

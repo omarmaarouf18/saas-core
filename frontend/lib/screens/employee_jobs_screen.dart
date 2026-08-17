@@ -661,8 +661,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             ),
             // Route Timeline Card Module
             RouteTimeline(
-              pickupAddress: "Pickup Depot / Loading Bay",
-              pickupDetail: "Dock / Gate Access Verified",
+              pickupAddress: "Pickup Location",
+              pickupDetail: "Client Address Confirmed",
               dropoffAddress: "Delivery Destination",
               dropoffDetail: l10n.employeeJobsDestinationCoordinates,
               distanceText: job.lockedEscrowAmount != null

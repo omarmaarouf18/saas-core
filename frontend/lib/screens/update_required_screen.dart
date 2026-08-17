@@ -173,8 +173,8 @@ class UpdateRequiredScreen extends StatelessWidget {
                                   _buildFeatureItem(
                                     icon: Icons.security,
                                     text: isArabic
-                                        ? "بروتوكولات أمان معززة لتتبع الشحنات."
-                                        : "Enhanced security protocols for shipment tracking.",
+                                        ? "بروتوكولات أمان معززة لتتبع الطلبات والخدمات."
+                                        : "Enhanced security protocols for order and delivery tracking.",
                                   ),
                                   const SizedBox(height: AppSpacing.xs),
                                   _buildFeatureItem(

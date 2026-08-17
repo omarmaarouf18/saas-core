@@ -2,6 +2,22 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Remediation of Stitch Mockup Freight & Warehousing Content Leak
+
+- **Implementation Detail**:
+  - **Root Cause**: The Stitch-derived UI redesign (commits `6856458` through `c8de30a`) used Google Stitch mockups as an implementation reference without a domain content-accuracy review pass before merging, causing generic freight, warehousing, loading bay/dock, and supply chain placeholder copy to leak into production Flutter code.
+  - **`customer_home_screen.dart`**: Replaced generic freight/warehousing placeholder copy across category tiles with real quick delivery and home services copy ("Fast on-demand delivery for orders, packages, and essentials.", "Local ride booking, moving transport, and courier transport.", "On-demand home cleaning, maintenance, and handyman services.", "Browse all available home services and delivery options."). Updated category icon from `Icons.warehouse_outlined` to `Icons.home_repair_service_outlined`.
+  - **`employee_jobs_screen.dart`**: Replaced "Pickup Depot / Loading Bay" and "Dock / Gate Access Verified" placeholder text with "Pickup Location" and "Client Address Confirmed".
+  - **`employee_history_screen.dart`**: Replaced "Pickup Depot" and "Dispatched & Logged" with "Pickup Location" and "Order Dispatched".
+  - **`job_status_screen.dart`**: Corrected misleading code comment `// Cargo load & vehicle spec` above payment details to `// Payment method & fare details`.
+  - **`service_screen.dart`**: Replaced "Configure and monitor active logistics services." with "Configure and monitor active business services.".
+  - **`theme.dart`**: Corrected comment tag from `Stitch Kinetic Logistics` to `Stitch Unified Theme`.
+  - **`update_required_screen.dart`**: Updated "Enhanced security protocols for shipment tracking." to "Enhanced security protocols for order and delivery tracking.".
+  - **`app_en.arb` & `app_ar.arb`**: Updated `ownerConfigNameHint` from "e.g. Quick Cargo Express" / "مثلاً: النسر للشحن السريع" to "e.g. Quick Delivery Services" / "مثلاً: النسر للخدمات السريعة".
+  - **`shared_widgets_test.dart`**: Updated `RouteTimeline` widget tests to use realistic Egyptian address examples instead of US logistics parkway/dock/pallets mock data.
+- **Commit SHA**: `PENDING_COMMIT_SHA`
+- **Verification**: Verified via `flutter analyze` (0 issues), `flutter test` (100% pass, 260/260 tests passed), and literal grep proving zero remaining freight/warehousing/dock placeholder content in `frontend/lib/`. ✅
+
 ## Corrected Unauthorized Reintroduction of KYB/KYE Reviewer Screens (Re-Reverting Commit ab9073a)
 
 - **Implementation Detail**:

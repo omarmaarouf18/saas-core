@@ -186,8 +186,8 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
                   color: AppColors.outlineVariant,
                 ),
                 RouteTimeline(
-                  pickupAddress: "Pickup Depot",
-                  pickupDetail: "Dispatched & Logged",
+                  pickupAddress: "Pickup Location",
+                  pickupDetail: "Order Dispatched",
                   dropoffAddress: "Delivery Destination",
                   dropoffDetail: "Customer: ${job.userId}",
                   distanceText: job.lockedEscrowAmount != null

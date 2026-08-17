@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 // STITCH DESIGN SYSTEM TOKENS - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
-// 1. Color Palette (Stitch Kinetic Logistics & Nocturne Amber)
+// 1. Color Palette (Stitch Unified Theme & Nocturne Amber)
 class AppColors {
   // Brand colors
   static const Color primary = Color(0xFF0D1321); // Deep Navy

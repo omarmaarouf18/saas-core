@@ -447,7 +447,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                     key: const Key('category_tile_delivery'),
                     title: l10n.customerHomeCatDelivery,
                     description:
-                        "Schedule last-mile delivery for parcels and urgent documents.",
+                        "Fast on-demand delivery for orders, packages, and essentials.",
                     icon: Icons.inventory_2_outlined,
                     iconBgColor:
                         AppColors.primaryContainer.withValues(alpha: 0.1),
@@ -462,7 +462,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                     key: const Key('category_tile_transport'),
                     title: l10n.customerHomeCatRide,
                     description:
-                        "Book long-haul freight and specialized transport vehicles.",
+                        "Local ride booking, moving transport, and courier transport.",
                     icon: Icons.local_shipping_outlined,
                     iconBgColor: AppColors.secondary.withValues(alpha: 0.2),
                     iconColor: AppColors.secondary,
@@ -483,8 +483,8 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                     key: const Key('category_tile_shipping'),
                     title: l10n.customerHomeCatShipping,
                     description:
-                        "Manage warehousing, inventory, and supply chain operations.",
-                    icon: Icons.warehouse_outlined,
+                        "On-demand home cleaning, maintenance, and handyman services.",
+                    icon: Icons.home_repair_service_outlined,
                     iconBgColor: AppColors.success.withValues(alpha: 0.15),
                     iconColor: AppColors.success,
                     onTap: () => widget.onCategorySelected('shipping'),
@@ -497,7 +497,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                     key: const Key('category_tile_all'),
                     title: l10n.customerHomeCatBrowseAll,
                     description:
-                        "Browse all available logistic services and options.",
+                        "Browse all available home services and delivery options.",
                     icon: Icons.grid_view_rounded,
                     iconBgColor: AppColors.primary.withValues(alpha: 0.1),
                     iconColor: AppColors.primary,

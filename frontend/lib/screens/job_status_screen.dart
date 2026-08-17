@@ -660,7 +660,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   const SizedBox(height: AppSpacing.md),
                   const Divider(height: 1, color: AppColors.outlineVariant),
                   const SizedBox(height: AppSpacing.sm),
-                  // Cargo load & vehicle spec
+                  // Payment method & fare details
                   Row(
                     children: [
                       Expanded(
