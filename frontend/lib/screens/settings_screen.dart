@@ -54,9 +54,16 @@ class SettingsScreen extends StatelessWidget {
       appBar: isEmbeddedInTab
           ? null
           : AppBar(
-              title: Text(l10n.settingsTitle),
+              title: Text(
+                l10n.settingsTitle,
+                style: AppTypography.titleMd.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.onPrimary,
+                ),
+              ),
               backgroundColor: AppColors.primary,
               foregroundColor: AppColors.onPrimary,
+              elevation: 0,
               actions: [
                 IconButton(
                   icon: const Icon(Icons.notifications_outlined),
@@ -76,7 +83,7 @@ class SettingsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Top User Profile Card
+            // Top User Profile Card (Stitch DOM)
             if (user != null) ...[
               ThemedCard(
                 padding: AppSpacing.md,
@@ -118,14 +125,19 @@ class SettingsScreen extends StatelessWidget {
                         vertical: AppSpacing.xxs,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: AppColors.primary.withValues(alpha: 0.08),
                         borderRadius: AppRadius.smBorder,
+                        border: Border.all(
+                          color:
+                              AppColors.outlineVariant.withValues(alpha: 0.5),
+                        ),
                       ),
                       child: Text(
                         user.role.toUpperCase(),
                         style: AppTypography.labelSm.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
@@ -294,8 +306,18 @@ class SettingsScreen extends StatelessWidget {
                           Icons.business_outlined,
                           color: theme.colorScheme.primary,
                         ),
-                        title: Text(l10n.settingsOwnerConfig),
-                        subtitle: Text(l10n.settingsOwnerConfigSub),
+                        title: Text(
+                          l10n.settingsOwnerConfig,
+                          style: AppTypography.bodyLg.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: Text(
+                          l10n.settingsOwnerConfigSub,
+                          style: AppTypography.bodySm.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
                         trailing: Icon(
                           Icons.chevron_right,
                           color: theme.colorScheme.outline,
@@ -317,8 +339,18 @@ class SettingsScreen extends StatelessWidget {
                           Icons.person_outlined,
                           color: theme.colorScheme.primary,
                         ),
-                        title: Text(l10n.settingsMyAccount),
-                        subtitle: Text(l10n.settingsMyAccountSub),
+                        title: Text(
+                          l10n.settingsMyAccount,
+                          style: AppTypography.bodyLg.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: Text(
+                          l10n.settingsMyAccountSub,
+                          style: AppTypography.bodySm.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
                         trailing: Icon(
                           Icons.chevron_right,
                           color: theme.colorScheme.outline,
@@ -340,8 +372,18 @@ class SettingsScreen extends StatelessWidget {
                           Icons.verified_user_outlined,
                           color: kycIconColor,
                         ),
-                        title: Text(l10n.settingsKycRowTitle),
-                        subtitle: Text(kycSubtitle),
+                        title: Text(
+                          l10n.settingsKycRowTitle,
+                          style: AppTypography.bodyLg.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: Text(
+                          kycSubtitle,
+                          style: AppTypography.bodySm.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
                         trailing: Icon(
                           Icons.chevron_right,
                           color: theme.colorScheme.outline,
@@ -377,8 +419,18 @@ class SettingsScreen extends StatelessWidget {
                     Icons.support_agent_outlined,
                     color: theme.colorScheme.primary,
                   ),
-                  title: Text(l10n.settingsCustomerService),
-                  subtitle: Text(l10n.settingsCustomerServiceSub),
+                  title: Text(
+                    l10n.settingsCustomerService,
+                    style: AppTypography.bodyLg.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    l10n.settingsCustomerServiceSub,
+                    style: AppTypography.bodySm.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
                   trailing: Icon(
                     Icons.chevron_right,
                     color: theme.colorScheme.outline,
