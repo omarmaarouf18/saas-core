@@ -1,0 +1,227 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Quick Delivery - Signup</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#dcd9da",
+                        "on-surface-variant": "#45464c",
+                        "tertiary-fixed": "#fbddc3",
+                        "on-tertiary-container": "#987f69",
+                        "background": "#fcf8fa",
+                        "inverse-on-surface": "#f3f0f1",
+                        "on-primary-fixed": "#151b2a",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#dde2f6",
+                        "inverse-surface": "#313031",
+                        "secondary-fixed": "#ffdf9e",
+                        "surface-bright": "#fcf8fa",
+                        "on-primary-container": "#7e8395",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#e5e2e3",
+                        "primary": "#000000",
+                        "on-error-container": "#93000a",
+                        "surface-container-high": "#eae7e9",
+                        "on-primary": "#ffffff",
+                        "surface-tint": "#585e6f",
+                        "on-surface": "#1b1b1d",
+                        "tertiary-fixed-dim": "#dec1a8",
+                        "surface-container-low": "#f6f3f4",
+                        "tertiary": "#000000",
+                        "on-error": "#ffffff",
+                        "tertiary-container": "#281808",
+                        "surface": "#fcf8fa",
+                        "surface-container-lowest": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-container": "#f0edee",
+                        "on-tertiary-fixed-variant": "#574330",
+                        "outline": "#76777d",
+                        "secondary": "#785900",
+                        "outline-variant": "#c6c6cc",
+                        "primary-container": "#151b2a",
+                        "secondary-container": "#fdc003",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "primary-fixed-dim": "#c1c6da",
+                        "on-secondary-fixed": "#261a00",
+                        "on-primary-fixed-variant": "#414657",
+                        "secondary-fixed-dim": "#fabd00",
+                        "surface-container-highest": "#e5e2e3",
+                        "inverse-primary": "#c1c6da",
+                        "on-secondary-container": "#6c5000",
+                        "on-tertiary-fixed": "#281808",
+                        "on-background": "#1b1b1d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "stack-md": "16px",
+                        "stack-lg": "24px",
+                        "stack-sm": "8px",
+                        "unit": "8px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Poppins"],
+                        "headline-lg-mobile": ["Poppins"],
+                        "headline-lg": ["Poppins"],
+                        "label-sm": ["Poppins"],
+                        "body-md": ["Poppins"],
+                        "body-lg": ["Poppins"],
+                        "label-lg": ["Poppins"],
+                        "title-lg": ["Poppins"],
+                        "headline-md": ["Poppins"],
+                        "headline-sm": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.1px", "fontWeight": "500" }],
+                        "title-lg": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .custom-radio:checked + div {
+            border-color: #0D1321;
+            background-color: #f3f0f1;
+        }
+        .custom-radio:checked + div .indicator {
+            background-color: #fdc003;
+            border-color: #0D1321;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col">
+<!-- Header (Shared Style, simplified for transactional intent) -->
+<header class="bg-surface/70 backdrop-blur-md shadow-sm fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-2">
+<img alt="Quick Delivery Logo" class="w-10 h-10 rounded-lg shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUYxRA54E6cjcYlvRVFKb_px_s2y93S8566ONfScVXsgPYSSBE6gSdLTQArSFMfjr2mhG7alWKuev5Yy0NhzYpR9ZQ2rA3j8kpPr7IXmQajXQZ3aA0q-orw1UwKUn_AfSCkScVcZrLA68fcVoLnnl70udecxTVux2o7yX72AdzmzffZeh60l8rewzNHY-4dRPHSbf45gMZhfgjHr1Wl7ro7aoKToJTdTPJIInLWTg6XnnRsQqDMvRpww">
+<span class="text-headline-md font-headline-md font-black text-primary-container hidden sm:block tracking-tight">QD</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex items-center justify-center pt-24 pb-12 px-margin-mobile w-full max-w-7xl mx-auto">
+<div class="w-full max-w-md bg-surface-container-lowest rounded-xl p-stack-lg shadow-[0_4px_16px_0_rgba(13,19,33,0.08)] border border-outline-variant/30">
+<div class="text-center mb-stack-lg">
+<h1 class="text-headline-lg-mobile font-headline-lg-mobile md:text-headline-lg md:font-headline-lg text-primary tracking-tight mb-2">Create Account</h1>
+<p class="text-body-md font-body-md text-on-surface-variant">Join Quick Delivery to manage your logistics effortlessly.</p>
+</div>
+<form action="#" class="space-y-stack-md" method="POST">
+<!-- Role Selection -->
+<div class="space-y-stack-sm">
+<label class="text-label-lg font-label-lg text-primary block">I am a...</label>
+<div class="grid grid-cols-3 gap-2">
+<label class="cursor-pointer relative">
+<input checked="" class="custom-radio sr-only" name="role" type="radio" value="customer">
+<div class="flex flex-col items-center justify-center p-3 rounded-lg border-2 border-outline-variant transition-colors duration-200 hover:border-primary/50 text-center">
+<span class="material-symbols-outlined mb-1 text-on-surface-variant" data-icon="person" style="font-variation-settings: &quot;FILL&quot; 0;">person</span>
+<span class="text-label-sm font-label-sm text-primary">Customer</span>
+</div>
+</label>
+
+<label class="cursor-pointer relative">
+<input class="custom-radio sr-only" name="role" type="radio" value="owner">
+<div class="flex flex-col items-center justify-center p-3 rounded-lg border-2 border-outline-variant transition-colors duration-200 hover:border-primary/50 text-center">
+<span class="material-symbols-outlined mb-1 text-on-surface-variant" data-icon="storefront" style="font-variation-settings: &quot;FILL&quot; 0;">storefront</span>
+<span class="text-label-sm font-label-sm text-primary">Business</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Input Fields -->
+<div class="space-y-stack-md pt-2">
+<div>
+<label class="block text-label-lg font-label-lg text-primary mb-1" for="name">Full Name</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline" data-icon="badge">badge</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2 border-2 border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface placeholder-outline focus:outline-none focus:ring-0 focus:border-[#0D1321] transition-colors" id="name" name="name" placeholder="John Doe" required="" type="text">
+</div>
+</div>
+<div>
+<label class="block text-label-lg font-label-lg text-primary mb-1" for="email">Email Address</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline" data-icon="mail">mail</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2 border-2 border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface placeholder-outline focus:outline-none focus:ring-0 focus:border-[#0D1321] transition-colors" id="email" name="email" placeholder="john@example.com" required="" type="email">
+</div>
+</div>
+<div>
+<label class="block text-label-lg font-label-lg text-primary mb-1" for="phone">Phone Number</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline" data-icon="phone_iphone">phone_iphone</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2 border-2 border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface placeholder-outline focus:outline-none focus:ring-0 focus:border-[#0D1321] transition-colors" id="phone" name="phone" placeholder="(555) 000-0000" required="" type="tel">
+</div>
+</div>
+<div>
+<label class="block text-label-lg font-label-lg text-primary mb-1" for="password">Password</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline" data-icon="lock">lock</span>
+</div>
+<input class="block w-full pl-10 pr-10 py-2 border-2 border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface placeholder-outline focus:outline-none focus:ring-0 focus:border-[#0D1321] transition-colors" id="password" name="password" placeholder="••••••••" required="" type="password">
+<button class="absolute inset-y-0 right-0 pr-3 flex items-center text-outline hover:text-primary transition-colors focus:outline-none" type="button">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+</div>
+<div class="pt-stack-md">
+<button class="w-full flex justify-center items-center py-3 px-4 rounded-lg bg-secondary-container text-primary-container text-title-lg font-title-lg shadow-sm hover:bg-secondary-fixed-dim focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-container transition-all active:scale-95" type="submit">
+                        Create Account
+                    </button>
+</div>
+<div class="text-center pt-stack-sm">
+<p class="text-body-md font-body-md text-on-surface-variant">
+                        Already have an account? 
+                        <a class="text-primary font-bold hover:underline" href="#">Log In</a>
+</p>
+</div>
+</form>
+</div>
+</main>
+<script>
+        // Simple password toggle
+        document.querySelectorAll('button[type="button"]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const input = this.previousElementSibling;
+                const icon = this.querySelector('span');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.textContent = 'visibility_off';
+                } else {
+                    input.type = 'password';
+                    icon.textContent = 'visibility';
+                }
+            });
+        });
+    </script>
+
+
+</body></html>

@@ -1,0 +1,341 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Owner History - Quick Delivery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#dde2f6",
+                        "outline": "#76777d",
+                        "background": "#fcf8fa",
+                        "on-secondary-container": "#6c5000",
+                        "surface-container": "#f0edee",
+                        "surface-tint": "#585e6f",
+                        "tertiary-fixed": "#fbddc3",
+                        "secondary-fixed": "#ffdf9e",
+                        "surface-variant": "#e5e2e3",
+                        "surface": "#fcf8fa",
+                        "on-primary-fixed": "#151b2a",
+                        "surface-container-highest": "#e5e2e3",
+                        "outline-variant": "#c6c6cc",
+                        "on-surface-variant": "#45464c",
+                        "primary": "#000000",
+                        "inverse-on-surface": "#f3f0f1",
+                        "primary-container": "#151b2a",
+                        "tertiary": "#000000",
+                        "on-tertiary-container": "#987f69",
+                        "inverse-primary": "#c1c6da",
+                        "inverse-surface": "#313031",
+                        "surface-container-low": "#f6f3f4",
+                        "on-error": "#ffffff",
+                        "on-background": "#1b1b1d",
+                        "on-tertiary-fixed": "#281808",
+                        "secondary-fixed-dim": "#fabd00",
+                        "surface-dim": "#dcd9da",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#574330",
+                        "on-primary-fixed-variant": "#414657",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#c1c6da",
+                        "surface-container-high": "#eae7e9",
+                        "tertiary-fixed-dim": "#dec1a8",
+                        "tertiary-container": "#281808",
+                        "on-error-container": "#93000a",
+                        "secondary": "#785900",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "on-primary-container": "#7e8395",
+                        "on-surface": "#1b1b1d",
+                        "secondary-container": "#fdc003",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#fcf8fa",
+                        "on-secondary-fixed": "#261a00",
+                        
+                        // Custom Brand Colors based on Style Guidance
+                        "brand-navy": "#0D1321",
+                        "brand-amber": "#FFC107",
+                        "scaffold": "#E5E7EB",
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-md": "16px",
+                        "unit": "8px",
+                        "margin-mobile": "16px",
+                        "stack-sm": "8px",
+                        "gutter": "16px",
+                        "stack-lg": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Poppins"],
+                        "headline-lg-mobile": ["Poppins"],
+                        "headline-md": ["Poppins"],
+                        "body-lg": ["Poppins"],
+                        "title-lg": ["Poppins"],
+                        "display-lg": ["Poppins"],
+                        "headline-sm": ["Poppins"],
+                        "label-sm": ["Poppins"],
+                        "label-lg": ["Poppins"],
+                        "headline-lg": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "title-lg": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.1px", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #E5E7EB; /* Scaffold color */
+        }
+        .glass-header {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        /* Custom Shadows */
+        .shadow-level-1 {
+            box-shadow: 0px 2px 8px 0px rgba(13, 19, 33, 0.04);
+        }
+        .shadow-level-2 {
+            box-shadow: 0px 4px 16px 0px rgba(13, 19, 33, 0.08);
+        }
+        /* Hide scrollbar for clean look */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface antialiased min-h-screen pb-24 relative overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-surface/70 backdrop-blur-md shadow-sm">
+<div class="flex justify-between items-center px-margin-mobile h-16 w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary hover:bg-surface-variant/50 p-2 rounded-full cursor-pointer" data-icon="local_shipping">local_shipping</span>
+<span class="text-headline-md font-headline-md font-black bg-primary-container text-on-primary-container px-2 py-1 rounded-lg">QD</span>
+</div>
+<!-- Desktop Navigation (Hidden on mobile) -->
+<nav class="hidden md:flex gap-6">
+<a class="text-label-lg font-label-lg text-on-surface-variant hover:bg-surface-variant/50 px-3 py-2 rounded-md" href="#">Home</a>
+<a class="text-label-lg font-label-lg text-on-surface-variant hover:bg-surface-variant/50 px-3 py-2 rounded-md" href="#">Services</a>
+<a class="text-label-lg font-label-lg text-primary font-bold hover:bg-surface-variant/50 px-3 py-2 rounded-md" href="#">History</a>
+<a class="text-label-lg font-label-lg text-on-surface-variant hover:bg-surface-variant/50 px-3 py-2 rounded-md" href="#">Settings</a>
+</nav>
+<div class="flex items-center gap-2">
+<button class="relative p-2 rounded-full hover:bg-surface-variant/50 text-primary">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-brand-amber rounded-full"></span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="pt-24 px-margin-mobile max-w-7xl mx-auto">
+<!-- Header Section -->
+<div class="mb-stack-lg">
+<h1 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg text-primary">Fleet History</h1>
+<p class="text-body-md font-body-md text-on-surface-variant mt-1">Review past jobs and performance.</p>
+</div>
+<!-- Filter Chips (Horizontal Scroll) -->
+<div class="flex gap-unit overflow-x-auto pb-2 mb-stack-lg no-scrollbar snap-x">
+<button class="snap-start flex-shrink-0 h-[40px] px-5 rounded-full bg-brand-amber text-brand-navy text-label-lg font-label-lg shadow-level-1">All</button>
+<button class="snap-start flex-shrink-0 h-[40px] px-5 rounded-full bg-surface-container text-on-surface-variant text-label-lg font-label-lg border border-transparent hover:border-outline-variant transition-colors">Today</button>
+<button class="snap-start flex-shrink-0 h-[40px] px-5 rounded-full bg-surface-container text-on-surface-variant text-label-lg font-label-lg border border-transparent hover:border-outline-variant transition-colors">Completed</button>
+<button class="snap-start flex-shrink-0 h-[40px] px-5 rounded-full bg-surface-container text-on-surface-variant text-label-lg font-label-lg border border-transparent hover:border-outline-variant transition-colors">Cancelled</button>
+</div>
+<!-- Jobs List Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Job Card 1 (Completed) -->
+<div class="bg-surface rounded-lg p-4 shadow-level-1 flex flex-col gap-unit hover:shadow-level-2 transition-shadow cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-outline">ID: QD-8924A</span>
+<div class="flex items-center gap-1 text-title-lg font-title-lg text-primary">
+<span class="material-symbols-outlined text-[20px]" data-icon="package_2" style="font-variation-settings: 'FILL' 1;">package_2</span>
+                            Delivery
+                        </div>
+</div>
+<span class="px-2 py-1 bg-[#D1FAE5] text-[#065F46] text-label-sm font-label-sm rounded-md font-bold uppercase tracking-wider">Completed</span>
+</div>
+<div class="h-[1px] bg-scaffold w-full my-1"></div>
+<div class="grid grid-cols-2 gap-2 mt-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]" data-icon="schedule">schedule</span>
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-outline">Oct 24, 2023</span>
+<span class="text-body-md font-body-md text-on-surface">14:30 PM</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]" data-icon="person">person</span>
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-outline">Driver</span>
+<span class="text-body-md font-body-md text-on-surface">Alex Rivera</span>
+</div>
+</div>
+</div>
+<div class="mt-2 flex justify-between items-end">
+<span class="text-label-lg font-label-lg text-outline">Total Fare</span>
+<span class="text-headline-sm font-headline-sm text-primary">$45.00</span>
+</div>
+</div>
+<!-- Job Card 2 (In Progress - Active) -->
+<div class="bg-surface rounded-lg p-4 shadow-level-2 border-l-4 border-brand-amber flex flex-col gap-unit cursor-pointer transform scale-[1.01] transition-transform">
+<div class="flex justify-between items-start mb-1">
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-outline">ID: QD-8925B</span>
+<div class="flex items-center gap-1 text-title-lg font-title-lg text-primary">
+<span class="material-symbols-outlined text-[20px]" data-icon="directions_car" style="font-variation-settings: 'FILL' 1;">directions_car</span>
+                            Ride
+                        </div>
+</div>
+<span class="px-2 py-1 bg-[#FEF3C7] text-[#92400E] text-label-sm font-label-sm rounded-md font-bold uppercase tracking-wider flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-brand-amber rounded-full animate-pulse"></span>
+                        En Route
+                    </span>
+</div>
+<div class="h-[1px] bg-scaffold w-full my-1"></div>
+<div class="grid grid-cols-2 gap-2 mt-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]" data-icon="schedule">schedule</span>
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-outline">Oct 24, 2023</span>
+<span class="text-body-md font-body-md text-on-surface">15:15 PM</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]" data-icon="person">person</span>
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-outline">Driver</span>
+<span class="text-body-md font-body-md text-on-surface">Sam Chen</span>
+</div>
+</div>
+</div>
+<div class="mt-2 flex justify-between items-end">
+<span class="text-label-lg font-label-lg text-outline">Est. Fare</span>
+<span class="text-headline-sm font-headline-sm text-primary">$22.50</span>
+</div>
+</div>
+<!-- Job Card 3 (Cancelled) -->
+<div class="bg-surface rounded-lg p-4 shadow-level-1 flex flex-col gap-unit opacity-75 hover:opacity-100 transition-opacity cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-outline">ID: QD-8922C</span>
+<div class="flex items-center gap-1 text-title-lg font-title-lg text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]" data-icon="package_2" style="font-variation-settings: 'FILL' 1;">package_2</span>
+                            Delivery
+                        </div>
+</div>
+<span class="px-2 py-1 bg-error-container text-on-error-container text-label-sm font-label-sm rounded-md font-bold uppercase tracking-wider">Cancelled</span>
+</div>
+<div class="h-[1px] bg-scaffold w-full my-1"></div>
+<div class="grid grid-cols-2 gap-2 mt-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline-variant text-[18px]" data-icon="schedule">schedule</span>
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-outline-variant">Oct 23, 2023</span>
+<span class="text-body-md font-body-md text-on-surface-variant line-through">09:00 AM</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline-variant text-[18px]" data-icon="person">person</span>
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-outline-variant">Driver</span>
+<span class="text-body-md font-body-md text-on-surface-variant">Unassigned</span>
+</div>
+</div>
+</div>
+<div class="mt-2 flex justify-between items-end">
+<span class="text-label-lg font-label-lg text-outline-variant">Total Fare</span>
+<span class="text-headline-sm font-headline-sm text-on-surface-variant line-through">$18.00</span>
+</div>
+</div>
+<!-- Job Card 4 (Completed) -->
+<div class="bg-surface rounded-lg p-4 shadow-level-1 flex flex-col gap-unit hover:shadow-level-2 transition-shadow cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-outline">ID: QD-8920D</span>
+<div class="flex items-center gap-1 text-title-lg font-title-lg text-primary">
+<span class="material-symbols-outlined text-[20px]" data-icon="directions_car" style="font-variation-settings: 'FILL' 1;">directions_car</span>
+                            Ride
+                        </div>
+</div>
+<span class="px-2 py-1 bg-[#D1FAE5] text-[#065F46] text-label-sm font-label-sm rounded-md font-bold uppercase tracking-wider">Completed</span>
+</div>
+<div class="h-[1px] bg-scaffold w-full my-1"></div>
+<div class="grid grid-cols-2 gap-2 mt-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]" data-icon="schedule">schedule</span>
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-outline">Oct 22, 2023</span>
+<span class="text-body-md font-body-md text-on-surface">18:45 PM</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]" data-icon="person">person</span>
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-outline">Driver</span>
+<span class="text-body-md font-body-md text-on-surface">Alex Rivera</span>
+</div>
+</div>
+</div>
+<div class="mt-2 flex justify-between items-end">
+<span class="text-label-lg font-label-lg text-outline">Total Fare</span>
+<span class="text-headline-sm font-headline-sm text-primary">$32.50</span>
+</div>
+</div>
+</div>
+<!-- Empty State Example (Hidden by default, structure provided) -->
+<div class="hidden flex-col items-center justify-center py-16 text-center">
+<div class="w-48 h-48 mb-4 bg-surface-variant rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-6xl text-outline-variant" data-icon="inbox">inbox</span>
+</div>
+<h3 class="text-headline-sm font-headline-sm text-primary mb-2">No jobs found</h3>
+<p class="text-body-md font-body-md text-on-surface-variant max-w-sm">Try adjusting your filters or check back later for new fleet activity.</p>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 w-full flex justify-around items-center px-margin-mobile py-2 bg-surface shadow-[0_-2px_8px_0_rgba(13,19,33,0.04)] z-50">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all duration-200 w-16" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="text-label-sm font-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all duration-200 w-16" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="package_2">package_2</span>
+<span class="text-label-sm font-label-sm">Services</span>
+</a>
+<!-- Active Tab: History -->
+<a class="flex flex-col items-center justify-center text-primary relative after:content-[''] after:absolute after:bottom-[-8px] after:w-8 after:h-1 after:bg-brand-amber after:rounded-full scale-90 transition-all duration-200 w-16" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="history" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="text-label-sm font-label-sm font-bold">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all duration-200 w-16" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="settings">settings</span>
+<span class="text-label-sm font-label-sm">Settings</span>
+</a>
+</nav>
+<!-- Safe area padding for mobile nav -->
+<div class="h-safe-area-bottom pb-4 md:hidden"></div>
+</body></html>

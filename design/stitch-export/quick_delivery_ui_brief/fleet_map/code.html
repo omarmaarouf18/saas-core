@@ -1,0 +1,395 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Fleet Map - Quick Delivery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-container": "#6c5000",
+                      "surface-container": "#f0edee",
+                      "on-secondary-fixed-variant": "#5b4300",
+                      "on-tertiary-container": "#987f69",
+                      "secondary-fixed": "#ffdf9e",
+                      "on-background": "#1b1b1d",
+                      "inverse-surface": "#313031",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary-fixed-dim": "#dec1a8",
+                      "primary-container": "#151b2a",
+                      "on-error-container": "#93000a",
+                      "secondary-container": "#fdc003",
+                      "background": "#fcf8fa",
+                      "error": "#ba1a1a",
+                      "secondary-fixed-dim": "#fabd00",
+                      "on-surface": "#1b1b1d",
+                      "on-primary": "#ffffff",
+                      "on-primary-fixed-variant": "#414657",
+                      "surface-bright": "#fcf8fa",
+                      "primary-fixed-dim": "#c1c6da",
+                      "inverse-on-surface": "#f3f0f1",
+                      "secondary": "#785900",
+                      "on-tertiary-fixed": "#281808",
+                      "surface-container-low": "#f6f3f4",
+                      "surface-variant": "#e5e2e3",
+                      "tertiary-fixed": "#fbddc3",
+                      "on-surface-variant": "#45464c",
+                      "primary": "#000000",
+                      "on-error": "#ffffff",
+                      "tertiary": "#000000",
+                      "outline-variant": "#c6c6cc",
+                      "surface-container-highest": "#e5e2e3",
+                      "on-secondary": "#ffffff",
+                      "outline": "#76777d",
+                      "error-container": "#ffdad6",
+                      "surface": "#fcf8fa",
+                      "on-secondary-fixed": "#261a00",
+                      "surface-tint": "#585e6f",
+                      "surface-dim": "#dcd9da",
+                      "surface-container-high": "#eae7e9",
+                      "on-primary-container": "#7e8395",
+                      "on-primary-fixed": "#151b2a",
+                      "primary-fixed": "#dde2f6",
+                      "inverse-primary": "#c1c6da",
+                      "on-tertiary-fixed-variant": "#574330",
+                      "on-tertiary": "#ffffff",
+                      "tertiary-container": "#281808"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "unit": "8px",
+                      "stack-md": "16px",
+                      "margin-mobile": "16px",
+                      "stack-sm": "8px",
+                      "stack-lg": "24px"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Poppins"
+                      ],
+                      "display-lg": [
+                              "Poppins"
+                      ],
+                      "headline-sm": [
+                              "Poppins"
+                      ],
+                      "title-lg": [
+                              "Poppins"
+                      ],
+                      "label-lg": [
+                              "Poppins"
+                      ],
+                      "headline-lg-mobile": [
+                              "Poppins"
+                      ],
+                      "headline-lg": [
+                              "Poppins"
+                      ],
+                      "headline-md": [
+                              "Poppins"
+                      ],
+                      "body-md": [
+                              "Poppins"
+                      ],
+                      "body-lg": [
+                              "Poppins"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.5px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "title-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-lg": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.1px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        /* Custom map styling to look more like OSM */
+        .map-grid {
+            background-image: linear-gradient(#e5e2e3 1px, transparent 1px),
+            linear-gradient(90deg, #e5e2e3 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-color: #f6f3f4;
+        }
+        
+        /* Map routes/roads simulation */
+        .map-route-major {
+            background-color: #ffffff;
+            border: 2px solid #dcd9da;
+        }
+        .map-route-active {
+            background-color: #fdc003; /* secondary-container */
+            box-shadow: 0 0 10px rgba(253, 192, 3, 0.5);
+        }
+        
+        /* Hide scrollbar for the bottom sheet */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen w-screen overflow-hidden flex flex-col antialiased selection:bg-secondary-container selection:text-on-secondary-container relative">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-surface/70 dark:bg-surface-container/70 backdrop-blur-md shadow-sm dark:shadow-none">
+<div class="flex justify-between items-center px-margin-mobile h-16 w-full max-w-7xl mx-auto">
+<!-- Leading -->
+<div class="flex items-center gap-2 cursor-pointer hover:bg-surface-variant/50 p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed" data-icon="local_shipping">local_shipping</span>
+<span class="text-headline-md font-headline-md font-black bg-primary-container text-on-primary-container px-2 py-1 rounded-lg">QD</span>
+</div>
+<!-- Trailing -->
+<button class="relative p-2 rounded-full hover:bg-surface-variant/50 transition-colors group">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed group-active:scale-95 transition-transform duration-150" data-icon="notifications">notifications</span>
+<!-- Active alert dot -->
+<span class="absolute top-2 right-2 w-2.5 h-2.5 bg-secondary-container rounded-full border-2 border-surface"></span>
+</button>
+</div>
+</header>
+<!-- Main Content Area - Full Screen Map -->
+<main class="flex-1 relative w-full h-full pt-16 pb-[80px]"> <!-- pt-16 for TopAppBar, pb-[80px] for BottomNavBar approx -->
+<!-- Map Canvas (Simulated) -->
+<div class="absolute inset-0 map-grid w-full h-full overflow-hidden" id="map-container">
+<!-- Decorative Map Elements (Simulated Roads) -->
+<div class="absolute top-[20%] left-0 w-full h-6 map-route-major transform -rotate-6"></div>
+<div class="absolute top-[50%] left-0 w-full h-4 map-route-major transform rotate-12"></div>
+<div class="absolute top-0 left-[30%] w-8 h-full map-route-major transform rotate-3"></div>
+<div class="absolute top-0 left-[70%] w-6 h-full map-route-major transform -rotate-2"></div>
+<!-- Active Route Path (SVG) -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
+<path class="animate-pulse" d="M 30% 20% Q 50% 40% 60% 60% T 70% 80%" fill="none" stroke="#fdc003" stroke-dasharray="8 8" stroke-width="4"></path>
+</svg>
+<!-- Map Markers -->
+<!-- Marker 1 (Inactive) -->
+<div class="absolute top-[20%] left-[30%] -translate-x-1/2 -translate-y-1/2 cursor-pointer group z-10 hover:z-20">
+<div class="bg-surface rounded-full p-1.5 shadow-[0_2px_8px_rgba(13,19,33,0.08)] border-2 border-outline-variant group-hover:border-primary transition-colors flex items-center justify-center relative">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]" data-icon="directions_car">directions_car</span>
+<!-- Label Tooltip -->
+<div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-label-sm font-label-sm px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        Tom H.
+                    </div>
+</div>
+</div>
+<!-- Marker 2 (Active/Selected - Sarah Jenkins) -->
+<div class="absolute top-[60%] left-[60%] -translate-x-1/2 -translate-y-1/2 cursor-pointer group z-20">
+<!-- Pulsing aura for active marker -->
+<div class="absolute inset-0 bg-secondary-container/30 rounded-full animate-ping scale-150 pointer-events-none"></div>
+<div class="bg-primary-container rounded-full p-2 shadow-[0_4px_16px_rgba(13,19,33,0.12)] border-2 border-secondary-container flex items-center justify-center relative scale-110 transition-transform">
+<span class="material-symbols-outlined text-secondary-container text-[24px]" data-icon="local_shipping" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+<!-- Label Tooltip (Always visible for selected) -->
+<div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-label-sm font-label-sm px-2 py-1 rounded whitespace-nowrap shadow-md">
+                        Sarah J.
+                        <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-inverse-surface"></div>
+</div>
+</div>
+</div>
+<!-- Marker 3 (Inactive) -->
+<div class="absolute top-[80%] left-[70%] -translate-x-1/2 -translate-y-1/2 cursor-pointer group z-10 hover:z-20">
+<div class="bg-surface rounded-full p-1.5 shadow-[0_2px_8px_rgba(13,19,33,0.08)] border-2 border-outline-variant group-hover:border-primary transition-colors flex items-center justify-center relative">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]" data-icon="two_wheeler">two_wheeler</span>
+<!-- Label Tooltip -->
+<div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-label-sm font-label-sm px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        Mike R.
+                    </div>
+</div>
+</div>
+</div> <!-- End Map Canvas -->
+<!-- Map Controls (Floating) -->
+<div class="absolute top-20 right-4 flex flex-col gap-2 z-30">
+<div class="bg-surface rounded-lg shadow-[0_2px_8px_rgba(13,19,33,0.08)] overflow-hidden flex flex-col border border-outline-variant/30">
+<button aria-label="Zoom In" class="p-2 hover:bg-surface-variant/50 transition-colors text-on-surface border-b border-outline-variant/30 active:bg-surface-variant">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+<button aria-label="Zoom Out" class="p-2 hover:bg-surface-variant/50 transition-colors text-on-surface active:bg-surface-variant">
+<span class="material-symbols-outlined" data-icon="remove">remove</span>
+</button>
+</div>
+<button aria-label="Recenter Map" class="mt-2 bg-surface rounded-lg p-2 shadow-[0_2px_8px_rgba(13,19,33,0.08)] hover:bg-surface-variant/50 transition-colors text-primary border border-outline-variant/30 active:bg-surface-variant">
+<span class="material-symbols-outlined" data-icon="my_location">my_location</span>
+</button>
+</div>
+<!-- Selected Employee Details Sheet (Floating Card) -->
+<div class="absolute bottom-24 left-4 right-4 md:left-auto md:right-auto md:w-[400px] md:bottom-28 md:left-1/2 md:-translate-x-1/2 z-40">
+<div class="bg-surface rounded-xl shadow-[0_4px_16px_rgba(13,19,33,0.08)] border border-outline-variant/20 overflow-hidden transform transition-transform duration-300 translate-y-0">
+<!-- Card Header/Drag Handle area (mobile mostly) -->
+<div class="w-full flex justify-center py-2 md:hidden cursor-grab active:cursor-grabbing">
+<div class="w-12 h-1.5 bg-outline-variant/50 rounded-full"></div>
+</div>
+<div class="p-4 md:p-6 flex flex-col gap-4">
+<!-- Profile Info -->
+<div class="flex items-center gap-4">
+<div class="relative w-14 h-14 rounded-full overflow-hidden border-2 border-secondary-container shrink-0">
+<img alt="Sarah Jenkins" class="object-cover w-full h-full" data-alt="A professional headshot of a female logistics driver wearing a dark navy cap and polo shirt with subtle amber yellow accents. The lighting is bright and outdoor-like, projecting reliability and energy. Clean, modern aesthetic, high resolution." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXIsCguNsXA_zDiqPs3G6SbH27EMI_FXxfs-pJXiXEl0-m-JguRvJxXgmwXJKV4xSj9sWYZW8fH5-x3NvDD6j38b5cmGNgBqLR_8oJhEnWcRX1NZzam9iOPhsokeIYuIC-Pog6L6AillbD9ABTdwEX7FCPjC0lQWuOQXKxDlaqmHOwkmVAVaupuVokMpKO3dvxVI5bXnM9x942ObHpG6SJSa7xoKlOQhrU-gCOqPrhSb_Zoz10sAnJww">
+</div>
+<div class="flex-1 min-w-0">
+<h2 class="text-headline-sm font-headline-sm text-on-surface truncate">Sarah Jenkins</h2>
+<div class="flex items-center gap-1 text-secondary-container mt-0.5">
+<span class="material-symbols-outlined text-[16px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">4.9 (124 deliveries)</span>
+</div>
+</div>
+<!-- Quick Action -->
+<button aria-label="Call Driver" class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center hover:bg-primary-container/80 transition-colors shrink-0">
+<span class="material-symbols-outlined" data-icon="call">call</span>
+</button>
+</div>
+<div class="h-px w-full bg-surface-variant"></div>
+<!-- Status & Job Info -->
+<div class="flex flex-col gap-3">
+<div class="flex justify-between items-start">
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Current Status</span>
+<div class="flex items-center gap-2 mt-1">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary-container animate-pulse"></span>
+<span class="text-title-lg font-title-lg text-on-surface">En Route to Delivery</span>
+</div>
+</div>
+<div class="text-right flex flex-col">
+<span class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Job ID</span>
+<span class="text-body-lg font-body-lg text-on-surface mt-1 font-mono">QD-8924A</span>
+</div>
+</div>
+<!-- Progress Bar (simulated) -->
+<div class="w-full bg-surface-variant rounded-full h-2 mt-1 overflow-hidden">
+<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="65" class="bg-secondary-container h-2 rounded-full w-[65%]" role="progressbar"></div>
+</div>
+<div class="flex justify-between text-label-sm font-label-sm text-on-surface-variant">
+<span>12 mins away</span>
+<span>2.4 mi</span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex gap-3 mt-2">
+<button class="flex-1 bg-surface-variant text-on-surface-variant font-label-lg text-label-lg py-2.5 rounded-lg border border-outline-variant/50 hover:bg-surface-variant/80 transition-colors">
+                            View Route
+                        </button>
+<button class="flex-1 bg-primary text-secondary-container font-label-lg text-label-lg py-2.5 rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+                            Message
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full flex justify-around items-center px-margin-mobile py-2 bg-surface dark:bg-surface-container shadow-[0_-2px_8px_0_rgba(13,19,33,0.04)] z-50 md:hidden">
+<!-- Tab 1: Home (Active based on 'Home' being the closest to a map/dashboard intent) -->
+<button aria-label="Home" class="flex flex-col items-center justify-center text-primary dark:text-secondary-container relative after:content-[''] after:absolute after:bottom-0 after:w-8 after:h-1 after:bg-secondary-container after:rounded-full group hover:text-primary dark:hover:text-secondary-fixed-dim">
+<span class="material-symbols-outlined mb-1 scale-90 transition-all duration-200 group-active:scale-75" data-icon="home" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="text-label-sm font-label-sm-mobile">Home</span>
+</button>
+<!-- Tab 2: Services -->
+<button aria-label="Services" class="flex flex-col items-center justify-center text-on-surface-variant group hover:text-primary dark:hover:text-secondary-fixed-dim transition-colors">
+<span class="material-symbols-outlined mb-1 transition-transform duration-200 group-active:scale-90" data-icon="package_2">package_2</span>
+<span class="text-label-sm font-label-sm-mobile">Services</span>
+</button>
+<!-- Tab 3: History -->
+<button aria-label="History" class="flex flex-col items-center justify-center text-on-surface-variant group hover:text-primary dark:hover:text-secondary-fixed-dim transition-colors">
+<span class="material-symbols-outlined mb-1 transition-transform duration-200 group-active:scale-90" data-icon="history">history</span>
+<span class="text-label-sm font-label-sm-mobile">History</span>
+</button>
+<!-- Tab 4: Settings -->
+<button aria-label="Settings" class="flex flex-col items-center justify-center text-on-surface-variant group hover:text-primary dark:hover:text-secondary-fixed-dim transition-colors">
+<span class="material-symbols-outlined mb-1 transition-transform duration-200 group-active:scale-90" data-icon="settings">settings</span>
+<span class="text-label-sm font-label-sm-mobile">Settings</span>
+</button>
+</nav>
+<!-- Desktop Nav Fallback (Hidden on Mobile) -->
+<!-- Usually handled by SideNav on Web, but sticking to constraints: "hide BottomNavBar and use full nav cluster in TopAppBar" if instructed, though TopAppBar JSON didn't specify a cluster. We hide BottomNav on md+ -->
+<style>
+        @media (min-width: 768px) {
+            nav.md\:hidden {
+                display: none !important;
+            }
+            /* Adjust main content padding if bottom nav is hidden */
+            main {
+                padding-bottom: 24px !important;
+            }
+        }
+    </style>
+</body></html>

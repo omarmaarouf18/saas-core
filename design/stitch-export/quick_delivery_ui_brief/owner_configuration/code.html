@@ -1,0 +1,238 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Owner Configuration - Quick Delivery</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#000000",
+                        "on-primary-container": "#7e8395",
+                        "outline": "#76777d",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#e5e2e3",
+                        "inverse-surface": "#313031",
+                        "on-background": "#1b1b1d",
+                        "primary-container": "#151b2a",
+                        "surface": "#fcf8fa",
+                        "primary-fixed": "#dde2f6",
+                        "on-tertiary-container": "#987f69",
+                        "secondary": "#785900",
+                        "inverse-on-surface": "#f3f0f1",
+                        "primary-fixed-dim": "#c1c6da",
+                        "on-tertiary": "#ffffff",
+                        "tertiary": "#000000",
+                        "on-secondary": "#ffffff",
+                        "on-surface-variant": "#45464c",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#151b2a",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "background": "#fcf8fa",
+                        "on-tertiary-fixed-variant": "#574330",
+                        "surface-container": "#f0edee",
+                        "secondary-fixed": "#ffdf9e",
+                        "surface-dim": "#dcd9da",
+                        "tertiary-container": "#281808",
+                        "surface-variant": "#e5e2e3",
+                        "tertiary-fixed-dim": "#dec1a8",
+                        "inverse-primary": "#c1c6da",
+                        "tertiary-fixed": "#fbddc3",
+                        "secondary-container": "#fdc003",
+                        "on-surface": "#1b1b1d",
+                        "outline-variant": "#c6c6cc",
+                        "surface-container-high": "#eae7e9",
+                        "on-secondary-fixed": "#261a00",
+                        "on-error": "#ffffff",
+                        "surface-bright": "#fcf8fa",
+                        "surface-container-low": "#f6f3f4",
+                        "on-secondary-container": "#6c5000",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "secondary-fixed-dim": "#fabd00",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#281808",
+                        "on-primary-fixed-variant": "#414657",
+                        "surface-tint": "#585e6f",
+                        
+                        // Custom Brand Overrides matching prompt intent
+                        "brand-navy": "#0D1321",
+                        "brand-amber": "#FFC107",
+                        "brand-outline": "#8E8F95"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "brand": "8px"
+                    },
+                    "spacing": {
+                        "stack-lg": "24px",
+                        "stack-md": "16px",
+                        "gutter": "16px",
+                        "margin-mobile": "16px",
+                        "stack-sm": "8px",
+                        "unit": "8px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Poppins", "sans-serif"],
+                        "display-lg": ["Poppins", "sans-serif"],
+                        "label-lg": ["Poppins", "sans-serif"],
+                        "body-lg": ["Poppins", "sans-serif"],
+                        "label-sm": ["Poppins", "sans-serif"],
+                        "headline-lg": ["Poppins", "sans-serif"],
+                        "headline-lg-mobile": ["Poppins", "sans-serif"],
+                        "title-lg": ["Poppins", "sans-serif"],
+                        "headline-md": ["Poppins", "sans-serif"],
+                        "headline-sm": ["Poppins", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.1px", "fontWeight": "500"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-sm": ["11px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}],
+                        "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #E5E7EB; }
+        .glass-header {
+            background-color: rgba(252, 248, 250, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .surface-card {
+            background-color: #ffffff;
+            box-shadow: 0px 2px 8px 0px rgba(13, 19, 33, 0.04);
+        }
+        
+        /* Custom form styles based on brand guidelines */
+        .brand-input {
+            border-color: #8E8F95;
+            border-width: 1.5px;
+            border-radius: 8px;
+        }
+        .brand-input:focus {
+            border-color: #0D1321;
+            border-width: 2px;
+            box-shadow: none;
+            outline: none;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-background min-h-screen pb-[100px]">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 glass-header shadow-sm transition-transform duration-150">
+<div class="flex justify-between items-center px-margin-mobile h-16 w-full max-w-7xl mx-auto">
+<button class="text-primary hover:bg-surface-variant/50 p-2 rounded-full transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+</button>
+<div class="text-headline-md font-headline-md font-black bg-primary-container text-on-primary-container px-2 py-1 rounded-lg">
+                QD
+            </div>
+<button class="text-primary hover:bg-surface-variant/50 p-2 rounded-full transition-colors flex items-center justify-center relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-brand-amber rounded-full"></span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="pt-[88px] px-margin-mobile max-w-3xl mx-auto space-y-stack-lg">
+<div class="mb-stack-md">
+<h1 class="text-headline-sm font-headline-sm text-brand-navy">Owner Configuration</h1>
+<p class="text-body-md font-body-md text-on-surface-variant mt-1">Manage your service details and preferences.</p>
+</div>
+<!-- Service Image Section -->
+<section class="surface-card rounded-brand p-stack-md">
+<h2 class="text-title-lg font-title-lg text-brand-navy mb-stack-sm">Service Image</h2>
+<div class="w-full aspect-[2/1] rounded-brand bg-surface-container-high border-2 border-dashed border-outline-variant flex flex-col items-center justify-center cursor-pointer hover:bg-surface-variant transition-colors relative overflow-hidden group">
+<img alt="Service Preview" class="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-30 transition-opacity" data-alt="A modern, high-quality photograph of a sleek delivery van parked on a clean, urban street. The lighting is bright and sunny, highlighting the polished exterior of the vehicle. The overall aesthetic is professional and trustworthy, matching a premium logistics brand palette of deep navy and amber gold accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCh1g3dMUMKE6edys-dJdhNzJ6YUUySjP-5jERnuYYq-xp01oxGEqCWk54dF_4UszFNC9VsUo2FNl78Dy9s6TOk1AxA2Tcy16LXqrpiADuHPdE_w5qZw-OmR-lCqBo6Ps-uCzBm8sTRuXiXTtKWrwaI0vwkmsKsewdaq42ANjHmG64b--ashq8g0KldM0LPFQHDGx3eGAOer9H6iXmMy64xhznzyUR6elREA1-GTmTCLMda2lZsPWtLrg">
+<span class="material-symbols-outlined text-4xl text-on-surface-variant mb-2 relative z-10" data-icon="add_a_photo">add_a_photo</span>
+<span class="text-label-lg font-label-lg text-on-surface-variant relative z-10">Upload or change photo</span>
+</div>
+</section>
+<!-- Service Details Section -->
+<section class="surface-card rounded-brand p-stack-md">
+<h2 class="text-title-lg font-title-lg text-brand-navy mb-stack-md">Service Details</h2>
+<div class="space-y-stack-md">
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-unit">Service Name</label>
+<input class="w-full brand-input bg-surface-container-lowest text-body-lg font-body-lg p-3" placeholder="Enter service name" type="text" value="Swift Logistics">
+</div>
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-unit">Category</label>
+<div class="relative">
+<select class="w-full brand-input bg-surface-container-lowest text-body-lg font-body-lg p-3 appearance-none pr-10 cursor-pointer">
+<option selected="">Delivery</option>
+<option>Ride</option>
+<option>Shipping</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-gutter">
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-unit">Base Price</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-body-lg font-body-lg">$</span>
+<input class="w-full brand-input bg-surface-container-lowest text-body-lg font-body-lg p-3 pl-8" placeholder="0.00" type="number" value="15.00">
+</div>
+</div>
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-unit">Price-per-km</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-body-lg font-body-lg">$</span>
+<input class="w-full brand-input bg-surface-container-lowest text-body-lg font-body-lg p-3 pl-8" placeholder="0.00" type="number" value="1.25">
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Location Section -->
+<section class="surface-card rounded-brand p-stack-md">
+<h2 class="text-title-lg font-title-lg text-brand-navy mb-stack-md">Location</h2>
+<div class="flex items-center justify-between mb-stack-md p-3 bg-surface-container-low rounded-brand">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="location_on">location_on</span>
+<div>
+<p class="text-label-sm font-label-sm text-on-surface-variant">Pickup Coordinates</p>
+<p class="text-body-md font-body-md text-brand-navy font-mono mt-1">40.7128° N, 74.0060° W</p>
+</div>
+</div>
+</div>
+<button class="w-full flex items-center justify-center gap-2 border-[1.5px] border-brand-navy text-brand-navy bg-transparent py-3 px-4 rounded-brand text-label-lg font-label-lg transition-colors hover:bg-surface-variant">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+                Set Location on Map
+            </button>
+</section>
+</main>
+<!-- Bottom Action Bar -->
+<div class="fixed bottom-0 left-0 w-full glass-header shadow-[0_-4px_16px_0_rgba(13,19,33,0.08)] z-50 p-margin-mobile">
+<div class="max-w-3xl mx-auto flex gap-gutter">
+<button class="flex-1 bg-transparent border-[1.5px] border-brand-navy text-brand-navy rounded-brand py-3 text-label-lg font-label-lg transition-colors hover:bg-surface-variant">
+                Cancel
+            </button>
+<button class="flex-[2] bg-brand-amber text-brand-navy rounded-brand py-3 text-label-lg font-label-lg transition-transform active:scale-95 shadow-sm hover:shadow-md">
+                Save Changes
+            </button>
+</div>
+</div>
+</body></html>

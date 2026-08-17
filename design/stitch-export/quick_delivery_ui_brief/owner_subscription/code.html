@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Owner Subscription - Quick Delivery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-surface-variant": "#45464c",
+                        "secondary": "#785900",
+                        "surface-container-high": "#eae7e9",
+                        "surface-container": "#f0edee",
+                        "surface-dim": "#dcd9da",
+                        "error": "#ba1a1a",
+                        "outline-variant": "#c6c6cc",
+                        "primary-container": "#151b2a",
+                        "on-primary-fixed": "#151b2a",
+                        "on-tertiary-container": "#987f69",
+                        "tertiary-container": "#281808",
+                        "on-tertiary-fixed-variant": "#574330",
+                        "on-background": "#1b1b1d",
+                        "surface-variant": "#e5e2e3",
+                        "outline": "#76777d",
+                        "inverse-surface": "#313031",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#281808",
+                        "on-primary-container": "#7e8395",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed": "#dde2f6",
+                        "surface-container-highest": "#e5e2e3",
+                        "primary": "#000000",
+                        "primary-fixed-dim": "#c1c6da",
+                        "inverse-on-surface": "#f3f0f1",
+                        "on-surface": "#1b1b1d",
+                        "surface-bright": "#fcf8fa",
+                        "background": "#fcf8fa",
+                        "surface-container-low": "#f6f3f4",
+                        "surface-tint": "#585e6f",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "tertiary-fixed-dim": "#dec1a8",
+                        "inverse-primary": "#c1c6da",
+                        "secondary-container": "#fdc003",
+                        "tertiary": "#000000",
+                        "on-secondary-container": "#6c5000",
+                        "secondary-fixed-dim": "#fabd00",
+                        "on-secondary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface": "#fcf8fa",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed": "#ffdf9e",
+                        "on-primary-fixed-variant": "#414657",
+                        "tertiary-fixed": "#fbddc3",
+                        "on-secondary-fixed": "#261a00"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "unit": "8px",
+                        "stack-md": "16px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "stack-lg": "24px",
+                        "stack-sm": "8px",
+                        "safe": "env(safe-area-inset-bottom)"
+                    },
+                    fontFamily: {
+                        "title-lg": ["Poppins"],
+                        "headline-sm": ["Poppins"],
+                        "headline-lg": ["Poppins"],
+                        "display-lg": ["Poppins"],
+                        "body-md": ["Poppins"],
+                        "headline-lg-mobile": ["Poppins"],
+                        "label-lg": ["Poppins"],
+                        "body-lg": ["Poppins"],
+                        "label-sm": ["Poppins"],
+                        "headline-md": ["Poppins"]
+                    },
+                    fontSize: {
+                        "title-lg": ["18px", { lineHeight: "24px", fontWeight: "600" }],
+                        "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "600" }],
+                        "display-lg": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "headline-lg-mobile": ["28px", { lineHeight: "36px", fontWeight: "600" }],
+                        "label-lg": ["14px", { lineHeight: "20px", letterSpacing: "0.1px", fontWeight: "500" }],
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "label-sm": ["11px", { lineHeight: "16px", letterSpacing: "0.5px", fontWeight: "500" }],
+                        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1;
+        }
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #0D1321;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #0D1321;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased pb-[80px]">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 backdrop-blur-md bg-surface/70 dark:bg-surface-container/70 shadow-sm backdrop-blur-xl bg-surface-container-high dark:bg-surface-container-highest flex items-center justify-between px-4 h-16 w-full">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed" data-icon="local_shipping">local_shipping</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary dark:text-primary-fixed">Subscription</h1>
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="pt-[80px] px-margin-mobile max-w-4xl mx-auto flex flex-col gap-stack-lg">
+<!-- Billing Toggle Section -->
+<section class="flex flex-col items-center justify-center py-stack-md">
+<div class="flex items-center bg-surface-container-low p-1 rounded-full border border-outline-variant shadow-sm relative">
+<div class="absolute inset-y-1 left-1 w-1/2 bg-white rounded-full shadow-sm transition-transform duration-300 ease-in-out" id="toggle-indicator"></div>
+<button class="relative z-10 w-32 py-2 font-label-lg text-label-lg text-on-surface text-center rounded-full" onclick="toggleBilling('monthly')">Monthly</button>
+<button class="relative z-10 w-32 py-2 font-label-lg text-label-lg text-on-surface-variant text-center rounded-full flex items-center justify-center gap-1" onclick="toggleBilling('yearly')">
+                    Yearly <span class="bg-secondary-container text-on-secondary-container text-[10px] px-1.5 py-0.5 rounded-full font-bold ml-1">SAVE 20%</span>
+</button>
+</div>
+</section>
+<!-- Subscription Plans Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter items-stretch">
+<!-- Starter Plan -->
+<div class="bg-surface-container-lowest rounded-xl p-stack-lg flex flex-col border border-outline-variant relative overflow-hidden shadow-[0_2px_8px_rgba(13,19,33,0.04)]">
+<div class="absolute top-0 right-0 bg-surface-container text-on-surface font-label-sm text-label-sm px-3 py-1 rounded-bl-xl font-bold border-b border-l border-outline-variant">
+                    Current Plan
+                </div>
+<div class="mb-stack-md mt-2">
+<h2 class="font-title-lg text-title-lg text-primary">Starter</h2>
+<div class="mt-2 flex items-baseline gap-1">
+<span class="font-headline-lg text-headline-lg md:font-headline-lg text-primary" data-monthly="$0" data-yearly="$0">$0</span>
+<span class="font-body-md text-body-md text-on-surface-variant">/mo</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2">Perfect for new owner-operators testing the waters.</p>
+</div>
+<ul class="flex flex-col gap-stack-sm mb-stack-lg flex-grow">
+<li class="flex items-start gap-2 font-body-md text-body-md text-on-surface">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="check">check</span>
+                        Up to 2 drivers
+                    </li>
+<li class="flex items-start gap-2 font-body-md text-body-md text-on-surface">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="check">check</span>
+                        Basic location tracking
+                    </li>
+<li class="flex items-start gap-2 font-body-md text-body-md text-on-surface">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="check">check</span>
+                        Email support
+                    </li>
+</ul>
+<button class="w-full py-3 px-4 rounded-lg bg-transparent border-[1.5px] border-primary text-primary font-label-lg text-label-lg flex items-center justify-center opacity-50 cursor-not-allowed">
+                    Active Plan
+                </button>
+</div>
+<!-- Professional Plan -->
+<div class="bg-primary-container rounded-xl p-stack-lg flex flex-col relative overflow-hidden shadow-[0_4px_16px_rgba(13,19,33,0.08)] transform md:-translate-y-4 border border-primary z-10">
+<div class="absolute top-0 inset-x-0 bg-secondary-container text-on-secondary-container font-label-sm text-label-sm py-1.5 text-center font-bold tracking-wider uppercase">
+                    Best Value
+                </div>
+<div class="mb-stack-md mt-6">
+<h2 class="font-title-lg text-title-lg text-on-primary-fixed">Professional</h2>
+<div class="mt-2 flex items-baseline gap-1">
+<span class="font-headline-lg text-headline-lg text-on-primary-fixed" data-monthly="$49" data-yearly="$39">$49</span>
+<span class="font-body-md text-body-md text-on-primary-fixed/80">/mo</span>
+</div>
+<p class="font-body-md text-body-md text-on-primary-fixed/80 mt-2">For growing fleets needing real-time insights.</p>
+</div>
+<ul class="flex flex-col gap-stack-sm mb-stack-lg flex-grow">
+<li class="flex items-start gap-2 font-body-md text-body-md text-on-primary-fixed">
+<span class="material-symbols-outlined text-secondary-container text-[20px]" data-icon="check_circle">check_circle</span>
+                        Up to 10 drivers
+                    </li>
+<li class="flex items-start gap-2 font-body-md text-body-md text-on-primary-fixed">
+<span class="material-symbols-outlined text-secondary-container text-[20px]" data-icon="check_circle">check_circle</span>
+                        Real-time fleet map
+                    </li>
+<li class="flex items-start gap-2 font-body-md text-body-md text-on-primary-fixed">
+<span class="material-symbols-outlined text-secondary-container text-[20px]" data-icon="check_circle">check_circle</span>
+                        Advanced analytics dashboard
+                    </li>
+<li class="flex items-start gap-2 font-body-md text-body-md text-on-primary-fixed">
+<span class="material-symbols-outlined text-secondary-container text-[20px]" data-icon="check_circle">check_circle</span>
+                        Priority 24/7 support
+                    </li>
+</ul>
+<button class="w-full py-3 px-4 rounded-lg bg-secondary-container text-on-secondary-container font-label-lg text-label-lg flex items-center justify-center hover:bg-secondary-fixed transition-colors active:scale-95">
+                    Upgrade to Professional
+                </button>
+</div>
+<!-- Enterprise Plan -->
+<div class="bg-surface-container-lowest rounded-xl p-stack-lg flex flex-col border border-outline-variant relative overflow-hidden shadow-[0_2px_8px_rgba(13,19,33,0.04)]">
+<div class="mb-stack-md mt-2">
+<h2 class="font-title-lg text-title-lg text-primary">Enterprise</h2>
+<div class="mt-2 flex items-baseline gap-1">
+<span class="font-headline-sm text-headline-sm text-primary">Custom Pricing</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2">Scalable infrastructure for large-scale operations.</p>
+</div>
+<ul class="flex flex-col gap-stack-sm mb-stack-lg flex-grow">
+<li class="flex items-start gap-2 font-body-md text-body-md text-on-surface">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="check">check</span>
+                        Unlimited drivers
+                    </li>
+<li class="flex items-start gap-2 font-body-md text-body-md text-on-surface">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="check">check</span>
+                        Full API access &amp; Integrations
+                    </li>
+<li class="flex items-start gap-2 font-body-md text-body-md text-on-surface">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="check">check</span>
+                        Dedicated Account Manager
+                    </li>
+<li class="flex items-start gap-2 font-body-md text-body-md text-on-surface">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="check">check</span>
+                        Custom SLA
+                    </li>
+</ul>
+<button class="w-full py-3 px-4 rounded-lg bg-transparent border-[1.5px] border-primary text-primary font-label-lg text-label-lg flex items-center justify-center hover:bg-surface-variant/20 transition-colors active:scale-95">
+                    Contact Sales
+                </button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-xl bg-surface dark:bg-surface-container-lowest border-t border-outline-variant dark:border-outline-variant/30 shadow-[0_-2px_8px_rgba(13,19,33,0.04)] fixed bottom-0 left-0 w-full flex justify-around items-center h-16 px-2 pb-safe md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all active:scale-90 duration-150 w-full h-full" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="dashboard">dashboard</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all active:scale-90 duration-150 w-full h-full" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="local_shipping">local_shipping</span>
+<span class="font-label-sm text-label-sm">Services</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all active:scale-90 duration-150 w-full h-full" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="history">history</span>
+<span class="font-label-sm text-label-sm">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-secondary-container font-bold relative after:content-[''] after:absolute after:bottom-0 after:w-1/2 after:h-0.5 after:bg-secondary-container hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all active:scale-90 duration-150 w-full h-full" href="#">
+<span class="material-symbols-outlined mb-1 text-primary dark:text-secondary-container" data-icon="settings" data-weight="fill">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</nav>
+<script>
+        function toggleBilling(type) {
+            const indicator = document.getElementById('toggle-indicator');
+            const buttons = document.querySelectorAll('button[onclick^="toggleBilling"]');
+            const prices = document.querySelectorAll('[data-monthly]');
+
+            if (type === 'yearly') {
+                indicator.style.transform = 'translateX(100%)';
+                buttons[0].classList.replace('text-on-surface', 'text-on-surface-variant');
+                buttons[1].classList.replace('text-on-surface-variant', 'text-on-surface');
+                
+                prices.forEach(price => {
+                    price.textContent = price.getAttribute('data-yearly');
+                });
+            } else {
+                indicator.style.transform = 'translateX(0)';
+                buttons[1].classList.replace('text-on-surface', 'text-on-surface-variant');
+                buttons[0].classList.replace('text-on-surface-variant', 'text-on-surface');
+                
+                prices.forEach(price => {
+                    price.textContent = price.getAttribute('data-monthly');
+                });
+            }
+        }
+    </script>
+</body></html>

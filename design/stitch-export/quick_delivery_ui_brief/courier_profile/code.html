@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Courier Profile - Quick Delivery</title>
+<!-- Google Fonts: Poppins -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config from Guidelines -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#1b1b1d",
+                        "on-primary-fixed-variant": "#414657",
+                        "surface-tint": "#585e6f",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#000000",
+                        "surface": "#fcf8fa",
+                        "outline-variant": "#c6c6cc",
+                        "on-primary": "#ffffff",
+                        "inverse-primary": "#c1c6da",
+                        "surface-container": "#f0edee",
+                        "outline": "#76777d",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed-variant": "#574330",
+                        "on-primary-fixed": "#151b2a",
+                        "on-secondary-container": "#6c5000",
+                        "tertiary-fixed": "#fbddc3",
+                        "surface-dim": "#dcd9da",
+                        "primary-container": "#151b2a",
+                        "on-secondary-fixed": "#261a00",
+                        "primary": "#000000",
+                        "primary-fixed": "#dde2f6",
+                        "surface-container-low": "#f6f3f4",
+                        "secondary-fixed": "#ffdf9e",
+                        "tertiary-fixed-dim": "#dec1a8",
+                        "tertiary-container": "#281808",
+                        "on-error-container": "#93000a",
+                        "surface-variant": "#e5e2e3",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "on-tertiary-container": "#987f69",
+                        "primary-fixed-dim": "#c1c6da",
+                        "surface-container-high": "#eae7e9",
+                        "surface-bright": "#fcf8fa",
+                        "secondary-fixed-dim": "#fabd00",
+                        "surface-container-highest": "#e5e2e3",
+                        "on-tertiary-fixed": "#281808",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#7e8395",
+                        "inverse-on-surface": "#f3f0f1",
+                        "inverse-surface": "#313031",
+                        "secondary-container": "#fdc003",
+                        "error-container": "#ffdad6",
+                        "secondary": "#785900",
+                        "on-error": "#ffffff",
+                        "background": "#fcf8fa",
+                        "on-surface-variant": "#45464c",
+                        "on-background": "#1b1b1d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "margin-mobile": "16px",
+                        "stack-lg": "24px",
+                        "stack-sm": "8px",
+                        "unit": "8px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Poppins"],
+                        "label-lg": ["Poppins"],
+                        "headline-md": ["Poppins"],
+                        "title-lg": ["Poppins"],
+                        "label-sm": ["Poppins"],
+                        "headline-lg-mobile": ["Poppins"],
+                        "display-lg": ["Poppins"],
+                        "headline-sm": ["Poppins"],
+                        "body-md": ["Poppins"],
+                        "headline-lg": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.1px", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "title-lg": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface antialiased pt-16 pb-32">
+<!-- TopAppBar from JSON -->
+<header class="fixed top-0 w-full z-50 bg-surface/70 backdrop-blur-md shadow-sm flex items-center justify-between px-margin-mobile h-16 w-full">
+<button class="text-primary hover:bg-surface-variant/50 transition-colors active:scale-95 duration-200 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm font-bold text-on-surface text-center flex-1">Courier Profile</h1>
+<button class="text-on-surface-variant hover:bg-surface-variant/50 transition-colors active:scale-95 duration-200 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">more_vert</span>
+</button>
+</header>
+<main class="px-margin-mobile flex flex-col gap-stack-lg mt-unit">
+<!-- Profile Header Section -->
+<section class="flex flex-col items-center pt-stack-md text-center">
+<div class="relative w-24 h-24 rounded-full overflow-hidden mb-stack-sm border-4 border-surface-container-lowest shadow-sm">
+<img class="w-full h-full object-cover" data-alt="A professional, brightly lit headshot of a friendly male delivery driver in his 30s. He is wearing a clean, modern deep navy blue uniform polo shirt. The background is a slightly blurred out pristine white delivery van. The lighting is natural and flattering, emphasizing a trustworthy and efficient brand aesthetic typical of a premium modern logistics company." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8gkJ27Us1G1Nc7U0AtJ4c54JgFk4vlSzRJLNCXTTjELEABi2Do7BBlmwXaCF7TcLN_P2LmjB3rRlHOfUSAMnPJtzAqQci_Kgr3sgYHDdFvzgopvywy-cNmFk11CX4Ly-yKuCCgG077Z8XUf45DF4bQZ3BmTAtPL5gcCYxxRxkdh0jrzsHrQUiq7HMqiPNe_uHOvnSmeO_Sy_74hpNVDT5V6T5SoNYo6Wx38msox0kGhRplBwbuQ6OlA"/>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-primary-fixed mb-1">Michael R.</h2>
+<div class="flex items-center gap-1 bg-surface-container-lowest px-3 py-1 rounded-full shadow-sm border border-surface-variant">
+<span class="material-symbols-outlined text-secondary-fixed-dim text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-lg text-label-lg text-on-surface">4.9</span>
+<span class="font-body-md text-body-md text-on-surface-variant ml-1">(1,240 reviews)</span>
+</div>
+</section>
+<!-- Stats Section (Bento Grid Style) -->
+<section class="grid grid-cols-3 gap-unit">
+<div class="bg-surface-container-lowest p-stack-md rounded-lg shadow-sm border border-surface-variant flex flex-col items-center justify-center text-center">
+<span class="font-headline-sm text-headline-sm text-on-primary-fixed">2,450+</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-1">Deliveries</span>
+</div>
+<div class="bg-surface-container-lowest p-stack-md rounded-lg shadow-sm border border-surface-variant flex flex-col items-center justify-center text-center">
+<span class="font-headline-sm text-headline-sm text-on-primary-fixed">3 Yrs</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-1">Experience</span>
+</div>
+<div class="bg-surface-container-lowest p-stack-md rounded-lg shadow-sm border border-surface-variant flex flex-col items-center justify-center text-center">
+<span class="font-headline-sm text-headline-sm text-on-primary-fixed">99%</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-1">On-Time</span>
+</div>
+</section>
+<!-- Vehicle Details Section -->
+<section class="flex flex-col gap-stack-sm">
+<h3 class="font-title-lg text-title-lg text-on-surface">Vehicle Details</h3>
+<div class="bg-surface-container-lowest rounded-lg shadow-sm border border-surface-variant overflow-hidden flex flex-row items-center h-32">
+<div class="w-1/3 h-full bg-surface-variant">
+<img class="w-full h-full object-cover" data-alt="A pristine, late-model Mercedes-Benz Sprinter delivery van painted in a clean white base color, parked on a sunlit, modern urban street. The image is captured from a dynamic 3/4 front angle, showcasing its sleek design. The setting features subtle, high-end architectural details in the background, maintaining a corporate modern aesthetic with sharp contrasts and bright, clear daylight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCL-A_kqCEnee_NuU8Gu6vHXJYPZxIst-mXjGScCxDOMeoI4g_-UytJT1hUg9Vgb-SgK_6C7nCVwlhLiKDWuwy10rmA4C2ANrV0zJH-lWHZozNgXihtieRVZOyDxN7l88NtWv_i6X84a-byL95aj_Il2HOj72-hQaRdPkgml3H7_eid9cyACurRcu2BC_NCSc-bxN-nJMT2pDhCtLCNuB96J9aZN0viIr_XRRHN_8yHmsl9WzOhHW22EA"/>
+</div>
+<div class="p-stack-md flex-1 flex flex-col justify-center">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-outline-variant text-[20px]">local_shipping</span>
+<h4 class="font-label-lg text-label-lg text-on-primary-fixed">Mercedes-Benz Sprinter</h4>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">White • Large Cargo Capacity</p>
+<div class="mt-2 bg-surface px-2 py-1 rounded inline-block border border-outline-variant/50 self-start">
+<span class="font-label-sm text-label-sm text-on-primary-fixed font-mono tracking-widest">QD-2024-X</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Recent Reviews Section -->
+<section class="flex flex-col gap-stack-sm">
+<div class="flex justify-between items-end mb-unit">
+<h3 class="font-title-lg text-title-lg text-on-surface">Recent Reviews</h3>
+<a class="font-label-lg text-label-lg text-secondary-container hover:underline" href="#">See all</a>
+</div>
+<div class="flex flex-col gap-unit">
+<!-- Review Card 1 -->
+<div class="bg-surface-container-lowest p-stack-md rounded-lg shadow-sm border border-surface-variant">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-label-lg text-label-lg text-on-surface">Sarah J.</h4>
+<div class="flex gap-0.5">
+<span class="material-symbols-outlined text-secondary-fixed-dim text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-secondary-fixed-dim text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-secondary-fixed-dim text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-secondary-fixed-dim text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-secondary-fixed-dim text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">"Very professional and arrived early! Handled my fragile packages with great care. Highly recommend."</p>
+</div>
+<!-- Review Card 2 -->
+<div class="bg-surface-container-lowest p-stack-md rounded-lg shadow-sm border border-surface-variant">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-label-lg text-label-lg text-on-surface">David M.</h4>
+<div class="flex gap-0.5">
+<span class="material-symbols-outlined text-secondary-fixed-dim text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-secondary-fixed-dim text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-secondary-fixed-dim text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-secondary-fixed-dim text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-secondary-fixed-dim text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">"Quick delivery, friendly driver. The tracking was perfectly accurate. Great service overall."</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Fixed Footer Actions -->
+<footer class="fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant shadow-[0_-4px_16px_rgba(13,19,33,0.04)] px-margin-mobile py-stack-md pb-[calc(16px+env(safe-area-inset-bottom))] z-50">
+<div class="flex gap-stack-md">
+<!-- Secondary Button -->
+<button class="flex-1 h-12 rounded-lg border-[1.5px] border-on-primary-fixed flex items-center justify-center gap-2 text-on-primary-fixed font-label-lg text-label-lg active:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">chat</span>
+                Message
+            </button>
+<!-- Primary Button -->
+<button class="flex-1 h-12 rounded-lg bg-secondary-fixed-dim flex items-center justify-center gap-2 text-on-secondary-fixed font-label-lg text-label-lg active:opacity-80 transition-opacity shadow-sm">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">call</span>
+                Call Courier
+            </button>
+</div>
+</footer>
+</body></html>

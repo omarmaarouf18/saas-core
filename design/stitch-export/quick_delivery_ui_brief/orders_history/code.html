@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Customer Orders History - Quick Delivery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed": "#261a00",
+                    "inverse-primary": "#c1c6da",
+                    "secondary-fixed-dim": "#fabd00",
+                    "primary-fixed-dim": "#c1c6da",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface": "#1b1b1d",
+                    "error": "#ba1a1a",
+                    "on-background": "#1b1b1d",
+                    "tertiary-fixed": "#fbddc3",
+                    "tertiary-container": "#281808",
+                    "surface-dim": "#dcd9da",
+                    "on-secondary-fixed-variant": "#5b4300",
+                    "surface": "#fcf8fa",
+                    "on-surface-variant": "#45464c",
+                    "primary-fixed": "#dde2f6",
+                    "error-container": "#ffdad6",
+                    "on-primary-container": "#7e8395",
+                    "inverse-surface": "#313031",
+                    "surface-container": "#f0edee",
+                    "on-primary": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "surface-variant": "#e5e2e3",
+                    "background": "#fcf8fa",
+                    "surface-tint": "#585e6f",
+                    "on-secondary-container": "#6c5000",
+                    "secondary-fixed": "#ffdf9e",
+                    "surface-bright": "#fcf8fa",
+                    "surface-container-highest": "#e5e2e3",
+                    "primary-container": "#151b2a",
+                    "surface-container-high": "#eae7e9",
+                    "tertiary-fixed-dim": "#dec1a8",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-low": "#f6f3f4",
+                    "inverse-on-surface": "#f3f0f1",
+                    "on-primary-fixed-variant": "#414657",
+                    "on-primary-fixed": "#151b2a",
+                    "on-error": "#ffffff",
+                    "tertiary": "#000000",
+                    "outline": "#76777d",
+                    "on-tertiary-fixed": "#281808",
+                    "outline-variant": "#c6c6cc",
+                    "on-tertiary-fixed-variant": "#574330",
+                    "secondary-container": "#fdc003",
+                    "primary": "#000000",
+                    "on-tertiary-container": "#987f69",
+                    "secondary": "#785900",
+                    "on-error-container": "#93000a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-lg": "24px",
+                    "margin-mobile": "16px",
+                    "gutter": "16px",
+                    "stack-md": "16px",
+                    "unit": "8px",
+                    "stack-sm": "8px"
+            },
+            "fontFamily": {
+                    "headline-sm": ["Poppins"],
+                    "title-lg": ["Poppins"],
+                    "display-lg": ["Poppins"],
+                    "headline-lg-mobile": ["Poppins"],
+                    "headline-lg": ["Poppins"],
+                    "headline-md": ["Poppins"],
+                    "label-lg": ["Poppins"],
+                    "body-lg": ["Poppins"],
+                    "body-md": ["Poppins"],
+                    "label-sm": ["Poppins"]
+            },
+            "fontSize": {
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.1px", "fontWeight": "500"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-sm": ["11px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Poppins', sans-serif; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased min-h-screen pb-[72px] pt-16">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/70 backdrop-blur-md shadow-sm flex items-center justify-between px-margin-mobile h-16">
+<div class="flex items-center gap-stack-sm hover:opacity-80 transition-opacity active:scale-95 transition-transform cursor-pointer">
+<span class="material-symbols-outlined text-primary" data-icon="package_2" style="font-variation-settings: 'FILL' 1;">package_2</span>
+</div>
+<h1 class="font-headline-sm text-headline-sm font-black text-primary">Orders</h1>
+<div class="flex items-center gap-stack-sm hover:opacity-80 transition-opacity active:scale-95 transition-transform cursor-pointer relative">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-secondary-container rounded-full border border-surface"></span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="w-full max-w-3xl mx-auto px-margin-mobile pt-stack-lg flex flex-col gap-stack-lg md:pt-stack-lg">
+<!-- Search Bar -->
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full h-12 pl-10 pr-4 rounded-lg bg-surface-container-lowest border-1.5 border-outline-variant focus:border-2 focus:border-primary focus:ring-0 font-body-md text-body-md text-on-surface shadow-[0_2px_8px_rgba(13,19,33,0.04)] transition-all" placeholder="Search by ID or destination..." type="text"/>
+</div>
+<!-- Filter Tabs -->
+<div class="flex gap-stack-sm overflow-x-auto hide-scroll pb-2 -mx-margin-mobile px-margin-mobile">
+<button class="h-10 px-5 rounded-full bg-secondary-container/20 text-on-secondary-container font-label-lg text-label-lg whitespace-nowrap transition-colors border border-secondary-container">All</button>
+<button class="h-10 px-5 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-lg text-label-lg whitespace-nowrap transition-colors border border-outline-variant hover:bg-surface-variant/50">In Transit</button>
+<button class="h-10 px-5 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-lg text-label-lg whitespace-nowrap transition-colors border border-outline-variant hover:bg-surface-variant/50">Completed</button>
+<button class="h-10 px-5 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-lg text-label-lg whitespace-nowrap transition-colors border border-outline-variant hover:bg-surface-variant/50">Cancelled</button>
+</div>
+<!-- Orders List (Bento-style Cards) -->
+<div class="flex flex-col gap-stack-md">
+<!-- In Transit Order Card -->
+<article class="bg-surface-container-lowest rounded-xl p-margin-mobile shadow-[0_2px_8px_rgba(13,19,33,0.04)] flex flex-col gap-stack-sm border border-surface-variant hover:shadow-[0_4px_16px_rgba(13,19,33,0.08)] transition-shadow">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block mb-1">Oct 24, 2023 • 14:30</span>
+<h3 class="font-title-lg text-title-lg text-primary">Order #QD-8472</h3>
+</div>
+<span class="px-2 py-1 rounded-md bg-secondary-container/20 text-on-secondary-container font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">local_shipping</span> In Transit
+                    </span>
+</div>
+<div class="flex items-center gap-2 mt-2">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant">location_on</span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-surface">Downtown Commercial District</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Metro City</p>
+</div>
+</div>
+<div class="h-px bg-surface-variant my-2 w-full"></div>
+<div class="flex justify-between items-center">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Total Cost</p>
+<p class="font-title-lg text-title-lg text-primary">$45.00</p>
+</div>
+<button class="h-10 px-4 rounded-lg bg-secondary-container text-on-secondary-container font-label-lg text-label-lg flex items-center gap-2 active:scale-95 transition-transform shadow-sm">
+<span class="material-symbols-outlined text-[18px]">my_location</span> Track
+                    </button>
+</div>
+</article>
+<!-- Completed Order Card -->
+<article class="bg-surface-container-lowest rounded-xl p-margin-mobile shadow-[0_2px_8px_rgba(13,19,33,0.04)] flex flex-col gap-stack-sm border border-surface-variant hover:shadow-[0_4px_16px_rgba(13,19,33,0.08)] transition-shadow">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block mb-1">Oct 22, 2023 • 09:15</span>
+<h3 class="font-title-lg text-title-lg text-primary">Order #QD-8311</h3>
+</div>
+<span class="px-2 py-1 rounded-md bg-primary-container/10 text-on-primary-fixed-variant font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Completed
+                    </span>
+</div>
+<div class="flex items-center gap-2 mt-2">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant">home</span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-surface">Westside Residential Area</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Metro City</p>
+</div>
+</div>
+<div class="h-px bg-surface-variant my-2 w-full"></div>
+<div class="flex justify-between items-center">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Total Cost</p>
+<p class="font-title-lg text-title-lg text-primary">$128.50</p>
+</div>
+<button class="h-10 px-4 rounded-lg bg-transparent border-1.5 border-primary text-primary font-label-lg text-label-lg flex items-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[18px]">replay</span> Reorder
+                    </button>
+</div>
+</article>
+<!-- Cancelled Order Card -->
+<article class="bg-surface-container-lowest rounded-xl p-margin-mobile shadow-[0_2px_8px_rgba(13,19,33,0.04)] flex flex-col gap-stack-sm border border-surface-variant opacity-75">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block mb-1">Oct 20, 2023 • 18:45</span>
+<h3 class="font-title-lg text-title-lg text-primary">Order #QD-8205</h3>
+</div>
+<span class="px-2 py-1 rounded-md bg-error-container text-on-error-container font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">cancel</span> Cancelled
+                    </span>
+</div>
+<div class="flex items-center gap-2 mt-2">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant">business</span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-surface">North Tech Park Building B</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Metro City</p>
+</div>
+</div>
+<div class="h-px bg-surface-variant my-2 w-full"></div>
+<div class="flex justify-between items-center">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Total Cost</p>
+<p class="font-title-lg text-title-lg text-on-surface-variant line-through">$32.00</p>
+</div>
+<button class="h-10 px-4 rounded-lg bg-transparent border-1.5 border-outline-variant text-on-surface-variant font-label-lg text-label-lg flex items-center gap-2 active:scale-95 transition-transform">
+                        Details
+                    </button>
+</div>
+</article>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-xl bg-surface shadow-[0_-2px_8px_rgba(13,19,33,0.04)] md:hidden border-t-0 flex justify-around items-center h-[72px] pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant pt-[6px] hover:bg-surface-variant/20 active:scale-90 transition-all duration-200 w-full h-full" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary border-t-2 border-secondary-container pt-1 hover:bg-surface-variant/20 active:scale-90 transition-all duration-200 w-full h-full" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="local_shipping" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+<span class="font-label-sm text-label-sm font-headline-sm font-black">Orders</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant pt-[6px] hover:bg-surface-variant/20 active:scale-90 transition-all duration-200 w-full h-full" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-label-sm text-label-sm">Wallet</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant pt-[6px] hover:bg-surface-variant/20 active:scale-90 transition-all duration-200 w-full h-full" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</a>
+</nav>
+</body></html>
