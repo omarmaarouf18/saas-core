@@ -2,6 +2,27 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Google Stitch Visual Redesign Implementation (Batches A–E)
+
+- **Implementation Detail**:
+  - **Design Tokens & Primary CTA Evolution (`frontend/lib/widgets/primary_button.dart`, `frontend/lib/core/theme.dart`, `docs/frontend/BRAND_IDENTITY.md`, `docs/frontend/DESIGN_SYSTEM.md`)**:
+    - Updated `PrimaryButton` default fill to `AppColors.secondary` (Amber Gold `#FFC107`) with `AppColors.onSecondary` (Deep Navy `#0D1321`) text for primary conversion CTAs, while preserving crimson red `AppColors.error` for destructive confirmation actions and active-state tap scaling.
+    - Deep Navy (`AppColors.primary`) remains the structural header, dark background, and dark surface anchor.
+    - Extended typography scale with `headlineMd` (20pt) and `labelSm` (10pt).
+  - **Modern Reusable Shared UI Components (`frontend/lib/widgets/`)**:
+    - `OtpPinInput` (`otp_pin_input.dart`): 6 discrete square digit input boxes with auto-advance, backspace focus retreat, clipboard paste, error border highlighting, and external controller sync.
+    - `PillFilterBar` (`pill_filter_bar.dart`): Reusable horizontal scrollable category chip bar with active/inactive states, badge counts, tap debounce, and full `InkWell` touch targets.
+    - `RouteTimeline` (`route_timeline.dart`): 2-point vertical route connector (dark pickup dot, vertical line, red dropoff dot, dock/bay notes, distance/time/cargo metrics row).
+    - `ThemedCard` (`themed_card.dart`): Added optional `onTap` parameter with `Material` and `InkWell` ripple integration.
+  - **Batch A (Authentication & Onboarding — 5 screens)**: Upgraded `login_screen.dart`, `signup_screen.dart`, `otp_screen.dart`, `forgot_password_screen.dart`, and `update_required_screen.dart` with external centered headlines, inline password/resend links, 2-card role selection, and discrete PIN boxes.
+  - **Batch B (Customer Marketplace & Tracking — 5 screens)**: Upgraded `customer_home_screen.dart`, `customer_jobs_screen.dart`, `job_status_screen.dart`, `customer_marketplace_screen.dart`, and `customer_job_map_screen.dart` with top "Where to deliver?" Quick Booking module, pill filter chips, live shipment tracking cards, map preview header, and driver contact cards.
+  - **Batch C (Tenant Owner Operations & Services — 5 screens)**: Upgraded `home_screen.dart` (Bento metrics grid, 48pt balance display, dark subscription tier card), `employee_screen.dart` (search bar, worker status filter chips, roster cards), `owner_configuration_screen.dart` (2:1 aspect ratio dashed photo uploader, 2-column pricing grid), `service_screen.dart`, and `kyc_document_upload_screen.dart` (2x2 document grid).
+  - **Batch D (Financial Management & Fleet Oversight — 5 screens)**: Upgraded `wallet_screen.dart` (Deep Navy Balance Hero card, side-by-side withdraw/deposit actions), `subscription_screen.dart` (highlighted Professional tier card with Best Value styling), `owner_fleet_map_screen.dart`, `owner_history_screen.dart`, and `owner_reconciliation_queue_screen.dart`.
+  - **Batch E (Employee Shell, Support & Communication — 8 screens)**: Upgraded `employee_home_screen.dart`, `employee_jobs_screen.dart`, `employee_history_screen.dart`, `settings_screen.dart` (top Profile Summary card, grouped preference containers), `my_account_screen.dart`, `notifications_screen.dart`, `chat_screen.dart`, and `rating_screen.dart` (interactive gold star rating selector).
+  - **Automated Test Coverage**: Added 40 unit and widget tests in `test/shared_widgets_test.dart` and updated auth/job tests for 100% pass across all 259 tests.
+- **Commit SHA**: ``68564580dde73d3c512c2648bd21f9c3a3c6c28e``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (259/259 pass), RTL layout check with `ar_EG`, live backend connectivity against `https://api.logiclinkeg.tech`, `make docs-check`, and pre-push hooks gate. ✅
+
 ## Maps, Dialogs & Update Required Screen Design System Migration
 
 - **Implementation Detail**:
