@@ -156,15 +156,20 @@ The detailed project history is distributed across categorized changelog files. 
   * **Decision**: A 4th service category for cargo/goods transport (distinct from passenger "Ride") is deferred and not scoped for the current launch. The customer-facing home screen displays exactly 3 service tiles (Delivery, Ride, Shipping), where "Ride" maps to the backend's `transport` category.
   * **Reasoning**: Keeping the scope limited to a 3-category directory for launch. If added later, cargo/goods transport will require a brand new backend category value distinct from `transport` (which is reserved for passenger rides) to avoid ambiguity.
 
-* **Frontend UX Restructuring & Role Home Redesign (ADR-0014)**
-  * **Scope**: Formally planned architecture initiative to consolidate scattered preferences/logout into a unified Settings screen (Account Action Center), redesign the Customer Home layout (4-tile + search), replace raw lat/long fields with an interactive `flutter_map` picker in `customer_marketplace_screen.dart`, and execute an employee backend contract audit prior to redesigning the employee screen(s).
-  * **Status**: Planned / Documented in [ADR-0014](docs/adr/0014-unified-account-settings-and-role-home-redesign.md) and [docs/frontend/STATUS.md](docs/frontend/STATUS.md) Phase 15. Implementation is deferred to multi-phase follow-up tasks.
-
-* **Business Owner Configuration**
-  * **Custom & Negotiable Pricing**: Custom or negotiable base pricing per owner beyond fixed `TenantBasePrice` and `TenantPricePerKM` values set during service creation (e.g. per-owner pricing tiers, seasonal or promotional pricing, or bulk-service discounts).
-  * **Business Operating Hours**: Operating hours defining days and times an owner's services are available for booking, as no concept of operating hours currently exists anywhere in `models.Service` or `models.Job` and jobs can be booked/tracked at any time regardless of any "open" state.
-  * **Service Coverage Area & Geographic Radius**: Service coverage areas or geographic radii limiting which customer locations an owner's services are bookable for (based on distance from base location or a defined polygon/radius), as `TrackJob` currently accepts any customer location without geographic validation against the owner's operating area.
-  * **Schema Absence Note**: None of these fields or capabilities are currently represented anywhere in `services/user-service/internal/models/models.go` (specifically within the `Service` or `Job` structs).
+* **Mock Reply Feature in Notifications**
+  * **Decision**: The "Reply" button on notification cards in `notifications_screen.dart` marks the notification as read and shows a `SnackBar` stating that the feature is in beta and local-only. It does not send any backend messages.
+  * **Reasoning**: Accepted as a frontend-only demo interaction placeholder until a direct messaging or ticket-reply endpoint is architected for notifications.
+* **Courier Profile Standalone Screen**
+  * **Decision**: A standalone courier profile screen is deferred. Driver details and verified badges are rendered inline within `job_status_screen.dart` and `customer_job_map_screen.dart`.
+  * **Reasoning**: Matches the mobile ergonomics of the customer flow without adding redundant screen hops.
+* **Admin Payout Request Approval & Fulfillment Endpoint**
+  * **Decision**: Admin-side payout request fulfillment/approval endpoint is deferred to ADR-0018 / Support Agent Console. Submitted payout requests from owners remain in `"requested"` status in the consumer application.
+  * **Reasoning**: Administrative payment processing and bank ledger execution are isolated to the Support Agent Console.
+* **Business Owner Configuration (Custom Pricing, Operating Hours, Geofencing)**
+  * **Custom & Negotiable Pricing**: Custom or negotiable base pricing per owner beyond fixed `TenantBasePrice` and `TenantPricePerKM` values set during service creation.
+  * **Business Operating Hours**: Operating hours defining days and times an owner's services are available for booking.
+  * **Service Coverage Area & Geographic Radius**: Service coverage areas or geographic radii limiting which customer locations an owner's services are bookable for.
+  * **Schema Absence Note**: None of these fields are currently represented in MongoDB `Service` or `Job` models; deferred to future backend service capability expansion.
 
 ---
 
