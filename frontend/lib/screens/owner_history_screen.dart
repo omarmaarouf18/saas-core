@@ -5,11 +5,13 @@ import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/pill_filter_bar.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
+import '../widgets/themed_text_field.dart';
 
 class OwnerHistoryScreen extends StatefulWidget {
   final bool isEmbeddedInTab;
@@ -22,6 +24,8 @@ class OwnerHistoryScreen extends StatefulWidget {
 class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final _jobsSearchController = TextEditingController();
+  String _jobsStatusFilter = 'all';
 
   @override
   void initState() {
@@ -37,6 +41,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
   void dispose() {
     _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
+    _jobsSearchController.dispose();
     super.dispose();
   }
 
@@ -248,6 +253,24 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
         .where((j) => j.status == 'completed' || j.status == 'cancelled')
         .toList();
 
+    final query = _jobsSearchController.text.trim().toLowerCase();
+    final filteredJobs = completedJobs.where((j) {
+      final matchesQuery = query.isEmpty ||
+          j.id.toLowerCase().contains(query) ||
+          j.userId.toLowerCase().contains(query) ||
+          (j.cancellationReason ?? '').toLowerCase().contains(query);
+      if (!matchesQuery) return false;
+
+      if (_jobsStatusFilter == 'completed') return j.status == 'completed';
+      if (_jobsStatusFilter == 'cancelled') return j.status == 'cancelled';
+      return true;
+    }).toList();
+
+    final totalCompleted =
+        completedJobs.where((j) => j.status == 'completed').length;
+    final totalCancelled =
+        completedJobs.where((j) => j.status == 'cancelled').length;
+
     return RefreshIndicator(
       onRefresh: _refreshJobs,
       child: ownerProvider.isLoading && ownerProvider.ownerJobs.isEmpty
@@ -265,6 +288,41 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                     ),
                     const SizedBox(height: AppSpacing.md),
                   ],
+                  // Search & Pill Filter Bar
+                  ThemedTextField(
+                    key: const Key('owner_jobs_search_field'),
+                    controller: _jobsSearchController,
+                    hintText: "Search by Job ID, customer, or reason...",
+                    prefixIcon:
+                        const Icon(Icons.search, color: AppColors.outline),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  PillFilterBar<String>(
+                    key: const Key('owner_jobs_pill_filter_bar'),
+                    padding: EdgeInsets.zero,
+                    items: [
+                      PillFilterItem(
+                        label: "All",
+                        value: "all",
+                        count: completedJobs.length,
+                      ),
+                      PillFilterItem(
+                        label: "Completed",
+                        value: "completed",
+                        count: totalCompleted,
+                      ),
+                      PillFilterItem(
+                        label: "Cancelled",
+                        value: "cancelled",
+                        count: totalCancelled,
+                      ),
+                    ],
+                    selectedValue: _jobsStatusFilter,
+                    onSelected: (val) =>
+                        setState(() => _jobsStatusFilter = val),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
                   if (completedJobs.isEmpty)
                     ThemedCard(
                       borderRadius: AppRadius.md,
@@ -278,15 +336,28 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                         onActionPressed: _refreshDataForCurrentTab,
                       ),
                     )
+                  else if (filteredJobs.isEmpty)
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                      child: Center(
+                        child: Text(
+                          "No jobs found matching your filter.",
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    )
                   else
                     ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: completedJobs.length,
+                      itemCount: filteredJobs.length,
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: AppSpacing.md),
                       itemBuilder: (context, index) {
-                        final job = completedJobs[index];
+                        final job = filteredJobs[index];
                         final isCancelled = job.status == 'cancelled';
                         return ThemedCard(
                           padding: AppSpacing.md,
@@ -519,11 +590,14 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
     );
 
     if (widget.isEmbeddedInTab) {
-      return Column(
-        children: [
-          _buildTabBar(l10n),
-          Expanded(child: tabBarView),
-        ],
+      return Material(
+        color: AppColors.scaffoldBackground,
+        child: Column(
+          children: [
+            _buildTabBar(l10n),
+            Expanded(child: tabBarView),
+          ],
+        ),
       );
     }
 

@@ -11,6 +11,7 @@ import '../providers/employee_location_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/confirm_action_dialog.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/route_timeline.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/skeleton_loader.dart';
@@ -657,40 +658,17 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               height: AppSpacing.lg,
               color: AppColors.outlineVariant,
             ),
-            // Primary Info: Destination
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLow,
-                borderRadius: AppRadius.smBorder,
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.location_on_outlined,
-                      color: AppColors.primary, size: 20),
-                  const SizedBox(width: AppSpacing.xs),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.employeeJobsDestinationCoordinates,
-                          style: AppTypography.labelLg.copyWith(
-                            color: AppColors.onSurfaceVariant,
-                          ),
-                        ),
-                        Text(
-                          "📍 Delivery Location",
-                          style: AppTypography.bodyMd.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.onSurface,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            // Route Timeline Card Module
+            RouteTimeline(
+              pickupAddress: "Pickup Depot / Loading Bay",
+              pickupDetail: "Dock / Gate Access Verified",
+              dropoffAddress: "Delivery Destination",
+              dropoffDetail: l10n.employeeJobsDestinationCoordinates,
+              distanceText: job.lockedEscrowAmount != null
+                  ? "${job.lockedEscrowAmount!.toStringAsFixed(0)} Credits"
+                  : "Standard Route",
+              timeText: isActive ? "In Progress" : job.status.toUpperCase(),
+              cargoText: job.paymentMethod.toUpperCase(),
             ),
             const SizedBox(height: AppSpacing.md),
             // Subordinate Info Badges / Chips

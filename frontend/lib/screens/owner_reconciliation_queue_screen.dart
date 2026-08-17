@@ -5,6 +5,7 @@ import '../core/theme.dart';
 import '../models/reconciliation_job.dart';
 import '../providers/reconciliation_provider.dart';
 import '../widgets/confirm_action_dialog.dart';
+import '../widgets/pill_filter_bar.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
@@ -13,6 +14,7 @@ import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_success_banner.dart';
+import '../widgets/themed_text_field.dart';
 
 class OwnerReconciliationQueueScreen extends StatefulWidget {
   const OwnerReconciliationQueueScreen({super.key});
@@ -24,12 +26,21 @@ class OwnerReconciliationQueueScreen extends StatefulWidget {
 
 class _OwnerReconciliationQueueScreenState
     extends State<OwnerReconciliationQueueScreen> {
+  final _searchController = TextEditingController();
+  String _selectedCategory = 'all';
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<ReconciliationProvider>(context, listen: false).fetchQueue();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _showConfirmationDialog({
@@ -140,15 +151,128 @@ class _OwnerReconciliationQueueScreenState
             );
           }
 
+          final query = _searchController.text.trim().toLowerCase();
+          final filteredQueue = provider.queue.where((j) {
+            final reason =
+                '${j.humanReadableFailureReason} ${j.escrowFailureReason}'
+                    .toLowerCase();
+            final matchesQuery = query.isEmpty ||
+                j.id.toLowerCase().contains(query) ||
+                j.userId.toLowerCase().contains(query) ||
+                (j.employeeId ?? '').toLowerCase().contains(query) ||
+                reason.contains(query) ||
+                j.reconciliationNote.toLowerCase().contains(query);
+            if (!matchesQuery) return false;
+
+            if (_selectedCategory == 'distance') {
+              return reason.contains('distance');
+            }
+            if (_selectedCategory == 'time') {
+              return reason.contains('time') || reason.contains('speed');
+            }
+            if (_selectedCategory == 'other') {
+              return !reason.contains('distance') &&
+                  !reason.contains('time') &&
+                  !reason.contains('speed');
+            }
+            return true;
+          }).toList();
+
+          final distanceCount = provider.queue.where((j) {
+            final reason =
+                '${j.humanReadableFailureReason} ${j.escrowFailureReason}'
+                    .toLowerCase();
+            return reason.contains('distance');
+          }).length;
+
+          final timeCount = provider.queue.where((j) {
+            final reason =
+                '${j.humanReadableFailureReason} ${j.escrowFailureReason}'
+                    .toLowerCase();
+            return reason.contains('time') || reason.contains('speed');
+          }).length;
+
+          final otherCount = provider.queue.where((j) {
+            final reason =
+                '${j.humanReadableFailureReason} ${j.escrowFailureReason}'
+                    .toLowerCase();
+            return !reason.contains('distance') &&
+                !reason.contains('time') &&
+                !reason.contains('speed');
+          }).length;
+
           return RefreshIndicator(
             onRefresh: _onRefresh,
-            child: ListView.builder(
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(AppSpacing.md),
-              itemCount: provider.queue.length,
-              itemBuilder: (context, index) {
-                final job = provider.queue[index];
-                return _buildReconciliationCard(context, job, l10n);
-              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ThemedTextField(
+                    key: const Key('reconciliation_search_field'),
+                    controller: _searchController,
+                    hintText: "Search queue by Job ID, customer, driver...",
+                    prefixIcon:
+                        const Icon(Icons.search, color: AppColors.outline),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  PillFilterBar<String>(
+                    key: const Key('reconciliation_pill_filter_bar'),
+                    padding: EdgeInsets.zero,
+                    items: [
+                      PillFilterItem(
+                        label: "All",
+                        value: "all",
+                        count: provider.queue.length,
+                      ),
+                      PillFilterItem(
+                        label: "Distance",
+                        value: "distance",
+                        count: distanceCount,
+                      ),
+                      PillFilterItem(
+                        label: "Time / Speed",
+                        value: "time",
+                        count: timeCount,
+                      ),
+                      PillFilterItem(
+                        label: "Other",
+                        value: "other",
+                        count: otherCount,
+                      ),
+                    ],
+                    selectedValue: _selectedCategory,
+                    onSelected: (val) =>
+                        setState(() => _selectedCategory = val),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  if (filteredQueue.isEmpty)
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                      child: Center(
+                        child: Text(
+                          "No reconciliation jobs match your filter.",
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: filteredQueue.length,
+                      itemBuilder: (context, index) {
+                        final job = filteredQueue[index];
+                        return _buildReconciliationCard(context, job, l10n);
+                      },
+                    ),
+                ],
+              ),
             ),
           );
         },

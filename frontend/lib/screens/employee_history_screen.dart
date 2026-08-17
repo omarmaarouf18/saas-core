@@ -5,6 +5,7 @@ import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/employee_jobs_provider.dart';
+import '../widgets/route_timeline.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
@@ -163,6 +164,18 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
                   height: AppSpacing.lg,
                   color: AppColors.outlineVariant,
                 ),
+                RouteTimeline(
+                  pickupAddress: "Pickup Depot",
+                  pickupDetail: "Dispatched & Logged",
+                  dropoffAddress: "Delivery Destination",
+                  dropoffDetail: "Customer: ${job.userId}",
+                  distanceText: job.lockedEscrowAmount != null
+                      ? "${job.lockedEscrowAmount!.toStringAsFixed(0)} Credits"
+                      : "Route Logged",
+                  timeText: isCancelled ? "Cancelled" : "Completed",
+                  cargoText: job.paymentMethod.toUpperCase(),
+                ),
+                const SizedBox(height: AppSpacing.md),
                 Wrap(
                   spacing: AppSpacing.xs,
                   runSpacing: AppSpacing.xs,
