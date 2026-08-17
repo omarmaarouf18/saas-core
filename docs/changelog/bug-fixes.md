@@ -15,7 +15,7 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
   - **`update_required_screen.dart`**: Updated "Enhanced security protocols for shipment tracking." to "Enhanced security protocols for order and delivery tracking.".
   - **`app_en.arb` & `app_ar.arb`**: Updated `ownerConfigNameHint` from "e.g. Quick Cargo Express" / "مثلاً: النسر للشحن السريع" to "e.g. Quick Delivery Services" / "مثلاً: النسر للخدمات السريعة".
   - **`shared_widgets_test.dart`**: Updated `RouteTimeline` widget tests to use realistic Egyptian address examples instead of US logistics parkway/dock/pallets mock data.
-- **Commit SHA**: `7de3442a319640c606d2612edbdfc8fe81e118c6`
+- **Commit SHA**: ``7de3442a319640c606d2612edbdfc8fe81e118c6``
 - **Verification**: Verified via `flutter analyze` (0 issues), `flutter test` (100% pass, 260/260 tests passed), and literal grep proving zero remaining freight/warehousing/dock placeholder content in `frontend/lib/`. ✅
 
 ## Corrected Unauthorized Reintroduction of KYB/KYE Reviewer Screens (Re-Reverting Commit ab9073a)
