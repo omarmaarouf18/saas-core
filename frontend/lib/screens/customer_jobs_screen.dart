@@ -106,85 +106,21 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header (Only show if not embedded to avoid redundant title in shell tab)
-          if (!widget.isEmbeddedInTab)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md,
-                AppSpacing.md,
-                AppSpacing.md,
-                AppSpacing.xs,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.customerJobsTitle,
-                    style: AppTypography.headlineLgMobile.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    l10n.customerJobsSub,
-                    style: AppTypography.bodyMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // 1. Page Header (Stitch "My Orders" Header)
+          if (!widget.isEmbeddedInTab) _buildHeader(l10n),
 
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.xs,
-            ),
-            child: ThemedTextField(
-              controller: _searchController,
-              hintText: l10n.customerJobsSearchHint,
-              prefixIcon: const Icon(Icons.search, size: 20),
-              onChanged: (val) {
-                setState(() {
-                  _searchQuery = val;
-                });
-              },
-            ),
-          ),
-
-          // Horizontal Pill Filter Bar
-          PillFilterBar<String>(
-            items: [
-              PillFilterItem(
-                label: 'All',
-                value: 'all',
-                count: marketplace.customerJobs.length,
-              ),
-              PillFilterItem(
-                label: 'In Transit',
-                value: 'in_transit',
-                count: inTransitCount,
-              ),
-              PillFilterItem(
-                label: 'Completed',
-                value: 'completed',
-                count: completedCount,
-              ),
-              PillFilterItem(
-                label: 'Cancelled',
-                value: 'cancelled',
-                count: cancelledCount,
-              ),
-            ],
-            selectedValue: _selectedFilter,
-            onSelected: (val) {
-              setState(() => _selectedFilter = val);
-            },
+          // 2. Search & Filter Bar (Stitch Search and Filter Section)
+          _buildSearchAndFilter(
+            l10n,
+            allCount: marketplace.customerJobs.length,
+            inTransitCount: inTransitCount,
+            completedCount: completedCount,
+            cancelledCount: cancelledCount,
           ),
 
           const SizedBox(height: AppSpacing.xs),
 
+          // 3. Orders List View (Stitch Orders List)
           Expanded(
             child: Builder(
               builder: (context) {
@@ -251,153 +187,7 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                     itemCount: filteredJobs.length,
                     itemBuilder: (context, index) {
                       final job = filteredJobs[index];
-                      final displayPrice = job.agreedPrice ??
-                          job.proposedPrice ??
-                          job.suggestedPrice;
-                      final displayId =
-                          job.id.length > 8 ? job.id.substring(0, 8) : job.id;
-                      final isCompleted =
-                          job.status.toLowerCase() == 'completed';
-                      final isCancelled =
-                          job.status.toLowerCase() == 'cancelled';
-                      final isInTransit = !isCompleted && !isCancelled;
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: ThemedCard(
-                          key: Key('customer_job_card_${job.id}'),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => JobStatusScreen(job: job),
-                              ),
-                            );
-                          },
-                          padding: AppSpacing.sm,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Top Row: Tag + Service Name + Status Badge
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      "${l10n.customerJobsOrder}$displayId",
-                                      style: AppTypography.titleMd.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.onSurface,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  StatusBadge(status: job.status),
-                                ],
-                              ),
-                              const SizedBox(height: AppSpacing.xs),
-
-                              // Payment & Price Row
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.payment,
-                                    size: AppIconSize.sm,
-                                    color: AppColors.onSurfaceVariant,
-                                  ),
-                                  const SizedBox(width: AppSpacing.xs),
-                                  Text(
-                                    "Payment: ${job.paymentMethod.toUpperCase()}",
-                                    style: AppTypography.bodySm.copyWith(
-                                      color: AppColors.onSurfaceVariant,
-                                    ),
-                                  ),
-                                  if (displayPrice != null) ...[
-                                    const Spacer(),
-                                    Text(
-                                      "\$${displayPrice.toStringAsFixed(2)}",
-                                      style: AppTypography.titleMd.copyWith(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-
-                              // Progress bar (In Transit / Active)
-                              if (isInTransit) ...[
-                                const SizedBox(height: AppSpacing.xs),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(3),
-                                  child: Container(
-                                    height: 4,
-                                    color: AppColors.surfaceContainerHigh,
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          flex: job.status.toLowerCase() ==
-                                                  'active'
-                                              ? 3
-                                              : 1,
-                                          child: Container(
-                                              color: AppColors.secondary),
-                                        ),
-                                        Expanded(
-                                          flex: job.status.toLowerCase() ==
-                                                  'active'
-                                              ? 1
-                                              : 3,
-                                          child: Container(
-                                              color: AppColors
-                                                  .surfaceContainerHigh),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-
-                              // Cancellation reason alert
-                              if (isCancelled &&
-                                  job.cancellationReason != null &&
-                                  job.cancellationReason!.isNotEmpty) ...[
-                                const SizedBox(height: AppSpacing.xs),
-                                Container(
-                                  padding: const EdgeInsets.all(AppSpacing.xs),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        AppColors.error.withValues(alpha: 0.1),
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.xs),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.info_outline,
-                                        size: AppIconSize.xs,
-                                        color: AppColors.error,
-                                      ),
-                                      const SizedBox(width: AppSpacing.xs),
-                                      Expanded(
-                                        child: Text(
-                                          "Reason: ${job.cancellationReason!}",
-                                          style: AppTypography.bodySm.copyWith(
-                                            color: AppColors.error,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      );
+                      return _buildJobCard(context, job, l10n);
                     },
                   ),
                 );
@@ -406,6 +196,241 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildHeader(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.xs,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.customerJobsTitle,
+            style: AppTypography.headlineLgMobile.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.onSurface,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            l10n.customerJobsSub,
+            style: AppTypography.bodyMd.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchAndFilter(
+    AppLocalizations l10n, {
+    required int allCount,
+    required int inTransitCount,
+    required int completedCount,
+    required int cancelledCount,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.xs,
+          ),
+          child: ThemedTextField(
+            controller: _searchController,
+            hintText: l10n.customerJobsSearchHint,
+            prefixIcon: const Icon(Icons.search, size: 20),
+            onChanged: (val) {
+              setState(() {
+                _searchQuery = val;
+              });
+            },
+          ),
+        ),
+        PillFilterBar<String>(
+          items: [
+            PillFilterItem(
+              label: 'All',
+              value: 'all',
+              count: allCount,
+            ),
+            PillFilterItem(
+              label: 'In Transit',
+              value: 'in_transit',
+              count: inTransitCount,
+            ),
+            PillFilterItem(
+              label: 'Completed',
+              value: 'completed',
+              count: completedCount,
+            ),
+            PillFilterItem(
+              label: 'Cancelled',
+              value: 'cancelled',
+              count: cancelledCount,
+            ),
+          ],
+          selectedValue: _selectedFilter,
+          onSelected: (val) {
+            setState(() => _selectedFilter = val);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildJobCard(BuildContext context, Job job, AppLocalizations l10n) {
+    final displayPrice =
+        job.agreedPrice ?? job.proposedPrice ?? job.suggestedPrice;
+    final displayId = job.id.length > 8 ? job.id.substring(0, 8) : job.id;
+    final isCompleted = job.status.toLowerCase() == 'completed';
+    final isCancelled = job.status.toLowerCase() == 'cancelled';
+    final isInTransit = !isCompleted && !isCancelled;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: ThemedCard(
+        key: Key('customer_job_card_${job.id}'),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => JobStatusScreen(job: job),
+            ),
+          );
+        },
+        padding: AppSpacing.sm,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Row: Tag + Service Name + Status Badge
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    "${l10n.customerJobsOrder}$displayId",
+                    style: AppTypography.titleMd.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.onSurface,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                StatusBadge(status: job.status),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xs),
+
+            // Payment & Price Row
+            Row(
+              children: [
+                const Icon(
+                  Icons.payment,
+                  size: AppIconSize.sm,
+                  color: AppColors.onSurfaceVariant,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  "Payment: ${job.paymentMethod.toUpperCase()}",
+                  style: AppTypography.bodySm.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+                if (displayPrice != null) ...[
+                  const Spacer(),
+                  Text(
+                    "\$${displayPrice.toStringAsFixed(2)}",
+                    style: AppTypography.titleMd.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+
+            // Progress bar (In Transit / Active)
+            if (isInTransit) _buildJobProgress(job),
+
+            // Cancellation reason alert
+            if (isCancelled &&
+                job.cancellationReason != null &&
+                job.cancellationReason!.isNotEmpty)
+              _buildCancellationReason(job.cancellationReason!),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildJobProgress(Job job) {
+    return Column(
+      children: [
+        const SizedBox(height: AppSpacing.xs),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: Container(
+            height: 4,
+            color: AppColors.surfaceContainerHigh,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: job.status.toLowerCase() == 'active' ? 3 : 1,
+                  child: Container(color: AppColors.secondary),
+                ),
+                Expanded(
+                  flex: job.status.toLowerCase() == 'active' ? 1 : 3,
+                  child: Container(color: AppColors.surfaceContainerHigh),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCancellationReason(String reason) {
+    return Column(
+      children: [
+        const SizedBox(height: AppSpacing.xs),
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.xs),
+          decoration: BoxDecoration(
+            color: AppColors.error.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.info_outline,
+                size: AppIconSize.xs,
+                color: AppColors.error,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Text(
+                  "Reason: $reason",
+                  style: AppTypography.bodySm.copyWith(
+                    color: AppColors.error,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
