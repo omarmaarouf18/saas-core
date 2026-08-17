@@ -57,7 +57,9 @@ class _WalletScreenState extends State<WalletScreen> {
             : RefreshIndicator(
                 key: const ValueKey('wallet_content'),
                 onRefresh: () async {
-                  await ownerProvider.fetchDashboardData(auth.token!);
+                  if (auth.token != null) {
+                    await ownerProvider.fetchDashboardData(auth.token!);
+                  }
                   await ownerProvider.fetchPlatformConfig();
                   await ownerProvider.fetchPayoutRequests();
                 },
@@ -67,158 +69,19 @@ class _WalletScreenState extends State<WalletScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header Row
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "My Wallet",
-                                  style:
-                                      AppTypography.headlineLgMobile.copyWith(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.xxs),
-                                Text(
-                                  "Manage corporate finances and payouts.",
-                                  style: AppTypography.bodyMd.copyWith(
-                                    color: AppColors.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          SizedBox(
-                            width: 160,
-                            child: PrimaryButton(
-                              onPressed: () => DepositFundsDialog.show(context),
-                              icon: Icons.add_card_rounded,
-                              text: "Deposit Funds",
-                            ),
-                          ),
-                        ],
-                      ),
+                      // Header Row (Stitch Reference)
+                      _buildHeader(l10n),
                       const SizedBox(height: AppSpacing.lg),
 
-                      // Stitch Hero Balance Card (Deep Navy + Gold Accent)
-                      ThemedCard(
-                        borderRadius: AppRadius.lg,
-                        topAccentColor: AppColors.secondary,
-                        topAccentHeight: 3,
-                        color: AppColors.primaryContainer,
-                        padding: AppSpacing.lg,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  "AVAILABLE BALANCE",
-                                  style: AppTypography.labelMd.copyWith(
-                                    color: AppColors.onPrimaryContainer,
-                                    letterSpacing: 1.0,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.baseSm,
-                                    vertical: AppSpacing.xxs,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.success
-                                        .withValues(alpha: 0.2),
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.full),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.trending_up,
-                                        color: AppColors.success,
-                                        size: 14,
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Text(
-                                        "+8.4% vs last mo",
-                                        style: AppTypography.caption.copyWith(
-                                          color: AppColors.success,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              "\$${ownerProvider.withdrawableBalance.toStringAsFixed(2)}",
-                              style: AppTypography.headlineLg.copyWith(
-                                color: AppColors.secondary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 32,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.xs),
-                            Text(
-                              "Total Portfolio: \$${ownerProvider.walletBalance.toStringAsFixed(2)} Credits",
-                              style: AppTypography.bodyMd.copyWith(
-                                color:
-                                    AppColors.onPrimary.withValues(alpha: 0.7),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      // Bento Financial Grid: Available Balance Hero & Escrow Pending
+                      _buildHeroBalanceCard(ownerProvider, l10n),
                       const SizedBox(height: AppSpacing.md),
 
-                      // Balance Display Cards
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildBalanceCard(
-                              title: l10n.walletTotalBalance,
-                              value: ownerProvider.walletBalance,
-                              icon: Icons.account_balance_rounded,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildBalanceCard(
-                              title: l10n.walletWithdrawable,
-                              value: ownerProvider.withdrawableBalance,
-                              icon: Icons.check_circle_outline_rounded,
-                              color: AppColors.success,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: _buildBalanceCard(
-                              title: l10n.walletLockedEscrow,
-                              value: ownerProvider.escrowBalance,
-                              icon: Icons.lock_outline_rounded,
-                              color: AppColors.warning,
-                            ),
-                          ),
-                        ],
-                      ),
+                      // Balance Breakdown Cards (Total, Withdrawable, Escrow)
+                      _buildBalanceCardsRow(ownerProvider, l10n),
                       const SizedBox(height: AppSpacing.md),
 
-                      // Request Payout Button directly beneath withdrawable balance cards
+                      // Payout Request Action Button
                       SizedBox(
                         width: double.infinity,
                         child: PrimaryButton(
@@ -230,6 +93,7 @@ class _WalletScreenState extends State<WalletScreen> {
                         ),
                       ),
 
+                      // Platform Fee Indicator
                       if (ownerProvider.platformFeePercentage != null) ...[
                         const SizedBox(height: AppSpacing.sm),
                         Align(
@@ -246,74 +110,11 @@ class _WalletScreenState extends State<WalletScreen> {
                       const SizedBox(height: AppSpacing.xl),
 
                       // Payout Requests History Section
-                      ThemedSectionHeader(
-                        key: const Key('payout_history_header'),
-                        title: l10n.payoutHistoryTitle,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-
-                      if (ownerProvider.payoutRequests.isEmpty)
-                        ThemedCard(
-                          elevation: AppElevation.shadowLevel1List,
-                          borderRadius: AppRadius.md,
-                          padding: AppSpacing.lg,
-                          child: ThemedEmptyState(
-                            icon: Icons.history_rounded,
-                            title: l10n.payoutHistoryEmpty,
-                            description:
-                                "Submitted payout requests will appear here with processing status.",
-                            actionText: l10n.payoutWithdrawButton,
-                            onActionPressed: () =>
-                                PayoutRequestDialog.show(context),
-                          ),
-                        )
-                      else
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: ownerProvider.payoutRequests.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: AppSpacing.base),
-                          itemBuilder: (context, index) {
-                            final payout = ownerProvider.payoutRequests[index];
-                            return _buildPayoutTile(context, payout);
-                          },
-                        ),
+                      _buildPayoutSection(ownerProvider, l10n),
                       const SizedBox(height: AppSpacing.xl),
 
                       // Transaction History Section
-                      ThemedSectionHeader(
-                        title: l10n.walletTransactionLedger,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-
-                      if (ownerProvider.ledgerEntries.isEmpty)
-                        ThemedCard(
-                          elevation: AppElevation.shadowLevel1List,
-                          borderRadius: AppRadius.md,
-                          padding: AppSpacing.lg,
-                          child: ThemedEmptyState(
-                            icon: Icons.receipt_long_outlined,
-                            title: l10n.walletNoTransactions,
-                            description:
-                                "Your transaction history will appear here once deposits or charges occur.",
-                            actionText: "Refresh Wallet",
-                            onActionPressed: () =>
-                                ownerProvider.fetchDashboardData(auth.token!),
-                          ),
-                        )
-                      else
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: ownerProvider.ledgerEntries.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: AppSpacing.base),
-                          itemBuilder: (context, index) {
-                            final entry = ownerProvider.ledgerEntries[index];
-                            return _buildLedgerTile(entry);
-                          },
-                        ),
+                      _buildLedgerSection(ownerProvider, auth, l10n),
                     ],
                   ),
                 ),
@@ -322,22 +123,256 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Widget _buildBalanceCard({
-    required String title,
-    required double value,
-    required IconData icon,
-    required Color color,
-  }) {
-    return StatCard(
-      label: title,
-      value: "${value.toStringAsFixed(2)} Credits",
-      icon: icon,
-      iconColor: color,
+  Widget _buildHeader(AppLocalizations l10n) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "My Wallet",
+                style: AppTypography.headlineLgMobile.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xxs),
+              Text(
+                "Manage corporate finances and payouts.",
+                style: AppTypography.bodyMd.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        SizedBox(
+          width: 160,
+          child: PrimaryButton(
+            onPressed: () => DepositFundsDialog.show(context),
+            icon: Icons.add_card_rounded,
+            text: "Deposit Funds",
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildPayoutTile(BuildContext context, PayoutRequest payout) {
-    final l10n = context.l10n;
+  Widget _buildHeroBalanceCard(
+    OwnerProvider ownerProvider,
+    AppLocalizations l10n,
+  ) {
+    return ThemedCard(
+      borderRadius: AppRadius.lg,
+      topAccentColor: AppColors.secondary,
+      topAccentHeight: 3,
+      color: AppColors.primaryContainer,
+      padding: AppSpacing.lg,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "AVAILABLE BALANCE",
+                style: AppTypography.labelMd.copyWith(
+                  color: AppColors.onPrimaryContainer,
+                  letterSpacing: 1.0,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.baseSm,
+                  vertical: AppSpacing.xxs,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.trending_up,
+                      color: AppColors.success,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      "+8.4% vs last mo",
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.success,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            "\$${ownerProvider.withdrawableBalance.toStringAsFixed(2)}",
+            style: AppTypography.headlineLg.copyWith(
+              color: AppColors.secondary,
+              fontWeight: FontWeight.bold,
+              fontSize: 32,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            "Total Portfolio: \$${ownerProvider.walletBalance.toStringAsFixed(2)} Credits",
+            style: AppTypography.bodyMd.copyWith(
+              color: AppColors.onPrimary.withValues(alpha: 0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBalanceCardsRow(
+    OwnerProvider ownerProvider,
+    AppLocalizations l10n,
+  ) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                label: l10n.walletTotalBalance,
+                value:
+                    "${ownerProvider.walletBalance.toStringAsFixed(2)} Credits",
+                icon: Icons.account_balance_rounded,
+                iconColor: AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                label: l10n.walletWithdrawable,
+                value:
+                    "${ownerProvider.withdrawableBalance.toStringAsFixed(2)} Credits",
+                icon: Icons.check_circle_outline_rounded,
+                iconColor: AppColors.success,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: StatCard(
+                label: l10n.walletLockedEscrow,
+                value:
+                    "${ownerProvider.escrowBalance.toStringAsFixed(2)} Credits",
+                icon: Icons.lock_outline_rounded,
+                iconColor: AppColors.warning,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPayoutSection(
+    OwnerProvider ownerProvider,
+    AppLocalizations l10n,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ThemedSectionHeader(
+          key: const Key('payout_history_header'),
+          title: l10n.payoutHistoryTitle,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        if (ownerProvider.payoutRequests.isEmpty)
+          ThemedCard(
+            borderRadius: AppRadius.md,
+            padding: AppSpacing.lg,
+            child: ThemedEmptyState(
+              icon: Icons.history_rounded,
+              title: l10n.payoutHistoryEmpty,
+              description:
+                  "Submitted payout requests will appear here with processing status.",
+              actionText: l10n.payoutWithdrawButton,
+              onActionPressed: () => PayoutRequestDialog.show(context),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: ownerProvider.payoutRequests.length,
+            separatorBuilder: (context, index) =>
+                const SizedBox(height: AppSpacing.base),
+            itemBuilder: (context, index) {
+              final payout = ownerProvider.payoutRequests[index];
+              return _buildPayoutTile(context, payout, l10n);
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildLedgerSection(
+    OwnerProvider ownerProvider,
+    AuthProvider auth,
+    AppLocalizations l10n,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ThemedSectionHeader(
+          title: l10n.walletTransactionLedger,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        if (ownerProvider.ledgerEntries.isEmpty)
+          ThemedCard(
+            borderRadius: AppRadius.md,
+            padding: AppSpacing.lg,
+            child: ThemedEmptyState(
+              icon: Icons.receipt_long_outlined,
+              title: l10n.walletNoTransactions,
+              description:
+                  "Your transaction history will appear here once deposits or charges occur.",
+              actionText: "Refresh Wallet",
+              onActionPressed: () {
+                if (auth.token != null) {
+                  ownerProvider.fetchDashboardData(auth.token!);
+                }
+              },
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: ownerProvider.ledgerEntries.length,
+            separatorBuilder: (context, index) =>
+                const SizedBox(height: AppSpacing.base),
+            itemBuilder: (context, index) {
+              return _buildLedgerTile(ownerProvider.ledgerEntries[index]);
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPayoutTile(
+    BuildContext context,
+    PayoutRequest payout,
+    AppLocalizations l10n,
+  ) {
     final isBank = payout.payoutMethod == 'bank_transfer';
     final methodLabel = isBank
         ? l10n.payoutMethodBankTransfer
