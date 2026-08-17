@@ -288,6 +288,13 @@ class AppTypography {
         fontWeight: FontWeight.w500,
         height: 12 / 10,
       );
+
+  /// Caption text (11pt / regular)
+  static TextStyle get caption => GoogleFonts.poppins(
+        fontSize: 11,
+        fontWeight: FontWeight.w400,
+        height: 14 / 11,
+      );
 }
 
 // ThemeData light setup

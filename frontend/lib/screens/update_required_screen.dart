@@ -44,110 +44,296 @@ class UpdateRequiredScreen extends StatelessWidget {
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.lg),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 400),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 96,
-                      height: 96,
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.system_update_rounded,
-                        size: 48,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    Text(
-                      titleText,
-                      style: AppTypography.headlineLgMobile.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.onSurface,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      subtitleText,
-                      style: AppTypography.bodyMd.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                        height: 1.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    ThemedCard(
-                      padding: AppSpacing.md,
-                      child: Column(
-                        children: [
-                          _buildVersionRow(
-                            context,
-                            label: isArabic
-                                ? 'الإصدار الحالي'
-                                : 'Installed Version',
-                            value: curVer,
-                            isHighlight: false,
+                constraints: const BoxConstraints(maxWidth: 440),
+                child: ThemedCard(
+                  padding: 0,
+                  borderRadius: AppRadius.md,
+                  elevation: AppElevation.shadowLevel2List,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Decorative Dark Gradient Header with Pulse Rings & Icon
+                      Container(
+                        height: 130,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppColors.primaryContainer,
+                              Color(0xFF000000),
+                            ],
                           ),
-                          const Divider(
-                            height: AppSpacing.lg,
-                            color: AppColors.outlineVariant,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(AppRadius.md),
+                            topRight: Radius.circular(AppRadius.md),
                           ),
-                          _buildVersionRow(
-                            context,
-                            label: isArabic
-                                ? 'الحد الأدنى المطلوب'
-                                : 'Minimum Required',
-                            value: minVer,
-                            isHighlight: true,
-                          ),
-                          if (latVer != minVer) ...[
-                            const Divider(
-                              height: AppSpacing.lg,
-                              color: AppColors.outlineVariant,
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Concentric Decorative Rings
+                            Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.secondary
+                                      .withValues(alpha: 0.12),
+                                  width: 2,
+                                ),
+                              ),
                             ),
-                            _buildVersionRow(
-                              context,
-                              label: isArabic
-                                  ? 'أحدث إصدار متاح'
-                                  : 'Latest Available',
-                              value: latVer,
-                              isHighlight: false,
+                            Container(
+                              width: 86,
+                              height: 86,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.secondary
+                                      .withValues(alpha: 0.25),
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                            // Central Amber Gold Circular Icon Container
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: const BoxDecoration(
+                                color: AppColors.secondary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.system_update,
+                                  size: 28,
+                                  color: AppColors.primary,
+                                ),
+                              ),
                             ),
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    PrimaryButton(
-                      key: const Key('update_now_button'),
-                      trailingIcon: Icons.arrow_forward,
-                      text: isArabic ? 'تحديث الآن' : 'Update Now',
-                      onPressed: onUpdatePressed ?? () {},
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      url,
-                      style: AppTypography.labelMd.copyWith(
-                        color: AppColors.outline,
+                      // Content Body
+                      Padding(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              titleText,
+                              style: AppTypography.headlineLgMobile.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.onSurface,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              subtitleText,
+                              style: AppTypography.bodyMd.copyWith(
+                                color: AppColors.onSurfaceVariant,
+                                height: 1.4,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            // What's New Feature List
+                            Container(
+                              padding: const EdgeInsets.all(AppSpacing.md),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceContainerLow,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                                border: Border.all(
+                                  color: AppColors.outlineVariant
+                                      .withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    isArabic
+                                        ? "الجديد في التحديث:"
+                                        : "What's new:",
+                                    style: AppTypography.titleMd.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  _buildFeatureItem(
+                                    icon: Icons.security,
+                                    text: isArabic
+                                        ? "بروتوكولات أمان معززة لتتبع الشحنات."
+                                        : "Enhanced security protocols for shipment tracking.",
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  _buildFeatureItem(
+                                    icon: Icons.speed,
+                                    text: isArabic
+                                        ? "خوارزميات توجيه محسنة لتسليم أسرع."
+                                        : "Optimized routing algorithms for faster deliveries.",
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  _buildFeatureItem(
+                                    icon: Icons.bug_report,
+                                    text: isArabic
+                                        ? "إصلاحات هامة وتحسينات في استقرار التطبيق."
+                                        : "Critical bug fixes and stability improvements.",
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            // Version Details Card
+                            Container(
+                              padding: const EdgeInsets.all(AppSpacing.sm),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                                border: Border.all(
+                                  color: AppColors.outlineVariant
+                                      .withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  _buildVersionRow(
+                                    context,
+                                    label: isArabic
+                                        ? 'الإصدار الحالي'
+                                        : 'Installed Version',
+                                    value: curVer,
+                                    isHighlight: false,
+                                  ),
+                                  const Divider(
+                                    height: AppSpacing.md,
+                                    color: AppColors.outlineVariant,
+                                  ),
+                                  _buildVersionRow(
+                                    context,
+                                    label: isArabic
+                                        ? 'الحد الأدنى المطلوب'
+                                        : 'Minimum Required',
+                                    value: minVer,
+                                    isHighlight: true,
+                                  ),
+                                  if (latVer != minVer) ...[
+                                    const Divider(
+                                      height: AppSpacing.md,
+                                      color: AppColors.outlineVariant,
+                                    ),
+                                    _buildVersionRow(
+                                      context,
+                                      label: isArabic
+                                          ? 'أحدث إصدار متاح'
+                                          : 'Latest Available',
+                                      value: latVer,
+                                      isHighlight: false,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            // Warning Notice Banner
+                            Container(
+                              padding: const EdgeInsets.all(AppSpacing.sm),
+                              decoration: BoxDecoration(
+                                color: AppColors.errorContainer
+                                    .withValues(alpha: 0.4),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                                border: Border.all(
+                                  color: AppColors.error.withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: AppColors.error,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: AppSpacing.xs),
+                                  Expanded(
+                                    child: Text(
+                                      isArabic
+                                          ? "لا يمكنك متابعة استخدام التطبيق حتى يتم تثبيت هذا التحديث."
+                                          : "You cannot continue using the app until this update is installed.",
+                                      style: AppTypography.caption.copyWith(
+                                        color: AppColors.onErrorContainer,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                            // Update Now Primary CTA
+                            PrimaryButton(
+                              key: const Key('update_now_button'),
+                              trailingIcon: Icons.arrow_forward,
+                              text: isArabic ? 'تحديث الآن' : 'Update Now',
+                              onPressed: onUpdatePressed ?? () {},
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              url,
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.outline,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildFeatureItem({
+    required IconData icon,
+    required String text,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 18,
+          color: AppColors.secondary,
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        Expanded(
+          child: Text(
+            text,
+            style: AppTypography.bodySm.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -175,7 +361,7 @@ class UpdateRequiredScreen extends StatelessWidget {
             color: isHighlight
                 ? AppColors.error.withValues(alpha: 0.12)
                 : AppColors.surfaceContainerHighest,
-            borderRadius: AppRadius.defaultBorder,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             border: isHighlight
                 ? Border.all(
                     color: AppColors.error.withValues(alpha: 0.3),

@@ -17,6 +17,8 @@ class ThemedCard extends StatelessWidget {
   final Color? color;
   final BorderSide? borderSide;
   final VoidCallback? onTap;
+  final Color? topAccentColor;
+  final double topAccentHeight;
 
   const ThemedCard({
     super.key,
@@ -29,6 +31,8 @@ class ThemedCard extends StatelessWidget {
     this.color,
     this.borderSide,
     this.onTap,
+    this.topAccentColor,
+    this.topAccentHeight = 4.0,
   });
 
   @override
@@ -84,15 +88,40 @@ class ThemedCard extends StatelessWidget {
       borderRadius ?? AppRadius.defaultValue,
     );
 
+    Widget innerContent;
+    if (topAccentColor != null) {
+      innerContent = ClipRRect(
+        borderRadius: cardRadius,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              height: topAccentHeight,
+              color: topAccentColor,
+            ),
+            Padding(
+              padding: EdgeInsets.all(padding),
+              child: child,
+            ),
+          ],
+        ),
+      );
+    } else {
+      innerContent = Padding(
+        padding: EdgeInsets.all(padding),
+        child: child,
+      );
+    }
+
     final cardContent = Container(
-      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: color ?? AppColors.surface,
         borderRadius: cardRadius,
         border: resolvedBorder,
         boxShadow: resolvedShadow,
       ),
-      child: child,
+      child: innerContent,
     );
 
     if (onTap != null) {

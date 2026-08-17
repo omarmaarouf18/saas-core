@@ -30,9 +30,11 @@ void main() {
     expect(find.text('1.0.0'), findsOneWidget);
     expect(find.text('1.2.0'), findsOneWidget);
     expect(find.text('1.3.0'), findsOneWidget);
-    expect(find.byKey(const Key('update_now_button')), findsOneWidget);
-
-    await tester.tap(find.byKey(const Key('update_now_button')));
+    final updateBtn = find.byKey(const Key('update_now_button'));
+    expect(updateBtn, findsOneWidget);
+    await tester.ensureVisible(updateBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(updateBtn);
     await tester.pump();
 
     expect(updateClicked, isTrue);
