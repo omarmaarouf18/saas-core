@@ -73,7 +73,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final allNotifications = provider.notifications;
     final filtered = _filterNotifications(allNotifications);
 
-    // Grouping
     final todayNotifs = filtered.where((n) => _isToday(n.timestamp)).toList();
     final yesterdayNotifs =
         filtered.where((n) => _isYesterday(n.timestamp)).toList();
@@ -81,18 +80,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         .where((n) => !_isToday(n.timestamp) && !_isYesterday(n.timestamp))
         .toList();
 
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
           l10n.notificationsTitle,
-          style: AppTypography.titleMd.copyWith(color: AppColors.onPrimary),
+          style: AppTypography.titleMd.copyWith(
+            color: AppColors.onPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_sweep),
@@ -113,165 +113,229 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // System Status Banner
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-            color: provider.isConnected
-                ? AppColors.success.withValues(alpha: 0.15)
-                : AppColors.error.withValues(alpha: 0.15),
-            child: Row(
-              children: [
-                Icon(
-                  provider.isConnected ? Icons.check_circle : Icons.error,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1000),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. Connectivity Status Banner
+              Container(
+                margin: const EdgeInsets.fromLTRB(
+                  AppSpacing.marginMobile,
+                  AppSpacing.sm,
+                  AppSpacing.marginMobile,
+                  AppSpacing.xs,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                decoration: BoxDecoration(
                   color: provider.isConnected
-                      ? AppColors.success
-                      : AppColors.error,
-                  size: AppIconSize.sm,
+                      ? AppColors.success.withValues(alpha: 0.12)
+                      : AppColors.errorContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: provider.isConnected
+                        ? AppColors.success.withValues(alpha: 0.25)
+                        : AppColors.error.withValues(alpha: 0.25),
+                  ),
                 ),
-                const SizedBox(width: AppSpacing.base),
-                Expanded(
-                  child: Text(
-                    provider.isConnected
-                        ? 'System Status: Operational.'
-                        : 'System Status: Disconnected.',
-                    style: AppTypography.labelMd.copyWith(
+                child: Row(
+                  children: [
+                    Icon(
+                      provider.isConnected
+                          ? Icons.check_circle_outline
+                          : Icons.wifi_off,
                       color: provider.isConnected
-                          ? AppColors.onSurface
+                          ? AppColors.success
                           : AppColors.error,
+                      size: AppIconSize.sm,
                     ),
-                  ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        provider.isConnected
+                            ? 'System Status: Operational.'
+                            : 'Sync paused. Showing offline notifications.',
+                        style: AppTypography.labelMd.copyWith(
+                          color: provider.isConnected
+                              ? AppColors.onSurface
+                              : AppColors.error,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
 
-          // Categories Filter Tabs
-          PillFilterBar<String>(
-            items: _categories
-                .map((cat) => PillFilterItem<String>(
-                      label: cat,
-                      value: cat,
-                    ))
-                .toList(),
-            selectedValue: _selectedCategory,
-            onSelected: (val) {
-              setState(() {
-                _selectedCategory = val;
-              });
-            },
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-          ),
+              // 2. Horizontal Filter Bar
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.marginMobile,
+                  vertical: AppSpacing.xs,
+                ),
+                child: PillFilterBar<String>(
+                  items: _categories
+                      .map((cat) => PillFilterItem<String>(
+                            label: cat,
+                            value: cat,
+                          ))
+                      .toList(),
+                  selectedValue: _selectedCategory,
+                  onSelected: (val) {
+                    setState(() {
+                      _selectedCategory = val;
+                    });
+                  },
+                ),
+              ),
 
-          // List of Notifications
-          Expanded(
-            child: filtered.isEmpty
-                ? ThemedEmptyState(
-                    icon: Icons.notifications_none,
-                    title: l10n.notificationsTitle,
-                    description: l10n.notificationsTitle,
-                    actionText: "Back to Home",
-                    onActionPressed: () => Navigator.pop(context),
-                  )
-                : ListView(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                    children: [
-                      if (todayNotifs.isNotEmpty) ...[
-                        _buildSectionHeader('Today', colorScheme),
-                        ...todayNotifs.map((n) => _buildNotificationCard(
-                            n, provider, auth.token, colorScheme)),
-                      ],
-                      if (yesterdayNotifs.isNotEmpty) ...[
-                        _buildSectionHeader('Yesterday', colorScheme),
-                        ...yesterdayNotifs.map((n) => _buildNotificationCard(
-                            n, provider, auth.token, colorScheme)),
-                      ],
-                      if (earlierNotifs.isNotEmpty) ...[
-                        _buildSectionHeader('Earlier', colorScheme),
-                        ...earlierNotifs.map((n) => _buildNotificationCard(
-                            n, provider, auth.token, colorScheme)),
-                      ],
-                      const SizedBox(height: AppSpacing.lg),
-                    ],
-                  ),
+              // 3. Notification List Canvas
+              Expanded(
+                child: filtered.isEmpty
+                    ? ThemedEmptyState(
+                        icon: Icons.notifications_none,
+                        title: l10n.notificationsTitle,
+                        description: l10n.notificationsTitle,
+                        actionText: "Back to Home",
+                        onActionPressed: () => Navigator.pop(context),
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.marginMobile,
+                          vertical: AppSpacing.sm,
+                        ),
+                        children: [
+                          if (todayNotifs.isNotEmpty) ...[
+                            _buildDateSection(
+                              title: 'Today',
+                              items: todayNotifs,
+                              provider: provider,
+                              userToken: auth.token,
+                            ),
+                          ],
+                          if (yesterdayNotifs.isNotEmpty) ...[
+                            _buildDateSection(
+                              title: 'Yesterday',
+                              items: yesterdayNotifs,
+                              provider: provider,
+                              userToken: auth.token,
+                            ),
+                          ],
+                          if (earlierNotifs.isNotEmpty) ...[
+                            _buildDateSection(
+                              title: 'Earlier',
+                              items: earlierNotifs,
+                              provider: provider,
+                              userToken: auth.token,
+                            ),
+                          ],
+                          const SizedBox(height: AppSpacing.xl),
+                        ],
+                      ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, ColorScheme colorScheme) {
-    return Padding(
-      padding:
-          const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.base),
-      child: Text(
-        title.toUpperCase(),
-        style: AppTypography.labelMd.copyWith(
-          color: AppColors.primary.withValues(alpha: 0.7),
-          fontWeight: FontWeight.bold,
         ),
       ),
     );
   }
 
-  Widget _buildNotificationCard(
-    NotificationModel notif,
-    NotificationsProvider provider,
-    String? userToken,
-    ColorScheme colorScheme,
-  ) {
-    IconData typeIcon = Icons.notifications_outlined;
-    Color iconBgColor = AppColors.surfaceContainerHigh;
-    Color iconColor = AppColors.primary;
-    String tagLabel = 'NOTIFICATION';
+  Widget _buildDateSection({
+    required String title,
+    required List<NotificationModel> items,
+    required NotificationsProvider provider,
+    required String? userToken,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(
+            top: AppSpacing.md,
+            bottom: AppSpacing.xs,
+          ),
+          child: Text(
+            title.toUpperCase(),
+            style: AppTypography.labelMd.copyWith(
+              color: AppColors.primary.withValues(alpha: 0.7),
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+        ...items.map(
+          (notif) => _buildStitchNotificationCard(
+            notif: notif,
+            provider: provider,
+            userToken: userToken,
+          ),
+        ),
+      ],
+    );
+  }
 
-    if (notif.type == 'job_alert' || notif.id.startsWith('job-')) {
-      typeIcon = Icons.local_shipping_outlined;
-      iconBgColor = AppColors.primaryContainer;
-      iconColor = AppColors.onPrimary;
-      tagLabel = 'JOB ALERT';
-    } else if (notif.type == 'status_update' || notif.type == 'popup') {
-      typeIcon = Icons.warning_amber_rounded;
-      iconBgColor = AppColors.errorContainer;
-      iconColor = AppColors.error;
-      tagLabel = 'ALERT';
-    } else if (notif.type == 'system') {
-      typeIcon = Icons.system_update_alt_rounded;
-      iconBgColor = AppColors.surfaceContainerHigh;
-      iconColor = AppColors.onSurfaceVariant;
-      tagLabel = 'SYSTEM';
-    }
+  Widget _buildStitchNotificationCard({
+    required NotificationModel notif,
+    required NotificationsProvider provider,
+    required String? userToken,
+  }) {
+    final bool isJob = notif.type == 'job_alert' || notif.id.startsWith('job-');
+    final bool isAlert = notif.type == 'status_update' || notif.type == 'popup';
+    final bool isSystem = notif.type == 'system';
+
+    final IconData typeIcon = isJob
+        ? Icons.local_shipping_outlined
+        : (isAlert
+            ? Icons.warning_amber_rounded
+            : (isSystem
+                ? Icons.system_update_alt_rounded
+                : Icons.notifications_outlined));
+
+    final Color iconBgColor = isJob
+        ? AppColors.primaryContainer
+        : (isAlert
+            ? AppColors.errorContainer
+            : (isSystem
+                ? AppColors.surfaceContainerHigh
+                : AppColors.surfaceContainerHigh));
+
+    final Color iconColor = isJob
+        ? AppColors.secondary
+        : (isAlert
+            ? AppColors.error
+            : (isSystem ? AppColors.onSurfaceVariant : AppColors.primary));
+
+    final String tagLabel = isJob
+        ? 'JOB ALERT'
+        : (isAlert ? 'ALERT' : (isSystem ? 'SYSTEM' : 'NOTIFICATION'));
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.base),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: ThemedCard(
         padding: 0,
         color:
             notif.isRead ? AppColors.surface : AppColors.surfaceContainerLowest,
-        borderRadius: AppRadius.md,
+        borderRadius: AppRadius.lg,
         child: InkWell(
-          borderRadius: AppRadius.mdBorder,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           onTap: () => _handleCardTap(notif.id, provider),
           child: IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Unread indicator bar on left
+                // Left Amber Vertical Bar for Unread
                 if (!notif.isRead)
                   Container(
                     width: 4,
                     decoration: const BoxDecoration(
                       color: AppColors.secondary,
                       borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(AppRadius.md),
-                        bottomLeft: Radius.circular(AppRadius.md),
+                        topLeft: Radius.circular(AppRadius.lg),
+                        bottomLeft: Radius.circular(AppRadius.lg),
                       ),
                     ),
                   ),
@@ -281,7 +345,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header line: icon badge + tag + timestamp + dismiss button
+                        // Top Meta Row: Icon + Tag + Timestamp + Dismiss
                         Row(
                           children: [
                             Container(
@@ -304,27 +368,36 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.surfaceContainerHigh,
-                                borderRadius: AppRadius.xsBorder,
+                                color: isAlert
+                                    ? AppColors.errorContainer
+                                        .withValues(alpha: 0.5)
+                                    : AppColors.surfaceContainerHigh,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.xs),
                               ),
                               child: Text(
                                 tagLabel,
                                 style: AppTypography.labelSm.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.onSurfaceVariant,
+                                  color: isAlert
+                                      ? AppColors.error
+                                      : AppColors.onSurfaceVariant,
                                 ),
                               ),
                             ),
                             const Spacer(),
                             Text(
                               _formatTime(notif.timestamp),
-                              style: AppTypography.labelMd
-                                  .copyWith(color: AppColors.outline),
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.outline,
+                              ),
                             ),
                             const SizedBox(width: AppSpacing.xs),
                             IconButton(
-                              icon: const Icon(Icons.delete_outline,
-                                  size: AppIconSize.sm),
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                size: AppIconSize.sm,
+                              ),
                               tooltip: context.l10n.tooltipDismiss,
                               color: AppColors.outline,
                               padding: EdgeInsets.zero,
@@ -348,9 +421,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             color: AppColors.onSurface,
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.xs),
+                        const SizedBox(height: AppSpacing.xxs),
 
-                        // Body content
+                        // Body description
                         Text(
                           notif.body,
                           style: AppTypography.bodyMd.copyWith(
