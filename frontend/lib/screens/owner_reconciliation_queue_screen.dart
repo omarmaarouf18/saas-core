@@ -43,6 +43,11 @@ class _OwnerReconciliationQueueScreenState
     super.dispose();
   }
 
+  Future<void> _onRefresh() async {
+    await Provider.of<ReconciliationProvider>(context, listen: false)
+        .fetchQueue();
+  }
+
   Future<void> _showConfirmationDialog({
     required BuildContext context,
     required ReconciliationJob job,
@@ -104,11 +109,18 @@ class _OwnerReconciliationQueueScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
-        title: Text(l10n.reconciliationReviewTitle),
+        title: Row(
+          children: [
+            const Icon(Icons.assignment, color: AppColors.secondary, size: 20),
+            const SizedBox(width: AppSpacing.sm),
+            Text(l10n.reconciliationReviewTitle),
+          ],
+        ),
         foregroundColor: AppColors.onPrimary,
       ),
       body: Consumer<ReconciliationProvider>(
@@ -280,18 +292,23 @@ class _OwnerReconciliationQueueScreenState
     );
   }
 
-  Future<void> _onRefresh() async {
-    await Provider.of<ReconciliationProvider>(context, listen: false)
-        .fetchQueue();
-  }
-
   Widget _buildReconciliationCard(
-      BuildContext context, ReconciliationJob job, AppLocalizations l10n) {
+    BuildContext context,
+    ReconciliationJob job,
+    AppLocalizations l10n,
+  ) {
+    final isHighRisk =
+        job.humanReadableFailureReason.toLowerCase().contains('damage') ||
+            job.humanReadableFailureReason.toLowerCase().contains('dispute') ||
+            job.escrowFailureReason.toLowerCase().contains('over_distance');
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       child: ThemedCard(
         borderRadius: AppRadius.md,
         padding: AppSpacing.lg,
+        topAccentColor: isHighRisk ? AppColors.error : AppColors.secondary,
+        topAccentHeight: 3,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
