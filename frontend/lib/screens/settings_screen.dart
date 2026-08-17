@@ -13,6 +13,7 @@ import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
 import 'kyc_document_upload_screen.dart';
 import 'my_account_screen.dart';
+import 'notifications_screen.dart';
 import 'owner_configuration_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -54,8 +55,21 @@ class SettingsScreen extends StatelessWidget {
           ? null
           : AppBar(
               title: Text(l10n.settingsTitle),
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: theme.colorScheme.onPrimary,
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined),
+                  tooltip: l10n.notificationsTitle,
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationsScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),

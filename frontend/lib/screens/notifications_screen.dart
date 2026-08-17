@@ -6,6 +6,7 @@ import '../models/notification_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/confirm_action_dialog.dart';
+import '../widgets/pill_filter_bar.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 
@@ -149,35 +150,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
 
           // Categories Filter Tabs
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          PillFilterBar<String>(
+            items: _categories
+                .map((cat) => PillFilterItem<String>(
+                      label: cat,
+                      value: cat,
+                    ))
+                .toList(),
+            selectedValue: _selectedCategory,
+            onSelected: (val) {
+              setState(() {
+                _selectedCategory = val;
+              });
+            },
             padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm, vertical: AppSpacing.base),
-            child: Row(
-              children: _categories.map((cat) {
-                final isSelected = _selectedCategory == cat;
-                return Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-                  child: ChoiceChip(
-                    label: Text(cat),
-                    selected: isSelected,
-                    selectedColor: AppColors.secondary,
-                    labelStyle: AppTypography.labelMd.copyWith(
-                      color: isSelected
-                          ? AppColors.onSecondary
-                          : AppColors.onSurface,
-                    ),
-                    onSelected: (val) {
-                      if (val) {
-                        setState(() {
-                          _selectedCategory = cat;
-                        });
-                      }
-                    },
-                  ),
-                );
-              }).toList(),
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
             ),
           ),
 
@@ -239,69 +227,143 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     String? userToken,
     ColorScheme colorScheme,
   ) {
+    IconData typeIcon = Icons.notifications_outlined;
+    Color iconBgColor = AppColors.surfaceContainerHigh;
+    Color iconColor = AppColors.primary;
+    String tagLabel = 'NOTIFICATION';
+
+    if (notif.type == 'job_alert' || notif.id.startsWith('job-')) {
+      typeIcon = Icons.local_shipping_outlined;
+      iconBgColor = AppColors.primaryContainer;
+      iconColor = AppColors.onPrimary;
+      tagLabel = 'JOB ALERT';
+    } else if (notif.type == 'status_update' || notif.type == 'popup') {
+      typeIcon = Icons.warning_amber_rounded;
+      iconBgColor = AppColors.errorContainer;
+      iconColor = AppColors.error;
+      tagLabel = 'ALERT';
+    } else if (notif.type == 'system') {
+      typeIcon = Icons.system_update_alt_rounded;
+      iconBgColor = AppColors.surfaceContainerHigh;
+      iconColor = AppColors.onSurfaceVariant;
+      tagLabel = 'SYSTEM';
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.base),
       child: ThemedCard(
-        padding: AppSpacing.md,
-        color: notif.isRead
-            ? AppColors.surface
-            : AppColors.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderSide: BorderSide(
-          color: notif.isRead
-              ? Colors.transparent
-              : AppColors.secondary.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        padding: 0,
+        color:
+            notif.isRead ? AppColors.surface : AppColors.surfaceContainerLowest,
         borderRadius: AppRadius.md,
         child: InkWell(
           borderRadius: AppRadius.mdBorder,
           onTap: () => _handleCardTap(notif.id, provider),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header line: title + timestamp
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      notif.title,
-                      style: AppTypography.bodyLg.copyWith(
-                        fontWeight:
-                            notif.isRead ? FontWeight.w500 : FontWeight.bold,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Unread indicator bar on left
+                if (!notif.isRead)
+                  Container(
+                    width: 4,
+                    decoration: const BoxDecoration(
+                      color: AppColors.secondary,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(AppRadius.md),
+                        bottomLeft: Radius.circular(AppRadius.md),
                       ),
                     ),
                   ),
-                  Text(
-                    _formatTime(notif.timestamp),
-                    style: AppTypography.labelMd
-                        .copyWith(color: AppColors.outline),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.base),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header line: icon badge + tag + timestamp + dismiss button
+                        Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: iconBgColor,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                typeIcon,
+                                size: 16,
+                                color: iconColor,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.xs,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceContainerHigh,
+                                borderRadius: AppRadius.xsBorder,
+                              ),
+                              child: Text(
+                                tagLabel,
+                                style: AppTypography.labelSm.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              _formatTime(notif.timestamp),
+                              style: AppTypography.labelMd
+                                  .copyWith(color: AppColors.outline),
+                            ),
+                            const SizedBox(width: AppSpacing.xs),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline,
+                                  size: AppIconSize.sm),
+                              tooltip: context.l10n.tooltipDismiss,
+                              color: AppColors.outline,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 24,
+                                minHeight: 24,
+                              ),
+                              onPressed: () => provider.dismiss(notif.id),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
 
-              // Body content
-              Text(
-                notif.body,
-                style: AppTypography.bodyMd.copyWith(height: 1.3),
-              ),
-              const SizedBox(height: AppSpacing.sm),
+                        // Title
+                        Text(
+                          notif.title,
+                          style: AppTypography.bodyLg.copyWith(
+                            fontWeight: notif.isRead
+                                ? FontWeight.w500
+                                : FontWeight.bold,
+                            color: AppColors.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
 
-              // Action buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  IconButton(
-                    icon:
-                        const Icon(Icons.delete_outline, size: AppIconSize.sm),
-                    tooltip: context.l10n.tooltipDismiss,
-                    color: AppColors.onSurfaceVariant,
-                    onPressed: () => provider.dismiss(notif.id),
+                        // Body content
+                        Text(
+                          notif.body,
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

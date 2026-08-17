@@ -160,7 +160,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.surfaceDim,
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,7 +225,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 color: Theme.of(context).colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
+                    color:
+                        Theme.of(context).shadowColor.withValues(alpha: 0.08),
                     offset: const Offset(0, -2),
                     blurRadius: 4,
                   ),
@@ -242,11 +243,17 @@ class _ChatScreenState extends State<ChatScreen> {
                         onFieldSubmitted: (_) => _sendMessage(),
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
-                    IconButton(
-                      onPressed: _sendMessage,
-                      icon: const Icon(Icons.send),
-                      color: AppColors.primary,
+                    const SizedBox(width: AppSpacing.sm),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary,
+                        borderRadius: AppRadius.defaultBorder,
+                      ),
+                      child: IconButton(
+                        onPressed: _sendMessage,
+                        icon: const Icon(Icons.send_rounded),
+                        color: AppColors.onSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -258,9 +265,6 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageBubble(ChatMessage msg, bool isMe) {
-    const primaryColor = AppColors.primary;
-    const secondaryColor = AppColors.secondary;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Column(
@@ -274,8 +278,7 @@ class _ChatScreenState extends State<ChatScreen> {
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             decoration: BoxDecoration(
-              color:
-                  isMe ? primaryColor : secondaryColor.withValues(alpha: 0.2),
+              color: isMe ? AppColors.primaryContainer : AppColors.surface,
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(AppRadius.lg),
                 topRight: const Radius.circular(AppRadius.lg),
@@ -286,11 +289,24 @@ class _ChatScreenState extends State<ChatScreen> {
                     ? const Radius.circular(0)
                     : const Radius.circular(AppRadius.lg),
               ),
+              border: isMe
+                  ? null
+                  : Border.all(
+                      color: AppColors.outlineVariant.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 2,
+                  offset: const Offset(0, 1),
+                ),
+              ],
             ),
             child: Text(
               msg.content,
               style: AppTypography.bodyMd.copyWith(
-                color: isMe ? AppColors.onPrimary : AppColors.primary,
+                color: isMe ? AppColors.onPrimary : AppColors.onSurface,
               ),
             ),
           ),

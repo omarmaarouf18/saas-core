@@ -330,6 +330,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                     PrimaryButton(
                       key: const Key('my_account_save_button'),
                       text: l10n.myAccountSaveButton,
+                      trailingIcon: Icons.arrow_forward,
                       isLoading: _isSubmitting,
                       onPressed: _submitForm,
                     ),

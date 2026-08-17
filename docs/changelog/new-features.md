@@ -2,6 +2,18 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Stitch Unified UI Implementation — Batch B (Global & Communication Screens)
+
+- **Implementation Detail**:
+  - **Batch B Target Screens (4 Screens Verified Against `logistics_core_unified`)**:
+    - [`settings_screen.dart`](../../frontend/lib/screens/settings_screen.dart) (`settings/`): Integrated Deep Navy header bar with notifications action button, profile avatar card with `EntityAvatar`, grouped section containers (`ThemedCard`) for Account, Preferences (Light/Dark/System theme and English/Arabic/System language segmented controls), Support, and destructive logout `PrimaryButton`.
+    - [`my_account_screen.dart`](../../frontend/lib/screens/my_account_screen.dart) (`my_account/`): Integrated top profile header with `EntityAvatar`, structured `ThemedCard` profile info form with readonly email + change email modal affordance, editable username with badge icon, phone field, frequent addresses list editor with add/remove actions, and `PrimaryButton` with `trailingIcon: Icons.arrow_forward`.
+    - [`notifications_screen.dart`](../../frontend/lib/screens/notifications_screen.dart) (`notifications/`): Adopted `PillFilterBar` category chips (`All`, `Jobs`, `System`, `Alerts`), chronological sections (`Today`, `Yesterday`, `Earlier`), unread left amber accent indicator bars, type-specific icon containers (`Icons.local_shipping_outlined`, `Icons.warning_amber_rounded`, `Icons.system_update_alt_rounded`), and tap-to-read / dismiss actions.
+    - [`chat_screen.dart`](../../frontend/lib/screens/chat_screen.dart) (`chat/`): Aligned message bubbles to Stitch dark slate container (`AppColors.primaryContainer` for sender with `rounded-tr-none`, `AppColors.surface` for receiver with `rounded-tl-none`), preserved critical `sender_username` display semantics, and updated send button to Amber Gold `AppColors.secondary`.
+  - **Automated Test Coverage**: Verified 100% pass across all 260 unit and widget tests in Flutter test suite.
+- **Commit SHA**: ``8c9068089f28194bb90f09cbf32a7f227ebacec9``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (260/260 pass), and pre-push hooks gate. ✅
+
 ## Stitch Unified UI Implementation — Batch A (Foundation & Auth/Global Screens)
 
 - **Implementation Detail**:
@@ -15,7 +27,7 @@ This file tracks historical entries for the primary category: **New Features Cha
     - [`forgot_password_screen.dart`](../../frontend/lib/screens/forgot_password_screen.dart) (`forgot_password/`): Integrated `PrimaryButton` with `trailingIcon: Icons.arrow_forward`, 2-stage password reset flow, and `OtpPinInput`.
     - [`update_required_screen.dart`](../../frontend/lib/screens/update_required_screen.dart) (`update_required/`): Integrated `PrimaryButton` with `trailingIcon: Icons.arrow_forward`, mandatory update hero badge, and `ThemedCard` version comparison container.
   - **Automated Test Coverage**: Added unit and widget tests for `PrimaryButton` trailing icon in `test/shared_widgets_test.dart`. Total 260 tests passing (100%).
-- **Commit SHA**: ``b5c8a909cd4ace467ee49f57aae4e5c0cb2e335d``
+- **Commit SHA**: ``8c9068089f28194bb90f09cbf32a7f227ebacec9``
 - **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (260/260 pass), and pre-push hooks gate. ✅
 
 ## Google Stitch Visual Redesign Implementation (Batches A–E)
