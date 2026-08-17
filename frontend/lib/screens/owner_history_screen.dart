@@ -88,6 +88,71 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
     }
   }
 
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final ownerProvider = Provider.of<OwnerProvider>(context);
+
+    final tabBarView = TabBarView(
+      controller: _tabController,
+      children: [
+        _buildActivityLogTab(ownerProvider),
+        _buildCompletedJobsTab(ownerProvider),
+        _buildWalletLedgerTab(ownerProvider),
+      ],
+    );
+
+    if (widget.isEmbeddedInTab) {
+      return Material(
+        color: AppColors.scaffoldBackground,
+        child: Column(
+          children: [
+            _buildTabBar(l10n),
+            Expanded(child: tabBarView),
+          ],
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: AppColors.scaffoldBackground,
+      appBar: AppBar(
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
+        title: Text(l10n.ownerHistoryTitle),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: AppColors.secondary,
+          indicatorWeight: 3,
+          labelColor: AppColors.onPrimary,
+          unselectedLabelColor: AppColors.onPrimary.withValues(alpha: 0.7),
+          labelStyle: AppTypography.bodySm.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+          unselectedLabelStyle: AppTypography.bodySm,
+          tabs: [
+            Tab(
+              key: const Key('history_tab_activity'),
+              text: l10n.ownerHistoryTabActivity,
+              icon: const Icon(Icons.history_outlined, size: 20),
+            ),
+            Tab(
+              key: const Key('history_tab_jobs'),
+              text: l10n.ownerHistoryTabJobs,
+              icon: const Icon(Icons.assignment_turned_in_outlined, size: 20),
+            ),
+            Tab(
+              key: const Key('history_tab_ledger'),
+              text: l10n.ownerHistoryTabLedger,
+              icon: const Icon(Icons.account_balance_wallet_outlined, size: 20),
+            ),
+          ],
+        ),
+      ),
+      body: tabBarView,
+    );
+  }
+
   Widget _buildTabBar(AppLocalizations l10n) {
     return Material(
       color: AppColors.primary,
@@ -162,88 +227,90 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: AppSpacing.md),
                       itemBuilder: (context, index) {
-                        final entry = ownerProvider.auditLogEntries[index];
-                        final rawAction =
-                            entry['action']?.toString() ?? 'Unknown Action';
-                        final actionTitle =
-                            rawAction.replaceAll('_', ' ').toUpperCase();
-                        final details = entry['details']?.toString() ?? '';
-                        final actorId = entry['actor_id']?.toString() ?? '';
-                        final rawTs = entry['timestamp']?.toString() ?? '';
-
-                        DateTime? timestamp;
-                        if (rawTs.isNotEmpty) {
-                          try {
-                            timestamp = DateTime.parse(rawTs).toLocal();
-                          } catch (_) {}
-                        }
-
-                        final dateStr = timestamp != null
-                            ? "${timestamp.year}-${_twoDigits(timestamp.month)}-${_twoDigits(timestamp.day)} ${_twoDigits(timestamp.hour)}:${_twoDigits(timestamp.minute)}"
-                            : rawTs;
-
-                        return ThemedCard(
-                          padding: AppSpacing.md,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      actionTitle,
-                                      style: AppTypography.titleMd.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                  ),
-                                  const Icon(
-                                    Icons.admin_panel_settings_outlined,
-                                    size: 20,
-                                    color: AppColors.outline,
-                                  ),
-                                ],
-                              ),
-                              if (details.isNotEmpty) ...[
-                                const SizedBox(height: AppSpacing.xs),
-                                Text(
-                                  details,
-                                  style: AppTypography.bodyMd.copyWith(
-                                    color: AppColors.onSurface,
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(height: AppSpacing.xs),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  if (actorId.isNotEmpty)
-                                    Text(
-                                      l10n.ownerHistoryActorId(actorId),
-                                      style: AppTypography.labelMd.copyWith(
-                                        color: AppColors.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  Text(
-                                    dateStr,
-                                    style: AppTypography.labelMd.copyWith(
-                                      color: AppColors.outline,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                        return _buildActivityCard(
+                          ownerProvider.auditLogEntries[index],
+                          l10n,
                         );
                       },
                     ),
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildActivityCard(Map<String, dynamic> entry, AppLocalizations l10n) {
+    final rawAction = entry['action']?.toString() ?? 'Unknown Action';
+    final actionTitle = rawAction.replaceAll('_', ' ').toUpperCase();
+    final details = entry['details']?.toString() ?? '';
+    final actorId = entry['actor_id']?.toString() ?? '';
+    final rawTs = entry['timestamp']?.toString() ?? '';
+
+    DateTime? timestamp;
+    if (rawTs.isNotEmpty) {
+      try {
+        timestamp = DateTime.parse(rawTs).toLocal();
+      } catch (_) {}
+    }
+
+    final dateStr = timestamp != null
+        ? "${timestamp.year}-${_twoDigits(timestamp.month)}-${_twoDigits(timestamp.day)} ${_twoDigits(timestamp.hour)}:${_twoDigits(timestamp.minute)}"
+        : rawTs;
+
+    return ThemedCard(
+      padding: AppSpacing.md,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  actionTitle,
+                  style: AppTypography.titleMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.admin_panel_settings_outlined,
+                size: 20,
+                color: AppColors.outline,
+              ),
+            ],
+          ),
+          if (details.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              details,
+              style: AppTypography.bodyMd.copyWith(
+                color: AppColors.onSurface,
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.xs),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (actorId.isNotEmpty)
+                Text(
+                  l10n.ownerHistoryActorId(actorId),
+                  style: AppTypography.labelMd.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+              Text(
+                dateStr,
+                style: AppTypography.labelMd.copyWith(
+                  color: AppColors.outline,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -357,58 +424,60 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: AppSpacing.md),
                       itemBuilder: (context, index) {
-                        final job = filteredJobs[index];
-                        final isCancelled = job.status == 'cancelled';
-                        return ThemedCard(
-                          padding: AppSpacing.md,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    l10n.ownerHomeJobId(job.id),
-                                    style: AppTypography.titleMd.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  StatusBadge(status: job.status),
-                                ],
-                              ),
-                              const SizedBox(height: AppSpacing.xs),
-                              Text(
-                                l10n.ownerHomePaymentInfo(
-                                    job.paymentMethod.toUpperCase(),
-                                    job.lockedEscrowAmount != null
-                                        ? ' (\$${job.lockedEscrowAmount!.toStringAsFixed(2)})'
-                                        : ''),
-                                style: AppTypography.bodyMd.copyWith(
-                                  color: AppColors.onSurfaceVariant,
-                                ),
-                              ),
-                              if (isCancelled &&
-                                  job.cancellationReason != null &&
-                                  job.cancellationReason!.isNotEmpty) ...[
-                                const SizedBox(height: AppSpacing.xs),
-                                Text(
-                                  l10n.ownerHistoryCancellationReason(
-                                      job.cancellationReason!),
-                                  style: AppTypography.bodyMd.copyWith(
-                                    color: AppColors.error,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        );
+                        return _buildJobHistoryCard(filteredJobs[index], l10n);
                       },
                     ),
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildJobHistoryCard(Job job, AppLocalizations l10n) {
+    final isCancelled = job.status == 'cancelled';
+    return ThemedCard(
+      padding: AppSpacing.md,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                l10n.ownerHomeJobId(job.id),
+                style: AppTypography.titleMd.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              StatusBadge(status: job.status),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            l10n.ownerHomePaymentInfo(
+              job.paymentMethod.toUpperCase(),
+              job.lockedEscrowAmount != null
+                  ? ' (\$${job.lockedEscrowAmount!.toStringAsFixed(2)})'
+                  : '',
+            ),
+            style: AppTypography.bodyMd.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
+          if (isCancelled &&
+              job.cancellationReason != null &&
+              job.cancellationReason!.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              l10n.ownerHistoryCancellationReason(job.cancellationReason!),
+              style: AppTypography.bodyMd.copyWith(
+                color: AppColors.error,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -452,118 +521,9 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: AppSpacing.md),
                       itemBuilder: (context, index) {
-                        final entry = ownerProvider.ledgerEntries[index];
-                        final rawType = entry['type']?.toString() ?? '';
-                        final amount =
-                            (entry['amount'] as num?)?.toDouble() ?? 0.0;
-                        final balanceAfter =
-                            (entry['balance_after'] as num?)?.toDouble() ?? 0.0;
-                        final description =
-                            entry['description']?.toString() ?? '';
-                        final jobId = entry['job_id']?.toString() ?? '';
-                        final rawTs = entry['timestamp']?.toString() ?? '';
-
-                        DateTime? timestamp;
-                        if (rawTs.isNotEmpty) {
-                          try {
-                            timestamp = DateTime.parse(rawTs).toLocal();
-                          } catch (_) {}
-                        }
-
-                        final dateStr = timestamp != null
-                            ? "${timestamp.year}-${_twoDigits(timestamp.month)}-${_twoDigits(timestamp.day)} ${_twoDigits(timestamp.hour)}:${_twoDigits(timestamp.minute)}"
-                            : rawTs;
-
-                        IconData icon;
-                        Color color;
-                        switch (rawType) {
-                          case 'deposit':
-                            icon = Icons.add_circle_outline_rounded;
-                            color = AppColors.success;
-                            break;
-                          case 'escrow_lock':
-                            icon = Icons.lock_outline_rounded;
-                            color = AppColors.warning;
-                            break;
-                          case 'escrow_release':
-                            icon = Icons.lock_open_rounded;
-                            color = AppColors.primary;
-                            break;
-                          case 'refund':
-                            icon = Icons.replay_rounded;
-                            color = AppColors.success;
-                            break;
-                          case 'fee_deduction':
-                            icon = Icons.remove_circle_outline_rounded;
-                            color = AppColors.error;
-                            break;
-                          default:
-                            icon = Icons.monetization_on_outlined;
-                            color = AppColors.outline;
-                        }
-
-                        final isPositive = rawType == 'deposit' ||
-                            rawType == 'refund' ||
-                            rawType == 'escrow_release';
-
-                        return ThemedCard(
-                          padding: AppSpacing.md,
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(AppSpacing.sm),
-                                decoration: BoxDecoration(
-                                  color: color.withValues(alpha: 0.1),
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.sm),
-                                ),
-                                child: Icon(icon, color: color, size: 24),
-                              ),
-                              const SizedBox(width: AppSpacing.md),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      description.isNotEmpty
-                                          ? description
-                                          : rawType.toUpperCase(),
-                                      style: AppTypography.titleMd.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppSpacing.xxs),
-                                    Text(
-                                      l10n.ownerHistoryBalanceAfter(
-                                          balanceAfter.toStringAsFixed(2),
-                                          jobId.isNotEmpty
-                                              ? ' • Job #$jobId'
-                                              : ''),
-                                      style: AppTypography.labelMd.copyWith(
-                                        color: AppColors.onSurfaceVariant,
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppSpacing.xxs),
-                                    Text(
-                                      dateStr,
-                                      style: AppTypography.labelMd.copyWith(
-                                        color: AppColors.outline,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Text(
-                                "${isPositive ? '+' : '-'}\$${amount.toStringAsFixed(2)}",
-                                style: AppTypography.titleMd.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: isPositive
-                                      ? AppColors.success
-                                      : AppColors.error,
-                                ),
-                              ),
-                            ],
-                          ),
+                        return _buildLedgerCard(
+                          ownerProvider.ledgerEntries[index],
+                          l10n,
                         );
                       },
                     ),
@@ -573,70 +533,111 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
     );
   }
 
-  String _twoDigits(int n) => n.toString().padLeft(2, '0');
+  Widget _buildLedgerCard(Map<String, dynamic> entry, AppLocalizations l10n) {
+    final rawType = entry['type']?.toString() ?? '';
+    final amount = (entry['amount'] as num?)?.toDouble() ?? 0.0;
+    final balanceAfter = (entry['balance_after'] as num?)?.toDouble() ?? 0.0;
+    final description = entry['description']?.toString() ?? '';
+    final jobId = entry['job_id']?.toString() ?? '';
+    final rawTs = entry['timestamp']?.toString() ?? '';
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final ownerProvider = Provider.of<OwnerProvider>(context);
-
-    final tabBarView = TabBarView(
-      controller: _tabController,
-      children: [
-        _buildActivityLogTab(ownerProvider),
-        _buildCompletedJobsTab(ownerProvider),
-        _buildWalletLedgerTab(ownerProvider),
-      ],
-    );
-
-    if (widget.isEmbeddedInTab) {
-      return Material(
-        color: AppColors.scaffoldBackground,
-        child: Column(
-          children: [
-            _buildTabBar(l10n),
-            Expanded(child: tabBarView),
-          ],
-        ),
-      );
+    DateTime? timestamp;
+    if (rawTs.isNotEmpty) {
+      try {
+        timestamp = DateTime.parse(rawTs).toLocal();
+      } catch (_) {}
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        title: Text(l10n.ownerHistoryTitle),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.secondary,
-          indicatorWeight: 3,
-          labelColor: AppColors.onPrimary,
-          unselectedLabelColor: AppColors.onPrimary.withValues(alpha: 0.7),
-          labelStyle: AppTypography.bodySm.copyWith(
-            fontWeight: FontWeight.bold,
+    final dateStr = timestamp != null
+        ? "${timestamp.year}-${_twoDigits(timestamp.month)}-${_twoDigits(timestamp.day)} ${_twoDigits(timestamp.hour)}:${_twoDigits(timestamp.minute)}"
+        : rawTs;
+
+    IconData icon;
+    Color color;
+    switch (rawType) {
+      case 'deposit':
+        icon = Icons.add_circle_outline_rounded;
+        color = AppColors.success;
+        break;
+      case 'escrow_lock':
+        icon = Icons.lock_outline_rounded;
+        color = AppColors.warning;
+        break;
+      case 'escrow_release':
+        icon = Icons.lock_open_rounded;
+        color = AppColors.primary;
+        break;
+      case 'refund':
+        icon = Icons.replay_rounded;
+        color = AppColors.success;
+        break;
+      case 'fee_deduction':
+        icon = Icons.remove_circle_outline_rounded;
+        color = AppColors.error;
+        break;
+      default:
+        icon = Icons.monetization_on_outlined;
+        color = AppColors.outline;
+    }
+
+    final isPositive = rawType == 'deposit' ||
+        rawType == 'refund' ||
+        rawType == 'escrow_release';
+
+    return ThemedCard(
+      padding: AppSpacing.md,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Icon(icon, color: color, size: 24),
           ),
-          unselectedLabelStyle: AppTypography.bodySm,
-          tabs: [
-            Tab(
-              key: const Key('history_tab_activity'),
-              text: l10n.ownerHistoryTabActivity,
-              icon: const Icon(Icons.history_outlined, size: 20),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  description.isNotEmpty ? description : rawType.toUpperCase(),
+                  style: AppTypography.titleMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  l10n.ownerHistoryBalanceAfter(
+                    balanceAfter.toStringAsFixed(2),
+                    jobId.isNotEmpty ? ' • Job #$jobId' : '',
+                  ),
+                  style: AppTypography.labelMd.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  dateStr,
+                  style: AppTypography.labelMd.copyWith(
+                    color: AppColors.outline,
+                  ),
+                ),
+              ],
             ),
-            Tab(
-              key: const Key('history_tab_jobs'),
-              text: l10n.ownerHistoryTabJobs,
-              icon: const Icon(Icons.assignment_turned_in_outlined, size: 20),
+          ),
+          Text(
+            "${isPositive ? '+' : '-'}\$${amount.toStringAsFixed(2)}",
+            style: AppTypography.titleMd.copyWith(
+              fontWeight: FontWeight.bold,
+              color: isPositive ? AppColors.success : AppColors.error,
             ),
-            Tab(
-              key: const Key('history_tab_ledger'),
-              text: l10n.ownerHistoryTabLedger,
-              icon: const Icon(Icons.account_balance_wallet_outlined, size: 20),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
-      body: tabBarView,
     );
   }
+
+  String _twoDigits(int n) => n.toString().padLeft(2, '0');
 }
