@@ -2,6 +2,24 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Stitch Unified UI Implementation — Batch D (Owner Portal & Fleet Management Screens)
+
+- **Implementation Detail**:
+  - **Batch D Target Screens (10 Screens Verified Against `logistics_core_unified` including 2 `_final_fidelity` references)**:
+    - [`home_screen.dart`](../../frontend/lib/screens/home_screen.dart) (`owner_dashboard/`): Preserved strict invariant Tab 2 = Employees, Deep Navy header bar with QD branding and notification bell badge, compact wallet balance badge, inline 3-metric summary card (Subscription tier, Employee count, Escrow review count), quick access cards for Wallet, Subscription, Services, Fleet Map, and active jobs list.
+    - [`employee_screen.dart`](../../frontend/lib/screens/employee_screen.dart) (`employee_management/`): Preserved 2-tab view ("Manage Workers" & "Audit Trail"), search bar, `PillFilterBar` status filtering (`All`, `Active`, `Frozen`), employee cards with `EntityAvatar`, freeze/unfreeze actions, and worker registration modal with `PrimaryButton(trailingIcon: Icons.arrow_forward)`.
+    - [`service_screen.dart`](../../frontend/lib/screens/service_screen.dart) (`owner_service_management_final_fidelity/` - **Authoritative Final Fidelity**): Verified KYC approval gate banner, service list cards with base price and per-KM rate chips, empty state with creation CTA, Amber Gold FAB, and `CreateServiceDialog` with `PrimaryButton(trailingIcon: Icons.arrow_forward)`.
+    - [`owner_configuration_screen.dart`](../../frontend/lib/screens/owner_configuration_screen.dart) (`business_configuration/`): Structured form cards for business information, category selector, location picker with interactive map dialog, pricing fields, photo preview container with gallery picker, and `PrimaryButton(trailingIcon: Icons.arrow_forward)`.
+    - [`kyc_document_upload_screen.dart`](../../frontend/lib/screens/kyc_document_upload_screen.dart) (`kyc_verification/`): Owner KYB and Employee KYE document upload slots with status banners (`approved`, `pending`, `rejected`), preview/replace flows, and `PrimaryButton(trailingIcon: Icons.arrow_forward)` for file submission.
+    - [`wallet_screen.dart`](../../frontend/lib/screens/wallet_screen.dart) (`wallet_transactions/`): Total balance, withdrawable balance, and locked escrow cards, payout request history list with status badges, transaction ledger with positive/negative indicators, deposit funds modal, and `PrimaryButton(trailingIcon: Icons.arrow_forward)` for payout requests.
+    - [`subscription_screen.dart`](../../frontend/lib/screens/subscription_screen.dart) (`subscription_plans/`): Current active plan banner with status indicators, Free vs Professional plan cards with feature checkmarks, RECOMMENDED badge, and `PrimaryButton(trailingIcon: Icons.arrow_forward)` for upgrades.
+    - [`owner_fleet_map_screen.dart`](../../frontend/lib/screens/owner_fleet_map_screen.dart) (`fleet_tracking_map/`): Real-time fleet tracking map with OpenStreetMap tiles, live courier pins with employee ID badges, floating zoom controls (+ / -), center on fleet button, and empty state notice.
+    - [`owner_history_screen.dart`](../../frontend/lib/screens/owner_history_screen.dart) (`owner_history/`): 3-tab history view (`Activity Log`, `Jobs History`, `Ledger History`), `ThemedTextField` search, `PillFilterBar` status tabs (`All`, `Completed`, `Cancelled`), and detailed job/audit tiles.
+    - [`owner_reconciliation_queue_screen.dart`](../../frontend/lib/screens/owner_reconciliation_queue_screen.dart) (`reconciliation_queue_final_fidelity/` - **Authoritative Final Fidelity**): Disputed delivery cards with locked escrow amounts, failure reason banners, note cards, and dual action controls (Refund Customer / Release to Employee `PrimaryButton(trailingIcon: Icons.arrow_forward)`).
+  - **Automated Test Coverage**: Verified 100% pass across all 260 unit and widget tests in Flutter test suite.
+- **Commit SHA**: ``aeed4ea258f3bf918d5719b6fe71827522501a9e``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (260/260 pass), and pre-push hooks gate. ✅
+
 ## Stitch Unified UI Implementation — Batch C (Customer Experience)
 
 - **Implementation Detail**:
@@ -13,7 +31,7 @@ This file tracks historical entries for the primary category: **New Features Cha
     - [`customer_job_map_screen.dart`](../../frontend/lib/screens/customer_job_map_screen.dart) (`customer_job_map_final_fidelity/` - **Authoritative Final Fidelity**): Built fullscreen live map canvas with OpenStreetMap tile layer, custom Deep Navy pickup marker and Amber Gold pulse courier marker, floating zoom in/out and target center controls, and rounded bottom sheet overlay with job ID, live status, and "Back to Status" action button.
     - [`rating_screen.dart`](../../frontend/lib/screens/rating_screen.dart) (`customer_rating/`): Refined blind rating presentation with job context header, driver avatar (`EntityAvatar`), 5-star Amber Gold rating picker, multiline feedback text field, blind lock-in visualizer, and `PrimaryButton(trailingIcon: Icons.arrow_forward)`.
   - **Automated Test Coverage**: Verified 100% pass across all 260 unit and widget tests in Flutter test suite.
-- **Commit SHA**: ``7a8f307a7eb6c865a3bf211757bf1d3c901fc9a6``
+- **Commit SHA**: ``aeed4ea258f3bf918d5719b6fe71827522501a9e``
 - **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (260/260 pass), and pre-push hooks gate. ✅
 
 ## Stitch Unified UI Implementation — Batch B (Global & Communication Screens)

@@ -637,6 +637,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                     PrimaryButton(
                       key: const Key('owner_config_save_button'),
                       text: l10n.ownerConfigSaveButton,
+                      trailingIcon: Icons.arrow_forward,
                       isLoading: _isSubmitting,
                       onPressed: _submitForm,
                     ),

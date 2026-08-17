@@ -476,6 +476,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                       text: "Register Employee",
                       isLoading: _isRegSubmitting,
                       icon: Icons.person_add_alt_1_outlined,
+                      trailingIcon: Icons.arrow_forward,
                     ),
                   ],
                 ),

@@ -39,15 +39,36 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
     });
   }
 
+  void _zoomIn() {
+    final currentZoom = _mapController.camera.zoom;
+    _mapController.move(_mapController.camera.center, currentZoom + 1);
+  }
+
+  void _zoomOut() {
+    final currentZoom = _mapController.camera.zoom;
+    _mapController.move(_mapController.camera.center, currentZoom - 1);
+  }
+
+  void _centerOnTarget(LatLng centerPoint) {
+    _mapController.move(centerPoint, 13.0);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        title: Text(l10n.fleetLiveMapTitle),
+        title: Text(
+          l10n.fleetLiveMapTitle,
+          style: AppTypography.titleMd.copyWith(color: AppColors.onPrimary),
+        ),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: l10n.tooltipRefreshStatus,
             onPressed: () {
               final provider = context.read<MapTrackingProvider>();
               if (widget.token != null) {
@@ -181,6 +202,54 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
                           message: 'Reconnecting live tracking stream...',
                         ),
                 ),
+
+              // Floating Map Controls
+              PositionedDirectional(
+                end: AppSpacing.md,
+                bottom: AppSpacing.xl,
+                child: Column(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: AppRadius.defaultBorder,
+                        boxShadow: AppElevation.shadowLevel2List,
+                        border: Border.all(color: AppColors.outlineVariant),
+                      ),
+                      child: Column(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.add),
+                            color: AppColors.onSurface,
+                            onPressed: _zoomIn,
+                          ),
+                          const Divider(
+                              height: 1, color: AppColors.outlineVariant),
+                          IconButton(
+                            icon: const Icon(Icons.remove),
+                            color: AppColors.onSurface,
+                            onPressed: _zoomOut,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        shape: BoxShape.circle,
+                        boxShadow: AppElevation.shadowLevel2List,
+                        border: Border.all(color: AppColors.outlineVariant),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.my_location),
+                        color: AppColors.primary,
+                        onPressed: () => _centerOnTarget(centerPoint),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           );
         },

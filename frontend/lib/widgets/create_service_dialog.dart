@@ -241,6 +241,7 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                         child: PrimaryButton(
                           key: const Key('service_create_button'),
                           text: "Create",
+                          trailingIcon: Icons.arrow_forward,
                           isLoading: _isSubmitting,
                           onPressed: () async {
                             if (_formKey.currentState?.validate() ?? false) {

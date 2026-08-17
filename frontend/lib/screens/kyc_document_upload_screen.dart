@@ -498,6 +498,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                           key: ValueKey('btn_upload_$slotKey'),
                           text: "Upload Document",
                           icon: Icons.upload_file,
+                          trailingIcon: Icons.arrow_forward,
                           isLoading: isUploading,
                           onPressed: isUploading
                               ? null

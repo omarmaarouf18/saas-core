@@ -134,6 +134,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           key: const Key('request_payout_button'),
                           onPressed: () => PayoutRequestDialog.show(context),
                           icon: Icons.outbox_rounded,
+                          trailingIcon: Icons.arrow_forward,
                           text: l10n.payoutWithdrawButton,
                         ),
                       ),

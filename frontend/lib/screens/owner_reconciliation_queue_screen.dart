@@ -368,6 +368,7 @@ class _OwnerReconciliationQueueScreenState
                   child: PrimaryButton(
                     isFullWidth: false,
                     icon: Icons.check_circle_outline,
+                    trailingIcon: Icons.arrow_forward,
                     text: l10n.reconciliationReleaseEmployee,
                     onPressed: () {
                       _showConfirmationDialog(

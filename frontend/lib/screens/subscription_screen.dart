@@ -283,6 +283,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           highlighted
               ? PrimaryButton(
                   text: buttonText,
+                  trailingIcon: Icons.arrow_forward,
                   onPressed: onPressed,
                   isLoading: isThisPlanLoading,
                 )
