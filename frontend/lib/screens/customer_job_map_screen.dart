@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/constants.dart';
 import '../core/theme.dart';
+import '../models/employee_marker.dart';
+import '../models/job.dart';
 import '../providers/map_tracking_provider.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
@@ -60,14 +62,18 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
         : widget.jobId.toUpperCase();
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
           l10n.liveCourierTracking,
-          style: AppTypography.titleMd.copyWith(color: AppColors.onPrimary),
+          style: AppTypography.titleMd.copyWith(
+            color: AppColors.onPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -90,127 +96,12 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
           }
 
           final markers = provider.markersList;
-
-          LatLng centerPoint = const LatLng(30.0444, 31.2357); // Default Cairo
-          if (markers.isNotEmpty) {
-            final m = markers.first;
-            centerPoint = LatLng(m.latitude, m.longitude);
-          } else if (provider.customerJobLocation != null) {
-            centerPoint = LatLng(
-              provider.customerJobLocation!.latitude,
-              provider.customerJobLocation!.longitude,
-            );
-          }
-
-          final List<Marker> mapMarkers = [];
-
-          // Add Pickup / Job location marker (Deep Navy Container with Pin Dot)
-          if (provider.customerJobLocation != null) {
-            mapMarkers.add(
-              Marker(
-                width: 90.0,
-                height: 70.0,
-                point: LatLng(
-                  provider.customerJobLocation!.latitude,
-                  provider.customerJobLocation!.longitude,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsetsDirectional.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: AppSpacing.xxs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryContainer,
-                        borderRadius: AppRadius.smBorder,
-                        border:
-                            Border.all(color: AppColors.surface, width: 1.5),
-                        boxShadow: AppElevation.shadowLevel2List,
-                      ),
-                      child: Text(
-                        'Pickup',
-                        style: AppTypography.labelSm.copyWith(
-                          color: AppColors.onPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.xs),
-                      decoration: const BoxDecoration(
-                        color: AppColors.primaryContainer,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.flag,
-                        color: AppColors.onPrimary,
-                        size: 18,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          // Add Courier / Employee Marker (Amber Gold Container)
-          for (final m in markers) {
-            mapMarkers.add(
-              Marker(
-                width: 100.0,
-                height: 75.0,
-                point: LatLng(m.latitude, m.longitude),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsetsDirectional.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: AppSpacing.xxs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary,
-                        borderRadius: AppRadius.smBorder,
-                        border:
-                            Border.all(color: AppColors.primary, width: 1.5),
-                        boxShadow: AppElevation.shadowLevel2List,
-                      ),
-                      child: Text(
-                        m.employeeId.length > 12
-                            ? m.employeeId.substring(0, 12)
-                            : m.employeeId,
-                        style: AppTypography.labelSm.copyWith(
-                          color: AppColors.onSecondary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.xs),
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.surface, width: 2),
-                      ),
-                      child: const Icon(
-                        Icons.directions_bike,
-                        color: AppColors.onSecondary,
-                        size: 20.0,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
+          final centerPoint = _computeCenterPoint(provider, markers);
+          final mapMarkers = _buildMapMarkers(provider, markers);
 
           return Stack(
             children: [
+              // 1. OpenStreetMap Interactive Canvas
               FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
@@ -227,189 +118,352 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                 ],
               ),
 
-              // Empty courier position notice
-              if (markers.isEmpty && !provider.isLoading)
-                Positioned(
-                  top: AppSpacing.md,
-                  left: AppSpacing.md,
-                  right: AppSpacing.md,
-                  child: ThemedCard(
-                    variant: ThemedCardVariant.elevated,
-                    padding: AppSpacing.sm,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.directions_car_outlined,
-                            color: AppColors.primary),
-                        const SizedBox(width: AppSpacing.base),
-                        Expanded(
-                          child: Text(
-                            'Waiting for courier location updates...',
-                            style: AppTypography.bodySm.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.onSurface,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              // 2. Waiting for Courier Location Notice
+              if (markers.isEmpty && !provider.isLoading) _buildWaitingNotice(),
 
-              // Connection status / error banner
+              // 3. Reconnecting / Subscription Error Banner
               if (!provider.isConnected && !provider.isLoading)
-                Positioned(
-                  top: markers.isEmpty ? 70.0 : AppSpacing.md,
-                  left: AppSpacing.md,
-                  right: AppSpacing.md,
-                  child: provider.subscriptionError != null
-                      ? ThemedErrorBanner(
-                          message: provider.subscriptionError!,
-                        )
-                      : const ThemedWarningBanner(
-                          message: 'Reconnecting live tracking stream...',
-                        ),
-                ),
+                _buildConnectionStatusBanner(provider, markers.isEmpty),
 
-              // Floating Map Controls (Zoom In / Zoom Out / My Location)
-              PositionedDirectional(
-                end: AppSpacing.md,
-                bottom: 180.0,
-                child: Column(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: AppRadius.smBorder,
-                        boxShadow: AppElevation.shadowLevel2List,
-                        border: Border.all(color: AppColors.outlineVariant),
-                      ),
-                      child: Column(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.add),
-                            color: AppColors.onSurface,
-                            onPressed: _zoomIn,
-                          ),
-                          const Divider(
-                              height: 1, color: AppColors.outlineVariant),
-                          IconButton(
-                            icon: const Icon(Icons.remove),
-                            color: AppColors.onSurface,
-                            onPressed: _zoomOut,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        shape: BoxShape.circle,
-                        boxShadow: AppElevation.shadowLevel2List,
-                        border: Border.all(color: AppColors.outlineVariant),
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.my_location),
-                        color: AppColors.primary,
-                        onPressed: () => _centerOnTarget(centerPoint),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // 4. Floating Map Controls (Zoom In / Out / My Location)
+              _buildFloatingControls(centerPoint),
 
-              // Bottom Sheet Overlay (Final Fidelity)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    AppSpacing.sm,
-                    AppSpacing.lg,
-                    AppSpacing.lg,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(AppRadius.xl),
-                      topRight: Radius.circular(AppRadius.xl),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        offset: const Offset(0, -4),
-                        blurRadius: 16,
-                      ),
-                    ],
-                  ),
-                  child: SafeArea(
-                    top: false,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Drag Handle
-                        Center(
-                          child: Container(
-                            width: 48,
-                            height: 4,
-                            margin:
-                                const EdgeInsets.only(bottom: AppSpacing.md),
-                            decoration: BoxDecoration(
-                              color: AppColors.outlineVariant,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-                        // Job Title & Status
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              "#QD-$displayJobId",
-                              style: AppTypography.titleMd.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.local_shipping,
-                              size: 18,
-                              color: AppColors.secondary,
-                            ),
-                            const SizedBox(width: AppSpacing.xs),
-                            Text(
-                              markers.isNotEmpty
-                                  ? "In Transit - Live Courier Tracking"
-                                  : "Live Route Tracking Active",
-                              style: AppTypography.bodyMd.copyWith(
-                                color: AppColors.onSurfaceVariant,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        PrimaryButton(
-                          text: "Back to Status",
-                          trailingIcon: Icons.arrow_forward,
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              // 5. Bottom Sheet Overlay (Final Fidelity Stitch Layout)
+              _buildBottomDetailsSheet(
+                displayJobId: displayJobId,
+                hasActiveMarkers: markers.isNotEmpty,
               ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  LatLng _computeCenterPoint(
+    MapTrackingProvider provider,
+    List<EmployeeMarkerData> markers,
+  ) {
+    if (markers.isNotEmpty) {
+      final m = markers.first;
+      return LatLng(m.latitude, m.longitude);
+    }
+    if (provider.customerJobLocation != null) {
+      return LatLng(
+        provider.customerJobLocation!.latitude,
+        provider.customerJobLocation!.longitude,
+      );
+    }
+    return const LatLng(30.0444, 31.2357); // Cairo default
+  }
+
+  List<Marker> _buildMapMarkers(
+    MapTrackingProvider provider,
+    List<EmployeeMarkerData> markers,
+  ) {
+    final List<Marker> mapMarkers = [];
+
+    // Pickup Marker
+    if (provider.customerJobLocation != null) {
+      mapMarkers.add(
+        _createPickupMarker(provider.customerJobLocation!),
+      );
+    }
+
+    // Active Courier Markers
+    for (final m in markers) {
+      mapMarkers.add(
+        _createCourierMarker(m),
+      );
+    }
+
+    return mapMarkers;
+  }
+
+  Marker _createPickupMarker(JobLocation location) {
+    return Marker(
+      width: 90.0,
+      height: 70.0,
+      point: LatLng(location.latitude, location.longitude),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xxs,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.primaryContainer,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              border: Border.all(color: AppColors.surface, width: 1.5),
+              boxShadow: AppElevation.shadowLevel2List,
+            ),
+            child: Text(
+              'Pickup',
+              style: AppTypography.labelSm.copyWith(
+                color: AppColors.onPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.xs),
+            decoration: const BoxDecoration(
+              color: AppColors.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.flag,
+              color: AppColors.onPrimary,
+              size: 18,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Marker _createCourierMarker(EmployeeMarkerData markerData) {
+    final displayName = markerData.employeeId.length > 12
+        ? markerData.employeeId.substring(0, 12)
+        : markerData.employeeId;
+
+    return Marker(
+      width: 100.0,
+      height: 75.0,
+      point: LatLng(markerData.latitude, markerData.longitude),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xxs,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.secondary,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              border: Border.all(color: AppColors.primary, width: 1.5),
+              boxShadow: AppElevation.shadowLevel2List,
+            ),
+            child: Text(
+              displayName,
+              style: AppTypography.labelSm.copyWith(
+                color: AppColors.onSecondary,
+                fontWeight: FontWeight.bold,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.xs),
+            decoration: BoxDecoration(
+              color: AppColors.secondary,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.surface, width: 2),
+            ),
+            child: const Icon(
+              Icons.directions_bike,
+              color: AppColors.onSecondary,
+              size: 20.0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWaitingNotice() {
+    return Positioned(
+      top: AppSpacing.md,
+      left: AppSpacing.marginMobile,
+      right: AppSpacing.marginMobile,
+      child: ThemedCard(
+        variant: ThemedCardVariant.elevated,
+        padding: AppSpacing.sm,
+        borderRadius: AppRadius.md,
+        child: Row(
+          children: [
+            const Icon(
+              Icons.directions_car_outlined,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                'Waiting for courier location updates...',
+                style: AppTypography.bodySm.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.onSurface,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConnectionStatusBanner(
+    MapTrackingProvider provider,
+    bool isMarkersEmpty,
+  ) {
+    return Positioned(
+      top: isMarkersEmpty ? 70.0 : AppSpacing.md,
+      left: AppSpacing.marginMobile,
+      right: AppSpacing.marginMobile,
+      child: provider.subscriptionError != null
+          ? ThemedErrorBanner(
+              message: provider.subscriptionError!,
+            )
+          : const ThemedWarningBanner(
+              message: 'Reconnecting live tracking stream...',
+            ),
+    );
+  }
+
+  Widget _buildFloatingControls(LatLng centerPoint) {
+    return PositionedDirectional(
+      end: AppSpacing.marginMobile,
+      bottom: 200.0,
+      child: Column(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              boxShadow: AppElevation.shadowLevel2List,
+              border: Border.all(color: AppColors.outlineVariant),
+            ),
+            child: Column(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  color: AppColors.onSurface,
+                  tooltip: 'Zoom In',
+                  onPressed: _zoomIn,
+                ),
+                const Divider(height: 1, color: AppColors.outlineVariant),
+                IconButton(
+                  icon: const Icon(Icons.remove),
+                  color: AppColors.onSurface,
+                  tooltip: 'Zoom Out',
+                  onPressed: _zoomOut,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              shape: BoxShape.circle,
+              boxShadow: AppElevation.shadowLevel2List,
+              border: Border.all(color: AppColors.outlineVariant),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.my_location),
+              color: AppColors.primary,
+              tooltip: 'Center Target',
+              onPressed: () => _centerOnTarget(centerPoint),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomDetailsSheet({
+    required String displayJobId,
+    required bool hasActiveMarkers,
+  }) {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.sm,
+          AppSpacing.lg,
+          AppSpacing.lg,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(AppRadius.xl),
+            topRight: Radius.circular(AppRadius.xl),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              offset: const Offset(0, -4),
+              blurRadius: 16,
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 48,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.outlineVariant,
+                    borderRadius: AppRadius.xsBorder,
+                  ),
+                ),
+              ),
+              // Job ID Header
+              Text(
+                "#QD-$displayJobId",
+                style: AppTypography.titleMd.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.onSurface,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xxs),
+              // Live Tracking Status Subtitle
+              Row(
+                children: [
+                  const Icon(
+                    Icons.local_shipping,
+                    size: 18,
+                    color: AppColors.secondary,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      hasActiveMarkers
+                          ? "In Transit - Live Courier Tracking"
+                          : "Live Route Tracking Active",
+                      style: AppTypography.bodyMd.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              // Back to Status / View Details CTA
+              PrimaryButton(
+                text: "Back to Status",
+                trailingIcon: Icons.arrow_forward,
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

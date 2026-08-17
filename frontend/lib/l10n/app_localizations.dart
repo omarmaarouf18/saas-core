@@ -527,7 +527,7 @@ abstract class AppLocalizations {
   /// No description provided for @ownerConfigNameHint.
   ///
   /// In en, this message translates to:
-  /// **'e.g. Quick Cargo Express'**
+  /// **'e.g. Quick Delivery Services'**
   String get ownerConfigNameHint;
 
   /// No description provided for @ownerConfigNameReq.

@@ -95,7 +95,7 @@ class _OtpScreenState extends State<OtpScreen> {
     final l10n = context.l10n;
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -108,7 +108,7 @@ class _OtpScreenState extends State<OtpScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
+              horizontal: AppSpacing.marginMobile,
               vertical: AppSpacing.md,
             ),
             child: ConstrainedBox(
@@ -119,172 +119,8 @@ class _OtpScreenState extends State<OtpScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    ThemedCard(
-                      borderRadius: AppRadius.md,
-                      topAccentColor: AppColors.secondary,
-                      topAccentHeight: 4.0,
-                      padding: AppSpacing.lg,
-                      elevation: AppElevation.shadowLevel2List,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Shield / Security Icon Container
-                          Center(
-                            child: Container(
-                              width: 64,
-                              height: 64,
-                              decoration: const BoxDecoration(
-                                color: AppColors.primaryContainer,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.security_outlined,
-                                  size: 32,
-                                  color: AppColors.secondary,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          Text(
-                            l10n.otpTitle,
-                            style: AppTypography.headlineLgMobile.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: AppSpacing.xxs),
-                          Text(
-                            "${l10n.otpSubtitle}\n${widget.email}",
-                            style: AppTypography.bodyMd.copyWith(
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          Text(
-                            l10n.otpCodeLabel,
-                            style: AppTypography.labelLg.copyWith(
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          FormField<String>(
-                            initialValue: _otpController.text,
-                            validator: (val) {
-                              final code = (val != null && val.isNotEmpty)
-                                  ? val.trim()
-                                  : _otpController.text.trim();
-                              if (code.length != 6) {
-                                return "OTP must be exactly 6 digits";
-                              }
-                              return null;
-                            },
-                            builder: (state) {
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  OtpPinInput(
-                                    controller: _otpController,
-                                    hasError: state.hasError,
-                                    onChanged: (code) {
-                                      state.didChange(code);
-                                    },
-                                    onCompleted: (code) {
-                                      state.didChange(code);
-                                      _submit();
-                                    },
-                                  ),
-                                  if (state.hasError) ...[
-                                    const SizedBox(height: AppSpacing.xs),
-                                    Center(
-                                      child: Text(
-                                        state.errorText ?? '',
-                                        style: AppTypography.bodySm.copyWith(
-                                          color: AppColors.danger,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              );
-                            },
-                          ),
-                          if (_currentDevOtp != null) ...[
-                            const SizedBox(height: AppSpacing.md),
-                            Container(
-                              padding: const EdgeInsets.all(AppSpacing.sm),
-                              decoration: BoxDecoration(
-                                color:
-                                    AppColors.secondary.withValues(alpha: 0.1),
-                                border: Border.all(
-                                  color: AppColors.secondary
-                                      .withValues(alpha: 0.4),
-                                ),
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.sm),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.bug_report_outlined,
-                                    color: AppColors.warning,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: AppSpacing.xs),
-                                  Expanded(
-                                    child: Text(
-                                      "Dev Mode: Auto-populated OTP '$_currentDevOtp' from response.",
-                                      style: AppTypography.labelMd.copyWith(
-                                        color: AppColors.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: AppSpacing.lg),
-                          PrimaryButton(
-                            text: l10n.otpSubmitButton,
-                            trailingIcon: Icons.arrow_forward,
-                            isLoading: auth.isLoading,
-                            onPressed: _submit,
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          SecondaryButton(
-                            key: const Key('otp_resend_button'),
-                            text: l10n.otpResendButton,
-                            icon: Icons.refresh,
-                            isLoading: auth.isLoading,
-                            isOutlined: true,
-                            onPressed: _resendCode,
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: AppSpacing.xxs,
-                            children: [
-                              const Icon(
-                                Icons.lock_outline,
-                                size: 14,
-                                color: AppColors.outline,
-                              ),
-                              Text(
-                                "Secured by Enterprise Trust Protocol",
-                                style: AppTypography.caption.copyWith(
-                                  color: AppColors.outline,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
+                    // Main Stitch Verification Card
+                    _buildOtpCard(auth, l10n),
                   ],
                 ),
               ),
@@ -292,6 +128,211 @@ class _OtpScreenState extends State<OtpScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildOtpCard(AuthProvider auth, AppLocalizations l10n) {
+    return ThemedCard(
+      borderRadius: AppRadius.lg,
+      topAccentColor: AppColors.secondary,
+      topAccentHeight: 4.0,
+      padding: AppSpacing.lg,
+      elevation: AppElevation.shadowLevel2List,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Security Shield Icon Container
+          _buildSecurityHeader(l10n),
+          const SizedBox(height: AppSpacing.lg),
+
+          // Subtitle and Target Prompt
+          Text(
+            l10n.otpCodeLabel,
+            style: AppTypography.labelLg.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          // 6-Digit PIN Discrete Input Fields
+          _buildPinInput(),
+
+          // Dev Mode Code Disclosure Banner
+          if (_currentDevOtp != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            _buildDevModeBanner(),
+          ],
+          const SizedBox(height: AppSpacing.lg),
+
+          // Action Buttons: Verify & Resend
+          _buildActionButtons(auth, l10n),
+          const SizedBox(height: AppSpacing.md),
+
+          // Contextual Security Trust Footnote
+          _buildSecurityFootnote(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSecurityHeader(AppLocalizations l10n) {
+    return Column(
+      children: [
+        Center(
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: const BoxDecoration(
+              color: AppColors.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.security_outlined,
+                size: 32,
+                color: AppColors.secondary,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          l10n.otpTitle,
+          style: AppTypography.headlineLgMobile.copyWith(
+            color: AppColors.primary,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          "${l10n.otpSubtitle}\n${widget.email}",
+          style: AppTypography.bodyMd.copyWith(
+            color: AppColors.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPinInput() {
+    return FormField<String>(
+      initialValue: _otpController.text,
+      validator: (val) {
+        final code = (val != null && val.isNotEmpty)
+            ? val.trim()
+            : _otpController.text.trim();
+        if (code.length != 6) {
+          return "OTP must be exactly 6 digits";
+        }
+        return null;
+      },
+      builder: (state) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            OtpPinInput(
+              controller: _otpController,
+              hasError: state.hasError,
+              onChanged: (code) {
+                state.didChange(code);
+              },
+              onCompleted: (code) {
+                state.didChange(code);
+                _submit();
+              },
+            ),
+            if (state.hasError) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Center(
+                child: Text(
+                  state.errorText ?? '',
+                  style: AppTypography.bodySm.copyWith(
+                    color: AppColors.danger,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDevModeBanner() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.secondary.withValues(alpha: 0.1),
+        border: Border.all(
+          color: AppColors.secondary.withValues(alpha: 0.4),
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.bug_report_outlined,
+            color: AppColors.warning,
+            size: 18,
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: Text(
+              "Dev Mode: Auto-populated OTP '$_currentDevOtp' from response.",
+              style: AppTypography.labelMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(AuthProvider auth, AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PrimaryButton(
+          text: l10n.otpSubmitButton,
+          trailingIcon: Icons.arrow_forward,
+          isLoading: auth.isLoading,
+          onPressed: _submit,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        SecondaryButton(
+          key: const Key('otp_resend_button'),
+          text: l10n.otpResendButton,
+          icon: Icons.refresh,
+          isLoading: auth.isLoading,
+          isOutlined: true,
+          onPressed: _resendCode,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecurityFootnote() {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: AppSpacing.xxs,
+      children: [
+        const Icon(
+          Icons.lock_outline,
+          size: 14,
+          color: AppColors.outline,
+        ),
+        Text(
+          "Secured by Enterprise Trust Protocol",
+          style: AppTypography.caption.copyWith(
+            color: AppColors.outline,
+          ),
+        ),
+      ],
     );
   }
 }

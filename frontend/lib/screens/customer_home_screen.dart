@@ -285,410 +285,149 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Welcome Hero Banner (Stitch Welcome Banner)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: BoxDecoration(
-              color: AppColors.primaryContainer,
-              borderRadius: AppRadius.mdBorder,
-              boxShadow: AppElevation.shadowLevel2List,
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                // Decorative Gold Ambient Glow
-                Positioned(
-                  right: -20,
-                  top: -20,
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: AppColors.secondary.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "${l10n.customerHomeGreeting} $username!",
-                      style: AppTypography.headlineLgMobile.copyWith(
-                        color: AppColors.onPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      l10n.customerHomeSub,
-                      style: AppTypography.bodyMd.copyWith(
-                        color: AppColors.onPrimary.withValues(alpha: 0.8),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Wrap(
-                      spacing: AppSpacing.sm,
-                      runSpacing: AppSpacing.sm,
-                      children: [
-                        SizedBox(
-                          width: 170,
-                          child: PrimaryButton(
-                            key: const Key('quick_book_now_button'),
-                            text: l10n.customerHomeQuickBookBtn,
-                            icon: Icons.local_shipping_outlined,
-                            trailingIcon: Icons.arrow_forward,
-                            onPressed: widget.onGoToServices,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          _buildWelcomeBanner(l10n, username),
           const SizedBox(height: AppSpacing.lg),
 
           // 2. "Where to deliver?" Quick Search Card
-          ThemedCard(
-            key: const Key('customer_quick_booking_card'),
-            padding: AppSpacing.md,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.xs),
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(AppRadius.xs),
-                      ),
-                      child: const Icon(
-                        Icons.near_me,
-                        color: AppColors.primary,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      "Where to deliver?",
-                      style: AppTypography.titleMd.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.onSurface,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                InkWell(
-                  onTap: widget.onGoToServices,
-                  borderRadius: AppRadius.smBorder,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLow,
-                      borderRadius: AppRadius.smBorder,
-                      border: Border.all(
-                        color: AppColors.outlineVariant,
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.search,
-                          color: AppColors.onSurfaceVariant,
-                          size: AppIconSize.md,
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Text(
-                            "Enter destination or pickup area...",
-                            style: AppTypography.bodyMd.copyWith(
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                PrimaryButton(
-                  key: const Key('find_couriers_button'),
-                  text: "Find Nearby Couriers",
-                  icon: Icons.search,
-                  trailingIcon: Icons.arrow_forward,
-                  onPressed: widget.onGoToServices,
-                ),
-              ],
-            ),
-          ),
+          _buildQuickSearchCard(),
           const SizedBox(height: AppSpacing.xl),
 
-          // 3. Core Services Grid (Stitch 3-Service Grid)
-          ThemedSectionHeader(
-            title: l10n.customerHomeQuickAccess,
-            subtitle: l10n.customerHomeSub,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: _buildServiceCard(
-                    context,
-                    key: const Key('category_tile_delivery'),
-                    title: l10n.customerHomeCatDelivery,
-                    description:
-                        "Schedule last-mile delivery for parcels and urgent documents.",
-                    icon: Icons.inventory_2_outlined,
-                    iconBgColor:
-                        AppColors.primaryContainer.withValues(alpha: 0.1),
-                    iconColor: AppColors.primaryContainer,
-                    onTap: () => widget.onCategorySelected('delivery'),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: _buildServiceCard(
-                    context,
-                    key: const Key('category_tile_transport'),
-                    title: l10n.customerHomeCatRide,
-                    description:
-                        "Book long-haul freight and specialized transport vehicles.",
-                    icon: Icons.local_shipping_outlined,
-                    iconBgColor: AppColors.secondary.withValues(alpha: 0.2),
-                    iconColor: AppColors.secondary,
-                    onTap: () => widget.onCategorySelected('transport'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: _buildServiceCard(
-                    context,
-                    key: const Key('category_tile_shipping'),
-                    title: l10n.customerHomeCatShipping,
-                    description:
-                        "Manage warehousing, inventory, and supply chain operations.",
-                    icon: Icons.warehouse_outlined,
-                    iconBgColor: AppColors.success.withValues(alpha: 0.15),
-                    iconColor: AppColors.success,
-                    onTap: () => widget.onCategorySelected('shipping'),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: _buildServiceCard(
-                    context,
-                    key: const Key('category_tile_all'),
-                    title: l10n.customerHomeCatBrowseAll,
-                    description:
-                        "Browse all available logistic services and options.",
-                    icon: Icons.grid_view_rounded,
-                    iconBgColor: AppColors.primary.withValues(alpha: 0.1),
-                    iconColor: AppColors.primary,
-                    onTap: () => widget.onCategorySelected('all'),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // 3. Core Services Grid (Stitch 2x2 Services Grid)
+          _buildCoreServicesSection(context, l10n),
           const SizedBox(height: AppSpacing.xl),
 
           // 4. Active Jobs Section (Stitch Active Jobs List)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          _buildActiveJobsSection(l10n, activeJobs),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWelcomeBanner(AppLocalizations l10n, String username) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.primaryContainer,
+        borderRadius: AppRadius.mdBorder,
+        boxShadow: AppElevation.shadowLevel2List,
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Decorative Gold Ambient Glow
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: AppColors.secondary.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: ThemedSectionHeader(
-                  title: l10n.customerHomeRecentActivity,
+              Text(
+                "${l10n.customerHomeGreeting} $username!",
+                style: AppTypography.headlineLgMobile.copyWith(
+                  color: AppColors.onPrimary,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              TextButton.icon(
-                key: const Key('view_all_orders_button'),
-                onPressed: widget.onGoToHistory,
-                icon: const Icon(Icons.arrow_forward, size: AppIconSize.sm),
-                label: Text(
-                  l10n.customerHomeCatBrowseAll,
-                  style: AppTypography.labelLg.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                l10n.customerHomeSub,
+                style: AppTypography.bodyMd.copyWith(
+                  color: AppColors.onPrimary.withValues(alpha: 0.8),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: [
+                  SizedBox(
+                    width: 170,
+                    child: PrimaryButton(
+                      key: const Key('quick_book_now_button'),
+                      text: l10n.customerHomeQuickBookBtn,
+                      icon: Icons.local_shipping_outlined,
+                      trailingIcon: Icons.arrow_forward,
+                      onPressed: widget.onGoToServices,
+                    ),
                   ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickSearchCard() {
+    return ThemedCard(
+      key: const Key('customer_quick_booking_card'),
+      padding: AppSpacing.md,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.xs),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
+                ),
+                child: const Icon(
+                  Icons.near_me,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                "Where to deliver?",
+                style: AppTypography.titleMd.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.onSurface,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          if (activeJobs.isNotEmpty) ...[
-            Column(
-              children: activeJobs.map((job) {
-                final displayId = job.id.length > 8
-                    ? job.id.substring(0, 8).toUpperCase()
-                    : job.id.toUpperCase();
-                return Container(
-                  margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: ThemedCard(
-                    onTap: widget.onGoToHistory,
-                    padding: AppSpacing.md,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "#QD-$displayId",
-                                  style: AppTypography.caption.copyWith(
-                                    color: AppColors.onSurfaceVariant,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  job.serviceId.isNotEmpty
-                                      ? job.serviceId
-                                      : "Express Delivery",
-                                  style: AppTypography.titleMd.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.onSurface,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            StatusBadge(status: job.status),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        // 2-Phase Progress Bar
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: Container(
-                            height: 6,
-                            color: AppColors.surfaceContainerHigh,
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: job.status.toLowerCase() == 'completed'
-                                      ? 4
-                                      : 2,
-                                  child: Container(
-                                      color: AppColors.primaryContainer),
-                                ),
-                                if (job.status.toLowerCase() == 'active' ||
-                                    job.status.toLowerCase() == 'assigned')
-                                  Expanded(
-                                    flex: 1,
-                                    child:
-                                        Container(color: AppColors.secondary),
-                                  ),
-                                if (job.status.toLowerCase() == 'pending')
-                                  Expanded(
-                                    flex: 2,
-                                    child: Container(
-                                        color: AppColors.surfaceContainerHigh),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("Origin",
-                                style: AppTypography.caption.copyWith(
-                                    color: AppColors.onSurfaceVariant)),
-                            Text("Destination",
-                                style: AppTypography.caption.copyWith(
-                                    color: AppColors.onSurfaceVariant)),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        const Divider(
-                            height: 1, color: AppColors.outlineVariant),
-                        const SizedBox(height: AppSpacing.sm),
-                        Row(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: const BoxDecoration(
-                                color: AppColors.surfaceContainerHigh,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.person,
-                                  size: 18, color: AppColors.onSurfaceVariant),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    job.employeeId != null
-                                        ? "Courier: Assigned"
-                                        : "Finding Courier...",
-                                    style: AppTypography.bodySm.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.onSurface,
-                                    ),
-                                  ),
-                                  Text(
-                                    "Payment: ${job.paymentMethod.toUpperCase()}",
-                                    style: AppTypography.caption.copyWith(
-                                      color: AppColors.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (job.agreedPrice != null ||
-                                job.suggestedPrice != null)
-                              Text(
-                                "\$${(job.agreedPrice ?? job.suggestedPrice ?? 0).toStringAsFixed(2)}",
-                                style: AppTypography.titleMd.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ] else ...[
-            ThemedCard(
-              padding: AppSpacing.lg,
+          const SizedBox(height: AppSpacing.md),
+          InkWell(
+            onTap: widget.onGoToServices,
+            borderRadius: AppRadius.smBorder,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLow,
+                borderRadius: AppRadius.smBorder,
+                border: Border.all(
+                  color: AppColors.outlineVariant,
+                  width: 1,
+                ),
+              ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline,
-                      color: AppColors.outline, size: 22),
-                  const SizedBox(width: AppSpacing.md),
+                  const Icon(
+                    Icons.search,
+                    color: AppColors.onSurfaceVariant,
+                    size: AppIconSize.md,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
-                      l10n.customerJobsEmpty,
+                      "Enter destination or pickup area...",
                       style: AppTypography.bodyMd.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
@@ -697,9 +436,296 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                 ],
               ),
             ),
-          ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          PrimaryButton(
+            key: const Key('find_couriers_button'),
+            text: "Find Nearby Couriers",
+            icon: Icons.search,
+            trailingIcon: Icons.arrow_forward,
+            onPressed: widget.onGoToServices,
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCoreServicesSection(
+      BuildContext context, AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ThemedSectionHeader(
+          title: l10n.customerHomeQuickAccess,
+          subtitle: l10n.customerHomeSub,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildServiceCard(
+                  context,
+                  key: const Key('category_tile_delivery'),
+                  title: l10n.customerHomeCatDelivery,
+                  description:
+                      "Fast on-demand delivery for orders, packages, and essentials.",
+                  icon: Icons.inventory_2_outlined,
+                  iconBgColor:
+                      AppColors.primaryContainer.withValues(alpha: 0.1),
+                  iconColor: AppColors.primaryContainer,
+                  onTap: () => widget.onCategorySelected('delivery'),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _buildServiceCard(
+                  context,
+                  key: const Key('category_tile_transport'),
+                  title: l10n.customerHomeCatRide,
+                  description:
+                      "Local ride booking, moving transport, and courier transport.",
+                  icon: Icons.local_shipping_outlined,
+                  iconBgColor: AppColors.secondary.withValues(alpha: 0.2),
+                  iconColor: AppColors.secondary,
+                  onTap: () => widget.onCategorySelected('transport'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildServiceCard(
+                  context,
+                  key: const Key('category_tile_shipping'),
+                  title: l10n.customerHomeCatShipping,
+                  description:
+                      "On-demand home cleaning, maintenance, and handyman services.",
+                  icon: Icons.home_repair_service_outlined,
+                  iconBgColor: AppColors.success.withValues(alpha: 0.15),
+                  iconColor: AppColors.success,
+                  onTap: () => widget.onCategorySelected('shipping'),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _buildServiceCard(
+                  context,
+                  key: const Key('category_tile_all'),
+                  title: l10n.customerHomeCatBrowseAll,
+                  description:
+                      "Browse all available home services and delivery options.",
+                  icon: Icons.grid_view_rounded,
+                  iconBgColor: AppColors.primary.withValues(alpha: 0.1),
+                  iconColor: AppColors.primary,
+                  onTap: () => widget.onCategorySelected('all'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActiveJobsSection(
+      AppLocalizations l10n, List<dynamic> activeJobs) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: ThemedSectionHeader(
+                title: l10n.customerHomeRecentActivity,
+              ),
+            ),
+            TextButton.icon(
+              key: const Key('view_all_orders_button'),
+              onPressed: widget.onGoToHistory,
+              icon: const Icon(Icons.arrow_forward, size: AppIconSize.sm),
+              label: Text(
+                l10n.customerHomeCatBrowseAll,
+                style: AppTypography.labelLg.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        if (activeJobs.isNotEmpty) ...[
+          Column(
+            children: activeJobs.map((job) {
+              final displayId = job.id.length > 8
+                  ? job.id.substring(0, 8).toUpperCase()
+                  : job.id.toUpperCase();
+              return Container(
+                margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: ThemedCard(
+                  onTap: widget.onGoToHistory,
+                  padding: AppSpacing.md,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "#QD-$displayId",
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.onSurfaceVariant,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                job.serviceId.isNotEmpty
+                                    ? job.serviceId
+                                    : "Express Delivery",
+                                style: AppTypography.titleMd.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                          StatusBadge(status: job.status),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      // 2-Phase Progress Bar
+                      ClipRRect(
+                        borderRadius: AppRadius.smBorder,
+                        child: Container(
+                          height: 6,
+                          color: AppColors.surfaceContainerHigh,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: job.status.toLowerCase() == 'completed'
+                                    ? 4
+                                    : 2,
+                                child: Container(
+                                    color: AppColors.primaryContainer),
+                              ),
+                              if (job.status.toLowerCase() == 'active' ||
+                                  job.status.toLowerCase() == 'assigned')
+                                Expanded(
+                                  flex: 1,
+                                  child: Container(color: AppColors.secondary),
+                                ),
+                              if (job.status.toLowerCase() == 'pending')
+                                Expanded(
+                                  flex: 2,
+                                  child: Container(
+                                      color: AppColors.surfaceContainerHigh),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("Origin",
+                              style: AppTypography.caption
+                                  .copyWith(color: AppColors.onSurfaceVariant)),
+                          Text("Destination",
+                              style: AppTypography.caption
+                                  .copyWith(color: AppColors.onSurfaceVariant)),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      const Divider(height: 1, color: AppColors.outlineVariant),
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: const BoxDecoration(
+                              color: AppColors.surfaceContainerHigh,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.person,
+                                size: 18, color: AppColors.onSurfaceVariant),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  job.employeeId != null
+                                      ? "Courier: Assigned"
+                                      : "Finding Courier...",
+                                  style: AppTypography.bodySm.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.onSurface,
+                                  ),
+                                ),
+                                Text(
+                                  "Payment: ${job.paymentMethod.toUpperCase()}",
+                                  style: AppTypography.caption.copyWith(
+                                    color: AppColors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (job.agreedPrice != null ||
+                              job.suggestedPrice != null)
+                            Text(
+                              "\$${(job.agreedPrice ?? job.suggestedPrice ?? 0).toStringAsFixed(2)}",
+                              style: AppTypography.titleMd.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ] else ...[
+          ThemedCard(
+            padding: AppSpacing.lg,
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline,
+                    color: AppColors.outline, size: 22),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Text(
+                    l10n.customerJobsEmpty,
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 

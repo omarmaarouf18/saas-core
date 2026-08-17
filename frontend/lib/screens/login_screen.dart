@@ -86,12 +86,12 @@ class _LoginScreenState extends State<LoginScreen> {
     final l10n = context.l10n;
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
+              horizontal: AppSpacing.marginMobile,
               vertical: AppSpacing.md,
             ),
             child: ConstrainedBox(
@@ -102,245 +102,263 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Top Chrome Bar: Compact QD Logotype & Pre-Login Toggles
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          key: const Key('login_qd_logo'),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
-                            vertical: AppSpacing.xs,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.storefront,
-                                color: AppColors.secondary,
-                                size: AppIconSize.md,
-                              ),
-                              const SizedBox(width: AppSpacing.xs),
-                              Text(
-                                "QD",
-                                style: AppTypography.titleMd.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.onPrimary,
-                                  letterSpacing: 1.0,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            IconButton(
-                              key: const Key('login_theme_toggle_button'),
-                              icon: Icon(
-                                themeProvider.themeMode == ThemeMode.dark
-                                    ? Icons.dark_mode_outlined
-                                    : (themeProvider.themeMode ==
-                                            ThemeMode.light
-                                        ? Icons.light_mode_outlined
-                                        : Icons.brightness_auto_outlined),
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              tooltip: l10n.tooltipToggleTheme,
-                              onPressed: () {
-                                final nextMode = themeProvider.themeMode ==
-                                        ThemeMode.light
-                                    ? ThemeMode.dark
-                                    : (themeProvider.themeMode == ThemeMode.dark
-                                        ? ThemeMode.system
-                                        : ThemeMode.light);
-                                themeProvider.setThemeMode(nextMode);
-                              },
-                            ),
-                            IconButton(
-                              key: const Key('login_lang_toggle_button'),
-                              icon: Icon(
-                                Icons.language,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              tooltip: l10n.tooltipToggleLanguage,
-                              onPressed: () {
-                                final isAr =
-                                    localeProvider?.locale?.languageCode ==
-                                        'ar';
-                                localeProvider?.setLocale(isAr
-                                    ? const Locale('en')
-                                    : const Locale('ar'));
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                    // 1. Top Chrome Bar: QD Logo & Language/Theme Toggles
+                    _buildTopChromeBar(themeProvider, localeProvider, l10n),
                     const SizedBox(height: AppSpacing.md),
-                    // Main Stitch Card Container
-                    ThemedCard(
-                      borderRadius: AppRadius.md,
-                      topAccentColor: AppColors.secondary,
-                      topAccentHeight: 4.0,
-                      padding: AppSpacing.lg,
-                      elevation: AppElevation.shadowLevel2List,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Brand Icon & Header Block
-                          Center(
-                            child: Container(
-                              width: 64,
-                              height: 64,
-                              decoration: const BoxDecoration(
-                                color: AppColors.primaryContainer,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.local_shipping,
-                                  size: 32,
-                                  color: AppColors.secondary,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          Text(
-                            l10n.loginTitle,
-                            style: AppTypography.headlineLgMobile.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: AppSpacing.xxs),
-                          Text(
-                            l10n.loginSubtitle,
-                            style: AppTypography.bodyMd.copyWith(
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          // Email Input
-                          ThemedTextField(
-                            controller: _emailController,
-                            labelText: l10n.loginEmailLabel,
-                            hintText: l10n.loginEmailHint,
-                            prefixIcon: const Icon(Icons.person_outline),
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (val) {
-                              if (val == null || val.trim().isEmpty) {
-                                return l10n.loginEmailReq;
-                              }
-                              final emailRegex = RegExp(
-                                  r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-                              if (!emailRegex.hasMatch(val.trim())) {
-                                return l10n.loginEmailInvalid;
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          // Password Header with Inline "Forgot Password?"
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                l10n.loginPasswordLabel,
-                                style: AppTypography.labelLg.copyWith(
-                                  color: AppColors.onSurfaceVariant,
-                                ),
-                              ),
-                              InkWell(
-                                onTap: () {
-                                  _debouncedNav(() {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const ForgotPasswordScreen(),
-                                      ),
-                                    );
-                                  });
-                                },
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.xs),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: AppSpacing.xxs,
-                                    horizontal: AppSpacing.xs,
-                                  ),
-                                  child: Text(
-                                    l10n.loginForgotPassword,
-                                    style: AppTypography.labelLg.copyWith(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.xxs),
-                          ThemedTextField(
-                            controller: _passwordController,
-                            hintText: l10n.loginPasswordHint,
-                            prefixIcon: const Icon(Icons.lock_outline),
-                            obscureText: true,
-                            isPasswordField: true,
-                            validator: (val) {
-                              if (val == null || val.isEmpty) {
-                                return l10n.loginPasswordReq;
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          // Primary Amber Gold CTA Button
-                          PrimaryButton(
-                            text: l10n.loginSubmitButton,
-                            trailingIcon: Icons.arrow_forward,
-                            isLoading: auth.isLoading,
-                            onPressed: _submit,
-                          ),
-                        ],
-                      ),
-                    ),
+
+                    // 2. Main Stitch Card Container
+                    _buildLoginFormCard(auth, l10n),
                     const SizedBox(height: AppSpacing.lg),
-                    // External Footer Navigation Link
-                    Center(
-                      child: InkWell(
-                        onTap: () {
-                          _debouncedNav(() {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const SignupScreen(),
-                              ),
-                            );
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.xs),
-                          child: Text(
-                            "${l10n.loginNoAccount} ${l10n.loginSignUp}",
-                            style: AppTypography.bodyMd.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+
+                    // 3. External Footer Navigation Link
+                    _buildFooterLink(l10n),
                   ],
                 ),
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopChromeBar(
+    ThemeProvider themeProvider,
+    LocaleProvider? localeProvider,
+    AppLocalizations l10n,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Container(
+          key: const Key('login_qd_logo'),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.xs,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.storefront,
+                color: AppColors.secondary,
+                size: AppIconSize.md,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                "QD",
+                style: AppTypography.titleMd.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.onPrimary,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Row(
+          children: [
+            IconButton(
+              key: const Key('login_theme_toggle_button'),
+              icon: Icon(
+                themeProvider.themeMode == ThemeMode.dark
+                    ? Icons.dark_mode_outlined
+                    : (themeProvider.themeMode == ThemeMode.light
+                        ? Icons.light_mode_outlined
+                        : Icons.brightness_auto_outlined),
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              tooltip: l10n.tooltipToggleTheme,
+              onPressed: () {
+                final nextMode = themeProvider.themeMode == ThemeMode.light
+                    ? ThemeMode.dark
+                    : (themeProvider.themeMode == ThemeMode.dark
+                        ? ThemeMode.system
+                        : ThemeMode.light);
+                themeProvider.setThemeMode(nextMode);
+              },
+            ),
+            IconButton(
+              key: const Key('login_lang_toggle_button'),
+              icon: Icon(
+                Icons.language,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              tooltip: l10n.tooltipToggleLanguage,
+              onPressed: () {
+                final isAr = localeProvider?.locale?.languageCode == 'ar';
+                localeProvider
+                    ?.setLocale(isAr ? const Locale('en') : const Locale('ar'));
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoginFormCard(AuthProvider auth, AppLocalizations l10n) {
+    return ThemedCard(
+      borderRadius: AppRadius.lg,
+      topAccentColor: AppColors.secondary,
+      topAccentHeight: 4.0,
+      padding: AppSpacing.lg,
+      elevation: AppElevation.shadowLevel2List,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Centered Brand Icon
+          Center(
+            child: Container(
+              width: 64,
+              height: 64,
+              decoration: const BoxDecoration(
+                color: AppColors.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.local_shipping,
+                  size: 32,
+                  color: AppColors.secondary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          // Brand Headline & Subtitle
+          Text(
+            l10n.loginTitle,
+            style: AppTypography.headlineLgMobile.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.xxs),
+          Text(
+            l10n.loginSubtitle,
+            style: AppTypography.bodyMd.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // Email Input Field
+          ThemedTextField(
+            controller: _emailController,
+            labelText: l10n.loginEmailLabel,
+            hintText: l10n.loginEmailHint,
+            prefixIcon: const Icon(Icons.person_outline),
+            keyboardType: TextInputType.emailAddress,
+            validator: (val) {
+              if (val == null || val.trim().isEmpty) {
+                return l10n.loginEmailReq;
+              }
+              final emailRegex =
+                  RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+              if (!emailRegex.hasMatch(val.trim())) {
+                return l10n.loginEmailInvalid;
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          // Password Header Row with Inline "Forgot Password?"
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                l10n.loginPasswordLabel,
+                style: AppTypography.labelLg.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  _debouncedNav(() {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const ForgotPasswordScreen(),
+                      ),
+                    );
+                  });
+                },
+                borderRadius: BorderRadius.circular(AppRadius.xs),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppSpacing.xxs,
+                    horizontal: AppSpacing.xs,
+                  ),
+                  child: Text(
+                    l10n.loginForgotPassword,
+                    style: AppTypography.labelLg.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xxs),
+
+          // Password Input Field
+          ThemedTextField(
+            controller: _passwordController,
+            hintText: l10n.loginPasswordHint,
+            prefixIcon: const Icon(Icons.lock_outline),
+            obscureText: true,
+            isPasswordField: true,
+            validator: (val) {
+              if (val == null || val.isEmpty) {
+                return l10n.loginPasswordReq;
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // Primary Amber Gold Sign In Button
+          PrimaryButton(
+            text: l10n.loginSubmitButton,
+            trailingIcon: Icons.arrow_forward,
+            isLoading: auth.isLoading,
+            onPressed: _submit,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooterLink(AppLocalizations l10n) {
+    return Center(
+      child: InkWell(
+        onTap: () {
+          _debouncedNav(() {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const SignupScreen(),
+              ),
+            );
+          });
+        },
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xs),
+          child: Text(
+            "${l10n.loginNoAccount} ${l10n.loginSignUp}",
+            style: AppTypography.bodyMd.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),

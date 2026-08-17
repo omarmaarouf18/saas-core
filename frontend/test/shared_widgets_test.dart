@@ -1146,25 +1146,25 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: RouteTimeline(
-              pickupAddress: '731 Logistics Center Pkwy',
-              pickupDetail: 'Dock 4 • Bay 12',
-              dropoffAddress: '192 Retail District Blvd',
-              dropoffDetail: 'Back Entrance',
+              pickupAddress: '123 Nile Street, Maadi',
+              pickupDetail: 'Building 4 • Apt 12',
+              dropoffAddress: '45 El-Tahrir St, Dokki',
+              dropoffDetail: 'Front Entrance',
               distanceText: '4.2 km',
               timeText: '18 mins',
-              cargoText: '2 Pallets',
+              cargoText: 'COD',
             ),
           ),
         ),
       );
 
-      expect(find.text('731 Logistics Center Pkwy'), findsOneWidget);
-      expect(find.text('Dock 4 • Bay 12'), findsOneWidget);
-      expect(find.text('192 Retail District Blvd'), findsOneWidget);
-      expect(find.text('Back Entrance'), findsOneWidget);
+      expect(find.text('123 Nile Street, Maadi'), findsOneWidget);
+      expect(find.text('Building 4 • Apt 12'), findsOneWidget);
+      expect(find.text('45 El-Tahrir St, Dokki'), findsOneWidget);
+      expect(find.text('Front Entrance'), findsOneWidget);
       expect(find.text('4.2 km'), findsOneWidget);
       expect(find.text('18 mins'), findsOneWidget);
-      expect(find.text('2 Pallets'), findsOneWidget);
+      expect(find.text('COD'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

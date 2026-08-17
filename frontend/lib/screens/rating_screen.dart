@@ -154,8 +154,11 @@ class _RatingScreenState extends State<RatingScreen> {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-
     final isWide = MediaQuery.of(context).size.width > 600;
+
+    final displayId = widget.job.id.length > 8
+        ? widget.job.id.substring(0, 8).toUpperCase()
+        : widget.job.id.toUpperCase();
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
@@ -174,131 +177,118 @@ class _RatingScreenState extends State<RatingScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Driver Profile Info Card (Stitch Reference)
-            ThemedCard(
-              padding: AppSpacing.lg,
-              child: Column(
-                children: [
-                  EntityAvatar(
-                    name: _otherPartyName,
-                    radius: 36,
-                    defaultIcon: Icons.local_shipping,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    _otherPartyName,
-                    style: AppTypography.titleMd.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xxs),
-                  Text(
-                    "Job ID: #QD-${widget.job.id.substring(0, widget.job.id.length > 8 ? 8 : widget.job.id.length).toUpperCase()}",
-                    style: AppTypography.labelMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Headline
-            Center(
-              child: Column(
-                children: [
-                  Text(
-                    'How was your delivery?',
-                    style: AppTypography.headlineLgMobile.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                    child: Text(
-                      'Ratings are blind. Neither party will see the other\'s feedback until both have submitted.',
-                      textAlign: TextAlign.center,
-                      style: AppTypography.bodyMd.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Main Interactive Card
-            ThemedCard(
-              borderRadius: AppRadius.lg,
-              padding: AppSpacing.lg,
-              child: isWide
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: _buildRatingForm(colorScheme, theme)),
-                        const SizedBox(width: AppSpacing.xl),
-                        Expanded(
-                            child: _buildBlindStatusVisualizer(
-                                colorScheme, theme)),
-                      ],
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildRatingForm(colorScheme, theme),
-                        const SizedBox(height: AppSpacing.xl),
-                        _buildBlindStatusVisualizer(colorScheme, theme),
-                      ],
-                    ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // Information Grid
-            GridView.count(
-              crossAxisCount: isWide ? 3 : 1,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: AppSpacing.md,
-              mainAxisSpacing: AppSpacing.md,
-              childAspectRatio: isWide ? 1.8 : 3.5,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildInfoCard(
-                  icon: Icons.security_outlined,
-                  title: l10n.ratingFeatureUnbiased,
-                  subtitle:
-                      "Preventing retaliatory or social-pressure ratings.",
+                // 1. Driver Profile Info Card (Stitch Reference)
+                _buildDriverProfileCard(displayId),
+                const SizedBox(height: AppSpacing.lg),
+
+                // 2. Rating Headline & Subtitle (Stitch Question)
+                _buildRatingHeader(),
+                const SizedBox(height: AppSpacing.lg),
+
+                // 3. Main Interactive Rating Card
+                ThemedCard(
+                  borderRadius: AppRadius.lg,
+                  padding: AppSpacing.lg,
+                  child: isWide
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: _buildRatingForm(l10n)),
+                            const SizedBox(width: AppSpacing.xl),
+                            Expanded(
+                              child: _buildBlindStatusVisualizer(
+                                l10n,
+                                colorScheme,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildRatingForm(l10n),
+                            const SizedBox(height: AppSpacing.xl),
+                            _buildBlindStatusVisualizer(l10n, colorScheme),
+                          ],
+                        ),
                 ),
-                _buildInfoCard(
-                  icon: Icons.verified_outlined,
-                  title: l10n.ratingFeatureTrust,
-                  subtitle:
-                      "Ratings directly impact platform reliability ranks.",
-                ),
-                _buildInfoCard(
-                  icon: Icons.history_toggle_off_outlined,
-                  title: l10n.ratingFeatureWindow,
-                  subtitle:
-                      "Submit within 24 hours to ensure your score counts.",
-                ),
+                const SizedBox(height: AppSpacing.xl),
+
+                // 4. Blind Rating Educational Info Grid
+                _buildInfoCards(l10n, isWide),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildRatingForm(ColorScheme colorScheme, ThemeData theme) {
-    final l10n = context.l10n;
+  Widget _buildDriverProfileCard(String displayId) {
+    return ThemedCard(
+      padding: AppSpacing.lg,
+      child: Column(
+        children: [
+          EntityAvatar(
+            name: _otherPartyName,
+            radius: 36,
+            defaultIcon: Icons.local_shipping,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            _otherPartyName,
+            style: AppTypography.titleMd.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.onSurface,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xxs),
+          Text(
+            "Delivery ID: #QD-$displayId",
+            style: AppTypography.labelMd.copyWith(
+              color: AppColors.onSurfaceVariant,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatingHeader() {
+    return Center(
+      child: Column(
+        children: [
+          Text(
+            'How was your delivery?',
+            style: AppTypography.headlineLgMobile.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text(
+              'Ratings are blind. Neither party will see the other\'s feedback until both have submitted.',
+              textAlign: TextAlign.center,
+              style: AppTypography.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatingForm(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -335,43 +325,22 @@ class _RatingScreenState extends State<RatingScreen> {
         ),
         const SizedBox(height: AppSpacing.lg),
 
-        // Score stars
-        Center(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(5, (index) {
-              final starValue = index + 1;
-              final isSelected = starValue <= _selectedStars;
-              return IconButton(
-                onPressed: () {
-                  setState(() {
-                    _selectedStars = starValue;
-                  });
-                },
-                icon: Icon(
-                  isSelected ? Icons.star : Icons.star_border,
-                  color: isSelected
-                      ? AppColors.secondary
-                      : AppColors.outlineVariant,
-                  size: 40,
-                ),
-              );
-            }),
-          ),
-        ),
+        // Score stars (Stitch Star Rating Component)
+        _buildStarRatingSelector(),
         const SizedBox(height: AppSpacing.lg),
 
         // Feedback input
         ThemedTextField(
           controller: _commentController,
           labelText: l10n.privateFeedbackLabel,
-          hintText: l10n.privateFeedbackHint,
-          maxLines: 3,
+          hintText: "Tell us more about your experience...",
+          maxLines: 4,
         ),
         const SizedBox(height: AppSpacing.lg),
 
+        // Submit Button (Stitch Primary CTA)
         PrimaryButton(
-          text: "Submit Blind Rating",
+          text: "Submit Rating",
           trailingIcon: Icons.send,
           onPressed: _submitRating,
           isLoading: _isSubmitting,
@@ -380,8 +349,35 @@ class _RatingScreenState extends State<RatingScreen> {
     );
   }
 
-  Widget _buildBlindStatusVisualizer(ColorScheme colorScheme, ThemeData theme) {
-    final l10n = context.l10n;
+  Widget _buildStarRatingSelector() {
+    return Center(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(5, (index) {
+          final starValue = index + 1;
+          final isSelected = starValue <= _selectedStars;
+          return IconButton(
+            onPressed: () {
+              setState(() {
+                _selectedStars = starValue;
+              });
+            },
+            icon: Icon(
+              isSelected ? Icons.star : Icons.star_border,
+              color:
+                  isSelected ? AppColors.secondary : AppColors.outlineVariant,
+              size: 44,
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildBlindStatusVisualizer(
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
     return ThemedCard(
       hasShadow: false,
       color: AppColors.surfaceContainerLow,
@@ -488,6 +484,34 @@ class _RatingScreenState extends State<RatingScreen> {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildInfoCards(AppLocalizations l10n, bool isWide) {
+    return GridView.count(
+      crossAxisCount: isWide ? 3 : 1,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: AppSpacing.md,
+      mainAxisSpacing: AppSpacing.md,
+      childAspectRatio: isWide ? 1.8 : 3.5,
+      children: [
+        _buildInfoCard(
+          icon: Icons.security_outlined,
+          title: l10n.ratingFeatureUnbiased,
+          subtitle: "Preventing retaliatory or social-pressure ratings.",
+        ),
+        _buildInfoCard(
+          icon: Icons.verified_outlined,
+          title: l10n.ratingFeatureTrust,
+          subtitle: "Ratings directly impact platform reliability ranks.",
+        ),
+        _buildInfoCard(
+          icon: Icons.history_toggle_off_outlined,
+          title: l10n.ratingFeatureWindow,
+          subtitle: "Submit within 24 hours to ensure your score counts.",
+        ),
+      ],
     );
   }
 

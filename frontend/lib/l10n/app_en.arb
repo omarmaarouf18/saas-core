@@ -71,7 +71,7 @@
   "ownerConfigHeader": "Business Details",
   "ownerConfigHeaderSub": "Update business parameters and service terms",
   "ownerConfigNameLabel": "Business Name",
-  "ownerConfigNameHint": "e.g. Quick Cargo Express",
+  "ownerConfigNameHint": "e.g. Quick Delivery Services",
   "ownerConfigNameReq": "Business name is required.",
   "ownerConfigCategoryLabel": "Category",
   "ownerConfigAddressLabel": "Address",

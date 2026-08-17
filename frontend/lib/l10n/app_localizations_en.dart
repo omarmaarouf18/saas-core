@@ -230,7 +230,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownerConfigNameLabel => 'Business Name';
 
   @override
-  String get ownerConfigNameHint => 'e.g. Quick Cargo Express';
+  String get ownerConfigNameHint => 'e.g. Quick Delivery Services';
 
   @override
   String get ownerConfigNameReq => 'Business name is required.';

@@ -71,7 +71,7 @@
   "ownerConfigHeader": "بيانات المحل/الخدمة",
   "ownerConfigHeaderSub": "تحديث اسم ومواعيد وأسعار الخدمة",
   "ownerConfigNameLabel": "اسم المحل أو الخدمة",
-  "ownerConfigNameHint": "مثلاً: النسر للشحن السريع",
+  "ownerConfigNameHint": "مثلاً: النسر للخدمات السريعة",
   "ownerConfigNameReq": "لازم تكتب اسم المحل أو الخدمة.",
   "ownerConfigCategoryLabel": "القسم",
   "ownerConfigAddressLabel": "العنوان",

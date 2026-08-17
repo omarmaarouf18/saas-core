@@ -368,130 +368,12 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // 1. Current Status Header Bar (Stitch Mobile Status Header)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: AppRadius.smBorder,
-                border: Border.all(color: AppColors.outlineVariant, width: 1),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isCancelled
-                              ? AppColors.error
-                              : isCompleted
-                                  ? AppColors.success
-                                  : AppColors.secondary,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text(
-                        isCancelled
-                            ? "Cancelled"
-                            : isCompleted
-                                ? "Completed"
-                                : isActive
-                                    ? "In Transit"
-                                    : "Pending",
-                        style: AppTypography.titleMd.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Text(
-                        "#QD-$displayId",
-                        style: AppTypography.labelSm.copyWith(
-                          color: AppColors.onSurfaceVariant,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      StatusBadge(status: _currentJob.status),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            _buildStatusHeaderBar(
+                isCancelled, isCompleted, isActive, displayId),
             const SizedBox(height: AppSpacing.md),
 
             // 2. Track Job Hero Banner (Stitch Live Tracking Action)
-            ThemedCard(
-              key: const Key('open_map_tracking_button'),
-              borderRadius: AppRadius.md,
-              color: AppColors.primaryContainer,
-              padding: AppSpacing.md,
-              onTap: () {
-                final auth = Provider.of<AuthProvider>(context, listen: false);
-                if (auth.token != null) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => CustomerJobMapScreen(
-                        jobId: _currentJob.id,
-                        token: auth.token!,
-                      ),
-                    ),
-                  );
-                }
-              },
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.map_outlined,
-                      color: AppColors.secondary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Track Job",
-                          style: AppTypography.titleMd.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.onPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          "View real-time location on map",
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.onPrimary.withValues(alpha: 0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    Icons.chevron_right,
-                    color: AppColors.onPrimary,
-                  ),
-                ],
-              ),
-            ),
+            _buildTrackJobBanner(context),
             const SizedBox(height: AppSpacing.md),
 
             // 3. Negotiable Transport Pricing Card (if transport)
@@ -501,394 +383,228 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             ],
 
             // 4. Fulfillment Progress Stepper Card (Stitch Stepper Card)
-            ThemedCard(
-              borderRadius: AppRadius.md,
-              padding: AppSpacing.lg,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Fulfillment Progress",
-                    style: AppTypography.titleMd.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  _buildFulfillmentStep(
-                    index: 0,
-                    title: "Pending",
-                    subtitle: "Request placed & queued",
-                    icon: Icons.check,
-                    isDone: step > 0 || isCompleted || isActive,
-                    isActive: step == 0 && !isCancelled,
-                    isLast: false,
-                  ),
-                  _buildFulfillmentStep(
-                    index: 1,
-                    title: "Assigned",
-                    subtitle: _currentJob.employeeId == null
-                        ? "Matching courier..."
-                        : (_resolvedUsername != null &&
-                                _resolvedUsername!.isNotEmpty
-                            ? "Assigned to $_resolvedUsername"
-                            : "Courier assigned"),
-                    icon: Icons.person_pin_circle_outlined,
-                    isDone: step > 1 || isCompleted,
-                    isActive: step == 1 && !isCancelled,
-                    isLast: false,
-                  ),
-                  _buildFulfillmentStep(
-                    index: 2,
-                    title: "In Transit",
-                    subtitle: "Package on route to destination",
-                    icon: Icons.local_shipping_outlined,
-                    isDone: isCompleted,
-                    isActive: isActive,
-                    isLast: false,
-                  ),
-                  _buildFulfillmentStep(
-                    index: 3,
-                    title: "Completed",
-                    subtitle: isCompleted
-                        ? "Delivered successfully"
-                        : "Pending delivery",
-                    icon: Icons.flag_outlined,
-                    isDone: isCompleted,
-                    isActive: false,
-                    isLast: true,
-                  ),
-                ],
-              ),
-            ),
+            _buildFulfillmentProgressCard(
+                step, isCompleted, isActive, isCancelled),
             const SizedBox(height: AppSpacing.md),
 
-            // 4. Route & Itinerary Card (Stitch Bento Itinerary Card)
-            ThemedCard(
-              borderRadius: AppRadius.md,
-              padding: AppSpacing.lg,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.route,
-                          size: 20, color: AppColors.onSurfaceVariant),
-                      const SizedBox(width: AppSpacing.xs),
-                      Text(
-                        "Itinerary",
-                        style: AppTypography.titleMd.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  // Pickup & Dropoff vertical timeline
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Column(
-                        children: [
-                          Container(
-                            width: 14,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.primaryContainer,
-                              border: Border.all(
-                                  color: AppColors.surface, width: 2),
-                            ),
-                          ),
-                          Container(
-                            width: 2,
-                            height: 36,
-                            color: AppColors.outlineVariant,
-                          ),
-                          Container(
-                            width: 14,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.secondary,
-                              border: Border.all(
-                                  color: AppColors.surface, width: 2),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "PICKUP",
-                              style: AppTypography.labelSm.copyWith(
-                                color: AppColors.onSurfaceVariant,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              "Origin / Customer Location",
-                              style: AppTypography.bodyMd.copyWith(
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              "DROPOFF",
-                              style: AppTypography.labelSm.copyWith(
-                                color: AppColors.secondary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              "Delivery Destination",
-                              style: AppTypography.bodyMd.copyWith(
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  const Divider(height: 1, color: AppColors.outlineVariant),
-                  const SizedBox(height: AppSpacing.sm),
-                  // Cargo load & vehicle spec
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(AppSpacing.sm),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceContainerLow,
-                            borderRadius: AppRadius.smBorder,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Payment",
-                                style: AppTypography.caption.copyWith(
-                                  color: AppColors.onSurfaceVariant,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                _currentJob.paymentMethod.toUpperCase(),
-                                style: AppTypography.bodySm.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.onSurface,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(AppSpacing.sm),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceContainerLow,
-                            borderRadius: AppRadius.smBorder,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Total Fare",
-                                style: AppTypography.caption.copyWith(
-                                  color: AppColors.onSurfaceVariant,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                "\$${(_currentJob.agreedPrice ?? _currentJob.suggestedPrice ?? 0).toStringAsFixed(2)}",
-                                style: AppTypography.bodySm.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            // 5. Route & Itinerary Card (Stitch Bento Itinerary Card)
+            _buildItineraryCard(),
             const SizedBox(height: AppSpacing.md),
 
-            // 5. Assigned Courier Driver Card (if assigned)
+            // 6. Assigned Courier Driver Card (if assigned)
             if (_currentJob.employeeId != null) ...[
-              ThemedCard(
-                borderRadius: AppRadius.md,
-                padding: AppSpacing.md,
-                child: Row(
-                  children: [
-                    EntityAvatar(
-                      name: _resolvedUsername ?? "Courier Driver",
-                      radius: 22,
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _resolvedUsername != null &&
-                                    _resolvedUsername!.isNotEmpty
-                                ? _resolvedUsername!
-                                : "Assigned Courier",
-                            style: AppTypography.bodyLg.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            "Verified Courier Driver",
-                            style: AppTypography.caption.copyWith(
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      key: const Key('open_chat_button'),
-                      icon: const Icon(
-                        Icons.chat_outlined,
-                        color: AppColors.primary,
-                      ),
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                ChatScreen(jobId: _currentJob.id),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              _buildAssignedCourierCard(context),
               const SizedBox(height: AppSpacing.md),
             ],
 
             // 7. Cancellation reason banner if cancelled
             if (isCancelled && _currentJob.cancellationReason != null) ...[
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.1),
-                  borderRadius: AppRadius.smBorder,
-                  border: Border.all(color: AppColors.error),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info_outline, color: AppColors.error),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        "Cancellation Reason: ${_currentJob.cancellationReason!}",
-                        style: AppTypography.bodySm.copyWith(
-                          color: AppColors.error,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _buildCancellationBanner(),
               const SizedBox(height: AppSpacing.md),
             ],
 
-            // 8. Action Buttons
-            if (isCompleted) ...[
-              PrimaryButton(
-                key: const Key('rate_job_button'),
-                text: "Rate Your Experience",
-                icon: Icons.star_outline,
-                trailingIcon: Icons.arrow_forward,
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => RatingScreen(job: _currentJob),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: AppSpacing.sm),
-            ],
-
-            if (isPending) ...[
-              SecondaryButton(
-                key: const Key('cancel_job_button'),
-                text: "Cancel Job",
-                icon: Icons.cancel_outlined,
-                isOutlined: true,
-                onPressed: () async {
-                  final auth =
-                      Provider.of<AuthProvider>(context, listen: false);
-                  final provider =
-                      Provider.of<MarketplaceProvider>(context, listen: false);
-                  await CancelJobDialog.show(
-                    context,
-                    jobId: _currentJob.id,
-                    onConfirm: (reason) async {
-                      await provider.cancelJob(
-                        jobId: _currentJob.id,
-                        reason: reason,
-                        userToken: auth.token!,
-                      );
-                      if (mounted) {
-                        final isNonCod =
-                            _currentJob.paymentMethod.toLowerCase() != 'cod';
-                        final msg = isNonCod
-                            ? "Job cancelled successfully. Escrow refunded to wallet."
-                            : "Job cancelled successfully.";
-                        ThemedSnackBar.showSuccess(this.context, msg);
-                        _refreshJobStatus();
-                      }
-                    },
-                  );
-                },
-              ),
-              const SizedBox(height: AppSpacing.sm),
-            ] else if (isActive) ...[
-              SecondaryButton(
-                key: const Key('open_complaint_ticket_button'),
-                text: "Open a Complaint Ticket",
-                icon: Icons.report_problem_outlined,
-                isOutlined: true,
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => CreateTicketDialog(
-                      contextId: _currentJob.id,
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: AppSpacing.sm),
-            ],
-
-            SecondaryButton(
-              text: "Back to Directory",
-              isOutlined: true,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
+            // 8. Contextual Action Buttons
+            ..._buildActionButtons(context, isCompleted, isPending, isActive),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusHeaderBar(
+    bool isCancelled,
+    bool isCompleted,
+    bool isActive,
+    String displayId,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.smBorder,
+        border: Border.all(color: AppColors.outlineVariant, width: 1),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isCancelled
+                      ? AppColors.error
+                      : isCompleted
+                          ? AppColors.success
+                          : AppColors.secondary,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                isCancelled
+                    ? "Cancelled"
+                    : isCompleted
+                        ? "Completed"
+                        : isActive
+                            ? "In Transit"
+                            : "Pending",
+                style: AppTypography.titleMd.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.onSurface,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              Text(
+                "#QD-$displayId",
+                style: AppTypography.labelSm.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              StatusBadge(status: _currentJob.status),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrackJobBanner(BuildContext context) {
+    return ThemedCard(
+      key: const Key('open_map_tracking_button'),
+      borderRadius: AppRadius.md,
+      color: AppColors.primaryContainer,
+      padding: AppSpacing.md,
+      onTap: () {
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+        if (auth.token != null) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => CustomerJobMapScreen(
+                jobId: _currentJob.id,
+                token: auth.token!,
+              ),
+            ),
+          );
+        }
+      },
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.surface.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.map_outlined,
+              color: AppColors.secondary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Track Job",
+                  style: AppTypography.titleMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.onPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "View real-time location on map",
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.onPrimary.withValues(alpha: 0.8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(
+            Icons.chevron_right,
+            color: AppColors.onPrimary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFulfillmentProgressCard(
+    int step,
+    bool isCompleted,
+    bool isActive,
+    bool isCancelled,
+  ) {
+    return ThemedCard(
+      borderRadius: AppRadius.md,
+      padding: AppSpacing.lg,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Fulfillment Progress",
+            style: AppTypography.titleMd.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.onSurface,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _buildFulfillmentStep(
+            index: 0,
+            title: "Pending",
+            subtitle: "Request placed & queued",
+            icon: Icons.check,
+            isDone: step > 0 || isCompleted || isActive,
+            isActive: step == 0 && !isCancelled,
+            isLast: false,
+          ),
+          _buildFulfillmentStep(
+            index: 1,
+            title: "Assigned",
+            subtitle: _currentJob.employeeId == null
+                ? "Matching courier..."
+                : (_resolvedUsername != null && _resolvedUsername!.isNotEmpty
+                    ? "Assigned to $_resolvedUsername"
+                    : "Courier assigned"),
+            icon: Icons.person_pin_circle_outlined,
+            isDone: step > 1 || isCompleted,
+            isActive: step == 1 && !isCancelled,
+            isLast: false,
+          ),
+          _buildFulfillmentStep(
+            index: 2,
+            title: "In Transit",
+            subtitle: "Package on route to destination",
+            icon: Icons.local_shipping_outlined,
+            isDone: isCompleted,
+            isActive: isActive,
+            isLast: false,
+          ),
+          _buildFulfillmentStep(
+            index: 3,
+            title: "Completed",
+            subtitle:
+                isCompleted ? "Delivered successfully" : "Pending delivery",
+            icon: Icons.flag_outlined,
+            isDone: isCompleted,
+            isActive: false,
+            isLast: true,
+          ),
+        ],
       ),
     );
   }
@@ -963,6 +679,328 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildItineraryCard() {
+    return ThemedCard(
+      borderRadius: AppRadius.md,
+      padding: AppSpacing.lg,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.route,
+                  size: 20, color: AppColors.onSurfaceVariant),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                "Itinerary",
+                style: AppTypography.titleMd.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // Pickup & Dropoff vertical timeline
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                children: [
+                  Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primaryContainer,
+                      border: Border.all(color: AppColors.surface, width: 2),
+                    ),
+                  ),
+                  Container(
+                    width: 2,
+                    height: 36,
+                    color: AppColors.outlineVariant,
+                  ),
+                  Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.secondary,
+                      border: Border.all(color: AppColors.surface, width: 2),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "PICKUP",
+                      style: AppTypography.labelSm.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      "Origin / Customer Location",
+                      style: AppTypography.bodyMd.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      "DROPOFF",
+                      style: AppTypography.labelSm.copyWith(
+                        color: AppColors.secondary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      "Delivery Destination",
+                      style: AppTypography.bodyMd.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const Divider(height: 1, color: AppColors.outlineVariant),
+          const SizedBox(height: AppSpacing.sm),
+          // Payment method & fare details
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLow,
+                    borderRadius: AppRadius.smBorder,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Payment",
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _currentJob.paymentMethod.toUpperCase(),
+                        style: AppTypography.bodySm.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLow,
+                    borderRadius: AppRadius.smBorder,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Total Fare",
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "\$${(_currentJob.agreedPrice ?? _currentJob.suggestedPrice ?? 0).toStringAsFixed(2)}",
+                        style: AppTypography.bodySm.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssignedCourierCard(BuildContext context) {
+    return ThemedCard(
+      borderRadius: AppRadius.md,
+      padding: AppSpacing.md,
+      child: Row(
+        children: [
+          EntityAvatar(
+            name: _resolvedUsername ?? "Courier Driver",
+            radius: 22,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _resolvedUsername != null && _resolvedUsername!.isNotEmpty
+                      ? _resolvedUsername!
+                      : "Assigned Courier",
+                  style: AppTypography.bodyLg.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "Verified Courier Driver",
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            key: const Key('open_chat_button'),
+            icon: const Icon(
+              Icons.chat_outlined,
+              color: AppColors.primary,
+            ),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ChatScreen(jobId: _currentJob.id),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCancellationBanner() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: 0.1),
+        borderRadius: AppRadius.smBorder,
+        border: Border.all(color: AppColors.error),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, color: AppColors.error),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              "Cancellation Reason: ${_currentJob.cancellationReason!}",
+              style: AppTypography.bodySm.copyWith(
+                color: AppColors.error,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildActionButtons(
+    BuildContext context,
+    bool isCompleted,
+    bool isPending,
+    bool isActive,
+  ) {
+    return [
+      if (isCompleted) ...[
+        PrimaryButton(
+          key: const Key('rate_job_button'),
+          text: "Rate Your Experience",
+          icon: Icons.star_outline,
+          trailingIcon: Icons.arrow_forward,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => RatingScreen(job: _currentJob),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: AppSpacing.sm),
+      ],
+      if (isPending) ...[
+        SecondaryButton(
+          key: const Key('cancel_job_button'),
+          text: "Cancel Job",
+          icon: Icons.cancel_outlined,
+          isOutlined: true,
+          onPressed: () async {
+            final auth = Provider.of<AuthProvider>(context, listen: false);
+            final provider =
+                Provider.of<MarketplaceProvider>(context, listen: false);
+            await CancelJobDialog.show(
+              context,
+              jobId: _currentJob.id,
+              onConfirm: (reason) async {
+                await provider.cancelJob(
+                  jobId: _currentJob.id,
+                  reason: reason,
+                  userToken: auth.token!,
+                );
+                if (mounted) {
+                  final isNonCod =
+                      _currentJob.paymentMethod.toLowerCase() != 'cod';
+                  final msg = isNonCod
+                      ? "Job cancelled successfully. Escrow refunded to wallet."
+                      : "Job cancelled successfully.";
+                  ThemedSnackBar.showSuccess(this.context, msg);
+                  _refreshJobStatus();
+                }
+              },
+            );
+          },
+        ),
+        const SizedBox(height: AppSpacing.sm),
+      ] else if (isActive) ...[
+        SecondaryButton(
+          key: const Key('open_complaint_ticket_button'),
+          text: "Open a Complaint Ticket",
+          icon: Icons.report_problem_outlined,
+          isOutlined: true,
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (context) => CreateTicketDialog(
+                contextId: _currentJob.id,
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: AppSpacing.sm),
+      ],
+      SecondaryButton(
+        text: "Back to Directory",
+        isOutlined: true,
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+    ];
   }
 
   Widget _buildNegotiationCard() {

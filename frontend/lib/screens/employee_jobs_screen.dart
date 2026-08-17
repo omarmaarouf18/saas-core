@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../models/job.dart';
-import 'package:geolocator/geolocator.dart';
 import '../providers/auth_provider.dart';
 import '../providers/employee_jobs_provider.dart';
 import '../providers/employee_location_provider.dart';
@@ -187,54 +187,6 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     }
   }
 
-  Widget _buildNotificationBell(BuildContext context) {
-    final l10n = context.l10n;
-    return Consumer<NotificationsProvider>(
-      builder: (context, provider, child) {
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.notifications),
-              tooltip: l10n.tooltipNotifications,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationsScreen(),
-                  ),
-                );
-              },
-            ),
-            if (provider.unreadCount > 0)
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
-                  decoration: BoxDecoration(
-                    color: AppColors.error,
-                    borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  ),
-                  child: Text(
-                    '${provider.unreadCount}',
-                    style: AppTypography.labelMd.copyWith(
-                      color: AppColors.onPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -296,49 +248,106 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        title: Text(
-          l10n.employeeJobsTitle,
-          style: AppTypography.titleMd.copyWith(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          IconButton(
-            key: const Key('employee_verification_button'),
-            icon: Icon(Icons.verified_user_outlined,
-                color: Theme.of(context).colorScheme.onSurface),
-            tooltip: l10n.employeeJobsTooltipVerification,
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const KycDocumentUploadScreen(),
-                ),
-              );
-            },
-          ),
-          _buildNotificationBell(context),
-          IconButton(
-            key: const Key('settings_button'),
-            icon: Icon(Icons.settings_outlined,
-                color: Theme.of(context).colorScheme.onSurface),
-            tooltip: l10n.ownerHomeTooltipSettings,
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+      appBar: _buildAppBar(context, l10n),
       body: bodyContent,
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(
+      BuildContext context, AppLocalizations l10n) {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
+      title: Text(
+        l10n.employeeJobsTitle,
+        style: AppTypography.titleMd.copyWith(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      actions: [
+        IconButton(
+          key: const Key('employee_verification_button'),
+          icon: Icon(
+            Icons.verified_user_outlined,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+          tooltip: l10n.employeeJobsTooltipVerification,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const KycDocumentUploadScreen(),
+              ),
+            );
+          },
+        ),
+        _buildNotificationBell(context),
+        IconButton(
+          key: const Key('settings_button'),
+          icon: Icon(
+            Icons.settings_outlined,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+          tooltip: l10n.ownerHomeTooltipSettings,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const SettingsScreen(),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNotificationBell(BuildContext context) {
+    final l10n = context.l10n;
+    return Consumer<NotificationsProvider>(
+      builder: (context, provider, child) {
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications),
+              tooltip: l10n.tooltipNotifications,
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsScreen(),
+                  ),
+                );
+              },
+            ),
+            if (provider.unreadCount > 0)
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
+                  decoration: BoxDecoration(
+                    color: AppColors.error,
+                    borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    '${provider.unreadCount}',
+                    style: AppTypography.labelMd.copyWith(
+                      color: AppColors.onPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -524,8 +533,10 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               controller: _actionController,
               labelText: l10n.employeeJobsSimulatorLabel,
               hintText: l10n.employeeJobsSimulatorHint,
-              prefixIcon: const Icon(Icons.run_circle_outlined,
-                  color: AppColors.outline),
+              prefixIcon: const Icon(
+                Icons.run_circle_outlined,
+                color: AppColors.outline,
+              ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return l10n.employeeJobsSimulatorValidation;
@@ -661,8 +672,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             ),
             // Route Timeline Card Module
             RouteTimeline(
-              pickupAddress: "Pickup Depot / Loading Bay",
-              pickupDetail: "Dock / Gate Access Verified",
+              pickupAddress: "Pickup Location",
+              pickupDetail: "Client Address Confirmed",
               dropoffAddress: "Delivery Destination",
               dropoffDetail: l10n.employeeJobsDestinationCoordinates,
               distanceText: job.lockedEscrowAmount != null

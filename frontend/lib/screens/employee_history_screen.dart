@@ -57,26 +57,10 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Stitch Header
-            Text(
-              l10n.ownerHistoryTitle,
-              style: AppTypography.headlineLgMobile.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xxs),
-            Text(
-              "Completed and cancelled jobs.",
-              style: AppTypography.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
-            ),
+            _buildHeader(l10n),
             const SizedBox(height: AppSpacing.lg),
-
             const ThemedSectionHeader(title: "Recent Activity"),
             const SizedBox(height: AppSpacing.sm),
-
             AnimatedSwitcher(
               duration: AppMotion.durationMedium,
               switchInCurve: AppMotion.curveStateChange,
@@ -128,6 +112,28 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
     );
   }
 
+  Widget _buildHeader(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.ownerHistoryTitle,
+          style: AppTypography.headlineLgMobile.copyWith(
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          "Completed and cancelled jobs.",
+          style: AppTypography.bodyMd.copyWith(
+            color: AppColors.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildHistoryList(List<Job> jobs) {
     final l10n = context.l10n;
     if (jobs.isEmpty) {
@@ -152,102 +158,106 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
       itemCount: jobs.length,
       itemBuilder: (context, index) {
         final job = jobs[index];
-        final isCancelled = job.status.toLowerCase().trim() == 'cancelled';
+        return _buildHistoryCard(job);
+      },
+    );
+  }
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.md),
-          child: ThemedCard(
-            key: Key('employee_history_card_${job.id}'),
-            elevation: AppElevation.shadowLevel1List,
-            borderRadius: AppRadius.lg,
-            padding: AppSpacing.lg,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildHistoryCard(Job job) {
+    final l10n = context.l10n;
+    final isCancelled = job.status.toLowerCase().trim() == 'cancelled';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: ThemedCard(
+        key: Key('employee_history_card_${job.id}'),
+        elevation: AppElevation.shadowLevel1List,
+        borderRadius: AppRadius.lg,
+        padding: AppSpacing.lg,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        l10n.employeeJobsJobId(job.id),
-                        style: AppTypography.titleMd.copyWith(
-                          fontFamily: 'monospace',
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.onSurface,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                Expanded(
+                  child: Text(
+                    l10n.employeeJobsJobId(job.id),
+                    style: AppTypography.titleMd.copyWith(
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.onSurface,
                     ),
-                    StatusBadge(status: job.status),
-                  ],
-                ),
-                const Divider(
-                  height: AppSpacing.lg,
-                  color: AppColors.outlineVariant,
-                ),
-                RouteTimeline(
-                  pickupAddress: "Pickup Depot",
-                  pickupDetail: "Dispatched & Logged",
-                  dropoffAddress: "Delivery Destination",
-                  dropoffDetail: "Customer: ${job.userId}",
-                  distanceText: job.lockedEscrowAmount != null
-                      ? "${job.lockedEscrowAmount!.toStringAsFixed(0)} Credits"
-                      : "Route Logged",
-                  timeText: isCancelled ? "Cancelled" : "Completed",
-                  cargoText: job.paymentMethod.toUpperCase(),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Wrap(
-                  spacing: AppSpacing.xs,
-                  runSpacing: AppSpacing.xs,
-                  children: [
-                    _buildChip(
-                      Icons.person_outline,
-                      l10n.employeeJobsLabelCustomer,
-                      job.userId,
-                    ),
-                    _buildChip(
-                      Icons.payment_outlined,
-                      l10n.employeeJobsLabelPayment,
-                      job.paymentMethod.toUpperCase(),
-                    ),
-                    if (job.lockedEscrowAmount != null &&
-                        job.lockedEscrowAmount! > 0)
-                      _buildChip(
-                        Icons.lock_clock_outlined,
-                        l10n.employeeJobsLabelEscrow,
-                        l10n.ownerHomeCreditsAmount(
-                            job.lockedEscrowAmount!.toStringAsFixed(2)),
-                      ),
-                  ],
-                ),
-                if (isCancelled &&
-                    job.cancellationReason != null &&
-                    job.cancellationReason!.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: 0.1),
-                      borderRadius: AppRadius.defaultBorder,
-                      border: Border.all(
-                          color: AppColors.error.withValues(alpha: 0.3)),
-                    ),
-                    child: Text(
-                      l10n.employeeJobsCancellationReason(
-                          job.cancellationReason!),
-                      style: AppTypography.bodyMd.copyWith(
-                        color: AppColors.error,
-                      ),
-                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
+                ),
+                StatusBadge(status: job.status),
               ],
             ),
-          ),
-        );
-      },
+            const Divider(
+              height: AppSpacing.lg,
+              color: AppColors.outlineVariant,
+            ),
+            RouteTimeline(
+              pickupAddress: "Pickup Location",
+              pickupDetail: "Order Dispatched",
+              dropoffAddress: "Delivery Destination",
+              dropoffDetail: "Customer: ${job.userId}",
+              distanceText: job.lockedEscrowAmount != null
+                  ? "${job.lockedEscrowAmount!.toStringAsFixed(0)} Credits"
+                  : "Route Logged",
+              timeText: isCancelled ? "Cancelled" : "Completed",
+              cargoText: job.paymentMethod.toUpperCase(),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Wrap(
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
+              children: [
+                _buildChip(
+                  Icons.person_outline,
+                  l10n.employeeJobsLabelCustomer,
+                  job.userId,
+                ),
+                _buildChip(
+                  Icons.payment_outlined,
+                  l10n.employeeJobsLabelPayment,
+                  job.paymentMethod.toUpperCase(),
+                ),
+                if (job.lockedEscrowAmount != null &&
+                    job.lockedEscrowAmount! > 0)
+                  _buildChip(
+                    Icons.lock_clock_outlined,
+                    l10n.employeeJobsLabelEscrow,
+                    l10n.ownerHomeCreditsAmount(
+                        job.lockedEscrowAmount!.toStringAsFixed(2)),
+                  ),
+              ],
+            ),
+            if (isCancelled &&
+                job.cancellationReason != null &&
+                job.cancellationReason!.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  borderRadius: AppRadius.defaultBorder,
+                  border:
+                      Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  l10n.employeeJobsCancellationReason(job.cancellationReason!),
+                  style: AppTypography.bodyMd.copyWith(
+                    color: AppColors.error,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 

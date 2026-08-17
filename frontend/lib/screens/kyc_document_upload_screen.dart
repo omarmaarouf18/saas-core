@@ -246,25 +246,61 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
     required bool isPending,
     required bool isRejected,
   }) {
-    return ThemedCard(
-      padding: AppSpacing.lg,
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: AppRadius.mdBorder,
+        border: Border(
+          left: BorderSide(
+            color: isApproved
+                ? AppColors.success
+                : (isRejected
+                    ? AppColors.error
+                    : (isPending ? AppColors.secondary : AppColors.primary)),
+            width: 4,
+          ),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "Verification Status",
-                style: AppTypography.titleMd.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
+              Row(
+                children: [
+                  Icon(
+                    isApproved
+                        ? Icons.check_circle_outline
+                        : (isRejected
+                            ? Icons.error_outline
+                            : (isPending
+                                ? Icons.schedule
+                                : Icons.info_outline)),
+                    color: isApproved
+                        ? AppColors.success
+                        : (isRejected
+                            ? AppColors.error
+                            : (isPending
+                                ? AppColors.secondary
+                                : AppColors.primary)),
+                    size: 20,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    "Verification Status",
+                    style: AppTypography.titleMd.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
               ),
               StatusBadge(status: displayStatus),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             isApproved
                 ? "Your account verification has been approved by administrators. Your account is fully active."
@@ -272,7 +308,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                     ? "All required documents have been uploaded and are pending super admin review."
                     : (isRejected
                         ? "Your document submission was rejected. Please review the reason below and re-upload the corrected document(s)."
-                        : "Please upload all required verification documents below to enable account capabilities.")),
+                        : "Please upload all required verification documents below to complete identity verification.")),
             style: AppTypography.bodyMd.copyWith(
               color: AppColors.onSurfaceVariant,
             ),
@@ -329,14 +365,14 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
                     color: isUploaded
-                        ? AppColors.success.withValues(alpha: 0.1)
-                        : AppColors.primary.withValues(alpha: 0.1),
+                        ? AppColors.success.withValues(alpha: 0.12)
+                        : AppColors.primary.withValues(alpha: 0.08),
                     borderRadius: AppRadius.smBorder,
                   ),
                   child: Icon(
                     icon,
                     color: isUploaded ? AppColors.success : AppColors.primary,
-                    size: 28,
+                    size: 26,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
@@ -351,6 +387,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                               title,
                               style: AppTypography.titleMd.copyWith(
                                 fontWeight: FontWeight.bold,
+                                color: AppColors.onSurface,
                               ),
                             ),
                           ),
@@ -361,7 +398,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                             ),
                         ],
                       ),
-                      const SizedBox(height: AppSpacing.xs),
+                      const SizedBox(height: AppSpacing.xxs),
                       Text(
                         subtitle,
                         style: AppTypography.bodySm.copyWith(
@@ -388,7 +425,10 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                         decoration: BoxDecoration(
                           color: AppColors.surfaceContainerLow,
                           borderRadius: AppRadius.smBorder,
-                          border: Border.all(color: AppColors.outlineVariant),
+                          border: Border.all(
+                            color:
+                                AppColors.outlineVariant.withValues(alpha: 0.5),
+                          ),
                         ),
                         child: Row(
                           children: [
@@ -400,13 +440,13 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                                 borderRadius: AppRadius.smBorder,
                                 child: Image.memory(
                                   localPicked.bytes,
-                                  width: 50,
-                                  height: 50,
+                                  width: 48,
+                                  height: 48,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) =>
                                       const Icon(
                                     Icons.image,
-                                    size: 40,
+                                    size: 36,
                                     color: AppColors.primary,
                                   ),
                                 ),
@@ -418,13 +458,13 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                                     false))
                               const Icon(
                                 Icons.picture_as_pdf,
-                                size: 40,
+                                size: 36,
                                 color: AppColors.error,
                               )
                             else
                               const Icon(
                                 Icons.insert_drive_file,
-                                size: 40,
+                                size: 36,
                                 color: AppColors.primary,
                               ),
                             const SizedBox(width: AppSpacing.md),
@@ -435,6 +475,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                                     : "Document on file (${existingPath!.split('/').last})",
                                 style: AppTypography.bodyMd.copyWith(
                                   fontWeight: FontWeight.w600,
+                                  color: AppColors.onSurface,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -530,7 +571,6 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
     final isRejected = user?.isRejected ?? false;
     final isPending = user?.isPendingApproval ?? false;
 
-    // Define required slots based on role
     final slots = [
       {
         'key': 'id_front',
@@ -569,8 +609,15 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
-        title: Text(roleTitle),
+        title: Text(
+          roleTitle,
+          style: AppTypography.titleMd.copyWith(
+            color: AppColors.onPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         foregroundColor: AppColors.onPrimary,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -587,7 +634,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Status Header Card
+              // Stitch Status Banner
               _buildStatusBanner(
                 displayStatus: displayStatus,
                 isApproved: isApproved,
