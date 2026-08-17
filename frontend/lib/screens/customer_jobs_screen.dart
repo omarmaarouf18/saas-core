@@ -377,7 +377,7 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
       children: [
         const SizedBox(height: AppSpacing.xs),
         ClipRRect(
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: AppRadius.xxsBorder,
           child: Container(
             height: 4,
             color: AppColors.surfaceContainerHigh,

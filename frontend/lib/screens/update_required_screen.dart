@@ -129,7 +129,7 @@ class UpdateRequiredScreen extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             AppColors.primaryContainer,
-            Color(0xFF000000),
+            AppColors.primary,
           ],
         ),
         borderRadius: BorderRadius.only(

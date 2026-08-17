@@ -406,9 +406,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 topRight: const Radius.circular(AppRadius.md),
                 bottomLeft: isMe
                     ? const Radius.circular(AppRadius.md)
-                    : const Radius.circular(2),
+                    : const Radius.circular(AppRadius.xs),
                 bottomRight: isMe
-                    ? const Radius.circular(2)
+                    ? const Radius.circular(AppRadius.xs)
                     : const Radius.circular(AppRadius.md),
               ),
               border: isMe

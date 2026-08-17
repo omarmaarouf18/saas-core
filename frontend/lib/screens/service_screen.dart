@@ -271,7 +271,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                           width: 8,
                           height: 8,
                           decoration: const BoxDecoration(
-                            color: Color(0xFF79DB8D),
+                            color: AppColors.success,
                             shape: BoxShape.circle,
                           ),
                         ),

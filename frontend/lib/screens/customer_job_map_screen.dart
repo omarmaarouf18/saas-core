@@ -419,7 +419,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                   margin: const EdgeInsets.only(bottom: AppSpacing.md),
                   decoration: BoxDecoration(
                     color: AppColors.outlineVariant,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: AppRadius.xsBorder,
                   ),
                 ),
               ),

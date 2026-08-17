@@ -587,7 +587,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: AppRadius.smBorder,
                   child: LinearProgressIndicator(
                     value: fleetPercent,
                     backgroundColor: AppColors.surfaceContainerHighest,

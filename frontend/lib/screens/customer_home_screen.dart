@@ -609,7 +609,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                       const SizedBox(height: AppSpacing.sm),
                       // 2-Phase Progress Bar
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: AppRadius.smBorder,
                         child: Container(
                           height: 6,
                           color: AppColors.surfaceContainerHigh,
