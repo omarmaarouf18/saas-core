@@ -158,8 +158,12 @@ class _RatingScreenState extends State<RatingScreen> {
     final isWide = MediaQuery.of(context).size.width > 600;
 
     return Scaffold(
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         title: Text(l10n.ratingTitle),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -173,26 +177,49 @@ class _RatingScreenState extends State<RatingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Context Header
-            Center(
+            // Driver Profile Info Card (Stitch Reference)
+            ThemedCard(
+              padding: AppSpacing.lg,
               child: Column(
                 children: [
-                  Text(
-                    'JOB ID: ${widget.job.id.substring(0, widget.job.id.length > 8 ? 8 : widget.job.id.length).toUpperCase()}',
-                    style: AppTypography.labelLg.copyWith(
-                      color: AppColors.primary.withValues(alpha: 0.7),
-                      letterSpacing: 1.5,
-                    ),
+                  EntityAvatar(
+                    name: _otherPartyName,
+                    radius: 36,
+                    defaultIcon: Icons.local_shipping,
                   ),
-                  const SizedBox(height: AppSpacing.base),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'Rate Your Experience',
-                    style: AppTypography.headlineLgMobile.copyWith(
+                    _otherPartyName,
+                    style: AppTypography.titleMd.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.onSurface,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.base),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    "Job ID: #QD-${widget.job.id.substring(0, widget.job.id.length > 8 ? 8 : widget.job.id.length).toUpperCase()}",
+                    style: AppTypography.labelMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+
+            // Headline
+            Center(
+              child: Column(
+                children: [
+                  Text(
+                    'How was your delivery?',
+                    style: AppTypography.headlineLgMobile.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
                   Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -201,14 +228,13 @@ class _RatingScreenState extends State<RatingScreen> {
                       textAlign: TextAlign.center,
                       style: AppTypography.bodyMd.copyWith(
                         color: AppColors.onSurfaceVariant,
-                        height: 1.4,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.lg),
 
             // Main Interactive Card
             ThemedCard(
@@ -310,32 +336,28 @@ class _RatingScreenState extends State<RatingScreen> {
         const SizedBox(height: AppSpacing.lg),
 
         // Score stars
-        Text(
-          'Score Experience',
-          style: AppTypography.labelLg.copyWith(
-            color: AppColors.onSurfaceVariant,
-            letterSpacing: 1.1,
+        Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (index) {
+              final starValue = index + 1;
+              final isSelected = starValue <= _selectedStars;
+              return IconButton(
+                onPressed: () {
+                  setState(() {
+                    _selectedStars = starValue;
+                  });
+                },
+                icon: Icon(
+                  isSelected ? Icons.star : Icons.star_border,
+                  color: isSelected
+                      ? AppColors.secondary
+                      : AppColors.outlineVariant,
+                  size: 40,
+                ),
+              );
+            }),
           ),
-        ),
-        const SizedBox(height: AppSpacing.base),
-        Row(
-          children: List.generate(5, (index) {
-            final starValue = index + 1;
-            final isSelected = starValue <= _selectedStars;
-            return IconButton(
-              onPressed: () {
-                setState(() {
-                  _selectedStars = starValue;
-                });
-              },
-              icon: Icon(
-                isSelected ? Icons.star : Icons.star_border,
-                color:
-                    isSelected ? AppColors.secondary : AppColors.outlineVariant,
-                size: 36,
-              ),
-            );
-          }),
         ),
         const SizedBox(height: AppSpacing.lg),
 
@@ -350,7 +372,7 @@ class _RatingScreenState extends State<RatingScreen> {
 
         PrimaryButton(
           text: "Submit Blind Rating",
-          trailingIcon: Icons.arrow_forward,
+          trailingIcon: Icons.send,
           onPressed: _submitRating,
           isLoading: _isSubmitting,
         ),
