@@ -324,6 +324,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         PrimaryButton(
                           key: const Key('submit_reset_password_button'),
                           text: l10n.forgotPasswordSubmitButton,
+                          trailingIcon: Icons.arrow_forward,
                           isLoading: auth.isLoading,
                           onPressed: _submitReset,
                         ),

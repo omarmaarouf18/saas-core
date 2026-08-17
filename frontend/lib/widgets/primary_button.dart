@@ -9,6 +9,7 @@ class PrimaryButton extends StatefulWidget {
   final bool isFullWidth;
   final double? height;
   final IconData? icon;
+  final IconData? trailingIcon;
   final int maxLines;
   final DateTime Function()? nowProvider;
 
@@ -21,6 +22,7 @@ class PrimaryButton extends StatefulWidget {
     this.isFullWidth = true,
     this.height = 52,
     this.icon,
+    this.trailingIcon,
     this.maxLines = 2,
     this.nowProvider,
   });
@@ -86,6 +88,10 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                   ),
                 ),
               ),
+              if (widget.trailingIcon != null) ...[
+                const SizedBox(width: AppSpacing.base),
+                Icon(widget.trailingIcon, size: 20, color: textColor),
+              ],
             ],
           );
 

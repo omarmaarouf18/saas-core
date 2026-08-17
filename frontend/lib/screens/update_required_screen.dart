@@ -127,7 +127,7 @@ class UpdateRequiredScreen extends StatelessWidget {
                     const SizedBox(height: AppSpacing.xl),
                     PrimaryButton(
                       key: const Key('update_now_button'),
-                      icon: Icons.download_rounded,
+                      trailingIcon: Icons.arrow_forward,
                       text: isArabic ? 'تحديث الآن' : 'Update Now',
                       onPressed: onUpdatePressed ?? () {},
                     ),

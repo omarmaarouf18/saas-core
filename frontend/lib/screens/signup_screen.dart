@@ -227,6 +227,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         const SizedBox(height: AppSpacing.lg),
                         PrimaryButton(
                           text: l10n.signupSubmitButton,
+                          trailingIcon: Icons.arrow_forward,
                           isLoading: auth.isLoading,
                           onPressed: _submit,
                         ),

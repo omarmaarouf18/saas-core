@@ -271,6 +271,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: AppSpacing.lg),
                         PrimaryButton(
                           text: l10n.loginSubmitButton,
+                          trailingIcon: Icons.arrow_forward,
                           isLoading: auth.isLoading,
                           onPressed: _submit,
                         ),

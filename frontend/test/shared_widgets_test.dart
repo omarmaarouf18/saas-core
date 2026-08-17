@@ -391,6 +391,35 @@ void main() {
       expect(destructiveText.style?.color, equals(AppColors.onPrimary));
     });
 
+    testWidgets('PrimaryButton renders leading and trailing icons correctly',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                PrimaryButton(
+                  text: 'Proceed Action',
+                  trailingIcon: Icons.arrow_forward,
+                  onPressed: () {},
+                ),
+                PrimaryButton(
+                  text: 'Download Action',
+                  icon: Icons.download,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Proceed Action'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
+      expect(find.text('Download Action'), findsOneWidget);
+      expect(find.byIcon(Icons.download), findsOneWidget);
+    });
+
     testWidgets('PrimaryButton ignores rapid double taps within 600ms',
         (tester) async {
       int tapCount = 0;

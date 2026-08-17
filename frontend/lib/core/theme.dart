@@ -9,12 +9,20 @@ import 'package:google_fonts/google_fonts.dart';
 class AppColors {
   // Brand colors
   static const Color primary = Color(0xFF0D1321); // Deep Navy
+  static const Color primaryContainer =
+      Color(0xFF151B2A); // Dark Slate/Navy container
+  static const Color onPrimaryContainer = Color(0xFF7E8395);
   static const Color secondary = Color(0xFFFFC107); // Amber Gold
+  static const Color secondaryContainer =
+      Color(0xFFFDC003); // Amber Gold CTA fill
+  static const Color onSecondaryContainer = Color(0xFF6C5000);
   static const Color background =
       Color(0xFFF9F9F9); // Light Gray surface background
   static const Color scaffoldBackground = Color(0xFFE5E7EB);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color error = Color(0xFFBA1A1A);
+  static const Color errorContainer = Color(0xFFFFDAD6);
+  static const Color onErrorContainer = Color(0xFF93000A);
 
   // Text on colors
   static const Color onPrimary = Color(0xFFFFFFFF);

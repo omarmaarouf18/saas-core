@@ -2,6 +2,22 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Stitch Unified UI Implementation — Batch A (Foundation & Auth/Global Screens)
+
+- **Implementation Detail**:
+  - **Unified Design Foundation (`frontend/lib/core/theme.dart`, `frontend/lib/widgets/primary_button.dart`)**:
+    - Harmonized Material 3 tokens with `logistics_core/DESIGN.md`: added `primaryContainer` (`#151B2A`), `onPrimaryContainer` (`#7E8395`), `secondaryContainer` (`#FDC003`), `onSecondaryContainer` (`#6C5000`), `errorContainer` (`#FFDAD6`), and `onErrorContainer` (`#93000A`) to `AppColors`.
+    - Extended `PrimaryButton` with optional `trailingIcon` parameter (used across Stitch primary conversion CTAs with `Icons.arrow_forward`).
+  - **Batch A Target Screens (5 Screens Verified Against `logistics_core_unified`)**:
+    - [`login_screen.dart`](../../frontend/lib/screens/login_screen.dart) (`login/`): Integrated `PrimaryButton` with `trailingIcon: Icons.arrow_forward`, external centered headline, inline "Forgot Password?" affordance, and discrete QD logo header badge.
+    - [`signup_screen.dart`](../../frontend/lib/screens/signup_screen.dart) (`signup/`): Integrated `PrimaryButton` with `trailingIcon: Icons.arrow_forward`, 2-card interactive role selector, rune-aware username field, and external footer navigation.
+    - [`otp_screen.dart`](../../frontend/lib/screens/otp_screen.dart) (`otp_verification/`): Integrated `PrimaryButton` with `trailingIcon: Icons.arrow_forward`, 6-digit `OtpPinInput`, dev OTP banner, and `SecondaryButton` for resending code.
+    - [`forgot_password_screen.dart`](../../frontend/lib/screens/forgot_password_screen.dart) (`forgot_password/`): Integrated `PrimaryButton` with `trailingIcon: Icons.arrow_forward`, 2-stage password reset flow, and `OtpPinInput`.
+    - [`update_required_screen.dart`](../../frontend/lib/screens/update_required_screen.dart) (`update_required/`): Integrated `PrimaryButton` with `trailingIcon: Icons.arrow_forward`, mandatory update hero badge, and `ThemedCard` version comparison container.
+  - **Automated Test Coverage**: Added unit and widget tests for `PrimaryButton` trailing icon in `test/shared_widgets_test.dart`. Total 260 tests passing (100%).
+- **Commit SHA**: ``b5c8a909cd4ace467ee49f57aae4e5c0cb2e335d``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), `flutter test` (260/260 pass), and pre-push hooks gate. ✅
+
 ## Google Stitch Visual Redesign Implementation (Batches A–E)
 
 - **Implementation Detail**:

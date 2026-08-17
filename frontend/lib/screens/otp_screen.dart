@@ -233,6 +233,7 @@ class _OtpScreenState extends State<OtpScreen> {
                         const SizedBox(height: AppSpacing.lg),
                         PrimaryButton(
                           text: l10n.otpSubmitButton,
+                          trailingIcon: Icons.arrow_forward,
                           isLoading: auth.isLoading,
                           onPressed: _submit,
                         ),
