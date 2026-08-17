@@ -65,33 +65,108 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     final currentTier = ownerProvider.subscriptionTier;
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(l10n.subscriptionPlansTitle),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
+        elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Current Plan Header Card
-            ThemedCard(
-              borderRadius: AppRadius.lg,
-              padding: AppSpacing.lg,
-              color: AppColors.primary,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'YOUR CURRENT PLAN',
-                    style: AppTypography.labelLg.copyWith(
-                      color: AppColors.onPrimary.withValues(alpha: 0.7),
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.base),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.marginMobile,
+          vertical: AppSpacing.lg,
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 1. Centered Hero Header (Stitch Header)
+                Center(
+                  child: Column(
                     children: [
+                      Text(
+                        l10n.subscriptionPlansTitle,
+                        style: AppTypography.headlineLgMobile.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        "Manage your operational tier. Upgrade to unlock live driver tracking, advanced pricing metrics, and priority enterprise support.",
+                        style: AppTypography.bodyMd.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+
+                // 2. Current Plan Status Header Card
+                ThemedCard(
+                  borderRadius: AppRadius.lg,
+                  padding: AppSpacing.lg,
+                  color: AppColors.primaryContainer,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'YOUR CURRENT PLAN',
+                            style: AppTypography.labelLg.copyWith(
+                              color: AppColors.onPrimary.withValues(alpha: 0.7),
+                              letterSpacing: 1.2,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm,
+                              vertical: AppSpacing.xxs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: currentTier == 'free'
+                                  ? AppColors.surfaceContainerHigh
+                                      .withValues(alpha: 0.3)
+                                  : AppColors.secondary.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  currentTier == 'free'
+                                      ? Icons.star_border
+                                      : Icons.stars,
+                                  color: currentTier == 'free'
+                                      ? AppColors.onPrimary
+                                      : AppColors.secondary,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  currentTier == 'free' ? 'BASIC' : 'PRO',
+                                  style: AppTypography.labelSm.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: currentTier == 'free'
+                                        ? AppColors.onPrimary
+                                        : AppColors.secondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
                       Text(
                         currentTier.toUpperCase().replaceAll('_', ' '),
                         style: AppTypography.headlineLgMobile.copyWith(
@@ -99,200 +174,385 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           color: AppColors.onPrimary,
                         ),
                       ),
-                      Icon(
-                        currentTier == 'free' ? Icons.star_border : Icons.stars,
-                        color: AppColors.secondary,
-                        size: 32,
-                      ),
+                      if (currentTier == 'pending_payment') ...[
+                        const SizedBox(height: AppSpacing.md),
+                        const ThemedWarningBanner(
+                          message:
+                              'Pending activation. Please contact support to complete payment.',
+                        ),
+                      ],
                     ],
                   ),
-                  if (currentTier == 'pending_payment') ...[
-                    const SizedBox(height: AppSpacing.md),
-                    const ThemedWarningBanner(
-                      message:
-                          'Pending activation. Please contact support to complete payment.',
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
+                ),
+                const SizedBox(height: AppSpacing.xl),
 
-            Text(
-              'Available Plans',
-              style: AppTypography.headlineLgMobile.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.onSurface,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
+                // 3. Section Title
+                Text(
+                  'Available Plans',
+                  style: AppTypography.titleMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.onSurface,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
 
-            // Plan 1: Free Tier Card
-            _buildPlanCard(
-              title: l10n.planFreeBasic,
-              price: '\$0',
-              billing: 'forever',
-              features: [
-                'Basic delivery matching',
-                'Standard routing optimization',
-                'Cash on Delivery (COD) bookings',
-                'Community support',
+                // 4. Responsive Pricing Cards (Stitch 2-Card Grid)
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isDesktop = constraints.maxWidth > 700;
+                    if (isDesktop) {
+                      return IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: _buildStandardPlanCard(
+                                l10n: l10n,
+                                currentTier: currentTier,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.lg),
+                            Expanded(
+                              child: _buildEnterprisePlanCard(
+                                l10n: l10n,
+                                currentTier: currentTier,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return Column(
+                      children: [
+                        _buildStandardPlanCard(
+                          l10n: l10n,
+                          currentTier: currentTier,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        _buildEnterprisePlanCard(
+                          l10n: l10n,
+                          currentTier: currentTier,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: AppSpacing.xl),
               ],
-              isCurrent: currentTier == 'free',
-              onPressed: _isSubmitting || currentTier == 'free'
-                  ? null
-                  : () => _changeSubscription('free'),
-              buttonText:
-                  currentTier == 'free' ? 'Active Plan' : 'Downgrade to Free',
             ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Plan 2: Professional Paid Tier Card
-            _buildPlanCard(
-              title: l10n.planProfessionalPaid,
-              price: '\$19.99',
-              billing: 'per month',
-              features: [
-                'Unlocks live worker location tracking',
-                'Priority dispatch routing',
-                'Access to advanced pricing metrics',
-                'Premium 24/7 dedicated support',
-              ],
-              isCurrent:
-                  currentTier == 'paid' || currentTier == 'pending_payment',
-              onPressed: _isSubmitting ||
-                      currentTier == 'paid' ||
-                      currentTier == 'pending_payment'
-                  ? null
-                  : () => _changeSubscription('paid'),
-              buttonText: currentTier == 'paid'
-                  ? 'Active Plan'
-                  : (currentTier == 'pending_payment'
-                      ? 'Awaiting Payment'
-                      : 'Upgrade to Professional'),
-              highlighted: true,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildPlanCard({
-    required String title,
-    required String price,
-    required String billing,
-    required List<String> features,
-    required bool isCurrent,
-    required VoidCallback? onPressed,
-    required String buttonText,
-    bool highlighted = false,
+  // --- Plan Card 1: Standard (Free Tier) ---
+  Widget _buildStandardPlanCard({
+    required AppLocalizations l10n,
+    required String currentTier,
   }) {
+    final bool isCurrent = currentTier == 'free';
     final bool isThisPlanLoading = _isSubmitting && !isCurrent;
 
     return ThemedCard(
-      variant: highlighted
-          ? ThemedCardVariant.highlighted
-          : ThemedCardVariant.normal,
+      variant: ThemedCardVariant.normal,
       borderRadius: AppRadius.lg,
       padding: AppSpacing.lg,
+      color: AppColors.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          if (highlighted) ...[
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                padding: const EdgeInsetsDirectional.symmetric(
-                  horizontal: AppSpacing.baseSm,
-                  vertical: AppSpacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.secondary,
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                ),
-                child: Text(
-                  'RECOMMENDED',
-                  style: AppTypography.labelMd.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.onSecondary,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.base),
-          ],
-          Text(
-            title,
-            style: AppTypography.titleMd.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.onSurface,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                price,
-                style: AppTypography.headlineLg.copyWith(
+                l10n.planFreeBasic,
+                style: AppTypography.titleMd.copyWith(
                   fontWeight: FontWeight.bold,
-                  color:
-                      highlighted ? AppColors.secondary : AppColors.onSurface,
+                  color: AppColors.onSurface,
                 ),
               ),
-              const SizedBox(width: AppSpacing.xs),
+              const SizedBox(height: AppSpacing.xxs),
               Text(
-                '/ $billing',
+                "Essential tools for independent operators.",
                 style: AppTypography.bodyMd.copyWith(
-                  color: AppColors.outline,
+                  color: AppColors.onSurfaceVariant,
                 ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    '\$0',
+                    style: AppTypography.headlineLg.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    '/ forever',
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              const Divider(height: 1, color: AppColors.outlineVariant),
+              const SizedBox(height: AppSpacing.md),
+              _buildFeatureRow(
+                icon: Icons.check_circle,
+                iconColor: AppColors.primary,
+                text: "Basic delivery matching",
+                isEnabled: true,
+              ),
+              _buildFeatureRow(
+                icon: Icons.check_circle,
+                iconColor: AppColors.primary,
+                text: "Standard routing optimization",
+                isEnabled: true,
+              ),
+              _buildFeatureRow(
+                icon: Icons.check_circle,
+                iconColor: AppColors.primary,
+                text: "Cash on Delivery (COD) bookings",
+                isEnabled: true,
+              ),
+              _buildFeatureRow(
+                icon: Icons.check_circle,
+                iconColor: AppColors.primary,
+                text: "Community support",
+                isEnabled: true,
+              ),
+              _buildFeatureRow(
+                icon: Icons.cancel_outlined,
+                iconColor: AppColors.outlineVariant,
+                text: "Live worker location tracking",
+                isEnabled: false,
+              ),
+              _buildFeatureRow(
+                icon: Icons.cancel_outlined,
+                iconColor: AppColors.outlineVariant,
+                text: "Priority dispatch routing",
+                isEnabled: false,
               ),
             ],
           ),
-          Divider(
-            height: AppSpacing.xl,
-            color: AppColors.outlineVariant.withValues(alpha: 0.3),
+          const SizedBox(height: AppSpacing.lg),
+          SecondaryButton(
+            text: isCurrent ? 'Active Plan' : 'Downgrade to Free',
+            isOutlined: true,
+            onPressed: isCurrent || _isSubmitting
+                ? null
+                : () => _changeSubscription('free'),
+            isLoading: isThisPlanLoading,
           ),
-          ...features.map((f) => Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.base),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.check_circle_outline,
-                      size: 20,
-                      color:
-                          highlighted ? AppColors.secondary : AppColors.outline,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        f,
-                        style: AppTypography.bodyMd.copyWith(
-                          color: AppColors.onSurface,
+        ],
+      ),
+    );
+  }
+
+  // --- Plan Card 2: Enterprise Pro (Paid Tier) ---
+  Widget _buildEnterprisePlanCard({
+    required AppLocalizations l10n,
+    required String currentTier,
+  }) {
+    final bool isCurrent =
+        currentTier == 'paid' || currentTier == 'pending_payment';
+    final bool isThisPlanLoading = _isSubmitting && !isCurrent;
+
+    return Stack(
+      children: [
+        ThemedCard(
+          variant: ThemedCardVariant.highlighted,
+          borderRadius: AppRadius.lg,
+          padding: AppSpacing.lg,
+          color: AppColors.surface,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          l10n.planProfessionalPaid,
+                          style: AppTypography.titleMd.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
+                      const SizedBox(width: AppSpacing.xs),
+                      const Icon(
+                        Icons.stars,
+                        color: AppColors.secondary,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    "Complete suite for fleet managers and growing businesses.",
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
                     ),
-                  ],
-                ),
-              )),
-          const SizedBox(height: AppSpacing.lg),
-          highlighted
-              ? PrimaryButton(
-                  text: buttonText,
-                  trailingIcon: Icons.arrow_forward,
-                  onPressed: onPressed,
-                  isLoading: isThisPlanLoading,
-                )
-              : SecondaryButton(
-                  text: buttonText,
-                  isOutlined: true,
-                  onPressed: onPressed,
-                  isLoading: isThisPlanLoading,
-                ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '\$19.99',
+                        style: AppTypography.headlineLg.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        '/ month',
+                        style: AppTypography.bodyMd.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  const Divider(height: 1, color: AppColors.outlineVariant),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildFeatureRow(
+                    icon: Icons.check_circle,
+                    iconColor: AppColors.secondary,
+                    text: "Unlocks live worker location tracking",
+                    isEnabled: true,
+                    isHighlighted: true,
+                  ),
+                  _buildFeatureRow(
+                    icon: Icons.check_circle,
+                    iconColor: AppColors.secondary,
+                    text: "Priority dispatch routing",
+                    isEnabled: true,
+                    isHighlighted: true,
+                  ),
+                  _buildFeatureRow(
+                    icon: Icons.check_circle,
+                    iconColor: AppColors.secondary,
+                    text: "Access to advanced pricing metrics",
+                    isEnabled: true,
+                    isHighlighted: true,
+                  ),
+                  _buildFeatureRow(
+                    icon: Icons.check_circle,
+                    iconColor: AppColors.secondary,
+                    text: "Full employee management suite",
+                    isEnabled: true,
+                    isHighlighted: true,
+                  ),
+                  _buildFeatureRow(
+                    icon: Icons.check_circle,
+                    iconColor: AppColors.secondary,
+                    text: "Premium 24/7 dedicated support",
+                    isEnabled: true,
+                    isHighlighted: true,
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Column(
+                children: [
+                  PrimaryButton(
+                    text: currentTier == 'paid'
+                        ? 'Active Plan'
+                        : (currentTier == 'pending_payment'
+                            ? 'Awaiting Payment'
+                            : 'Upgrade to Professional'),
+                    trailingIcon: Icons.arrow_forward,
+                    onPressed: isCurrent || _isSubmitting
+                        ? null
+                        : () => _changeSubscription('paid'),
+                    isLoading: isThisPlanLoading,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    "Billed monthly. Cancel anytime.",
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        // Positioned Top-Right "RECOMMENDED" Badge
+        PositionedDirectional(
+          top: 0,
+          end: 0,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.baseSm,
+              vertical: AppSpacing.xs,
+            ),
+            decoration: const BoxDecoration(
+              color: AppColors.secondary,
+              borderRadius: BorderRadius.only(
+                topRight: Radius.circular(AppRadius.lg),
+                bottomLeft: Radius.circular(AppRadius.md),
+              ),
+            ),
+            child: Text(
+              'RECOMMENDED',
+              style: AppTypography.labelMd.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.onSecondary,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeatureRow({
+    required IconData icon,
+    required Color iconColor,
+    required String text,
+    required bool isEnabled,
+    bool isHighlighted = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: iconColor,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: AppTypography.bodyMd.copyWith(
+                color: isEnabled
+                    ? (isHighlighted ? AppColors.primary : AppColors.onSurface)
+                    : AppColors.onSurfaceVariant.withValues(alpha: 0.6),
+                fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ),
         ],
       ),
     );
