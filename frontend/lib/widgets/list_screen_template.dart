@@ -81,6 +81,9 @@ class ListScreenTemplate<T> extends StatelessWidget {
   /// Whether the scroll view should shrink wrap its contents. Defaults to false.
   final bool shrinkWrap;
 
+  /// Optional Key applied to the loaded ListView widget. Defaults to ValueKey('list_template_list').
+  final Key? listViewKey;
+
   // --- State Customization ---
   /// Custom loading widget overriding default [ThemedLoadingIndicator].
   final Widget? loadingWidget;
@@ -150,6 +153,7 @@ class ListScreenTemplate<T> extends StatelessWidget {
     this.physics = const AlwaysScrollableScrollPhysics(),
     this.scrollController,
     this.shrinkWrap = false,
+    this.listViewKey,
     // Custom States
     this.loadingWidget,
     this.loadingMessage,
@@ -280,7 +284,7 @@ class ListScreenTemplate<T> extends StatelessWidget {
         );
 
     Widget listView = ListView.separated(
-      key: const ValueKey('list_template_list'),
+      key: listViewKey ?? const ValueKey('list_template_list'),
       controller: scrollController,
       physics: physics,
       shrinkWrap: shrinkWrap,

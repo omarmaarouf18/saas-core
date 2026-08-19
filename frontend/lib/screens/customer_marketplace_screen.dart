@@ -8,6 +8,7 @@ import '../models/marketplace_service.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../providers/notifications_provider.dart';
+import '../widgets/list_screen_template.dart';
 import '../widgets/location_picker_map.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
@@ -96,24 +97,28 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                 Positioned(
                   right: 8,
                   top: 8,
-                  child: Container(
-                    padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
-                    decoration: BoxDecoration(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
+                    child: ColoredBox(
                       color: AppColors.error,
-                      borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      '${provider.unreadCount}',
-                      style: AppTypography.labelMd.copyWith(
-                        color: AppColors.onPrimary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
+                      child: Container(
+                        padding:
+                            const EdgeInsetsDirectional.all(AppSpacing.xxs),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${provider.unreadCount}',
+                          style: AppTypography.labelMd.copyWith(
+                            color: AppColors.onPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ),
                 ),
@@ -156,34 +161,51 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
             .where((s) => s.category == _selectedCategory)
             .toList();
 
-    final bodyContent = Column(
-      children: [
-        // 1. Filter & Location Control Panel (Stitch Filter Card)
-        _buildFilterControlCard(l10n),
-
-        // 2. Services Listing (Stitch Bento / Service Cards)
-        _buildServiceList(marketplace, filteredServices, auth, l10n),
+    return ListScreenTemplate<MarketplaceService>(
+      title: l10n.customerMarketplaceTitle,
+      isEmbeddedInTab: widget.isEmbeddedInTab,
+      actions: [
+        _buildNotificationBell(context),
       ],
-    );
-
-    if (widget.isEmbeddedInTab) {
-      return Scaffold(
-        backgroundColor: AppColors.scaffoldBackground,
-        body: SizedBox.expand(child: bodyContent),
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        title: Text(l10n.customerMarketplaceTitle),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        actions: [
-          _buildNotificationBell(context),
-        ],
+      header: _buildFilterControlCard(l10n),
+      items: filteredServices,
+      isLoading: marketplace.isLoading,
+      onRefresh: () async => _loadServices(),
+      listViewKey: const ValueKey('marketplace_services_list'),
+      loadingWidget: ListView.builder(
+        key: const ValueKey('marketplace_skeleton_list'),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        itemCount: 4,
+        itemBuilder: (context, index) => const MarketplaceCardSkeleton(),
       ),
-      body: bodyContent,
+      emptyWidget: SingleChildScrollView(
+        key: const ValueKey('marketplace_empty_state'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: ThemedCard(
+            elevation: AppElevation.shadowLevel1List,
+            borderRadius: AppRadius.md,
+            padding: AppSpacing.lg,
+            child: ThemedEmptyState(
+              icon: Icons.search_off,
+              title: l10n.noServicesNearby,
+              description:
+                  "Try broadening your search radius or changing your coordinates.",
+              actionText: "Refresh List",
+              onActionPressed: _loadServices,
+            ),
+          ),
+        ),
+      ),
+      listPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
+      itemSpacing: 0,
+      itemBuilder: (context, service, index) {
+        return _buildServiceCard(context, service, l10n, auth);
+      },
     );
   }
 
@@ -385,63 +407,6 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
     );
   }
 
-  Widget _buildServiceList(
-    MarketplaceProvider marketplace,
-    List<MarketplaceService> filteredServices,
-    AuthProvider auth,
-    AppLocalizations l10n,
-  ) {
-    return Expanded(
-      child: AnimatedSwitcher(
-        duration: AppMotion.durationMedium,
-        switchInCurve: AppMotion.curveStateChange,
-        switchOutCurve: AppMotion.curveStateChange,
-        child: marketplace.isLoading
-            ? ListView.builder(
-                key: const ValueKey('marketplace_skeleton_list'),
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                itemCount: 4,
-                itemBuilder: (context, index) =>
-                    const MarketplaceCardSkeleton(),
-              )
-            : filteredServices.isEmpty
-                ? SingleChildScrollView(
-                    key: const ValueKey('marketplace_empty_state'),
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                      child: ThemedCard(
-                        elevation: AppElevation.shadowLevel1List,
-                        borderRadius: AppRadius.md,
-                        padding: AppSpacing.lg,
-                        child: ThemedEmptyState(
-                          icon: Icons.search_off,
-                          title: l10n.noServicesNearby,
-                          description:
-                              "Try broadening your search radius or changing your coordinates.",
-                          actionText: "Refresh List",
-                          onActionPressed: _loadServices,
-                        ),
-                      ),
-                    ),
-                  )
-                : ListView.builder(
-                    key: const ValueKey('marketplace_services_list'),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.xs,
-                    ),
-                    itemCount: filteredServices.length,
-                    itemBuilder: (context, index) {
-                      final service = filteredServices[index];
-                      return _buildServiceCard(context, service, l10n, auth);
-                    },
-                  ),
-      ),
-    );
-  }
-
   Widget _buildServiceCard(
     BuildContext context,
     MarketplaceService service,
@@ -463,13 +428,9 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
+                CircleAvatar(
+                  radius: 22,
+                  backgroundColor: AppColors.secondary.withValues(alpha: 0.15),
                   child: Icon(
                     _getCategoryIcon(service.category),
                     color: AppColors.primary,
@@ -494,20 +455,22 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         runSpacing: AppSpacing.xxs,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.sm,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(AppRadius.xs),
+                            child: ColoredBox(
                               color: AppColors.surfaceContainerHigh,
-                              borderRadius: BorderRadius.circular(AppRadius.xs),
-                            ),
-                            child: Text(
-                              categoryLabel,
-                              style: AppTypography.caption.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.onSurfaceVariant,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.sm,
+                                  vertical: 2,
+                                ),
+                                child: Text(
+                                  categoryLabel,
+                                  style: AppTypography.caption.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.onSurfaceVariant,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
