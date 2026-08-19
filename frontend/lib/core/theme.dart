@@ -54,6 +54,39 @@ class AppColors {
       0xFF57585E); // Dark Gray (contrast 5.61:1 on scaffold, 7.09:1 on white)
   static const Color outlineVariant =
       Color(0xFF8E8F95); // Mid Gray (contrast 3.34:1 for UI borders)
+
+  // Dark Mode tokens (WCAG AA compliant contrast ratios >= 4.5:1 for text, >= 3:1 for controls)
+  static const Color primaryDark =
+      Color(0xFFFFC107); // Amber Gold primary accent in dark mode
+  static const Color onPrimaryDark =
+      Color(0xFF0F172A); // Dark Navy text on Amber Gold
+  static const Color primaryContainerDark =
+      Color(0xFF1E293B); // Dark Slate container
+  static const Color onPrimaryContainerDark = Color(0xFFF8FAFC);
+  static const Color secondaryDark = Color(0xFFFFC107); // Amber Gold secondary
+  static const Color onSecondaryDark = Color(0xFF0F172A);
+  static const Color secondaryContainerDark = Color(0xFF334155);
+  static const Color onSecondaryContainerDark = Color(0xFFFFDF9E);
+  static const Color backgroundDark = Color(0xFF0A0E17);
+  static const Color scaffoldBackgroundDark = Color(0xFF0A0E17);
+  static const Color surfaceDark =
+      Color(0xFF0F172A); // Dark Navy/Slate surface background
+  static const Color onSurfaceDark =
+      Color(0xFFF8FAFC); // High contrast off-white text
+  static const Color surfaceDimDark = Color(0xFF0A0E17);
+  static const Color surfaceContainerLowestDark = Color(0xFF0F172A);
+  static const Color surfaceContainerLowDark = Color(0xFF1E293B);
+  static const Color surfaceContainerDark =
+      Color(0xFF1E293B); // Card background in dark mode
+  static const Color surfaceContainerHighDark = Color(0xFF334155);
+  static const Color surfaceContainerHighestDark = Color(0xFF475569);
+  static const Color onSurfaceVariantDark =
+      Color(0xFFCBD5E1); // Light Slate subtitle text
+  static const Color outlineDark = Color(0xFF64748B); // Slate border
+  static const Color outlineVariantDark =
+      Color(0xFF475569); // Darker slate divider
+  static const Color errorDark = Color(0xFFF87171); // High contrast Red
+  static const Color onErrorDark = Color(0xFF0F172A);
 }
 
 // Backwards-compatible global constants
