@@ -257,6 +257,7 @@
     * `email_change_dialog.dart`
     * `entity_avatar.dart`
     * `info_list_tile.dart`
+    * `list_screen_template.dart`
     * `location_picker_map.dart`
     * `otp_pin_input.dart`
     * `payout_request_dialog.dart`
