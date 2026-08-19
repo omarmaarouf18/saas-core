@@ -248,6 +248,7 @@
    * `employee_history_screen.dart`
    * `update_required_screen.dart`
  * **Widgets**:
+    * `app_shell.dart`
     * `cancel_job_dialog.dart`
     * `confirm_action_dialog.dart`
     * `create_service_dialog.dart`
