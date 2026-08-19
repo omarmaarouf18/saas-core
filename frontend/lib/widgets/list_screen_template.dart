@@ -237,12 +237,10 @@ class ListScreenTemplate<T> extends StatelessWidget {
       if (onRefresh != null) {
         return RefreshIndicator(
           onRefresh: onRefresh!,
-          child: ListView(
+          child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            children: [
-              const SizedBox(height: AppSpacing.xl),
-              errorContent,
-            ],
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: errorContent,
           ),
         );
       }
@@ -264,12 +262,10 @@ class ListScreenTemplate<T> extends StatelessWidget {
       if (onRefresh != null) {
         return RefreshIndicator(
           onRefresh: onRefresh!,
-          child: ListView(
+          child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            children: [
-              const SizedBox(height: AppSpacing.xl),
-              emptyContent,
-            ],
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: emptyContent,
           ),
         );
       }
