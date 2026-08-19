@@ -5,6 +5,7 @@ import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/pill_filter_bar.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
@@ -102,88 +103,53 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
       ],
     );
 
-    if (widget.isEmbeddedInTab) {
-      return Material(
-        color: AppColors.scaffoldBackground,
-        child: Column(
-          children: [
-            _buildTabBar(l10n),
-            Expanded(child: tabBarView),
-          ],
-        ),
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        title: Text(l10n.ownerHistoryTitle),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.secondary,
-          indicatorWeight: 3,
-          labelColor: AppColors.onPrimary,
-          unselectedLabelColor: AppColors.onPrimary.withValues(alpha: 0.7),
-          labelStyle: AppTypography.bodySm.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-          unselectedLabelStyle: AppTypography.bodySm,
-          tabs: [
-            Tab(
-              key: const Key('history_tab_activity'),
-              text: l10n.ownerHistoryTabActivity,
-              icon: const Icon(Icons.history_outlined, size: 20),
-            ),
-            Tab(
-              key: const Key('history_tab_jobs'),
-              text: l10n.ownerHistoryTabJobs,
-              icon: const Icon(Icons.assignment_turned_in_outlined, size: 20),
-            ),
-            Tab(
-              key: const Key('history_tab_ledger'),
-              text: l10n.ownerHistoryTabLedger,
-              icon: const Icon(Icons.account_balance_wallet_outlined, size: 20),
-            ),
-          ],
-        ),
-      ),
-      body: tabBarView,
+    return AppShell(
+      title: l10n.ownerHistoryTitle,
+      isEmbeddedInTab: widget.isEmbeddedInTab,
+      useSafeArea: !widget.isEmbeddedInTab,
+      bottom: widget.isEmbeddedInTab ? null : _buildTabBar(l10n),
+      body: widget.isEmbeddedInTab
+          ? Column(
+              children: [
+                Material(
+                  color: AppColors.primary,
+                  child: _buildTabBar(l10n),
+                ),
+                Expanded(child: tabBarView),
+              ],
+            )
+          : tabBarView,
     );
   }
 
-  Widget _buildTabBar(AppLocalizations l10n) {
-    return Material(
-      color: AppColors.primary,
-      child: TabBar(
-        controller: _tabController,
-        indicatorColor: AppColors.secondary,
-        indicatorWeight: 3,
-        labelColor: AppColors.onPrimary,
-        unselectedLabelColor: AppColors.onPrimary.withValues(alpha: 0.7),
-        labelStyle: AppTypography.bodySm.copyWith(
-          fontWeight: FontWeight.bold,
-        ),
-        unselectedLabelStyle: AppTypography.bodySm,
-        tabs: [
-          Tab(
-            key: const Key('history_tab_activity'),
-            text: l10n.ownerHistoryTabActivity,
-            icon: const Icon(Icons.history_outlined, size: 20),
-          ),
-          Tab(
-            key: const Key('history_tab_jobs'),
-            text: l10n.ownerHistoryTabJobs,
-            icon: const Icon(Icons.assignment_turned_in_outlined, size: 20),
-          ),
-          Tab(
-            key: const Key('history_tab_ledger'),
-            text: l10n.ownerHistoryTabLedger,
-            icon: const Icon(Icons.account_balance_wallet_outlined, size: 20),
-          ),
-        ],
+  PreferredSizeWidget _buildTabBar(AppLocalizations l10n) {
+    return TabBar(
+      controller: _tabController,
+      indicatorColor: AppColors.secondary,
+      indicatorWeight: 3,
+      labelColor: AppColors.onPrimary,
+      unselectedLabelColor: AppColors.onPrimary.withValues(alpha: 0.7),
+      labelStyle: AppTypography.bodySm.copyWith(
+        fontWeight: FontWeight.bold,
       ),
+      unselectedLabelStyle: AppTypography.bodySm,
+      tabs: [
+        Tab(
+          key: const Key('history_tab_activity'),
+          text: l10n.ownerHistoryTabActivity,
+          icon: const Icon(Icons.history_outlined, size: 20),
+        ),
+        Tab(
+          key: const Key('history_tab_jobs'),
+          text: l10n.ownerHistoryTabJobs,
+          icon: const Icon(Icons.assignment_turned_in_outlined, size: 20),
+        ),
+        Tab(
+          key: const Key('history_tab_ledger'),
+          text: l10n.ownerHistoryTabLedger,
+          icon: const Icon(Icons.account_balance_wallet_outlined, size: 20),
+        ),
+      ],
     );
   }
 
@@ -588,13 +554,15 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
       padding: AppSpacing.md,
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            child: ColoredBox(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppRadius.sm),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Icon(icon, color: color, size: 24),
+              ),
             ),
-            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
