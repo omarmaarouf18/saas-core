@@ -57,7 +57,7 @@ Target directory: frontend/lib/screens/*.dart
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | 1. `Scaffold(` in screens | 26 | 25 | 24 | 23 | **22** | **-4** |
 | 2. `AppBar(` in screens | 21 | 20 | 19 | 18 | **17** | **-4** |
-| 3. `BoxDecoration(` in screens | 119 | 118 | 117 | 114 | **114** | **-5** |
+| 3. `BoxDecoration(` in screens | 119 | 116 | 115 | 114 | **114** | **-5** |
 | 4. `.toUpperCase()` in screens | 36 | 36 | 36 | 36 | **36** | **0** |
 | 5. `Color(0xFF` outside theme | 0 | 0 | 0 | 0 | **0** | **0** |
 | 6. `Color(0xFF` inside theme | 51 | 51 | 51 | 51 | **51** | **0** |
