@@ -285,14 +285,68 @@ func resolveTokenWithRole(tokenStr string, allowedRoles ...string) (string, erro
 	return claims.UserID, nil
 }
 
-func (u *UserService) saveIdempotencyKey(ctx context.Context, userID, key, jobID string) {
+// idempotencyPendingValue marks a reserved-but-incomplete idempotency slot.
+const idempotencyPendingValue = "__pending__"
+
+// saveIdempotencyKey records the completed job ID for a per-user idempotency
+// key. Idempotency bookkeeping is deliberately NOT tied to the inbound request
+// context: a client disconnect between job creation and key-set previously
+// cancelled the write, dropping the key and causing client retries to
+// double-book funded jobs.
+func (u *UserService) saveIdempotencyKey(userID, key, jobID string) {
 	if key != "" && u.rdb != nil {
 		redisKey := "idempotency:job:" + userID + ":" + key
-		if err := u.rdb.Set(ctx, redisKey, jobID, 24*time.Hour).Err(); err != nil {
+		if err := u.rdb.Set(context.Background(), redisKey, jobID, 24*time.Hour).Err(); err != nil {
 			// #nosec G706 //nolint:gosec -- key comes from request header/body, used for failure diagnosis
 			log.Printf("[ERROR] failed to store idempotency key %s in Redis: %v", key, err)
 		}
 	}
+}
+
+// reserveIdempotencyKey atomically claims the per-user idempotency slot via
+// SET NX, closing the concurrent-duplicate race where two requests could both
+// miss the replay check and both create funded jobs. It returns:
+//   - replayJobID != "" : a completed request already exists under this key —
+//     serve its job as an idempotent replay.
+//   - conflict == true  : another identical request holds a pending
+//     reservation — reject with 409 instead of double-booking.
+//
+// Redis unavailability degrades to non-idempotent operation (logged), matching
+// the pre-existing availability behaviour of the replay check.
+func (u *UserService) reserveIdempotencyKey(userID, key string) (replayJobID string, conflict bool) {
+	if key == "" || u.rdb == nil {
+		return "", false
+	}
+	redisKey := "idempotency:job:" + userID + ":" + key
+
+	existing, err := u.rdb.Get(context.Background(), redisKey).Result()
+	if err == nil && existing != "" && existing != idempotencyPendingValue {
+		return existing, false
+	}
+
+	reserved, err := u.rdb.SetNX(context.Background(), redisKey, idempotencyPendingValue, 24*time.Hour).Result()
+	if err != nil {
+		log.Printf("[WARN] idempotency reservation unavailable, proceeding without dedupe: %v", err)
+		return "", false
+	}
+	if !reserved {
+		val, err := u.rdb.Get(context.Background(), redisKey).Result()
+		if err == nil && val != "" && val != idempotencyPendingValue {
+			return val, false // lost the race but the winner already finished
+		}
+		return "", true // genuine concurrent in-flight duplicate
+	}
+	return "", false
+}
+
+// releaseIdempotencyReservation drops a pending reservation after a failure
+// path that did NOT persist a job, so legitimate client retries are not
+// blocked by a stale pending marker. Safe to call when no reservation exists.
+func (u *UserService) releaseIdempotencyReservation(userID, key string) {
+	if key == "" || u.rdb == nil {
+		return
+	}
+	_ = u.rdb.Del(context.Background(), "idempotency:job:"+userID+":"+key).Err()
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
