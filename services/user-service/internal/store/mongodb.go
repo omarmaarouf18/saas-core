@@ -1058,3 +1058,59 @@ func (s *MongoDB) GetReconciliationQueueByOwner(ctx context.Context, ownerID str
 	}
 	return jobs, nil
 }
+
+// RejectPayoutRequest flips a payout request from "requested" to "rejected"
+// (CAS-guarded so an approved/paid/rejected request can never be mutated),
+// restores the previously deducted funds to the owner's withdrawable and
+// total balances, and records a payout_refund ledger entry. This is the
+// store capability backing the admin rejection flow, which remains deferred
+// to the Support Agent Console per ADR-0018.
+func (s *MongoDB) RejectPayoutRequest(ctx context.Context, payoutID, reason string) error {
+	now := time.Now().UTC()
+
+	// CAS: only a request still in "requested" state can be rejected.
+	res := s.payoutRequests.FindOneAndUpdate(ctx,
+		bson.M{"_id": payoutID, "status": models.PayoutStatusRequested},
+		bson.M{"$set": bson.M{
+			"status":           models.PayoutStatusRejected,
+			"rejection_reason": reason,
+			"updated_at":       now,
+		}},
+	)
+	if res.Err() != nil {
+		if res.Err() == mongo.ErrNoDocuments {
+			return fmt.Errorf("payout request %s not found or not in requested state", payoutID)
+		}
+		return fmt.Errorf("failed to reject payout request: %w", res.Err())
+	}
+
+	var pr models.PayoutRequest
+	if err := res.Decode(&pr); err != nil {
+		return fmt.Errorf("failed to decode rejected payout request: %w", err)
+	}
+
+	// Restore the deducted funds.
+	wres, err := s.wallets.UpdateOne(ctx,
+		bson.M{"tenant_id": pr.TenantID},
+		bson.M{
+			"$inc": bson.M{"withdrawable_balance": pr.Amount, "total_balance": pr.Amount},
+			"$set": bson.M{"updated_at": now},
+		})
+	if err != nil {
+		return fmt.Errorf("failed to restore wallet balance for rejected payout: %w", err)
+	}
+	if wres.MatchedCount == 0 {
+		return fmt.Errorf("wallet for tenant %s not found while restoring rejected payout", pr.TenantID)
+	}
+
+	if _, err := s.ledger.InsertOne(ctx, models.TransactionLedger{
+		ID: fmt.Sprintf("tx-%d", now.UnixNano()), TenantID: pr.TenantID,
+		Type: models.TxPayoutRefund, Amount: pr.Amount,
+		Description: fmt.Sprintf("payout %s rejected: %s", payoutID, reason),
+		Timestamp:   now,
+	}); err != nil {
+		log.Printf("[ERROR] failed to insert payout_refund ledger entry: %v", err)
+	}
+
+	return nil
+}

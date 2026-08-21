@@ -233,6 +233,7 @@ const (
 	TxEscrowRelease TransactionType = "escrow_release"
 	TxPlatformFee   TransactionType = "platform_fee"
 	TxPayout        TransactionType = "payout"
+	TxPayoutRefund  TransactionType = "payout_refund"
 	TxDeposit       TransactionType = "deposit"
 )
 
