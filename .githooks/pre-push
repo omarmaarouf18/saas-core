@@ -163,7 +163,16 @@ for mod in services/api-gateway services/auth-service services/chat-service \
   fi
 done
 
-# 5. Flutter analyze & test checks parity (strict without ignoring warnings/infos)
+# 5. Frontend composition-layer gate (blocks Scaffold(/AppBar(/BoxDecoration(/Color(0xFF/.toUpperCase() in screens/)
+if [ -d "frontend" ]; then
+  echo "-- checking frontend composition gate --"
+  bash scripts/frontend_composition_gate.sh || {
+    echo "BLOCKED: frontend composition gate failed"
+    exit 1
+  }
+fi
+
+# 6. Flutter analyze & test checks parity (strict without ignoring warnings/infos)
 if [ -d "frontend" ]; then
   echo "-- checking frontend Flutter analyze/test --"
   (cd frontend && flutter analyze && flutter test) || {
