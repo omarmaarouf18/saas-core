@@ -13,6 +13,7 @@ import '../widgets/create_ticket_dialog.dart';
 import '../widgets/entity_avatar.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
@@ -336,29 +337,27 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         ? _currentJob.id.substring(0, 8).toUpperCase()
         : _currentJob.id.toUpperCase();
 
-    return Scaffold(
+    return AppShell(
+      title: context.l10n.jobStatusTitle,
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        title: Text(context.l10n.jobStatusTitle),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        actions: [
-          IconButton(
-            key: const Key('job_status_refresh_button'),
-            icon: _isRefreshing
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.onPrimary,
-                    ),
-                  )
-                : const Icon(Icons.refresh),
-            onPressed: () => _refreshJobStatus(),
-          ),
-        ],
-      ),
+      appBarBackgroundColor: AppColors.primary,
+      appBarForegroundColor: AppColors.onPrimary,
+      actions: [
+        IconButton(
+          key: const Key('job_status_refresh_button'),
+          icon: _isRefreshing
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.onPrimary,
+                  ),
+                )
+              : const Icon(Icons.refresh),
+          onPressed: () => _refreshJobStatus(),
+        ),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,

@@ -8,6 +8,7 @@ import '../core/theme.dart';
 import '../models/employee_marker.dart';
 import '../models/job.dart';
 import '../providers/map_tracking_provider.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
@@ -61,30 +62,21 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
         ? widget.jobId.substring(0, 8).toUpperCase()
         : widget.jobId.toUpperCase();
 
-    return Scaffold(
+    return AppShell(
+      title: l10n.liveCourierTracking,
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          l10n.liveCourierTracking,
-          style: AppTypography.titleMd.copyWith(
-            color: AppColors.onPrimary,
-            fontWeight: FontWeight.bold,
-          ),
+      appBarBackgroundColor: AppColors.primary,
+      appBarForegroundColor: AppColors.onPrimary,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: l10n.tooltipRefreshStatus,
+          onPressed: () {
+            final provider = context.read<MapTrackingProvider>();
+            provider.hydrateCustomerJob(widget.jobId, widget.token);
+          },
         ),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: l10n.tooltipRefreshStatus,
-            onPressed: () {
-              final provider = context.read<MapTrackingProvider>();
-              provider.hydrateCustomerJob(widget.jobId, widget.token);
-            },
-          ),
-        ],
-      ),
+      ],
       body: Consumer<MapTrackingProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading && provider.markersList.isEmpty) {

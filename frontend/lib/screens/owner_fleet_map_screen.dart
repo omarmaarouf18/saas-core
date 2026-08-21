@@ -7,6 +7,7 @@ import '../core/constants.dart';
 import '../core/theme.dart';
 import '../models/employee_marker.dart';
 import '../providers/map_tracking_provider.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
@@ -58,28 +59,23 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
+    return AppShell(
+      title: l10n.fleetLiveMapTitle,
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        title: Text(
-          l10n.fleetLiveMapTitle,
-          style: AppTypography.titleMd.copyWith(color: AppColors.onPrimary),
+      appBarBackgroundColor: AppColors.primary,
+      appBarForegroundColor: AppColors.onPrimary,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: l10n.tooltipRefreshStatus,
+          onPressed: () {
+            final provider = context.read<MapTrackingProvider>();
+            if (widget.token != null) {
+              provider.hydrateOwnerFleet(widget.token!);
+            }
+          },
         ),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: l10n.tooltipRefreshStatus,
-            onPressed: () {
-              final provider = context.read<MapTrackingProvider>();
-              if (widget.token != null) {
-                provider.hydrateOwnerFleet(widget.token!);
-              }
-            },
-          ),
-        ],
-      ),
+      ],
       body: Consumer<MapTrackingProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading && provider.markersList.isEmpty) {

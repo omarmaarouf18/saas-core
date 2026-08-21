@@ -5,6 +5,7 @@ import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/entity_avatar.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
@@ -160,21 +161,17 @@ class _RatingScreenState extends State<RatingScreen> {
         ? widget.job.id.substring(0, 8).toUpperCase()
         : widget.job.id.toUpperCase();
 
-    return Scaffold(
+    return AppShell(
+      title: l10n.ratingTitle,
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        title: Text(l10n.ratingTitle),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: l10n.tooltipRefreshStatus,
-            onPressed: _checkOtherPartyRatingStatus,
-          ),
-        ],
-      ),
+      appBarBackgroundColor: Colors.transparent,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: l10n.tooltipRefreshStatus,
+          onPressed: _checkOtherPartyRatingStatus,
+        ),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Center(
