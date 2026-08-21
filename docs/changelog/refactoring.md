@@ -46,3 +46,10 @@ This file tracks historical entries for the primary category: **Refactoring Chan
   - Refined `scripts/frontend_audit.sh`: widget-construction matching via PCRE negative lookbehind so identifier substrings (e.g. `_buildOwnerScaffold(`) no longer false-positive; home helpers renamed `_buildOwnerShell`/`_buildNonOwnerShell`.
 - **Commit SHA**: ``9630064454924560c810805692c567eae9f7d2e8``
 - **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), `frontend/test/dashboard_screen_template_test.dart` (4/4 pass), full suite `flutter test` (292/292 All tests passed), and post-batch audit: Scaffold files 13 -> 10, AppBar files 10 -> 7. ✅
+
+## AppShell-Only Composition Migration Batch (6 screens)
+
+- **Implementation Detail**:
+  - Migrated screens with unique layouts onto `AppShell` directly (no archetype template): `chat_screen.dart` (`titleWidget` preserving two-line title + live status indicator), `wallet_screen.dart` (chrome-less shell), `subscription_screen.dart`, `update_required_screen.dart` (PopScope non-dismissible guard preserved), `employee_screen.dart` (TabBar-only header via AppShell `bottom:` slot on surface background), and `employee_jobs_screen.dart` (embedded-tab early-return preserved).
+- **Commit SHA**: ``8756b0ed6ee2b0269c88b53aa8cfad627a5a7b3f``
+- **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), full suite `flutter test` (292/292 All tests passed), and post-batch audit: Scaffold files 10 -> 4, AppBar files 7 -> 4. ✅
