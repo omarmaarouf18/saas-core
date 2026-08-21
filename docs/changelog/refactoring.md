@@ -28,3 +28,12 @@ This file tracks historical entries for the primary category: **Refactoring Chan
 - **Commit SHA**: ``e0747d5557f3c4c3c21325578cc94ff17dd97738``
 - **Verification**: Verified via `go build ./...`, `go vet ./...`, full test suite parity across all 6 backend services and frontend, `make docs-check`, and `.githooks/pre-push` gate. ✅
 
+
+## Form-Archetype Screen Composition Migration Batch (8 screens to AppShell/FormScreenTemplate)
+
+- **Implementation Detail**:
+  - Migrated the remaining form/config archetype screens off manual `Scaffold`/`AppBar` construction onto `AppShell`/`FormScreenTemplate` composition roots as part of Frontend Architecture Unification P2: `signup_screen.dart`, `forgot_password_screen.dart`, `otp_screen.dart`, `settings_screen.dart`, `owner_configuration_screen.dart`, `kyc_document_upload_screen.dart`, `service_screen.dart`, and `my_account_screen.dart`.
+  - Transparent auth app bars preserved via `appBarBackgroundColor: Colors.transparent` + `appBarForegroundColor`; embedded-tab behavior (`settings_screen.dart`), full-body initialization loaders, refresh actions, pull-to-refresh, FAB placement with KYC gating (`service_screen.dart`), and responsive grids all preserved.
+  - Post-batch audit (`scripts/frontend_audit.sh`): files containing `Scaffold(` in screens/ reduced 21 -> 13; files containing `AppBar(` reduced 17 -> 10.
+- **Commit SHA**: ``070b7a20c9d14f8b52c89e8e7d9da77e6f3e16d3``
+- **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), targeted suites (37/37 pass across auth/forgot-password/settings/owner-config/kyc/my-account/password-toggle tests), and full suite `flutter test` (288/288 All tests passed). ✅
