@@ -180,6 +180,7 @@ type CustomerJobResponse struct {
 	Status                 JobStatus  `json:"status"`
 	Location               Location   `json:"location"`
 	PaymentMethod          string     `json:"payment_method"`
+	CancellationReason     string     `json:"cancellation_reason,omitempty"`
 	SuggestedPrice         float64    `json:"suggested_price,omitempty"`
 	ProposedPrice          *float64   `json:"proposed_price,omitempty"`
 	ProposedBy             string     `json:"proposed_by,omitempty"`
@@ -201,6 +202,7 @@ func NewCustomerJobResponse(j *Job) CustomerJobResponse {
 		Status:                 j.Status,
 		Location:               j.Location,
 		PaymentMethod:          j.PaymentMethod,
+		CancellationReason:     j.CancellationReason,
 		SuggestedPrice:         j.SuggestedPrice,
 		ProposedPrice:          j.ProposedPrice,
 		ProposedBy:             j.ProposedBy,
