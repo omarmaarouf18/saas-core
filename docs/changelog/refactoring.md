@@ -37,3 +37,12 @@ This file tracks historical entries for the primary category: **Refactoring Chan
   - Post-batch audit (`scripts/frontend_audit.sh`): files containing `Scaffold(` in screens/ reduced 21 -> 13; files containing `AppBar(` reduced 17 -> 10.
 - **Commit SHA**: ``070b7a20c9d14f8b52c89e8e7d9da77e6f3e16d3``
 - **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), targeted suites (37/37 pass across auth/forgot-password/settings/owner-config/kyc/my-account/password-toggle tests), and full suite `flutter test` (288/288 All tests passed). ✅
+
+## DashboardScreenTemplate & Dashboard Shell Composition Migration (3 screens)
+
+- **Implementation Detail**:
+  - Created `DashboardScreenTemplate` (`frontend/lib/widgets/dashboard_screen_template.dart`) capturing the shared tabbed-dashboard shell: canonical Quick Delivery brand logo badge (`DashboardScreenTemplate.brandLogo()`, key `app_header_logo`), transparent AppBar with dynamic tab title, lazy-hydrated `IndexedStack` body, and keyed `NavigationBar` wiring.
+  - Migrated `home_screen.dart` (owner 4-tab shell; non-owner branch onto `AppShell`), `customer_home_screen.dart`, and `employee_home_screen.dart`, removing three duplicated ~90-line shell implementations.
+  - Refined `scripts/frontend_audit.sh`: widget-construction matching via PCRE negative lookbehind so identifier substrings (e.g. `_buildOwnerScaffold(`) no longer false-positive; home helpers renamed `_buildOwnerShell`/`_buildNonOwnerShell`.
+- **Commit SHA**: ``9630064454924560c810805692c567eae9f7d2e8``
+- **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), `frontend/test/dashboard_screen_template_test.dart` (4/4 pass), full suite `flutter test` (292/292 All tests passed), and post-batch audit: Scaffold files 13 -> 10, AppBar files 10 -> 7. ✅
