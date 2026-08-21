@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../providers/marketplace_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_empty_state.dart';
@@ -121,25 +122,22 @@ class _HomeScreenState extends State<HomeScreen> {
               Positioned(
                 right: 8,
                 top: 8,
-                child: Container(
-                  padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
-                  decoration: BoxDecoration(
+                child: ThemedPanel(
                     color: AppColors.error,
                     borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  ),
-                  child: Text(
-                    '${provider.unreadCount}',
-                    style: AppTypography.labelMd.copyWith(
-                      color: AppColors.onPrimary,
-                      fontWeight: FontWeight.bold,
+                    padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+                    child: Text(
+                      '${provider.unreadCount}',
+                      style: AppTypography.labelMd.copyWith(
+                        color: AppColors.onPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    )),
               ),
           ],
         );
@@ -352,25 +350,22 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
+              ThemedPanel(
                   color: AppColors.secondary.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: AppColors.secondary.withValues(alpha: 0.4),
                     width: 1.5,
                   ),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.admin_panel_settings_rounded,
-                    color: AppColors.secondary,
-                    size: 26,
-                  ),
-                ),
-              ),
+                  width: 48,
+                  height: 48,
+                  child: const Center(
+                    child: Icon(
+                      Icons.admin_panel_settings_rounded,
+                      color: AppColors.secondary,
+                      size: 26,
+                    ),
+                  )),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
@@ -408,38 +403,35 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
                 borderRadius: BorderRadius.circular(AppRadius.full),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm,
-                  ),
-                  decoration: BoxDecoration(
+                child: ThemedPanel(
                     color: AppColors.secondary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(AppRadius.full),
                     border: Border.all(
                       color: AppColors.secondary,
                       width: 1,
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.account_balance_wallet,
-                        color: AppColors.secondary,
-                        size: 18,
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Text(
-                        walletText,
-                        style: AppTypography.labelLg.copyWith(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.account_balance_wallet,
                           color: AppColors.secondary,
-                          fontWeight: FontWeight.bold,
+                          size: 18,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          walletText,
+                          style: AppTypography.labelLg.copyWith(
+                            color: AppColors.secondary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    )),
               ),
             ],
           ),
@@ -744,18 +736,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: AppSpacing.md,
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.sm),
-                        decoration: BoxDecoration(
+                      ThemedPanel(
                           color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        child: const Icon(
-                          Icons.account_balance_wallet,
-                          color: AppColors.primary,
-                          size: 24,
-                        ),
-                      ),
+                          padding: const EdgeInsets.all(AppSpacing.sm),
+                          child: const Icon(
+                            Icons.account_balance_wallet,
+                            color: AppColors.primary,
+                            size: 24,
+                          )),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Column(
@@ -803,18 +792,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: AppSpacing.md,
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.sm),
-                        decoration: BoxDecoration(
+                      ThemedPanel(
                           color: AppColors.secondary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        child: const Icon(
-                          Icons.storefront,
-                          color: AppColors.secondary,
-                          size: 24,
-                        ),
-                      ),
+                          padding: const EdgeInsets.all(AppSpacing.sm),
+                          child: const Icon(
+                            Icons.storefront,
+                            color: AppColors.secondary,
+                            size: 24,
+                          )),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Column(
@@ -863,18 +849,15 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: AppSpacing.md,
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(
+                ThemedPanel(
                     color: AppColors.primaryContainer,
                     borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: const Icon(
-                    Icons.business_outlined,
-                    color: AppColors.secondary,
-                    size: 24,
-                  ),
-                ),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: const Icon(
+                      Icons.business_outlined,
+                      color: AppColors.secondary,
+                      size: 24,
+                    )),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
@@ -922,19 +905,16 @@ class _HomeScreenState extends State<HomeScreen> {
               // Action 1: Vehicle Maintenance / Fleet Alert
               Row(
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: const BoxDecoration(
+                  const ThemedPanel(
                       color: AppColors.errorContainer,
                       shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.warning_amber_rounded,
-                      color: AppColors.onErrorContainer,
-                      size: 22,
-                    ),
-                  ),
+                      width: 40,
+                      height: 40,
+                      child: Icon(
+                        Icons.warning_amber_rounded,
+                        color: AppColors.onErrorContainer,
+                        size: 22,
+                      )),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
@@ -980,19 +960,16 @@ class _HomeScreenState extends State<HomeScreen> {
               // Action 2: Pending Reconciliations
               Row(
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
+                  ThemedPanel(
                       color: AppColors.secondary.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.person_add_outlined,
-                      color: AppColors.secondary,
-                      size: 22,
-                    ),
-                  ),
+                      width: 40,
+                      height: 40,
+                      child: const Icon(
+                        Icons.person_add_outlined,
+                        color: AppColors.secondary,
+                        size: 22,
+                      )),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
@@ -1067,80 +1044,71 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(AppRadius.md),
           child: ThemedCard(
             padding: 0,
-            child: Container(
-              height: 140,
-              decoration: BoxDecoration(
+            child: ThemedPanel(
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 color: AppColors.primaryContainer,
-              ),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Center(
-                      child: Icon(
-                        Icons.map_outlined,
-                        size: 64,
-                        color: AppColors.onPrimaryContainer
-                            .withValues(alpha: 0.15),
+                height: 140,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Center(
+                        child: Icon(
+                          Icons.map_outlined,
+                          size: 64,
+                          color: AppColors.onPrimaryContainer
+                              .withValues(alpha: 0.15),
+                        ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    left: AppSpacing.md,
-                    bottom: AppSpacing.md,
-                    right: AppSpacing.md,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.sm,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
+                    Positioned(
+                      left: AppSpacing.md,
+                      bottom: AppSpacing.md,
+                      right: AppSpacing.md,
+                      child: ThemedPanel(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                            vertical: AppSpacing.sm,
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.secondary,
-                                  shape: BoxShape.circle,
-                                ),
+                              Row(
+                                children: [
+                                  const ThemedPanel(
+                                      color: AppColors.secondary,
+                                      shape: BoxShape.circle,
+                                      width: 10,
+                                      height: 10),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Text(
+                                    "Active Zone",
+                                    style: AppTypography.bodyMd.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.onSurface,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: AppSpacing.sm),
                               Text(
-                                "Active Zone",
-                                style: AppTypography.bodyMd.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.onSurface,
+                                "Downtown Metro Coverage",
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.onSurfaceVariant,
                                 ),
                               ),
                             ],
-                          ),
-                          Text(
-                            "Downtown Metro Coverage",
-                            style: AppTypography.caption.copyWith(
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
+                          )),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                )),
           ),
         ),
       ],

@@ -3,6 +3,7 @@ import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/form_screen_template.dart';
 import '../widgets/otp_pin_input.dart';
 import '../widgets/primary_button.dart';
@@ -170,22 +171,19 @@ class _OtpScreenState extends State<OtpScreen> {
   Widget _buildSecurityHeader(AppLocalizations l10n) {
     return Column(
       children: [
-        Center(
-          child: Container(
-            width: 64,
-            height: 64,
-            decoration: const BoxDecoration(
+        const Center(
+          child: ThemedPanel(
               color: AppColors.primaryContainer,
               shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.security_outlined,
-                size: 32,
-                color: AppColors.secondary,
-              ),
-            ),
-          ),
+              width: 64,
+              height: 64,
+              child: Center(
+                child: Icon(
+                  Icons.security_outlined,
+                  size: 32,
+                  color: AppColors.secondary,
+                ),
+              )),
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
@@ -253,34 +251,31 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   Widget _buildDevModeBanner() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      decoration: BoxDecoration(
+    return ThemedPanel(
         color: AppColors.secondary.withValues(alpha: 0.1),
         border: Border.all(
           color: AppColors.secondary.withValues(alpha: 0.4),
         ),
         borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.bug_report_outlined,
-            color: AppColors.warning,
-            size: 18,
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Expanded(
-            child: Text(
-              "Dev Mode: Auto-populated OTP '$_currentDevOtp' from response.",
-              style: AppTypography.labelMd.copyWith(
-                color: AppColors.onSurfaceVariant,
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.bug_report_outlined,
+              color: AppColors.warning,
+              size: 18,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: Text(
+                "Dev Mode: Auto-populated OTP '$_currentDevOtp' from response.",
+                style: AppTypography.labelMd.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ));
   }
 
   Widget _buildActionButtons(AuthProvider auth, AppLocalizations l10n) {

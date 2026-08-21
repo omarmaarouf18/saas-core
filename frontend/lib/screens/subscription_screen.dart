@@ -4,6 +4,7 @@ import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/app_shell.dart';
@@ -125,43 +126,40 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.sm,
-                              vertical: AppSpacing.xxs,
-                            ),
-                            decoration: BoxDecoration(
+                          ThemedPanel(
                               color: currentTier == 'free'
                                   ? AppColors.surfaceContainerHigh
                                       .withValues(alpha: 0.3)
                                   : AppColors.secondary.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(AppRadius.xl),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  currentTier == 'free'
-                                      ? Icons.star_border
-                                      : Icons.stars,
-                                  color: currentTier == 'free'
-                                      ? AppColors.onPrimary
-                                      : AppColors.secondary,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  currentTier == 'free' ? 'BASIC' : 'PRO',
-                                  style: AppTypography.labelSm.copyWith(
-                                    fontWeight: FontWeight.bold,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm,
+                                vertical: AppSpacing.xxs,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    currentTier == 'free'
+                                        ? Icons.star_border
+                                        : Icons.stars,
                                     color: currentTier == 'free'
                                         ? AppColors.onPrimary
                                         : AppColors.secondary,
+                                    size: 16,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    currentTier == 'free' ? 'BASIC' : 'PRO',
+                                    style: AppTypography.labelSm.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: currentTier == 'free'
+                                          ? AppColors.onPrimary
+                                          : AppColors.secondary,
+                                    ),
+                                  ),
+                                ],
+                              )),
                         ],
                       ),
                       const SizedBox(height: AppSpacing.sm),
@@ -497,27 +495,24 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         PositionedDirectional(
           top: 0,
           end: 0,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.baseSm,
-              vertical: AppSpacing.xs,
-            ),
-            decoration: const BoxDecoration(
+          child: ThemedPanel(
               color: AppColors.secondary,
-              borderRadius: BorderRadius.only(
+              borderRadius: const BorderRadius.only(
                 topRight: Radius.circular(AppRadius.lg),
                 bottomLeft: Radius.circular(AppRadius.md),
               ),
-            ),
-            child: Text(
-              'RECOMMENDED',
-              style: AppTypography.labelMd.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.onSecondary,
-                letterSpacing: 0.5,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.baseSm,
+                vertical: AppSpacing.xs,
               ),
-            ),
-          ),
+              child: Text(
+                'RECOMMENDED',
+                style: AppTypography.labelMd.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.onSecondary,
+                  letterSpacing: 0.5,
+                ),
+              )),
         ),
       ],
     );

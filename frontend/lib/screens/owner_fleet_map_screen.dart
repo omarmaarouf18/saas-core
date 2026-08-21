@@ -7,6 +7,7 @@ import '../core/constants.dart';
 import '../core/theme.dart';
 import '../models/employee_marker.dart';
 import '../providers/map_tracking_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
@@ -158,28 +159,25 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      padding: const EdgeInsetsDirectional.symmetric(
-                        horizontal: AppSpacing.xs,
-                        vertical: AppSpacing.xxs,
-                      ),
-                      decoration: BoxDecoration(
+                    ThemedPanel(
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(AppRadius.radiusSm),
                         border: Border.all(color: AppColors.secondary),
                         boxShadow: AppElevation.shadowLevel1List,
-                      ),
-                      child: Text(
-                        m.employeeId.length > 12
-                            ? m.employeeId.substring(0, 12)
-                            : m.employeeId,
-                        style: AppTypography.labelMd.copyWith(
-                          color: AppColors.onPrimary,
-                          fontWeight: FontWeight.bold,
+                        padding: const EdgeInsetsDirectional.symmetric(
+                          horizontal: AppSpacing.xs,
+                          vertical: AppSpacing.xxs,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                        child: Text(
+                          m.employeeId.length > 12
+                              ? m.employeeId.substring(0, 12)
+                              : m.employeeId,
+                          style: AppTypography.labelMd.copyWith(
+                            color: AppColors.onPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        )),
                     const Icon(
                       Icons.location_on,
                       color: AppColors.secondary,
@@ -204,116 +202,98 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.xs,
-              ),
-              decoration: BoxDecoration(
+            ThemedPanel(
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(AppRadius.full),
                 boxShadow: AppElevation.shadowLevel1List,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "All Fleet",
-                    style: AppTypography.labelMd.copyWith(
-                      color: AppColors.onPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(AppRadius.full),
-                    ),
-                    child: Text(
-                      "$markersCount",
-                      style: AppTypography.caption.copyWith(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xs,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "All Fleet",
+                      style: AppTypography.labelMd.copyWith(
                         color: AppColors.onPrimary,
                         fontWeight: FontWeight.bold,
-                        fontSize: 10,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                    const SizedBox(width: AppSpacing.xs),
+                    ThemedPanel(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(AppRadius.full),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        child: Text(
+                          "$markersCount",
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.onPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                        )),
+                  ],
+                )),
             const SizedBox(width: AppSpacing.xs),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.xs,
-              ),
-              decoration: BoxDecoration(
+            ThemedPanel(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(AppRadius.full),
                 border: Border.all(color: AppColors.outlineVariant),
                 boxShadow: AppElevation.shadowLevel1List,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppColors.success,
-                      shape: BoxShape.circle,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xs,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const ThemedPanel(
+                        color: AppColors.success,
+                        shape: BoxShape.circle,
+                        width: 8,
+                        height: 8),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      "On Route",
+                      style: AppTypography.labelMd.copyWith(
+                        color: AppColors.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    "On Route",
-                    style: AppTypography.labelMd.copyWith(
-                      color: AppColors.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                )),
             const SizedBox(width: AppSpacing.xs),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.xs,
-              ),
-              decoration: BoxDecoration(
+            ThemedPanel(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(AppRadius.full),
                 border: Border.all(color: AppColors.outlineVariant),
                 boxShadow: AppElevation.shadowLevel1List,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppColors.secondary,
-                      shape: BoxShape.circle,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xs,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const ThemedPanel(
+                        color: AppColors.secondary,
+                        shape: BoxShape.circle,
+                        width: 8,
+                        height: 8),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      "Idle",
+                      style: AppTypography.labelMd.copyWith(
+                        color: AppColors.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    "Idle",
-                    style: AppTypography.labelMd.copyWith(
-                      color: AppColors.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                )),
           ],
         ),
       ),
@@ -366,26 +346,23 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
               children: [
                 Row(
                   children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: const BoxDecoration(
+                    ThemedPanel(
                         color: AppColors.primaryContainer,
                         shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          employee.employeeId.length > 2
-                              ? AppTypography.uppercaseLabel(
-                                  employee.employeeId.substring(0, 2))
-                              : 'DR',
-                          style: AppTypography.labelMd.copyWith(
-                            color: AppColors.secondary,
-                            fontWeight: FontWeight.bold,
+                        width: 36,
+                        height: 36,
+                        child: Center(
+                          child: Text(
+                            employee.employeeId.length > 2
+                                ? AppTypography.uppercaseLabel(
+                                    employee.employeeId.substring(0, 2))
+                                : 'DR',
+                            style: AppTypography.labelMd.copyWith(
+                              color: AppColors.secondary,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
+                        )),
                     const SizedBox(width: AppSpacing.sm),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,43 +418,37 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
       bottom: AppSpacing.xl,
       child: Column(
         children: [
-          Container(
-            decoration: BoxDecoration(
+          ThemedPanel(
               color: AppColors.surface,
               borderRadius: AppRadius.defaultBorder,
               boxShadow: AppElevation.shadowLevel2List,
               border: Border.all(color: AppColors.outlineVariant),
-            ),
-            child: Column(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  color: AppColors.onSurface,
-                  onPressed: _zoomIn,
-                ),
-                const Divider(height: 1, color: AppColors.outlineVariant),
-                IconButton(
-                  icon: const Icon(Icons.remove),
-                  color: AppColors.onSurface,
-                  onPressed: _zoomOut,
-                ),
-              ],
-            ),
-          ),
+              child: Column(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    color: AppColors.onSurface,
+                    onPressed: _zoomIn,
+                  ),
+                  const Divider(height: 1, color: AppColors.outlineVariant),
+                  IconButton(
+                    icon: const Icon(Icons.remove),
+                    color: AppColors.onSurface,
+                    onPressed: _zoomOut,
+                  ),
+                ],
+              )),
           const SizedBox(height: AppSpacing.sm),
-          Container(
-            decoration: BoxDecoration(
+          ThemedPanel(
               color: AppColors.surface,
               shape: BoxShape.circle,
               boxShadow: AppElevation.shadowLevel2List,
               border: Border.all(color: AppColors.outlineVariant),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.my_location),
-              color: AppColors.primary,
-              onPressed: () => _centerOnTarget(centerPoint),
-            ),
-          ),
+              child: IconButton(
+                icon: const Icon(Icons.my_location),
+                color: AppColors.primary,
+                onPressed: () => _centerOnTarget(centerPoint),
+              )),
         ],
       ),
     );

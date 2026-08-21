@@ -191,7 +191,7 @@
     * *P2 AppShell Rollout*: **[COMPLETE — 0 Scaffold(/AppBar( constructions in screens/, proven by scripts/frontend_audit.sh]**
     * *P2 Companion — Loading/Error/Empty State Consistency Audit*: **[COMPLETE]** All page-level loading flows route through `ThemedLoadingIndicator`/`SkeletonLoader` variants (10 screens) or template state slots; empty states via `ThemedEmptyState` (12 screens); errors via `ThemedErrorBanner` (13 screens); zero raw `SnackBar(` in screens/ (`ThemedSnackBar.showSuccess/showError` helpers only). Exactly 2 `CircularProgressIndicator(` remain in screens/, both deliberate inline micro-indicators (8×8 chat connection dot in the AppBar status row; 18×18 refresh-icon replacement while polling) — accepted exceptions, not page-level states.
     * *P3 Typography/Uppercase*: **[COMPLETE]** Added `AppTypography.labelUppercase` (canonical badge style) and `AppTypography.uppercaseLabel(String)` (centralized transform) to `core/theme.dart`. Rewrote all **36** scattered `.toUpperCase()` call sites across 16 screen files to route through `uppercaseLabel` — the transform now has exactly one definition, and raw `.toUpperCase()` is banned in screens/. Post-fix audit: **0 `.toUpperCase()` occurrences in screens/**. Full suite: 292/292 pass.
-    * *P4 BoxDecoration Elimination*: **[NOT STARTED]** (114 occurrences in screens/).
+    * *P4 BoxDecoration Elimination*: **[COMPLETE]** Created shared primitives `ThemedPanel` + `AnimatedThemedPanel` (`frontend/lib/widgets/themed_panel.dart`) as the sanctioned decorated-container layer (color/gradient/radius/circle/border/shadow/constraints), converting all **109** `Container(decoration: BoxDecoration(...))` sites plus 1 `AnimatedContainer` site across 23 screen files. Ran `dart fix --apply` (19 const fixes) in the same pass. Post-fix audit: **0 `BoxDecoration(` occurrences in screens/** (was 110 at P2 completion; 123 at plan baseline). Dedicated suite `test/themed_panel_test.dart` (5/5 pass); full suite 297/297 pass.
     * *P5 Lint Enforcement CI Gate*: **[NOT STARTED]**.
     * *P6 Component Library + Golden Tests*: **[NOT STARTED]**.
 
@@ -263,6 +263,7 @@
     * `app_shell.dart`
     * `cancel_job_dialog.dart`
     * `dashboard_screen_template.dart`
+    * `themed_panel.dart`
     * `confirm_action_dialog.dart`
     * `create_service_dialog.dart`
     * `create_ticket_dialog.dart`

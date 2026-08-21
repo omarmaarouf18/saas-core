@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
 import '../providers/theme_provider.dart';
 import '../utils/logout_helper.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/create_ticket_dialog.dart';
 import '../widgets/entity_avatar.dart';
 import '../widgets/form_screen_template.dart';
@@ -108,27 +109,24 @@ class SettingsScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xxs,
-                    ),
-                    decoration: BoxDecoration(
+                  ThemedPanel(
                       color: AppColors.primary.withValues(alpha: 0.08),
                       borderRadius: AppRadius.smBorder,
                       border: Border.all(
                         color: AppColors.outlineVariant.withValues(alpha: 0.5),
                       ),
-                    ),
-                    child: Text(
-                      AppTypography.uppercaseLabel(user.role),
-                      style: AppTypography.labelSm.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xxs,
                       ),
-                    ),
-                  ),
+                      child: Text(
+                        AppTypography.uppercaseLabel(user.role),
+                        style: AppTypography.labelSm.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      )),
                 ],
               ),
             ),

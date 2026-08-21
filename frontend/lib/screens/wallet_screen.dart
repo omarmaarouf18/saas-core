@@ -5,6 +5,7 @@ import '../l10n/l10n.dart';
 import '../models/payout_request.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/deposit_funds_dialog.dart';
 import '../widgets/info_list_tile.dart';
 import '../widgets/payout_request_dialog.dart';
@@ -187,34 +188,31 @@ class _WalletScreenState extends State<WalletScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.baseSm,
-                  vertical: AppSpacing.xxs,
-                ),
-                decoration: BoxDecoration(
+              ThemedPanel(
                   color: AppColors.success.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.trending_up,
-                      color: AppColors.success,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      "+8.4% vs last mo",
-                      style: AppTypography.caption.copyWith(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.baseSm,
+                    vertical: AppSpacing.xxs,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.trending_up,
                         color: AppColors.success,
-                        fontWeight: FontWeight.bold,
+                        size: 14,
                       ),
-                    ),
-                  ],
-                ),
-              ),
+                      const SizedBox(width: 2),
+                      Text(
+                        "+8.4% vs last mo",
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.success,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  )),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -497,23 +495,20 @@ class _WalletScreenState extends State<WalletScreen> {
           ),
           if (jobId.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.xs),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 6,
-                vertical: 2,
-              ),
-              decoration: BoxDecoration(
+            ThemedPanel(
                 color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: Text(
-                "Job: ${jobId.substring(0, jobId.length > 8 ? 8 : jobId.length)}",
-                style: AppTypography.labelMd.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
                 ),
-              ),
-            ),
+                child: Text(
+                  "Job: ${jobId.substring(0, jobId.length > 8 ? 8 : jobId.length)}",
+                  style: AppTypography.labelMd.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                )),
           ],
         ],
       ),

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/email_change_dialog.dart';
 import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
@@ -408,24 +409,21 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.xxs),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: AppSpacing.xxs,
-            ),
-            decoration: BoxDecoration(
+          ThemedPanel(
               color: AppColors.success.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: Text(
-              AppTypography.uppercaseLabel(role),
-              style: AppTypography.labelSm.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.success,
-                letterSpacing: 0.8,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xxs,
               ),
-            ),
-          ),
+              child: Text(
+                AppTypography.uppercaseLabel(role),
+                style: AppTypography.labelSm.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.success,
+                  letterSpacing: 0.8,
+                ),
+              )),
         ],
       ),
     );

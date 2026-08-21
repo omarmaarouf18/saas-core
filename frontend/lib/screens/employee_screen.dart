@@ -5,6 +5,7 @@ import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/entity_avatar.dart';
 import '../widgets/pill_filter_bar.dart';
 import '../widgets/primary_button.dart';
@@ -325,63 +326,60 @@ class _EmployeeScreenState extends State<EmployeeScreen>
         ? AppTypography.uppercaseLabel(empId.substring(0, 8))
         : AppTypography.uppercaseLabel(empId);
 
-    return Container(
-      key: Key('employee_item_$empId'),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
+    return ThemedPanel(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
           color: AppColors.outlineVariant.withValues(alpha: 0.3),
           width: 1,
         ),
-      ),
-      child: Row(
-        children: [
-          EntityAvatar(
-            name: username.isNotEmpty ? username : 'Employee',
-            radius: 22,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  username,
-                  style: AppTypography.titleMd.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  email,
-                  style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  "ID: #QD-$displayId",
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.outline,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+        key: Key('employee_item_$empId'),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: [
+            EntityAvatar(
+              name: username.isNotEmpty ? username : 'Employee',
+              radius: 22,
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          StatusBadge(
-            status: isActive ? 'active' : 'frozen',
-            compact: true,
-          ),
-        ],
-      ),
-    );
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    username,
+                    style: AppTypography.titleMd.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    email,
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    "ID: #QD-$displayId",
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.outline,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            StatusBadge(
+              status: isActive ? 'active' : 'frozen',
+              compact: true,
+            ),
+          ],
+        ));
   }
 
   Widget _buildRegisterEmployeeForm(

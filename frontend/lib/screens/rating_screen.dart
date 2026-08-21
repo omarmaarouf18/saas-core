@@ -5,6 +5,7 @@ import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/entity_avatar.dart';
 import '../widgets/primary_button.dart';
@@ -386,18 +387,15 @@ class _RatingScreenState extends State<RatingScreen> {
           if (_isLoadingOtherStatus)
             ThemedLoadingIndicator(message: l10n.loadingStatus)
           else if (_otherPartyHasRated) ...[
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
+            ThemedPanel(
                 color: AppColors.success.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_circle_outline,
-                color: AppColors.success,
-                size: 48,
-              ),
-            ),
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: const Icon(
+                  Icons.check_circle_outline,
+                  color: AppColors.success,
+                  size: 48,
+                )),
             const SizedBox(height: AppSpacing.md),
             Text(
               "Feedback Locked In!",
@@ -423,17 +421,14 @@ class _RatingScreenState extends State<RatingScreen> {
                   size: 48,
                   color: AppColors.onSurfaceVariant.withValues(alpha: 0.3),
                 ),
-                Positioned(
+                const Positioned(
                   right: 0,
                   top: 0,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
+                  child: ThemedPanel(
                       color: AppColors.secondary,
                       shape: BoxShape.circle,
-                    ),
-                  ),
+                      width: 10,
+                      height: 10),
                 ),
               ],
             ),
@@ -458,23 +453,17 @@ class _RatingScreenState extends State<RatingScreen> {
             Row(
               children: [
                 Expanded(
-                  child: Container(
-                    height: 6,
-                    decoration: BoxDecoration(
+                  child: ThemedPanel(
                       color: colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(AppRadius.radiusXxs),
-                    ),
-                  ),
+                      height: 6),
                 ),
                 const SizedBox(width: AppSpacing.base),
                 Expanded(
-                  child: Container(
-                    height: 6,
-                    decoration: BoxDecoration(
+                  child: ThemedPanel(
                       color: AppColors.outline.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(AppRadius.radiusXxs),
-                    ),
-                  ),
+                      height: 6),
                 ),
               ],
             ),

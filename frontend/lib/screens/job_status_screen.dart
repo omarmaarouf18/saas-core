@@ -8,6 +8,7 @@ import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/cancel_job_dialog.dart';
 import '../widgets/create_ticket_dialog.dart';
 import '../widgets/entity_avatar.dart';
@@ -416,65 +417,59 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     bool isActive,
     String displayId,
   ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
+    return ThemedPanel(
         color: AppColors.surface,
         borderRadius: AppRadius.smBorder,
         border: Border.all(color: AppColors.outlineVariant, width: 1),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isCancelled
-                      ? AppColors.error
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                ThemedPanel(
+                    shape: BoxShape.circle,
+                    color: isCancelled
+                        ? AppColors.error
+                        : isCompleted
+                            ? AppColors.success
+                            : AppColors.secondary,
+                    width: 10,
+                    height: 10),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  isCancelled
+                      ? "Cancelled"
                       : isCompleted
-                          ? AppColors.success
-                          : AppColors.secondary,
+                          ? "Completed"
+                          : isActive
+                              ? "In Transit"
+                              : "Pending",
+                  style: AppTypography.titleMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.onSurface,
+                  ),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                isCancelled
-                    ? "Cancelled"
-                    : isCompleted
-                        ? "Completed"
-                        : isActive
-                            ? "In Transit"
-                            : "Pending",
-                style: AppTypography.titleMd.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.onSurface,
+              ],
+            ),
+            Row(
+              children: [
+                Text(
+                  "#QD-$displayId",
+                  style: AppTypography.labelSm.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              Text(
-                "#QD-$displayId",
-                style: AppTypography.labelSm.copyWith(
-                  color: AppColors.onSurfaceVariant,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              StatusBadge(status: _currentJob.status),
-            ],
-          ),
-        ],
-      ),
-    );
+                const SizedBox(width: AppSpacing.sm),
+                StatusBadge(status: _currentJob.status),
+              ],
+            ),
+          ],
+        ));
   }
 
   Widget _buildTrackJobBanner(BuildContext context) {
@@ -498,19 +493,16 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       },
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
+          ThemedPanel(
               color: AppColors.surface.withValues(alpha: 0.15),
               shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.map_outlined,
-              color: AppColors.secondary,
-              size: 24,
-            ),
-          ),
+              width: 44,
+              height: 44,
+              child: const Icon(
+                Icons.map_outlined,
+                color: AppColors.secondary,
+                size: 24,
+              )),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -630,16 +622,13 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       children: [
         Column(
           children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
+            ThemedPanel(
                 shape: BoxShape.circle,
                 color: nodeBg,
                 boxShadow: isActive ? AppElevation.shadowLevel1List : null,
-              ),
-              child: Icon(icon, size: 16, color: nodeColor),
-            ),
+                width: 32,
+                height: 32,
+                child: Icon(icon, size: 16, color: nodeColor)),
             if (!isLast)
               Container(
                 width: 2,
@@ -708,29 +697,23 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             children: [
               Column(
                 children: [
-                  Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
+                  ThemedPanel(
                       shape: BoxShape.circle,
                       color: AppColors.primaryContainer,
                       border: Border.all(color: AppColors.surface, width: 2),
-                    ),
-                  ),
+                      width: 14,
+                      height: 14),
                   Container(
                     width: 2,
                     height: 36,
                     color: AppColors.outlineVariant,
                   ),
-                  Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
+                  ThemedPanel(
                       shape: BoxShape.circle,
                       color: AppColors.secondary,
                       border: Border.all(color: AppColors.surface, width: 2),
-                    ),
-                  ),
+                      width: 14,
+                      height: 14),
                 ],
               ),
               const SizedBox(width: AppSpacing.md),
@@ -779,61 +762,56 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           Row(
             children: [
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(
+                child: ThemedPanel(
                     color: AppColors.surfaceContainerLow,
                     borderRadius: AppRadius.smBorder,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Payment",
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Payment",
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        AppTypography.uppercaseLabel(_currentJob.paymentMethod),
-                        style: AppTypography.bodySm.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.onSurface,
+                        const SizedBox(height: 2),
+                        Text(
+                          AppTypography.uppercaseLabel(
+                              _currentJob.paymentMethod),
+                          style: AppTypography.bodySm.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.onSurface,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                      ],
+                    )),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(
+                child: ThemedPanel(
                     color: AppColors.surfaceContainerLow,
                     borderRadius: AppRadius.smBorder,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Total Fare",
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Total Fare",
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        "\$${(_currentJob.agreedPrice ?? _currentJob.suggestedPrice ?? 0).toStringAsFixed(2)}",
-                        style: AppTypography.bodySm.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                        const SizedBox(height: 2),
+                        Text(
+                          "\$${(_currentJob.agreedPrice ?? _currentJob.suggestedPrice ?? 0).toStringAsFixed(2)}",
+                          style: AppTypography.bodySm.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                      ],
+                    )),
               ),
             ],
           ),
@@ -896,29 +874,26 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
   }
 
   Widget _buildCancellationBanner() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
+    return ThemedPanel(
         color: AppColors.error.withValues(alpha: 0.1),
         borderRadius: AppRadius.smBorder,
         border: Border.all(color: AppColors.error),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.info_outline, color: AppColors.error),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              "Cancellation Reason: ${_currentJob.cancellationReason!}",
-              style: AppTypography.bodySm.copyWith(
-                color: AppColors.error,
-                fontWeight: FontWeight.bold,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: [
+            const Icon(Icons.info_outline, color: AppColors.error),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                "Cancellation Reason: ${_currentJob.cancellationReason!}",
+                style: AppTypography.bodySm.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ));
   }
 
   List<Widget> _buildActionButtons(
@@ -1026,14 +1001,12 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           ThemedSectionHeader(
             title: l10n.priceNegotiationTitle,
             trailing: (status == 'awaiting_price_response' && !expired)
-                ? Container(
+                ? ThemedPanel(
+                    color: AppColors.warning.withValues(alpha: 0.15),
+                    borderRadius: AppRadius.smBorder,
+                    border: Border.all(color: AppColors.warning),
                     padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.sm, vertical: AppSpacing.xs / 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.warning.withValues(alpha: 0.15),
-                      borderRadius: AppRadius.smBorder,
-                      border: Border.all(color: AppColors.warning),
-                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -1049,38 +1022,34 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                           ),
                         ),
                       ],
-                    ),
-                  )
+                    ))
                 : null,
           ),
           const SizedBox(height: AppSpacing.md),
 
           // Expired state banner
           if (expired) ...[
-            Container(
-              key: const Key('negotiation_expired_banner'),
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
+            ThemedPanel(
                 color: AppColors.error.withValues(alpha: 0.1),
                 borderRadius: AppRadius.smBorder,
                 border: Border.all(color: AppColors.error),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.alarm_off, color: AppColors.error),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      "Negotiation Window Expired (5-min limit lapsed)",
-                      style: AppTypography.bodyMd.copyWith(
-                        color: AppColors.error,
-                        fontWeight: FontWeight.bold,
+                key: const Key('negotiation_expired_banner'),
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Row(
+                  children: [
+                    const Icon(Icons.alarm_off, color: AppColors.error),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        "Negotiation Window Expired (5-min limit lapsed)",
+                        style: AppTypography.bodyMd.copyWith(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                )),
             const SizedBox(height: AppSpacing.sm),
           ],
 
@@ -1098,70 +1067,67 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               !expired) ...[
             const Divider(
                 height: AppSpacing.md, color: AppColors.outlineVariant),
-            Container(
-              key: const Key('incoming_proposal_card'),
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
+            ThemedPanel(
                 color: AppColors.primary.withValues(alpha: 0.08),
                 borderRadius: AppRadius.smBorder,
                 border:
                     Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Incoming Proposal",
-                        style: AppTypography.bodyMd.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                key: const Key('incoming_proposal_card'),
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Incoming Proposal",
+                          style: AppTypography.bodyMd.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
                         ),
-                      ),
-                      Text(
-                        "by ${proposedBy == 'customer' ? 'Customer' : 'Driver / Employee'}",
-                        style: AppTypography.labelMd.copyWith(
-                          color: AppColors.onSurfaceVariant,
-                          fontStyle: FontStyle.italic,
+                        Text(
+                          "by ${proposedBy == 'customer' ? 'Customer' : 'Driver / Employee'}",
+                          style: AppTypography.labelMd.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Proposed Fare:",
-                        style: AppTypography.bodyMd
-                            .copyWith(color: AppColors.onSurface),
-                      ),
-                      Text(
-                        "\$${proposed.toStringAsFixed(2)}",
-                        key: const Key('proposed_price_text'),
-                        style: AppTypography.headlineLgMobile.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.secondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    "Comparison: ${proposed - suggested >= 0 ? '+' : ''}\$${(proposed - suggested).toStringAsFixed(2)} (${proposed - suggested >= 0 ? '+' : ''}${(suggested > 0 ? ((proposed - suggested) / suggested) * 100 : 0.0).toStringAsFixed(1)}% vs System Price)",
-                    key: const Key('proposal_comparison_text'),
-                    style: AppTypography.labelMd.copyWith(
-                      color: (proposed - suggested) > 0
-                          ? AppColors.warning
-                          : AppColors.success,
-                      fontWeight: FontWeight.w600,
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Proposed Fare:",
+                          style: AppTypography.bodyMd
+                              .copyWith(color: AppColors.onSurface),
+                        ),
+                        Text(
+                          "\$${proposed.toStringAsFixed(2)}",
+                          key: const Key('proposed_price_text'),
+                          style: AppTypography.headlineLgMobile.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.secondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      "Comparison: ${proposed - suggested >= 0 ? '+' : ''}\$${(proposed - suggested).toStringAsFixed(2)} (${proposed - suggested >= 0 ? '+' : ''}${(suggested > 0 ? ((proposed - suggested) / suggested) * 100 : 0.0).toStringAsFixed(1)}% vs System Price)",
+                      key: const Key('proposal_comparison_text'),
+                      style: AppTypography.labelMd.copyWith(
+                        color: (proposed - suggested) > 0
+                            ? AppColors.warning
+                            : AppColors.success,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                )),
             const SizedBox(height: AppSpacing.md),
             if ((proposedBy == 'customer' &&
                     currentUserId == _currentJob.userId) ||

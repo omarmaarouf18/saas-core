@@ -3,6 +3,7 @@ import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/form_screen_template.dart';
 import '../widgets/otp_pin_input.dart';
 import '../widgets/primary_button.dart';
@@ -320,22 +321,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget _buildHeader(AppLocalizations l10n) {
     return Column(
       children: [
-        Center(
-          child: Container(
-            width: 64,
-            height: 64,
-            decoration: const BoxDecoration(
+        const Center(
+          child: ThemedPanel(
               color: AppColors.primaryContainer,
               shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.lock_reset,
-                size: 32,
-                color: AppColors.secondary,
-              ),
-            ),
-          ),
+              width: 64,
+              height: 64,
+              child: Center(
+                child: Icon(
+                  Icons.lock_reset,
+                  size: 32,
+                  color: AppColors.secondary,
+                ),
+              )),
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
@@ -359,24 +357,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildDevOtpBanner() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
+    return ThemedPanel(
         color: AppColors.secondary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(
           color: AppColors.secondary.withValues(alpha: 0.4),
         ),
-      ),
-      child: Text(
-        "Dev OTP Code: $_currentDevOtp",
-        style: AppTypography.bodyLg.copyWith(
-          color: AppColors.primary,
-          fontWeight: FontWeight.bold,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    );
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Text(
+          "Dev OTP Code: $_currentDevOtp",
+          style: AppTypography.bodyLg.copyWith(
+            color: AppColors.primary,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ));
   }
 
   Widget _buildFooterLink(AppLocalizations l10n) {

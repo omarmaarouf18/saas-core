@@ -5,6 +5,7 @@ import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/employee_jobs_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/list_screen_template.dart';
 import '../widgets/route_timeline.dart';
 import '../widgets/status_badge.dart';
@@ -216,22 +217,20 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
                 job.cancellationReason != null &&
                 job.cancellationReason!.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.sm),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
+              ThemedPanel(
                   color: AppColors.error.withValues(alpha: 0.1),
                   borderRadius: AppRadius.defaultBorder,
                   border:
                       Border.all(color: AppColors.error.withValues(alpha: 0.3)),
-                ),
-                child: Text(
-                  l10n.employeeJobsCancellationReason(job.cancellationReason!),
-                  style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.error,
-                  ),
-                ),
-              ),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  child: Text(
+                    l10n.employeeJobsCancellationReason(
+                        job.cancellationReason!),
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.error,
+                    ),
+                  )),
             ],
           ],
         ),
@@ -240,37 +239,34 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
   }
 
   Widget _buildChip(IconData icon, String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
+    return ThemedPanel(
         color: AppColors.surface,
         borderRadius: AppRadius.smBorder,
         border: Border.all(color: AppColors.outlineVariant),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: AppIconSize.xs, color: AppColors.onSurfaceVariant),
-          const SizedBox(width: AppSpacing.xs),
-          Text(
-            "$label: ",
-            style: AppTypography.labelLg.copyWith(
-              color: AppColors.onSurfaceVariant,
-              fontWeight: FontWeight.normal,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: AppIconSize.xs, color: AppColors.onSurfaceVariant),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              "$label: ",
+              style: AppTypography.labelLg.copyWith(
+                color: AppColors.onSurfaceVariant,
+                fontWeight: FontWeight.normal,
+              ),
             ),
-          ),
-          Text(
-            value,
-            style: AppTypography.labelLg.copyWith(
-              color: AppColors.onSurface,
-              fontWeight: FontWeight.bold,
+            Text(
+              value,
+              style: AppTypography.labelLg.copyWith(
+                color: AppColors.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ));
   }
 }

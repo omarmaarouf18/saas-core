@@ -3,6 +3,7 @@ import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
@@ -116,22 +117,19 @@ class _SignupScreenState extends State<SignupScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Centered Brand Shipping Icon
-          Center(
-            child: Container(
-              width: 64,
-              height: 64,
-              decoration: const BoxDecoration(
+          const Center(
+            child: ThemedPanel(
                 color: AppColors.primaryContainer,
                 shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.local_shipping,
-                  size: 32,
-                  color: AppColors.secondary,
-                ),
-              ),
-            ),
+                width: 64,
+                height: 64,
+                child: Center(
+                  child: Icon(
+                    Icons.local_shipping,
+                    size: 32,
+                    color: AppColors.secondary,
+                  ),
+                )),
           ),
           const SizedBox(height: AppSpacing.md),
 
@@ -303,20 +301,17 @@ class _SignupScreenState extends State<SignupScreen> {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        child: AnimatedContainer(
+        child: AnimatedThemedPanel(
           duration: AppMotion.durationFast,
           padding: const EdgeInsets.symmetric(
             vertical: AppSpacing.md,
             horizontal: AppSpacing.sm,
           ),
-          decoration: BoxDecoration(
-            color:
-                isSelected ? AppColors.surfaceContainerLow : AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.outlineVariant,
-              width: isSelected ? 2.0 : 1.0,
-            ),
+          color: isSelected ? AppColors.surfaceContainerLow : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.outlineVariant,
+            width: isSelected ? 2.0 : 1.0,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

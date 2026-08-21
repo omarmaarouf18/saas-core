@@ -5,6 +5,7 @@ import '../core/constants.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/create_service_dialog.dart';
 import '../widgets/themed_card.dart';
@@ -147,49 +148,46 @@ class _ServiceScreenState extends State<ServiceScreen> {
   }
 
   Widget _buildKycBanner() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
+    return ThemedPanel(
         color: AppColors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
           color: AppColors.outlineVariant.withValues(alpha: 0.5),
           width: 1,
         ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.lock_outline,
-            color: AppColors.outline,
-            size: 22,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Verification Required",
-                  style: AppTypography.titleMd.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.onSurface,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  "Please complete KYC verification to create new services or modify existing ones.",
-                  style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-              ],
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.lock_outline,
+              color: AppColors.outline,
+              size: 22,
             ),
-          ),
-        ],
-      ),
-    );
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Verification Required",
+                    style: AppTypography.titleMd.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    "Please complete KYC verification to create new services or modify existing ones.",
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ));
   }
 
   Widget _buildEmptyState(dynamic user, AppLocalizations l10n) {
@@ -233,21 +231,18 @@ class _ServiceScreenState extends State<ServiceScreen> {
           // Top Row: Category Icon, Name, Active status dot
           Row(
             children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
+              ThemedPanel(
                   color: AppColors.primaryContainer,
                   borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                child: Center(
-                  child: Icon(
-                    _getCategoryIcon(category),
-                    color: AppColors.secondary,
-                    size: 22,
-                  ),
-                ),
-              ),
+                  width: 42,
+                  height: 42,
+                  child: Center(
+                    child: Icon(
+                      _getCategoryIcon(category),
+                      color: AppColors.secondary,
+                      size: 22,
+                    ),
+                  )),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
@@ -264,14 +259,11 @@ class _ServiceScreenState extends State<ServiceScreen> {
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
+                        const ThemedPanel(
                             color: AppColors.success,
                             shape: BoxShape.circle,
-                          ),
-                        ),
+                            width: 8,
+                            height: 8),
                         const SizedBox(width: 6),
                         Text(
                           AppTypography.uppercaseLabel(categoryLabel),
@@ -294,68 +286,65 @@ class _ServiceScreenState extends State<ServiceScreen> {
           ),
 
           // Rates Box (Base Rate + Per KM)
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-            decoration: BoxDecoration(
+          ThemedPanel(
               color: AppColors.surfaceContainerLow,
               borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "BASE RATE",
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "BASE RATE",
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      "\$${basePrice.toStringAsFixed(2)}",
-                      style: AppTypography.titleMd.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                      const SizedBox(height: 2),
+                      Text(
+                        "\$${basePrice.toStringAsFixed(2)}",
+                        style: AppTypography.titleMd.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                Container(
-                  height: 28,
-                  width: 1,
-                  color: AppColors.outlineVariant.withValues(alpha: 0.4),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "PER KM",
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
+                    ],
+                  ),
+                  Container(
+                    height: 28,
+                    width: 1,
+                    color: AppColors.outlineVariant.withValues(alpha: 0.4),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "PER KM",
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      "\$${pricePerKm.toStringAsFixed(2)}",
-                      style: AppTypography.titleMd.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                      const SizedBox(height: 2),
+                      Text(
+                        "\$${pricePerKm.toStringAsFixed(2)}",
+                        style: AppTypography.titleMd.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+                    ],
+                  ),
+                ],
+              )),
 
           // Location coordinates if present
           if (lat != null && lon != null) ...[
