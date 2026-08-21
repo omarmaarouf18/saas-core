@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import '../core/api_client.dart';
 
@@ -11,12 +15,26 @@ abstract class PushMessagingAdapter {
           callback);
 }
 
-/// Default implementation for FCM messaging adapter.
+/// Default implementation backed by the real `firebase_messaging` plugin.
+///
+/// When Firebase has not been initialized (no `Firebase.initializeApp()` call
+/// and no platform configuration files such as `google-services.json`), every
+/// method degrades to a safe no-op instead of registering fake tokens — push
+/// delivery is simply unavailable until Firebase is configured for the build.
 class DefaultPushMessagingAdapter implements PushMessagingAdapter {
+  StreamSubscription<RemoteMessage>? _foregroundSubscription;
+
+  bool get _firebaseAvailable => Firebase.apps.isNotEmpty;
+
   @override
   Future<String?> getToken() async {
     try {
-      return 'fcm-device-token-${DateTime.now().millisecondsSinceEpoch}';
+      if (!_firebaseAvailable) {
+        debugPrint(
+            '[FCM] Firebase is not initialized; skipping device token retrieval');
+        return null;
+      }
+      return await FirebaseMessaging.instance.getToken();
     } catch (e) {
       debugPrint('FCM getToken error: $e');
       return null;
@@ -26,7 +44,12 @@ class DefaultPushMessagingAdapter implements PushMessagingAdapter {
   @override
   Future<void> deleteToken() async {
     try {
-      debugPrint('FCM token deleted');
+      if (!_firebaseAvailable) {
+        debugPrint('[FCM] Firebase is not initialized; nothing to delete');
+        return;
+      }
+      await FirebaseMessaging.instance.deleteToken();
+      debugPrint('[FCM] FCM token deleted');
     } catch (e) {
       debugPrint('FCM deleteToken error: $e');
     }
@@ -36,7 +59,19 @@ class DefaultPushMessagingAdapter implements PushMessagingAdapter {
   void onForegroundMessage(
       void Function(String title, String body, Map<String, dynamic> data)
           callback) {
-    // Subscribes to foreground push notifications
+    if (!_firebaseAvailable) {
+      debugPrint(
+          '[FCM] Firebase is not initialized; foreground message listening disabled');
+      return;
+    }
+    _foregroundSubscription?.cancel();
+    _foregroundSubscription = FirebaseMessaging.onMessage.listen((message) {
+      callback(
+        message.notification?.title ?? '',
+        message.notification?.body ?? '',
+        message.data,
+      );
+    });
   }
 }
 
