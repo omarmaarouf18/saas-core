@@ -70,3 +70,14 @@ This file tracks historical entries for the primary category: **Refactoring Chan
   - Post-fix audit (`scripts/frontend_audit.sh`): `.toUpperCase()` occurrences in screens/ = **0**.
 - **Commit SHA**: ``0106e1dc0494ec75f3a6f0a9421fee6bc6fac663``
 - **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), and full suite `flutter test` (292/292 All tests passed). ✅
+
+## P4 BoxDecoration Elimination via ThemedPanel (110 call sites eliminated)
+
+- **Implementation Detail**:
+  - Created `ThemedPanel` + `AnimatedThemedPanel` (`frontend/lib/widgets/themed_panel.dart`) as the single sanctioned decorated-container primitives for screens, internally owning all `BoxDecoration` construction.
+  - Converted 109 `Container(decoration: BoxDecoration(...))` sites and 1 `AnimatedContainer` site (signup role-selector -> `AnimatedThemedPanel`) across all 23 remaining screen files; zero unsupported-argument drops during the mechanical conversion.
+  - Fixed an animation repaint defect found by the dedicated test: state initially extended `ImplicitlyAnimatedWidgetState` (no per-tick rebuilds); moved to `AnimatedWidgetBaseState`.
+  - Ran `dart fix --apply` (19 `prefer_const_constructors` fixes) in the same pass.
+  - Post-fix audit (`scripts/frontend_audit.sh`): `BoxDecoration(` occurrences in screens/ = **0**.
+- **Commit SHA**: ``9920693ffbd80d306e7e5c5fb6ee539a8798f060``
+- **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), `frontend/test/themed_panel_test.dart` (5/5 pass), and full suite `flutter test` (297/297 All tests passed). ✅
