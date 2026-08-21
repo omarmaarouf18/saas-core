@@ -79,6 +79,9 @@ type UserService struct {
 	ledgerIPLimiter           *handlerutil.RateLimiter
 	ratingsLimiter            *handlerutil.RateLimiter
 	reconciliationLimiter     *handlerutil.RateLimiter
+	completeJobLimiter        *handlerutil.RateLimiter
+	resolveReconLimiter       *handlerutil.RateLimiter
+	payoutLimiter             *handlerutil.RateLimiter
 	internalServiceToken      string
 	locationThrottleMu        sync.Mutex
 	locationLastUpdate        map[string]time.Time
@@ -178,6 +181,9 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 	rlLedgerIP := ratelimit.NewRateLimiter(rdb, 60, 1*time.Minute, "user:ledger_ip")
 	rlRatings := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "user:ratings")
 	rlReconciliation := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "user:reconciliation")
+	rlCompleteJob := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "user:complete_job")
+	rlResolveRecon := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "user:reconciliation_resolve")
+	rlPayout := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "user:payout")
 
 	authClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
 	chatClient := resilience.NewClient(client, "chat-service", 2, 5*time.Second)
@@ -195,6 +201,9 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		ledgerIPLimiter:           handlerutil.NewRateLimiter(rlLedgerIP),
 		ratingsLimiter:            handlerutil.NewRateLimiter(rlRatings),
 		reconciliationLimiter:     handlerutil.NewRateLimiter(rlReconciliation),
+		completeJobLimiter:        handlerutil.NewRateLimiter(rlCompleteJob),
+		resolveReconLimiter:       handlerutil.NewRateLimiter(rlResolveRecon),
+		payoutLimiter:             handlerutil.NewRateLimiter(rlPayout),
 		internalServiceToken:      cfg.InternalServiceToken,
 		locationLastUpdate:        make(map[string]time.Time),
 		locationInFlight:          make(map[string]bool),

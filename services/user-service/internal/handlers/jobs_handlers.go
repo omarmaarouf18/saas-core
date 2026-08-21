@@ -429,6 +429,10 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 			return
 		}
+		if limited, remaining := u.completeJobLimiter.CheckAndRecord(resolvedRequester); limited {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many requests; retry in %.0f seconds", remaining.Seconds())})
+			return
+		}
 
 		if resolvedRequester != job.OwnerID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
 			// #nosec G706 //nolint:gosec -- IDs are from verified JWT tokens and database, log injection not possible

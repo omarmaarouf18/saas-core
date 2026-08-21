@@ -142,6 +142,11 @@ func (u *UserService) ResolveReconciliation(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if limited, remaining := u.resolveReconLimiter.CheckAndRecord(resolvedOwnerID); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many requests; retry in %.0f seconds", remaining.Seconds())})
+		return
+	}
+
 	ctx := r.Context()
 	job := u.store.GetJob(ctx, req.JobID)
 	if job == nil {

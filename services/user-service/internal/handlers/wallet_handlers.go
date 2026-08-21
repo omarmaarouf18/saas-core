@@ -224,6 +224,10 @@ func (u *UserService) RequestPayout(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant owner token: " + err.Error()})
 		return
 	}
+	if limited, remaining := u.payoutLimiter.CheckAndRecord(resolvedTenantID); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many requests; retry in %.0f seconds", remaining.Seconds())})
+		return
+	}
 
 	if req.Amount <= 0 {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid payout amount: must be greater than 0"})
@@ -273,6 +277,10 @@ func (u *UserService) GetPayoutRequests(w http.ResponseWriter, r *http.Request) 
 	resolvedTenantID, err := resolveTokenWithRole(tokenStr, "owner")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant owner token: " + err.Error()})
+		return
+	}
+	if limited, remaining := u.payoutLimiter.CheckAndRecord(resolvedTenantID); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many requests; retry in %.0f seconds", remaining.Seconds())})
 		return
 	}
 
