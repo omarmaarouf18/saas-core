@@ -673,3 +673,135 @@ func TestBroadcastJobAlert_ExtraCoverage(t *testing.T) {
 		t.Errorf("Expected 400 Bad Request for malformed JSON, got %d", rec.Code)
 	}
 }
+
+// openStreamOnce performs one full SSE stream lifecycle against the recorder
+// harness: registers, waits for hub registration, then cancels the request
+// context so the handler returns. Returns the HTTP status code.
+func openStreamOnce(t *testing.T, n *Notification, sseHub *hub.SSEHub, token string) int {
+	t.Helper()
+	ctx, cancel := context.WithCancel(context.Background())
+	req := httptest.NewRequest("GET", "/notifications/stream?token="+token, nil).WithContext(ctx)
+	rec := httptest.NewRecorder()
+
+	go func() {
+		deadline := time.Now().Add(2 * time.Second)
+		for sseHub.ClientCount() == 0 && time.Now().Before(deadline) {
+			time.Sleep(2 * time.Millisecond)
+		}
+		cancel()
+	}()
+
+	n.Stream(rec, req)
+	return rec.Code
+}
+
+// TestStream_RegistrationRateLimiting verifies the per-tenant stream
+// registration limiter: the 31st stream open within a minute gets 429.
+func TestStream_RegistrationRateLimiting(t *testing.T) {
+	jwtutil.Init("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	mockAuth := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"id": r.URL.Query().Get("id"), "role": "owner", "is_active": true, "tenant_id": "tenant-rl",
+		})
+	}))
+	defer mockAuth.Close()
+
+	sseHub := hub.NewSSEHub()
+	cfg := &config.Config{AuthServiceURL: mockAuth.URL, AllowedOrigin: "http://localhost:3000", InternalServiceToken: "secret-internal-token"}
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	n := NewNotification(sseHub, cfg, rdb)
+	token, _ := jwtutil.GenerateToken("user-rl", "owner", "tenant-rl", "rl@example.com")
+
+	for i := 0; i < 30; i++ {
+		if code := openStreamOnce(t, n, sseHub, token); code != http.StatusOK {
+			t.Fatalf("stream open %d unexpectedly returned %d (expected 200 within budget)", i+1, code)
+		}
+	}
+
+	if code := openStreamOnce(t, n, sseHub, token); code != http.StatusTooManyRequests {
+		t.Errorf("Expected 429 on stream open 31, got %d", code)
+	}
+}
+
+// TestStream_ConcurrentStreamCapPerTenant verifies that only
+// maxConcurrentStreamsPerTenant simultaneous SSE streams are allowed for one
+// tenant identity and slots are released when streams close.
+func TestStream_ConcurrentStreamCapPerTenant(t *testing.T) {
+	jwtutil.Init("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	mockAuth := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"id": r.URL.Query().Get("id"), "role": "owner", "is_active": true, "tenant_id": "tenant-cap",
+		})
+	}))
+	defer mockAuth.Close()
+
+	sseHub := hub.NewSSEHub()
+	cfg := &config.Config{AuthServiceURL: mockAuth.URL, AllowedOrigin: "http://localhost:3000", InternalServiceToken: "secret-internal-token"}
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	n := NewNotification(sseHub, cfg, rdb)
+	token, _ := jwtutil.GenerateToken("user-cap", "owner", "tenant-cap", "cap@example.com")
+
+	cancels := make([]context.CancelFunc, 0, maxConcurrentStreamsPerTenant)
+	defer func() {
+		for _, cancel := range cancels {
+			cancel()
+		}
+	}()
+
+	for i := 0; i < maxConcurrentStreamsPerTenant; i++ {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancels = append(cancels, cancel)
+		req := httptest.NewRequest("GET", "/notifications/stream?token="+token, nil).WithContext(ctx)
+		rec := httptest.NewRecorder()
+		go n.Stream(rec, req)
+	}
+	deadline := time.Now().Add(2 * time.Second)
+	for sseHub.ClientCount() < maxConcurrentStreamsPerTenant && time.Now().Before(deadline) {
+		time.Sleep(2 * time.Millisecond)
+	}
+
+	// One more concurrent stream than allowed must be rejected with 429.
+	ctxOver, cancelOver := context.WithCancel(context.Background())
+	defer cancelOver()
+	reqOver := httptest.NewRequest("GET", "/notifications/stream?token="+token, nil).WithContext(ctxOver)
+	recOver := httptest.NewRecorder()
+	n.Stream(recOver, reqOver)
+	if recOver.Code != http.StatusTooManyRequests {
+		t.Errorf("Expected 429 for stream beyond concurrent cap, got %d. Body: %s", recOver.Code, recOver.Body.String())
+	}
+
+	// Release all held slots, then a new stream must be admitted again.
+	for _, cancel := range cancels {
+		cancel()
+	}
+	cancels = nil
+	relDeadline := time.Now().Add(2 * time.Second)
+	for sseHub.ClientCount() > 0 && time.Now().Before(relDeadline) {
+		time.Sleep(2 * time.Millisecond)
+	}
+	if code := openStreamOnce(t, n, sseHub, token); code != http.StatusOK {
+		t.Errorf("Expected 200 after slots were released, got %d", code)
+	}
+}

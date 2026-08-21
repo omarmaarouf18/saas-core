@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/project/notification-service/internal/config"
@@ -19,12 +20,19 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// maxConcurrentStreamsPerTenant caps simultaneously open SSE streams for a
+// single tenant identity so one token cannot exhaust server FDs/memory.
+const maxConcurrentStreamsPerTenant = 5
+
 // Notification holds dependencies for notification handlers.
 type Notification struct {
 	hub                  *hub.SSEHub
 	authServiceURL       string
 	allowedOrigin        string
 	limiter              *handlerutil.RateLimiter
+	streamLimiter        *handlerutil.RateLimiter
+	streamCaps           map[string]int
+	streamCapsMu         sync.Mutex
 	internalServiceToken string
 	resilienceClient     *resilience.ResilienceClient
 }
@@ -48,6 +56,7 @@ func NewNotification(h *hub.SSEHub, cfg *config.Config, rdb *redis.Client) *Noti
 	}
 
 	rl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Minute, "notification")
+	streamRl := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "notification:stream")
 
 	resClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
 
@@ -56,6 +65,8 @@ func NewNotification(h *hub.SSEHub, cfg *config.Config, rdb *redis.Client) *Noti
 		authServiceURL:       cfg.AuthServiceURL,
 		allowedOrigin:        allowedOrigin,
 		limiter:              handlerutil.NewRateLimiter(rl),
+		streamLimiter:        handlerutil.NewRateLimiter(streamRl),
+		streamCaps:           make(map[string]int),
 		internalServiceToken: cfg.InternalServiceToken,
 		resilienceClient:     resClient,
 	}
@@ -104,6 +115,22 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 		writeBytes(w, []byte(`{"error": "invalid or inactive token"}`))
 		return
 	}
+
+	// Rate-limit new stream registrations per tenant and cap concurrent
+	// streams per tenant so one identity cannot exhaust server resources.
+	if limited, remaining := n.streamLimiter.CheckAndRecord("sse:" + tenantID); limited {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusTooManyRequests)
+		writeBytes(w, []byte(fmt.Sprintf(`{"error":"too many requests","message":"stream registration limit exceeded; retry in %.0f seconds"}`, remaining.Seconds())))
+		return
+	}
+	if !n.acquireStreamSlot(tenantID) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusTooManyRequests)
+		writeBytes(w, []byte(`{"error":"too many requests","message":"concurrent stream limit exceeded for this account"}`))
+		return
+	}
+	defer n.releaseStreamSlot(tenantID)
 
 	// Set SSE headers.
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -357,4 +384,25 @@ func writeBytes(w http.ResponseWriter, data []byte) {
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	handlerutil.WriteJSON(w, status, data)
+}
+
+// acquireStreamSlot reserves one concurrent SSE stream slot for the tenant,
+// returning false when the tenant already holds the maximum allowed.
+func (n *Notification) acquireStreamSlot(tenantID string) bool {
+	n.streamCapsMu.Lock()
+	defer n.streamCapsMu.Unlock()
+	if n.streamCaps[tenantID] >= maxConcurrentStreamsPerTenant {
+		return false
+	}
+	n.streamCaps[tenantID]++
+	return true
+}
+
+// releaseStreamSlot returns a previously acquired SSE stream slot.
+func (n *Notification) releaseStreamSlot(tenantID string) {
+	n.streamCapsMu.Lock()
+	defer n.streamCapsMu.Unlock()
+	if n.streamCaps[tenantID] > 0 {
+		n.streamCaps[tenantID]--
+	}
 }

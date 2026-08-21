@@ -53,6 +53,8 @@ type Chat struct {
 	tokenCacheMu         sync.Mutex
 	limiter              *handlerutil.RateLimiter
 	wsLimiter            *handlerutil.RateLimiter
+	wsMessageLimiter     *handlerutil.RateLimiter
+	wsSubscribeLimiter   *handlerutil.RateLimiter
 	internalServiceToken string
 	allowedOrigin        string
 	authClient           *resilience.ResilienceClient
@@ -80,6 +82,8 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Cli
 
 	rl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Minute, "chat")
 	wsRl := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "chat:ws")
+	wsMsgRl := ratelimit.NewRateLimiter(rdb, 60, 1*time.Minute, "chat:wsmsg")
+	wsSubRl := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "chat:wssub")
 
 	authClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
 	userClient := resilience.NewClient(client, "user-service", 2, 5*time.Second)
@@ -92,6 +96,8 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Cli
 		tokenCache:           make(map[string]cachedToken),
 		limiter:              handlerutil.NewRateLimiter(rl),
 		wsLimiter:            handlerutil.NewRateLimiter(wsRl),
+		wsMessageLimiter:     handlerutil.NewRateLimiter(wsMsgRl),
+		wsSubscribeLimiter:   handlerutil.NewRateLimiter(wsSubRl),
 		internalServiceToken: cfg.InternalServiceToken,
 		allowedOrigin:        allowedOrigin,
 		authClient:           authClient,
@@ -458,6 +464,12 @@ func (c *Chat) readPump(conn *websocket.Conn, client *chat.Client) {
 		switch msg.Action {
 		case "subscribe":
 			if msg.Channel != "" {
+				// Per-client post-handshake flood guard: bound subscription
+				// attempts before each triggers an outbound authz call.
+				if limited, remaining := c.wsSubscribeLimiter.CheckAndRecord(client.ID); limited {
+					sendWSError(client, msg.Channel, "rate_limited", fmt.Sprintf("subscribe rate limit exceeded; retry in %.0f seconds", remaining.Seconds()))
+					continue
+				}
 				allowed, err := c.canAccessChannel(client.ID, msg.Channel)
 				if err != nil {
 					denied, _ := json.Marshal(map[string]string{
@@ -512,6 +524,13 @@ func (c *Chat) readPump(conn *websocket.Conn, client *chat.Client) {
 
 		case "message":
 			if msg.Content != "" {
+				// Per-client post-handshake flood guard: bound messages before
+				// each triggers an authz call, a Mongo persist, and a fan-out.
+				if limited, remaining := c.wsMessageLimiter.CheckAndRecord(client.ID); limited {
+					log.Printf("[WS RATE LIMITED] Client %s exceeded message rate on channel %q", client.ID, msg.Channel)
+					sendWSError(client, msg.Channel, "rate_limited", fmt.Sprintf("message rate limit exceeded; retry in %.0f seconds", remaining.Seconds()))
+					continue
+				}
 				allowed, err := c.canAccessChannel(client.ID, msg.Channel)
 				if err != nil {
 					denied, _ := json.Marshal(map[string]string{
@@ -794,4 +813,19 @@ func (c *Chat) HandleResolveTicket(w http.ResponseWriter, r *http.Request) {
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	handlerutil.WriteJSON(w, status, data)
+}
+
+// sendWSError pushes an error frame to a WebSocket client without blocking
+// the read pump when the client's send buffer is full.
+func sendWSError(client *chat.Client, channel, code, message string) {
+	b, _ := json.Marshal(map[string]string{
+		"type":    "error",
+		"channel": channel,
+		"error":   code,
+		"message": message,
+	})
+	select {
+	case client.Send <- b:
+	default:
+	}
 }
