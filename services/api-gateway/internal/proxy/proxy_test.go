@@ -3,6 +3,7 @@ package proxy
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/project/gateway/internal/config"
 	"github.com/project/gateway/internal/middleware"
 	"github.com/project/shared/infra/ratelimit"
+	"github.com/project/shared/infra/resilience"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -424,5 +426,64 @@ func TestProxyOversizedAndMalformedBodyForwarded(t *testing.T) {
 	}
 	if receivedBody != malformedPayload {
 		t.Errorf("Expected backend to receive malformed payload %q, got %q", malformedPayload, receivedBody)
+	}
+}
+
+// TestProxyStreamingResponseWithResilientTransport is an integration test
+// wiring the production ResilienceRoundTripper (as main.go does) into the
+// real reverse proxy. It guards against regressions where the per-attempt
+// timeout context cancels streamed (SSE) response bodies before the proxy
+// finishes relaying them. The earlier test suite bypassed this wrapper by
+// injecting http.DefaultTransport directly, which is why the defect shipped.
+func TestProxyStreamingResponseWithResilientTransport(t *testing.T) {
+	gatewaySecret := "sse-gateway-secret"
+
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		fl := w.(http.Flusher)
+		for i := 0; i < 4; i++ {
+			fmt.Fprintf(w, "data: event %d\n\n", i)
+			fl.Flush()
+			time.Sleep(100 * time.Millisecond)
+		}
+	}))
+	defer backend.Close()
+
+	route := config.ServiceRoute{
+		Prefix:      "/api/v1/notifications/",
+		Target:      backend.URL,
+		StripPrefix: "/api/v1",
+	}
+
+	resilientTransport := resilience.NewRoundTripper(http.DefaultTransport, "test-sse-route", 2, 150*time.Millisecond)
+	proxyHandler, err := New(route, gatewaySecret, []string{"127.0.0.1", "::1"}, resilientTransport)
+	if err != nil {
+		t.Fatalf("failed to create proxy: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle(route.Prefix, proxyHandler)
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v1/notifications/stream")
+	if err != nil {
+		t.Fatalf("GET through gateway failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("reading proxied stream failed (stream truncated): %v", err)
+	}
+	for i := 0; i < 4; i++ {
+		want := fmt.Sprintf("data: event %d", i)
+		if !strings.Contains(string(body), want) {
+			t.Errorf("proxied stream missing %q; got body=%q", want, string(body))
+		}
 	}
 }
