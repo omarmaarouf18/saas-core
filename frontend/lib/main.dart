@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 
 import 'core/api_client.dart';
@@ -21,6 +22,7 @@ import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/component_library_screen.dart';
 
 class DevHttpOverrides extends HttpOverrides {
   @override
@@ -35,6 +37,10 @@ void main() {
   if (kDebugMode) {
     HttpOverrides.global = DevHttpOverrides();
   }
+
+  // Poppins is bundled under assets/fonts/ — brand typography must render
+  // identically offline and never depend on runtime font downloads.
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   final apiClient = ApiClient();
 
@@ -102,6 +108,17 @@ class MyApp extends StatelessWidget {
         return const Locale('en');
       },
       debugShowCheckedModeBanner: false,
+      onGenerateRoute: (settings) {
+        // Debug-only component library route (Storybook-style shared widget
+        // catalog). Never registered in release builds.
+        if (kDebugMode && settings.name == '/component-library') {
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (_) => const ComponentLibraryScreen(),
+          );
+        }
+        return null;
+      },
       home: auth.isAuthenticated ? const HomeScreen() : const LoginScreen(),
     );
   }

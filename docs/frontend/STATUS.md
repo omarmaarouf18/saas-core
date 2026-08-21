@@ -193,7 +193,7 @@
     * *P3 Typography/Uppercase*: **[COMPLETE]** Added `AppTypography.labelUppercase` (canonical badge style) and `AppTypography.uppercaseLabel(String)` (centralized transform) to `core/theme.dart`. Rewrote all **36** scattered `.toUpperCase()` call sites across 16 screen files to route through `uppercaseLabel` — the transform now has exactly one definition, and raw `.toUpperCase()` is banned in screens/. Post-fix audit: **0 `.toUpperCase()` occurrences in screens/**. Full suite: 292/292 pass.
     * *P4 BoxDecoration Elimination*: **[COMPLETE]** Created shared primitives `ThemedPanel` + `AnimatedThemedPanel` (`frontend/lib/widgets/themed_panel.dart`) as the sanctioned decorated-container layer (color/gradient/radius/circle/border/shadow/constraints), converting all **109** `Container(decoration: BoxDecoration(...))` sites plus 1 `AnimatedContainer` site across 23 screen files. Ran `dart fix --apply` (19 const fixes) in the same pass. Post-fix audit: **0 `BoxDecoration(` occurrences in screens/** (was 110 at P2 completion; 123 at plan baseline). Dedicated suite `test/themed_panel_test.dart` (5/5 pass); full suite 297/297 pass.
     * *P5 Lint Enforcement CI Gate*: **[COMPLETE]** Created `scripts/frontend_composition_gate.sh` rejecting `Scaffold(`, `AppBar(`, `BoxDecoration(`, `Color(0xFF`, and `.toUpperCase()` inside `frontend/lib/screens/**` (PCRE word-boundary matching; allowed in `core/theme.dart` and `widgets/**` which are outside the gated path). Wired into `.githooks/pre-push` (before flutter analyze/test) and `.github/workflows/ci.yml` (`Frontend Composition Gate` step) preserving strict hook/CI parity. Negative test verified: injected violation file → gate exit 1 with 4 pattern hits; reverted → gate exit 0.
-    * *P6 Component Library + Golden Tests*: **[NOT STARTED]**.
+    * *P6 Component Library + Golden Tests*: **[COMPLETE]** Built debug-only `ComponentLibraryScreen` (`screens/component_library_screen.dart`, assert-gated to kDebugMode, registered at `/component-library` via onGenerateRoute only when kDebugMode) showcasing all shared widgets across loading/error/empty/success/interactive states. Added golden snapshot suite `test/golden_screens_test.dart`: 7 tests / 8 goldens covering the P0 pair (`notifications_screen`, `owner_reconciliation_queue_screen`), P2 template representatives (`customer_jobs_screen` list, `login_screen` form), and the component library at 3 breakpoints (mobile 360x800, tablet 768x1024, desktop 1280x800). Bundled Poppins under `assets/fonts/` with `GoogleFonts.config.allowRuntimeFetching = false` (deterministic offline typography; removes runtime font fetch dependency in production too). Goldens surfaced 2 real defects, both fixed: StatusBadge horizontal overflow on long statuses (shared widget — Flexible+ellipsis) and reconciliation queue AppBar title Row overflow at mobile width. Verified: `--update-goldens` generates all 8; verification run passes 7/7 against baselines.
 
  ## File Tracking Index
 
@@ -231,6 +231,7 @@
    * `map_tracking_provider.dart`
    * `reconciliation_provider.dart`
  * **Screens**:
+   * `component_library_screen.dart`
    * `settings_screen.dart`
    * `owner_configuration_screen.dart`
    * `my_account_screen.dart`
