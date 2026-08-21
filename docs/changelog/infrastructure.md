@@ -318,3 +318,12 @@ This file tracks historical entries for the primary category: **Infrastructure &
 
 
 
+
+## Frontend Composition-Layer Gate (P5 CI Enforcement)
+
+- **Implementation Detail**:
+  - Created `scripts/frontend_composition_gate.sh`: rejects `Scaffold(`, `AppBar(`, `BoxDecoration(`, `Color(0xFF`, and `.toUpperCase()` inside `frontend/lib/screens/**` (PCRE negative-lookbehind so identifier substrings don't false-positive). Shared widgets (`widgets/**`) and design tokens (`core/theme.dart`) are outside the gated path and remain the single sources of truth.
+  - Wired into `.githooks/pre-push` (gate step before flutter analyze/test) and `.github/workflows/ci.yml` (`Frontend Composition Gate` step before Flutter Analyze) preserving the strict hook/CI parity principle.
+  - Prevents recurrence of the drift documented in FRONTEND_ARCHITECTURE_PLAN §0 where phases marked "Complete" silently regressed to hardcoded values.
+- **Commit SHA**: ``a602df257b2823ad0cdb72ef1453b16a9fee6f85``
+- **Verification**: Verified via negative audit — injected violation block into `frontend/lib/screens/wallet_screen.dart` produced `BLOCKED: 4 composition-layer rule(s) violated` with exit code 1 listing every hit with file:line; reverting via `git checkout` restored exit code 0. YAML validated with Python yaml.safe_load; hook syntax validated with bash -n. ✅
