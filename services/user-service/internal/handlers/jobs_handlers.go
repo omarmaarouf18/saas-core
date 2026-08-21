@@ -601,10 +601,11 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 		return
 	}
-	id := r.URL.Query().Get("user_token")
-	if id == "" {
-		id = r.URL.Query().Get("id")
-	}
+	// The job ID comes ONLY from `id`. The legacy `user_token` alias must NOT
+	// participate in job-ID resolution: clients (e.g. Flutter map hydration)
+	// send `?id=<jobID>&user_token=<JWT>`, and preferring user_token looked up
+	// the JWT string as a job ID, breaking hydration with 404s.
+	id := r.URL.Query().Get("id")
 	if id == "" {
 		requesterToken := r.URL.Query().Get("requester_token")
 		if requesterToken == "" {

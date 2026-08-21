@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/user-service/internal/models"
@@ -76,4 +77,47 @@ func TestUpdateService_RejectsInvalidCoordinates(t *testing.T) {
 		t.Fatalf("expected 400 invalid_coordinates for longitude=9999 on update, got %d. Body: %s", rec.Code, rec.Body.String())
 	}
 	t.Logf("update rejection body: %s", rec.Body.String())
+}
+
+// GetJob previously resolved the job ID from the `user_token` query param
+// FIRST, falling back to `id`. The Flutter map-tracking provider sends BOTH
+// (`?id=<jobID>&user_token=<JWT>`), so the JWT string was looked up as a job
+// ID and customer map hydration always received 404.
+func TestGetJob_UserTokenParamDoesNotShadowJobID(t *testing.T) {
+	u, s, _, cleanup := idemRaceSetup(t)
+	defer cleanup()
+
+	ctx := context.Background()
+	ownerID := "shadow-owner"
+	svcID := "shadow-svc"
+	s.CreateService(ctx, &models.Service{ID: svcID, TenantID: ownerID, TenantBasePrice: 5.0, TenantPricePerKM: 0.0, Latitude: 30.0, Longitude: 30.0})
+	job := &models.Job{ID: "shadow-job-1", OwnerID: ownerID, UserID: "shadow-cust", ServiceID: svcID,
+		Status: models.JobStatusActive, PaymentMethod: "cod",
+		Location: models.Location{Latitude: 30.0, Longitude: 30.0}, CreatedAt: time.Now().Add(-time.Hour)}
+	_ = s.CreateJob(ctx, job)
+
+	tokenCust, _ := jwtutil.GenerateToken("shadow-cust", "user", ownerID, "shadow-cust@example.com")
+
+	// The corrected hydration contract (what MapTrackingProvider sends after
+	// this fix): id + requester_id. user_token must not shadow the job ID.
+	req := httptest.NewRequest("GET", "/users/jobs/get?id=shadow-job-1&requester_id="+tokenCust, nil)
+	rec := httptest.NewRecorder()
+	u.GetJob(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 for ?id=&requester_id=, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+	var got map[string]any
+	_ = json.Unmarshal(rec.Body.Bytes(), &got)
+	if id, _ := got["id"].(string); id != "shadow-job-1" {
+		t.Errorf("expected job shadow-job-1, got: %s", rec.Body.String())
+	}
+
+	// Legacy callers that still append user_token alongside the correct
+	// params must get the same job — user_token must never win ID resolution.
+	reqLegacy := httptest.NewRequest("GET", "/users/jobs/get?id=shadow-job-1&requester_id="+tokenCust+"&user_token="+tokenCust, nil)
+	recLegacy := httptest.NewRecorder()
+	u.GetJob(recLegacy, reqLegacy)
+	if recLegacy.Code != http.StatusOK {
+		t.Errorf("legacy param combination broken: %d %s", recLegacy.Code, recLegacy.Body.String())
+	}
 }

@@ -103,9 +103,13 @@ class MapTrackingProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // requester_id (not the legacy user_token alias): the backend resolves
+      // the job ID solely from `id` and requires requester_id for party
+      // authorization. Sending user_token here previously caused 404s because
+      // it was once preferred as the job-ID parameter.
       final res = await apiClient.get(
         '/users/jobs/get',
-        queryParams: {'id': jobId, 'user_token': userToken},
+        queryParams: {'id': jobId, 'requester_id': userToken},
       );
 
       Map<String, dynamic>? jobMap;
