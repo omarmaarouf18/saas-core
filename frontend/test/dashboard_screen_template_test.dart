@@ -55,8 +55,7 @@ void main() {
     )));
 
     expect(find.text('Tab1'), findsOneWidget);
-    final indexedStack =
-        tester.widget<IndexedStack>(find.byType(IndexedStack));
+    final indexedStack = tester.widget<IndexedStack>(find.byType(IndexedStack));
     expect(indexedStack.index, 1);
     expect(indexedStack.children.length, 2);
   });

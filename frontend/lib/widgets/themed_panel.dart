@@ -181,11 +181,10 @@ class _AnimatedThemedPanelState
       widget.boxShadow,
     );
     _decoration = visitor(
-          _decoration,
-          target,
-          (value) => DecorationTween(begin: value as Decoration),
-        )
-        as DecorationTween?;
+      _decoration,
+      target,
+      (value) => DecorationTween(begin: value as Decoration),
+    ) as DecorationTween?;
   }
 
   static Decoration _resolveDecoration(

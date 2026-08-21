@@ -79,8 +79,9 @@ void main() {
 
     BoxDecoration decorationAt(String text) {
       return tester
-          .widget<Container>(find.ancestor(
-              of: find.text(text), matching: find.byType(Container)).first)
+          .widget<Container>(find
+              .ancestor(of: find.text(text), matching: find.byType(Container))
+              .first)
           .decoration! as BoxDecoration;
     }
 

@@ -99,8 +99,7 @@ class DashboardScreenTemplate extends StatelessWidget {
       actions: actions,
       isEmbeddedInTab: isEmbeddedInTab,
       backgroundColor: backgroundColor,
-      appBarBackgroundColor:
-          appBarBackgroundColor ?? Colors.transparent,
+      appBarBackgroundColor: appBarBackgroundColor ?? Colors.transparent,
       appBarForegroundColor:
           appBarForegroundColor ?? Theme.of(context).colorScheme.onSurface,
       body: IndexedStack(
