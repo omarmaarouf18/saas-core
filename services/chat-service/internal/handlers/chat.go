@@ -317,7 +317,7 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 		CheckOrigin: func(r *http.Request) bool {
-			return r.Header.Get("Origin") == c.allowedOrigin
+			return c.isOriginAllowed(r.Header.Get("Origin"))
 		},
 	}
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -828,4 +828,15 @@ func sendWSError(client *chat.Client, channel, code, message string) {
 	case client.Send <- b:
 	default:
 	}
+}
+
+// isOriginAllowed enforces the WebSocket origin allow-list. Non-browser
+// clients (dart:io WebSocket on Android/iOS, CLI tools) send NO Origin header
+// and are admitted — browser-style CSRF does not apply to them. A PRESENT
+// Origin must match the configured origin exactly.
+func (c *Chat) isOriginAllowed(origin string) bool {
+	if origin == "" {
+		return true
+	}
+	return origin == c.allowedOrigin
 }

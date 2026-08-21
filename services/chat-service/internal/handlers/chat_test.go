@@ -1683,3 +1683,26 @@ func TestWebSocket_MessageRateLimiting(t *testing.T) {
 		t.Errorf("Flood guard failed: all %d messages were persisted", totalMessages)
 	}
 }
+
+// WS Origin policy regression guards: non-browser clients (dart:io WebSocket
+// on mobile, CLI tooling) send NO Origin header and must be admitted, while a
+// PRESENT Origin must still match the configured allow-list entry exactly.
+func TestIsOriginAllowed(t *testing.T) {
+	c := &Chat{allowedOrigin: "http://localhost:3000"}
+
+	cases := []struct {
+		origin string
+		want   bool
+	}{
+		{"", true},                              // non-browser client (no Origin)
+		{"http://localhost:3000", true},         // exact match
+		{"https://localhost:3000", false},       // scheme mismatch
+		{"http://localhost:3000.evil.com", false}, // suffix spoof
+		{"http://evil.com", false},              // foreign origin
+	}
+	for _, tc := range cases {
+		if got := c.isOriginAllowed(tc.origin); got != tc.want {
+			t.Errorf("isOriginAllowed(%q) = %v, want %v", tc.origin, got, tc.want)
+		}
+	}
+}

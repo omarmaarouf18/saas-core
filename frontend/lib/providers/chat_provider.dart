@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/io.dart';
 import '../core/api_client.dart';
+import '../core/constants.dart';
 import '../core/error_messages.dart';
 import '../models/chat_message.dart';
 
@@ -94,7 +95,9 @@ class ChatProvider extends ChangeNotifier {
 
       _webSocketChannel = IOWebSocketChannel.connect(
         Uri.parse(wsUrl),
-        headers: {'Origin': 'http://localhost:3000'},
+        headers: {
+          'Origin': chatWsOrigin
+        }, // see core/constants.dart (CHAT_WS_ORIGIN)
       );
 
       // Immediately send subscribe action on connection
