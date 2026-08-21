@@ -376,9 +376,8 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
                       child: Center(
                         child: Text(
                           employee.employeeId.length > 2
-                              ? employee.employeeId
-                                  .substring(0, 2)
-                                  .toUpperCase()
+                              ? AppTypography.uppercaseLabel(
+                                  employee.employeeId.substring(0, 2))
                               : 'DR',
                           style: AppTypography.labelMd.copyWith(
                             color: AppColors.secondary,

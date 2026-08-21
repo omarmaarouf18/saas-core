@@ -334,8 +334,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     final isActive = _currentJob.status == 'active';
     final isPending = _currentJob.status == 'pending';
     final displayId = _currentJob.id.length > 8
-        ? _currentJob.id.substring(0, 8).toUpperCase()
-        : _currentJob.id.toUpperCase();
+        ? AppTypography.uppercaseLabel(_currentJob.id.substring(0, 8))
+        : AppTypography.uppercaseLabel(_currentJob.id);
 
     return AppShell(
       title: context.l10n.jobStatusTitle,
@@ -796,7 +796,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _currentJob.paymentMethod.toUpperCase(),
+                        AppTypography.uppercaseLabel(_currentJob.paymentMethod),
                         style: AppTypography.bodySm.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppColors.onSurface,

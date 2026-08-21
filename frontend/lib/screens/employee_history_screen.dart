@@ -185,7 +185,7 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
                   ? "${job.lockedEscrowAmount!.toStringAsFixed(0)} Credits"
                   : "Route Logged",
               timeText: isCancelled ? "Cancelled" : "Completed",
-              cargoText: job.paymentMethod.toUpperCase(),
+              cargoText: AppTypography.uppercaseLabel(job.paymentMethod),
             ),
             const SizedBox(height: AppSpacing.md),
             Wrap(
@@ -200,7 +200,7 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
                 _buildChip(
                   Icons.payment_outlined,
                   l10n.employeeJobsLabelPayment,
-                  job.paymentMethod.toUpperCase(),
+                  AppTypography.uppercaseLabel(job.paymentMethod),
                 ),
                 if (job.lockedEscrowAmount != null &&
                     job.lockedEscrowAmount! > 0)

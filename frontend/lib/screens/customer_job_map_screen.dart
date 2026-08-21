@@ -59,8 +59,8 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final displayJobId = widget.jobId.length > 8
-        ? widget.jobId.substring(0, 8).toUpperCase()
-        : widget.jobId.toUpperCase();
+        ? AppTypography.uppercaseLabel(widget.jobId.substring(0, 8))
+        : AppTypography.uppercaseLabel(widget.jobId);
 
     return AppShell(
       title: l10n.liveCourierTracking,

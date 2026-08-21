@@ -274,7 +274,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          categoryLabel.toUpperCase(),
+                          AppTypography.uppercaseLabel(categoryLabel),
                           style: AppTypography.caption.copyWith(
                             color: AppColors.onSurfaceVariant,
                             fontWeight: FontWeight.w600,

@@ -328,6 +328,21 @@ class AppTypography {
         fontWeight: FontWeight.w400,
         height: 14 / 11,
       );
+
+  /// Canonical uppercase label style for small badges, chips, and status tags.
+  /// The ONLY sanctioned way to render uppercase labels — screens must not
+  /// hand-roll `.toUpperCase()` + ad-hoc text styles.
+  static TextStyle get labelUppercase => labelSm.copyWith(
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.8,
+      );
+
+  /// Centralized uppercase transform for short display labels (tracking IDs,
+  /// payment methods, roles, statuses). Screens must route all uppercase
+  /// transforms through this helper instead of calling `.toUpperCase()`
+  /// directly, so the rule stays enforceable in one place. Not intended for
+  /// headings or body copy.
+  static String uppercaseLabel(String text) => text.toUpperCase();
 }
 
 // ThemeData light setup

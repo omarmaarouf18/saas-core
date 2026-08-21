@@ -322,8 +322,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
     final email = emp['email']?.toString() ?? '';
     final isActive = emp['is_active'] == true;
     final displayId = empId.length > 8
-        ? empId.substring(0, 8).toUpperCase()
-        : empId.toUpperCase();
+        ? AppTypography.uppercaseLabel(empId.substring(0, 8))
+        : AppTypography.uppercaseLabel(empId);
 
     return Container(
       key: Key('employee_item_$empId'),
@@ -726,7 +726,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              action.toString().toUpperCase(),
+                              AppTypography.uppercaseLabel(action.toString()),
                               style: AppTypography.bodyMd.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.primary,

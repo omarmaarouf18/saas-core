@@ -44,79 +44,79 @@ class UpdateRequiredScreen extends StatelessWidget {
         backgroundColor: AppColors.background,
         showBackButton: false,
         body: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.marginMobile,
-                vertical: AppSpacing.md,
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 440),
-                child: ThemedCard(
-                  padding: 0,
-                  borderRadius: AppRadius.lg,
-                  elevation: AppElevation.shadowLevel2List,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // 1. Decorative Dark Gradient Header with Pulse Rings & Icon
-                      _buildHeroHeader(),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.marginMobile,
+              vertical: AppSpacing.md,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: ThemedCard(
+                padding: 0,
+                borderRadius: AppRadius.lg,
+                elevation: AppElevation.shadowLevel2List,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 1. Decorative Dark Gradient Header with Pulse Rings & Icon
+                    _buildHeroHeader(),
 
-                      // 2. Main Content Body
-                      Padding(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Headline & Operational Subtitle
-                            Text(
-                              titleText,
-                              style: AppTypography.headlineLgMobile.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.onSurface,
-                              ),
-                              textAlign: TextAlign.center,
+                    // 2. Main Content Body
+                    Padding(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Headline & Operational Subtitle
+                          Text(
+                            titleText,
+                            style: AppTypography.headlineLgMobile.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.onSurface,
                             ),
-                            const SizedBox(height: AppSpacing.xs),
-                            Text(
-                              subtitleText,
-                              style: AppTypography.bodyMd.copyWith(
-                                color: AppColors.onSurfaceVariant,
-                                height: 1.4,
-                              ),
-                              textAlign: TextAlign.center,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            subtitleText,
+                            style: AppTypography.bodyMd.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                              height: 1.4,
                             ),
-                            const SizedBox(height: AppSpacing.md),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
 
-                            // 3. What's New Feature List
-                            _buildWhatsNewList(isArabic),
-                            const SizedBox(height: AppSpacing.md),
+                          // 3. What's New Feature List
+                          _buildWhatsNewList(isArabic),
+                          const SizedBox(height: AppSpacing.md),
 
-                            // 4. Version Details Matrix Card
-                            _buildVersionMatrix(
-                              context,
-                              curVer: curVer,
-                              minVer: minVer,
-                              latVer: latVer,
-                              isArabic: isArabic,
-                            ),
-                            const SizedBox(height: AppSpacing.md),
+                          // 4. Version Details Matrix Card
+                          _buildVersionMatrix(
+                            context,
+                            curVer: curVer,
+                            minVer: minVer,
+                            latVer: latVer,
+                            isArabic: isArabic,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
 
-                            // 5. Warning Notice Callout Banner
-                            _buildWarningBanner(isArabic),
-                            const SizedBox(height: AppSpacing.lg),
+                          // 5. Warning Notice Callout Banner
+                          _buildWarningBanner(isArabic),
+                          const SizedBox(height: AppSpacing.lg),
 
-                            // 6. Primary Action CTA & Target URL
-                            _buildActionArea(isArabic, url),
-                          ],
-                        ),
+                          // 6. Primary Action CTA & Target URL
+                          _buildActionArea(isArabic, url),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
         ),
+      ),
     );
   }
 

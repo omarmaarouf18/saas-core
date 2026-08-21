@@ -206,31 +206,31 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
       navigationBarKey: const Key('owner_bottom_navigation_bar'),
       destinations: [
-          NavigationDestination(
-            key: const Key('owner_nav_tab_home'),
-            icon: const Icon(Icons.home_outlined),
-            selectedIcon: const Icon(Icons.home),
-            label: l10n.ownerHomeNavHome,
-          ),
-          NavigationDestination(
-            key: const Key('owner_nav_tab_employees'),
-            icon: const Icon(Icons.people_outline),
-            selectedIcon: const Icon(Icons.people),
-            label: l10n.ownerHomeNavEmployees,
-          ),
-          NavigationDestination(
-            key: const Key('owner_nav_tab_history'),
-            icon: const Icon(Icons.history_outlined),
-            selectedIcon: const Icon(Icons.history),
-            label: l10n.ownerHomeNavHistory,
-          ),
-          NavigationDestination(
-            key: const Key('owner_nav_tab_settings'),
-            icon: const Icon(Icons.settings_outlined),
-            selectedIcon: const Icon(Icons.settings),
-            label: l10n.ownerHomeNavSettings,
-          ),
-        ],
+        NavigationDestination(
+          key: const Key('owner_nav_tab_home'),
+          icon: const Icon(Icons.home_outlined),
+          selectedIcon: const Icon(Icons.home),
+          label: l10n.ownerHomeNavHome,
+        ),
+        NavigationDestination(
+          key: const Key('owner_nav_tab_employees'),
+          icon: const Icon(Icons.people_outline),
+          selectedIcon: const Icon(Icons.people),
+          label: l10n.ownerHomeNavEmployees,
+        ),
+        NavigationDestination(
+          key: const Key('owner_nav_tab_history'),
+          icon: const Icon(Icons.history_outlined),
+          selectedIcon: const Icon(Icons.history),
+          label: l10n.ownerHomeNavHistory,
+        ),
+        NavigationDestination(
+          key: const Key('owner_nav_tab_settings'),
+          icon: const Icon(Icons.settings_outlined),
+          selectedIcon: const Icon(Icons.settings),
+          label: l10n.ownerHomeNavSettings,
+        ),
+      ],
     );
   }
 
@@ -246,7 +246,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final subText = ownerProvider.isLoading
         ? "..."
-        : ownerProvider.subscriptionTier.toUpperCase().replaceAll('_', ' ');
+        : AppTypography.uppercaseLabel(ownerProvider.subscriptionTier)
+            .replaceAll('_', ' ');
 
     final subColor = ownerProvider.subscriptionTier == "paid"
         ? AppColors.success
@@ -468,7 +469,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      l10n.ownerHomeOwnerJobs.toUpperCase(),
+                      AppTypography.uppercaseLabel(l10n.ownerHomeOwnerJobs),
                       style: AppTypography.labelMd.copyWith(
                         color: AppColors.onSurfaceVariant,
                         letterSpacing: 0.5,
@@ -1216,8 +1217,8 @@ class _HomeScreenState extends State<HomeScreen> {
               final canCancel =
                   job.status == 'pending' || job.status == 'active';
               final displayJobId = job.id.length > 8
-                  ? job.id.substring(0, 8).toUpperCase()
-                  : job.id.toUpperCase();
+                  ? AppTypography.uppercaseLabel(job.id.substring(0, 8))
+                  : AppTypography.uppercaseLabel(job.id);
               return Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.md),
                 child: ThemedCard(
@@ -1248,7 +1249,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         l10n.ownerHomePaymentInfo(
-                          job.paymentMethod.toUpperCase(),
+                          AppTypography.uppercaseLabel(job.paymentMethod),
                           job.lockedEscrowAmount != null
                               ? ' (\$${job.lockedEscrowAmount!.toStringAsFixed(2)})'
                               : '',
@@ -1362,7 +1363,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildDetailRow(l10n.ownerHomeLabelEmail, user.email),
                   _buildDetailRow(
                     l10n.ownerHomeLabelRole,
-                    user.role.toUpperCase(),
+                    AppTypography.uppercaseLabel(user.role),
                   ),
                 ],
               ),

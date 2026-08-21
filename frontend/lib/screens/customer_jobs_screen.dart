@@ -306,7 +306,7 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Text(
-                  "Payment: ${job.paymentMethod.toUpperCase()}",
+                  "Payment: ${AppTypography.uppercaseLabel(job.paymentMethod)}",
                   style: AppTypography.bodySm.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),

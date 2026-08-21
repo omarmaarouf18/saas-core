@@ -177,27 +177,27 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
       ],
       navigationBarKey: const Key('customer_bottom_navigation_bar'),
       destinations: [
-          NavigationDestination(
-            key: const Key('nav_tab_home'),
-            icon: const Icon(Icons.home),
-            label: l10n.navHome,
-          ),
-          NavigationDestination(
-            key: const Key('nav_tab_services'),
-            icon: const Icon(Icons.storefront),
-            label: l10n.navServices,
-          ),
-          NavigationDestination(
-            key: const Key('nav_tab_history'),
-            icon: const Icon(Icons.receipt_long),
-            label: l10n.navHistory,
-          ),
-          NavigationDestination(
-            key: const Key('nav_tab_settings'),
-            icon: const Icon(Icons.settings),
-            label: l10n.navSettings,
-          ),
-        ],
+        NavigationDestination(
+          key: const Key('nav_tab_home'),
+          icon: const Icon(Icons.home),
+          label: l10n.navHome,
+        ),
+        NavigationDestination(
+          key: const Key('nav_tab_services'),
+          icon: const Icon(Icons.storefront),
+          label: l10n.navServices,
+        ),
+        NavigationDestination(
+          key: const Key('nav_tab_history'),
+          icon: const Icon(Icons.receipt_long),
+          label: l10n.navHistory,
+        ),
+        NavigationDestination(
+          key: const Key('nav_tab_settings'),
+          icon: const Icon(Icons.settings),
+          label: l10n.navSettings,
+        ),
+      ],
     );
   }
 }
@@ -534,8 +534,8 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
           Column(
             children: activeJobs.map((job) {
               final displayId = job.id.length > 8
-                  ? job.id.substring(0, 8).toUpperCase()
-                  : job.id.toUpperCase();
+                  ? AppTypography.uppercaseLabel(job.id.substring(0, 8))
+                  : AppTypography.uppercaseLabel(job.id);
               return Container(
                 margin: const EdgeInsets.only(bottom: AppSpacing.md),
                 child: ThemedCard(
@@ -647,7 +647,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                                   ),
                                 ),
                                 Text(
-                                  "Payment: ${job.paymentMethod.toUpperCase()}",
+                                  "Payment: ${AppTypography.uppercaseLabel(job.paymentMethod)}",
                                   style: AppTypography.caption.copyWith(
                                     color: AppColors.onSurfaceVariant,
                                   ),

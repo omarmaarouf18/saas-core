@@ -121,7 +121,7 @@ class SettingsScreen extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      user.role.toUpperCase(),
+                      AppTypography.uppercaseLabel(user.role),
                       style: AppTypography.labelSm.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,

@@ -380,7 +380,7 @@ class _WalletScreenState extends State<WalletScreen> {
         ? l10n.payoutMethodBankTransfer
         : (payout.payoutMethod == 'instapay'
             ? l10n.payoutMethodInstapay
-            : payout.payoutMethod.toUpperCase());
+            : AppTypography.uppercaseLabel(payout.payoutMethod));
 
     final dateStr =
         "${payout.createdAt.year}-${_twoDigits(payout.createdAt.month)}-${_twoDigits(payout.createdAt.day)} ${_twoDigits(payout.createdAt.hour)}:${_twoDigits(payout.createdAt.minute)}";
@@ -487,7 +487,7 @@ class _WalletScreenState extends State<WalletScreen> {
       leadingBackgroundColor: color.withValues(alpha: 0.1),
       title: description.isNotEmpty
           ? description
-          : type.replaceAll('_', ' ').toUpperCase(),
+          : AppTypography.uppercaseLabel(type.replaceAll('_', ' ')),
       subtitleWidget: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

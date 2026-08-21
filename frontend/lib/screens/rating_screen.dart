@@ -158,8 +158,8 @@ class _RatingScreenState extends State<RatingScreen> {
     final isWide = MediaQuery.of(context).size.width > 600;
 
     final displayId = widget.job.id.length > 8
-        ? widget.job.id.substring(0, 8).toUpperCase()
-        : widget.job.id.toUpperCase();
+        ? AppTypography.uppercaseLabel(widget.job.id.substring(0, 8))
+        : AppTypography.uppercaseLabel(widget.job.id);
 
     return AppShell(
       title: l10n.ratingTitle,

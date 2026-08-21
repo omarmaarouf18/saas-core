@@ -166,7 +166,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
-                        currentTier.toUpperCase().replaceAll('_', ' '),
+                        AppTypography.uppercaseLabel(currentTier)
+                            .replaceAll('_', ' '),
                         style: AppTypography.headlineLgMobile.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppColors.onPrimary,

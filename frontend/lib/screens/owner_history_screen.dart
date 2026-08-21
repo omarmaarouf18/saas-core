@@ -207,7 +207,8 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
 
   Widget _buildActivityCard(Map<String, dynamic> entry, AppLocalizations l10n) {
     final rawAction = entry['action']?.toString() ?? 'Unknown Action';
-    final actionTitle = rawAction.replaceAll('_', ' ').toUpperCase();
+    final actionTitle =
+        AppTypography.uppercaseLabel(rawAction.replaceAll('_', ' '));
     final details = entry['details']?.toString() ?? '';
     final actorId = entry['actor_id']?.toString() ?? '';
     final rawTs = entry['timestamp']?.toString() ?? '';
@@ -421,7 +422,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
           const SizedBox(height: AppSpacing.xs),
           Text(
             l10n.ownerHomePaymentInfo(
-              job.paymentMethod.toUpperCase(),
+              AppTypography.uppercaseLabel(job.paymentMethod),
               job.lockedEscrowAmount != null
                   ? ' (\$${job.lockedEscrowAmount!.toStringAsFixed(2)})'
                   : '',
@@ -570,7 +571,9 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  description.isNotEmpty ? description : rawType.toUpperCase(),
+                  description.isNotEmpty
+                      ? description
+                      : AppTypography.uppercaseLabel(rawType),
                   style: AppTypography.titleMd.copyWith(
                     fontWeight: FontWeight.bold,
                   ),

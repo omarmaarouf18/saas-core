@@ -663,8 +663,10 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               distanceText: job.lockedEscrowAmount != null
                   ? "${job.lockedEscrowAmount!.toStringAsFixed(0)} Credits"
                   : "Standard Route",
-              timeText: isActive ? "In Progress" : job.status.toUpperCase(),
-              cargoText: job.paymentMethod.toUpperCase(),
+              timeText: isActive
+                  ? "In Progress"
+                  : AppTypography.uppercaseLabel(job.status),
+              cargoText: AppTypography.uppercaseLabel(job.paymentMethod),
             ),
             const SizedBox(height: AppSpacing.md),
             // Subordinate Info Badges / Chips
@@ -680,7 +682,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 _buildSubordinateChip(
                   Icons.payment_outlined,
                   l10n.employeeJobsLabelPayment,
-                  job.paymentMethod.toUpperCase(),
+                  AppTypography.uppercaseLabel(job.paymentMethod),
                 ),
                 if (job.lockedEscrowAmount != null &&
                     job.lockedEscrowAmount! > 0)
