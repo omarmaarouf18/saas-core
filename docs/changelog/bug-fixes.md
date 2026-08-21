@@ -464,5 +464,5 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
   - Fixed two trailing-edge `Alignment.centerRight` alignments (home_screen job-card cancel action, wallet_screen platform-fee note) to `AlignmentDirectional.centerEnd` so they mirror correctly under RTL (ar_EG). Full directional audit: zero `EdgeInsets.only(left:/right:)` in screens/, all fromLTRB paddings symmetric.
   - Added accessibility tooltips to all 11 previously-unlabeled icon-only `IconButton`s via 6 new localized arb keys (`tooltipClose`, `tooltipOpenChat`, `tooltipRemoveAddress`, `tooltipZoomIn`, `tooltipZoomOut`, `tooltipRecenter`; English + Egyptian Arabic). Post-fix audit: 0 icon-only buttons without semantics.
   - Aligned two widget-test harnesses (customer_marketplace, owner_configuration) with the production MaterialApp by adding localization delegates; tooltips use the null-safe `context.l10n` fallback convention.
-- **Commit SHA**: ``8b26232e26cf75d798b473594585af3d5f938017``
+- **Commit SHA**: ``f54f867119470cba0060985255b671d658899796``
 - **Verification**: Verified via `flutter analyze` (No issues found!), full suite `flutter test` (304/304 All tests passed), and re-run of the icon-only button audit script (0 remaining). ✅

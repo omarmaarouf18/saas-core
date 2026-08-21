@@ -523,11 +523,11 @@ This file tracks historical entries for the primary category: **New Features Cha
   - Added `test/golden_screens_test.dart`: 7 golden tests / 8 snapshot baselines covering the P0 migrated pair (`notifications_screen`, `owner_reconciliation_queue_screen`), P2 archetype representatives (`customer_jobs_screen` list template, `login_screen` form template), and the component library at mobile/tablet/desktop viewports.
   - Bundled Poppins (OFL) under `assets/fonts/` with `GoogleFonts.config.allowRuntimeFetching = false` for deterministic, offline-safe typography (production behavior change: brand fonts no longer fetched at runtime).
   - Fixed two real overflow defects surfaced by the multi-viewport golden pass: `StatusBadge` (shared widget — Flexible + ellipsis inside badge Row) and reconciliation queue AppBar titleWidget Row.
-- **Commit SHA**: ``d64fa25fdead7091a8e2e050b10e9fda363b6e55``
+- **Commit SHA**: ``35c7a2aa646f3fc296ee8f8496d11c413f4a5d94``
 - **Verification**: Verified via golden generation run (`flutter test --update-goldens test/golden_screens_test.dart`, 7/7 pass), baseline verification run without --update-goldens (7/7 pass), full suite `flutter test` (304/304 All tests passed), and `flutter analyze` (No issues found!). ✅
 
 ## Breakpoint Goldens for P0 Proof-of-Concept Screens (Responsive QA Extension)
 
 - **Implementation Detail**: Extended `test/golden_screens_test.dart` with tablet (768x1024) and desktop web (1280x800) golden variants for both P0 proof-of-concept screens (`notifications_screen`, `owner_reconciliation_queue_screen`), completing the multi-viewport responsive check for the proof-of-concept pair before full-rollout viewport expansion. Golden count: 12 baselines across 7 tests.
-- **Commit SHA**: ``ae3c3e05784360f7eca7a06a00f68621aed0a52a``
+- **Commit SHA**: ``185cc9d4b5b9087242f5d902493918e0038747ea``
 - **Verification**: Verified via regeneration run (`flutter test --update-goldens`, 7/7 pass) and baseline verification run without --update-goldens (7/7 pass). ✅

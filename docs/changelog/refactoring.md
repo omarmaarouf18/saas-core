@@ -35,7 +35,7 @@ This file tracks historical entries for the primary category: **Refactoring Chan
   - Migrated the remaining form/config archetype screens off manual `Scaffold`/`AppBar` construction onto `AppShell`/`FormScreenTemplate` composition roots as part of Frontend Architecture Unification P2: `signup_screen.dart`, `forgot_password_screen.dart`, `otp_screen.dart`, `settings_screen.dart`, `owner_configuration_screen.dart`, `kyc_document_upload_screen.dart`, `service_screen.dart`, and `my_account_screen.dart`.
   - Transparent auth app bars preserved via `appBarBackgroundColor: Colors.transparent` + `appBarForegroundColor`; embedded-tab behavior (`settings_screen.dart`), full-body initialization loaders, refresh actions, pull-to-refresh, FAB placement with KYC gating (`service_screen.dart`), and responsive grids all preserved.
   - Post-batch audit (`scripts/frontend_audit.sh`): files containing `Scaffold(` in screens/ reduced 21 -> 13; files containing `AppBar(` reduced 17 -> 10.
-- **Commit SHA**: ``070b7a20c9d14f8b52c89e8e7d9da77e6f3e16d3``
+- **Commit SHA**: ``4ed40007c3a3909f6794db5d98312be219adeb9c``
 - **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), targeted suites (37/37 pass across auth/forgot-password/settings/owner-config/kyc/my-account/password-toggle tests), and full suite `flutter test` (288/288 All tests passed). ✅
 
 ## DashboardScreenTemplate & Dashboard Shell Composition Migration (3 screens)
@@ -44,14 +44,14 @@ This file tracks historical entries for the primary category: **Refactoring Chan
   - Created `DashboardScreenTemplate` (`frontend/lib/widgets/dashboard_screen_template.dart`) capturing the shared tabbed-dashboard shell: canonical Quick Delivery brand logo badge (`DashboardScreenTemplate.brandLogo()`, key `app_header_logo`), transparent AppBar with dynamic tab title, lazy-hydrated `IndexedStack` body, and keyed `NavigationBar` wiring.
   - Migrated `home_screen.dart` (owner 4-tab shell; non-owner branch onto `AppShell`), `customer_home_screen.dart`, and `employee_home_screen.dart`, removing three duplicated ~90-line shell implementations.
   - Refined `scripts/frontend_audit.sh`: widget-construction matching via PCRE negative lookbehind so identifier substrings (e.g. `_buildOwnerScaffold(`) no longer false-positive; home helpers renamed `_buildOwnerShell`/`_buildNonOwnerShell`.
-- **Commit SHA**: ``9630064454924560c810805692c567eae9f7d2e8``
+- **Commit SHA**: ``b083789ab5b0eb23337253818ee091a513839ce2``
 - **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), `frontend/test/dashboard_screen_template_test.dart` (4/4 pass), full suite `flutter test` (292/292 All tests passed), and post-batch audit: Scaffold files 13 -> 10, AppBar files 10 -> 7. ✅
 
 ## AppShell-Only Composition Migration Batch (6 screens)
 
 - **Implementation Detail**:
   - Migrated screens with unique layouts onto `AppShell` directly (no archetype template): `chat_screen.dart` (`titleWidget` preserving two-line title + live status indicator), `wallet_screen.dart` (chrome-less shell), `subscription_screen.dart`, `update_required_screen.dart` (PopScope non-dismissible guard preserved), `employee_screen.dart` (TabBar-only header via AppShell `bottom:` slot on surface background), and `employee_jobs_screen.dart` (embedded-tab early-return preserved).
-- **Commit SHA**: ``8756b0ed6ee2b0269c88b53aa8cfad627a5a7b3f``
+- **Commit SHA**: ``bdeac613b23eeafc938a4d6cd91f5901e8677ec5``
 - **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), full suite `flutter test` (292/292 All tests passed), and post-batch audit: Scaffold files 10 -> 4, AppBar files 7 -> 4. ✅
 
 ## Detail & Map Screen Composition Migration Batch (P2 Completion, 4 screens)
@@ -59,7 +59,7 @@ This file tracks historical entries for the primary category: **Refactoring Chan
 - **Implementation Detail**:
   - Migrated the final 4 screens onto `AppShell` composition roots: `job_status_screen.dart` (refresh spinner-in-actions preserved), `rating_screen.dart` (transparent app bar preserved), `owner_fleet_map_screen.dart` and `customer_job_map_screen.dart` (navy map headers with refresh actions preserved).
   - **P2 rollout target achieved**: 0 files in `frontend/lib/screens/` construct `Scaffold(` or `AppBar(` directly — all 28 screens compose exclusively through `AppShell`/archetype templates.
-- **Commit SHA**: ``9c0dfce444162cc4672b74eb3c277da6691f4de7``
+- **Commit SHA**: ``5845de375511f52f6e453cc392cee4a4f4d52ed4``
 - **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), full suite `flutter test` (292/292 All tests passed), and post-fix audit: Scaffold( files 4 -> 0, AppBar( files 4 -> 0. ✅
 
 ## P3 Centralized Uppercase Typography (36 call sites eliminated)
@@ -68,7 +68,7 @@ This file tracks historical entries for the primary category: **Refactoring Chan
   - Added `AppTypography.labelUppercase` (canonical TextStyle for small badges/chips/status tags) and `AppTypography.uppercaseLabel(String)` (single centralized uppercase transform) to `frontend/lib/core/theme.dart`.
   - Rewrote all 36 scattered `.toUpperCase()` usages across 16 screen files onto `uppercaseLabel` (balanced-paren backward-scanner rewrite; the single multiline chain in `owner_fleet_map_screen.dart` repaired manually and caught by analyzer).
   - Post-fix audit (`scripts/frontend_audit.sh`): `.toUpperCase()` occurrences in screens/ = **0**.
-- **Commit SHA**: ``0106e1dc0494ec75f3a6f0a9421fee6bc6fac663``
+- **Commit SHA**: ``8c493c9beaee5fbed56ba676254ae2a10a1355de``
 - **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), and full suite `flutter test` (292/292 All tests passed). ✅
 
 ## P4 BoxDecoration Elimination via ThemedPanel (110 call sites eliminated)
@@ -79,5 +79,5 @@ This file tracks historical entries for the primary category: **Refactoring Chan
   - Fixed an animation repaint defect found by the dedicated test: state initially extended `ImplicitlyAnimatedWidgetState` (no per-tick rebuilds); moved to `AnimatedWidgetBaseState`.
   - Ran `dart fix --apply` (19 `prefer_const_constructors` fixes) in the same pass.
   - Post-fix audit (`scripts/frontend_audit.sh`): `BoxDecoration(` occurrences in screens/ = **0**.
-- **Commit SHA**: ``9920693ffbd80d306e7e5c5fb6ee539a8798f060``
+- **Commit SHA**: ``13f9bc65e40d1b5337fa1e7b313ef85758db6ff9``
 - **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), `frontend/test/themed_panel_test.dart` (5/5 pass), and full suite `flutter test` (297/297 All tests passed). ✅
