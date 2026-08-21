@@ -4358,8 +4358,8 @@ func TestTrackJob_RedisBackedIdempotency_MultiInstanceAndTTL(t *testing.T) {
 		t.Fatalf("Expected cross-instance duplicate request to return original job ID %q, got %q", jobID1, jobID2)
 	}
 
-	// 3. Verify Redis TTL: key "idempotency:job:multi-instance-idem-key-777" must have 24h TTL
-	ttl := mr.TTL("idempotency:job:" + idempotencyKey)
+	// 3. Verify Redis TTL: per-user namespaced key "idempotency:job:<userID>:<key>" must have 24h TTL
+	ttl := mr.TTL("idempotency:job:" + userID + ":" + idempotencyKey)
 	if ttl <= 23*time.Hour || ttl > 24*time.Hour {
 		t.Fatalf("Expected Redis key TTL around 24 hours, got %v", ttl)
 	}
@@ -6091,3 +6091,134 @@ func TestRespondPrice_EscrowLockingAndReconciliationFallback(t *testing.T) {
 }
 
 func floatPtr(f float64) *float64 { return &f }
+
+// TestTrackJob_IdempotencyReplayRequiresAuthentication guards against the
+// pre-auth idempotency disclosure defect: the Redis replay lookup must run
+// only after the caller's JWT has been resolved, and keys must be namespaced
+// per user so a known/guessed key can never return another user's job.
+func TestTrackJob_IdempotencyReplayRequiresAuthentication(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
+		return
+	}
+	defer func() {
+		_ = s.DropDatabase(context.Background())
+		s.Close(context.Background())
+	}()
+
+	mr := miniredis.RunT(t)
+	if mr == nil {
+		t.Fatal("miniredis unavailable")
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		id := r.URL.Query().Get("id")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"id":         id,
+			"role":       "owner",
+			"kyc_status": "approved",
+			"is_active":  true,
+			"tenant_id":  id,
+		})
+	}))
+	defer mockAuthServer.Close()
+
+	cfg := &config.Config{
+		AuthServiceURL:         mockAuthServer.URL,
+		InternalServiceToken:   "mock-internal-token",
+		AppEnv:                 "test",
+		AllowTestPaymentBypass: true,
+	}
+	u := NewUserService(s, cfg, rdb)
+
+	victimOwnerID := "idem-victim-owner-1"
+	victimUserID := "idem-victim-user-1"
+	serviceID := "idem-svc-1"
+
+	s.CreateService(ctx, &models.Service{ID: serviceID, TenantID: victimOwnerID, TenantBasePrice: 10.0, TenantPricePerKM: 1.0, Latitude: 30.0, Longitude: 30.0})
+	_ = s.Deposit(ctx, victimOwnerID, 500.0)
+
+	tokenOwner, _ := jwtutil.GenerateToken(victimOwnerID, "owner", victimOwnerID, "victim-owner@example.com")
+	tokenUser, _ := jwtutil.GenerateToken(victimUserID, "user", victimOwnerID, "victim-user@example.com")
+
+	idempotencyKey := "leakable-key-abc123"
+	trackReqBody := map[string]any{
+		"owner_id":        tokenOwner,
+		"service_id":      serviceID,
+		"user_id":         tokenUser,
+		"payment_method":  "cod",
+		"idempotency_key": idempotencyKey,
+		"location":        models.Location{Latitude: 30.0, Longitude: 30.0},
+	}
+	trackBody, _ := json.Marshal(trackReqBody)
+
+	// Victim creates a job under the idempotency key (201 Created).
+	reqVictim := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(trackBody))
+	reqVictim.Header.Set("Idempotency-Key", idempotencyKey)
+	recVictim := httptest.NewRecorder()
+	u.TrackJob(recVictim, reqVictim)
+	if recVictim.Code != http.StatusCreated {
+		t.Fatalf("Expected 201 for victim request, got %d. Body: %s", recVictim.Code, recVictim.Body.String())
+	}
+	var victimResp map[string]any
+	_ = json.Unmarshal(recVictim.Body.Bytes(), &victimResp)
+	victimJobObj, _ := victimResp["job"].(map[string]any)
+	victimJobID, _ := victimJobObj["id"].(string)
+	if victimJobID == "" {
+		t.Fatal("victim job creation did not yield a job ID")
+	}
+
+	// Attacker replays the victim's key WITHOUT any valid token and with
+	// garbage identity fields. Must be rejected 401 and must NOT disclose
+	// the victim's job object.
+	attackBody, _ := json.Marshal(map[string]any{
+		"service_id":     serviceID,
+		"user_id":        "not-a-token-attacker",
+		"payment_method": "cod",
+		"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+	})
+	reqAttack := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(attackBody))
+	reqAttack.Header.Set("Idempotency-Key", idempotencyKey)
+	recAttack := httptest.NewRecorder()
+	u.TrackJob(recAttack, reqAttack)
+
+	if recAttack.Code != http.StatusUnauthorized {
+		t.Fatalf("Expected 401 for unauthenticated replay attempt, got %d. Body: %s", recAttack.Code, recAttack.Body.String())
+	}
+	if strings.Contains(recAttack.Body.String(), victimJobID) {
+		t.Fatalf("Victim job ID %q leaked to unauthenticated caller: %s", victimJobID, recAttack.Body.String())
+	}
+
+	// Authorized duplicate (same victim token + same key) still returns the
+	// existing job with 200 OK — namespacing must not break legit replay.
+	reqReplay := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(trackBody))
+	reqReplay.Header.Set("Idempotency-Key", idempotencyKey)
+	recReplay := httptest.NewRecorder()
+	u.TrackJob(recReplay, reqReplay)
+	if recReplay.Code != http.StatusOK {
+		t.Fatalf("Expected 200 for authorized duplicate, got %d. Body: %s", recReplay.Code, recReplay.Body.String())
+	}
+	var replayResp map[string]any
+	_ = json.Unmarshal(recReplay.Body.Bytes(), &replayResp)
+	replayJobObj, _ := replayResp["job"].(map[string]any)
+	replayJobID, _ := replayJobObj["id"].(string)
+	if replayJobID != victimJobID {
+		t.Fatalf("Authorized duplicate returned job %q, want original %q", replayJobID, victimJobID)
+	}
+}

@@ -53,30 +53,6 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idempotencyKey := r.Header.Get("Idempotency-Key")
-	if idempotencyKey == "" {
-		idempotencyKey = r.Header.Get("X-Idempotency-Key")
-	}
-	if idempotencyKey == "" {
-		idempotencyKey = req.IdempotencyKey
-	}
-
-	if idempotencyKey != "" && u.rdb != nil {
-		redisKey := "idempotency:job:" + idempotencyKey
-		existingJobID, err := u.rdb.Get(r.Context(), redisKey).Result()
-		if err == nil && existingJobID != "" {
-			existingJob := u.store.GetJob(r.Context(), existingJobID)
-			if existingJob != nil {
-				writeJSON(w, http.StatusOK, map[string]any{
-					"message":         "job tracking record already created (idempotent response)",
-					"job":             existingJob,
-					"idempotency_key": idempotencyKey,
-				})
-				return
-			}
-		}
-	}
-
 	if !isValidCoordinate(req.Location.Latitude, req.Location.Longitude) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error":   "invalid_coordinates",
@@ -105,6 +81,34 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.UserID = resolvedUserID
+
+	// Idempotency replay check. Deliberately runs only AFTER the caller's
+	// identity has been resolved from a signed JWT, and keys are namespaced
+	// per user ("idempotency:job:<userID>:<key>") so a known or guessed
+	// idempotency key can never disclose another user's job record.
+	idempotencyKey := r.Header.Get("Idempotency-Key")
+	if idempotencyKey == "" {
+		idempotencyKey = r.Header.Get("X-Idempotency-Key")
+	}
+	if idempotencyKey == "" {
+		idempotencyKey = req.IdempotencyKey
+	}
+
+	if idempotencyKey != "" && u.rdb != nil {
+		redisKey := "idempotency:job:" + resolvedUserID + ":" + idempotencyKey
+		existingJobID, err := u.rdb.Get(r.Context(), redisKey).Result()
+		if err == nil && existingJobID != "" {
+			existingJob := u.store.GetJob(r.Context(), existingJobID)
+			if existingJob != nil {
+				writeJSON(w, http.StatusOK, map[string]any{
+					"message":         "job tracking record already created (idempotent response)",
+					"job":             existingJob,
+					"idempotency_key": idempotencyKey,
+				})
+				return
+			}
+		}
+	}
 
 	ctx := r.Context()
 	var svc *models.Service
@@ -253,7 +257,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	// For transport category jobs, skip escrow locking entirely during TrackJob regardless of payment method.
 	if isTransport {
 		log.Printf("[USER] Transport Job %s created awaiting price proposal response (suggested=%.2f)", job.ID, suggestedPrice)
-		u.saveIdempotencyKey(r.Context(), idempotencyKey, job.ID)
+		u.saveIdempotencyKey(r.Context(), resolvedUserID, idempotencyKey, job.ID)
 		writeJSON(w, http.StatusCreated, map[string]any{
 			"message": "job tracking record created",
 			"job":     job,
@@ -272,7 +276,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		job.Status = models.JobStatusActive
 		job.UpdatedAt = time.Now().UTC()
 
-		u.saveIdempotencyKey(r.Context(), idempotencyKey, job.ID)
+		u.saveIdempotencyKey(r.Context(), resolvedUserID, idempotencyKey, job.ID)
 
 		writeJSON(w, http.StatusCreated, map[string]any{
 			"message":        "job tracking record created",
@@ -286,7 +290,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	if err := u.store.LockEscrow(ctx, req.OwnerID, job.ID, escrowAmount); err != nil {
 		log.Printf("[USER] Escrow lock failed for job %s: %v", job.ID, err)
 		// Job created but unfunded — still report it.
-		u.saveIdempotencyKey(r.Context(), idempotencyKey, job.ID)
+		u.saveIdempotencyKey(r.Context(), resolvedUserID, idempotencyKey, job.ID)
 		writeJSON(w, http.StatusCreated, map[string]any{
 			"message": "job created but escrow lock failed — deposit funds first",
 			"warning": err.Error(), "job": job, "escrow_amount": escrowAmount,
@@ -337,7 +341,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	job.Status = models.JobStatusActive
 	job.UpdatedAt = time.Now().UTC()
 
-	u.saveIdempotencyKey(r.Context(), idempotencyKey, job.ID)
+	u.saveIdempotencyKey(r.Context(), resolvedUserID, idempotencyKey, job.ID)
 
 	writeJSON(w, http.StatusCreated, map[string]any{
 		"message": "job tracking record created", "lifecycle_note": "escrow locked, all up to date",
