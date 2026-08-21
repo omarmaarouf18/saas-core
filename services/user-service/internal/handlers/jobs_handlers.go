@@ -315,7 +315,10 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		u.saveIdempotencyKey(resolvedUserID, idempotencyKey, job.ID)
 		writeJSON(w, http.StatusCreated, map[string]any{
 			"message": "job created but escrow lock failed — deposit funds first",
-			"warning": err.Error(), "job": job, "escrow_amount": escrowAmount,
+			// Generic client-facing warning: the raw store error discloses the
+			// owner's exact withdrawable balance to other tenants; details stay
+			// in the server log line above.
+			"warning": "escrow lock failed — owner must deposit funds before this booking can be funded", "job": job, "escrow_amount": escrowAmount,
 		})
 		return
 	}
@@ -429,9 +432,11 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 			return
 		}
-		if limited, remaining := u.completeJobLimiter.CheckAndRecord(resolvedRequester); limited {
-			writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many requests; retry in %.0f seconds", remaining.Seconds())})
-			return
+		if u.completeJobLimiter != nil {
+			if limited, remaining := u.completeJobLimiter.CheckAndRecord(resolvedRequester); limited {
+				writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many requests; retry in %.0f seconds", remaining.Seconds())})
+				return
+			}
 		}
 
 		if resolvedRequester != job.OwnerID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
@@ -1690,9 +1695,11 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 			if err := u.store.LockEscrow(ctx, job.OwnerID, job.ID, activePrice); err != nil {
 				log.Printf("[USER] Escrow lock failed for negotiable transport job %s: %v", job.ID, err)
 				writeJSON(w, http.StatusBadRequest, map[string]any{
-					"error":         "escrow_lock_failed",
-					"message":       "price proposal acceptance failed — insufficient wallet funds for escrow lock",
-					"warning":       err.Error(),
+					"error":   "escrow_lock_failed",
+					"message": "price proposal acceptance failed — insufficient wallet funds for escrow lock",
+					// Generic client-facing warning: raw store error would disclose
+					// the owner's exact wallet balance cross-tenant; details are logged.
+					"warning":       "escrow lock failed — owner must deposit funds before accepting this price",
 					"job":           job,
 					"escrow_amount": activePrice,
 				})

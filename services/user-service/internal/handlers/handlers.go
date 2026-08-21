@@ -174,16 +174,15 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		client = http.DefaultClient
 	}
 
-	rl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Minute, "user")
-	rlOwnerJobs := ratelimit.NewRateLimiter(rdb, 60, 1*time.Minute, "user:owner_jobs")
-	rlCustomerJobs := ratelimit.NewRateLimiter(rdb, 60, 1*time.Minute, "user:customer_jobs")
-	rlLedger := ratelimit.NewRateLimiter(rdb, 60, 1*time.Minute, "user:ledger")
-	rlLedgerIP := ratelimit.NewRateLimiter(rdb, 60, 1*time.Minute, "user:ledger_ip")
-	rlRatings := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "user:ratings")
-	rlReconciliation := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "user:reconciliation")
-	rlCompleteJob := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "user:complete_job")
-	rlResolveRecon := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "user:reconciliation_resolve")
-	rlPayout := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "user:payout")
+	// Limiter construction is nil-safe: with a nil Redis client (some test
+	// harnesses), limiter FIELDS stay nil so per-endpoint guards skip limiting
+	// instead of wrapping a nil-Redis limiter that would panic on first use.
+	newHandlerLimiter := func(limit int, name string) *handlerutil.RateLimiter {
+		if rdb == nil {
+			return nil
+		}
+		return handlerutil.NewRateLimiter(ratelimit.NewRateLimiter(rdb, limit, 1*time.Minute, name))
+	}
 
 	authClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
 	chatClient := resilience.NewClient(client, "chat-service", 2, 5*time.Second)
@@ -194,16 +193,16 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		authServiceURL:            cfg.AuthServiceURL,
 		chatServiceURL:            chatServiceURL,
 		notificationServiceURL:    notificationServiceURL,
-		limiter:                   handlerutil.NewRateLimiter(rl),
-		ownerJobsLimiter:          handlerutil.NewRateLimiter(rlOwnerJobs),
-		customerJobsLimiter:       handlerutil.NewRateLimiter(rlCustomerJobs),
-		ledgerLimiter:             handlerutil.NewRateLimiter(rlLedger),
-		ledgerIPLimiter:           handlerutil.NewRateLimiter(rlLedgerIP),
-		ratingsLimiter:            handlerutil.NewRateLimiter(rlRatings),
-		reconciliationLimiter:     handlerutil.NewRateLimiter(rlReconciliation),
-		completeJobLimiter:        handlerutil.NewRateLimiter(rlCompleteJob),
-		resolveReconLimiter:       handlerutil.NewRateLimiter(rlResolveRecon),
-		payoutLimiter:             handlerutil.NewRateLimiter(rlPayout),
+		limiter:                   newHandlerLimiter(5, "user"),
+		ownerJobsLimiter:          newHandlerLimiter(60, "user:owner_jobs"),
+		customerJobsLimiter:       newHandlerLimiter(60, "user:customer_jobs"),
+		ledgerLimiter:             newHandlerLimiter(60, "user:ledger"),
+		ledgerIPLimiter:           newHandlerLimiter(60, "user:ledger_ip"),
+		ratingsLimiter:            newHandlerLimiter(30, "user:ratings"),
+		reconciliationLimiter:     newHandlerLimiter(30, "user:reconciliation"),
+		completeJobLimiter:        newHandlerLimiter(30, "user:complete_job"),
+		resolveReconLimiter:       newHandlerLimiter(30, "user:reconciliation_resolve"),
+		payoutLimiter:             newHandlerLimiter(30, "user:payout"),
 		internalServiceToken:      cfg.InternalServiceToken,
 		locationLastUpdate:        make(map[string]time.Time),
 		locationInFlight:          make(map[string]bool),

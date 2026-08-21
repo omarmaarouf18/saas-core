@@ -224,9 +224,11 @@ func (u *UserService) RequestPayout(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant owner token: " + err.Error()})
 		return
 	}
-	if limited, remaining := u.payoutLimiter.CheckAndRecord(resolvedTenantID); limited {
-		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many requests; retry in %.0f seconds", remaining.Seconds())})
-		return
+	if u.payoutLimiter != nil {
+		if limited, remaining := u.payoutLimiter.CheckAndRecord(resolvedTenantID); limited {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many requests; retry in %.0f seconds", remaining.Seconds())})
+			return
+		}
 	}
 
 	if req.Amount <= 0 {
@@ -279,9 +281,11 @@ func (u *UserService) GetPayoutRequests(w http.ResponseWriter, r *http.Request) 
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant owner token: " + err.Error()})
 		return
 	}
-	if limited, remaining := u.payoutLimiter.CheckAndRecord(resolvedTenantID); limited {
-		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many requests; retry in %.0f seconds", remaining.Seconds())})
-		return
+	if u.payoutLimiter != nil {
+		if limited, remaining := u.payoutLimiter.CheckAndRecord(resolvedTenantID); limited {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many requests; retry in %.0f seconds", remaining.Seconds())})
+			return
+		}
 	}
 
 	requests, err := u.store.GetPayoutRequests(ctx, resolvedTenantID)
