@@ -6,6 +6,7 @@ import '../core/constants.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../providers/notifications_provider.dart';
+import '../widgets/dashboard_screen_template.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/primary_button.dart';
@@ -141,74 +142,41 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Scaffold(
+    return DashboardScreenTemplate(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.sm),
-          child: Center(
-            child: Container(
-              key: const Key('app_header_logo'),
-              padding: const EdgeInsets.all(AppSpacing.xs),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: const Icon(
-                Icons.storefront,
-                color: AppColors.secondary,
-                size: 18,
-              ),
-            ),
-          ),
-        ),
-        title: Text(
-          _getTabTitle(_currentIndex, l10n),
-          style: AppTypography.titleMd
-              .copyWith(color: Theme.of(context).colorScheme.onSurface),
-        ),
-        actions: [
-          _buildNotificationBell(context),
-        ],
-      ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          _visitedTabs.contains(0)
-              ? _CustomerHomeDashboardTab(
-                  onCategorySelected: _navigateToServicesCategory,
-                  onGoToServices: () => onTabTapped(1),
-                  onGoToHistory: () => onTabTapped(2),
-                )
-              : const SizedBox.shrink(),
-          _visitedTabs.contains(1)
-              ? CustomerMarketplaceScreen(
-                  key: _marketplaceKey,
-                  isEmbeddedInTab: true,
-                )
-              : const SizedBox.shrink(),
-          _visitedTabs.contains(2)
-              ? const CustomerJobsScreen(
-                  isEmbeddedInTab: true,
-                )
-              : const SizedBox.shrink(),
-          _visitedTabs.contains(3)
-              ? const SettingsScreen(
-                  isEmbeddedInTab: true,
-                )
-              : const SizedBox.shrink(),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        key: const Key('customer_bottom_navigation_bar'),
-        selectedIndex: _currentIndex,
-        onDestinationSelected: onTabTapped,
-        destinations: [
+      title: _getTabTitle(_currentIndex, l10n),
+      actions: [
+        _buildNotificationBell(context),
+      ],
+      currentIndex: _currentIndex,
+      onDestinationSelected: onTabTapped,
+      tabs: [
+        _visitedTabs.contains(0)
+            ? _CustomerHomeDashboardTab(
+                onCategorySelected: _navigateToServicesCategory,
+                onGoToServices: () => onTabTapped(1),
+                onGoToHistory: () => onTabTapped(2),
+              )
+            : const SizedBox.shrink(),
+        _visitedTabs.contains(1)
+            ? CustomerMarketplaceScreen(
+                key: _marketplaceKey,
+                isEmbeddedInTab: true,
+              )
+            : const SizedBox.shrink(),
+        _visitedTabs.contains(2)
+            ? const CustomerJobsScreen(
+                isEmbeddedInTab: true,
+              )
+            : const SizedBox.shrink(),
+        _visitedTabs.contains(3)
+            ? const SettingsScreen(
+                isEmbeddedInTab: true,
+              )
+            : const SizedBox.shrink(),
+      ],
+      navigationBarKey: const Key('customer_bottom_navigation_bar'),
+      destinations: [
           NavigationDestination(
             key: const Key('nav_tab_home'),
             icon: const Icon(Icons.home),
@@ -230,7 +198,6 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
             label: l10n.navSettings,
           ),
         ],
-      ),
     );
   }
 }

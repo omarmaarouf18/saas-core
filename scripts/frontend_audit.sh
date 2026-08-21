@@ -17,14 +17,16 @@ if [ ! -f "$THEME_FILE" ]; then
   exit 1
 fi
 
-# Count 1: Number of files containing Scaffold(
-scaffold_files=$({ grep -lF "Scaffold(" "$SCREENS_DIR"/*.dart 2>/dev/null || true; } | wc -l | tr -d ' ')
+# Counts 1 & 2 match widget CONSTRUCTION (not identifier substrings such as
+# `_buildOwnerScaffold(`), using a PCRE negative lookbehind on identifier chars.
+# Count 1: Number of files constructing Scaffold(
+scaffold_files=$({ grep -lP '(?<![A-Za-z0-9_])Scaffold\(' "$SCREENS_DIR"/*.dart 2>/dev/null || true; } | wc -l | tr -d ' ')
 
-# Count 2: Number of files containing AppBar(
-appbar_files=$({ grep -lF "AppBar(" "$SCREENS_DIR"/*.dart 2>/dev/null || true; } | wc -l | tr -d ' ')
+# Count 2: Number of files constructing AppBar(
+appbar_files=$({ grep -lP '(?<![A-Za-z0-9_])AppBar\(' "$SCREENS_DIR"/*.dart 2>/dev/null || true; } | wc -l | tr -d ' ')
 
 # Count 3: Total occurrences of BoxDecoration(
-box_decorations=$({ grep -oF "BoxDecoration(" "$SCREENS_DIR"/*.dart 2>/dev/null || true; } | wc -l | tr -d ' ')
+box_decorations=$({ grep -oP '(?<![A-Za-z0-9_])BoxDecoration\(' "$SCREENS_DIR"/*.dart 2>/dev/null || true; } | wc -l | tr -d ' ')
 
 # Count 4: Total occurrences of .toUpperCase()
 toupper_occurrences=$({ grep -oF ".toUpperCase()" "$SCREENS_DIR"/*.dart 2>/dev/null || true; } | wc -l | tr -d ' ')

@@ -12,7 +12,9 @@ import '../widgets/themed_section_header.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_success_banner.dart';
 import '../widgets/rating_summary_card.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/cancel_job_dialog.dart';
+import '../widgets/dashboard_screen_template.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/skeleton_loader.dart';
@@ -162,88 +164,48 @@ class _HomeScreenState extends State<HomeScreen> {
       return const CustomerHomeScreen();
     }
     if (user.role != 'owner') {
-      return _buildNonOwnerScaffold(user, l10n);
+      return _buildNonOwnerShell(user, l10n);
     }
 
-    return _buildOwnerScaffold(user, l10n);
+    return _buildOwnerShell(user, l10n);
   }
 
-  Widget _buildOwnerScaffold(UserProfile user, AppLocalizations l10n) {
-    return Scaffold(
+  Widget _buildOwnerShell(UserProfile user, AppLocalizations l10n) {
+    return DashboardScreenTemplate(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.sm),
-          child: Center(
-            child: Container(
-              key: const Key('app_header_logo'),
-              padding: const EdgeInsets.all(AppSpacing.xs),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
+      title: _getTabTitle(context, _currentIndex),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.gavel_outlined),
+          tooltip: l10n.ownerHomeTooltipEscrowReconciliation,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const OwnerReconciliationQueueScreen(),
               ),
-              child: const Icon(
-                Icons.storefront,
-                color: AppColors.secondary,
-                size: 18,
-              ),
-            ),
-          ),
+            );
+          },
         ),
-        title: Text(
-          _getTabTitle(context, _currentIndex),
-          style: AppTypography.titleMd
-              .copyWith(color: Theme.of(context).colorScheme.onSurface),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.gavel_outlined),
-            tooltip: l10n.ownerHomeTooltipEscrowReconciliation,
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const OwnerReconciliationQueueScreen(),
-                ),
-              );
-            },
-          ),
-          _buildNotificationBell(context),
-        ],
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: IndexedStack(
-              index: _currentIndex,
-              children: [
-                _visitedTabs.contains(0)
-                    ? _buildDashboardTab(context, user)
-                    : const SizedBox.shrink(),
-                _visitedTabs.contains(1)
-                    ? const EmployeeScreen()
-                    : const SizedBox.shrink(),
-                _visitedTabs.contains(2)
-                    ? const OwnerHistoryScreen(isEmbeddedInTab: true)
-                    : const SizedBox.shrink(),
-                _visitedTabs.contains(3)
-                    ? const SettingsScreen(isEmbeddedInTab: true)
-                    : const SizedBox.shrink(),
-              ],
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        key: const Key('owner_bottom_navigation_bar'),
-        selectedIndex: _currentIndex,
-        onDestinationSelected: onTabTapped,
-        destinations: [
+        _buildNotificationBell(context),
+      ],
+      currentIndex: _currentIndex,
+      onDestinationSelected: onTabTapped,
+      tabs: [
+        _visitedTabs.contains(0)
+            ? _buildDashboardTab(context, user)
+            : const SizedBox.shrink(),
+        _visitedTabs.contains(1)
+            ? const EmployeeScreen()
+            : const SizedBox.shrink(),
+        _visitedTabs.contains(2)
+            ? const OwnerHistoryScreen(isEmbeddedInTab: true)
+            : const SizedBox.shrink(),
+        _visitedTabs.contains(3)
+            ? const SettingsScreen(isEmbeddedInTab: true)
+            : const SizedBox.shrink(),
+      ],
+      navigationBarKey: const Key('owner_bottom_navigation_bar'),
+      destinations: [
           NavigationDestination(
             key: const Key('owner_nav_tab_home'),
             icon: const Icon(Icons.home_outlined),
@@ -269,7 +231,6 @@ class _HomeScreenState extends State<HomeScreen> {
             label: l10n.ownerHomeNavSettings,
           ),
         ],
-      ),
     );
   }
 
@@ -1341,54 +1302,29 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNonOwnerScaffold(UserProfile user, AppLocalizations l10n) {
-    return Scaffold(
+  Widget _buildNonOwnerShell(UserProfile user, AppLocalizations l10n) {
+    return AppShell(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.sm),
-          child: Center(
-            child: Container(
-              key: const Key('app_header_logo'),
-              padding: const EdgeInsets.all(AppSpacing.xs),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
+      appBarBackgroundColor: Colors.transparent,
+      appBarForegroundColor: Theme.of(context).colorScheme.onSurface,
+      leading: DashboardScreenTemplate.brandLogo(),
+      showBackButton: false,
+      title: l10n.quickDeliveryDashboard,
+      actions: [
+        _buildNotificationBell(context),
+        IconButton(
+          key: const Key('settings_button'),
+          icon: const Icon(Icons.settings_outlined),
+          tooltip: l10n.ownerHomeTooltipSettings,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const SettingsScreen(),
               ),
-              child: const Icon(
-                Icons.storefront,
-                color: AppColors.secondary,
-                size: 18,
-              ),
-            ),
-          ),
+            );
+          },
         ),
-        title: Text(
-          l10n.quickDeliveryDashboard,
-          style: AppTypography.titleMd
-              .copyWith(color: Theme.of(context).colorScheme.onSurface),
-        ),
-        actions: [
-          _buildNotificationBell(context),
-          IconButton(
-            key: const Key('settings_button'),
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: l10n.ownerHomeTooltipSettings,
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(

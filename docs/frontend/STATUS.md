@@ -187,7 +187,7 @@
     * *Methodology*: Every sub-phase requires (a) a baseline audit from `scripts/frontend_audit.sh`, (b) the fix, (c) the post-fix audit re-run, and (d) literal `flutter analyze` + full-suite `flutter test` output. No phase is marked complete without a re-runnable audit proving it.
     * *P0 Proof of Concept*: **[COMPLETE]** `AppShell` + `ListScreenTemplate` built; migrated `notifications_screen.dart` + `owner_reconciliation_queue_screen.dart` (commits through `e9a3d9c`).
     * *P1 Dark Theme Unification*: **[COMPLETE]** `quickDeliveryDarkTheme` rebuilt from `AppColors.*Dark` variants. Post-fix audit: 0 files with `Color(0xFF` outside `core/theme.dart` (baseline was 60+ standalone literals inside the dark theme block). Guarded by `test/dark_theme_hex_verification_test.dart`.
-    * *P2 AppShell Rollout*: **[IN PROGRESS]** Baseline at plan start: 28/28 screens built `Scaffold(`, 23 built `AppBar(`. After prior list-screen batch + login: 21 Scaffold files / 17 AppBar files remained. This batch migrates the 8 form/config screens (`signup`, `forgot_password`, `otp`, `settings`, `owner_configuration`, `kyc_document_upload`, `service`, `my_account`) to `FormScreenTemplate`/`AppShell`. Post-batch audit: **13 Scaffold files / 10 AppBar files remaining** (all dashboard/detail/map/chat/wallet shells, next batches). Full suite: 288/288 pass.
+    * *P2 AppShell Rollout*: **[IN PROGRESS]** Baseline at plan start: 28/28 screens built `Scaffold(`, 23 built `AppBar(`. Form batch (8 screens) reduced this to 13/10. Dashboard batch created `DashboardScreenTemplate` (brand logo chrome + lazy IndexedStack + NavigationBar) and migrated `home_screen.dart`, `customer_home_screen.dart`, `employee_home_screen.dart`. Audit script refined to match widget construction via PCRE lookbehind (identifier substrings like `_buildOwnerScaffold(` no longer false-positive). Post-batch audit: **10 Scaffold files / 7 AppBar files remaining** (detail/map/chat/wallet/employee shells, next batches). Full suite: 292/292 pass.
     * *P3 Typography/Uppercase*: **[NOT STARTED]** (36 `.toUpperCase()` occurrences in screens/).
     * *P4 BoxDecoration Elimination*: **[NOT STARTED]** (114 occurrences in screens/).
     * *P5 Lint Enforcement CI Gate*: **[NOT STARTED]**.
@@ -260,6 +260,7 @@
  * **Widgets**:
     * `app_shell.dart`
     * `cancel_job_dialog.dart`
+    * `dashboard_screen_template.dart`
     * `confirm_action_dialog.dart`
     * `create_service_dialog.dart`
     * `create_ticket_dialog.dart`
