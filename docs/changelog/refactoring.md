@@ -61,3 +61,12 @@ This file tracks historical entries for the primary category: **Refactoring Chan
   - **P2 rollout target achieved**: 0 files in `frontend/lib/screens/` construct `Scaffold(` or `AppBar(` directly — all 28 screens compose exclusively through `AppShell`/archetype templates.
 - **Commit SHA**: ``9c0dfce444162cc4672b74eb3c277da6691f4de7``
 - **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), full suite `flutter test` (292/292 All tests passed), and post-fix audit: Scaffold( files 4 -> 0, AppBar( files 4 -> 0. ✅
+
+## P3 Centralized Uppercase Typography (36 call sites eliminated)
+
+- **Implementation Detail**:
+  - Added `AppTypography.labelUppercase` (canonical TextStyle for small badges/chips/status tags) and `AppTypography.uppercaseLabel(String)` (single centralized uppercase transform) to `frontend/lib/core/theme.dart`.
+  - Rewrote all 36 scattered `.toUpperCase()` usages across 16 screen files onto `uppercaseLabel` (balanced-paren backward-scanner rewrite; the single multiline chain in `owner_fleet_map_screen.dart` repaired manually and caught by analyzer).
+  - Post-fix audit (`scripts/frontend_audit.sh`): `.toUpperCase()` occurrences in screens/ = **0**.
+- **Commit SHA**: ``0106e1dc0494ec75f3a6f0a9421fee6bc6fac663``
+- **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), and full suite `flutter test` (292/292 All tests passed). ✅
