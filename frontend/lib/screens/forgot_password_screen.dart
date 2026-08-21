@@ -3,6 +3,7 @@ import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/form_screen_template.dart';
 import '../widgets/otp_pin_input.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
@@ -123,41 +124,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final auth = Provider.of<AuthProvider>(context);
     final l10n = context.l10n;
 
-    return Scaffold(
+    return FormScreenTemplate(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        foregroundColor: AppColors.primary,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.onBackground),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+      appBarBackgroundColor: Colors.transparent,
+      appBarForegroundColor: AppColors.onBackground,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.marginMobile,
+        vertical: AppSpacing.md,
       ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.marginMobile,
-              vertical: AppSpacing.md,
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Main Stitch Reset Password Card
-                    _buildForgotPasswordCard(auth, l10n),
-                    const SizedBox(height: AppSpacing.lg),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Main Stitch Reset Password Card
+                _buildForgotPasswordCard(auth, l10n),
+                const SizedBox(height: AppSpacing.lg),
 
-                    // External Footer Navigation Link (Back to Login)
-                    _buildFooterLink(l10n),
-                  ],
-                ),
-              ),
+                // External Footer Navigation Link (Back to Login)
+                _buildFooterLink(l10n),
+              ],
             ),
           ),
         ),

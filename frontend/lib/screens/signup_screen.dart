@@ -3,6 +3,7 @@ import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_text_field.dart';
@@ -75,32 +76,28 @@ class _SignupScreenState extends State<SignupScreen> {
     final auth = Provider.of<AuthProvider>(context);
     final l10n = context.l10n;
 
-    return Scaffold(
+    return FormScreenTemplate(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.marginMobile,
-              vertical: AppSpacing.md,
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Main Stitch Signup Card
-                    _buildSignupFormCard(auth, l10n),
-                    const SizedBox(height: AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.marginMobile,
+        vertical: AppSpacing.md,
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Main Stitch Signup Card
+                _buildSignupFormCard(auth, l10n),
+                const SizedBox(height: AppSpacing.lg),
 
-                    // External Footer Navigation Link
-                    _buildFooterLink(l10n),
-                  ],
-                ),
-              ),
+                // External Footer Navigation Link
+                _buildFooterLink(l10n),
+              ],
             ),
           ),
         ),

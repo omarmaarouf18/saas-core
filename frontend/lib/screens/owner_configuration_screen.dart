@@ -9,6 +9,7 @@ import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/form_screen_template.dart';
 import '../widgets/location_picker_map.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
@@ -323,52 +324,46 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
-    return Scaffold(
+    return FormScreenTemplate(
+      title: l10n.ownerConfigTitle,
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        title: Text(l10n.ownerConfigTitle),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-      ),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       body: !_isInitialized
           ? Center(child: ThemedLoadingIndicator(message: l10n.loading))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ThemedSectionHeader(
-                      title: l10n.ownerConfigHeader,
-                      subtitle: l10n.ownerConfigHeaderSub,
+          : Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ThemedSectionHeader(
+                    title: l10n.ownerConfigHeader,
+                    subtitle: l10n.ownerConfigHeaderSub,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  if (_errorMessage != null) ...[
+                    ThemedErrorBanner(
+                      key: const Key('owner_config_error_banner'),
+                      message: _errorMessage!,
+                      onRetry: _submitForm,
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    if (_errorMessage != null) ...[
-                      ThemedErrorBanner(
-                        key: const Key('owner_config_error_banner'),
-                        message: _errorMessage!,
-                        onRetry: _submitForm,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                    ],
-
-                    // Section 1: Business Identity Card (Stitch Reference)
-                    _buildBusinessIdentityCard(l10n),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Section 2: Location & Operations Card (Stitch Reference)
-                    _buildLocationOperationsCard(l10n),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Section 3: Pricing Structure Card (Stitch Reference)
-                    _buildPricingStructureCard(l10n),
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Section 4: Primary Save Action Button
-                    _buildSaveButton(l10n),
                   ],
-                ),
+
+                  // Section 1: Business Identity Card (Stitch Reference)
+                  _buildBusinessIdentityCard(l10n),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Section 2: Location & Operations Card (Stitch Reference)
+                  _buildLocationOperationsCard(l10n),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Section 3: Pricing Structure Card (Stitch Reference)
+                  _buildPricingStructureCard(l10n),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // Section 4: Primary Save Action Button
+                  _buildSaveButton(l10n),
+                ],
               ),
             ),
     );

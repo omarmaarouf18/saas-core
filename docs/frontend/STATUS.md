@@ -183,6 +183,16 @@
     * *Batch 5 (Shared, Support & Cross-Screen Consistency Screens)*: Harmonized and verified `kyc_document_upload_screen.dart`, `owner_history_screen.dart`, `settings_screen.dart`, `my_account_screen.dart`, `notifications_screen.dart`, `chat_screen.dart`, and `rating_screen.dart`. Rebuilt customer rating screen with driver profile card, headline, centered 5-star rating selector with gold icons, private feedback field, primary submit action (`Icons.send`), and blind status visualizer. (Commit `7419384856a563c0639d97b5d69ce32e0f7a4e67`).
     * *Verification*: 100% pass across all 260 Flutter tests, 0 analyze warnings (`flutter analyze`), RTL compliance verified with `ar_EG`, `make docs-check` pass, and `make ci` pre-push gate passed.
 
+* **Phase 29: Frontend Architecture Unification (FRONTEND_ARCHITECTURE_PLAN P0–P6)** — **[IN PROGRESS — AUDIT-DRIVEN]**
+    * *Methodology*: Every sub-phase requires (a) a baseline audit from `scripts/frontend_audit.sh`, (b) the fix, (c) the post-fix audit re-run, and (d) literal `flutter analyze` + full-suite `flutter test` output. No phase is marked complete without a re-runnable audit proving it.
+    * *P0 Proof of Concept*: **[COMPLETE]** `AppShell` + `ListScreenTemplate` built; migrated `notifications_screen.dart` + `owner_reconciliation_queue_screen.dart` (commits through `e9a3d9c`).
+    * *P1 Dark Theme Unification*: **[COMPLETE]** `quickDeliveryDarkTheme` rebuilt from `AppColors.*Dark` variants. Post-fix audit: 0 files with `Color(0xFF` outside `core/theme.dart` (baseline was 60+ standalone literals inside the dark theme block). Guarded by `test/dark_theme_hex_verification_test.dart`.
+    * *P2 AppShell Rollout*: **[IN PROGRESS]** Baseline at plan start: 28/28 screens built `Scaffold(`, 23 built `AppBar(`. After prior list-screen batch + login: 21 Scaffold files / 17 AppBar files remained. This batch migrates the 8 form/config screens (`signup`, `forgot_password`, `otp`, `settings`, `owner_configuration`, `kyc_document_upload`, `service`, `my_account`) to `FormScreenTemplate`/`AppShell`. Post-batch audit: **13 Scaffold files / 10 AppBar files remaining** (all dashboard/detail/map/chat/wallet shells, next batches). Full suite: 288/288 pass.
+    * *P3 Typography/Uppercase*: **[NOT STARTED]** (36 `.toUpperCase()` occurrences in screens/).
+    * *P4 BoxDecoration Elimination*: **[NOT STARTED]** (114 occurrences in screens/).
+    * *P5 Lint Enforcement CI Gate*: **[NOT STARTED]**.
+    * *P6 Component Library + Golden Tests*: **[NOT STARTED]**.
+
  ## File Tracking Index
 
  The following Dart implementation files are currently active in the codebase and tracked by the structural drift check:

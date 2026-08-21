@@ -9,6 +9,7 @@ import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../models/user_profile.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
@@ -605,32 +606,22 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
         },
     ];
 
-    return Scaffold(
+    return FormScreenTemplate(
+      title: roleTitle,
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        title: Text(
-          roleTitle,
-          style: AppTypography.titleMd.copyWith(
-            color: AppColors.onPrimary,
-            fontWeight: FontWeight.bold,
-          ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: l10n.tooltipRefreshStatus,
+          onPressed: _refreshUserData,
         ),
-        foregroundColor: AppColors.onPrimary,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: l10n.tooltipRefreshStatus,
-            onPressed: _refreshUserData,
-          ),
-        ],
-      ),
+      ],
+      padding: const EdgeInsets.all(AppSpacing.lg),
       body: RefreshIndicator(
         onRefresh: _refreshUserData,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: EdgeInsets.zero,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

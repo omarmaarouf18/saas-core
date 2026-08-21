@@ -5,6 +5,7 @@ import '../core/constants.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/create_service_dialog.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
@@ -51,7 +52,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     if (user == null) {
-      return Scaffold(
+      return AppShell(
         body: Center(
           child: Text(l10n.unauthenticatedMsg),
         ),
@@ -62,13 +63,9 @@ class _ServiceScreenState extends State<ServiceScreen> {
     final myServices =
         owner.services.where((s) => s['tenant_id'] == user.id).toList();
 
-    return Scaffold(
+    return AppShell(
+      title: l10n.ownerConfigTitle,
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        title: Text(l10n.ownerConfigTitle),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-      ),
       body: RefreshIndicator(
         onRefresh: _loadServices,
         child: owner.isLoading && myServices.isEmpty

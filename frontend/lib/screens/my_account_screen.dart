@@ -5,6 +5,7 @@ import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/email_change_dialog.dart';
+import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/themed_card.dart';
@@ -153,22 +154,16 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     final l10n = context.l10n;
     final user = authProvider.user;
 
-    return Scaffold(
+    return FormScreenTemplate(
+      title: l10n.myAccountTitle,
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(l10n.myAccountTitle),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        elevation: 0,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.marginMobile,
+        vertical: AppSpacing.lg,
       ),
       body: !_isInitialized
           ? Center(child: ThemedLoadingIndicator(message: l10n.loading))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.marginMobile,
-                vertical: AppSpacing.lg,
-              ),
-              child: Center(
+          : Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1000),
                   child: Form(
@@ -286,7 +281,6 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                   ),
                 ),
               ),
-            ),
     );
   }
 
