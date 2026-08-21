@@ -680,3 +680,9 @@ This section consolidates the resolution status for all 10 findings from the ext
 
 
 
+
+## TrackJob Idempotency Replay Required Authentication & Per-User Key Namespacing (Pre-Auth Job Disclosure)
+
+- **Implementation Detail**: Fixed a HIGH-severity unauthenticated information disclosure in `TrackJob` (`services/user-service/internal/handlers/jobs_handlers.go`). The Redis idempotency replay lookup (`idempotency:job:<key>`) executed BEFORE any JWT validation — the first `resolveTokenWithRole` call occurred only later in the handler. Any unauthenticated caller who obtained or guessed a victim's client-chosen `Idempotency-Key` / `X-Idempotency-Key` header / `idempotency_key` body field received the victim's full job object (pickup coordinates, payment method, participant IDs) with HTTP 200 OK and zero authentication. The lookup now runs immediately after the customer's identity is resolved from a signed JWT, and keys are namespaced per user as `idempotency:job:<userID>:<key>` (24h TTL unchanged), so cross-user key replay can never match another user's record. `saveIdempotencyKey` signature extended with the resolved user ID; all four write sites updated.
+- **Commit SHA**: ``152c3d54d6d12e2ea3ac93cff5a7f98d46a686fc``
+- **Verification**: New regression test `TestTrackJob_IdempotencyReplayRequiresAuthentication` passes (asserts HTTP 401 for unauthenticated key replay, asserts the victim's job ID never appears in the attacker response, and asserts authorized duplicates still return the original job with 200 OK). Existing `TestTrackJob_RedisBackedIdempotency_MultiInstanceAndTTL` updated for the namespaced key format and passing. Full `go test ./... -count=1` in `user-service` passes (config, handlers, models, store all `ok`). ✅
