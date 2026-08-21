@@ -10,13 +10,23 @@
 | Phase | Title | Objective | Scope & Target Files | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **Phase 0** | **Design System & Brand Foundation** | Establish design tokens, brand specs, component audit, and roadmap | `theme.dart`, `BRAND_IDENTITY.md`, `DESIGN_SYSTEM.md`, `UI_UX_ENTERPRISE_ROADMAP.md` | **[100% COMPLETE & VERIFIED]** |
-| **Phase 1** | **Design Token System Migration & Debt Cleanup** | Remediate 55 hardcoded raw values bypassing token system | 15 screen files in `frontend/lib/screens/` | **[100% COMPLETE & VERIFIED]** |
+| **Phase 1** | **Design Token System Migration & Debt Cleanup** | Remediate 55 hardcoded raw values bypassing token system | 15 screen files in `frontend/lib/screens/` | **[COMPLETE WITH CORRECTION 2026-08-21 — SEE §CORRECTIONS]** |
 | **Phase 2** | **Motion, Transitions & Micro-Interactions** | Standardize animation durations, easing curves, and button feedback | 26 screen files, 18 widget files, `AppMotion` | **[100% COMPLETE & VERIFIED]** |
 | **Phase 3** | **Empty, Error & Success State Polish** | Elevate placeholder graphics, error banners, and success feedback | `ThemedEmptyState`, `ThemedErrorBanner`, `ThemedLoadingIndicator`, `ThemedSuccessBanner` | **[100% COMPLETE & VERIFIED]** |
 | **Phase 4** | **Visual Hierarchy & Card Presentation Overhaul** | Refine card layouts, elevation shadows, and primary action hierarchy | Marketplace, Job Status, Wallet, Employee screens | **[100% COMPLETE & VERIFIED]** |
 | **Phase 5** | **Performance Perception & Skeleton States** | Replace blocking spinners with skeleton shimmer loaders | Marketplace, Home, Employee Jobs, Wallet screens | **[100% COMPLETE & VERIFIED]** |
-| **Phase 6** | **Google Stitch Visual Redesign Implementation** | Implement all 65 Stitch design brief findings across Batches A–E with Amber Gold CTA tokens | All 28 screens in `frontend/lib/screens/` | **[100% COMPLETE & VERIFIED]** |
+| **Phase 6** | **Google Stitch Visual Redesign Implementation** | Implement all 65 Stitch design brief findings across Batches A–E with Amber Gold CTA tokens | All 28 screens in `frontend/lib/screens/` | **[VISUAL PASS COMPLETE — ARCHITECTURAL CLAIM CORRECTED 2026-08-21, SEE §CORRECTIONS]** |
 | **Phase 7** | **Multi-Viewport & Real-Device QA Pass** | Validate touch targets, multi-screen scaling, dark mode, RTL layout | Physical iOS/Android devices & Web viewports | **[PLANNED]** |
+
+---
+
+## Corrections To Historical Claims (2026-08-21 Audit)
+
+> [!IMPORTANT]
+> A direct code audit performed on 2026-08-21 (baseline for the Frontend Architecture Unification plan, `FRONTEND_ARCHITECTURE_PLAN.md`) disproved part of the "100% COMPLETE & VERIFIED" claims below. Per the new evidence rule, the original entries are kept as a record and re-labeled with what the audit actually found. Re-runnable evidence: `bash scripts/frontend_audit.sh`.
+
+* **Phase 1 (Design Token System Migration)**: The 55 catalogued raw values in the 16 listed files *were* remediated — that part was true and remains verified. However, the phase's implied claim of "total token usage" was false at audit time: `quickDeliveryDarkTheme` still contained **60+ standalone `Color(0xFF...)` literals** fully parallel to `AppColors`, meaning any brand color change required edits in two places. This has since been genuinely fixed (dark theme rebuilt from `AppColors.*Dark` variants; post-fix audit: **0** `Color(0xFF` occurrences outside `core/theme.dart`, guarded by `frontend/test/dark_theme_hex_verification_test.dart`).
+* **Phase 6 (Google Stitch Visual Redesign — "All 28 screens")**: The *visual* redesign (colors, components, layouts) did land across all 28 screens. But the roadmap presented this as architectural unification, which the audit disproved: at audit time **28/28 screens still constructed `Scaffold(` directly**, 23/28 built `AppBar(` from scratch, there were **123 direct `BoxDecoration(` usages** inside `screens/` (a parallel card system bypassing `ThemedCard`), **41 scattered `.toUpperCase()` calls**, and **zero** shared composition root (`AppShell`) in the codebase. Visual similarity across 28 hand-built screens is not an architecture. Remediation is tracked as the Frontend Architecture Unification effort (P0–P6) in [STATUS.md](STATUS.md) Phase 29 with per-phase audit numbers.
 
 ---
 
@@ -29,7 +39,7 @@
 
 ---
 
-### Phase 1: Design Token System Migration & Debt Cleanup — **[100% COMPLETE & VERIFIED]**
+### Phase 1: Design Token System Migration & Debt Cleanup — **[COMPLETE WITH CORRECTION — SEE §CORRECTIONS]**
 * **Goal**: Remediate all 55 hardcoded raw values cataloged in `DESIGN_SYSTEM.md` §5 to eliminate technical design debt and enforce total token usage across screen files.
 * **Scope**: 16 screen & theme files (`chat_screen.dart`, `customer_home_screen.dart`, `customer_job_map_screen.dart`, `customer_marketplace_screen.dart`, `employee_jobs_screen.dart`, `home_screen.dart`, `job_status_screen.dart`, `kyb_kye_review_screen.dart`, `notifications_screen.dart`, `owner_fleet_map_screen.dart`, `owner_history_screen.dart`, `owner_reconciliation_queue_screen.dart`, `rating_screen.dart`, `service_screen.dart`, `subscription_screen.dart`, `wallet_screen.dart`).
 * **Verification Evidence**:
@@ -89,7 +99,7 @@
 
 ---
 
-### Phase 6: Google Stitch Visual Redesign Implementation — **[100% COMPLETE & VERIFIED]**
+### Phase 6: Google Stitch Visual Redesign Implementation — **[VISUAL PASS COMPLETE — ARCHITECTURAL CLAIM CORRECTED, SEE §CORRECTIONS]**
 * **Goal**: Implement all 65 visual findings from the Google Stitch design export across Batches A–E, establishing high-contrast Amber Gold (`#FFC107`) primary CTA buttons, Deep Navy structural surfaces, modern Bento-grid dashboards, discrete PIN entry, pill filter chips, and 2-point route timelines.
 * **Scope**: All 28 screens in `frontend/lib/screens/`, `theme.dart`, `primary_button.dart`, `themed_card.dart`, `otp_pin_input.dart`, `pill_filter_bar.dart`, `route_timeline.dart`.
 * **Verification Evidence**:
