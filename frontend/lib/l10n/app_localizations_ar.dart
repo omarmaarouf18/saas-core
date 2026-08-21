@@ -1309,6 +1309,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get tooltipPickImage => 'اختيار صورة';
 
   @override
+  String get tooltipClose => 'إغلاق';
+
+  @override
+  String get tooltipOpenChat => 'فتح المحادثة';
+
+  @override
+  String get tooltipRemoveAddress => 'حذف العنوان';
+
+  @override
+  String get tooltipZoomIn => 'تكبير الخريطة';
+
+  @override
+  String get tooltipZoomOut => 'تصغير الخريطة';
+
+  @override
+  String get tooltipRecenter => 'إعادة توسيط الخريطة';
+
+  @override
   String get sortByLabel => 'ترتيب حسب';
 
   @override

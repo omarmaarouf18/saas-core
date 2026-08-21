@@ -1229,7 +1229,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (canCancel) ...[
                         const SizedBox(height: AppSpacing.sm),
                         Align(
-                          alignment: Alignment.centerRight,
+                          alignment: AlignmentDirectional.centerEnd,
                           child: SecondaryButton(
                             key: Key('cancel_owner_job_button_${job.id}'),
                             text: l10n.ownerHomeCancelJob,

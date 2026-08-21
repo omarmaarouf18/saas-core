@@ -2547,6 +2547,42 @@ abstract class AppLocalizations {
   /// **'Pick Image'**
   String get tooltipPickImage;
 
+  /// No description provided for @tooltipClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get tooltipClose;
+
+  /// No description provided for @tooltipOpenChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Open chat'**
+  String get tooltipOpenChat;
+
+  /// No description provided for @tooltipRemoveAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove address'**
+  String get tooltipRemoveAddress;
+
+  /// No description provided for @tooltipZoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get tooltipZoomIn;
+
+  /// No description provided for @tooltipZoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get tooltipZoomOut;
+
+  /// No description provided for @tooltipRecenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Recenter map'**
+  String get tooltipRecenter;
+
   /// No description provided for @sortByLabel.
   ///
   /// In en, this message translates to:

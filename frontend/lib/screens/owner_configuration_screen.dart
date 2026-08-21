@@ -137,6 +137,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
   }
 
   void _openLocationPickerDialog(BuildContext context) {
+    final l10n = context.l10n;
     LatLng tempLocation = (_latitude != null && _longitude != null)
         ? LatLng(_latitude!, _longitude!)
         : LocationPickerMap.cairoDefault;
@@ -174,6 +175,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                         ),
                       ),
                       IconButton(
+                        tooltip: l10n.tooltipClose,
                         icon: const Icon(Icons.close),
                         onPressed: () => Navigator.of(dialogCtx).pop(),
                       ),

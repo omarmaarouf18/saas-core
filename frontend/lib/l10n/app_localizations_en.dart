@@ -1323,6 +1323,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tooltipPickImage => 'Pick Image';
 
   @override
+  String get tooltipClose => 'Close';
+
+  @override
+  String get tooltipOpenChat => 'Open chat';
+
+  @override
+  String get tooltipRemoveAddress => 'Remove address';
+
+  @override
+  String get tooltipZoomIn => 'Zoom in';
+
+  @override
+  String get tooltipZoomOut => 'Zoom out';
+
+  @override
+  String get tooltipRecenter => 'Recenter map';
+
+  @override
   String get sortByLabel => 'Sort By';
 
   @override

@@ -100,7 +100,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       if (ownerProvider.platformFeePercentage != null) ...[
                         const SizedBox(height: AppSpacing.sm),
                         Align(
-                          alignment: Alignment.centerRight,
+                          alignment: AlignmentDirectional.centerEnd,
                           child: Text(
                             "Platform fee: ${ownerProvider.platformFeePercentage! % 1 == 0 ? ownerProvider.platformFeePercentage!.toInt() : ownerProvider.platformFeePercentage}%",
                             key: const Key('platform_fee_percentage_text'),

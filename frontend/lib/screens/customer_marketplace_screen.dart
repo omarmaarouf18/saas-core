@@ -545,6 +545,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
   }
 
   void _openLocationPickerDialog(BuildContext context) {
+    final l10n = context.l10n;
     LatLng tempLocation = LatLng(_customerLat, _customerLon);
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
@@ -580,6 +581,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         ),
                       ),
                       IconButton(
+                        tooltip: l10n.tooltipClose,
                         icon: const Icon(Icons.close),
                         onPressed: () => Navigator.of(dialogCtx).pop(),
                       ),

@@ -345,6 +345,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       appBarForegroundColor: AppColors.onPrimary,
       actions: [
         IconButton(
+          tooltip: context.l10n.tooltipRefreshStatus,
           key: const Key('job_status_refresh_button'),
           icon: _isRefreshing
               ? const SizedBox(
@@ -855,6 +856,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             ),
           ),
           IconButton(
+            tooltip: context.l10n.tooltipOpenChat,
             key: const Key('open_chat_button'),
             icon: const Icon(
               Icons.chat_outlined,

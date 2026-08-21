@@ -168,7 +168,12 @@ class _OwnerReconciliationQueueScreenState
               const Icon(Icons.assignment,
                   color: AppColors.secondary, size: 20),
               const SizedBox(width: AppSpacing.sm),
-              Text(l10n.reconciliationReviewTitle),
+              Flexible(
+                child: Text(
+                  l10n.reconciliationReviewTitle,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           backgroundColor: AppColors.scaffoldBackground,

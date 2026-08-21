@@ -355,6 +355,7 @@ class _RatingScreenState extends State<RatingScreen> {
           final starValue = index + 1;
           final isSelected = starValue <= _selectedStars;
           return IconButton(
+            tooltip: context.l10n.ratingTitle,
             onPressed: () {
               setState(() {
                 _selectedStars = starValue;

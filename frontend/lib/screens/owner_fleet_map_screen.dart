@@ -386,6 +386,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
                   ],
                 ),
                 IconButton(
+                  tooltip: context.l10n.tooltipClose,
                   icon: const Icon(Icons.close, size: 18),
                   onPressed: () => setState(() => _selectedEmployee = null),
                 ),
@@ -426,12 +427,14 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
               child: Column(
                 children: [
                   IconButton(
+                    tooltip: context.l10n.tooltipZoomIn,
                     icon: const Icon(Icons.add),
                     color: AppColors.onSurface,
                     onPressed: _zoomIn,
                   ),
                   const Divider(height: 1, color: AppColors.outlineVariant),
                   IconButton(
+                    tooltip: context.l10n.tooltipZoomOut,
                     icon: const Icon(Icons.remove),
                     color: AppColors.onSurface,
                     onPressed: _zoomOut,
@@ -445,6 +448,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
               boxShadow: AppElevation.shadowLevel2List,
               border: Border.all(color: AppColors.outlineVariant),
               child: IconButton(
+                tooltip: context.l10n.tooltipRecenter,
                 icon: const Icon(Icons.my_location),
                 color: AppColors.primary,
                 onPressed: () => _centerOnTarget(centerPoint),

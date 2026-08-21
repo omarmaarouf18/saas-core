@@ -535,6 +535,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                         ),
                       ),
                       IconButton(
+                        tooltip: l10n.tooltipRemoveAddress,
                         key: Key('my_account_remove_address_$index'),
                         icon: const Icon(
                           Icons.delete_outline,

@@ -99,6 +99,7 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
             alignment: Alignment.center,
             children: [
               IconButton(
+                tooltip: context.l10n.tooltipNotifications,
                 key: const Key('notification_bell_button'),
                 icon: const Icon(Icons.notifications),
                 onPressed: () {
