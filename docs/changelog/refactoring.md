@@ -53,3 +53,11 @@ This file tracks historical entries for the primary category: **Refactoring Chan
   - Migrated screens with unique layouts onto `AppShell` directly (no archetype template): `chat_screen.dart` (`titleWidget` preserving two-line title + live status indicator), `wallet_screen.dart` (chrome-less shell), `subscription_screen.dart`, `update_required_screen.dart` (PopScope non-dismissible guard preserved), `employee_screen.dart` (TabBar-only header via AppShell `bottom:` slot on surface background), and `employee_jobs_screen.dart` (embedded-tab early-return preserved).
 - **Commit SHA**: ``8756b0ed6ee2b0269c88b53aa8cfad627a5a7b3f``
 - **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), full suite `flutter test` (292/292 All tests passed), and post-batch audit: Scaffold files 10 -> 4, AppBar files 7 -> 4. ✅
+
+## Detail & Map Screen Composition Migration Batch (P2 Completion, 4 screens)
+
+- **Implementation Detail**:
+  - Migrated the final 4 screens onto `AppShell` composition roots: `job_status_screen.dart` (refresh spinner-in-actions preserved), `rating_screen.dart` (transparent app bar preserved), `owner_fleet_map_screen.dart` and `customer_job_map_screen.dart` (navy map headers with refresh actions preserved).
+  - **P2 rollout target achieved**: 0 files in `frontend/lib/screens/` construct `Scaffold(` or `AppBar(` directly — all 28 screens compose exclusively through `AppShell`/archetype templates.
+- **Commit SHA**: ``9c0dfce444162cc4672b74eb3c277da6691f4de7``
+- **Verification**: Verified via `dart format`, `flutter analyze` (No issues found!), full suite `flutter test` (292/292 All tests passed), and post-fix audit: Scaffold( files 4 -> 0, AppBar( files 4 -> 0. ✅
