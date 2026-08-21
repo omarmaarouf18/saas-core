@@ -58,6 +58,16 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
 	}
+
+	if !isValidCoordinate(req.Latitude, req.Longitude) {
+		log.Printf("[SECURITY WARNING] Invalid coordinates rejected for CreateService: lat=%.6f, lon=%.6f", req.Latitude, req.Longitude)
+		handlerutil.ShipSecurityEvent(r.Context(), "INVALID_COORDINATES_DETECTED", "user-service", "unauthenticated", "", fmt.Sprintf("CreateService rejected: coordinates out of range (lat=%.6f, lon=%.6f)", req.Latitude, req.Longitude), handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_coordinates",
+			"message": "Latitude must be between -90 and 90, and Longitude must be between -180 and 180",
+		})
+		return
+	}
 	if req.OwnerToken != "" {
 		req.OwnerID = req.OwnerToken
 	}
@@ -130,6 +140,18 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 	var req models.UpdateServiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+
+	if (req.Latitude != nil || req.Longitude != nil) &&
+		((req.Latitude != nil && !isValidCoordinate(*req.Latitude, 0)) ||
+			(req.Longitude != nil && !isValidCoordinate(0, *req.Longitude))) {
+		log.Printf("[SECURITY WARNING] Invalid coordinates rejected for UpdateService")
+		handlerutil.ShipSecurityEvent(r.Context(), "INVALID_COORDINATES_DETECTED", "user-service", "unauthenticated", "", "UpdateService rejected: coordinates out of range", handlerutil.GetClientIP(r))
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_coordinates",
+			"message": "Latitude must be between -90 and 90, and Longitude must be between -180 and 180",
+		})
 		return
 	}
 	if req.ID == "" && req.ServiceID != "" {
