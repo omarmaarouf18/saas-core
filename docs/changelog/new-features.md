@@ -509,3 +509,9 @@ This file tracks historical entries for the primary category: **New Features Cha
 
 
 
+
+## Payout Rejection-Refund Store Capability (ADR-0018 Console Prerequisite)
+
+- **Implementation Detail**: Owner payout requests deduct funds at creation time, but the rejection path did not exist — the `rejected` `PayoutStatus` was defined with no code path to reach it, so a rejected payout would silently consume the owner's money. Added `MongoDB.RejectPayoutRequest(ctx, payoutID, reason)` in `services/user-service/internal/store/mongodb.go`: a CAS-guarded `FindOneAndUpdate` on `status == "requested"` (making double-rejection and mutation of approved/paid requests impossible), atomic restoration of `withdrawable_balance` and `total_balance`, a new `models.TxPayoutRefund` ledger entry type recording the refund with the rejection reason, and reason persistence on the request document. Deliberately exposes NO public endpoint — administrative fulfillment/rejection remains deferred to the standalone Support Agent Console per ADR-0018; this commit delivers the store capability that console will invoke.
+- **Commit SHA**: ``4155c7370ab9b3d926bcaa69a05bfb3920029e7b``
+- **Verification**: New store regression test `TestRejectPayoutRequest_RestoresBalancesAndLedgers` passes: asserts balances 100→60 after request creation and 60→100 after rejection, `PayoutStatusRejected` + recorded reason on the request document, presence of a 40.0 `payout_refund` ledger entry, and an error on double-rejection via the CAS guard. Full user-service module suite passes (config/handlers/models/store all `ok`). ✅
