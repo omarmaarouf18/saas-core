@@ -121,3 +121,34 @@ func TestGetJob_UserTokenParamDoesNotShadowJobID(t *testing.T) {
 		t.Errorf("legacy param combination broken: %d %s", recLegacy.Code, recLegacy.Body.String())
 	}
 }
+
+// The backend issues customer JWTs with role "customer" in several flows,
+// but /users/jobs/mine accepted only role "user", 403-ing those customers.
+func TestGetCustomerJobs_AcceptsCustomerRoleAlias(t *testing.T) {
+	u, s, _, cleanup := idemRaceSetup(t)
+	defer cleanup()
+
+	ctx := context.Background()
+	ownerID := "alias-owner"
+	svcID := "alias-svc"
+	custID := "alias-cust"
+	s.CreateService(ctx, &models.Service{ID: svcID, TenantID: ownerID, TenantBasePrice: 5.0, TenantPricePerKM: 0.0, Latitude: 30.0, Longitude: 30.0})
+	job := &models.Job{ID: "alias-job-1", OwnerID: ownerID, UserID: custID, ServiceID: svcID,
+		Status: models.JobStatusActive, PaymentMethod: "cod",
+		Location: models.Location{Latitude: 30.0, Longitude: 30.0}, CreatedAt: time.Now().Add(-time.Hour)}
+	_ = s.CreateJob(ctx, job)
+
+	tokenCustomerRole, _ := jwtutil.GenerateToken(custID, "customer", ownerID, "alias@example.com")
+
+	req := httptest.NewRequest("GET", "/users/jobs/mine?requester_id="+tokenCustomerRole, nil)
+	rec := httptest.NewRecorder()
+	u.GetCustomerJobs(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 for role=customer on /users/jobs/mine, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+	var jobs []map[string]any
+	_ = json.Unmarshal(rec.Body.Bytes(), &jobs)
+	if len(jobs) != 1 {
+		t.Errorf("expected exactly 1 job for the customer, got %d", len(jobs))
+	}
+}

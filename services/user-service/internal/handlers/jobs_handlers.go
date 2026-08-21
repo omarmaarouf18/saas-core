@@ -811,8 +811,9 @@ func (u *UserService) GetCustomerJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify customer role
-	if claims.Role != "user" {
+	// Verify customer role. JWTs are issued with either "user" or "customer"
+	// for customer identities depending on flow; accept both aliases.
+	if claims.Role != "user" && claims.Role != "customer" {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: customer role required"})
 		return
 	}

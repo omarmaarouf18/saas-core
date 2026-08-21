@@ -1296,7 +1296,9 @@ func generate6DigitOTP() string {
 // If X-Gateway-Secret is missing/invalid, auth-service falls back to r.RemoteAddr.
 func (a *Auth) getClientIP(r *http.Request) string {
 	var ip string
-	if r.Header.Get("X-Gateway-Secret") == a.gatewaySecret {
+	// Constant-time comparison: the gateway secret gates XFF trust for
+	// security-relevant audit attribution.
+	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Gateway-Secret")), []byte(a.gatewaySecret)) == 1 {
 		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 			parts := strings.Split(xff, ",")
 			ip = strings.TrimSpace(parts[0])
@@ -1786,7 +1788,10 @@ func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 
 	// 1. Verify X-Internal-Token header
 	internalToken := r.Header.Get("X-Internal-Token")
-	if subtle.ConstantTimeCompare([]byte(internalToken), []byte(a.internalServiceToken)) != 1 {
+	// Empty-secret precondition mirrors GetUser: ConstantTimeCompare on two
+	// empty byte slices returns 1, which would authenticate any caller if the
+	// configured token were ever empty.
+	if a.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(internalToken), []byte(a.internalServiceToken)) != 1 {
 		return nil, errors.New("unauthorized internal token")
 	}
 
