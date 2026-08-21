@@ -93,21 +93,14 @@ func main() {
 	}
 	mongoStore.StartOTPCleanup(context.Background(), 1*time.Minute)
 
-	// Select OTP dispatcher based on environment.
-	var dispatcher otp.OTPDispatcher
-	switch cfg.AppEnv {
-	case "local", "dev", "development":
-		dispatcher = &otp.MockSMSDispatcher{}
-		log.Printf("[AUTH] OTP dispatcher: %s (no external network calls)", dispatcher.Name())
-	default:
-		if cfg.ResendAPIKey != "" {
-			dispatcher = otp.NewResendDispatcher(cfg.ResendAPIKey, cfg.ResendFromEmail)
-			log.Printf("[AUTH] OTP dispatcher: %s (Resend API active)", dispatcher.Name())
-		} else {
-			dispatcher = &otp.MockSMSDispatcher{}
-			log.Printf("[AUTH] ⚠ No production OTP dispatcher configured — using %s", dispatcher.Name())
-		}
+	// Select OTP dispatcher based on environment. Production environments
+	// must have a real dispatcher configured — silently falling back to the
+	// stdout-printing mock would leak every OTP code into container logs.
+	dispatcher, err := selectOTPDispatcher(cfg.AppEnv, cfg.ResendAPIKey, cfg.ResendFromEmail)
+	if err != nil {
+		log.Fatalf("[AUTH] %v", err)
 	}
+	log.Printf("[AUTH] OTP dispatcher: %s", dispatcher.Name())
 
 	// Connect to Redis for rate limiting.
 	redisClient, err := ratelimit.NewRedisClient(cfg.RedisURI)
@@ -186,4 +179,20 @@ func main() {
 		log.Fatalf("Server error: %v", err)
 	}
 
+}
+
+// selectOTPDispatcher chooses the OTP delivery mechanism for the current
+// environment. Local/dev environments use the stdout mock; every other
+// environment REQUIRES a configured Resend dispatcher and refuses to start
+// otherwise — an insecure silent fallback would print OTP codes to logs.
+func selectOTPDispatcher(appEnv, resendAPIKey, resendFromEmail string) (otp.OTPDispatcher, error) {
+	switch appEnv {
+	case "local", "dev", "development":
+		return &otp.MockSMSDispatcher{}, nil
+	default:
+		if resendAPIKey == "" {
+			return nil, fmt.Errorf("no production OTP dispatcher configured: RESEND_API_KEY is required when APP_ENV=%q (refusing to fall back to the stdout-printing mock)", appEnv)
+		}
+		return otp.NewResendDispatcher(resendAPIKey, resendFromEmail), nil
+	}
 }
