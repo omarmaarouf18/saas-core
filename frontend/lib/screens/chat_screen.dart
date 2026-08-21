@@ -6,6 +6,7 @@ import '../core/theme.dart';
 import '../models/chat_message.dart';
 import '../providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
@@ -168,27 +169,24 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
 
-    return Scaffold(
+    return AppShell(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "${l10n.chatTitle} #$shortJobId",
-              style: AppTypography.titleMd.copyWith(
-                color: AppColors.onPrimary,
-                fontWeight: FontWeight.w600,
-              ),
+      appBarBackgroundColor: AppColors.primary,
+      appBarForegroundColor: AppColors.onPrimary,
+      titleWidget: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            "${l10n.chatTitle} #$shortJobId",
+            style: AppTypography.titleMd.copyWith(
+              color: AppColors.onPrimary,
+              fontWeight: FontWeight.w600,
             ),
-            const SizedBox(height: 2),
-            statusIndicator,
-          ],
-        ),
+          ),
+          const SizedBox(height: 2),
+          statusIndicator,
+        ],
       ),
       body: Column(
         children: [

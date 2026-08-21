@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_success_banner.dart';
 
@@ -64,14 +65,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     final ownerProvider = Provider.of<OwnerProvider>(context);
     final currentTier = ownerProvider.subscriptionTier;
 
-    return Scaffold(
+    return AppShell(
+      title: l10n.subscriptionPlansTitle,
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(l10n.subscriptionPlansTitle),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        elevation: 0,
-      ),
+      appBarBackgroundColor: AppColors.primary,
+      appBarForegroundColor: AppColors.onPrimary,
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.marginMobile,

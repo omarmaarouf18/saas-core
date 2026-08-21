@@ -9,6 +9,7 @@ import '../widgets/entity_avatar.dart';
 import '../widgets/pill_filter_bar.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/status_badge.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
@@ -109,28 +110,23 @@ class _EmployeeScreenState extends State<EmployeeScreen>
       return const EmployeeJobsScreen();
     }
 
-    return Scaffold(
+    return AppShell(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: Container(
-          color: AppColors.surface,
-          child: SafeArea(
-            child: TabBar(
-              controller: _tabController,
-              labelColor: AppColors.primary,
-              unselectedLabelColor: AppColors.outline,
-              indicatorColor: AppColors.primary,
-              tabs: const [
-                Tab(icon: Icon(Icons.people_outline), text: "Manage Workers"),
-                Tab(
-                  icon: Icon(Icons.receipt_long_outlined),
-                  text: "Audit Trail",
-                ),
-              ],
-            ),
+      showBackButton: false,
+      appBarBackgroundColor: AppColors.surface,
+      appBarForegroundColor: AppColors.onSurface,
+      bottom: TabBar(
+        controller: _tabController,
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.outline,
+        indicatorColor: AppColors.primary,
+        tabs: const [
+          Tab(icon: Icon(Icons.people_outline), text: "Manage Workers"),
+          Tab(
+            icon: Icon(Icons.receipt_long_outlined),
+            text: "Audit Trail",
           ),
-        ),
+        ],
       ),
       body: TabBarView(
         controller: _tabController,

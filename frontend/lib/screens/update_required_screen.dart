@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/locale_provider.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/themed_card.dart';
 
 class UpdateRequiredScreen extends StatelessWidget {
@@ -39,10 +40,10 @@ class UpdateRequiredScreen extends StatelessWidget {
 
     return PopScope(
       canPop: false, // Non-dismissible
-      child: Scaffold(
+      child: AppShell(
         backgroundColor: AppColors.background,
-        body: SafeArea(
-          child: Center(
+        showBackButton: false,
+        body: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.marginMobile,
@@ -116,7 +117,6 @@ class UpdateRequiredScreen extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
   }
 

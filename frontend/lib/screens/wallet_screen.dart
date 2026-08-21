@@ -11,6 +11,7 @@ import '../widgets/payout_request_dialog.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/status_badge.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
@@ -40,8 +41,9 @@ class _WalletScreenState extends State<WalletScreen> {
     final auth = Provider.of<AuthProvider>(context);
     final ownerProvider = Provider.of<OwnerProvider>(context);
 
-    return Scaffold(
+    return AppShell(
       backgroundColor: AppColors.scaffoldBackground,
+      showBackButton: false,
       body: AnimatedSwitcher(
         duration: AppMotion.durationMedium,
         switchInCurve: AppMotion.curveStateChange,

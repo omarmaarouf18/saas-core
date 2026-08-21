@@ -15,6 +15,7 @@ import '../widgets/route_timeline.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/skeleton_loader.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
@@ -246,27 +247,9 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
       return bodyContent;
     }
 
-    return Scaffold(
+    return AppShell(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: _buildAppBar(context, l10n),
-      body: bodyContent,
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(
-      BuildContext context, AppLocalizations l10n) {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      surfaceTintColor: Colors.transparent,
-      title: Text(
-        l10n.employeeJobsTitle,
-        style: AppTypography.titleMd.copyWith(
-          color: Theme.of(context).colorScheme.onSurface,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      title: l10n.employeeJobsTitle,
       actions: [
         IconButton(
           key: const Key('employee_verification_button'),
@@ -300,6 +283,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
           },
         ),
       ],
+      body: bodyContent,
     );
   }
 
