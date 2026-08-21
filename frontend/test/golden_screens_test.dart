@@ -138,8 +138,8 @@ Future<void> _pumpGolden(
   await tester.pumpWidget(app);
   // Flush bundled google_fonts asset loads outside the fake async zone so
   // glyph rendering is fully settled (and identical) before rasterization.
-  await tester.runAsync(() =>
-      Future<void>.delayed(const Duration(milliseconds: 200)));
+  await tester
+      .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
   await tester.pump();
   await expectLater(
     find.byType(MaterialApp),
@@ -202,10 +202,10 @@ void main() {
         ),
         ChangeNotifierProvider<NotificationsProvider>.value(
           value: _MockNotificationsProvider(api, [
-            _notification(
-                'n1', 'Order picked up', now.subtract(const Duration(hours: 1))),
-            _notification(
-                'n2', 'Courier assigned', now.subtract(const Duration(hours: 3))),
+            _notification('n1', 'Order picked up',
+                now.subtract(const Duration(hours: 1))),
+            _notification('n2', 'Courier assigned',
+                now.subtract(const Duration(hours: 3))),
             _notification('n3', 'Payment confirmed',
                 now.subtract(const Duration(days: 1)),
                 isRead: true),
@@ -214,8 +214,12 @@ void main() {
       ],
       child: _localizedApp(home: const NotificationsScreen()),
     );
-    await _pumpGolden(tester, app, _mobile,
-        'notifications_screen_mobile_360x800');
+    await _pumpGolden(
+        tester, app, _mobile, 'notifications_screen_mobile_360x800');
+    await _pumpGolden(
+        tester, app, _tablet, 'notifications_screen_tablet_768x1024');
+    await _pumpGolden(
+        tester, app, _desktop, 'notifications_screen_desktop_1280x800');
   });
 
   testWidgets('GOLDEN owner reconciliation queue screen (P0 migration)',
@@ -243,6 +247,10 @@ void main() {
     );
     await _pumpGolden(
         tester, app, _mobile, 'reconciliation_queue_mobile_360x800');
+    await _pumpGolden(
+        tester, app, _tablet, 'reconciliation_queue_tablet_768x1024');
+    await _pumpGolden(
+        tester, app, _desktop, 'reconciliation_queue_desktop_1280x800');
   });
 
   testWidgets('GOLDEN customer jobs screen — list template (P2 migration)',
@@ -263,8 +271,7 @@ void main() {
       ],
       child: _localizedApp(home: const CustomerJobsScreen()),
     );
-    await _pumpGolden(
-        tester, app, _mobile, 'customer_jobs_mobile_360x800');
+    await _pumpGolden(tester, app, _mobile, 'customer_jobs_mobile_360x800');
   });
 
   testWidgets('GOLDEN login screen — form template (P2 migration)',
