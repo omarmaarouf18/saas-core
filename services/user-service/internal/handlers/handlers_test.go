@@ -2713,9 +2713,11 @@ func TestUserServiceHandlers(t *testing.T) {
 			json.Unmarshal(rec.Body.Bytes(), &resp)
 			totalAmt, _ := resp["total_amount"].(float64)
 
-			// Assert amount is exactly base price of 10.0, not recalculated using 31.0, 30.0
-			if totalAmt != 10.0 {
-				t.Errorf("Expected Escrow total_amount to be 10.0, got %.2f", totalAmt)
+			// Assert amount is exactly the locked escrow (100.0), never
+			// recalculated from live-location coordinates. Releasing less than
+			// LockedEscrowAmount would strand the residual in escrow forever.
+			if totalAmt != 100.0 {
+				t.Errorf("Expected Escrow total_amount to equal LockedEscrowAmount 100.0, got %.2f", totalAmt)
 			}
 		})
 	})

@@ -523,12 +523,14 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Cap the release amount at LockedEscrowAmount to prevent drawing down other jobs' escrow
-	if amount > job.LockedEscrowAmount {
-		log.Printf("[SECURITY WARNING] Recomputed completion amount %.2f exceeds locked escrow amount %.2f for job %s. Capping to locked amount.", amount, job.LockedEscrowAmount, job.ID)
-		handlerutil.ShipSecurityEvent(ctx, "ESCROW_LIMIT_EXCEEDED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("CompleteJob amount %.2f exceeds locked escrow %.2f, capped", amount, job.LockedEscrowAmount), handlerutil.GetClientIP(r))
-		amount = job.LockedEscrowAmount
-	}
+	// Release exactly the amount that was locked for THIS job at booking
+	// time. Recomputing from current service pricing (above) is only used for
+	// COD logging and ADR-0007 reconciliation math: if the owner repriced the
+	// service mid-job, a recomputed release would strand the residual
+	// (LockedEscrowAmount - amount) in escrow forever on a completed job.
+	// Releasing the exact locked amount both prevents drawing down other
+	// jobs' escrow (ADR-0002 wallet isolation) and eliminates stranded funds.
+	amount = job.LockedEscrowAmount
 
 	// Release escrow with profit splitting (Non-COD flow)
 	if err := u.store.ReleaseEscrowWithSplit(ctx, job.OwnerID, job.ID, amount); err != nil {
@@ -1310,12 +1312,13 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Cap the refund amount at LockedEscrowAmount to prevent drawing down other jobs' escrow
-		if amount > job.LockedEscrowAmount {
-			log.Printf("[SECURITY WARNING] Recomputed refund amount %.2f exceeds locked escrow amount %.2f for job %s. Capping to locked amount.", amount, job.LockedEscrowAmount, job.ID)
-			handlerutil.ShipSecurityEvent(ctx, "ESCROW_LIMIT_EXCEEDED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("CancelJob refund %.2f exceeds locked escrow %.2f, capped", amount, job.LockedEscrowAmount), handlerutil.GetClientIP(r))
-			amount = job.LockedEscrowAmount
-		}
+		// Refund exactly the amount that was locked for THIS job at booking
+		// time. Recomputing from current service pricing (above) would strand
+		// the residual (LockedEscrowAmount - amount) in escrow forever on a
+		// cancelled job if the owner repriced the service mid-job. Refunding
+		// the exact locked amount both prevents drawing down other jobs'
+		// escrow (ADR-0002 wallet isolation) and eliminates stranded funds.
+		amount = job.LockedEscrowAmount
 
 		if err := u.store.RefundEscrow(ctx, job.OwnerID, job.ID, amount); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to refund escrow: " + err.Error()})
