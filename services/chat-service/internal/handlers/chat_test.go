@@ -1694,11 +1694,11 @@ func TestIsOriginAllowed(t *testing.T) {
 		origin string
 		want   bool
 	}{
-		{"", true},                              // non-browser client (no Origin)
-		{"http://localhost:3000", true},         // exact match
-		{"https://localhost:3000", false},       // scheme mismatch
+		{"", true},                                // non-browser client (no Origin)
+		{"http://localhost:3000", true},           // exact match
+		{"https://localhost:3000", false},         // scheme mismatch
 		{"http://localhost:3000.evil.com", false}, // suffix spoof
-		{"http://evil.com", false},              // foreign origin
+		{"http://evil.com", false},                // foreign origin
 	}
 	for _, tc := range cases {
 		if got := c.isOriginAllowed(tc.origin); got != tc.want {
