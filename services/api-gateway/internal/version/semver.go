@@ -24,6 +24,13 @@ func ParseSemVer(v string) (SemVer, error) {
 	if idx := strings.Index(v, "+"); idx != -1 {
 		v = v[:idx]
 	}
+	// Strip optional prerelease suffix (e.g. -beta, -rc.2). Prerelease
+	// ordering is not needed for the minimum-version gate; the numeric
+	// core decides. Previously "-beta" leaked into the patch component and
+	// failed strconv.Atoi, rejecting every prerelease client build.
+	if idx := strings.Index(v, "-"); idx != -1 {
+		v = v[:idx]
+	}
 	// Strip optional leading 'v'
 	v = strings.TrimPrefix(v, "v")
 

@@ -58,3 +58,32 @@ func TestSemVer_LessThan(t *testing.T) {
 		t.Errorf("2.0.0 should NOT be LessThan 1.0.0")
 	}
 }
+
+// TestParseSemVer_PrereleaseAndBuildSuffixes reproduces the prerelease
+// parsing bug: "1.2.3-beta" split into ["1","2","3-beta"] and strconv.Atoi
+// failed on "3-beta", rejecting valid semver client versions (HTTP 400 from
+// the VersionGate for every prerelease build).
+//
+// Pre-fix expectation: error "invalid semver integers".
+// Post-fix expectation: 1.2.3 parsed; prerelease/build suffixes ignored for
+// comparison purposes.
+func TestParseSemVer_PrereleaseAndBuildSuffixes(t *testing.T) {
+	cases := []struct {
+		in   string
+		want SemVer
+	}{
+		{"1.2.3-beta", SemVer{Major: 1, Minor: 2, Patch: 3}},
+		{"1.2.3-beta.1+build5", SemVer{Major: 1, Minor: 2, Patch: 3}},
+		{"v2.0.0-rc.2", SemVer{Major: 2, Minor: 0, Patch: 0}},
+	}
+	for _, tc := range cases {
+		got, err := ParseSemVer(tc.in)
+		if err != nil {
+			t.Errorf("ParseSemVer(%q) failed: %v (valid semver with prerelease must parse)", tc.in, err)
+			continue
+		}
+		if got != tc.want {
+			t.Errorf("ParseSemVer(%q) = %v, want %v", tc.in, got, tc.want)
+		}
+	}
+}
