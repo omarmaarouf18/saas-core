@@ -790,3 +790,9 @@ This section consolidates the resolution status for all 10 findings from the ext
 ## Process Note: Missed Test Files in c618430
 
 - **Detail**: Two store test files updated by the GetLedger/GetRatings signature change were left unstaged in commit `c6184303de8625b4b531525729a2721a2e61c257`; committed separately as `ad9779f37f11e20472c1b9298828ce39ba2222b9` (test-only, mechanical `(0,0)` default-page args). Recorded for transparency per repo honesty rules.
+
+## [TRAFFIC] Access-Log Injection Sanitization (api-gateway)
+
+- **Implementation Detail**: The gateway's access-log middleware interpolated the decoded `r.URL.Path` verbatim into the `[TRAFFIC]` line under a `#nosec G706` claim that injection was "not possible" — but an encoded `%0A`/`%0D` in the request path survives URL decoding and forges additional log lines. CR/LF bytes are now replaced with spaces before interpolation, and the stale nosec rationale corrected to describe the actual mitigation.
+- **Commit SHA**: ``2ee33b65674ed897d20b0c0c30dc2c94500dfefd``
+- **Verification**: New output-capture regression `TestLogging_TRAFFICSanitizesNewlinesInPath`. Pre-fix literal captured log: `[TRAFFIC] GET /api/v1/users/services\n[FAKE]\rinjected → 200 (2µs)` (single request, two visual log lines). Post-fix: assertion passes; full api-gateway suite passes. ✅
