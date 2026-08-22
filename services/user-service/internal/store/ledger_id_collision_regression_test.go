@@ -90,7 +90,8 @@ func TestLedger_ConcurrentDepositNoIDCollision(t *testing.T) {
 		t.Errorf("balance drift: got %.2f, want %.2f (deposits themselves must all apply)", w.TotalBalance, float64(deposits))
 	}
 
-	entries := s.GetLedger(ctx, tenant)
+	// Page size caps at 500; the fixture seeds 400 deposits — page fully.
+	entries := s.GetLedger(ctx, tenant, 500, 0)
 	depositEntries := 0
 	for _, e := range entries {
 		if e.Type == models.TxDeposit && strings.HasPrefix(e.ID, "tx-") {

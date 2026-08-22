@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/project/shared/infra/handlerutil"
@@ -192,8 +193,18 @@ func (u *UserService) GetLedger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entries := u.store.GetLedger(r.Context(), tenantID)
-	writeJSON(w, http.StatusOK, map[string]any{"count": len(entries), "entries": entries})
+	// Server-side pagination: default page of 100, hard cap of 500, client
+	// tunable via ?limit/&offset. Previously this endpoint serialized every
+	// matching ledger document — an unbounded-response DoS surface.
+	limit := int64(parseIntDefault(r.URL.Query().Get("limit"), 100))
+	offset := int64(parseIntDefault(r.URL.Query().Get("offset"), 0))
+	entries := u.store.GetLedger(r.Context(), tenantID, limit, offset)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"count":   len(entries),
+		"entries": entries,
+		"limit":   limit,
+		"offset":  offset,
+	})
 }
 
 // RequestPayout processes a tenant owner's withdrawal request (POST /users/wallet/payout/request).
@@ -312,4 +323,17 @@ func (u *UserService) GetPayoutRequests(w http.ResponseWriter, r *http.Request) 
 	}
 
 	writeJSON(w, http.StatusOK, requests)
+}
+
+// parseIntDefault parses a non-negative integer query value, falling back to
+// def on empty or malformed input.
+func parseIntDefault(s string, def int) int {
+	if s == "" {
+		return def
+	}
+	v, err := strconv.Atoi(s)
+	if err != nil || v < 0 {
+		return def
+	}
+	return v
 }

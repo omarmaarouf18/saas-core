@@ -785,11 +785,36 @@ func (s *MongoDB) GetPayoutRequests(ctx context.Context, tenantID string) ([]*mo
 	return requests, nil
 }
 
-func (s *MongoDB) GetLedger(ctx context.Context, tenantID string) []models.TransactionLedger {
+// Read-pagination bounds shared by list endpoints. Server-side defaults cap
+// every page so no read can materialize an unbounded result set; clients may
+// lower limit / advance offset but can never exceed the hard caps.
+const (
+	DefaultLedgerPage  int64 = 100
+	MaxLedgerPage      int64 = 500
+	DefaultRatingsPage int64 = 50
+	MaxRatingsPage     int64 = 200
+)
+
+// clampPage normalizes caller-supplied paging arguments.
+func clampPage(limit, offset, def, max int64) (int64, int64) {
+	if limit <= 0 {
+		limit = def
+	}
+	if limit > max {
+		limit = max
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	return limit, offset
+}
+
+func (s *MongoDB) GetLedger(ctx context.Context, tenantID string, limit, offset int64) []models.TransactionLedger {
 	if s == nil || s.ledger == nil {
 		return nil
 	}
-	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}})
+	limit, offset = clampPage(limit, offset, DefaultLedgerPage, MaxLedgerPage)
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}}).SetLimit(limit).SetSkip(offset)
 	cursor, err := s.ledger.Find(ctx, bson.M{"tenant_id": tenantID}, opts)
 	if err != nil {
 		return nil
@@ -901,12 +926,14 @@ func (s *MongoDB) CreateRating(ctx context.Context, r *models.Rating) error {
 	return err
 }
 
-// GetRatingsForUser returns all ratings received by a user.
-func (s *MongoDB) GetRatingsForUser(ctx context.Context, userID string) ([]*models.Rating, error) {
+// GetRatingsForUser returns a page of ratings received by a user.
+func (s *MongoDB) GetRatingsForUser(ctx context.Context, userID string, limit, offset int64) ([]*models.Rating, error) {
 	if s == nil || s.ratings == nil {
 		return []*models.Rating{}, nil
 	}
-	cursor, err := s.ratings.Find(ctx, bson.M{"rated_user": userID})
+	limit, offset = clampPage(limit, offset, DefaultRatingsPage, MaxRatingsPage)
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).SetLimit(limit).SetSkip(offset)
+	cursor, err := s.ratings.Find(ctx, bson.M{"rated_user": userID}, opts)
 	if err != nil {
 		return nil, err
 	}
