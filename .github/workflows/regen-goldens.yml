@@ -7,6 +7,14 @@ name: Regenerate Golden Baselines
 
 on:
   workflow_dispatch:
+  # Bridge until this file reaches the default branch: GitHub resolves
+  # workflow_dispatch by filename against the DEFAULT branch only, so while
+  # regen-goldens.yml lives only on feature branches we re-run regeneration
+  # whenever this file itself changes (self-path filter keeps noise at zero).
+  push:
+    branches: [logic-exploitation]
+    paths:
+      - '.github/workflows/regen-goldens.yml'
 
 jobs:
   regenerate-goldens:
