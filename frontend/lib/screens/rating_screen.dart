@@ -29,8 +29,8 @@ class _RatingScreenState extends State<RatingScreen> {
   bool _isSubmitting = false;
   bool _isLoadingOtherStatus = true;
   bool _otherPartyHasRated = false;
-  String _otherPartyName = "Marcus J.";
-  String _otherPartyRole = "Driver / Specialist";
+  String _otherPartyName = "Driver / Employee";
+  String _otherPartyRole = "Specialist";
   String? _otherPartyId;
 
   @override
@@ -338,7 +338,7 @@ class _RatingScreenState extends State<RatingScreen> {
 
         // Submit Button (Stitch Primary CTA)
         PrimaryButton(
-          text: "Submit Rating",
+          text: l10n.ratingSubmitBtn,
           trailingIcon: Icons.send,
           onPressed: _submitRating,
           isLoading: _isSubmitting,
@@ -356,6 +356,8 @@ class _RatingScreenState extends State<RatingScreen> {
           final isSelected = starValue <= _selectedStars;
           return IconButton(
             tooltip: context.l10n.ratingTitle,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
             onPressed: () {
               setState(() {
                 _selectedStars = starValue;
@@ -475,13 +477,39 @@ class _RatingScreenState extends State<RatingScreen> {
   }
 
   Widget _buildInfoCards(AppLocalizations l10n, bool isWide) {
+    // Mobile: intrinsic-height column — the previous 1-column GridView with
+    // childAspectRatio 3.5 forced ~84px tiles under ~110px of content and
+    // overflowed at 360dp (caught by the rating_screen widget suite).
+    if (!isWide) {
+      return Column(
+        children: [
+          _buildInfoCard(
+            icon: Icons.security_outlined,
+            title: l10n.ratingFeatureUnbiased,
+            subtitle: l10n.unbiasedRatingDesc,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _buildInfoCard(
+            icon: Icons.verified_outlined,
+            title: l10n.ratingFeatureTrust,
+            subtitle: l10n.reliabilityRanksDesc,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _buildInfoCard(
+            icon: Icons.history_toggle_off_outlined,
+            title: l10n.ratingFeatureWindow,
+            subtitle: l10n.windowDeadlineDesc,
+          ),
+        ],
+      );
+    }
     return GridView.count(
-      crossAxisCount: isWide ? 3 : 1,
+      crossAxisCount: 3,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: AppSpacing.md,
       mainAxisSpacing: AppSpacing.md,
-      childAspectRatio: isWide ? 1.8 : 3.5,
+      childAspectRatio: 1.8,
       children: [
         _buildInfoCard(
           icon: Icons.security_outlined,
