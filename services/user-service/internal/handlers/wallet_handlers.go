@@ -94,6 +94,12 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	// Cent-boundary discipline: sub-cent residues must never enter balances.
+	req.Amount = roundMoney(req.Amount)
+	if req.Amount == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "amount rounds to zero"})
+		return
+	}
 
 	resolvedTenantID, err := resolveTokenWithRole(req.TenantID, "owner")
 	if err != nil {
@@ -238,6 +244,13 @@ func (u *UserService) RequestPayout(w http.ResponseWriter, r *http.Request) {
 
 	if strings.TrimSpace(req.PayoutMethod) == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "payout_method is required (e.g. bank_transfer, instapay)"})
+		return
+	}
+
+	// Cent-boundary discipline for fund movements.
+	req.Amount = roundMoney(req.Amount)
+	if req.Amount == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid payout amount: must be greater than 0"})
 		return
 	}
 

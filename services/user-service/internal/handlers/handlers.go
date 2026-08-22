@@ -380,6 +380,13 @@ func parseFloat(s string, fallback float64) float64 {
 	return v
 }
 
+// roundMoney rounds a monetary value to cents using half-away-from-zero,
+// the single sanctioned boundary treatment for client-supplied money until
+// the deferred integer-minor-units migration.
+func roundMoney(x float64) float64 {
+	return math.Round(x*100) / 100
+}
+
 func haversineKm(lat1, lon1, lat2, lon2 float64) float64 {
 	const R = 6371.0
 	dLat := (lat2 - lat1) * math.Pi / 180

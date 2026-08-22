@@ -237,7 +237,9 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		initialStatus = models.JobStatusAwaitingPriceResponse
 
 		if req.ProposedPrice != nil {
-			if !models.ValidPriceProposal(suggestedPrice, *req.ProposedPrice) {
+			pp := roundMoney(*req.ProposedPrice)
+			req.ProposedPrice = &pp
+			if !models.ValidPriceProposal(suggestedPrice, pp) {
 				writeJSON(w, http.StatusBadRequest, map[string]string{
 					"error":   "invalid_proposed_price",
 					"message": "proposed_price must be between 50% and 150% of the suggested price",
@@ -1534,6 +1536,15 @@ func (u *UserService) ProposePrice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	req.ProposedPrice = roundMoney(req.ProposedPrice)
+	if !models.ValidPriceProposal(job.SuggestedPrice, req.ProposedPrice) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_proposed_price",
+			"message": "proposed price must be between 50% and 150% of the suggested price",
+		})
+		return
+	}
+
 	now := time.Now().UTC()
 	exp := now.Add(5 * time.Minute)
 	job.ProposedPrice = &req.ProposedPrice
@@ -1699,6 +1710,7 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 		if job.ProposedPrice != nil {
 			activePrice = *job.ProposedPrice
 		}
+		activePrice = roundMoney(activePrice)
 
 		// Lock escrow for non-COD negotiable transport jobs
 		if job.PaymentMethod != "cod" {
