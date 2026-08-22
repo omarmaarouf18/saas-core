@@ -12,6 +12,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -403,7 +404,14 @@ func (u *UserService) savePayoutIdempotencyKey(tenantID, key, payoutID string) {
 		return
 	}
 	if err := u.rdb.Set(context.Background(), "idempotency:payout:"+tenantID+":"+key, payoutID, 24*time.Hour).Err(); err != nil {
-		log.Printf("[ERROR] failed to store payout idempotency key %s: %v", key, err)
+		// The key is client-controlled: CR/LF-sanitize before logging (G706).
+		safeKey := strings.Map(func(r rune) rune {
+			if r == '\n' || r == '\r' {
+				return ' '
+			}
+			return r
+		}, key)
+		log.Printf("[ERROR] failed to store payout idempotency key %s: %v", safeKey, err)
 	}
 }
 
