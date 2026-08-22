@@ -958,7 +958,28 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 		return fmt.Errorf("insufficient escrow balance to refund: have %.2f, need %.2f", w.EscrowBalance, amount)
 	}
 
-	runTx := func(sc context.Context) error {
+	runTx := func(sc context.Context, isFallback bool) error {
+		// Capture the job's prior state so a compensating revert can restore
+		// it if a later step fails. The revert closures are no-ops inside a
+		// real multi-document transaction (abort handles it); they only act
+		// in the non-transactional fallback where each step commits
+		// immediately and a mid-sequence failure would otherwise strand
+		// mutated state — mirroring ReleaseEscrowWithSplit.
+		prevJobStatus := models.JobStatusCancelled
+		var prev models.Job
+		if err := s.jobs.FindOne(sc, bson.M{"_id": jobID}).Decode(&prev); err == nil && prev.Status != "" {
+			prevJobStatus = prev.Status
+		}
+
+		revertJob := func() {
+			if isFallback {
+				_, _ = s.jobs.UpdateOne(sc, bson.M{"_id": jobID}, bson.M{
+					"$inc": bson.M{"locked_escrow_amount": amount},
+					"$set": bson.M{"status": prevJobStatus, "updated_at": time.Now().UTC()},
+				})
+			}
+		}
+
 		// Atomic check and deduct against that job's own locked amount by updating the job document.
 		// status must be Active or Pending, and locked_escrow_amount >= amount.
 		resJob, err := s.jobs.UpdateOne(sc,
@@ -985,10 +1006,22 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 				"$set": bson.M{"updated_at": time.Now().UTC()},
 			})
 		if err != nil {
+			revertJob()
 			return err
 		}
 		if res.MatchedCount == 0 {
+			revertJob()
 			return fmt.Errorf("escrow refund failed: insufficient escrow balance")
+		}
+
+		revertWalletAndJob := func() {
+			if isFallback {
+				_, _ = s.wallets.UpdateOne(sc, bson.M{"tenant_id": tenantID}, bson.M{
+					"$inc": bson.M{"escrow_balance": amount, "withdrawable_balance": -amount},
+					"$set": bson.M{"updated_at": time.Now().UTC()},
+				})
+				revertJob()
+			}
 		}
 
 		_, err = s.ledger.InsertOne(sc, models.TransactionLedger{
@@ -997,12 +1030,16 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 			BalanceBefore: w.WithdrawableBalance, BalanceAfter: w.WithdrawableBalance + amount,
 			Description: fmt.Sprintf("escrow refund for cancelled job %s", jobID), Timestamp: time.Now().UTC(),
 		})
-		return err
+		if err != nil {
+			revertWalletAndJob()
+			return err
+		}
+		return nil
 	}
 
 	session, err := s.client.StartSession()
 	if err != nil {
-		return runTx(ctx)
+		return runTx(ctx, true)
 	}
 	defer session.EndSession(ctx)
 
@@ -1010,7 +1047,7 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 		if err := session.StartTransaction(); err != nil {
 			return err
 		}
-		if err := runTx(sc); err != nil {
+		if err := runTx(sc, false); err != nil {
 			_ = session.AbortTransaction(sc)
 			return err
 		}
@@ -1019,7 +1056,7 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 
 	if err != nil && (strings.Contains(err.Error(), "Transaction numbers") || strings.Contains(err.Error(), "replica set")) {
 		log.Printf("[USER-STORE] Standalone MongoDB detected. Falling back to sequential execution for RefundEscrow.")
-		return runTx(ctx)
+		return runTx(ctx, true)
 	}
 	return err
 }
