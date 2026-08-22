@@ -412,7 +412,10 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 
 	// Authorization check
 	resolvedRequester := "internal_service"
-	isInternal := subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
+	// Empty-secret guard (QA audit Q23): an unconfigured token must never
+	// authenticate internal callers even if config.Load() is bypassed.
+	isInternal := u.internalServiceToken != "" &&
+		subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
 	if !isInternal {
 		if req.RequesterToken != "" {
 			req.RequesterID = req.RequesterToken
@@ -655,8 +658,9 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 
 	u.checkLazyPriceProposalExpiry(ctx, job)
 
-	// 1. Internal trusted token check
-	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1 {
+	// 1. Internal trusted token check (empty-secret guard, QA audit Q23)
+	if u.internalServiceToken != "" &&
+		subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1 {
 		writeJSON(w, http.StatusOK, job)
 		return
 	}

@@ -662,7 +662,8 @@ func (c *Chat) BroadcastLocation(w http.ResponseWriter, r *http.Request) {
 
 	// Validate internal token
 	gotToken := r.Header.Get("X-Internal-Token")
-	if subtle.ConstantTimeCompare([]byte(gotToken), []byte(c.internalServiceToken)) != 1 {
+	// Empty-secret guard (QA audit Q23): never authenticate when unconfigured.
+	if c.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(gotToken), []byte(c.internalServiceToken)) != 1 {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: invalid internal token"})
 		return
 	}

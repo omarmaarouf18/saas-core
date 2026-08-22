@@ -270,7 +270,8 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 	}
 
 	gotToken := r.Header.Get("X-Internal-Token")
-	if subtle.ConstantTimeCompare([]byte(gotToken), []byte(n.internalServiceToken)) != 1 {
+	// Empty-secret guard (QA audit Q23): never authenticate when unconfigured.
+	if n.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(gotToken), []byte(n.internalServiceToken)) != 1 {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: internal token required"})
 		return
 	}
@@ -342,7 +343,8 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 	}
 
 	gotToken := r.Header.Get("X-Internal-Token")
-	if subtle.ConstantTimeCompare([]byte(gotToken), []byte(n.internalServiceToken)) != 1 {
+	// Empty-secret guard (QA audit Q23): never authenticate when unconfigured.
+	if n.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(gotToken), []byte(n.internalServiceToken)) != 1 {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: internal token required"})
 		return
 	}
