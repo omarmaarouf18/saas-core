@@ -359,6 +359,61 @@ func (u *UserService) releaseIdempotencyReservation(userID, key string) {
 	_ = u.rdb.Del(context.Background(), "idempotency:job:"+userID+":"+key).Err()
 }
 
+// ---------------------------------------------------------------------------
+// Payout idempotency (mirrors the TrackJob reservation pattern; QA audit Q1)
+// ---------------------------------------------------------------------------
+
+// reservePayoutIdempotencyKey atomically claims the per-owner payout
+// idempotency slot via SET NX. Returns:
+//   - replayID != "": an identical logical request already completed under
+//     this key — serve its stored payout request instead of double-deducting.
+//   - conflict == true: another identical request holds a pending
+//     reservation — reject with 409.
+//
+// Redis unavailability degrades to non-idempotent operation (logged),
+// matching TrackJob's availability behaviour.
+func (u *UserService) reservePayoutIdempotencyKey(tenantID, key string) (replayID string, conflict bool) {
+	if key == "" || u.rdb == nil {
+		return "", false
+	}
+	redisKey := "idempotency:payout:" + tenantID + ":" + key
+
+	existing, err := u.rdb.Get(context.Background(), redisKey).Result()
+	if err == nil && existing != "" && existing != idempotencyPendingValue {
+		return existing, false
+	}
+
+	reserved, err := u.rdb.SetNX(context.Background(), redisKey, idempotencyPendingValue, 24*time.Hour).Result()
+	if err != nil {
+		log.Printf("[WARN] payout idempotency reservation unavailable, proceeding without dedupe: %v", err)
+		return "", false
+	}
+	if !reserved {
+		val, err := u.rdb.Get(context.Background(), redisKey).Result()
+		if err == nil && val != "" && val != idempotencyPendingValue {
+			return val, false // lost the race but the winner already finished
+		}
+		return "", true // genuine concurrent in-flight duplicate
+	}
+	return "", false
+}
+
+func (u *UserService) savePayoutIdempotencyKey(tenantID, key, payoutID string) {
+	if key == "" || u.rdb == nil {
+		return
+	}
+	if err := u.rdb.Set(context.Background(), "idempotency:payout:"+tenantID+":"+key, payoutID, 24*time.Hour).Err(); err != nil {
+		log.Printf("[ERROR] failed to store payout idempotency key %s: %v", key, err)
+	}
+}
+
+func (u *UserService) releasePayoutIdempotencyReservation(tenantID, key string) {
+	if key == "" || u.rdb == nil {
+		return
+	}
+	_ = u.rdb.Del(context.Background(), "idempotency:payout:"+tenantID+":"+key).Err()
+}
+
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	handlerutil.WriteJSON(w, status, data)
 }

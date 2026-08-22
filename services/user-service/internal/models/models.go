@@ -292,6 +292,9 @@ type CreatePayoutRequestInput struct {
 	Amount         float64 `json:"amount"`
 	PayoutMethod   string  `json:"payout_method"`
 	AccountDetails string  `json:"account_details,omitempty"`
+	// IdempotencyKey optionally identifies this logical request across
+	// network retries; the Idempotency-Key header takes precedence.
+	IdempotencyKey string `json:"idempotency_key,omitempty"`
 }
 
 // ---------------------------------------------------------------------------
