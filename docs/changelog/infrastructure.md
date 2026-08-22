@@ -339,3 +339,17 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Diagnostic Finding**: After pinning alone (before any baseline change), CI-rendered baselines were **sha256-identical to all 12 existing repo baselines** (`gh run download` + checksum comparison) — proving the Flutter ENGINE VERSION was the sole failing variable and cross-distro fontconfig contributed nothing for these screens (all text renders from bundled Poppins). Consequently no baseline commit was required; the pre-existing baselines are canonical under the pin.
 - **Standing Rule**: any Flutter bump must regenerate goldens in the same change (procedure + rationale documented in `frontend/README.md`, root-cause table in `docs/frontend/STATUS.md`). `workflow_dispatch` on `regen-goldens.yml` becomes available once the file reaches `main`; until then a self-path push trigger fires it when the mechanism itself changes.
 - **Verification (GitHub Actions, not local)**: Run 32555159762 on `e596b80` — all 8 CI Gate jobs success including "Flutter Lint & Test", log line `🎉 305 tests passed.`; Run 32555473575 on `2f8af6d` — "Flutter Lint & Test" success. Local suite additionally 305/305 (not counted as verification). ✅
+
+## A3 Test Coverage Pass — P1 Money & P2 Auth Provider Gaps Closed
+
+**Date**: 2026-08-22
+**Category**: Infrastructure / Test Coverage
+**Related Commit SHA**: ``84bd5aa447099d7cd7bb0a2b26650feb3ebe26d9``
+
+- **Re-runnable auditor**: `scripts/frontend_coverage_audit.py` parses `frontend/coverage/lcov.info` and prints per-file line coverage for screens/providers/widgets/services with risk-tier flags (0% always flagged; floors: 60% money/auth/job-state, 40% presentational).
+- **Stale-flag correction**: the previously reported zero-coverage trio was wrong on two counts — `utils/logout_helper.dart` measures **100%**, `screens/chat_screen.dart` **81.5%**; the only true zero is `screens/rating_screen.dart` (still open, P3). The real concentration of risk was PROVIDERS starved by widget tests that mock providers wholesale.
+- **Coverage deltas** (line coverage): reconciliation_provider 2.9%→**100%**, employee_jobs_provider 4.3%→**94.3%**, marketplace_provider 18.6%→**89.0%**, auth_provider 25.1%→**75.8%**, core/api_client.dart 24.7%→**63.9%**. Overall audited coverage 69.4%→**73.2%**. Suite 305→**355 tests**.
+- **New test infrastructure**: dart:io `HttpClient` fake via `HttpOverrides` (`test/helpers/mock_http_harness.dart`, request recording + canned routing — no production code changes) and a `FlutterSecureStorage` method-channel mock with in-memory store.
+- **Behavioral find (documented as contract)**: ALL auth flows surface `ApiClientException.message` verbatim (e.g. "email exists", "invalid OTP") unlike every other provider which routes through `friendlyErrorMessage`. Auth endpoints return safe strings by contract, so this is intentional; asserted in tests to prevent silent drift.
+- **Deferred (Still OPEN)**: rating_screen widget suite (P3), map_tracking_provider WebSocket fake layer (P3), notifications/chat providers + low-coverage data models + service_screen (P4 cosmetic/data-class risk only).
+- **Verification**: local full suite `flutter test` 355/355 pass; `flutter analyze` No issues found!; coverage re-run literal before/after above. ✅
