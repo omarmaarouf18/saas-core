@@ -129,7 +129,7 @@ This design system provides the visual architecture and component spec for Quick
 
 ## 3. Shared Component Library Reference
 
-All shared widgets are located in `frontend/lib/widgets/`. Below is the complete catalog of 27 widgets:
+All shared widgets are located in `frontend/lib/widgets/`. Below is the complete catalog of 32 shared widgets (catalog snapshots may lag; `frontend/lib/widgets/` is the source of truth):
 
 | Widget Class Name | File Path | Visual Role & Purpose | Key Constructor Parameters | Primary Screen Usages |
 | :--- | :--- | :--- | :--- | :--- |
@@ -162,7 +162,7 @@ All shared widgets are located in `frontend/lib/widgets/`. Below is the complete
 | `ThemedTextField` | `themed_text_field.dart` | Input field with floating label, focus indicator & password toggle | `label`, `controller`, `validator`, `prefixIcon` | Used across 20 screens |
 
 > [!RULE]
-> **Component Propose Rule**: If a developer requires a visual pattern not fulfilled by the 27 shared widgets above, they must propose and implement a new shared widget under `frontend/lib/widgets/` rather than adding custom inline container styling inside a screen file.
+> **Component Propose Rule**: If a developer requires a visual pattern not fulfilled by the 32 shared widgets above, they must propose and implement a new shared widget under `frontend/lib/widgets/` rather than adding custom inline container styling inside a screen file.
 
 ---
 
