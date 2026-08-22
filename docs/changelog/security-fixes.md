@@ -780,3 +780,13 @@ This section consolidates the resolution status for all 10 findings from the ext
 ## Reviewed Decision: ToggleEmployee Owner Password in Request Body (Accepted, Documented)
 
 - **Decision**: The owner re-authentication password for employee freeze/unfreeze remains in the request body (`owner_password`). **Rationale**: it is required for genuine step-up authentication of a destructive action; transport is exclusively TLS/mTLS; the value is never logged (all ToggleEmployee log lines audited — emails only), never persisted, never serialized back; enumeration/timing oracles around this path were closed in commit `b5ae0789f2d17ec4e8f341dc862b2d04d8edde5a`. Removing the field would require a coordinated backend+frontend contract migration (short-lived step-up token) that cannot land safely in a backend-only parallel session against an unreleased frontend branch. **Flagged for future hardening**: dedicated re-auth endpoint issuing a short-lived step-up token.
+
+## FCM Client No Longer Sends X-Internal-Token to External Host
+
+- **Implementation Detail**: `notification-service`'s FCM client (`services/notification-service/internal/fcm/fcm.go`) attached `X-Internal-Token` to every push request, including those addressed to the default `https://fcm.googleapis.com/...` endpoint when no internal relay was configured — leaking a shared intra-cluster secret to an external host. The client now records whether an explicit `FCMEndpointURL` relay was configured and attaches the header ONLY in that mode; default Google-mode requests carry no internal auth material.
+- **Commit SHA**: ``51196fa5d27ef0ec0f8ad108cb6ebf8cac662e88``
+- **Verification**: New white-box regression `TestFCMPush_NoInternalTokenToGoogle` intercepts a default-mode client's outbound call via httptest (endpoint overridden without changing endpoint MODE). Pre-fix literal failure: `INTERNAL TOKEN LEAKED TO EXTERNAL HOST: X-Internal-Token="secret-internal-token" was sent to the default (Google) endpoint`. Companion test `TestFCMPush_InternalTokenPresentOnCustomRelay` asserts relay mode still authenticates. Full notification-service suite passes (`go test ./...`: config/fcm/handlers/hub all `ok`). ✅
+
+## Process Note: Missed Test Files in c618430
+
+- **Detail**: Two store test files updated by the GetLedger/GetRatings signature change were left unstaged in commit `c6184303de8625b4b531525729a2721a2e61c257`; committed separately as `ad9779f37f11e20472c1b9298828ce39ba2222b9` (test-only, mechanical `(0,0)` default-page args). Recorded for transparency per repo honesty rules.
