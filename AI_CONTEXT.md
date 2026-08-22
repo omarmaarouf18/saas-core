@@ -427,4 +427,13 @@ Deferred from this pass with rationale (all previously flagged lows):
 * **Request-body size caps beyond auth-service**: MaxBytesReader exists for auth uploads/profile; extending across all endpoints is a cross-cutting contract review.
 * **Admin version-config credential model & version-store persistence (main.go:68)**: both require product decisions (dedicated admin credentials; Mongo-backed store enablement) before code changes.
 * **Encrypt-documents rotation safety**: tool double-encrypts after key rotation (no magic-header marker); fix requires an on-disk format marker plus migration guidance.
+* **Encrypt-documents rotation safety**: tool double-encrypts after key rotation (no magic-header marker); fix requires an on-disk format marker plus migration guidance.
 * **Storage prefix separator guard**: classic incomplete-prefix pattern (`absBase` without trailing separator) — traversal itself is blocked twice; low-impact guard worth adding in a future touch of `storage.go`.
+
+### Parallel-Session Infrastructure Isolation (Operational Lesson, 2026-08-22)
+
+During this pass run in parallel with a frontend session, the shared `saas-mongo` container crash-looped (observed `RestartCount=44` in one day), producing `connection reset by peer` / server-selection-timeout failures inside test setup that mimic code flakes. **Standing guidance for any future parallel sessions**: give each worktree/session its own MongoDB and Redis containers (distinct host ports or separate docker-compose project names) instead of sharing one stack. When integration tests fail with transport-level errors against shared local infra, check `docker inspect -f '{{.RestartCount}}'` for the container FIRST and classify as environmental before treating it as a regression.
+
+### Backend-Lows Pass Closure (2026-08-22)
+
+Closed with CI verified on GitHub Actions: 16 code/decision items + doc correction landed (see delivery log in session report); Priority 1–3 fully closed, Priority 4 explicitly deferred above except the four quick wins fixed this pass (FCM header gating `9167d87...`, semver prerelease `218748d...`, TRAFFIC sanitization `9ab8ef3...`, device-platform whitelist `2bd3755...`). Final tip `bdf4bd5d773ef7088fe93555554038a8f2fd6093`: CI Gate run `32558009180` success (all jobs: Lint & Formatting, chat/user/notification/api-gateway/shared-infra Build & Test, Flutter Lint & Test).
