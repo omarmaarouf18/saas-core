@@ -125,12 +125,11 @@ func main() {
 
 	// Health check.
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		// Minimal status only: the previous payload disclosed environment
+		// details (app_env), crypto/dispatcher internals to unauthenticated
+		// callers. Server-side diagnostics belong in logs, not public probes.
 		handlerutil.WriteJSON(w, http.StatusOK, map[string]string{
-			"status":       "ok",
-			"storage":      "mongodb",
-			"otp_crypto":   "AES-256-GCM",
-			"otp_dispatch": dispatcher.Name(),
-			"app_env":      cfg.AppEnv,
+			"status": "ok",
 		})
 	})
 
