@@ -881,6 +881,16 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Authentication MUST precede the throttle reservation: reserving the
+	// per-job Redis slot before verifying the caller let any unauthenticated
+	// party holding a job ID continuously claim the reservation window,
+	// starving the assigned employee's legitimate updates with 429s.
+	resolvedRequester, err := resolveTokenWithRole(req.RequesterID, "employee", "owner")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
 	// --- ATOMIC THROTTLE RESERVATION (ENTRY GUARD) ---
 	now := time.Now()
 	nowMs := now.UnixNano() / int64(time.Millisecond)
@@ -966,13 +976,6 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 			lastTime = lastUpdate
 		}
 		u.locationThrottleMu.Unlock()
-	}
-
-	resolvedRequester, err := resolveTokenWithRole(req.RequesterID, "employee", "owner")
-	if err != nil {
-		clearInFlight()
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
-		return
 	}
 
 	if !isValidCoordinate(req.Latitude, req.Longitude) {
