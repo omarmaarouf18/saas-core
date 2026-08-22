@@ -69,7 +69,7 @@ func TestRejectPayoutRequest_RestoresBalancesAndLedgers(t *testing.T) {
 	}
 
 	// Ledger must contain a refund entry crediting the owner back.
-	ledger := s.GetLedger(ctx, tenantID)
+	ledger := s.GetLedger(ctx, tenantID, 0, 0)
 	refundFound := false
 	for _, e := range ledger {
 		if e.Type == models.TxPayoutRefund && e.Amount == 40.0 {
