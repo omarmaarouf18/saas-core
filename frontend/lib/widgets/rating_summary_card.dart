@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/l10n.dart';
 import '../core/theme.dart';
 import 'themed_card.dart';
 
@@ -62,7 +63,8 @@ class RatingSummaryCard extends StatelessWidget {
                   Row(children: stars),
                   const SizedBox(height: AppSpacing.xxs),
                   Text(
-                    'Verified Service Score',
+                    AppLocalizations.of(context)?.verifiedServiceScoreLabel ??
+                        'Verified Service Score',
                     style: AppTypography.labelMd.copyWith(
                       color: AppColors.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
@@ -79,7 +81,8 @@ class RatingSummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.baseSm),
           Text(
-            'Based on $ratingCount ratings',
+            AppLocalizations.of(context)?.basedOnRatingsLine("$ratingCount") ??
+                'Based on $ratingCount ratings',
             style: AppTypography.bodySm.copyWith(
               color: AppColors.onSurfaceVariant,
               fontWeight: FontWeight.w400,

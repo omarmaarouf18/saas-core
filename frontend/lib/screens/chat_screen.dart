@@ -115,7 +115,7 @@ class _ChatScreenState extends State<ChatScreen> {
               height: 7),
           const SizedBox(width: AppSpacing.xs),
           Text(
-            "Live",
+            l10n.chatStatusLive,
             style: AppTypography.labelSm.copyWith(
               color: AppColors.success,
               fontWeight: FontWeight.bold,
@@ -155,7 +155,7 @@ class _ChatScreenState extends State<ChatScreen> {
               height: 7),
           const SizedBox(width: AppSpacing.xs),
           Text(
-            "Disconnected",
+            l10n.chatStatusDisconnected,
             style: AppTypography.labelSm.copyWith(
               color: AppColors.outline,
             ),
@@ -216,14 +216,14 @@ class _ChatScreenState extends State<ChatScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          "Job #$shortJobId",
+                          l10n.chatJobTag(shortJobId),
                           style: AppTypography.labelLg.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppColors.onSurface,
                           ),
                         ),
                         Text(
-                          "Direct Real-time Channel",
+                          l10n.chatDirectChannel,
                           style: AppTypography.labelSm.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
@@ -247,8 +247,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: Padding(
                       padding: const EdgeInsets.all(AppSpacing.lg),
                       child: ThemedErrorBanner(
-                        message:
-                            "Access Denied: You are not authorized to view or join the chat for Job #${widget.jobId}.",
+                        message: l10n.chatAccessDeniedJob(widget.jobId),
                         onRetry: _initChat,
                       ),
                     ),

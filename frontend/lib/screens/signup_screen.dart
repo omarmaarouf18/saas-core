@@ -184,14 +184,14 @@ class _SignupScreenState extends State<SignupScreen> {
               final trimmed = val.trim();
               final runeCount = trimmed.runes.length;
               if (runeCount < 3) {
-                return "Username must be at least 3 characters";
+                return l10n.usernameTooShort;
               }
               if (runeCount > 30) {
-                return "Username must be at most 30 characters";
+                return l10n.usernameTooLong;
               }
               final usernameRegex = RegExp(r'^[a-zA-Z0-9_\s\u0600-\u06FF]+$');
               if (!usernameRegex.hasMatch(trimmed)) {
-                return "Username contains invalid characters";
+                return l10n.usernameInvalidChars;
               }
               return null;
             },

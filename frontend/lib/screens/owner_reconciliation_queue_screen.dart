@@ -217,7 +217,7 @@ class _OwnerReconciliationQueueScreenState
                       ThemedTextField(
                         key: const Key('reconciliation_search_field'),
                         controller: _searchController,
-                        hintText: "Search queue by Job ID, customer, driver...",
+                        hintText: l10n.reconQueueSearchHint,
                         prefixIcon:
                             const Icon(Icons.search, color: AppColors.outline),
                         onChanged: (_) => setState(() {}),
@@ -228,22 +228,22 @@ class _OwnerReconciliationQueueScreenState
                         padding: EdgeInsets.zero,
                         items: [
                           PillFilterItem(
-                            label: "All",
+                            label: l10n.filterAll,
                             value: "all",
                             count: provider.queue.length,
                           ),
                           PillFilterItem(
-                            label: "Distance",
+                            label: l10n.reconFilterDistance,
                             value: "distance",
                             count: distanceCount,
                           ),
                           PillFilterItem(
-                            label: "Time / Speed",
+                            label: l10n.reconFilterTimeSpeed,
                             value: "time",
                             count: timeCount,
                           ),
                           PillFilterItem(
-                            label: "Other",
+                            label: l10n.reconFilterOther,
                             value: "other",
                             count: otherCount,
                           ),
@@ -257,7 +257,7 @@ class _OwnerReconciliationQueueScreenState
                         const SizedBox(height: AppSpacing.lg),
                         Center(
                           child: Text(
-                            "No reconciliation jobs match your filter.",
+                            l10n.noReconMatchFilter,
                             style: AppTypography.bodyMd.copyWith(
                               color: AppColors.onSurfaceVariant,
                             ),

@@ -194,6 +194,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
   }
 
   Widget _buildFleetFilterPillRow(int markersCount) {
+    final l10n = context.l10n;
     return Positioned(
       top: AppSpacing.md,
       left: AppSpacing.md,
@@ -214,7 +215,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      "All Fleet",
+                      l10n.fleetFilterAllFleet,
                       style: AppTypography.labelMd.copyWith(
                         color: AppColors.onPrimary,
                         fontWeight: FontWeight.bold,
@@ -258,7 +259,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
                         height: 8),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
-                      "On Route",
+                      l10n.fleetFilterOnRoute,
                       style: AppTypography.labelMd.copyWith(
                         color: AppColors.onSurface,
                         fontWeight: FontWeight.w600,
@@ -286,7 +287,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
                         height: 8),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
-                      "Idle",
+                      l10n.fleetFilterIdle,
                       style: AppTypography.labelMd.copyWith(
                         color: AppColors.onSurface,
                         fontWeight: FontWeight.w600,
@@ -314,7 +315,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
             const SizedBox(width: AppSpacing.base),
             Expanded(
               child: Text(
-                'No active employees transmitting location.',
+                context.l10n.noEmployeesTransmitting,
                 style: AppTypography.bodySm.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppColors.onSurface,
@@ -376,7 +377,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
                         ),
                         if (employee.jobId != null)
                           Text(
-                            "Assigned Job: #${employee.jobId}",
+                            context.l10n.assignedJobLine(employee.jobId!),
                             style: AppTypography.caption.copyWith(
                               color: AppColors.onSurfaceVariant,
                             ),
@@ -407,8 +408,8 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
           ? ThemedErrorBanner(
               message: provider.subscriptionError!,
             )
-          : const ThemedWarningBanner(
-              message: 'Reconnecting live tracking stream...',
+          : ThemedWarningBanner(
+              message: context.l10n.reconnectingTrackingStream,
             ),
     );
   }

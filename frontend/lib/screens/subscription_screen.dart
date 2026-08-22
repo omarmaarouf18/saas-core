@@ -96,7 +96,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
-                        "Manage your operational tier. Upgrade to unlock live driver tracking, advanced pricing metrics, and priority enterprise support.",
+                        l10n.subscriptionManageDesc,
                         style: AppTypography.bodyMd.copyWith(
                           color: AppColors.onSurfaceVariant,
                         ),
@@ -119,7 +119,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'YOUR CURRENT PLAN',
+                            l10n.yourCurrentPlanBadge,
                             style: AppTypography.labelLg.copyWith(
                               color: AppColors.onPrimary.withValues(alpha: 0.7),
                               letterSpacing: 1.2,
@@ -173,9 +173,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       ),
                       if (currentTier == 'pending_payment') ...[
                         const SizedBox(height: AppSpacing.md),
-                        const ThemedWarningBanner(
-                          message:
-                              'Pending activation. Please contact support to complete payment.',
+                        ThemedWarningBanner(
+                          message: l10n.pendingActivationNote,
                         ),
                       ],
                     ],
@@ -185,7 +184,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
                 // 3. Section Title
                 Text(
-                  'Available Plans',
+                  l10n.availablePlansHeader,
                   style: AppTypography.titleMd.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.onSurface,
@@ -272,7 +271,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               ),
               const SizedBox(height: AppSpacing.xxs),
               Text(
-                "Essential tools for independent operators.",
+                l10n.freeTierDesc,
                 style: AppTypography.bodyMd.copyWith(
                   color: AppColors.onSurfaceVariant,
                 ),
@@ -397,7 +396,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xxs),
                   Text(
-                    "Complete suite for fleet managers and growing businesses.",
+                    l10n.proTierDesc,
                     style: AppTypography.bodyMd.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
@@ -480,7 +479,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    "Billed monthly. Cancel anytime.",
+                    l10n.billedMonthlyNote,
                     style: AppTypography.caption.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
@@ -506,7 +505,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 vertical: AppSpacing.xs,
               ),
               child: Text(
-                'RECOMMENDED',
+                l10n.recommendedBadge,
                 style: AppTypography.labelMd.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.onSecondary,

@@ -326,7 +326,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                   ThemedTextField(
                     key: const Key('owner_jobs_search_field'),
                     controller: _jobsSearchController,
-                    hintText: "Search by Job ID, customer, or reason...",
+                    hintText: l10n.ownerJobsSearchHint,
                     prefixIcon:
                         const Icon(Icons.search, color: AppColors.outline),
                     onChanged: (_) => setState(() {}),
@@ -337,17 +337,17 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                     padding: EdgeInsets.zero,
                     items: [
                       PillFilterItem(
-                        label: "All",
+                        label: l10n.filterAll,
                         value: "all",
                         count: completedJobs.length,
                       ),
                       PillFilterItem(
-                        label: "Completed",
+                        label: l10n.statusCompleted,
                         value: "completed",
                         count: totalCompleted,
                       ),
                       PillFilterItem(
-                        label: "Cancelled",
+                        label: l10n.statusCancelled,
                         value: "cancelled",
                         count: totalCancelled,
                       ),
@@ -376,7 +376,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                           const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                       child: Center(
                         child: Text(
-                          "No jobs found matching your filter.",
+                          l10n.noJobsMatchFilter,
                           style: AppTypography.bodyMd.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),

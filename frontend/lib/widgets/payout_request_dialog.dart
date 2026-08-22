@@ -138,7 +138,8 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    "Account: ${_accountDetailsController.text.trim()}",
+                    l10n.accountDetailsLine(
+                        _accountDetailsController.text.trim()),
                     style: AppTypography.labelMd.copyWith(
                       color: AppColors.onSurfaceVariant,
                       fontWeight: FontWeight.bold,

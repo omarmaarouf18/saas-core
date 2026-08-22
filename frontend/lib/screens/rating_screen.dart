@@ -248,7 +248,7 @@ class _RatingScreenState extends State<RatingScreen> {
           ),
           const SizedBox(height: AppSpacing.xxs),
           Text(
-            "Delivery ID: #QD-$displayId",
+            context.l10n.deliveryIdTag(displayId),
             style: AppTypography.labelMd.copyWith(
               color: AppColors.onSurfaceVariant,
               fontFamily: 'monospace',
@@ -264,7 +264,7 @@ class _RatingScreenState extends State<RatingScreen> {
       child: Column(
         children: [
           Text(
-            'How was your delivery?',
+            context.l10n.howWasDeliveryQuestion,
             style: AppTypography.headlineLgMobile.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.primary,
@@ -274,7 +274,7 @@ class _RatingScreenState extends State<RatingScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
-              'Ratings are blind. Neither party will see the other\'s feedback until both have submitted.',
+              context.l10n.ratingsBlindExplanation,
               textAlign: TextAlign.center,
               style: AppTypography.bodyMd.copyWith(
                 color: AppColors.onSurfaceVariant,
@@ -331,7 +331,7 @@ class _RatingScreenState extends State<RatingScreen> {
         ThemedTextField(
           controller: _commentController,
           labelText: l10n.privateFeedbackLabel,
-          hintText: "Tell us more about your experience...",
+          hintText: l10n.feedbackExperienceHint,
           maxLines: 4,
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -399,7 +399,7 @@ class _RatingScreenState extends State<RatingScreen> {
                 )),
             const SizedBox(height: AppSpacing.md),
             Text(
-              "Feedback Locked In!",
+              l10n.feedbackLockedInTitle,
               style: AppTypography.titleMd.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.success,
@@ -407,7 +407,7 @@ class _RatingScreenState extends State<RatingScreen> {
             ),
             const SizedBox(height: AppSpacing.base),
             Text(
-              "The other party has submitted their rating. Both feedbacks are now visible under profile summary.",
+              l10n.bothRatingsVisibleDesc,
               textAlign: TextAlign.center,
               style: AppTypography.bodySm.copyWith(
                 color: AppColors.onSurfaceVariant,
@@ -435,7 +435,7 @@ class _RatingScreenState extends State<RatingScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              "Waiting for other party...",
+              l10n.waitingOtherPartyTitle,
               style: AppTypography.titleMd.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.onSurface,
@@ -443,7 +443,7 @@ class _RatingScreenState extends State<RatingScreen> {
             ),
             const SizedBox(height: AppSpacing.base),
             Text(
-              "The other party has not yet rated this transaction. Your ratings will remain hidden until they submit.",
+              l10n.otherPartyNotRatedDesc,
               textAlign: TextAlign.center,
               style: AppTypography.bodySm.copyWith(
                 color: AppColors.onSurfaceVariant,
@@ -486,17 +486,17 @@ class _RatingScreenState extends State<RatingScreen> {
         _buildInfoCard(
           icon: Icons.security_outlined,
           title: l10n.ratingFeatureUnbiased,
-          subtitle: "Preventing retaliatory or social-pressure ratings.",
+          subtitle: l10n.unbiasedRatingDesc,
         ),
         _buildInfoCard(
           icon: Icons.verified_outlined,
           title: l10n.ratingFeatureTrust,
-          subtitle: "Ratings directly impact platform reliability ranks.",
+          subtitle: l10n.reliabilityRanksDesc,
         ),
         _buildInfoCard(
           icon: Icons.history_toggle_off_outlined,
           title: l10n.ratingFeatureWindow,
-          subtitle: "Submit within 24 hours to ensure your score counts.",
+          subtitle: l10n.windowDeadlineDesc,
         ),
       ],
     );

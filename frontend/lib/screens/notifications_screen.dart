@@ -12,7 +12,11 @@ import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 
 class NotificationsScreen extends StatefulWidget {
-  const NotificationsScreen({super.key});
+  const NotificationsScreen({super.key, this.clock});
+
+  /// Injectable clock for deterministic date-group rendering (tests/goldens).
+  /// Defaults to the real system time when null.
+  final DateTime Function()? clock;
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -24,15 +28,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   final List<String> _categories = ['All', 'Jobs', 'System', 'Alerts'];
 
+  DateTime _now() => widget.clock?.call() ?? DateTime.now();
+
   bool _isToday(DateTime dateTime) {
-    final now = DateTime.now();
+    final now = _now();
     return dateTime.year == now.year &&
         dateTime.month == now.month &&
         dateTime.day == now.day;
   }
 
   bool _isYesterday(DateTime dateTime) {
-    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    final yesterday = _now().subtract(const Duration(days: 1));
     return yesterday.year == dateTime.year &&
         yesterday.month == dateTime.month &&
         yesterday.day == dateTime.day;

@@ -349,7 +349,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                   )),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                "Where to deliver?",
+                context.l10n.customerHomeWhereDeliver,
                 style: AppTypography.titleMd.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.onSurface,
@@ -382,7 +382,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
-                        "Enter destination or pickup area...",
+                        context.l10n.customerHomeSearchHint,
                         style: AppTypography.bodyMd.copyWith(
                           color: AppColors.onSurfaceVariant,
                         ),
@@ -596,10 +596,10 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text("Origin",
+                          Text(context.l10n.commonOrigin,
                               style: AppTypography.caption
                                   .copyWith(color: AppColors.onSurfaceVariant)),
-                          Text("Destination",
+                          Text(context.l10n.commonDestination,
                               style: AppTypography.caption
                                   .copyWith(color: AppColors.onSurfaceVariant)),
                         ],
@@ -623,15 +623,17 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                               children: [
                                 Text(
                                   job.employeeId != null
-                                      ? "Courier: Assigned"
-                                      : "Finding Courier...",
+                                      ? context.l10n.courierAssignedLabel
+                                      : context.l10n.findingCourierLabel,
                                   style: AppTypography.bodySm.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.onSurface,
                                   ),
                                 ),
                                 Text(
-                                  "Payment: ${AppTypography.uppercaseLabel(job.paymentMethod)}",
+                                  context.l10n.paymentMethodLine(
+                                      AppTypography.uppercaseLabel(
+                                          job.paymentMethod)),
                                   style: AppTypography.caption.copyWith(
                                     color: AppColors.onSurfaceVariant,
                                   ),

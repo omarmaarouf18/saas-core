@@ -1564,4 +1564,649 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get payoutRejectionReasonLabel => 'Rejection Reason:';
+
+  @override
+  String get chatStatusLive => 'Live';
+
+  @override
+  String get chatStatusDisconnected => 'Disconnected';
+
+  @override
+  String chatJobTag(String shortId) {
+    return 'Job #$shortId';
+  }
+
+  @override
+  String get chatDirectChannel => 'Direct Real-time Channel';
+
+  @override
+  String chatAccessDeniedJob(String jobId) {
+    return 'Access Denied: You are not authorized to view or join the chat for Job #$jobId.';
+  }
+
+  @override
+  String get customerHomeWhereDeliver => 'Where to deliver?';
+
+  @override
+  String get customerHomeSearchHint => 'Enter destination or pickup area...';
+
+  @override
+  String get commonOrigin => 'Origin';
+
+  @override
+  String get commonDestination => 'Destination';
+
+  @override
+  String get courierAssignedLabel => 'Courier: Assigned';
+
+  @override
+  String get findingCourierLabel => 'Finding Courier...';
+
+  @override
+  String paymentMethodLine(String method) {
+    return 'Payment: $method';
+  }
+
+  @override
+  String get mapPickupBadge => 'Pickup';
+
+  @override
+  String get waitingCourierUpdates => 'Waiting for courier location updates...';
+
+  @override
+  String get reconnectingTrackingStream =>
+      'Reconnecting live tracking stream...';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String distanceAwayLine(String distance) {
+    return '$distance km away';
+  }
+
+  @override
+  String pricingBreakdownLine(String base, String perKm) {
+    return 'Base: $base + $perKm/km';
+  }
+
+  @override
+  String estPriceLine(String price) {
+    return 'Est. Price: $price';
+  }
+
+  @override
+  String get chooseSearchLocation => 'Choose Search Location';
+
+  @override
+  String get confirmBookingTitle => 'Confirm Booking';
+
+  @override
+  String categoryLine(String category) {
+    return 'Category: $category';
+  }
+
+  @override
+  String get pickupDistanceLabel => 'Pickup Distance:';
+
+  @override
+  String kmUnitLine(String distance) {
+    return '$distance km';
+  }
+
+  @override
+  String get estimatedTotalLabel => 'Estimated Total:';
+
+  @override
+  String get codOptionTitle => 'Cash on Delivery (COD)';
+
+  @override
+  String get codOptionSubtitle =>
+      'Pay in cash directly to the driver upon arrival';
+
+  @override
+  String get betaEscrowNote =>
+      'Note: Escrow payments and wallet deductions are currently deferred for this beta launch.';
+
+  @override
+  String get noRatingsLabel => 'No ratings';
+
+  @override
+  String reasonLine(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get recentActivityHeader => 'Recent Activity';
+
+  @override
+  String get employeeHistorySubtitle => 'Completed and cancelled jobs.';
+
+  @override
+  String get employeeManageSubtitle => 'Manage delivery personnel and status.';
+
+  @override
+  String get employeeSearchHint => 'Search workers by name or email...';
+
+  @override
+  String get employeeFrozenStatus => 'Frozen';
+
+  @override
+  String get noWorkersMatchFilter => 'No workers found matching your filter.';
+
+  @override
+  String workerIdBadge(String id) {
+    return 'ID: #QD-$id';
+  }
+
+  @override
+  String get targetStatusLabel => 'Target Status';
+
+  @override
+  String get secureVerificationNote =>
+      'Required for secure out-of-band operations verification.';
+
+  @override
+  String clientIpLine(String ip) {
+    return 'IP: $ip';
+  }
+
+  @override
+  String get usernameRequired => 'Username is required';
+
+  @override
+  String get usernameTooShort => 'Username must be at least 3 characters';
+
+  @override
+  String get usernameTooLong => 'Username must be at most 30 characters';
+
+  @override
+  String get usernameInvalidChars => 'Username contains invalid characters';
+
+  @override
+  String get emailRequired => 'Email is required';
+
+  @override
+  String get invalidEmailFormat => 'Please enter a valid email';
+
+  @override
+  String get passwordRequired => 'Password is required';
+
+  @override
+  String get passwordTooShort => 'Password must be at least 6 characters';
+
+  @override
+  String get employeeEmailRequired => 'Employee email is required';
+
+  @override
+  String get ownerPasswordRequired =>
+      'Owner password is required to re-authenticate';
+
+  @override
+  String get enterOtp6Digits => 'Enter 6-digit OTP code';
+
+  @override
+  String get otpExactly6Digits => 'OTP must be exactly 6 digits';
+
+  @override
+  String devOtpBanner(String otp) {
+    return 'Dev OTP Code: $otp';
+  }
+
+  @override
+  String devOtpAutoFilled(String otp) {
+    return 'Dev Mode: Auto-populated OTP \'$otp\' from response.';
+  }
+
+  @override
+  String get enterpriseTrustNote => 'Secured by Enterprise Trust Protocol';
+
+  @override
+  String get jobsTrendChipMock => '+12% vs last week';
+
+  @override
+  String get activeFleetMetricLabel => 'ACTIVE FLEET';
+
+  @override
+  String get quickConfigSubtitle =>
+      'Configure business profile, rates & coverage';
+
+  @override
+  String get urgentActionsHeader => 'Urgent Actions';
+
+  @override
+  String get vehicleMaintenanceTitle => 'Vehicle Maintenance Required';
+
+  @override
+  String get vehicleMaintenanceDesc =>
+      'Van #402 reported engine warning. Schedule service immediately.';
+
+  @override
+  String get scheduleAction => 'Schedule';
+
+  @override
+  String get pendingReconciliationsHeader => 'Pending Reconciliations';
+
+  @override
+  String get reconciliationPendingDesc =>
+      'Driver shifts from yesterday awaiting escrow settlement.';
+
+  @override
+  String get reviewAction => 'Review';
+
+  @override
+  String get fleetOverviewHeader => 'Fleet Overview';
+
+  @override
+  String get activeZoneLabel => 'Active Zone';
+
+  @override
+  String get downtownCoverageLabel => 'Downtown Metro Coverage';
+
+  @override
+  String get trackJobHeroTitle => 'Track Job';
+
+  @override
+  String get trackJobHeroSubtitle => 'View real-time location on map';
+
+  @override
+  String get fulfillmentProgressHeader => 'Fulfillment Progress';
+
+  @override
+  String get stepRequestQueuedSub => 'Request placed & queued';
+
+  @override
+  String get stepAssignedTitle => 'Assigned';
+
+  @override
+  String get matchingCourierLabel => 'Matching courier...';
+
+  @override
+  String assignedToLine(String name) {
+    return 'Assigned to $name';
+  }
+
+  @override
+  String get courierAssignedShort => 'Courier assigned';
+
+  @override
+  String get stepInTransitSub => 'Package on route to destination';
+
+  @override
+  String get stepDeliveredOkSub => 'Delivered successfully';
+
+  @override
+  String get stepPendingDeliverySub => 'Pending delivery';
+
+  @override
+  String get itineraryHeader => 'Itinerary';
+
+  @override
+  String get pickupStageBadge => 'PICKUP';
+
+  @override
+  String get originCustomerLocation => 'Origin / Customer Location';
+
+  @override
+  String get dropoffStageBadge => 'DROPOFF';
+
+  @override
+  String get deliveryDestinationLabel => 'Delivery Destination';
+
+  @override
+  String get paymentSectionHeader => 'Payment';
+
+  @override
+  String get totalFareLabel => 'Total Fare';
+
+  @override
+  String get verifiedCourierDriver => 'Verified Courier Driver';
+
+  @override
+  String cancellationReasonLine(String reason) {
+    return 'Cancellation Reason: $reason';
+  }
+
+  @override
+  String get negotiationExpiredBanner =>
+      'Negotiation Window Expired (5-min limit lapsed)';
+
+  @override
+  String get incomingProposalCard => 'Incoming Proposal';
+
+  @override
+  String proposalByLine(String role) {
+    return 'by $role';
+  }
+
+  @override
+  String get proposalRoleCustomer => 'Customer';
+
+  @override
+  String get proposalRoleDriverEmployee => 'Driver / Employee';
+
+  @override
+  String get proposedFareLabel => 'Proposed Fare:';
+
+  @override
+  String get comparisonPrefix => 'Comparison:';
+
+  @override
+  String get vsSystemPrice => 'vs System Price';
+
+  @override
+  String get waitingProposalResponse =>
+      'Waiting for response to your proposal...';
+
+  @override
+  String get submitCounterOfferBtn => 'Submit Counter-Offer';
+
+  @override
+  String allowedBoundLine(String min, String max) {
+    return 'Allowed bound: $min – $max (±50%)';
+  }
+
+  @override
+  String get verificationStatusCardTitle => 'Verification Status';
+
+  @override
+  String get documentsLockedMessage =>
+      'Documents are locked because your account is approved.';
+
+  @override
+  String get removeSelectionAction => 'Remove selection';
+
+  @override
+  String get requiredDocsHeader => 'Required Verification Documents';
+
+  @override
+  String get kycOwnerDocsSub =>
+      'Owners must upload all 4 documents (ID Front, ID Back, Selfie, Business Proof).';
+
+  @override
+  String get kycEmployeeDocsSub =>
+      'Employees must upload all 3 documents (ID Front, ID Back, Selfie).';
+
+  @override
+  String get profileInfoCardTitle => 'Profile Information';
+
+  @override
+  String get sectionBusinessIdentity => 'Business Identity';
+
+  @override
+  String get sectionBusinessIdentitySub => 'Company details and classification';
+
+  @override
+  String get sectionLocationOperations => 'Location & Operations';
+
+  @override
+  String get sectionLocationOperationsSub =>
+      'Headquarters and coverage boundary';
+
+  @override
+  String get sectionPricingStructure => 'Pricing Structure';
+
+  @override
+  String get sectionPricingStructureSub => 'Base fare and distance-based fees';
+
+  @override
+  String get estDelivery10kmLabel => 'Est. 10KM Delivery:';
+
+  @override
+  String get fleetFilterAllFleet => 'All Fleet';
+
+  @override
+  String get fleetFilterOnRoute => 'On Route';
+
+  @override
+  String get fleetFilterIdle => 'Idle';
+
+  @override
+  String get noEmployeesTransmitting =>
+      'No active employees transmitting location.';
+
+  @override
+  String assignedJobLine(String jobId) {
+    return 'Assigned Job: #$jobId';
+  }
+
+  @override
+  String get ownerJobsSearchHint => 'Search by Job ID, customer, or reason...';
+
+  @override
+  String get noJobsMatchFilter => 'No jobs found matching your filter.';
+
+  @override
+  String get reconQueueSearchHint =>
+      'Search queue by Job ID, customer, driver...';
+
+  @override
+  String get reconFilterDistance => 'Distance';
+
+  @override
+  String get reconFilterTimeSpeed => 'Time / Speed';
+
+  @override
+  String get reconFilterOther => 'Other';
+
+  @override
+  String get noReconMatchFilter => 'No reconciliation jobs match your filter.';
+
+  @override
+  String deliveryIdTag(String id) {
+    return 'Delivery ID: #QD-$id';
+  }
+
+  @override
+  String get howWasDeliveryQuestion => 'How was your delivery?';
+
+  @override
+  String get ratingsBlindExplanation =>
+      'Ratings are blind. Neither party will see the other\'s feedback until both have submitted.';
+
+  @override
+  String get feedbackExperienceHint => 'Tell us more about your experience...';
+
+  @override
+  String get feedbackLockedInTitle => 'Feedback Locked In!';
+
+  @override
+  String get bothRatingsVisibleDesc =>
+      'The other party has submitted their rating. Both feedbacks are now visible under profile summary.';
+
+  @override
+  String get waitingOtherPartyTitle => 'Waiting for other party...';
+
+  @override
+  String get otherPartyNotRatedDesc =>
+      'The other party has not yet rated this transaction. Your ratings will remain hidden until they submit.';
+
+  @override
+  String get unbiasedRatingDesc =>
+      'Preventing retaliatory or social-pressure ratings.';
+
+  @override
+  String get reliabilityRanksDesc =>
+      'Ratings directly impact platform reliability ranks.';
+
+  @override
+  String get windowDeadlineDesc =>
+      'Submit within 24 hours to ensure your score counts.';
+
+  @override
+  String get serviceMgmtHeader => 'Service Management';
+
+  @override
+  String get serviceMgmtSubtitle =>
+      'Configure and monitor active logistics services.';
+
+  @override
+  String get verificationRequiredHeader => 'Verification Required';
+
+  @override
+  String get kycRequiredDesc =>
+      'Please complete KYC verification to create new services or modify existing ones.';
+
+  @override
+  String get baseRateBadge => 'BASE RATE';
+
+  @override
+  String get perKmBadge => 'PER KM';
+
+  @override
+  String serviceLocationLine(String lat, String lon) {
+    return 'Location: ($lat, $lon)';
+  }
+
+  @override
+  String get subscriptionManageDesc =>
+      'Manage your operational tier. Upgrade to unlock live driver tracking, advanced pricing metrics, and priority enterprise support.';
+
+  @override
+  String get yourCurrentPlanBadge => 'YOUR CURRENT PLAN';
+
+  @override
+  String get pendingActivationNote =>
+      'Pending activation. Please contact support to complete payment.';
+
+  @override
+  String get availablePlansHeader => 'Available Plans';
+
+  @override
+  String get freeTierDesc => 'Essential tools for independent operators.';
+
+  @override
+  String get proTierDesc =>
+      'Complete suite for fleet managers and growing businesses.';
+
+  @override
+  String get billedMonthlyNote => 'Billed monthly. Cancel anytime.';
+
+  @override
+  String get recommendedBadge => 'RECOMMENDED';
+
+  @override
+  String platformFeeLine(String fee) {
+    return 'Platform fee: $fee%';
+  }
+
+  @override
+  String get walletMyWalletTitle => 'My Wallet';
+
+  @override
+  String get walletCorporateSubtitle =>
+      'Manage corporate finances and payouts.';
+
+  @override
+  String get availableBalanceBadge => 'AVAILABLE BALANCE';
+
+  @override
+  String get balanceTrendChipMock => '+8.4% vs last mo';
+
+  @override
+  String totalPortfolioLine(String amount) {
+    return 'Total Portfolio: $amount Credits';
+  }
+
+  @override
+  String creditsAmountLine(String amount) {
+    return '$amount Credits';
+  }
+
+  @override
+  String ledgerJobLine(String jobId) {
+    return 'Job: $jobId';
+  }
+
+  @override
+  String ledgerBalanceLine(String balance) {
+    return 'Bal: $balance';
+  }
+
+  @override
+  String get cancelReasonRequiredLong =>
+      'Please provide a reason for cancelling this job. A valid cancellation reason is required.';
+
+  @override
+  String get createNewServiceTitle => 'Create New Service';
+
+  @override
+  String referenceIdLine(String ref) {
+    return 'Reference ID: #$ref';
+  }
+
+  @override
+  String get depositFundsTitle => 'Deposit Funds';
+
+  @override
+  String get depositDialogDesc =>
+      'Enter the amount in credits to deposit to your wallet.';
+
+  @override
+  String get amountRequired => 'Amount is required';
+
+  @override
+  String get positiveNumberRequired => 'Please enter a valid positive number';
+
+  @override
+  String get basePriceRequired => 'Base price is required';
+
+  @override
+  String get invalidPriceValue => 'Invalid price';
+
+  @override
+  String get rateRequired => 'Rate is required';
+
+  @override
+  String get invalidRateValue => 'Invalid rate';
+
+  @override
+  String get fieldRequiredGeneric => 'Required';
+
+  @override
+  String get latRangeMessage => 'Must be between -90 and 90';
+
+  @override
+  String get lonRangeMessage => 'Must be between -180 and 180';
+
+  @override
+  String otpSentToEmail(String email) {
+    return 'Enter the 6-digit verification code sent to $email.';
+  }
+
+  @override
+  String get devModeOtpLabel => 'Dev Mode OTP';
+
+  @override
+  String verificationCodeLine(String code) {
+    return 'Verification code: $code';
+  }
+
+  @override
+  String get verificationCodeLabel => 'Verification Code';
+
+  @override
+  String get verificationCodeRequired => 'Verification code is required';
+
+  @override
+  String accountDetailsLine(String account) {
+    return 'Account: $account';
+  }
+
+  @override
+  String get verifiedServiceScoreLabel => 'Verified Service Score';
+
+  @override
+  String basedOnRatingsLine(String count) {
+    return 'Based on $count ratings';
+  }
+
+  @override
+  String get employeeSetActiveStatus => 'Set account to Active (Unfreeze)';
+
+  @override
+  String get employeeSetFrozenStatus => 'Set account to Frozen (Suspended)';
+
+  @override
+  String get stepInTransitTitle => 'In Transit';
 }

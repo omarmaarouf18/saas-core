@@ -234,7 +234,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             validator: (val) {
               final code = _otpController.text.trim();
               if (code.isEmpty || code.length != 6) {
-                return "Enter 6-digit OTP code";
+                return context.l10n.enterOtp6Digits;
               }
               return null;
             },
@@ -365,7 +365,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Text(
-          "Dev OTP Code: $_currentDevOtp",
+          context.l10n.devOtpBanner(_currentDevOtp ?? ''),
           style: AppTypography.bodyLg.copyWith(
             color: AppColors.primary,
             fontWeight: FontWeight.bold,

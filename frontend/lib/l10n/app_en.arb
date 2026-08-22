@@ -701,5 +701,409 @@
   "payoutErrorAmountExceeds": "Amount exceeds current withdrawable balance.",
   "payoutErrorAmountInvalid": "Please enter a valid amount greater than 0.",
   "payoutErrorDetailsRequired": "Account details are required.",
-  "payoutRejectionReasonLabel": "Rejection Reason:"
+  "payoutRejectionReasonLabel": "Rejection Reason:",
+  "chatStatusLive": "Live",
+  "chatStatusDisconnected": "Disconnected",
+  "chatJobTag": "Job #{shortId}",
+  "@chatJobTag": {
+    "placeholders": {
+      "shortId": {
+        "type": "String"
+      }
+    }
+  },
+  "chatDirectChannel": "Direct Real-time Channel",
+  "chatAccessDeniedJob": "Access Denied: You are not authorized to view or join the chat for Job #{jobId}.",
+  "@chatAccessDeniedJob": {
+    "placeholders": {
+      "jobId": {
+        "type": "String"
+      }
+    }
+  },
+  "customerHomeWhereDeliver": "Where to deliver?",
+  "customerHomeSearchHint": "Enter destination or pickup area...",
+  "commonOrigin": "Origin",
+  "commonDestination": "Destination",
+  "courierAssignedLabel": "Courier: Assigned",
+  "findingCourierLabel": "Finding Courier...",
+  "paymentMethodLine": "Payment: {method}",
+  "@paymentMethodLine": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "mapPickupBadge": "Pickup",
+  "waitingCourierUpdates": "Waiting for courier location updates...",
+  "reconnectingTrackingStream": "Reconnecting live tracking stream...",
+  "filterAll": "All",
+  "distanceAwayLine": "{distance} km away",
+  "@distanceAwayLine": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "pricingBreakdownLine": "Base: {base} + {perKm}/km",
+  "@pricingBreakdownLine": {
+    "placeholders": {
+      "base": {
+        "type": "String"
+      },
+      "perKm": {
+        "type": "String"
+      }
+    }
+  },
+  "estPriceLine": "Est. Price: {price}",
+  "@estPriceLine": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "chooseSearchLocation": "Choose Search Location",
+  "confirmBookingTitle": "Confirm Booking",
+  "categoryLine": "Category: {category}",
+  "@categoryLine": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "pickupDistanceLabel": "Pickup Distance:",
+  "kmUnitLine": "{distance} km",
+  "@kmUnitLine": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "estimatedTotalLabel": "Estimated Total:",
+  "codOptionTitle": "Cash on Delivery (COD)",
+  "codOptionSubtitle": "Pay in cash directly to the driver upon arrival",
+  "betaEscrowNote": "Note: Escrow payments and wallet deductions are currently deferred for this beta launch.",
+  "noRatingsLabel": "No ratings",
+  "reasonLine": "Reason: {reason}",
+  "@reasonLine": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "recentActivityHeader": "Recent Activity",
+  "employeeHistorySubtitle": "Completed and cancelled jobs.",
+  "employeeManageSubtitle": "Manage delivery personnel and status.",
+  "employeeSearchHint": "Search workers by name or email...",
+  "employeeFrozenStatus": "Frozen",
+  "noWorkersMatchFilter": "No workers found matching your filter.",
+  "workerIdBadge": "ID: #QD-{id}",
+  "@workerIdBadge": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "targetStatusLabel": "Target Status",
+  "secureVerificationNote": "Required for secure out-of-band operations verification.",
+  "clientIpLine": "IP: {ip}",
+  "@clientIpLine": {
+    "placeholders": {
+      "ip": {
+        "type": "String"
+      }
+    }
+  },
+  "usernameRequired": "Username is required",
+  "usernameTooShort": "Username must be at least 3 characters",
+  "usernameTooLong": "Username must be at most 30 characters",
+  "usernameInvalidChars": "Username contains invalid characters",
+  "emailRequired": "Email is required",
+  "invalidEmailFormat": "Please enter a valid email",
+  "passwordRequired": "Password is required",
+  "passwordTooShort": "Password must be at least 6 characters",
+  "employeeEmailRequired": "Employee email is required",
+  "ownerPasswordRequired": "Owner password is required to re-authenticate",
+  "enterOtp6Digits": "Enter 6-digit OTP code",
+  "otpExactly6Digits": "OTP must be exactly 6 digits",
+  "devOtpBanner": "Dev OTP Code: {otp}",
+  "@devOtpBanner": {
+    "placeholders": {
+      "otp": {
+        "type": "String"
+      }
+    }
+  },
+  "devOtpAutoFilled": "Dev Mode: Auto-populated OTP '{otp}' from response.",
+  "@devOtpAutoFilled": {
+    "placeholders": {
+      "otp": {
+        "type": "String"
+      }
+    }
+  },
+  "enterpriseTrustNote": "Secured by Enterprise Trust Protocol",
+  "jobsTrendChipMock": "+12% vs last week",
+  "activeFleetMetricLabel": "ACTIVE FLEET",
+  "quickConfigSubtitle": "Configure business profile, rates & coverage",
+  "urgentActionsHeader": "Urgent Actions",
+  "vehicleMaintenanceTitle": "Vehicle Maintenance Required",
+  "vehicleMaintenanceDesc": "Van #402 reported engine warning. Schedule service immediately.",
+  "scheduleAction": "Schedule",
+  "pendingReconciliationsHeader": "Pending Reconciliations",
+  "reconciliationPendingDesc": "Driver shifts from yesterday awaiting escrow settlement.",
+  "reviewAction": "Review",
+  "fleetOverviewHeader": "Fleet Overview",
+  "activeZoneLabel": "Active Zone",
+  "downtownCoverageLabel": "Downtown Metro Coverage",
+  "trackJobHeroTitle": "Track Job",
+  "trackJobHeroSubtitle": "View real-time location on map",
+  "fulfillmentProgressHeader": "Fulfillment Progress",
+  "stepRequestQueuedSub": "Request placed & queued",
+  "stepAssignedTitle": "Assigned",
+  "matchingCourierLabel": "Matching courier...",
+  "assignedToLine": "Assigned to {name}",
+  "@assignedToLine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "courierAssignedShort": "Courier assigned",
+  "stepInTransitSub": "Package on route to destination",
+  "stepDeliveredOkSub": "Delivered successfully",
+  "stepPendingDeliverySub": "Pending delivery",
+  "itineraryHeader": "Itinerary",
+  "pickupStageBadge": "PICKUP",
+  "originCustomerLocation": "Origin / Customer Location",
+  "dropoffStageBadge": "DROPOFF",
+  "deliveryDestinationLabel": "Delivery Destination",
+  "paymentSectionHeader": "Payment",
+  "totalFareLabel": "Total Fare",
+  "verifiedCourierDriver": "Verified Courier Driver",
+  "cancellationReasonLine": "Cancellation Reason: {reason}",
+  "@cancellationReasonLine": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "negotiationExpiredBanner": "Negotiation Window Expired (5-min limit lapsed)",
+  "incomingProposalCard": "Incoming Proposal",
+  "proposalByLine": "by {role}",
+  "@proposalByLine": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "proposalRoleCustomer": "Customer",
+  "proposalRoleDriverEmployee": "Driver / Employee",
+  "proposedFareLabel": "Proposed Fare:",
+  "comparisonPrefix": "Comparison:",
+  "vsSystemPrice": "vs System Price",
+  "waitingProposalResponse": "Waiting for response to your proposal...",
+  "submitCounterOfferBtn": "Submit Counter-Offer",
+  "allowedBoundLine": "Allowed bound: {min} – {max} (±50%)",
+  "@allowedBoundLine": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "verificationStatusCardTitle": "Verification Status",
+  "documentsLockedMessage": "Documents are locked because your account is approved.",
+  "removeSelectionAction": "Remove selection",
+  "requiredDocsHeader": "Required Verification Documents",
+  "kycOwnerDocsSub": "Owners must upload all 4 documents (ID Front, ID Back, Selfie, Business Proof).",
+  "kycEmployeeDocsSub": "Employees must upload all 3 documents (ID Front, ID Back, Selfie).",
+  "profileInfoCardTitle": "Profile Information",
+  "sectionBusinessIdentity": "Business Identity",
+  "sectionBusinessIdentitySub": "Company details and classification",
+  "sectionLocationOperations": "Location & Operations",
+  "sectionLocationOperationsSub": "Headquarters and coverage boundary",
+  "sectionPricingStructure": "Pricing Structure",
+  "sectionPricingStructureSub": "Base fare and distance-based fees",
+  "estDelivery10kmLabel": "Est. 10KM Delivery:",
+  "fleetFilterAllFleet": "All Fleet",
+  "fleetFilterOnRoute": "On Route",
+  "fleetFilterIdle": "Idle",
+  "noEmployeesTransmitting": "No active employees transmitting location.",
+  "assignedJobLine": "Assigned Job: #{jobId}",
+  "@assignedJobLine": {
+    "placeholders": {
+      "jobId": {
+        "type": "String"
+      }
+    }
+  },
+  "ownerJobsSearchHint": "Search by Job ID, customer, or reason...",
+  "noJobsMatchFilter": "No jobs found matching your filter.",
+  "reconQueueSearchHint": "Search queue by Job ID, customer, driver...",
+  "reconFilterDistance": "Distance",
+  "reconFilterTimeSpeed": "Time / Speed",
+  "reconFilterOther": "Other",
+  "noReconMatchFilter": "No reconciliation jobs match your filter.",
+  "deliveryIdTag": "Delivery ID: #QD-{id}",
+  "@deliveryIdTag": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "howWasDeliveryQuestion": "How was your delivery?",
+  "ratingsBlindExplanation": "Ratings are blind. Neither party will see the other's feedback until both have submitted.",
+  "feedbackExperienceHint": "Tell us more about your experience...",
+  "feedbackLockedInTitle": "Feedback Locked In!",
+  "bothRatingsVisibleDesc": "The other party has submitted their rating. Both feedbacks are now visible under profile summary.",
+  "waitingOtherPartyTitle": "Waiting for other party...",
+  "otherPartyNotRatedDesc": "The other party has not yet rated this transaction. Your ratings will remain hidden until they submit.",
+  "unbiasedRatingDesc": "Preventing retaliatory or social-pressure ratings.",
+  "reliabilityRanksDesc": "Ratings directly impact platform reliability ranks.",
+  "windowDeadlineDesc": "Submit within 24 hours to ensure your score counts.",
+  "serviceMgmtHeader": "Service Management",
+  "serviceMgmtSubtitle": "Configure and monitor active logistics services.",
+  "verificationRequiredHeader": "Verification Required",
+  "kycRequiredDesc": "Please complete KYC verification to create new services or modify existing ones.",
+  "baseRateBadge": "BASE RATE",
+  "perKmBadge": "PER KM",
+  "serviceLocationLine": "Location: ({lat}, {lon})",
+  "@serviceLocationLine": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lon": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionManageDesc": "Manage your operational tier. Upgrade to unlock live driver tracking, advanced pricing metrics, and priority enterprise support.",
+  "yourCurrentPlanBadge": "YOUR CURRENT PLAN",
+  "pendingActivationNote": "Pending activation. Please contact support to complete payment.",
+  "availablePlansHeader": "Available Plans",
+  "freeTierDesc": "Essential tools for independent operators.",
+  "proTierDesc": "Complete suite for fleet managers and growing businesses.",
+  "billedMonthlyNote": "Billed monthly. Cancel anytime.",
+  "recommendedBadge": "RECOMMENDED",
+  "platformFeeLine": "Platform fee: {fee}%",
+  "@platformFeeLine": {
+    "placeholders": {
+      "fee": {
+        "type": "String"
+      }
+    }
+  },
+  "walletMyWalletTitle": "My Wallet",
+  "walletCorporateSubtitle": "Manage corporate finances and payouts.",
+  "availableBalanceBadge": "AVAILABLE BALANCE",
+  "balanceTrendChipMock": "+8.4% vs last mo",
+  "totalPortfolioLine": "Total Portfolio: {amount} Credits",
+  "@totalPortfolioLine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "creditsAmountLine": "{amount} Credits",
+  "@creditsAmountLine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ledgerJobLine": "Job: {jobId}",
+  "@ledgerJobLine": {
+    "placeholders": {
+      "jobId": {
+        "type": "String"
+      }
+    }
+  },
+  "ledgerBalanceLine": "Bal: {balance}",
+  "@ledgerBalanceLine": {
+    "placeholders": {
+      "balance": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelReasonRequiredLong": "Please provide a reason for cancelling this job. A valid cancellation reason is required.",
+  "createNewServiceTitle": "Create New Service",
+  "referenceIdLine": "Reference ID: #{ref}",
+  "@referenceIdLine": {
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "depositFundsTitle": "Deposit Funds",
+  "depositDialogDesc": "Enter the amount in credits to deposit to your wallet.",
+  "amountRequired": "Amount is required",
+  "positiveNumberRequired": "Please enter a valid positive number",
+  "basePriceRequired": "Base price is required",
+  "invalidPriceValue": "Invalid price",
+  "rateRequired": "Rate is required",
+  "invalidRateValue": "Invalid rate",
+  "fieldRequiredGeneric": "Required",
+  "latRangeMessage": "Must be between -90 and 90",
+  "lonRangeMessage": "Must be between -180 and 180",
+  "otpSentToEmail": "Enter the 6-digit verification code sent to {email}.",
+  "@otpSentToEmail": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "devModeOtpLabel": "Dev Mode OTP",
+  "verificationCodeLine": "Verification code: {code}",
+  "@verificationCodeLine": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "verificationCodeLabel": "Verification Code",
+  "verificationCodeRequired": "Verification code is required",
+  "accountDetailsLine": "Account: {account}",
+  "@accountDetailsLine": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "verifiedServiceScoreLabel": "Verified Service Score",
+  "basedOnRatingsLine": "Based on {count} ratings",
+  "@basedOnRatingsLine": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "employeeSetActiveStatus": "Set account to Active (Unfreeze)",
+  "employeeSetFrozenStatus": "Set account to Frozen (Suspended)",
+  "stepInTransitTitle": "In Transit"
 }

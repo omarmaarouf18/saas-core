@@ -475,7 +475,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                             ),
                           ),
                           Text(
-                            "${service.distanceKM} km away",
+                            l10n.distanceAwayLine("${service.distanceKM}"),
                             style: AppTypography.bodySm.copyWith(
                               color: AppColors.onSurfaceVariant,
                             ),
@@ -505,7 +505,8 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Base: \$${service.tenantBasePrice} + \$${service.tenantPricePerKM}/km",
+                        l10n.pricingBreakdownLine("${service.tenantBasePrice}",
+                            "${service.tenantPricePerKM}"),
                         style: AppTypography.caption.copyWith(
                           color: AppColors.onSurfaceVariant,
                         ),
@@ -514,7 +515,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        "Est. Price: \$${service.finalPrice}",
+                        l10n.estPriceLine("${service.finalPrice}"),
                         style: AppTypography.titleMd.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,
@@ -574,7 +575,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          "Choose Search Location",
+                          context.l10n.chooseSearchLocation,
                           style: AppTypography.titleMd.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -710,7 +711,7 @@ class _BookingDialogState extends State<_BookingDialog> {
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       title: Text(
-        "Confirm Booking",
+        l10n.confirmBookingTitle,
         style: AppTypography.titleMd.copyWith(
           color: AppColors.primary,
           fontWeight: FontWeight.bold,
@@ -732,7 +733,7 @@ class _BookingDialogState extends State<_BookingDialog> {
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                "Category: $categoryLabel",
+                l10n.categoryLine(categoryLabel),
                 style: AppTypography.bodyMd.copyWith(
                   color: AppColors.onSurfaceVariant,
                 ),
@@ -745,7 +746,7 @@ class _BookingDialogState extends State<_BookingDialog> {
                 children: [
                   Expanded(
                     child: Text(
-                      "Pickup Distance:",
+                      l10n.pickupDistanceLabel,
                       style: AppTypography.bodyMd.copyWith(
                         color: AppColors.onSurface,
                       ),
@@ -753,7 +754,7 @@ class _BookingDialogState extends State<_BookingDialog> {
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Text(
-                    "${widget.service.distanceKM} km",
+                    l10n.kmUnitLine("${widget.service.distanceKM}"),
                     style: AppTypography.bodyMd.copyWith(
                       color: AppColors.onSurface,
                       fontWeight: FontWeight.bold,
@@ -767,7 +768,7 @@ class _BookingDialogState extends State<_BookingDialog> {
                 children: [
                   Expanded(
                     child: Text(
-                      "Estimated Total:",
+                      l10n.estimatedTotalLabel,
                       style: AppTypography.bodyMd.copyWith(
                         color: AppColors.onSurface,
                       ),
@@ -795,13 +796,13 @@ class _BookingDialogState extends State<_BookingDialog> {
                   color: AppColors.primary,
                 ),
                 title: Text(
-                  "Cash on Delivery (COD)",
+                  l10n.codOptionTitle,
                   style: AppTypography.bodyMd.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 subtitle: Text(
-                  "Pay in cash directly to the driver upon arrival",
+                  l10n.codOptionSubtitle,
                   style: AppTypography.labelMd.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),
@@ -811,9 +812,8 @@ class _BookingDialogState extends State<_BookingDialog> {
               ),
               const SizedBox(height: AppSpacing.sm),
               // Inline note explaining escrow/other methods are deferred
-              const ThemedWarningBanner(
-                message:
-                    "Note: Escrow payments and wallet deductions are currently deferred for this beta launch.",
+              ThemedWarningBanner(
+                message: l10n.betaEscrowNote,
               ),
             ],
           ),
@@ -900,7 +900,7 @@ class _ServiceRatingWidgetState extends State<ServiceRatingWidget> {
     }
     if (_count == null || _count == 0) {
       return Text(
-        "No ratings",
+        context.l10n.noRatingsLabel,
         style: AppTypography.labelMd.copyWith(color: AppColors.outline),
       );
     }

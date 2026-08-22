@@ -105,7 +105,9 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> {
             children: [
               if (hasContextId) ...[
                 Text(
-                  "Reference ID: #${widget.contextId!.length > 8 ? widget.contextId!.substring(0, 8) : widget.contextId}",
+                  l10n.referenceIdLine(widget.contextId!.length > 8
+                      ? widget.contextId!.substring(0, 8)
+                      : widget.contextId!),
                   style: AppTypography.bodySm.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),

@@ -289,7 +289,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
-                      "Verification Status",
+                      context.l10n.verificationStatusCardTitle,
                       style: AppTypography.titleMd.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
@@ -325,8 +325,8 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
   }
 
   Widget _buildApprovedLockedBanner() {
-    return const ThemedSuccessBanner(
-      message: "Documents are locked because your account is approved.",
+    return ThemedSuccessBanner(
+      message: context.l10n.documentsLockedMessage,
     );
   }
 
@@ -479,7 +479,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                                 IconButton(
                                   icon: const Icon(Icons.close, size: 18),
                                   color: AppColors.error,
-                                  tooltip: "Remove selection",
+                                  tooltip: context.l10n.removeSelectionAction,
                                   onPressed: isUploading
                                       ? null
                                       : () {
@@ -642,10 +642,10 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
 
               // Section Header
               ThemedSectionHeader(
-                title: "Required Verification Documents",
+                title: context.l10n.requiredDocsHeader,
                 subtitle: isOwner
-                    ? "Owners must upload all 4 documents (ID Front, ID Back, Selfie, Business Proof)."
-                    : "Employees must upload all 3 documents (ID Front, ID Back, Selfie).",
+                    ? context.l10n.kycOwnerDocsSub
+                    : context.l10n.kycEmployeeDocsSub,
               ),
               const SizedBox(height: AppSpacing.lg),
 

@@ -306,7 +306,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
               ),
               const SizedBox(width: AppSpacing.xs),
               Text(
-                'Profile Information',
+                context.l10n.profileInfoCardTitle,
                 style: AppTypography.titleMd.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,

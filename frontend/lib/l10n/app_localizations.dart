@@ -3008,6 +3008,1116 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rejection Reason:'**
   String get payoutRejectionReasonLabel;
+
+  /// No description provided for @chatStatusLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Live'**
+  String get chatStatusLive;
+
+  /// No description provided for @chatStatusDisconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnected'**
+  String get chatStatusDisconnected;
+
+  /// No description provided for @chatJobTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Job #{shortId}'**
+  String chatJobTag(String shortId);
+
+  /// No description provided for @chatDirectChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct Real-time Channel'**
+  String get chatDirectChannel;
+
+  /// No description provided for @chatAccessDeniedJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Access Denied: You are not authorized to view or join the chat for Job #{jobId}.'**
+  String chatAccessDeniedJob(String jobId);
+
+  /// No description provided for @customerHomeWhereDeliver.
+  ///
+  /// In en, this message translates to:
+  /// **'Where to deliver?'**
+  String get customerHomeWhereDeliver;
+
+  /// No description provided for @customerHomeSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter destination or pickup area...'**
+  String get customerHomeSearchHint;
+
+  /// No description provided for @commonOrigin.
+  ///
+  /// In en, this message translates to:
+  /// **'Origin'**
+  String get commonOrigin;
+
+  /// No description provided for @commonDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination'**
+  String get commonDestination;
+
+  /// No description provided for @courierAssignedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Courier: Assigned'**
+  String get courierAssignedLabel;
+
+  /// No description provided for @findingCourierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding Courier...'**
+  String get findingCourierLabel;
+
+  /// No description provided for @paymentMethodLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment: {method}'**
+  String paymentMethodLine(String method);
+
+  /// No description provided for @mapPickupBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup'**
+  String get mapPickupBadge;
+
+  /// No description provided for @waitingCourierUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for courier location updates...'**
+  String get waitingCourierUpdates;
+
+  /// No description provided for @reconnectingTrackingStream.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting live tracking stream...'**
+  String get reconnectingTrackingStream;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// No description provided for @distanceAwayLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{distance} km away'**
+  String distanceAwayLine(String distance);
+
+  /// No description provided for @pricingBreakdownLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Base: {base} + {perKm}/km'**
+  String pricingBreakdownLine(String base, String perKm);
+
+  /// No description provided for @estPriceLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Est. Price: {price}'**
+  String estPriceLine(String price);
+
+  /// No description provided for @chooseSearchLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Search Location'**
+  String get chooseSearchLocation;
+
+  /// No description provided for @confirmBookingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Booking'**
+  String get confirmBookingTitle;
+
+  /// No description provided for @categoryLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Category: {category}'**
+  String categoryLine(String category);
+
+  /// No description provided for @pickupDistanceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup Distance:'**
+  String get pickupDistanceLabel;
+
+  /// No description provided for @kmUnitLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{distance} km'**
+  String kmUnitLine(String distance);
+
+  /// No description provided for @estimatedTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Total:'**
+  String get estimatedTotalLabel;
+
+  /// No description provided for @codOptionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash on Delivery (COD)'**
+  String get codOptionTitle;
+
+  /// No description provided for @codOptionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay in cash directly to the driver upon arrival'**
+  String get codOptionSubtitle;
+
+  /// No description provided for @betaEscrowNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: Escrow payments and wallet deductions are currently deferred for this beta launch.'**
+  String get betaEscrowNote;
+
+  /// No description provided for @noRatingsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No ratings'**
+  String get noRatingsLabel;
+
+  /// No description provided for @reasonLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String reasonLine(String reason);
+
+  /// No description provided for @recentActivityHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Activity'**
+  String get recentActivityHeader;
+
+  /// No description provided for @employeeHistorySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed and cancelled jobs.'**
+  String get employeeHistorySubtitle;
+
+  /// No description provided for @employeeManageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage delivery personnel and status.'**
+  String get employeeManageSubtitle;
+
+  /// No description provided for @employeeSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search workers by name or email...'**
+  String get employeeSearchHint;
+
+  /// No description provided for @employeeFrozenStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Frozen'**
+  String get employeeFrozenStatus;
+
+  /// No description provided for @noWorkersMatchFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No workers found matching your filter.'**
+  String get noWorkersMatchFilter;
+
+  /// No description provided for @workerIdBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'ID: #QD-{id}'**
+  String workerIdBadge(String id);
+
+  /// No description provided for @targetStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Target Status'**
+  String get targetStatusLabel;
+
+  /// No description provided for @secureVerificationNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Required for secure out-of-band operations verification.'**
+  String get secureVerificationNote;
+
+  /// No description provided for @clientIpLine.
+  ///
+  /// In en, this message translates to:
+  /// **'IP: {ip}'**
+  String clientIpLine(String ip);
+
+  /// No description provided for @usernameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Username is required'**
+  String get usernameRequired;
+
+  /// No description provided for @usernameTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Username must be at least 3 characters'**
+  String get usernameTooShort;
+
+  /// No description provided for @usernameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Username must be at most 30 characters'**
+  String get usernameTooLong;
+
+  /// No description provided for @usernameInvalidChars.
+  ///
+  /// In en, this message translates to:
+  /// **'Username contains invalid characters'**
+  String get usernameInvalidChars;
+
+  /// No description provided for @emailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Email is required'**
+  String get emailRequired;
+
+  /// No description provided for @invalidEmailFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email'**
+  String get invalidEmailFormat;
+
+  /// No description provided for @passwordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Password is required'**
+  String get passwordRequired;
+
+  /// No description provided for @passwordTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters'**
+  String get passwordTooShort;
+
+  /// No description provided for @employeeEmailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee email is required'**
+  String get employeeEmailRequired;
+
+  /// No description provided for @ownerPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner password is required to re-authenticate'**
+  String get ownerPasswordRequired;
+
+  /// No description provided for @enterOtp6Digits.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter 6-digit OTP code'**
+  String get enterOtp6Digits;
+
+  /// No description provided for @otpExactly6Digits.
+  ///
+  /// In en, this message translates to:
+  /// **'OTP must be exactly 6 digits'**
+  String get otpExactly6Digits;
+
+  /// No description provided for @devOtpBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Dev OTP Code: {otp}'**
+  String devOtpBanner(String otp);
+
+  /// No description provided for @devOtpAutoFilled.
+  ///
+  /// In en, this message translates to:
+  /// **'Dev Mode: Auto-populated OTP \'{otp}\' from response.'**
+  String devOtpAutoFilled(String otp);
+
+  /// No description provided for @enterpriseTrustNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Secured by Enterprise Trust Protocol'**
+  String get enterpriseTrustNote;
+
+  /// No description provided for @jobsTrendChipMock.
+  ///
+  /// In en, this message translates to:
+  /// **'+12% vs last week'**
+  String get jobsTrendChipMock;
+
+  /// No description provided for @activeFleetMetricLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ACTIVE FLEET'**
+  String get activeFleetMetricLabel;
+
+  /// No description provided for @quickConfigSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure business profile, rates & coverage'**
+  String get quickConfigSubtitle;
+
+  /// No description provided for @urgentActionsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent Actions'**
+  String get urgentActionsHeader;
+
+  /// No description provided for @vehicleMaintenanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle Maintenance Required'**
+  String get vehicleMaintenanceTitle;
+
+  /// No description provided for @vehicleMaintenanceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Van #402 reported engine warning. Schedule service immediately.'**
+  String get vehicleMaintenanceDesc;
+
+  /// No description provided for @scheduleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get scheduleAction;
+
+  /// No description provided for @pendingReconciliationsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Reconciliations'**
+  String get pendingReconciliationsHeader;
+
+  /// No description provided for @reconciliationPendingDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver shifts from yesterday awaiting escrow settlement.'**
+  String get reconciliationPendingDesc;
+
+  /// No description provided for @reviewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get reviewAction;
+
+  /// No description provided for @fleetOverviewHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Fleet Overview'**
+  String get fleetOverviewHeader;
+
+  /// No description provided for @activeZoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Zone'**
+  String get activeZoneLabel;
+
+  /// No description provided for @downtownCoverageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Downtown Metro Coverage'**
+  String get downtownCoverageLabel;
+
+  /// No description provided for @trackJobHeroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track Job'**
+  String get trackJobHeroTitle;
+
+  /// No description provided for @trackJobHeroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'View real-time location on map'**
+  String get trackJobHeroSubtitle;
+
+  /// No description provided for @fulfillmentProgressHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Fulfillment Progress'**
+  String get fulfillmentProgressHeader;
+
+  /// No description provided for @stepRequestQueuedSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Request placed & queued'**
+  String get stepRequestQueuedSub;
+
+  /// No description provided for @stepAssignedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get stepAssignedTitle;
+
+  /// No description provided for @matchingCourierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching courier...'**
+  String get matchingCourierLabel;
+
+  /// No description provided for @assignedToLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned to {name}'**
+  String assignedToLine(String name);
+
+  /// No description provided for @courierAssignedShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Courier assigned'**
+  String get courierAssignedShort;
+
+  /// No description provided for @stepInTransitSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Package on route to destination'**
+  String get stepInTransitSub;
+
+  /// No description provided for @stepDeliveredOkSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered successfully'**
+  String get stepDeliveredOkSub;
+
+  /// No description provided for @stepPendingDeliverySub.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending delivery'**
+  String get stepPendingDeliverySub;
+
+  /// No description provided for @itineraryHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Itinerary'**
+  String get itineraryHeader;
+
+  /// No description provided for @pickupStageBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'PICKUP'**
+  String get pickupStageBadge;
+
+  /// No description provided for @originCustomerLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Origin / Customer Location'**
+  String get originCustomerLocation;
+
+  /// No description provided for @dropoffStageBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'DROPOFF'**
+  String get dropoffStageBadge;
+
+  /// No description provided for @deliveryDestinationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery Destination'**
+  String get deliveryDestinationLabel;
+
+  /// No description provided for @paymentSectionHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get paymentSectionHeader;
+
+  /// No description provided for @totalFareLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Fare'**
+  String get totalFareLabel;
+
+  /// No description provided for @verifiedCourierDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified Courier Driver'**
+  String get verifiedCourierDriver;
+
+  /// No description provided for @cancellationReasonLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation Reason: {reason}'**
+  String cancellationReasonLine(String reason);
+
+  /// No description provided for @negotiationExpiredBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Negotiation Window Expired (5-min limit lapsed)'**
+  String get negotiationExpiredBanner;
+
+  /// No description provided for @incomingProposalCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming Proposal'**
+  String get incomingProposalCard;
+
+  /// No description provided for @proposalByLine.
+  ///
+  /// In en, this message translates to:
+  /// **'by {role}'**
+  String proposalByLine(String role);
+
+  /// No description provided for @proposalRoleCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get proposalRoleCustomer;
+
+  /// No description provided for @proposalRoleDriverEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver / Employee'**
+  String get proposalRoleDriverEmployee;
+
+  /// No description provided for @proposedFareLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed Fare:'**
+  String get proposedFareLabel;
+
+  /// No description provided for @comparisonPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Comparison:'**
+  String get comparisonPrefix;
+
+  /// No description provided for @vsSystemPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'vs System Price'**
+  String get vsSystemPrice;
+
+  /// No description provided for @waitingProposalResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for response to your proposal...'**
+  String get waitingProposalResponse;
+
+  /// No description provided for @submitCounterOfferBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Counter-Offer'**
+  String get submitCounterOfferBtn;
+
+  /// No description provided for @allowedBoundLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed bound: {min} – {max} (±50%)'**
+  String allowedBoundLine(String min, String max);
+
+  /// No description provided for @verificationStatusCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification Status'**
+  String get verificationStatusCardTitle;
+
+  /// No description provided for @documentsLockedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents are locked because your account is approved.'**
+  String get documentsLockedMessage;
+
+  /// No description provided for @removeSelectionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove selection'**
+  String get removeSelectionAction;
+
+  /// No description provided for @requiredDocsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Required Verification Documents'**
+  String get requiredDocsHeader;
+
+  /// No description provided for @kycOwnerDocsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Owners must upload all 4 documents (ID Front, ID Back, Selfie, Business Proof).'**
+  String get kycOwnerDocsSub;
+
+  /// No description provided for @kycEmployeeDocsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Employees must upload all 3 documents (ID Front, ID Back, Selfie).'**
+  String get kycEmployeeDocsSub;
+
+  /// No description provided for @profileInfoCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Information'**
+  String get profileInfoCardTitle;
+
+  /// No description provided for @sectionBusinessIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Business Identity'**
+  String get sectionBusinessIdentity;
+
+  /// No description provided for @sectionBusinessIdentitySub.
+  ///
+  /// In en, this message translates to:
+  /// **'Company details and classification'**
+  String get sectionBusinessIdentitySub;
+
+  /// No description provided for @sectionLocationOperations.
+  ///
+  /// In en, this message translates to:
+  /// **'Location & Operations'**
+  String get sectionLocationOperations;
+
+  /// No description provided for @sectionLocationOperationsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Headquarters and coverage boundary'**
+  String get sectionLocationOperationsSub;
+
+  /// No description provided for @sectionPricingStructure.
+  ///
+  /// In en, this message translates to:
+  /// **'Pricing Structure'**
+  String get sectionPricingStructure;
+
+  /// No description provided for @sectionPricingStructureSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Base fare and distance-based fees'**
+  String get sectionPricingStructureSub;
+
+  /// No description provided for @estDelivery10kmLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Est. 10KM Delivery:'**
+  String get estDelivery10kmLabel;
+
+  /// No description provided for @fleetFilterAllFleet.
+  ///
+  /// In en, this message translates to:
+  /// **'All Fleet'**
+  String get fleetFilterAllFleet;
+
+  /// No description provided for @fleetFilterOnRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'On Route'**
+  String get fleetFilterOnRoute;
+
+  /// No description provided for @fleetFilterIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Idle'**
+  String get fleetFilterIdle;
+
+  /// No description provided for @noEmployeesTransmitting.
+  ///
+  /// In en, this message translates to:
+  /// **'No active employees transmitting location.'**
+  String get noEmployeesTransmitting;
+
+  /// No description provided for @assignedJobLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned Job: #{jobId}'**
+  String assignedJobLine(String jobId);
+
+  /// No description provided for @ownerJobsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by Job ID, customer, or reason...'**
+  String get ownerJobsSearchHint;
+
+  /// No description provided for @noJobsMatchFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No jobs found matching your filter.'**
+  String get noJobsMatchFilter;
+
+  /// No description provided for @reconQueueSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search queue by Job ID, customer, driver...'**
+  String get reconQueueSearchHint;
+
+  /// No description provided for @reconFilterDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get reconFilterDistance;
+
+  /// No description provided for @reconFilterTimeSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Time / Speed'**
+  String get reconFilterTimeSpeed;
+
+  /// No description provided for @reconFilterOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get reconFilterOther;
+
+  /// No description provided for @noReconMatchFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No reconciliation jobs match your filter.'**
+  String get noReconMatchFilter;
+
+  /// No description provided for @deliveryIdTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery ID: #QD-{id}'**
+  String deliveryIdTag(String id);
+
+  /// No description provided for @howWasDeliveryQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'How was your delivery?'**
+  String get howWasDeliveryQuestion;
+
+  /// No description provided for @ratingsBlindExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Ratings are blind. Neither party will see the other\'s feedback until both have submitted.'**
+  String get ratingsBlindExplanation;
+
+  /// No description provided for @feedbackExperienceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us more about your experience...'**
+  String get feedbackExperienceHint;
+
+  /// No description provided for @feedbackLockedInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback Locked In!'**
+  String get feedbackLockedInTitle;
+
+  /// No description provided for @bothRatingsVisibleDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The other party has submitted their rating. Both feedbacks are now visible under profile summary.'**
+  String get bothRatingsVisibleDesc;
+
+  /// No description provided for @waitingOtherPartyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for other party...'**
+  String get waitingOtherPartyTitle;
+
+  /// No description provided for @otherPartyNotRatedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The other party has not yet rated this transaction. Your ratings will remain hidden until they submit.'**
+  String get otherPartyNotRatedDesc;
+
+  /// No description provided for @unbiasedRatingDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Preventing retaliatory or social-pressure ratings.'**
+  String get unbiasedRatingDesc;
+
+  /// No description provided for @reliabilityRanksDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Ratings directly impact platform reliability ranks.'**
+  String get reliabilityRanksDesc;
+
+  /// No description provided for @windowDeadlineDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit within 24 hours to ensure your score counts.'**
+  String get windowDeadlineDesc;
+
+  /// No description provided for @serviceMgmtHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Management'**
+  String get serviceMgmtHeader;
+
+  /// No description provided for @serviceMgmtSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure and monitor active logistics services.'**
+  String get serviceMgmtSubtitle;
+
+  /// No description provided for @verificationRequiredHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification Required'**
+  String get verificationRequiredHeader;
+
+  /// No description provided for @kycRequiredDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Please complete KYC verification to create new services or modify existing ones.'**
+  String get kycRequiredDesc;
+
+  /// No description provided for @baseRateBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'BASE RATE'**
+  String get baseRateBadge;
+
+  /// No description provided for @perKmBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'PER KM'**
+  String get perKmBadge;
+
+  /// No description provided for @serviceLocationLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Location: ({lat}, {lon})'**
+  String serviceLocationLine(String lat, String lon);
+
+  /// No description provided for @subscriptionManageDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your operational tier. Upgrade to unlock live driver tracking, advanced pricing metrics, and priority enterprise support.'**
+  String get subscriptionManageDesc;
+
+  /// No description provided for @yourCurrentPlanBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'YOUR CURRENT PLAN'**
+  String get yourCurrentPlanBadge;
+
+  /// No description provided for @pendingActivationNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending activation. Please contact support to complete payment.'**
+  String get pendingActivationNote;
+
+  /// No description provided for @availablePlansHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Plans'**
+  String get availablePlansHeader;
+
+  /// No description provided for @freeTierDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Essential tools for independent operators.'**
+  String get freeTierDesc;
+
+  /// No description provided for @proTierDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete suite for fleet managers and growing businesses.'**
+  String get proTierDesc;
+
+  /// No description provided for @billedMonthlyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Billed monthly. Cancel anytime.'**
+  String get billedMonthlyNote;
+
+  /// No description provided for @recommendedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'RECOMMENDED'**
+  String get recommendedBadge;
+
+  /// No description provided for @platformFeeLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform fee: {fee}%'**
+  String platformFeeLine(String fee);
+
+  /// No description provided for @walletMyWalletTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Wallet'**
+  String get walletMyWalletTitle;
+
+  /// No description provided for @walletCorporateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage corporate finances and payouts.'**
+  String get walletCorporateSubtitle;
+
+  /// No description provided for @availableBalanceBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'AVAILABLE BALANCE'**
+  String get availableBalanceBadge;
+
+  /// No description provided for @balanceTrendChipMock.
+  ///
+  /// In en, this message translates to:
+  /// **'+8.4% vs last mo'**
+  String get balanceTrendChipMock;
+
+  /// No description provided for @totalPortfolioLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Portfolio: {amount} Credits'**
+  String totalPortfolioLine(String amount);
+
+  /// No description provided for @creditsAmountLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} Credits'**
+  String creditsAmountLine(String amount);
+
+  /// No description provided for @ledgerJobLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Job: {jobId}'**
+  String ledgerJobLine(String jobId);
+
+  /// No description provided for @ledgerBalanceLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Bal: {balance}'**
+  String ledgerBalanceLine(String balance);
+
+  /// No description provided for @cancelReasonRequiredLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Please provide a reason for cancelling this job. A valid cancellation reason is required.'**
+  String get cancelReasonRequiredLong;
+
+  /// No description provided for @createNewServiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Service'**
+  String get createNewServiceTitle;
+
+  /// No description provided for @referenceIdLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference ID: #{ref}'**
+  String referenceIdLine(String ref);
+
+  /// No description provided for @depositFundsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deposit Funds'**
+  String get depositFundsTitle;
+
+  /// No description provided for @depositDialogDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the amount in credits to deposit to your wallet.'**
+  String get depositDialogDesc;
+
+  /// No description provided for @amountRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount is required'**
+  String get amountRequired;
+
+  /// No description provided for @positiveNumberRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid positive number'**
+  String get positiveNumberRequired;
+
+  /// No description provided for @basePriceRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Base price is required'**
+  String get basePriceRequired;
+
+  /// No description provided for @invalidPriceValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid price'**
+  String get invalidPriceValue;
+
+  /// No description provided for @rateRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate is required'**
+  String get rateRequired;
+
+  /// No description provided for @invalidRateValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid rate'**
+  String get invalidRateValue;
+
+  /// No description provided for @fieldRequiredGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get fieldRequiredGeneric;
+
+  /// No description provided for @latRangeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be between -90 and 90'**
+  String get latRangeMessage;
+
+  /// No description provided for @lonRangeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be between -180 and 180'**
+  String get lonRangeMessage;
+
+  /// No description provided for @otpSentToEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit verification code sent to {email}.'**
+  String otpSentToEmail(String email);
+
+  /// No description provided for @devModeOtpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dev Mode OTP'**
+  String get devModeOtpLabel;
+
+  /// No description provided for @verificationCodeLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code: {code}'**
+  String verificationCodeLine(String code);
+
+  /// No description provided for @verificationCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification Code'**
+  String get verificationCodeLabel;
+
+  /// No description provided for @verificationCodeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code is required'**
+  String get verificationCodeRequired;
+
+  /// No description provided for @accountDetailsLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Account: {account}'**
+  String accountDetailsLine(String account);
+
+  /// No description provided for @verifiedServiceScoreLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified Service Score'**
+  String get verifiedServiceScoreLabel;
+
+  /// No description provided for @basedOnRatingsLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Based on {count} ratings'**
+  String basedOnRatingsLine(String count);
+
+  /// No description provided for @employeeSetActiveStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Set account to Active (Unfreeze)'**
+  String get employeeSetActiveStatus;
+
+  /// No description provided for @employeeSetFrozenStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Set account to Frozen (Suspended)'**
+  String get employeeSetFrozenStatus;
+
+  /// No description provided for @stepInTransitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'In Transit'**
+  String get stepInTransitTitle;
 }
 
 class _AppLocalizationsDelegate

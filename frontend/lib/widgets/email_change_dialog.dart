@@ -189,7 +189,7 @@ class _EmailChangeDialogState extends State<EmailChangeDialog> {
                   ),
                 ] else ...[
                   Text(
-                    "Enter the 6-digit verification code sent to $_targetEmail.",
+                    l10n.otpSentToEmail(_targetEmail ?? ''),
                     style: AppTypography.bodyMd.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
@@ -198,8 +198,8 @@ class _EmailChangeDialogState extends State<EmailChangeDialog> {
                     const SizedBox(height: AppSpacing.sm),
                     ThemedSuccessBanner(
                       key: const Key('dev_otp_banner'),
-                      title: "Dev Mode OTP",
-                      message: "Verification code: $_devOtp",
+                      title: l10n.devModeOtpLabel,
+                      message: l10n.verificationCodeLine(_devOtp!),
                     ),
                   ],
                   const SizedBox(height: AppSpacing.md),
@@ -207,12 +207,12 @@ class _EmailChangeDialogState extends State<EmailChangeDialog> {
                     key: _otpFormKey,
                     child: ThemedTextField(
                       key: const Key('email_change_otp_input'),
-                      labelText: "Verification Code",
+                      labelText: l10n.verificationCodeLabel,
                       controller: _otpController,
                       keyboardType: TextInputType.number,
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) {
-                          return "Verification code is required";
+                          return l10n.verificationCodeRequired;
                         }
                         if (v.trim().length < 6) {
                           return "Enter complete 6-digit code";

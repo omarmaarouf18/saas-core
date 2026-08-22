@@ -102,7 +102,12 @@ class _WalletScreenState extends State<WalletScreen> {
                         Align(
                           alignment: AlignmentDirectional.centerEnd,
                           child: Text(
-                            "Platform fee: ${ownerProvider.platformFeePercentage! % 1 == 0 ? ownerProvider.platformFeePercentage!.toInt() : ownerProvider.platformFeePercentage}%",
+                            l10n.platformFeeLine(
+                                ownerProvider.platformFeePercentage! % 1 == 0
+                                    ? ownerProvider.platformFeePercentage!
+                                        .toInt()
+                                        .toString()
+                                    : "${ownerProvider.platformFeePercentage}"),
                             key: const Key('platform_fee_percentage_text'),
                             style: AppTypography.labelMd.copyWith(
                               color: AppColors.onSurfaceVariant,
@@ -135,7 +140,7 @@ class _WalletScreenState extends State<WalletScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "My Wallet",
+                l10n.walletMyWalletTitle,
                 style: AppTypography.headlineLgMobile.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
@@ -143,7 +148,7 @@ class _WalletScreenState extends State<WalletScreen> {
               ),
               const SizedBox(height: AppSpacing.xxs),
               Text(
-                "Manage corporate finances and payouts.",
+                l10n.walletCorporateSubtitle,
                 style: AppTypography.bodyMd.copyWith(
                   color: AppColors.onSurfaceVariant,
                 ),
@@ -181,7 +186,7 @@ class _WalletScreenState extends State<WalletScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "AVAILABLE BALANCE",
+                l10n.availableBalanceBadge,
                 style: AppTypography.labelMd.copyWith(
                   color: AppColors.onPrimaryContainer,
                   letterSpacing: 1.0,
@@ -205,7 +210,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       ),
                       const SizedBox(width: 2),
                       Text(
-                        "+8.4% vs last mo",
+                        l10n.balanceTrendChipMock,
                         style: AppTypography.caption.copyWith(
                           color: AppColors.success,
                           fontWeight: FontWeight.bold,
@@ -226,7 +231,8 @@ class _WalletScreenState extends State<WalletScreen> {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            "Total Portfolio: \$${ownerProvider.walletBalance.toStringAsFixed(2)} Credits",
+            l10n.totalPortfolioLine(
+                ownerProvider.walletBalance.toStringAsFixed(2)),
             style: AppTypography.bodyMd.copyWith(
               color: AppColors.onPrimary.withValues(alpha: 0.7),
             ),
@@ -247,8 +253,8 @@ class _WalletScreenState extends State<WalletScreen> {
             Expanded(
               child: StatCard(
                 label: l10n.walletTotalBalance,
-                value:
-                    "${ownerProvider.walletBalance.toStringAsFixed(2)} Credits",
+                value: l10n.creditsAmountLine(
+                    ownerProvider.walletBalance.toStringAsFixed(2)),
                 icon: Icons.account_balance_rounded,
                 iconColor: AppColors.primary,
               ),
@@ -261,8 +267,8 @@ class _WalletScreenState extends State<WalletScreen> {
             Expanded(
               child: StatCard(
                 label: l10n.walletWithdrawable,
-                value:
-                    "${ownerProvider.withdrawableBalance.toStringAsFixed(2)} Credits",
+                value: l10n.creditsAmountLine(
+                    ownerProvider.withdrawableBalance.toStringAsFixed(2)),
                 icon: Icons.check_circle_outline_rounded,
                 iconColor: AppColors.success,
               ),
@@ -271,8 +277,8 @@ class _WalletScreenState extends State<WalletScreen> {
             Expanded(
               child: StatCard(
                 label: l10n.walletLockedEscrow,
-                value:
-                    "${ownerProvider.escrowBalance.toStringAsFixed(2)} Credits",
+                value: l10n.creditsAmountLine(
+                    ownerProvider.escrowBalance.toStringAsFixed(2)),
                 icon: Icons.lock_outline_rounded,
                 iconColor: AppColors.warning,
               ),
@@ -389,7 +395,7 @@ class _WalletScreenState extends State<WalletScreen> {
           isBank ? Icons.account_balance_rounded : Icons.phone_android_rounded,
       leadingIconColor: AppColors.primary,
       leadingBackgroundColor: AppColors.primary.withValues(alpha: 0.1),
-      title: "${payout.amount.toStringAsFixed(2)} Credits",
+      title: l10n.creditsAmountLine(payout.amount.toStringAsFixed(2)),
       subtitleWidget: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -503,7 +509,8 @@ class _WalletScreenState extends State<WalletScreen> {
                   vertical: 2,
                 ),
                 child: Text(
-                  "Job: ${jobId.substring(0, jobId.length > 8 ? 8 : jobId.length)}",
+                  context.l10n.ledgerJobLine(
+                      jobId.substring(0, jobId.length > 8 ? 8 : jobId.length)),
                   style: AppTypography.labelMd.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
@@ -525,7 +532,7 @@ class _WalletScreenState extends State<WalletScreen> {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            "Bal: ${balanceAfter.toStringAsFixed(2)}",
+            context.l10n.ledgerBalanceLine(balanceAfter.toStringAsFixed(2)),
             style: AppTypography.labelMd.copyWith(
               color: AppColors.onSurfaceVariant,
             ),

@@ -159,7 +159,7 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
                   )
                 : const Icon(Icons.my_location, size: 20),
             label: Text(
-              "Use My Location",
+              context.l10n.locationPickerUseMyLocation,
               style: AppTypography.labelLg.copyWith(color: AppColors.onPrimary),
             ),
             onPressed: _isLoadingLocation ? null : _fetchAndSetCurrentLocation,

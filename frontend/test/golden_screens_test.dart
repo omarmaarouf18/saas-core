@@ -212,7 +212,9 @@ void main() {
           ]),
         ),
       ],
-      child: _localizedApp(home: const NotificationsScreen()),
+      child: _localizedApp(
+        home: NotificationsScreen(clock: () => now),
+      ),
     );
     await _pumpGolden(
         tester, app, _mobile, 'notifications_screen_mobile_360x800');

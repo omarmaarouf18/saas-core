@@ -492,7 +492,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(width: 2),
                     Text(
-                      "+12% vs last week",
+                      l10n.jobsTrendChipMock,
                       style: AppTypography.caption.copyWith(
                         color: AppColors.success,
                         fontWeight: FontWeight.w600,
@@ -518,7 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "ACTIVE FLEET",
+                      l10n.activeFleetMetricLabel,
                       style: AppTypography.labelMd.copyWith(
                         color: AppColors.onSurfaceVariant,
                         letterSpacing: 0.5,
@@ -871,7 +871,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        "Configure business profile, rates & coverage",
+                        l10n.quickConfigSubtitle,
                         style: AppTypography.labelMd.copyWith(
                           color: AppColors.onSurfaceVariant,
                         ),
@@ -896,7 +896,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const ThemedSectionHeader(title: "Urgent Actions"),
+        ThemedSectionHeader(title: l10n.urgentActionsHeader),
         const SizedBox(height: AppSpacing.sm),
         ThemedCard(
           padding: AppSpacing.md,
@@ -921,14 +921,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Vehicle Maintenance Required",
+                          l10n.vehicleMaintenanceTitle,
                           style: AppTypography.titleMd.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          "Van #402 reported engine warning. Schedule service immediately.",
+                          l10n.vehicleMaintenanceDesc,
                           style: AppTypography.bodySm.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
@@ -949,7 +949,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         vertical: AppSpacing.xs,
                       ),
                     ),
-                    child: const Text("Schedule"),
+                    child: Text(l10n.scheduleAction),
                   ),
                 ],
               ),
@@ -976,14 +976,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Pending Reconciliations",
+                          l10n.pendingReconciliationsHeader,
                           style: AppTypography.titleMd.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          "Driver shifts from yesterday awaiting escrow settlement.",
+                          l10n.reconciliationPendingDesc,
                           style: AppTypography.bodySm.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
@@ -1009,7 +1009,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         vertical: AppSpacing.xs,
                       ),
                     ),
-                    child: const Text("Review"),
+                    child: Text(l10n.reviewAction),
                   ),
                 ],
               ),
@@ -1028,7 +1028,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const ThemedSectionHeader(title: "Fleet Overview"),
+        ThemedSectionHeader(title: l10n.fleetOverviewHeader),
         const SizedBox(height: AppSpacing.sm),
         InkWell(
           onTap: () {
@@ -1090,7 +1090,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       height: 10),
                                   const SizedBox(width: AppSpacing.sm),
                                   Text(
-                                    "Active Zone",
+                                    l10n.activeZoneLabel,
                                     style: AppTypography.bodyMd.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: AppColors.onSurface,
@@ -1099,7 +1099,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ],
                               ),
                               Text(
-                                "Downtown Metro Coverage",
+                                l10n.downtownCoverageLabel,
                                 style: AppTypography.caption.copyWith(
                                   color: AppColors.onSurfaceVariant,
                                 ),

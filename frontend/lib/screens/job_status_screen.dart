@@ -510,7 +510,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Track Job",
+                  context.l10n.trackJobHeroTitle,
                   style: AppTypography.titleMd.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.onPrimary,
@@ -518,7 +518,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  "View real-time location on map",
+                  context.l10n.trackJobHeroSubtitle,
                   style: AppTypography.caption.copyWith(
                     color: AppColors.onPrimary.withValues(alpha: 0.8),
                   ),
@@ -548,7 +548,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Fulfillment Progress",
+            context.l10n.fulfillmentProgressHeader,
             style: AppTypography.titleMd.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.onSurface,
@@ -557,8 +557,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           const SizedBox(height: AppSpacing.lg),
           _buildFulfillmentStep(
             index: 0,
-            title: "Pending",
-            subtitle: "Request placed & queued",
+            title: context.l10n.statusPending,
+            subtitle: context.l10n.stepRequestQueuedSub,
             icon: Icons.check,
             isDone: step > 0 || isCompleted || isActive,
             isActive: step == 0 && !isCancelled,
@@ -566,12 +566,12 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           ),
           _buildFulfillmentStep(
             index: 1,
-            title: "Assigned",
+            title: context.l10n.stepAssignedTitle,
             subtitle: _currentJob.employeeId == null
-                ? "Matching courier..."
+                ? context.l10n.matchingCourierLabel
                 : (_resolvedUsername != null && _resolvedUsername!.isNotEmpty
-                    ? "Assigned to $_resolvedUsername"
-                    : "Courier assigned"),
+                    ? context.l10n.assignedToLine(_resolvedUsername!)
+                    : context.l10n.courierAssignedShort),
             icon: Icons.person_pin_circle_outlined,
             isDone: step > 1 || isCompleted,
             isActive: step == 1 && !isCancelled,
@@ -579,8 +579,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           ),
           _buildFulfillmentStep(
             index: 2,
-            title: "In Transit",
-            subtitle: "Package on route to destination",
+            title: context.l10n.stepInTransitTitle,
+            subtitle: context.l10n.stepInTransitSub,
             icon: Icons.local_shipping_outlined,
             isDone: isCompleted,
             isActive: isActive,
@@ -588,9 +588,10 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           ),
           _buildFulfillmentStep(
             index: 3,
-            title: "Completed",
-            subtitle:
-                isCompleted ? "Delivered successfully" : "Pending delivery",
+            title: context.l10n.statusCompleted,
+            subtitle: isCompleted
+                ? context.l10n.stepDeliveredOkSub
+                : context.l10n.stepPendingDeliverySub,
             icon: Icons.flag_outlined,
             isDone: isCompleted,
             isActive: false,
@@ -683,7 +684,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   size: 20, color: AppColors.onSurfaceVariant),
               const SizedBox(width: AppSpacing.xs),
               Text(
-                "Itinerary",
+                context.l10n.itineraryHeader,
                 style: AppTypography.titleMd.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.onSurface,
@@ -723,14 +724,14 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "PICKUP",
+                      context.l10n.pickupStageBadge,
                       style: AppTypography.labelSm.copyWith(
                         color: AppColors.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      "Origin / Customer Location",
+                      context.l10n.originCustomerLocation,
                       style: AppTypography.bodyMd.copyWith(
                         fontWeight: FontWeight.w500,
                         color: AppColors.onSurface,
@@ -738,14 +739,14 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      "DROPOFF",
+                      context.l10n.dropoffStageBadge,
                       style: AppTypography.labelSm.copyWith(
                         color: AppColors.secondary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      "Delivery Destination",
+                      context.l10n.deliveryDestinationLabel,
                       style: AppTypography.bodyMd.copyWith(
                         fontWeight: FontWeight.w500,
                         color: AppColors.onSurface,
@@ -771,7 +772,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Payment",
+                          context.l10n.paymentSectionHeader,
                           style: AppTypography.caption.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
@@ -798,7 +799,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Total Fare",
+                          context.l10n.totalFareLabel,
                           style: AppTypography.caption.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
@@ -847,7 +848,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  "Verified Courier Driver",
+                  context.l10n.verifiedCourierDriver,
                   style: AppTypography.caption.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),
@@ -887,7 +888,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(
-                "Cancellation Reason: ${_currentJob.cancellationReason!}",
+                context.l10n
+                    .cancellationReasonLine(_currentJob.cancellationReason!),
                 style: AppTypography.bodySm.copyWith(
                   color: AppColors.error,
                   fontWeight: FontWeight.bold,
@@ -1043,7 +1045,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
-                        "Negotiation Window Expired (5-min limit lapsed)",
+                        context.l10n.negotiationExpiredBanner,
                         style: AppTypography.bodyMd.copyWith(
                           color: AppColors.error,
                           fontWeight: FontWeight.bold,
@@ -1083,14 +1085,16 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Incoming Proposal",
+                          l10n.incomingProposalCard,
                           style: AppTypography.bodyMd.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppColors.primary,
                           ),
                         ),
                         Text(
-                          "by ${proposedBy == 'customer' ? 'Customer' : 'Driver / Employee'}",
+                          l10n.proposalByLine(proposedBy == 'customer'
+                              ? l10n.proposalRoleCustomer
+                              : l10n.proposalRoleDriverEmployee),
                           style: AppTypography.labelMd.copyWith(
                             color: AppColors.onSurfaceVariant,
                             fontStyle: FontStyle.italic,
@@ -1103,7 +1107,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Proposed Fare:",
+                          l10n.proposedFareLabel,
                           style: AppTypography.bodyMd
                               .copyWith(color: AppColors.onSurface),
                         ),
@@ -1119,7 +1123,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
-                      "Comparison: ${proposed - suggested >= 0 ? '+' : ''}\$${(proposed - suggested).toStringAsFixed(2)} (${proposed - suggested >= 0 ? '+' : ''}${(suggested > 0 ? ((proposed - suggested) / suggested) * 100 : 0.0).toStringAsFixed(1)}% vs System Price)",
+                      "${l10n.comparisonPrefix} ${proposed - suggested >= 0 ? '+' : ''}\$${(proposed - suggested).toStringAsFixed(2)} (${proposed - suggested >= 0 ? '+' : ''}${(suggested > 0 ? ((proposed - suggested) / suggested) * 100 : 0.0).toStringAsFixed(1)}% ${l10n.vsSystemPrice})",
                       key: const Key('proposal_comparison_text'),
                       style: AppTypography.labelMd.copyWith(
                         color: (proposed - suggested) > 0
@@ -1136,7 +1140,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 (proposedBy == 'employee' &&
                     currentUserId == _currentJob.employeeId))
               Text(
-                "Waiting for response to your proposal...",
+                l10n.waitingProposalResponse,
                 style: AppTypography.bodyMd.copyWith(
                   color: AppColors.onSurfaceVariant,
                   fontStyle: FontStyle.italic,
@@ -1176,7 +1180,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             const Divider(
                 height: AppSpacing.md, color: AppColors.outlineVariant),
             Text(
-              "Submit Counter-Offer",
+              l10n.submitCounterOfferBtn,
               style: AppTypography.bodyMd.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.onSurface,
@@ -1184,7 +1188,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              "Allowed bound: \$${minPrice.toStringAsFixed(2)} – \$${maxPrice.toStringAsFixed(2)} (±50%)",
+              l10n.allowedBoundLine(
+                  minPrice.toStringAsFixed(2), maxPrice.toStringAsFixed(2)),
               style: AppTypography.labelMd.copyWith(
                 color: AppColors.onSurfaceVariant,
               ),

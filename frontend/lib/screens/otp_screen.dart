@@ -214,7 +214,7 @@ class _OtpScreenState extends State<OtpScreen> {
             ? val.trim()
             : _otpController.text.trim();
         if (code.length != 6) {
-          return "OTP must be exactly 6 digits";
+          return context.l10n.otpExactly6Digits;
         }
         return null;
       },
@@ -268,7 +268,7 @@ class _OtpScreenState extends State<OtpScreen> {
             const SizedBox(width: AppSpacing.xs),
             Expanded(
               child: Text(
-                "Dev Mode: Auto-populated OTP '$_currentDevOtp' from response.",
+                context.l10n.devOtpAutoFilled(_currentDevOtp ?? ''),
                 style: AppTypography.labelMd.copyWith(
                   color: AppColors.onSurfaceVariant,
                 ),
@@ -313,7 +313,7 @@ class _OtpScreenState extends State<OtpScreen> {
           color: AppColors.outline,
         ),
         Text(
-          "Secured by Enterprise Trust Protocol",
+          context.l10n.enterpriseTrustNote,
           style: AppTypography.caption.copyWith(
             color: AppColors.outline,
           ),

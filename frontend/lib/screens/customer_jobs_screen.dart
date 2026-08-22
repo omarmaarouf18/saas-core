@@ -224,22 +224,22 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
         PillFilterBar<String>(
           items: [
             PillFilterItem(
-              label: 'All',
+              label: l10n.filterAll,
               value: 'all',
               count: allCount,
             ),
             PillFilterItem(
-              label: 'In Transit',
+              label: l10n.customerJobsInTransit,
               value: 'in_transit',
               count: inTransitCount,
             ),
             PillFilterItem(
-              label: 'Completed',
+              label: l10n.statusCompleted,
               value: 'completed',
               count: completedCount,
             ),
             PillFilterItem(
-              label: 'Cancelled',
+              label: l10n.statusCancelled,
               value: 'cancelled',
               count: cancelledCount,
             ),
@@ -306,7 +306,8 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Text(
-                  "Payment: ${AppTypography.uppercaseLabel(job.paymentMethod)}",
+                  l10n.paymentMethodLine(
+                      AppTypography.uppercaseLabel(job.paymentMethod)),
                   style: AppTypography.bodySm.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),
@@ -385,7 +386,7 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                   const SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(
-                      "Reason: $reason",
+                      context.l10n.reasonLine(reason),
                       style: AppTypography.bodySm.copyWith(
                         color: AppColors.error,
                       ),

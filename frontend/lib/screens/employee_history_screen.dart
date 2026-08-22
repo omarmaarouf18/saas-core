@@ -66,7 +66,7 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
           children: [
             _buildHeader(l10n),
             const SizedBox(height: AppSpacing.lg),
-            const ThemedSectionHeader(title: "Recent Activity"),
+            ThemedSectionHeader(title: context.l10n.recentActivityHeader),
           ],
         ),
       ),
@@ -133,7 +133,7 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
         ),
         const SizedBox(height: AppSpacing.xxs),
         Text(
-          "Completed and cancelled jobs.",
+          context.l10n.employeeHistorySubtitle,
           style: AppTypography.bodyMd.copyWith(
             color: AppColors.onSurfaceVariant,
           ),

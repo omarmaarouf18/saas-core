@@ -130,7 +130,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Service Management",
+          context.l10n.serviceMgmtHeader,
           style: AppTypography.headlineLgMobile.copyWith(
             fontWeight: FontWeight.bold,
             color: AppColors.primary,
@@ -138,7 +138,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
         ),
         const SizedBox(height: AppSpacing.xxs),
         Text(
-          "Configure and monitor active logistics services.",
+          context.l10n.serviceMgmtSubtitle,
           style: AppTypography.bodyMd.copyWith(
             color: AppColors.onSurfaceVariant,
           ),
@@ -170,7 +170,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Verification Required",
+                    context.l10n.verificationRequiredHeader,
                     style: AppTypography.titleMd.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.onSurface,
@@ -178,7 +178,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xxs),
                   Text(
-                    "Please complete KYC verification to create new services or modify existing ones.",
+                    context.l10n.kycRequiredDesc,
                     style: AppTypography.bodyMd.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
@@ -300,7 +300,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "BASE RATE",
+                        context.l10n.baseRateBadge,
                         style: AppTypography.caption.copyWith(
                           color: AppColors.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
@@ -326,7 +326,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "PER KM",
+                        context.l10n.perKmBadge,
                         style: AppTypography.caption.copyWith(
                           color: AppColors.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
@@ -358,7 +358,8 @@ class _ServiceScreenState extends State<ServiceScreen> {
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Text(
-                  "Location: (${lat.toStringAsFixed(4)}, ${lon.toStringAsFixed(4)})",
+                  context.l10n.serviceLocationLine(
+                      lat.toStringAsFixed(4), lon.toStringAsFixed(4)),
                   style: AppTypography.labelMd.copyWith(
                     color: AppColors.outline,
                   ),

@@ -191,7 +191,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                 vertical: AppSpacing.xxs,
               ),
               child: Text(
-                'Pickup',
+                context.l10n.mapPickupBadge,
                 style: AppTypography.labelSm.copyWith(
                   color: AppColors.onPrimary,
                   fontWeight: FontWeight.bold,
@@ -275,7 +275,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(
-                'Waiting for courier location updates...',
+                context.l10n.waitingCourierUpdates,
                 style: AppTypography.bodySm.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppColors.onSurface,
@@ -300,8 +300,8 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
           ? ThemedErrorBanner(
               message: provider.subscriptionError!,
             )
-          : const ThemedWarningBanner(
-              message: 'Reconnecting live tracking stream...',
+          : ThemedWarningBanner(
+              message: context.l10n.reconnectingTrackingStream,
             ),
     );
   }
@@ -322,14 +322,14 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                   IconButton(
                     icon: const Icon(Icons.add),
                     color: AppColors.onSurface,
-                    tooltip: 'Zoom In',
+                    tooltip: context.l10n.tooltipZoomIn,
                     onPressed: _zoomIn,
                   ),
                   const Divider(height: 1, color: AppColors.outlineVariant),
                   IconButton(
                     icon: const Icon(Icons.remove),
                     color: AppColors.onSurface,
-                    tooltip: 'Zoom Out',
+                    tooltip: context.l10n.tooltipZoomOut,
                     onPressed: _zoomOut,
                   ),
                 ],
@@ -343,7 +343,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
               child: IconButton(
                 icon: const Icon(Icons.my_location),
                 color: AppColors.primary,
-                tooltip: 'Center Target',
+                tooltip: context.l10n.tooltipRecenter,
                 onPressed: () => _centerOnTarget(centerPoint),
               )),
         ],

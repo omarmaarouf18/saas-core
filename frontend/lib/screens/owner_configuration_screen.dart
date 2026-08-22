@@ -399,14 +399,14 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Business Identity",
+                      context.l10n.sectionBusinessIdentity,
                       style: AppTypography.titleMd.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
                       ),
                     ),
                     Text(
-                      "Company details and classification",
+                      context.l10n.sectionBusinessIdentitySub,
                       style: AppTypography.caption.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
@@ -566,14 +566,14 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Location & Operations",
+                      context.l10n.sectionLocationOperations,
                       style: AppTypography.titleMd.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
                       ),
                     ),
                     Text(
-                      "Headquarters and coverage boundary",
+                      context.l10n.sectionLocationOperationsSub,
                       style: AppTypography.caption.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
@@ -699,14 +699,14 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Pricing Structure",
+                      context.l10n.sectionPricingStructure,
                       style: AppTypography.titleMd.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
                       ),
                     ),
                     Text(
-                      "Base fare and distance-based fees",
+                      context.l10n.sectionPricingStructureSub,
                       style: AppTypography.caption.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
@@ -780,7 +780,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "Est. 10KM Delivery:",
+                      context.l10n.estDelivery10kmLabel,
                       style: AppTypography.labelMd.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
