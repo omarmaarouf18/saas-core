@@ -2336,6 +2336,17 @@ func (a *Auth) DeviceToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Platform whitelist: only known client platforms may be recorded.
+	// (Empty keeps the store's legacy "android" default.)
+	switch req.Platform {
+	case "", "android", "ios", "web":
+	default:
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid platform: must be one of android, ios, web",
+		})
+		return
+	}
+
 	if req.Action == "unregister" || req.Token == "" {
 		if err := a.store.RemoveDeviceToken(ctx, claims.UserID, req.Token); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{
