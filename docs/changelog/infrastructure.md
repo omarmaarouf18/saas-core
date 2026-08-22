@@ -368,3 +368,15 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Coverage**: rating_screen.dart **0.0% → 92.5%**; overall audited coverage 73.2% → **75.2%**; suite 355 → **361 tests**.
 - **Suite**: 6 widget tests covering party determination both directions, blind-status waiting vs locked-in branches, submit payload contract incl. comment trimming, success pop flow, failure snackbar retention, identity guard with zero network calls.
 - **Verification**: flutter analyze No issues found!; full suite 361/361 pass locally; CI verification recorded separately in AI_CONTEXT. ✅
+
+## l10n Scanner `text:` Property Gap Closure — 39 Strings Across 11 Files
+
+**Date**: 2026-08-22
+**Category**: Bug Fix / Localization
+**Related Commit SHA**: ``018c79551f978b3b67b7346b53ee08599d80d515``
+
+- **Gap**: the A2 audit scanner's property list omitted `text:` (PrimaryButton/SecondaryButton/Tab/_buildFeatureRow style params), letting hardcoded CTA/tab-label strings survive despite matching ARB keys existing (e.g. 'Submit Rating' vs unused `ratingSubmitBtn`).
+- **Scope found**: 39 production strings across 11 files — job_status_screen CTAs (7), subscription feature lists (9), employee_screen tabs/register (3), marketplace booking dialog (3), kyc upload/replace (2), dialogs Cancel/Confirm/Create (4), plus wallet/home/map/config singles.
+- **Remediation**: 9 exact-value REUSES of existing keys + 24 new en+ar keys (`subFreeFeature*`, `subProFeature*`, CTA labels). Post-fix audit: zero non-exception flags (38 remaining = 33 documented accepted exceptions + 5 debug-only component-library literals newly visible to the widened scanner).
+- **Hydration-race scan (follow-up)**: rating_screen was the sole stuck-placeholder instance; all other screens read auth at build time (reactive) or use post-frame refreshes. No further action needed.
+- **Verification**: flutter analyze No issues found!; full suite 361/361 pass locally. ✅
