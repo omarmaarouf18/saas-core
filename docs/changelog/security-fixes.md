@@ -796,3 +796,9 @@ This section consolidates the resolution status for all 10 findings from the ext
 - **Implementation Detail**: The gateway's access-log middleware interpolated the decoded `r.URL.Path` verbatim into the `[TRAFFIC]` line under a `#nosec G706` claim that injection was "not possible" — but an encoded `%0A`/`%0D` in the request path survives URL decoding and forges additional log lines. CR/LF bytes are now replaced with spaces before interpolation, and the stale nosec rationale corrected to describe the actual mitigation.
 - **Commit SHA**: ``2ee33b65674ed897d20b0c0c30dc2c94500dfefd``
 - **Verification**: New output-capture regression `TestLogging_TRAFFICSanitizesNewlinesInPath`. Pre-fix literal captured log: `[TRAFFIC] GET /api/v1/users/services\n[FAKE]\rinjected → 200 (2µs)` (single request, two visual log lines). Post-fix: assertion passes; full api-gateway suite passes. ✅
+
+## Device-Token Platform Whitelist (auth-service)
+
+- **Implementation Detail**: `POST /auth/device-token` (`services/auth-service/internal/handlers/auth.go`) accepted any `platform` string and persisted it verbatim into `users.device_tokens[].platform`. Added a strict whitelist — `android` | `ios` | `web`, empty keeping the store's existing `android` default — rejecting anything else with 400 before any write.
+- **Commit SHA**: ``42e186dc6bcdcc8ec4c68236d841dc95e54d5b4c``
+- **Verification**: New regression `TestDeviceToken_PlatformWhitelist`. Pre-fix literal failure: `ARBITRARY PLATFORM ACCEPTED: platform="windows-phone;DROP" got 200 (want 400)`. Post-fix passes; full auth-service suite passes. ✅
