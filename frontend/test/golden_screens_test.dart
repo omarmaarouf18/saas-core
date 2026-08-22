@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -160,9 +161,28 @@ MaterialApp _localizedApp({required Widget home}) => MaterialApp(
     );
 
 void main() {
-  setUpAll(() {
+  setUpAll(() async {
     // Poppins is bundled as an asset (assets/fonts/) — never fetch at runtime.
     GoogleFonts.config.allowRuntimeFetching = false;
+    // Deterministic font preload (golden environment contract): load the five
+    // bundled Poppins TTFs directly into the engine so glyph rasterization
+    // depends only on the pinned Flutter build, not on google_fonts' async
+    // asset-loading path or host-system fonts. Scoped to this suite because
+    // global binding initialization in flutter_test_config.dart breaks other
+    // suites that construct HTTP clients outside test zones.
+    TestWidgetsFlutterBinding.ensureInitialized();
+    const fontPaths = <String>[
+      'assets/fonts/Poppins-Regular.ttf',
+      'assets/fonts/Poppins-Medium.ttf',
+      'assets/fonts/Poppins-SemiBold.ttf',
+      'assets/fonts/Poppins-Bold.ttf',
+      'assets/fonts/Poppins-ExtraBold.ttf',
+    ];
+    final loader = FontLoader('Poppins');
+    for (final path in fontPaths) {
+      loader.addFont(rootBundle.load(path));
+    }
+    await loader.load();
   });
 
   testWidgets('GOLDEN component library — mobile', (tester) async {
