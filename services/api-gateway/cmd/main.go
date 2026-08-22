@@ -79,7 +79,7 @@ func main() {
 	// ---- Internal Health check endpoint ----
 	mux.HandleFunc("/health/internal", func(w http.ResponseWriter, r *http.Request) {
 		gotToken := r.Header.Get("X-Internal-Token")
-// Empty-secret guard (QA audit Q23): never authenticate when unconfigured.
+		// Empty-secret guard (QA audit Q23): never authenticate when unconfigured.
 		if cfg.InternalServiceToken == "" || subtle.ConstantTimeCompare([]byte(gotToken), []byte(cfg.InternalServiceToken)) != 1 {
 			handlerutil.WriteJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: invalid internal token"})
 			return
@@ -93,7 +93,7 @@ func main() {
 	// ---- Admin App Version Configuration Endpoint ----
 	mux.HandleFunc("/api/v1/admin/version-config", func(w http.ResponseWriter, r *http.Request) {
 		gotToken := r.Header.Get("X-Internal-Token")
-// Empty-secret guard (QA audit Q23): never authenticate when unconfigured.
+		// Empty-secret guard (QA audit Q23): never authenticate when unconfigured.
 		if cfg.InternalServiceToken == "" || subtle.ConstantTimeCompare([]byte(gotToken), []byte(cfg.InternalServiceToken)) != 1 {
 			handlerutil.WriteJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: invalid internal token"})
 			return
