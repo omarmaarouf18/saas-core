@@ -2,6 +2,10 @@
 set -e
 echo "== pre-push gate: running checks =="
 
+# Git exports GIT_DIR=. into hook environments; the Flutter tool misreads it
+# and fails package resolution ("Flutter SDK is not available"). Sanitize.
+unset GIT_DIR GIT_WORK_TREE
+
 # Set default authenticated Mongo & Redis URIs for host-level unit/integration tests
 export MONGO_URI="${MONGO_URI:-mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin}"
 export REDIS_URI="${REDIS_URI:-redis://:devpassword123@localhost:6380}"
