@@ -967,8 +967,13 @@ func (s *MongoDB) UpdateJobLocation(ctx context.Context, id string, lat, lon flo
 	return nil
 }
 
-// CancelJob updates a job's status to cancelled and stores the reason.
-// Enforces CAS status guard allowing cancellation only from active, pending, awaiting_price_response, escrow_reconciliation_required, or cancelled (from RefundEscrow) states.
+// CancelJob performs the NON-MONEY side of cancellation: it flips an
+// active/pending/awaiting_price_response job to cancelled and stores the
+// reason. Escrow-bearing exits are deliberately OUT of scope here — a funded
+// job must settle through RefundEscrow (which owns its own guarded
+// transition), and reconciliation-flagged jobs must exit through their
+// dedicated resolution path. Including those states in this filter previously
+// let a direct call strand locked funds permanently (QA audit Q5).
 func (s *MongoDB) CancelJob(ctx context.Context, id string, reason string) error {
 	res, err := s.jobs.UpdateOne(ctx,
 		bson.M{
@@ -977,8 +982,6 @@ func (s *MongoDB) CancelJob(ctx context.Context, id string, reason string) error
 				models.JobStatusActive,
 				models.JobStatusPending,
 				models.JobStatusAwaitingPriceResponse,
-				models.JobStatusEscrowReconciliationRequired,
-				models.JobStatusCancelled,
 			}},
 		},
 		bson.M{"$set": bson.M{
@@ -995,6 +998,30 @@ func (s *MongoDB) CancelJob(ctx context.Context, id string, reason string) error
 			return fmt.Errorf("job %q not found", id)
 		}
 		return fmt.Errorf("cancel job failed: job %s is not in a cancellable state (currently %s)", id, job.Status)
+	}
+	return nil
+}
+
+// SetCancellationReason stamps (or restamps) the cancellation reason on a job
+// that is ALREADY cancelled — i.e. after a guarded money transition such as
+// RefundEscrow flipped it. It can never move a job between states or touch
+// escrow fields.
+func (s *MongoDB) SetCancellationReason(ctx context.Context, id string, reason string) error {
+	res, err := s.jobs.UpdateOne(ctx,
+		bson.M{"_id": id, "status": models.JobStatusCancelled},
+		bson.M{"$set": bson.M{
+			"cancellation_reason": reason,
+			"updated_at":          time.Now().UTC(),
+		}})
+	if err != nil {
+		return fmt.Errorf("store: set cancellation reason: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		var job models.Job
+		if findErr := s.jobs.FindOne(ctx, bson.M{"_id": id}).Decode(&job); findErr != nil {
+			return fmt.Errorf("job %q not found", id)
+		}
+		return fmt.Errorf("cancellation reason refused: job %s is not cancelled (currently %s)", id, job.Status)
 	}
 	return nil
 }

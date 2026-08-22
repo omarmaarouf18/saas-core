@@ -1373,14 +1373,24 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Perform cancellation in DB
-	if err := u.store.CancelJob(ctx, job.ID, req.Reason); err != nil {
-		if strings.Contains(err.Error(), "not in a cancellable state") {
-			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+	if job.PaymentMethod == "cod" {
+		// COD jobs hold no escrow; the narrowed non-money cancel applies directly.
+		if err := u.store.CancelJob(ctx, job.ID, req.Reason); err != nil {
+			if strings.Contains(err.Error(), "not in a cancellable state") {
+				writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+				return
+			}
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to cancel job: " + err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to cancel job: " + err.Error()})
-		return
+	} else {
+		// Non-COD: RefundEscrow above performed the guarded money transition
+		// and flipped the job to cancelled; stamp the caller's reason through
+		// the narrow reason-only operation (QA audit Q5).
+		if err := u.store.SetCancellationReason(ctx, job.ID, req.Reason); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to record cancellation reason: " + err.Error()})
+			return
+		}
 	}
 
 	// Audit-log job cancellation
