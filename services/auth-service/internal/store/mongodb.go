@@ -4,7 +4,9 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"strings"
@@ -683,8 +685,19 @@ func (s *MongoDB) AuditCount(ctx context.Context) int {
 	return int(count)
 }
 
+// hashToken returns the SHA-256 hex digest used for bearer-token storage at
+// rest. Raw tokens are never persisted; lookups hash the presented credential
+// before querying, with a plaintext fallback for rows written before this
+// hardening (migration window).
+func hashToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
+}
+
 // AddReviewer saves a new reviewer to the reviewers collection.
+// The token is stored as a SHA-256 digest, never plaintext.
 func (s *MongoDB) AddReviewer(ctx context.Context, rev *models.Reviewer) error {
+	rev.Token = hashToken(rev.Token)
 	_, err := s.reviewers.InsertOne(ctx, rev)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
@@ -705,10 +718,16 @@ func (s *MongoDB) GetReviewerByID(ctx context.Context, id string) (*models.Revie
 	return &rev, nil
 }
 
-// GetReviewerByToken fetches a reviewer by their unique token.
+// GetReviewerByToken fetches a reviewer by their unique token. The presented
+// credential is hashed before querying; if no digest row matches, a legacy
+// plaintext lookup runs once so credentials issued before the at-rest
+// hashing migration keep working until re-onboarded.
 func (s *MongoDB) GetReviewerByToken(ctx context.Context, token string) (*models.Reviewer, error) {
 	var rev models.Reviewer
-	err := s.reviewers.FindOne(ctx, bson.M{"token": token}).Decode(&rev)
+	err := s.reviewers.FindOne(ctx, bson.M{"token": hashToken(token)}).Decode(&rev)
+	if err != nil {
+		err = s.reviewers.FindOne(ctx, bson.M{"token": token}).Decode(&rev)
+	}
 	if err != nil {
 		return nil, err
 	}
