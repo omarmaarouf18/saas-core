@@ -85,7 +85,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			return
 		}
 
-		if strings.Contains(id, "employee") {
+		if strings.Contains(id, "employee") || strings.HasPrefix(id, "emp-") {
 			isActive := !strings.Contains(id, "deactivated")
 			tenantID := "kyc-approved-owner"
 			if strings.Contains(id, "-under-") {

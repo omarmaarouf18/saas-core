@@ -177,6 +177,18 @@ func (u *UserService) GetRatings(w http.ResponseWriter, r *http.Request) {
 	resolvedTarget, err := resolveTokenWithRole(targetUserID, "owner", "employee", "user", "customer")
 	if err == nil {
 		targetUserID = resolvedTarget
+	} else {
+		// Raw-ID fall-through is restricted (QA audit Q24): business
+		// reputation (owner/employee targets) stays publicly queryable for
+		// the ADR-0014 directory/marketplace; customer rating histories are
+		// private blind-feedback data and require the customer's own token.
+		role, roleErr := u.fetchUserRole(r.Context(), targetUserID)
+		if roleErr != nil || (role != "owner" && role != "employee") {
+			writeJSON(w, http.StatusForbidden, map[string]string{
+				"error": "access denied: customer rating histories require the customer's own token",
+			})
+			return
+		}
 	}
 
 	// Server-side pagination: default page of 50, hard cap of 200.

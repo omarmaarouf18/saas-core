@@ -11,6 +11,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -532,6 +533,42 @@ func (u *UserService) verifyEmployeeAssignment(employeeID, ownerID string) (bool
 	}
 
 	return true, nil
+}
+
+// fetchUserRole resolves a user's role via the auth-service by raw ID.
+// Used by GetRatings to classify unresolved raw-ID targets (QA audit Q24):
+// business reputation (owner/employee) is public-by-design for the ADR-0014
+// directory, while customer rating histories stay private.
+func (u *UserService) fetchUserRole(ctx context.Context, userID string) (string, error) {
+	// Nil-safe like the limiter fields: hand-built harnesses without an auth
+	// client fail closed instead of panicking.
+	if u.authClient == nil {
+		return "", ErrServiceUnavailable
+	}
+	url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, url.QueryEscape(userID))
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("X-Internal-Token", u.internalServiceToken)
+	resp, err := u.authClient.Do(req)
+	if err != nil {
+		return "", ErrServiceUnavailable
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return "", fmt.Errorf("user not found")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", ErrServiceUnavailable
+	}
+	var user struct {
+		Role string `json:"role"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return "", err
+	}
+	return user.Role, nil
 }
 
 // requireTier enforces that a tenant has at least the minimum subscription tier.
