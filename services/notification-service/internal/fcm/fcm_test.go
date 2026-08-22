@@ -110,3 +110,58 @@ func TestFCMPush_DisabledMode(t *testing.T) {
 		t.Errorf("Expected isStale to be false when FCM is disabled")
 	}
 }
+
+// TestFCMPush_NoInternalTokenToGoogle reproduces the credential-leak defect:
+// the internal service auth header was attached UNCONDITIONALLY, including on
+// requests to the real FCM endpoint when no custom relay was configured.
+// X-Internal-Token authenticates service-to-service calls inside our own
+// network; handing it to Google (or whatever host the default endpoint points
+// at) leaks an internal shared secret.
+//
+// Pre-fix expectation: default-mode client (no custom endpoint) still sends
+// X-Internal-Token.
+// Post-fix expectation: header sent ONLY for custom relay endpoints.
+func TestFCMPush_NoInternalTokenToGoogle(t *testing.T) {
+	var gotInternalToken string
+	stub := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotInternalToken = r.Header.Get("X-Internal-Token")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{"name": "projects/p/messages/1"})
+	}))
+	defer stub.Close()
+
+	// Production default mode: credentials+project set, NO custom endpoint.
+	c := NewClient(`{"type":"service_account"}`, "proj-1", "", "http://auth", "secret-internal-token", nil)
+	if !c.IsEnabled() {
+		t.Fatal("client should be enabled")
+	}
+	// Intercept the outbound call without changing the client's endpoint MODE.
+	c.endpointURL = stub.URL
+
+	// NOTE: SendPush's current success path returns (false, nil) on HTTP 200
+	// — a pre-existing quirk outside this item's scope; only header behavior
+	// is under test here.
+	_, _ = c.SendPush(context.Background(), "device-token", "t", "b", nil)
+
+	if gotInternalToken != "" {
+		t.Errorf("INTERNAL TOKEN LEAKED TO EXTERNAL HOST: X-Internal-Token=%q was sent to the default (Google) endpoint", gotInternalToken)
+	}
+}
+
+// Companion assertion: custom relay endpoints DO carry the internal token.
+func TestFCMPush_InternalTokenPresentOnCustomRelay(t *testing.T) {
+	var gotInternalToken string
+	stub := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotInternalToken = r.Header.Get("X-Internal-Token")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{"name": "projects/p/messages/1"})
+	}))
+	defer stub.Close()
+
+	c := NewClient(`{"type":"service_account"}`, "", stub.URL, "http://auth", "secret-internal-token", nil)
+	_, _ = c.SendPush(context.Background(), "device-token", "t", "b", nil)
+
+	if gotInternalToken != "secret-internal-token" {
+		t.Errorf("custom relay endpoint lost its internal auth header: got %q", gotInternalToken)
+	}
+}
