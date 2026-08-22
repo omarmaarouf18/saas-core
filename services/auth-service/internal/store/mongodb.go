@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -389,13 +390,24 @@ func (s *MongoDB) VerifyOTP(ctx context.Context, email, otp string) error {
 		return fmt.Errorf("invalid OTP")
 	}
 
-	// Mark as verified and clear the encrypted code atomically.
-	_, err = s.users.UpdateOne(ctx,
-		bson.M{"email": email},
+	// Consume atomically ONLY if the stored ciphertext is still exactly what
+	// we just validated. AES-GCM encrypts each issued code under a fresh
+	// random nonce, so the ciphertext doubles as an opaque one-time handle:
+	//   - a concurrent SetOTP (resend) replaces it -> this consume misses,
+	//     correctly rejecting the superseded code;
+	//   - a competing verifier clears it first -> this consume misses too,
+	//     so one code can never yield two successes (QA audit Q7).
+	res := s.users.FindOneAndUpdate(ctx,
+		bson.M{"email": email, "otp_code": user.OTPCode},
 		bson.M{"$set": bson.M{"otp_verified": true, "otp_code": ""}},
 	)
-	if err != nil {
-		return fmt.Errorf("store: verify OTP: %w", err)
+	if res.Err() != nil {
+		if errors.Is(res.Err(), mongo.ErrNoDocuments) {
+			// Superseded by a resend or already consumed by a racing verify;
+			// same generic rejection as a wrong code (anti-enumeration).
+			return fmt.Errorf("invalid OTP")
+		}
+		return fmt.Errorf("store: verify OTP: %w", res.Err())
 	}
 	return nil
 }
