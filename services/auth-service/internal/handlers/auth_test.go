@@ -3752,3 +3752,50 @@ func TestReviewKYBKYESubmissions_ConcurrencyRace(t *testing.T) {
 		t.Errorf("Expected exactly 1 audit log entry for KYC_REVIEWED, got %d", kycReviewedCount)
 	}
 }
+
+// TestDeviceToken_PlatformWhitelist reproduces the missing whitelist: the
+// platform field was persisted verbatim, so arbitrary strings (or injection
+// payloads) entered device_tokens[].platform.
+//
+// Pre-fix expectation: arbitrary platform accepted (200).
+// Post-fix expectation: only android/ios/web accepted; others 400.
+func TestDeviceToken_PlatformWhitelist(t *testing.T) {
+	a, mongoStore, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	user := &models.User{
+		ID: "user-device-platform-1", Email: "deviceplatform@example.com",
+		Username: "deviceplatformuser", Password: "Password123!",
+		Role: models.RoleUser, IsActive: true, CreatedAt: time.Now().UTC(),
+	}
+	_ = mongoStore.CreateUser(ctx, user)
+
+	tokenStr, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email)
+	if err != nil {
+		t.Fatalf("token: %v", err)
+	}
+
+	for _, platform := range []string{"android", "ios", "web"} {
+		body := fmt.Sprintf(`{"token":"tok-%s","platform":"%s"}`, platform, platform)
+		req := httptest.NewRequest("POST", "/auth/device-token", strings.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+tokenStr)
+		rec := httptest.NewRecorder()
+		a.DeviceToken(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("platform %q should be whitelisted, got %d %s", platform, rec.Code, rec.Body.String())
+		}
+	}
+
+	body := `{"token":"tok-bad","platform":"windows-phone;DROP"}`
+	req := httptest.NewRequest("POST", "/auth/device-token", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+tokenStr)
+	rec := httptest.NewRecorder()
+	a.DeviceToken(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("ARBITRARY PLATFORM ACCEPTED: platform=%q got %d (want 400)", "windows-phone;DROP", rec.Code)
+	}
+}

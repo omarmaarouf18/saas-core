@@ -110,6 +110,7 @@ type Job struct {
 	PaymentMethod          string     `json:"payment_method"                bson:"payment_method"`
 	CancellationReason     string     `json:"cancellation_reason,omitempty" bson:"cancellation_reason,omitempty"`
 	LockedEscrowAmount     float64    `json:"locked_escrow_amount,omitempty" bson:"locked_escrow_amount,omitempty"`
+	ActualCashAmount       *float64   `json:"actual_cash_amount,omitempty"  bson:"actual_cash_amount,omitempty"`
 	ReconciliationNote     string     `json:"reconciliation_note,omitempty" bson:"reconciliation_note,omitempty"`
 	EscrowFailureReason    string     `json:"escrow_failure_reason,omitempty" bson:"escrow_failure_reason,omitempty"`
 	SuggestedPrice         float64    `json:"suggested_price,omitempty"           bson:"suggested_price,omitempty"`
@@ -133,6 +134,7 @@ type OwnerJobResponse struct {
 	CurrentLocation        *Location  `json:"current_location,omitempty"`
 	PaymentMethod          string     `json:"payment_method"`
 	LockedEscrowAmount     float64    `json:"locked_escrow_amount,omitempty"`
+	ActualCashAmount       *float64   `json:"actual_cash_amount,omitempty"`
 	ReconciliationNote     string     `json:"reconciliation_note,omitempty"`
 	EscrowFailureReason    string     `json:"escrow_failure_reason,omitempty"`
 	SuggestedPrice         float64    `json:"suggested_price,omitempty"`
@@ -160,6 +162,7 @@ func NewOwnerJobResponse(j *Job) OwnerJobResponse {
 		CurrentLocation:        j.CurrentLocation,
 		PaymentMethod:          j.PaymentMethod,
 		LockedEscrowAmount:     j.LockedEscrowAmount,
+		ActualCashAmount:       j.ActualCashAmount,
 		ReconciliationNote:     j.ReconciliationNote,
 		EscrowFailureReason:    j.EscrowFailureReason,
 		SuggestedPrice:         j.SuggestedPrice,
@@ -353,10 +356,14 @@ type DepositRequest struct {
 
 // CompleteJobRequest is the expected JSON body for POST /users/jobs/complete.
 type CompleteJobRequest struct {
-	JobID          string `json:"job_id"`
-	CashCollected  bool   `json:"cash_collected"`
-	RequesterID    string `json:"requester_id"`
-	RequesterToken string `json:"requester_token,omitempty"`
+	JobID         string `json:"job_id"`
+	CashCollected bool   `json:"cash_collected"`
+	// ActualCashAmount is the employee-reported cash actually collected for
+	// COD jobs. When >0 it is cent-rounded and persisted on the job record;
+	// otherwise the agreed/recomputed amount is recorded as before.
+	ActualCashAmount float64 `json:"actual_cash_amount,omitempty"`
+	RequesterID      string  `json:"requester_id"`
+	RequesterToken   string  `json:"requester_token,omitempty"`
 }
 
 type PlanTier string

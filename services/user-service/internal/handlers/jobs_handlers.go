@@ -237,7 +237,9 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		initialStatus = models.JobStatusAwaitingPriceResponse
 
 		if req.ProposedPrice != nil {
-			if !models.ValidPriceProposal(suggestedPrice, *req.ProposedPrice) {
+			pp := roundMoney(*req.ProposedPrice)
+			req.ProposedPrice = &pp
+			if !models.ValidPriceProposal(suggestedPrice, pp) {
 				writeJSON(w, http.StatusBadRequest, map[string]string{
 					"error":   "invalid_proposed_price",
 					"message": "proposed_price must be between 50% and 150% of the suggested price",
@@ -535,7 +537,15 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := u.store.CompleteCODJob(ctx, job.ID); err != nil {
+		// Record the cash actually collected at the door (cent-rounded).
+		// Previously only a recomputed price estimate was logged — real
+		// collections that differed from the estimate were silently lost.
+		cashAmount := amount
+		if req.ActualCashAmount > 0 {
+			cashAmount = math.Round(req.ActualCashAmount*100) / 100
+		}
+
+		if err := u.store.CompleteCODJob(ctx, job.ID, cashAmount); err != nil {
 			if strings.Contains(err.Error(), "not active") {
 				writeJSON(w, http.StatusConflict, map[string]string{"error": "job already completed or not active: " + err.Error()})
 				return
@@ -544,13 +554,14 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		log.Printf("[USER] COD Job %s completed: cash_collected=%.2f logged (0%% platform commission)", job.ID, amount)
+		log.Printf("[USER] COD Job %s completed: actual_cash_collected=%.2f logged (0%% platform commission)", job.ID, cashAmount)
 		writeJSON(w, http.StatusOK, map[string]any{
-			"message":          "COD job completed and collection logged (0% platform commission)",
-			"job_id":           job.ID,
-			"total_amount":     amount,
-			"platform_fee":     0.0,
-			"platform_fee_pct": 0.0,
+			"message":              "COD job completed and collection recorded (0% platform commission)",
+			"job_id":               job.ID,
+			"total_amount":         cashAmount,
+			"cash_amount_recorded": cashAmount,
+			"platform_fee":         0.0,
+			"platform_fee_pct":     0.0,
 		})
 		return
 	}
@@ -575,19 +586,18 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg := u.store.GetPlatformConfig(ctx)
-	feePercent := 15.0
-	if cfg != nil {
-		feePercent = cfg.PlatformFeePercentage
-	}
-	fee := math.Round(amount*feePercent) / 100
-	net := amount - fee
+	// The response must reflect the ACTUAL fund movement. ReleaseEscrowWithSplit
+	// credits 100% of the released amount (ADR-0017 zero-commission model);
+	// deriving a percentage-based fee/net split from mutable platform_config
+	// here previously displayed a phantom fee that was never deducted.
+	fee := 0.0
+	net := amount
 
-	log.Printf("[USER] Job %s completed: total=%.2f fee=%.2f net=%.2f", job.ID, amount, fee, net)
+	log.Printf("[USER] Job %s completed: released=%.2f fee=0.00 net_to_tenant=%.2f (zero-commission release)", job.ID, amount, net)
 	writeJSON(w, http.StatusOK, map[string]any{
-		"message": "job completed — profit split executed",
+		"message": "job completed — escrow released (0% platform commission)",
 		"job_id":  job.ID, "total_amount": amount,
-		"platform_fee": fee, "platform_fee_pct": feePercent,
+		"platform_fee": fee, "platform_fee_pct": 0.0,
 		"net_to_tenant": net,
 	})
 }
@@ -871,6 +881,16 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Authentication MUST precede the throttle reservation: reserving the
+	// per-job Redis slot before verifying the caller let any unauthenticated
+	// party holding a job ID continuously claim the reservation window,
+	// starving the assigned employee's legitimate updates with 429s.
+	resolvedRequester, err := resolveTokenWithRole(req.RequesterID, "employee", "owner")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
 	// --- ATOMIC THROTTLE RESERVATION (ENTRY GUARD) ---
 	now := time.Now()
 	nowMs := now.UnixNano() / int64(time.Millisecond)
@@ -956,13 +976,6 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 			lastTime = lastUpdate
 		}
 		u.locationThrottleMu.Unlock()
-	}
-
-	resolvedRequester, err := resolveTokenWithRole(req.RequesterID, "employee", "owner")
-	if err != nil {
-		clearInFlight()
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
-		return
 	}
 
 	if !isValidCoordinate(req.Latitude, req.Longitude) {
@@ -1526,6 +1539,15 @@ func (u *UserService) ProposePrice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	req.ProposedPrice = roundMoney(req.ProposedPrice)
+	if !models.ValidPriceProposal(job.SuggestedPrice, req.ProposedPrice) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_proposed_price",
+			"message": "proposed price must be between 50% and 150% of the suggested price",
+		})
+		return
+	}
+
 	now := time.Now().UTC()
 	exp := now.Add(5 * time.Minute)
 	job.ProposedPrice = &req.ProposedPrice
@@ -1691,6 +1713,7 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 		if job.ProposedPrice != nil {
 			activePrice = *job.ProposedPrice
 		}
+		activePrice = roundMoney(activePrice)
 
 		// Lock escrow for non-COD negotiable transport jobs
 		if job.PaymentMethod != "cod" {

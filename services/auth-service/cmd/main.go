@@ -125,12 +125,11 @@ func main() {
 
 	// Health check.
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		// Minimal status only: the previous payload disclosed environment
+		// details (app_env), crypto/dispatcher internals to unauthenticated
+		// callers. Server-side diagnostics belong in logs, not public probes.
 		handlerutil.WriteJSON(w, http.StatusOK, map[string]string{
-			"status":       "ok",
-			"storage":      "mongodb",
-			"otp_crypto":   "AES-256-GCM",
-			"otp_dispatch": dispatcher.Name(),
-			"app_env":      cfg.AppEnv,
+			"status": "ok",
 		})
 	})
 
@@ -149,10 +148,17 @@ func main() {
 
 	addr := ":" + cfg.Port
 	server := &http.Server{
-		Addr:              addr,
-		Handler:           mux,
-		TLSConfig:         tlsConfig,
+		Addr:      addr,
+		Handler:   mux,
+		TLSConfig: tlsConfig,
+		// ReadTimeout bounds slow-body slowloris reads (request headers
+		// were already capped at 3s). IdleTimeout reaps idle keep-alive
+		// connections. WriteTimeout is deliberately unset: SSE streams and
+		// proxied long-lived responses must never be truncated by a write
+		// deadline.
 		ReadHeaderTimeout: 3 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	// Graceful shutdown.

@@ -97,7 +97,7 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rating := &models.Rating{
-		ID:        fmt.Sprintf("rate-%d", time.Now().UnixNano()),
+		ID:        "rate-" + generateID(),
 		JobID:     req.JobID,
 		RatedBy:   req.RatedBy,
 		RatedUser: req.RatedUser,
@@ -179,7 +179,10 @@ func (u *UserService) GetRatings(w http.ResponseWriter, r *http.Request) {
 		targetUserID = resolvedTarget
 	}
 
-	ratings, err := u.store.GetRatingsForUser(r.Context(), targetUserID)
+	// Server-side pagination: default page of 50, hard cap of 200.
+	limit := int64(parseIntDefault(r.URL.Query().Get("limit"), 50))
+	offset := int64(parseIntDefault(r.URL.Query().Get("offset"), 0))
+	ratings, err := u.store.GetRatingsForUser(r.Context(), targetUserID, limit, offset)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return

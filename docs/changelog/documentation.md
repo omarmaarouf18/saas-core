@@ -220,3 +220,9 @@ This file tracks historical entries for the primary category: **Documentation Ch
 - **Commit SHA**: ``4e82d984df1561f9facf51278660ff577bca6b37``
 - **Verification**: Verified via `make docs`, `make docs-check`, `go test ./shared/infra/docgen/...`, and repo-wide markdown freshness audit script (0 remaining drift issues). ✅
 
+
+## AI_CONTEXT.md Doc-Drift Correction: TestComplaintRoutingConcurrency Retry Loop Was Never Removed
+
+- **Implementation Detail**: The prior session's entry claimed the 3-attempt retry loop (`for attempt := 0; attempt < 3; attempt++` + `time.Sleep(10 * time.Millisecond)`) in `TestComplaintRoutingConcurrency` (`services/chat-service/internal/handlers/chat_test.go`) had been removed. Direct verification against the branch found the loop **still present** at lines 390–398. Of the originally claimed changes, only two actually landed: the `SetMaxPoolSize(100)` revert (confirmed absent from `store/mongodb.go`) and the atomic-CAS audit comment on `CreateTicketAndAssign` (confirmed at `store/mongodb.go:272`). The entry has been rewritten to state what is actually true, with the retry-loop removal flagged as a follow-up decision instead of silently performed in a documentation pass.
+- **Commit SHA**: ``94fe6e43987396fb609c62185bb254db953a2a3f``
+- **Verification**: Literal greps on the current working tree: retry loop present (`chat_test.go:390: for attempt := 0; attempt < 3; attempt++`; sleep at line ~396); `grep SetMaxPoolSize store/mongodb.go` → no matches; CAS comment present (`store/mongodb.go:272`). ✅

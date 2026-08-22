@@ -82,6 +82,7 @@ type UserService struct {
 	completeJobLimiter        *handlerutil.RateLimiter
 	resolveReconLimiter       *handlerutil.RateLimiter
 	payoutLimiter             *handlerutil.RateLimiter
+	subscriptionLimiter       *handlerutil.RateLimiter
 	internalServiceToken      string
 	locationThrottleMu        sync.Mutex
 	locationLastUpdate        map[string]time.Time
@@ -203,6 +204,7 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		completeJobLimiter:        newHandlerLimiter(30, "user:complete_job"),
 		resolveReconLimiter:       newHandlerLimiter(30, "user:reconciliation_resolve"),
 		payoutLimiter:             newHandlerLimiter(30, "user:payout"),
+		subscriptionLimiter:       newHandlerLimiter(30, "user:subscription"),
 		internalServiceToken:      cfg.InternalServiceToken,
 		locationLastUpdate:        make(map[string]time.Time),
 		locationInFlight:          make(map[string]bool),
@@ -378,6 +380,13 @@ func parseFloat(s string, fallback float64) float64 {
 		return fallback
 	}
 	return v
+}
+
+// roundMoney rounds a monetary value to cents using half-away-from-zero,
+// the single sanctioned boundary treatment for client-supplied money until
+// the deferred integer-minor-units migration.
+func roundMoney(x float64) float64 {
+	return math.Round(x*100) / 100
 }
 
 func haversineKm(lat1, lon1, lat2, lon2 float64) float64 {

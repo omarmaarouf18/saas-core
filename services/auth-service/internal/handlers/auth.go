@@ -426,6 +426,10 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := a.store.GetByEmail(ctx, req.Email)
 	if user == nil {
+		// Timing-parity: burn a real bcrypt comparison against a dummy hash
+		// so the not-found path costs the same as the wrong-password path,
+		// closing the response-time enumeration side channel.
+		_ = bcrypt.CompareHashAndPassword(dummyBcryptHash, []byte(req.Password))
 		a.limiter.RecordFailure(clientIP)
 		if req.Email != "" {
 			a.limiter.RecordFailure(req.Email)
@@ -724,11 +728,14 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// Get Owner
+	// Get Owner. Both failure shapes (nonexistent / non-owner account vs
+	// wrong password) MUST be indistinguishable in status and body — the
+	// prior distinct wordings confirmed which emails belong to real owners.
 	owner := a.store.GetByEmail(ctx, req.OwnerEmail)
 	if owner == nil || owner.Role != models.RoleOwner {
+		_ = bcrypt.CompareHashAndPassword(dummyBcryptHash, []byte(req.OwnerPassword))
 		writeJSON(w, http.StatusForbidden, map[string]string{
-			"error": "invalid owner credentials or owner does not exist",
+			"error": "invalid owner credentials",
 		})
 		return
 	}
@@ -738,7 +745,7 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 		a.limiter.RecordFailure(clientIP)
 		a.limiter.RecordFailure(req.OwnerEmail)
 		writeJSON(w, http.StatusForbidden, map[string]string{
-			"error": "invalid owner credentials or password does not match",
+			"error": "invalid owner credentials",
 		})
 		return
 	}
@@ -753,11 +760,13 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get Employee to resolve ID
+	// Get Employee to resolve ID. Nonexistent and foreign-tenant employees
+	// return the SAME status and body here: the previous 404-vs-400 split
+	// distinguished "no such account" from "not yours".
 	emp := a.store.GetByEmail(ctx, req.EmployeeEmail)
 	if emp == nil {
 		log.Printf("[AUTH ERROR] ToggleEmployee failed: employee %q not found", req.EmployeeEmail)
-		writeJSON(w, http.StatusNotFound, map[string]string{
+		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "employee not found or not authorized for this owner",
 		})
 		return
@@ -1263,6 +1272,11 @@ func (a *Auth) Refresh(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// dummyBcryptHash is a valid bcrypt digest of an unknown random string,
+// compared against on every user-not-found authentication path so response
+// timing is independent of account existence (cost 10).
+var dummyBcryptHash = []byte("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy")
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	handlerutil.WriteJSON(w, status, data)
@@ -2318,6 +2332,17 @@ func (a *Auth) DeviceToken(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "invalid request body",
+		})
+		return
+	}
+
+	// Platform whitelist: only known client platforms may be recorded.
+	// (Empty keeps the store's legacy "android" default.)
+	switch req.Platform {
+	case "", "android", "ios", "web":
+	default:
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid platform: must be one of android, ios, web",
 		})
 		return
 	}

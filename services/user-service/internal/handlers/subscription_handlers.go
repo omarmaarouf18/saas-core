@@ -86,6 +86,16 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Per-endpoint rate limit (30 req/min per owner), matching ADR-0016
+		// tiering for state-changing endpoints; runs post-authentication and
+		// is keyed on verified identity.
+		if u.subscriptionLimiter != nil {
+			if limited, remaining := u.subscriptionLimiter.CheckAndRecord(req.TenantID); limited {
+				writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many requests; retry in %.0f seconds", remaining.Seconds())})
+				return
+			}
+		}
+
 		// Verify requester_id resolves to a real user via auth-service (internal call)
 		authURL := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, req.RequesterID)
 		authReq, err := http.NewRequest("GET", authURL, nil)
@@ -121,7 +131,7 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 
 		if req.Tier == models.PlanPaid {
 			sub := &models.Subscription{
-				ID:        fmt.Sprintf("sub-%d", time.Now().UnixNano()),
+				ID:        "sub-" + generateID(),
 				TenantID:  req.TenantID,
 				Tier:      models.PlanPendingPayment,
 				StartedAt: time.Now().UTC(),
@@ -138,7 +148,7 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 		}
 
 		sub := &models.Subscription{
-			ID:        fmt.Sprintf("sub-%d", time.Now().UnixNano()),
+			ID:        "sub-" + generateID(),
 			TenantID:  req.TenantID,
 			Tier:      models.PlanFree,
 			StartedAt: time.Now().UTC(),

@@ -3,6 +3,8 @@ package store
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"math"
@@ -486,6 +488,28 @@ func (s *MongoDB) GetWallet(ctx context.Context, tenantID string) *models.Wallet
 	return &w
 }
 
+// ---------------------------------------------------------------------------
+// Collision-proof record ID generation
+// ---------------------------------------------------------------------------
+
+// newRecordID generates a collision-proof unique ID for persisted records
+// (ledger entries, payout requests) as "<prefix>-<16 hex chars><suffix>".
+//
+// The previous scheme, fmt.Sprintf("tx-%d", time.Now().UnixNano()), collides
+// whenever two concurrent operations read the clock in the same nanosecond;
+// since TransactionLedger.ID maps to _id, the loser's InsertOne fails with a
+// duplicate-key error and several write paths only log it — silently dropping
+// the immutable audit entry for a real money movement. 8 random bytes give a
+// 2^-64 per-pair collision probability, matching handlers.generateID.
+func newRecordID(prefix, suffix string) string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		// Last-resort fallback; crypto/rand does not fail on supported platforms.
+		return fmt.Sprintf("%s-fallback-%d%s", prefix, time.Now().UnixNano(), suffix)
+	}
+	return prefix + "-" + hex.EncodeToString(b) + suffix
+}
+
 func (s *MongoDB) Deposit(ctx context.Context, tenantID string, amount float64) error {
 	w, err := s.GetOrCreateWallet(ctx, tenantID)
 	if err != nil {
@@ -499,7 +523,7 @@ func (s *MongoDB) Deposit(ctx context.Context, tenantID string, amount float64) 
 		return err
 	}
 	if _, err := s.ledger.InsertOne(ctx, models.TransactionLedger{
-		ID: fmt.Sprintf("tx-%d", time.Now().UnixNano()), TenantID: tenantID, Type: models.TxDeposit,
+		ID: newRecordID("tx", ""), TenantID: tenantID, Type: models.TxDeposit,
 		Amount: amount, BalanceBefore: w.TotalBalance, BalanceAfter: w.TotalBalance + amount,
 		Description: "wallet deposit", Timestamp: time.Now().UTC(),
 	}); err != nil {
@@ -530,7 +554,7 @@ func (s *MongoDB) LockEscrow(ctx context.Context, tenantID, jobID string, amount
 		return fmt.Errorf("escrow lock failed: race condition or insufficient funds")
 	}
 	if _, err := s.ledger.InsertOne(ctx, models.TransactionLedger{
-		ID: fmt.Sprintf("tx-%d", time.Now().UnixNano()), TenantID: tenantID, JobID: jobID,
+		ID: newRecordID("tx", ""), TenantID: tenantID, JobID: jobID,
 		Type: models.TxEscrowLock, Amount: amount,
 		BalanceBefore: w.WithdrawableBalance, BalanceAfter: w.WithdrawableBalance - amount,
 		Description: fmt.Sprintf("escrow lock for job %s", jobID), Timestamp: time.Now().UTC(),
@@ -544,7 +568,6 @@ func (s *MongoDB) LockEscrow(ctx context.Context, tenantID, jobID string, amount
 func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID string, amount float64) error {
 	netAmount := amount
 	now := time.Now().UTC()
-	tsBase := now.UnixNano()
 
 	runTx := func(sc context.Context, isFallback bool) error {
 		if isFallback {
@@ -614,11 +637,11 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 		// Ledger entries.
 		entries := []interface{}{
 			models.TransactionLedger{
-				ID: fmt.Sprintf("tx-%d-release", tsBase), TenantID: tenantID, JobID: jobID,
+				ID: newRecordID("tx", "-release"), TenantID: tenantID, JobID: jobID,
 				Type: models.TxEscrowRelease, Amount: amount, Description: "escrow released (0% platform commission)", Timestamp: now,
 			},
 			models.TransactionLedger{
-				ID: fmt.Sprintf("tx-%d-payout", tsBase), TenantID: tenantID, JobID: jobID,
+				ID: newRecordID("tx", "-payout"), TenantID: tenantID, JobID: jobID,
 				Type: models.TxPayout, Amount: netAmount, Description: "100% net payout to tenant owner", Timestamp: now,
 			},
 		}
@@ -653,15 +676,18 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 	return err
 }
 
-// CompleteCODJob updates job status to completed for Cash-on-Delivery jobs with zero wallet mutation.
-func (s *MongoDB) CompleteCODJob(ctx context.Context, jobID string) error {
+// CompleteCODJob updates job status to completed for Cash-on-Delivery jobs
+// with zero wallet mutation, persisting the actually-collected cash amount in
+// the same atomic status flip so the collection record can never diverge from
+// the completion event.
+func (s *MongoDB) CompleteCODJob(ctx context.Context, jobID string, cashAmount float64) error {
 	resJob, err := s.jobs.UpdateOne(ctx,
 		bson.M{
 			"_id":    jobID,
 			"status": bson.M{"$in": []models.JobStatus{models.JobStatusActive, models.JobStatusEscrowReconciliationRequired}},
 		},
 		bson.M{
-			"$set": bson.M{"status": models.JobStatusCompleted, "updated_at": time.Now().UTC()},
+			"$set": bson.M{"status": models.JobStatusCompleted, "actual_cash_amount": cashAmount, "updated_at": time.Now().UTC()},
 		})
 	if err != nil {
 		return fmt.Errorf("failed to update COD job status: %w", err)
@@ -690,7 +716,7 @@ func (s *MongoDB) CreatePayoutRequest(ctx context.Context, tenantID string, inpu
 	}
 
 	now := time.Now().UTC()
-	payoutID := fmt.Sprintf("payout-%d", now.UnixNano())
+	payoutID := newRecordID("payout", "")
 
 	// Atomically deduct amount from withdrawable_balance and total_balance
 	res, err := s.wallets.UpdateOne(ctx,
@@ -728,7 +754,7 @@ func (s *MongoDB) CreatePayoutRequest(ctx context.Context, tenantID string, inpu
 
 	// Insert transaction ledger record
 	if _, err := s.ledger.InsertOne(ctx, models.TransactionLedger{
-		ID:            fmt.Sprintf("tx-%d-payout-req", now.UnixNano()),
+		ID:            newRecordID("tx", "-payout-req"),
 		TenantID:      tenantID,
 		Type:          models.TxPayout,
 		Amount:        input.Amount,
@@ -759,11 +785,36 @@ func (s *MongoDB) GetPayoutRequests(ctx context.Context, tenantID string) ([]*mo
 	return requests, nil
 }
 
-func (s *MongoDB) GetLedger(ctx context.Context, tenantID string) []models.TransactionLedger {
+// Read-pagination bounds shared by list endpoints. Server-side defaults cap
+// every page so no read can materialize an unbounded result set; clients may
+// lower limit / advance offset but can never exceed the hard caps.
+const (
+	DefaultLedgerPage  int64 = 100
+	MaxLedgerPage      int64 = 500
+	DefaultRatingsPage int64 = 50
+	MaxRatingsPage     int64 = 200
+)
+
+// clampPage normalizes caller-supplied paging arguments.
+func clampPage(limit, offset, def, max int64) (int64, int64) {
+	if limit <= 0 {
+		limit = def
+	}
+	if limit > max {
+		limit = max
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	return limit, offset
+}
+
+func (s *MongoDB) GetLedger(ctx context.Context, tenantID string, limit, offset int64) []models.TransactionLedger {
 	if s == nil || s.ledger == nil {
 		return nil
 	}
-	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}})
+	limit, offset = clampPage(limit, offset, DefaultLedgerPage, MaxLedgerPage)
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}}).SetLimit(limit).SetSkip(offset)
 	cursor, err := s.ledger.Find(ctx, bson.M{"tenant_id": tenantID}, opts)
 	if err != nil {
 		return nil
@@ -782,6 +833,17 @@ func (s *MongoDB) GetPlatformConfig(ctx context.Context) *models.PlatformConfig 
 		return nil
 	}
 	return &cfg
+}
+
+// UpsertPlatformConfig replaces the global platform configuration document.
+// Mirrors UpsertSubscription: upsert on the fixed "global" document ID.
+func (s *MongoDB) UpsertPlatformConfig(ctx context.Context, cfg *models.PlatformConfig) error {
+	if cfg.ID == "" {
+		cfg.ID = "global"
+	}
+	opts := options.Replace().SetUpsert(true)
+	_, err := s.platConfig.ReplaceOne(ctx, bson.M{"_id": cfg.ID}, cfg, opts)
+	return err
 }
 
 // ---------------------------------------------------------------------------
@@ -842,9 +904,19 @@ func (s *MongoDB) GetSubscription(ctx context.Context, tenantID string) *models.
 }
 
 // UpsertSubscription inserts or updates a subscription.
+// The tenant's existing document ID is preserved on update: generating a new
+// ID per call violated MongoDB's immutable _id constraint and turned every
+// repeat upsert into a write error.
 func (s *MongoDB) UpsertSubscription(ctx context.Context, sub *models.Subscription) error {
+	var existing models.Subscription
+	err := s.subscriptions.FindOne(ctx, bson.M{"tenant_id": sub.TenantID}).Decode(&existing)
+	if err == nil && existing.ID != "" {
+		sub.ID = existing.ID
+	} else if sub.ID == "" {
+		sub.ID = newRecordID("sub", "")
+	}
 	opts := options.Replace().SetUpsert(true)
-	_, err := s.subscriptions.ReplaceOne(ctx, bson.M{"tenant_id": sub.TenantID}, sub, opts)
+	_, err = s.subscriptions.ReplaceOne(ctx, bson.M{"tenant_id": sub.TenantID}, sub, opts)
 	return err
 }
 
@@ -854,12 +926,14 @@ func (s *MongoDB) CreateRating(ctx context.Context, r *models.Rating) error {
 	return err
 }
 
-// GetRatingsForUser returns all ratings received by a user.
-func (s *MongoDB) GetRatingsForUser(ctx context.Context, userID string) ([]*models.Rating, error) {
+// GetRatingsForUser returns a page of ratings received by a user.
+func (s *MongoDB) GetRatingsForUser(ctx context.Context, userID string, limit, offset int64) ([]*models.Rating, error) {
 	if s == nil || s.ratings == nil {
 		return []*models.Rating{}, nil
 	}
-	cursor, err := s.ratings.Find(ctx, bson.M{"rated_user": userID})
+	limit, offset = clampPage(limit, offset, DefaultRatingsPage, MaxRatingsPage)
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).SetLimit(limit).SetSkip(offset)
+	cursor, err := s.ratings.Find(ctx, bson.M{"rated_user": userID}, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -935,7 +1009,28 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 		return fmt.Errorf("insufficient escrow balance to refund: have %.2f, need %.2f", w.EscrowBalance, amount)
 	}
 
-	runTx := func(sc context.Context) error {
+	runTx := func(sc context.Context, isFallback bool) error {
+		// Capture the job's prior state so a compensating revert can restore
+		// it if a later step fails. The revert closures are no-ops inside a
+		// real multi-document transaction (abort handles it); they only act
+		// in the non-transactional fallback where each step commits
+		// immediately and a mid-sequence failure would otherwise strand
+		// mutated state — mirroring ReleaseEscrowWithSplit.
+		prevJobStatus := models.JobStatusCancelled
+		var prev models.Job
+		if err := s.jobs.FindOne(sc, bson.M{"_id": jobID}).Decode(&prev); err == nil && prev.Status != "" {
+			prevJobStatus = prev.Status
+		}
+
+		revertJob := func() {
+			if isFallback {
+				_, _ = s.jobs.UpdateOne(sc, bson.M{"_id": jobID}, bson.M{
+					"$inc": bson.M{"locked_escrow_amount": amount},
+					"$set": bson.M{"status": prevJobStatus, "updated_at": time.Now().UTC()},
+				})
+			}
+		}
+
 		// Atomic check and deduct against that job's own locked amount by updating the job document.
 		// status must be Active or Pending, and locked_escrow_amount >= amount.
 		resJob, err := s.jobs.UpdateOne(sc,
@@ -962,24 +1057,40 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 				"$set": bson.M{"updated_at": time.Now().UTC()},
 			})
 		if err != nil {
+			revertJob()
 			return err
 		}
 		if res.MatchedCount == 0 {
+			revertJob()
 			return fmt.Errorf("escrow refund failed: insufficient escrow balance")
 		}
 
+		revertWalletAndJob := func() {
+			if isFallback {
+				_, _ = s.wallets.UpdateOne(sc, bson.M{"tenant_id": tenantID}, bson.M{
+					"$inc": bson.M{"escrow_balance": amount, "withdrawable_balance": -amount},
+					"$set": bson.M{"updated_at": time.Now().UTC()},
+				})
+				revertJob()
+			}
+		}
+
 		_, err = s.ledger.InsertOne(sc, models.TransactionLedger{
-			ID: fmt.Sprintf("tx-%d-refund", time.Now().UnixNano()), TenantID: tenantID, JobID: jobID,
+			ID: newRecordID("tx", "-refund"), TenantID: tenantID, JobID: jobID,
 			Type: models.TxEscrowRelease, Amount: amount,
 			BalanceBefore: w.WithdrawableBalance, BalanceAfter: w.WithdrawableBalance + amount,
 			Description: fmt.Sprintf("escrow refund for cancelled job %s", jobID), Timestamp: time.Now().UTC(),
 		})
-		return err
+		if err != nil {
+			revertWalletAndJob()
+			return err
+		}
+		return nil
 	}
 
 	session, err := s.client.StartSession()
 	if err != nil {
-		return runTx(ctx)
+		return runTx(ctx, true)
 	}
 	defer session.EndSession(ctx)
 
@@ -987,7 +1098,7 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 		if err := session.StartTransaction(); err != nil {
 			return err
 		}
-		if err := runTx(sc); err != nil {
+		if err := runTx(sc, false); err != nil {
 			_ = session.AbortTransaction(sc)
 			return err
 		}
@@ -996,7 +1107,7 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 
 	if err != nil && (strings.Contains(err.Error(), "Transaction numbers") || strings.Contains(err.Error(), "replica set")) {
 		log.Printf("[USER-STORE] Standalone MongoDB detected. Falling back to sequential execution for RefundEscrow.")
-		return runTx(ctx)
+		return runTx(ctx, true)
 	}
 	return err
 }
@@ -1019,7 +1130,7 @@ func (s *MongoDB) RollbackEscrow(ctx context.Context, tenantID string, amount fl
 		return fmt.Errorf("escrow rollback failed: insufficient escrow balance")
 	}
 	_, err = s.ledger.InsertOne(ctx, models.TransactionLedger{
-		ID: fmt.Sprintf("tx-%d-rollback", time.Now().UnixNano()), TenantID: tenantID,
+		ID: newRecordID("tx", "-rollback"), TenantID: tenantID,
 		Type: models.TxEscrowRelease, Amount: amount,
 		BalanceBefore: w.WithdrawableBalance, BalanceAfter: w.WithdrawableBalance + amount,
 		Description: "escrow lock rollback due to persistence failure", Timestamp: time.Now().UTC(),
@@ -1104,7 +1215,7 @@ func (s *MongoDB) RejectPayoutRequest(ctx context.Context, payoutID, reason stri
 	}
 
 	if _, err := s.ledger.InsertOne(ctx, models.TransactionLedger{
-		ID: fmt.Sprintf("tx-%d", now.UnixNano()), TenantID: pr.TenantID,
+		ID: newRecordID("tx", ""), TenantID: pr.TenantID,
 		Type: models.TxPayoutRefund, Amount: pr.Amount,
 		Description: fmt.Sprintf("payout %s rejected: %s", payoutID, reason),
 		Timestamp:   now,

@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/project/shared/infra/handlerutil"
@@ -92,6 +93,12 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": fmt.Sprintf("tenant_id and positive amount up to %d required", maxDepositAmount),
 		})
+		return
+	}
+	// Cent-boundary discipline: sub-cent residues must never enter balances.
+	req.Amount = roundMoney(req.Amount)
+	if req.Amount == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "amount rounds to zero"})
 		return
 	}
 
@@ -186,8 +193,18 @@ func (u *UserService) GetLedger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entries := u.store.GetLedger(r.Context(), tenantID)
-	writeJSON(w, http.StatusOK, map[string]any{"count": len(entries), "entries": entries})
+	// Server-side pagination: default page of 100, hard cap of 500, client
+	// tunable via ?limit/&offset. Previously this endpoint serialized every
+	// matching ledger document — an unbounded-response DoS surface.
+	limit := int64(parseIntDefault(r.URL.Query().Get("limit"), 100))
+	offset := int64(parseIntDefault(r.URL.Query().Get("offset"), 0))
+	entries := u.store.GetLedger(r.Context(), tenantID, limit, offset)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"count":   len(entries),
+		"entries": entries,
+		"limit":   limit,
+		"offset":  offset,
+	})
 }
 
 // RequestPayout processes a tenant owner's withdrawal request (POST /users/wallet/payout/request).
@@ -238,6 +255,13 @@ func (u *UserService) RequestPayout(w http.ResponseWriter, r *http.Request) {
 
 	if strings.TrimSpace(req.PayoutMethod) == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "payout_method is required (e.g. bank_transfer, instapay)"})
+		return
+	}
+
+	// Cent-boundary discipline for fund movements.
+	req.Amount = roundMoney(req.Amount)
+	if req.Amount == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid payout amount: must be greater than 0"})
 		return
 	}
 
@@ -299,4 +323,17 @@ func (u *UserService) GetPayoutRequests(w http.ResponseWriter, r *http.Request) 
 	}
 
 	writeJSON(w, http.StatusOK, requests)
+}
+
+// parseIntDefault parses a non-negative integer query value, falling back to
+// def on empty or malformed input.
+func parseIntDefault(s string, def int) int {
+	if s == "" {
+		return def
+	}
+	v, err := strconv.Atoi(s)
+	if err != nil || v < 0 {
+		return def
+	}
+	return v
 }

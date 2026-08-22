@@ -200,7 +200,7 @@ func TestMongoDB_WalletAndEscrow(t *testing.T) {
 	}
 
 	// 5. GetLedger (returns []models.TransactionLedger)
-	ledger := s.GetLedger(ctx, tenantID)
+	ledger := s.GetLedger(ctx, tenantID, 0, 0)
 	if len(ledger) == 0 {
 		t.Errorf("GetLedger returned 0 items")
 	}
@@ -246,7 +246,7 @@ func TestMongoDB_SubscriptionsAndRatings(t *testing.T) {
 		t.Fatalf("CreateRating failed: %v", err)
 	}
 
-	gotRatings, err := s.GetRatingsForUser(ctx, "owner-1")
+	gotRatings, err := s.GetRatingsForUser(ctx, "owner-1", 0, 0)
 	if err != nil || len(gotRatings) != 1 {
 		t.Errorf("GetRatingsForUser failed: len=%d, err=%v", len(gotRatings), err)
 	}
