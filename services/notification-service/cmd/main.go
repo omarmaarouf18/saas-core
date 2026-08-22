@@ -106,10 +106,17 @@ func main() {
 
 	addr := ":" + cfg.Port
 	server := &http.Server{
-		Addr:              addr,
-		Handler:           mux,
-		TLSConfig:         tlsConfig,
+		Addr:      addr,
+		Handler:   mux,
+		TLSConfig: tlsConfig,
+		// ReadTimeout bounds slow-body slowloris reads (request headers
+		// were already capped at 3s). IdleTimeout reaps idle keep-alive
+		// connections. WriteTimeout is deliberately unset: SSE streams and
+		// proxied long-lived responses must never be truncated by a write
+		// deadline.
 		ReadHeaderTimeout: 3 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	// Graceful shutdown.
