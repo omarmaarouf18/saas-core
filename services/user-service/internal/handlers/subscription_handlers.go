@@ -121,7 +121,7 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 
 		if req.Tier == models.PlanPaid {
 			sub := &models.Subscription{
-				ID:        fmt.Sprintf("sub-%d", time.Now().UnixNano()),
+				ID:        "sub-" + generateID(),
 				TenantID:  req.TenantID,
 				Tier:      models.PlanPendingPayment,
 				StartedAt: time.Now().UTC(),
@@ -138,7 +138,7 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 		}
 
 		sub := &models.Subscription{
-			ID:        fmt.Sprintf("sub-%d", time.Now().UnixNano()),
+			ID:        "sub-" + generateID(),
 			TenantID:  req.TenantID,
 			Tier:      models.PlanFree,
 			StartedAt: time.Now().UTC(),

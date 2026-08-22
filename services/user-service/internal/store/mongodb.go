@@ -3,6 +3,8 @@ package store
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"math"
@@ -486,6 +488,28 @@ func (s *MongoDB) GetWallet(ctx context.Context, tenantID string) *models.Wallet
 	return &w
 }
 
+// ---------------------------------------------------------------------------
+// Collision-proof record ID generation
+// ---------------------------------------------------------------------------
+
+// newRecordID generates a collision-proof unique ID for persisted records
+// (ledger entries, payout requests) as "<prefix>-<16 hex chars><suffix>".
+//
+// The previous scheme, fmt.Sprintf("tx-%d", time.Now().UnixNano()), collides
+// whenever two concurrent operations read the clock in the same nanosecond;
+// since TransactionLedger.ID maps to _id, the loser's InsertOne fails with a
+// duplicate-key error and several write paths only log it — silently dropping
+// the immutable audit entry for a real money movement. 8 random bytes give a
+// 2^-64 per-pair collision probability, matching handlers.generateID.
+func newRecordID(prefix, suffix string) string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		// Last-resort fallback; crypto/rand does not fail on supported platforms.
+		return fmt.Sprintf("%s-fallback-%d%s", prefix, time.Now().UnixNano(), suffix)
+	}
+	return prefix + "-" + hex.EncodeToString(b) + suffix
+}
+
 func (s *MongoDB) Deposit(ctx context.Context, tenantID string, amount float64) error {
 	w, err := s.GetOrCreateWallet(ctx, tenantID)
 	if err != nil {
@@ -499,7 +523,7 @@ func (s *MongoDB) Deposit(ctx context.Context, tenantID string, amount float64) 
 		return err
 	}
 	if _, err := s.ledger.InsertOne(ctx, models.TransactionLedger{
-		ID: fmt.Sprintf("tx-%d", time.Now().UnixNano()), TenantID: tenantID, Type: models.TxDeposit,
+		ID: newRecordID("tx", ""), TenantID: tenantID, Type: models.TxDeposit,
 		Amount: amount, BalanceBefore: w.TotalBalance, BalanceAfter: w.TotalBalance + amount,
 		Description: "wallet deposit", Timestamp: time.Now().UTC(),
 	}); err != nil {
@@ -530,7 +554,7 @@ func (s *MongoDB) LockEscrow(ctx context.Context, tenantID, jobID string, amount
 		return fmt.Errorf("escrow lock failed: race condition or insufficient funds")
 	}
 	if _, err := s.ledger.InsertOne(ctx, models.TransactionLedger{
-		ID: fmt.Sprintf("tx-%d", time.Now().UnixNano()), TenantID: tenantID, JobID: jobID,
+		ID: newRecordID("tx", ""), TenantID: tenantID, JobID: jobID,
 		Type: models.TxEscrowLock, Amount: amount,
 		BalanceBefore: w.WithdrawableBalance, BalanceAfter: w.WithdrawableBalance - amount,
 		Description: fmt.Sprintf("escrow lock for job %s", jobID), Timestamp: time.Now().UTC(),
@@ -544,7 +568,6 @@ func (s *MongoDB) LockEscrow(ctx context.Context, tenantID, jobID string, amount
 func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID string, amount float64) error {
 	netAmount := amount
 	now := time.Now().UTC()
-	tsBase := now.UnixNano()
 
 	runTx := func(sc context.Context, isFallback bool) error {
 		if isFallback {
@@ -614,11 +637,11 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 		// Ledger entries.
 		entries := []interface{}{
 			models.TransactionLedger{
-				ID: fmt.Sprintf("tx-%d-release", tsBase), TenantID: tenantID, JobID: jobID,
+				ID: newRecordID("tx", "-release"), TenantID: tenantID, JobID: jobID,
 				Type: models.TxEscrowRelease, Amount: amount, Description: "escrow released (0% platform commission)", Timestamp: now,
 			},
 			models.TransactionLedger{
-				ID: fmt.Sprintf("tx-%d-payout", tsBase), TenantID: tenantID, JobID: jobID,
+				ID: newRecordID("tx", "-payout"), TenantID: tenantID, JobID: jobID,
 				Type: models.TxPayout, Amount: netAmount, Description: "100% net payout to tenant owner", Timestamp: now,
 			},
 		}
@@ -690,7 +713,7 @@ func (s *MongoDB) CreatePayoutRequest(ctx context.Context, tenantID string, inpu
 	}
 
 	now := time.Now().UTC()
-	payoutID := fmt.Sprintf("payout-%d", now.UnixNano())
+	payoutID := newRecordID("payout", "")
 
 	// Atomically deduct amount from withdrawable_balance and total_balance
 	res, err := s.wallets.UpdateOne(ctx,
@@ -728,7 +751,7 @@ func (s *MongoDB) CreatePayoutRequest(ctx context.Context, tenantID string, inpu
 
 	// Insert transaction ledger record
 	if _, err := s.ledger.InsertOne(ctx, models.TransactionLedger{
-		ID:            fmt.Sprintf("tx-%d-payout-req", now.UnixNano()),
+		ID:            newRecordID("tx", "-payout-req"),
 		TenantID:      tenantID,
 		Type:          models.TxPayout,
 		Amount:        input.Amount,
@@ -969,7 +992,7 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 		}
 
 		_, err = s.ledger.InsertOne(sc, models.TransactionLedger{
-			ID: fmt.Sprintf("tx-%d-refund", time.Now().UnixNano()), TenantID: tenantID, JobID: jobID,
+			ID: newRecordID("tx", "-refund"), TenantID: tenantID, JobID: jobID,
 			Type: models.TxEscrowRelease, Amount: amount,
 			BalanceBefore: w.WithdrawableBalance, BalanceAfter: w.WithdrawableBalance + amount,
 			Description: fmt.Sprintf("escrow refund for cancelled job %s", jobID), Timestamp: time.Now().UTC(),
@@ -1019,7 +1042,7 @@ func (s *MongoDB) RollbackEscrow(ctx context.Context, tenantID string, amount fl
 		return fmt.Errorf("escrow rollback failed: insufficient escrow balance")
 	}
 	_, err = s.ledger.InsertOne(ctx, models.TransactionLedger{
-		ID: fmt.Sprintf("tx-%d-rollback", time.Now().UnixNano()), TenantID: tenantID,
+		ID: newRecordID("tx", "-rollback"), TenantID: tenantID,
 		Type: models.TxEscrowRelease, Amount: amount,
 		BalanceBefore: w.WithdrawableBalance, BalanceAfter: w.WithdrawableBalance + amount,
 		Description: "escrow lock rollback due to persistence failure", Timestamp: time.Now().UTC(),
@@ -1104,7 +1127,7 @@ func (s *MongoDB) RejectPayoutRequest(ctx context.Context, payoutID, reason stri
 	}
 
 	if _, err := s.ledger.InsertOne(ctx, models.TransactionLedger{
-		ID: fmt.Sprintf("tx-%d", now.UnixNano()), TenantID: pr.TenantID,
+		ID: newRecordID("tx", ""), TenantID: pr.TenantID,
 		Type: models.TxPayoutRefund, Amount: pr.Amount,
 		Description: fmt.Sprintf("payout %s rejected: %s", payoutID, reason),
 		Timestamp:   now,

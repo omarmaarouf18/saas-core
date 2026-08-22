@@ -97,7 +97,7 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rating := &models.Rating{
-		ID:        fmt.Sprintf("rate-%d", time.Now().UnixNano()),
+		ID:        "rate-" + generateID(),
 		JobID:     req.JobID,
 		RatedBy:   req.RatedBy,
 		RatedUser: req.RatedUser,
