@@ -411,6 +411,7 @@ func (u *UserService) savePayoutIdempotencyKey(tenantID, key, payoutID string) {
 			}
 			return r
 		}, key)
+		// #nosec G706 //nolint:gosec -- key is client-controlled failure-diagnostic context and is CR/LF-sanitized above; matches saveIdempotencyKey
 		log.Printf("[ERROR] failed to store payout idempotency key %s: %v", safeKey, err)
 	}
 }
