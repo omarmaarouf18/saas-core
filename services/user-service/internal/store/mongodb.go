@@ -879,9 +879,19 @@ func (s *MongoDB) GetSubscription(ctx context.Context, tenantID string) *models.
 }
 
 // UpsertSubscription inserts or updates a subscription.
+// The tenant's existing document ID is preserved on update: generating a new
+// ID per call violated MongoDB's immutable _id constraint and turned every
+// repeat upsert into a write error.
 func (s *MongoDB) UpsertSubscription(ctx context.Context, sub *models.Subscription) error {
+	var existing models.Subscription
+	err := s.subscriptions.FindOne(ctx, bson.M{"tenant_id": sub.TenantID}).Decode(&existing)
+	if err == nil && existing.ID != "" {
+		sub.ID = existing.ID
+	} else if sub.ID == "" {
+		sub.ID = newRecordID("sub", "")
+	}
 	opts := options.Replace().SetUpsert(true)
-	_, err := s.subscriptions.ReplaceOne(ctx, bson.M{"tenant_id": sub.TenantID}, sub, opts)
+	_, err = s.subscriptions.ReplaceOne(ctx, bson.M{"tenant_id": sub.TenantID}, sub, opts)
 	return err
 }
 
