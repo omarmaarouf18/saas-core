@@ -1200,7 +1200,27 @@ func (s *MongoDB) RejectPayoutRequest(ctx context.Context, payoutID, reason stri
 		return fmt.Errorf("failed to decode rejected payout request: %w", err)
 	}
 
-	// Restore the deducted funds.
+	// compensateStatusFlip returns the request to "requested" when a later
+	// step fails, so the rejection can be retried instead of silently
+	// consuming the CAS slot and stranding the owner's deducted funds.
+	compensateStatusFlip := func(cause error) error {
+		back := s.payoutRequests.FindOneAndUpdate(ctx,
+			bson.M{"_id": payoutID, "status": models.PayoutStatusRejected},
+			bson.M{
+				"$set":   bson.M{"status": models.PayoutStatusRequested, "updated_at": time.Now().UTC()},
+				"$unset": bson.M{"rejection_reason": ""},
+			},
+		)
+		if back.Err() != nil {
+			log.Printf("[USER-STORE] CRITICAL: failed to revert rejected-payout status flip for %s after restore failure (%v): %v — payout may be stranded in 'rejected'", payoutID, cause, back.Err())
+		}
+		return cause
+	}
+
+	// Restore the deducted funds. On any failure the status flip above is
+	// compensated so the rejection stays retryable (QA audit finding Q2:
+	// the previous code consumed the CAS first and returned on restore
+	// failure, permanently stranding the deducted amount).
 	wres, err := s.wallets.UpdateOne(ctx,
 		bson.M{"tenant_id": pr.TenantID},
 		bson.M{
@@ -1208,10 +1228,10 @@ func (s *MongoDB) RejectPayoutRequest(ctx context.Context, payoutID, reason stri
 			"$set": bson.M{"updated_at": now},
 		})
 	if err != nil {
-		return fmt.Errorf("failed to restore wallet balance for rejected payout: %w", err)
+		return compensateStatusFlip(fmt.Errorf("failed to restore wallet balance for rejected payout: %w", err))
 	}
 	if wres.MatchedCount == 0 {
-		return fmt.Errorf("wallet for tenant %s not found while restoring rejected payout", pr.TenantID)
+		return compensateStatusFlip(fmt.Errorf("wallet for tenant %s not found while restoring rejected payout", pr.TenantID))
 	}
 
 	if _, err := s.ledger.InsertOne(ctx, models.TransactionLedger{
