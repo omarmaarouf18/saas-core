@@ -353,3 +353,18 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Behavioral find (documented as contract)**: ALL auth flows surface `ApiClientException.message` verbatim (e.g. "email exists", "invalid OTP") unlike every other provider which routes through `friendlyErrorMessage`. Auth endpoints return safe strings by contract, so this is intentional; asserted in tests to prevent silent drift.
 - **Deferred (Still OPEN)**: rating_screen widget suite (P3), map_tracking_provider WebSocket fake layer (P3), notifications/chat providers + low-coverage data models + service_screen (P4 cosmetic/data-class risk only).
 - **Verification**: local full suite `flutter test` 355/355 pass; `flutter analyze` No issues found!; coverage re-run literal before/after above. ✅
+
+## A3-P3: rating_screen First Coverage + Two 360dp Layout Bug Fixes
+
+**Date**: 2026-08-22
+**Category**: Bug Fix / Test Coverage
+**Related Commit SHA**: ``c133f0e4fa32915a7892013f7c4c204b19f9163d``
+
+- **Two real production layout bugs** caught by the screen's first-ever widget tests at its target 360dp width (screen previously had 0% coverage and no golden):
+  1. Star selector RenderFlex overflowed **38px right**: five IconButton(44px icon)s each render ~60px wide with default padding/density. Fixed by constraining each to a 44dp square.
+  2. Blind-rating info cards overflowed **25/11px bottom**: the 1-column GridView forced `childAspectRatio: 3.5` (~84px tiles) under ~110px of content. Mobile path replaced with an intrinsic-height Column (wide path keeps the 3-column grid).
+- **l10n blind-spot find**: CTA used hardcoded `"Submit Rating"` — `PrimaryButton`'s `text:` property was not in the A2 scanner's property list; existing ARB key `ratingSubmitBtn` ('SUBMIT RATING') was sitting unused. Now routed through it.
+- **Mock-default cleanup**: leftover Stitch placeholder party defaults ('Marcus J.' / 'Driver / Specialist') replaced with role-neutral labels for the auth-race edge case.
+- **Coverage**: rating_screen.dart **0.0% → 92.5%**; overall audited coverage 73.2% → **75.2%**; suite 355 → **361 tests**.
+- **Suite**: 6 widget tests covering party determination both directions, blind-status waiting vs locked-in branches, submit payload contract incl. comment trimming, success pop flow, failure snackbar retention, identity guard with zero network calls.
+- **Verification**: flutter analyze No issues found!; full suite 361/361 pass locally; CI verification recorded separately in AI_CONTEXT. ✅
