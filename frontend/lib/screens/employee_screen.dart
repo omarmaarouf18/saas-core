@@ -121,11 +121,13 @@ class _EmployeeScreenState extends State<EmployeeScreen>
         labelColor: AppColors.primary,
         unselectedLabelColor: AppColors.outline,
         indicatorColor: AppColors.primary,
-        tabs: const [
-          Tab(icon: Icon(Icons.people_outline), text: "Manage Workers"),
+        tabs: [
           Tab(
-            icon: Icon(Icons.receipt_long_outlined),
-            text: "Audit Trail",
+              icon: const Icon(Icons.people_outline),
+              text: context.l10n.employeeScreenTitle),
+          Tab(
+            icon: const Icon(Icons.receipt_long_outlined),
+            text: context.l10n.auditTrailTabLabel,
           ),
         ],
       ),
@@ -519,7 +521,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                         }
                       }
                     },
-              text: "Register Employee",
+              text: l10n.registerEmployeeBtn,
               isLoading: _isRegSubmitting,
               icon: Icons.person_add_alt_1_outlined,
               trailingIcon: Icons.arrow_forward,

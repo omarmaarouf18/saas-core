@@ -528,7 +528,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                 SizedBox(
                   width: 80,
                   child: PrimaryButton(
-                    text: "Book",
+                    text: l10n.bookNowBtn,
                     isFullWidth: false,
                     onPressed: () => _showBookingDialog(
                       context,
@@ -603,7 +603,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                   const SizedBox(height: AppSpacing.md),
                   PrimaryButton(
                     key: const Key('confirm_location_button'),
-                    text: "Confirm Location",
+                    text: context.l10n.locationPickerConfirmBtn,
                     trailingIcon: Icons.arrow_forward,
                     onPressed: () {
                       setState(() {
@@ -839,7 +839,7 @@ class _BookingDialogState extends State<_BookingDialog> {
             Expanded(
               child: PrimaryButton(
                 key: const Key('confirm_booking_button'),
-                text: "Confirm & Request",
+                text: l10n.confirmAndRequestBtn,
                 trailingIcon: Icons.arrow_forward,
                 isLoading: _isSubmitting,
                 isFullWidth: false,

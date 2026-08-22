@@ -30,7 +30,7 @@ CONTEXTS = [
     r"(?<![A-Za-z0-9_])Text\.rich\(\s*(?P<lit>['\"])",
     r"(?<![A-Za-z0-9_])uppercaseLabel\(\s*(?P<lit>['\"])",
     r"\b(?:_?error)\s*=\s*(?P<lit>['\"])",
-    r"\b(?:tooltip|hintText|labelText|helperText|errorText|semanticLabel|title|message|subtitle|label|emptyTitle|emptyMessage|actionLabel)\s*:\s*(?P<lit>['\"])",
+    r"\b(?:tooltip|hintText|labelText|helperText|errorText|semanticLabel|title|message|subtitle|label|emptyTitle|emptyMessage|actionLabel|text)\s*:\s*(?P<lit>['\"])",
 ]
 
 COMPILED = [(re.compile(c), c) for c in CONTEXTS]

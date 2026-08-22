@@ -4118,6 +4118,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'In Transit'**
   String get stepInTransitTitle;
+
+  /// No description provided for @findNearbyCouriers.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Nearby Couriers'**
+  String get findNearbyCouriers;
+
+  /// No description provided for @confirmAndRequestBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm & Request'**
+  String get confirmAndRequestBtn;
+
+  /// No description provided for @auditTrailTabLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit Trail'**
+  String get auditTrailTabLabel;
+
+  /// No description provided for @registerEmployeeBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Register Employee'**
+  String get registerEmployeeBtn;
+
+  /// No description provided for @rateYourExperienceCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Your Experience'**
+  String get rateYourExperienceCta;
+
+  /// No description provided for @openComplaintTicketBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a Complaint Ticket'**
+  String get openComplaintTicketBtn;
+
+  /// No description provided for @backToDirectoryBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Directory'**
+  String get backToDirectoryBtn;
+
+  /// No description provided for @acceptProposalBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept Proposal'**
+  String get acceptProposalBtn;
+
+  /// No description provided for @declineProposalBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get declineProposalBtn;
+
+  /// No description provided for @replaceDocumentBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace Document'**
+  String get replaceDocumentBtn;
+
+  /// No description provided for @uploadDocumentBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Document'**
+  String get uploadDocumentBtn;
+
+  /// No description provided for @createActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get createActionLabel;
+
+  /// No description provided for @backToStatusBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Status'**
+  String get backToStatusBtn;
+
+  /// No description provided for @bookNowBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Book'**
+  String get bookNowBtn;
+
+  /// No description provided for @subFreeFeatureMatching.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic delivery matching'**
+  String get subFreeFeatureMatching;
+
+  /// No description provided for @subFreeFeatureRouting.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard routing optimization'**
+  String get subFreeFeatureRouting;
+
+  /// No description provided for @subFreeFeatureCod.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash on Delivery (COD) bookings'**
+  String get subFreeFeatureCod;
+
+  /// No description provided for @subFreeFeatureSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Community support'**
+  String get subFreeFeatureSupport;
+
+  /// No description provided for @subProFeatureTracking.
+  ///
+  /// In en, this message translates to:
+  /// **'Live worker location tracking'**
+  String get subProFeatureTracking;
+
+  /// No description provided for @subProFeatureDispatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority dispatch routing'**
+  String get subProFeatureDispatch;
+
+  /// No description provided for @subProFeaturePricing.
+  ///
+  /// In en, this message translates to:
+  /// **'Access to advanced pricing metrics'**
+  String get subProFeaturePricing;
+
+  /// No description provided for @subProEmployeeSuite.
+  ///
+  /// In en, this message translates to:
+  /// **'Full employee management suite'**
+  String get subProEmployeeSuite;
+
+  /// No description provided for @subProDedicatedSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium 24/7 dedicated support'**
+  String get subProDedicatedSupport;
+
+  /// No description provided for @subProFeatureTrackingUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlocks live worker location tracking'**
+  String get subProFeatureTrackingUnlock;
 }
 
 class _AppLocalizationsDelegate

@@ -2177,4 +2177,76 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get stepInTransitTitle => 'في الطريق';
+
+  @override
+  String get findNearbyCouriers => 'دوّر على كورير قريب';
+
+  @override
+  String get confirmAndRequestBtn => 'تأكيد وإرسال الطلب';
+
+  @override
+  String get auditTrailTabLabel => 'سجل التدقيق';
+
+  @override
+  String get registerEmployeeBtn => 'تسجيل موظف';
+
+  @override
+  String get rateYourExperienceCta => 'قيّم تجربتك';
+
+  @override
+  String get openComplaintTicketBtn => 'افتح تذكرة شكوى';
+
+  @override
+  String get backToDirectoryBtn => 'رجوع للخدمات';
+
+  @override
+  String get acceptProposalBtn => 'اقبل العرض';
+
+  @override
+  String get declineProposalBtn => 'ارفض';
+
+  @override
+  String get replaceDocumentBtn => 'استبدل المستند';
+
+  @override
+  String get uploadDocumentBtn => 'ارفع المستند';
+
+  @override
+  String get createActionLabel => 'إنشاء';
+
+  @override
+  String get backToStatusBtn => 'رجوع لحالة الشحنة';
+
+  @override
+  String get bookNowBtn => 'احجز';
+
+  @override
+  String get subFreeFeatureMatching => 'مطابقة توصيل أساسية';
+
+  @override
+  String get subFreeFeatureRouting => 'تحسين مسارات قياسي';
+
+  @override
+  String get subFreeFeatureCod => 'حجوزات دفع عند الاستلام (كاش)';
+
+  @override
+  String get subFreeFeatureSupport => 'دعم من المجتمع';
+
+  @override
+  String get subProFeatureTracking => 'تتبع مباشر لموقع العامل';
+
+  @override
+  String get subProFeatureDispatch => 'أولوية في توزيع الطلبات';
+
+  @override
+  String get subProFeaturePricing => 'وصول لمؤشرات أسعار متقدمة';
+
+  @override
+  String get subProEmployeeSuite => 'إدارة كاملة للموظفين';
+
+  @override
+  String get subProDedicatedSupport => 'دعم مخصص 24/7';
+
+  @override
+  String get subProFeatureTrackingUnlock => 'يفتح تتبع مباشر لموقع العامل';
 }

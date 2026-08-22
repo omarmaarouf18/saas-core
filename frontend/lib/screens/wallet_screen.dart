@@ -162,7 +162,7 @@ class _WalletScreenState extends State<WalletScreen> {
           child: PrimaryButton(
             onPressed: () => DepositFundsDialog.show(context),
             icon: Icons.add_card_rounded,
-            text: "Deposit Funds",
+            text: l10n.depositFundsTitle,
           ),
         ),
       ],

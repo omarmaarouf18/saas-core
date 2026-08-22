@@ -427,7 +427,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
                 const SizedBox(height: AppSpacing.md),
                 // Back to Status / View Details CTA
                 PrimaryButton(
-                  text: "Back to Status",
+                  text: context.l10n.backToStatusBtn,
                   trailingIcon: Icons.arrow_forward,
                   onPressed: () => Navigator.of(context).pop(),
                 ),

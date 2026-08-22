@@ -196,7 +196,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                   const SizedBox(height: AppSpacing.md),
                   PrimaryButton(
                     key: const Key('confirm_location_button'),
-                    text: "Confirm Location",
+                    text: context.l10n.locationPickerConfirmBtn,
                     onPressed: () {
                       setState(() {
                         _latitude = tempLocation.latitude;

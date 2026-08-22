@@ -2209,4 +2209,77 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stepInTransitTitle => 'In Transit';
+
+  @override
+  String get findNearbyCouriers => 'Find Nearby Couriers';
+
+  @override
+  String get confirmAndRequestBtn => 'Confirm & Request';
+
+  @override
+  String get auditTrailTabLabel => 'Audit Trail';
+
+  @override
+  String get registerEmployeeBtn => 'Register Employee';
+
+  @override
+  String get rateYourExperienceCta => 'Rate Your Experience';
+
+  @override
+  String get openComplaintTicketBtn => 'Open a Complaint Ticket';
+
+  @override
+  String get backToDirectoryBtn => 'Back to Directory';
+
+  @override
+  String get acceptProposalBtn => 'Accept Proposal';
+
+  @override
+  String get declineProposalBtn => 'Decline';
+
+  @override
+  String get replaceDocumentBtn => 'Replace Document';
+
+  @override
+  String get uploadDocumentBtn => 'Upload Document';
+
+  @override
+  String get createActionLabel => 'Create';
+
+  @override
+  String get backToStatusBtn => 'Back to Status';
+
+  @override
+  String get bookNowBtn => 'Book';
+
+  @override
+  String get subFreeFeatureMatching => 'Basic delivery matching';
+
+  @override
+  String get subFreeFeatureRouting => 'Standard routing optimization';
+
+  @override
+  String get subFreeFeatureCod => 'Cash on Delivery (COD) bookings';
+
+  @override
+  String get subFreeFeatureSupport => 'Community support';
+
+  @override
+  String get subProFeatureTracking => 'Live worker location tracking';
+
+  @override
+  String get subProFeatureDispatch => 'Priority dispatch routing';
+
+  @override
+  String get subProFeaturePricing => 'Access to advanced pricing metrics';
+
+  @override
+  String get subProEmployeeSuite => 'Full employee management suite';
+
+  @override
+  String get subProDedicatedSupport => 'Premium 24/7 dedicated support';
+
+  @override
+  String get subProFeatureTrackingUnlock =>
+      'Unlocks live worker location tracking';
 }

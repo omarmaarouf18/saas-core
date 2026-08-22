@@ -229,7 +229,7 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                     children: [
                       Expanded(
                         child: SecondaryButton(
-                          text: "Cancel",
+                          text: l10n.cancel,
                           isOutlined: true,
                           onPressed: _isSubmitting
                               ? null
@@ -240,7 +240,7 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                       Expanded(
                         child: PrimaryButton(
                           key: const Key('service_create_button'),
-                          text: "Create",
+                          text: l10n.createActionLabel,
                           trailingIcon: Icons.arrow_forward,
                           isLoading: _isSubmitting,
                           onPressed: () async {

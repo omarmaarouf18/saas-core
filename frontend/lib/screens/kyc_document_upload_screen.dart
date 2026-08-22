@@ -521,7 +521,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                   ? (isUploaded
                       ? SecondaryButton(
                           key: ValueKey('btn_replace_$slotKey'),
-                          text: "Replace Document",
+                          text: context.l10n.replaceDocumentBtn,
                           icon: Icons.refresh,
                           isLoading: isUploading,
                           onPressed: isUploading
@@ -531,7 +531,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                         )
                       : PrimaryButton(
                           key: ValueKey('btn_upload_$slotKey'),
-                          text: "Upload Document",
+                          text: context.l10n.uploadDocumentBtn,
                           icon: Icons.upload_file,
                           trailingIcon: Icons.arrow_forward,
                           isLoading: isUploading,

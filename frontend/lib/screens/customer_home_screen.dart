@@ -394,7 +394,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
           const SizedBox(height: AppSpacing.md),
           PrimaryButton(
             key: const Key('find_couriers_button'),
-            text: "Find Nearby Couriers",
+            text: context.l10n.findNearbyCouriers,
             icon: Icons.search,
             trailingIcon: Icons.arrow_forward,
             onPressed: widget.onGoToServices,

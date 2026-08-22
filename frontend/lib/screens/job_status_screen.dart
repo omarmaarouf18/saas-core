@@ -910,7 +910,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       if (isCompleted) ...[
         PrimaryButton(
           key: const Key('rate_job_button'),
-          text: "Rate Your Experience",
+          text: context.l10n.rateYourExperienceCta,
           icon: Icons.star_outline,
           trailingIcon: Icons.arrow_forward,
           onPressed: () {
@@ -926,7 +926,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       if (isPending) ...[
         SecondaryButton(
           key: const Key('cancel_job_button'),
-          text: "Cancel Job",
+          text: context.l10n.ownerHomeCancelJob,
           icon: Icons.cancel_outlined,
           isOutlined: true,
           onPressed: () async {
@@ -959,7 +959,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       ] else if (isActive) ...[
         SecondaryButton(
           key: const Key('open_complaint_ticket_button'),
-          text: "Open a Complaint Ticket",
+          text: context.l10n.openComplaintTicketBtn,
           icon: Icons.report_problem_outlined,
           isOutlined: true,
           onPressed: () {
@@ -974,7 +974,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         const SizedBox(height: AppSpacing.sm),
       ],
       SecondaryButton(
-        text: "Back to Directory",
+        text: context.l10n.backToDirectoryBtn,
         isOutlined: true,
         onPressed: () => Navigator.of(context).pop(),
       ),
@@ -1152,7 +1152,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   Expanded(
                     child: PrimaryButton(
                       key: const Key('accept_proposal_button'),
-                      text: "Accept Proposal",
+                      text: l10n.acceptProposalBtn,
                       icon: Icons.check,
                       isLoading: _isRespondingProposal,
                       onPressed: () => _respondToProposal('accept'),
@@ -1162,7 +1162,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   Expanded(
                     child: SecondaryButton(
                       key: const Key('decline_proposal_button'),
-                      text: "Decline",
+                      text: l10n.declineProposalBtn,
                       icon: Icons.close,
                       isOutlined: true,
                       isLoading: _isRespondingProposal,
@@ -1232,7 +1232,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   width: 150,
                   child: PrimaryButton(
                     key: const Key('submit_proposal_button'),
-                    text: "Submit",
+                    text: l10n.submit,
                     isLoading: _isSubmittingProposal,
                     onPressed: () => _submitCounterOffer(suggested),
                   ),

@@ -134,7 +134,7 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                     children: [
                       Expanded(
                         child: SecondaryButton(
-                          text: "Cancel",
+                          text: l10n.cancel,
                           isOutlined: true,
                           onPressed: _isSubmitting
                               ? null
@@ -145,7 +145,7 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                       Expanded(
                         child: PrimaryButton(
                           key: const Key('deposit_confirm_button'),
-                          text: "Confirm",
+                          text: l10n.confirm,
                           isLoading: _isSubmitting,
                           onPressed: () async {
                             if (_formKey.currentState!.validate()) {
