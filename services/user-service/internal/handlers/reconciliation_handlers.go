@@ -176,7 +176,7 @@ func (u *UserService) ResolveReconciliation(w http.ResponseWriter, r *http.Reque
 	switch req.Decision {
 	case "release_to_employee":
 		if job.PaymentMethod == "cod" {
-			if err := u.store.CompleteCODJob(ctx, job.ID); err != nil && !strings.Contains(err.Error(), "not active") {
+			if err := u.store.CompleteCODJob(ctx, job.ID, 0); err != nil && !strings.Contains(err.Error(), "not active") {
 				log.Printf("[ERROR] Failed to complete COD job on reconciliation release for job %s: %v", job.ID, err)
 			}
 		} else if amount > 0 {

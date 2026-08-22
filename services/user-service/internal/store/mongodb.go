@@ -676,15 +676,18 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 	return err
 }
 
-// CompleteCODJob updates job status to completed for Cash-on-Delivery jobs with zero wallet mutation.
-func (s *MongoDB) CompleteCODJob(ctx context.Context, jobID string) error {
+// CompleteCODJob updates job status to completed for Cash-on-Delivery jobs
+// with zero wallet mutation, persisting the actually-collected cash amount in
+// the same atomic status flip so the collection record can never diverge from
+// the completion event.
+func (s *MongoDB) CompleteCODJob(ctx context.Context, jobID string, cashAmount float64) error {
 	resJob, err := s.jobs.UpdateOne(ctx,
 		bson.M{
 			"_id":    jobID,
 			"status": bson.M{"$in": []models.JobStatus{models.JobStatusActive, models.JobStatusEscrowReconciliationRequired}},
 		},
 		bson.M{
-			"$set": bson.M{"status": models.JobStatusCompleted, "updated_at": time.Now().UTC()},
+			"$set": bson.M{"status": models.JobStatusCompleted, "actual_cash_amount": cashAmount, "updated_at": time.Now().UTC()},
 		})
 	if err != nil {
 		return fmt.Errorf("failed to update COD job status: %w", err)
@@ -805,6 +808,17 @@ func (s *MongoDB) GetPlatformConfig(ctx context.Context) *models.PlatformConfig 
 		return nil
 	}
 	return &cfg
+}
+
+// UpsertPlatformConfig replaces the global platform configuration document.
+// Mirrors UpsertSubscription: upsert on the fixed "global" document ID.
+func (s *MongoDB) UpsertPlatformConfig(ctx context.Context, cfg *models.PlatformConfig) error {
+	if cfg.ID == "" {
+		cfg.ID = "global"
+	}
+	opts := options.Replace().SetUpsert(true)
+	_, err := s.platConfig.ReplaceOne(ctx, bson.M{"_id": cfg.ID}, cfg, opts)
+	return err
 }
 
 // ---------------------------------------------------------------------------
