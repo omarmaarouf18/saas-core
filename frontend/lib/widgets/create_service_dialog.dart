@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../core/error_messages.dart';
 import 'package:provider/provider.dart';
 import '../core/constants.dart';
 import '../core/theme.dart';
@@ -275,7 +276,7 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                                   setState(() => _isSubmitting = false);
                                   ThemedSnackBar.showError(
                                     context,
-                                    l10n.serviceCreateFailed(e.toString()),
+                                    l10n.serviceCreateFailed(friendlyErrorMessage(e)),
                                   );
                                 }
                               }

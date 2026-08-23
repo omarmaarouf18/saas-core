@@ -30,6 +30,11 @@ class ApiClient {
   String? _jwtToken;
   String _appVersion = '1.0.0+1';
 
+  /// Per-request ceiling (QA audit A5): without it a hung backend leaves
+  /// every caller's loading state unresolved forever. Injectable so tests
+  /// can exercise the expiry deterministically.
+  final Duration requestTimeout;
+
   /// Callback fired when a token is successfully refreshed during HTTP 401 retry.
   Future<void> Function(String newToken)? onTokenRefreshed;
 
@@ -48,6 +53,7 @@ class ApiClient {
       defaultValue: 'https://localhost:8080/api/v1',
     ),
     String? appVersion,
+    this.requestTimeout = const Duration(seconds: 30),
   }) {
     if (appVersion != null && appVersion.isNotEmpty) {
       _appVersion = appVersion;
@@ -55,6 +61,8 @@ class ApiClient {
     // Setup security overrides for local developer self-signed certificates.
     final httpClient = HttpClient();
     httpClient.badCertificateCallback = bypassBadCertificate;
+    // Fail fast when nothing is listening at all (QA audit A5).
+    httpClient.connectionTimeout = const Duration(seconds: 15);
     _client = io_client.IOClient(httpClient);
   }
 
@@ -101,11 +109,13 @@ class ApiClient {
       if (queryParams != null && queryParams.isNotEmpty) {
         uri = uri.replace(queryParameters: queryParams);
       }
-      final response = await _client.post(
-        uri,
-        headers: _getHeaders(extraHeaders: headers),
-        body: jsonEncode(body),
-      );
+      final response = await _client
+          .post(
+            uri,
+            headers: _getHeaders(extraHeaders: headers),
+            body: jsonEncode(body),
+          )
+          .timeout(requestTimeout);
       return await _handleResponse(
         response,
         onRetry: isRetry
@@ -114,6 +124,8 @@ class ApiClient {
                 queryParams: queryParams, headers: headers, isRetry: true),
         path: path,
       );
+    } on TimeoutException {
+      rethrow; // friendlyErrorMessage maps this to the connectivity copy.
     } catch (e) {
       if (e is ApiClientException) rethrow;
       throw ApiClientException(
@@ -133,11 +145,13 @@ class ApiClient {
       if (queryParams != null && queryParams.isNotEmpty) {
         uri = uri.replace(queryParameters: queryParams);
       }
-      final response = await _client.put(
-        uri,
-        headers: _getHeaders(extraHeaders: headers),
-        body: jsonEncode(body),
-      );
+      final response = await _client
+          .put(
+            uri,
+            headers: _getHeaders(extraHeaders: headers),
+            body: jsonEncode(body),
+          )
+          .timeout(requestTimeout);
       return await _handleResponse(
         response,
         onRetry: isRetry
@@ -146,6 +160,8 @@ class ApiClient {
                 queryParams: queryParams, headers: headers, isRetry: true),
         path: path,
       );
+    } on TimeoutException {
+      rethrow; // friendlyErrorMessage maps this to the connectivity copy.
     } catch (e) {
       if (e is ApiClientException) rethrow;
       throw ApiClientException(
@@ -165,11 +181,13 @@ class ApiClient {
       if (queryParams != null && queryParams.isNotEmpty) {
         uri = uri.replace(queryParameters: queryParams);
       }
-      final response = await _client.patch(
-        uri,
-        headers: _getHeaders(extraHeaders: headers),
-        body: jsonEncode(body),
-      );
+      final response = await _client
+          .patch(
+            uri,
+            headers: _getHeaders(extraHeaders: headers),
+            body: jsonEncode(body),
+          )
+          .timeout(requestTimeout);
       return await _handleResponse(
         response,
         onRetry: isRetry
@@ -178,6 +196,8 @@ class ApiClient {
                 queryParams: queryParams, headers: headers, isRetry: true),
         path: path,
       );
+    } on TimeoutException {
+      rethrow; // friendlyErrorMessage maps this to the connectivity copy.
     } catch (e) {
       if (e is ApiClientException) rethrow;
       throw ApiClientException(
@@ -196,10 +216,12 @@ class ApiClient {
       if (queryParams != null) {
         uri = uri.replace(queryParameters: queryParams);
       }
-      final response = await _client.get(
-        uri,
-        headers: _getHeaders(extraHeaders: headers),
-      );
+      final response = await _client
+          .get(
+            uri,
+            headers: _getHeaders(extraHeaders: headers),
+          )
+          .timeout(requestTimeout);
       return await _handleResponse(
         response,
         onRetry: isRetry
@@ -208,6 +230,8 @@ class ApiClient {
                 queryParams: queryParams, headers: headers, isRetry: true),
         path: path,
       );
+    } on TimeoutException {
+      rethrow; // friendlyErrorMessage maps this to the connectivity copy.
     } catch (e) {
       if (e is ApiClientException) rethrow;
       throw ApiClientException(
@@ -233,16 +257,20 @@ class ApiClient {
         existingParams.addAll(queryParams);
         uri = uri.replace(queryParameters: existingParams);
       }
-      final response = await _client.get(
-        uri,
-        headers: _getHeaders(extraHeaders: headers),
-      );
+      final response = await _client
+          .get(
+            uri,
+            headers: _getHeaders(extraHeaders: headers),
+          )
+          .timeout(requestTimeout);
       if (response.statusCode == 200) {
         return response.bodyBytes;
       }
       throw ApiClientException(
           'Failed to load document (status: ${response.statusCode})',
           statusCode: response.statusCode);
+    } on TimeoutException {
+      rethrow; // friendlyErrorMessage maps this to the connectivity copy.
     } catch (e) {
       if (e is ApiClientException) rethrow;
       throw ApiClientException('Network error: Unable to load document.');
@@ -267,8 +295,12 @@ class ApiClient {
           filename: filename,
         ),
       );
-      final streamedResponse = await _client.send(request);
-      final response = await http.Response.fromStream(streamedResponse);
+      final streamedResponse =
+          await _client.send(request).timeout(requestTimeout);
+      final response =
+          await http.Response.fromStream(streamedResponse).timeout(
+                requestTimeout,
+              );
       return await _handleResponse(
         response,
         onRetry: isRetry
@@ -282,6 +314,8 @@ class ApiClient {
                 ),
         path: path,
       );
+    } on TimeoutException {
+      rethrow; // friendlyErrorMessage maps this to the connectivity copy.
     } catch (e) {
       if (e is ApiClientException) rethrow;
       throw ApiClientException(
@@ -366,11 +400,13 @@ class ApiClient {
       }
 
       final refreshUri = Uri.parse('$baseUrl/auth/refresh');
-      final response = await _client.post(
-        refreshUri,
-        headers: _getHeaders(),
-        body: jsonEncode({'token': _jwtToken}),
-      );
+      final response = await _client
+          .post(
+            refreshUri,
+            headers: _getHeaders(),
+            body: jsonEncode({'token': _jwtToken}),
+          )
+          .timeout(requestTimeout);
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../core/error_messages.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
@@ -89,7 +90,7 @@ class _ChatScreenState extends State<ChatScreen> {
         final l10n = AppLocalizations.of(context)!;
         ThemedSnackBar.showError(
           context,
-          l10n.chatFailedSend(e.toString()),
+          l10n.chatFailedSend(friendlyErrorMessage(e)),
           onRetry: _sendMessage,
         );
       }

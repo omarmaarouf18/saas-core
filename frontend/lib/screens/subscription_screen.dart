@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/error_messages.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
@@ -44,10 +45,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       }
     } catch (e) {
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
         ThemedSnackBar.showError(
           context,
-          l10n.ratingFailed(e.toString()),
+          // A5: was l10n.ratingFailed(e.toString()) — copy-pasted rating key that
+          // rendered a raw exception dump on a money flow.
+          friendlyErrorMessage(e),
           onRetry: () => _changeSubscription(tier),
         );
       }

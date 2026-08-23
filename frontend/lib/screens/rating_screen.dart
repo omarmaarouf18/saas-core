@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/error_messages.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
@@ -138,7 +139,7 @@ class _RatingScreenState extends State<RatingScreen> {
         final l10n = AppLocalizations.of(context)!;
         ThemedSnackBar.showError(
           context,
-          l10n.ratingFailed(e.toString()),
+          l10n.ratingFailed(friendlyErrorMessage(e)),
           onRetry: _submitRating,
         );
       }

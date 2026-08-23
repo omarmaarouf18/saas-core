@@ -137,7 +137,11 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = friendlyErrorMessage(e);
+          // QA audit A5: PATCH /auth/user is an auth-path endpoint; prefer
+          // the provider's stored verbatim message (same contract as the
+          // email-change dialog beside it) with friendly fallback.
+          final auth = Provider.of<AuthProvider>(context, listen: false);
+          _errorMessage = auth.error ?? friendlyErrorMessage(e);
         });
       }
     } finally {

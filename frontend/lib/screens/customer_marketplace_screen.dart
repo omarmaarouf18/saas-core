@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/error_messages.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
@@ -11,6 +12,7 @@ import '../providers/notifications_provider.dart';
 import '../widgets/list_screen_template.dart';
 import '../widgets/location_picker_map.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/themed_card.dart';
@@ -170,6 +172,10 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
       header: _buildFilterControlCard(l10n),
       items: filteredServices,
       isLoading: marketplace.isLoading,
+      // QA audit A5: a failed fetch previously fell through to the
+      // "no services nearby" empty state — customers read a backend outage
+      // as "no couriers exist". Surface the error with retry instead.
+      errorMessage: marketplace.error,
       onRefresh: () async => _loadServices(),
       listViewKey: const ValueKey('marketplace_services_list'),
       loadingWidget: ListView.builder(
@@ -177,6 +183,14 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
         itemCount: 4,
         itemBuilder: (context, index) => const MarketplaceCardSkeleton(),
+      ),
+      errorWidget: Padding(
+        key: const ValueKey('marketplace_error_banner'),
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: ThemedErrorBanner(
+          message: marketplace.error ?? '',
+          onRetry: _loadServices,
+        ),
       ),
       emptyWidget: SingleChildScrollView(
         key: const ValueKey('marketplace_empty_state'),
@@ -693,7 +707,7 @@ class _BookingDialogState extends State<_BookingDialog> {
       final l10n = AppLocalizations.of(context)!;
       ThemedSnackBar.showError(
         context,
-        l10n.bookingFailed(e.toString()),
+        l10n.bookingFailed(friendlyErrorMessage(e)),
       );
     }
   }

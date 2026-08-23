@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 
 import 'core/api_client.dart';
+import 'core/update_gate.dart';
 import 'core/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/owner_provider.dart';
@@ -32,6 +33,10 @@ class DevHttpOverrides extends HttpOverrides {
   }
 }
 
+/// Library-level so both [main] (426 wiring) and [MyApp] (MaterialApp) share
+/// one navigator instance.
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+
 void main() {
   // Wire HTTP certificate overrides in debug mode for self-signed certificates.
   if (kDebugMode) {
@@ -43,6 +48,12 @@ void main() {
   GoogleFonts.config.allowRuntimeFetching = false;
 
   final apiClient = ApiClient();
+
+  // HTTP 426 forced-update gate (QA audit A5): route any upgrade-required
+  // response to the blocking UpdateRequiredScreen instead of letting it
+  // surface as an unmapped generic error.
+  apiClient.onUpdateRequired =
+      UpdateGate(appNavigatorKey).handle;
 
   runApp(
     MultiProvider(
@@ -86,6 +97,7 @@ class MyApp extends StatelessWidget {
     });
 
     return MaterialApp(
+      navigatorKey: appNavigatorKey,
       title: 'Quick Delivery',
       theme: quickDeliveryTheme,
       darkTheme: quickDeliveryDarkTheme,
