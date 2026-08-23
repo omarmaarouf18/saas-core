@@ -261,7 +261,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
 
     if (user == null) {
       setState(() {
-        _errorMessage = 'User not authenticated.';
+        _errorMessage = l10n.userNotAuthenticatedError;
       });
       return;
     }
@@ -620,7 +620,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                     child: Text(
                       (_latitude != null && _longitude != null)
                           ? "Lat: ${_latitude!.toStringAsFixed(4)}, Lon: ${_longitude!.toStringAsFixed(4)}"
-                          : "No location selected",
+                          : l10n.noLocationSelectedLabel,
                       key: const Key('owner_config_location_text'),
                       style: AppTypography.bodyMd.copyWith(
                         color: (_latitude != null && _longitude != null)

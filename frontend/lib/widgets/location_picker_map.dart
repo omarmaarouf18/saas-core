@@ -154,7 +154,8 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(AppColors.onPrimary),
                     ),
                   )
                 : const Icon(Icons.my_location, size: 20),

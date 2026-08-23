@@ -231,7 +231,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     ThemedPanel(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: AppColors.onPrimary.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(AppRadius.full),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
@@ -239,10 +239,9 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                         ),
                         child: Text(
                           "$markersCount",
-                          style: AppTypography.caption.copyWith(
+                          style: AppTypography.labelSm.copyWith(
                             color: AppColors.onPrimary,
                             fontWeight: FontWeight.bold,
-                            fontSize: 10,
                           ),
                         )),
                   ],

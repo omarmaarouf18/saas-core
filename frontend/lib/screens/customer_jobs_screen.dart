@@ -151,7 +151,7 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
         icon: Icons.receipt_long_outlined,
         title: l10n.customerJobsEmpty,
         description: l10n.customerJobsEmptyDescription,
-        actionText: "Browse Services",
+        actionText: l10n.browseServicesBtn,
         onActionPressed: () => Navigator.pop(context),
       ),
       listPadding: const EdgeInsets.symmetric(
@@ -183,7 +183,7 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
               color: AppColors.onSurface,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: AppSpacing.xxs),
           Text(
             l10n.customerJobsSub,
             style: AppTypography.bodyMd.copyWith(

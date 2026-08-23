@@ -9,6 +9,7 @@ import '../providers/notifications_provider.dart';
 import '../widgets/themed_panel.dart';
 import '../widgets/dashboard_screen_template.dart';
 import '../widgets/themed_card.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/status_badge.dart';
@@ -235,7 +236,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
     final auth = Provider.of<AuthProvider>(context);
     final marketplace = Provider.of<MarketplaceProvider>(context);
     final l10n = context.l10n;
-    final username = auth.user?.username ?? 'Customer';
+    final username = auth.user?.username ?? l10n.quickDeliveryUserFallback;
 
     final activeJobs = marketplace.customerJobs.where((j) {
       final status = j.status.toLowerCase();
@@ -263,7 +264,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
           const SizedBox(height: AppSpacing.xl),
 
           // 4. Active Jobs Section (Stitch Active Jobs List)
-          _buildActiveJobsSection(l10n, activeJobs),
+          _buildActiveJobsSection(l10n, activeJobs, marketplace.error),
         ],
       ),
     );
@@ -348,11 +349,17 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                     size: 20,
                   )),
               const SizedBox(width: AppSpacing.sm),
-              Text(
-                context.l10n.customerHomeWhereDeliver,
-                style: AppTypography.titleMd.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.onSurface,
+              // A8/B1-F1: ellipsized within Expanded — this row overflowed
+              // by 56px at 360dp with long localized titles.
+              Expanded(
+                child: Text(
+                  context.l10n.customerHomeWhereDeliver,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.titleMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.onSurface,
+                  ),
                 ),
               ),
             ],
@@ -423,8 +430,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                   context,
                   key: const Key('category_tile_delivery'),
                   title: l10n.customerHomeCatDelivery,
-                  description:
-                      "Fast on-demand delivery for orders, packages, and essentials.",
+                  description: l10n.customerHomeTileDeliveryDesc,
                   icon: Icons.inventory_2_outlined,
                   iconBgColor:
                       AppColors.primaryContainer.withValues(alpha: 0.1),
@@ -438,8 +444,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                   context,
                   key: const Key('category_tile_transport'),
                   title: l10n.customerHomeCatRide,
-                  description:
-                      "Local ride booking, moving transport, and courier transport.",
+                  description: l10n.customerHomeTileRideDesc,
                   icon: Icons.local_shipping_outlined,
                   iconBgColor: AppColors.secondary.withValues(alpha: 0.2),
                   iconColor: AppColors.secondary,
@@ -459,8 +464,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                   context,
                   key: const Key('category_tile_shipping'),
                   title: l10n.customerHomeCatShipping,
-                  description:
-                      "On-demand home cleaning, maintenance, and handyman services.",
+                  description: l10n.customerHomeTileCleaningDesc,
                   icon: Icons.home_repair_service_outlined,
                   iconBgColor: AppColors.success.withValues(alpha: 0.15),
                   iconColor: AppColors.success,
@@ -473,8 +477,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                   context,
                   key: const Key('category_tile_all'),
                   title: l10n.customerHomeCatBrowseAll,
-                  description:
-                      "Browse all available home services and delivery options.",
+                  description: l10n.customerHomeTileBrowseAllDesc,
                   icon: Icons.grid_view_rounded,
                   iconBgColor: AppColors.primary.withValues(alpha: 0.1),
                   iconColor: AppColors.primary,
@@ -489,7 +492,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
   }
 
   Widget _buildActiveJobsSection(
-      AppLocalizations l10n, List<dynamic> activeJobs) {
+      AppLocalizations l10n, List<dynamic> activeJobs, String? fetchError) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -517,6 +520,20 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
+        // A8/B1-F1: surface marketplace fetch failures instead of silently
+        // rendering stale/empty activity content.
+        if (fetchError != null && activeJobs.isEmpty)
+          ThemedErrorBanner(
+            key: const Key('customer_home_activity_error'),
+            message: fetchError,
+            onRetry: () {
+              final auth = Provider.of<AuthProvider>(context, listen: false);
+              if (auth.token != null) {
+                Provider.of<MarketplaceProvider>(context, listen: false)
+                    .fetchCustomerJobs(auth.token!);
+              }
+            },
+          ),
         if (activeJobs.isNotEmpty) ...[
           Column(
             children: activeJobs.map((job) {
@@ -545,11 +562,11 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                                   letterSpacing: 0.5,
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              const SizedBox(height: AppSpacing.xxs),
                               Text(
                                 job.serviceId.isNotEmpty
                                     ? job.serviceId
-                                    : "Express Delivery",
+                                    : l10n.expressDeliveryFallbackLabel,
                                 style: AppTypography.titleMd.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: AppColors.onSurface,
@@ -592,7 +609,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -718,7 +735,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                     color: AppColors.onSurface,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   description,
                   style: AppTypography.caption.copyWith(

@@ -387,6 +387,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     required String username,
     required String role,
   }) {
+    final l10n = context.l10n;
     final String initial = username.isNotEmpty
         ? AppTypography.uppercaseLabel(username.substring(0, 1))
         : 'U';
@@ -410,7 +411,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            username.isNotEmpty ? username : 'User Profile',
+            username.isNotEmpty ? username : l10n.userProfileTitle,
             style: AppTypography.titleMd.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.primary,

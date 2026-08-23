@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../core/theme.dart';
+import 'package:frontend/l10n/l10n.dart';
 
 /// A 6-digit discrete PIN input widget with auto-advance, backspace retreat,
 /// paste support, and dev-mode auto-fill reactivity.
@@ -192,51 +193,57 @@ class _OtpPinInputState extends State<OtpPinInput> {
       borderColor = AppColors.primary;
     }
 
-    return KeyboardListener(
-      focusNode: _auxFocusNodes[index], // auxiliary for backspace capture
-      onKeyEvent: (event) {
-        if (event is KeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.backspace) {
-          if (_boxControllers[index].text.isEmpty && index > 0) {
-            _boxControllers[index - 1].text = '';
-            _focusNodes[index - 1].requestFocus();
-            _notifyChange();
+    final l10n = AppLocalizations.of(context);
+    return Semantics(
+      label: l10n != null
+          ? l10n.otpDigitSemantic(index + 1, widget.length)
+          : 'PIN ${index + 1}/${widget.length}',
+      child: KeyboardListener(
+        focusNode: _auxFocusNodes[index], // auxiliary for backspace capture
+        onKeyEvent: (event) {
+          if (event is KeyDownEvent &&
+              event.logicalKey == LogicalKeyboardKey.backspace) {
+            if (_boxControllers[index].text.isEmpty && index > 0) {
+              _boxControllers[index - 1].text = '';
+              _focusNodes[index - 1].requestFocus();
+              _notifyChange();
+            }
           }
-        }
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: Border.all(
-            color: borderColor,
-            width: isFocused || widget.hasError ? 2.0 : 1.5,
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            border: Border.all(
+              color: borderColor,
+              width: isFocused || widget.hasError ? 2.0 : 1.5,
+            ),
+            boxShadow: isFocused ? AppElevation.shadowLevel1List : null,
           ),
-          boxShadow: isFocused ? AppElevation.shadowLevel1List : null,
-        ),
-        child: Center(
-          child: TextField(
-            key: Key('otp_box_$index'),
-            controller: _boxControllers[index],
-            focusNode: _focusNodes[index],
-            enabled: widget.enabled,
-            autofocus: widget.autoFocus && index == 0,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            style: AppTypography.headlineMd.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.bold,
+          child: Center(
+            child: TextField(
+              key: Key('otp_box_$index'),
+              controller: _boxControllers[index],
+              focusNode: _focusNodes[index],
+              enabled: widget.enabled,
+              autofocus: widget.autoFocus && index == 0,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              style: AppTypography.headlineMd.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLength: 1,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+              decoration: const InputDecoration(
+                counterText: '',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+              onChanged: (val) => _onDigitChanged(index, val),
             ),
-            maxLength: 1,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-            ],
-            decoration: const InputDecoration(
-              counterText: '',
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
-            ),
-            onChanged: (val) => _onDigitChanged(index, val),
           ),
         ),
       ),

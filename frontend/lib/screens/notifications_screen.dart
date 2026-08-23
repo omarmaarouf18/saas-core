@@ -9,6 +9,7 @@ import '../widgets/confirm_action_dialog.dart';
 import '../widgets/list_screen_template.dart';
 import '../widgets/pill_filter_bar.dart';
 import '../widgets/themed_card.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_empty_state.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -26,7 +27,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   String _selectedCategory = 'All';
   DateTime? _lastCardTapTime;
 
-  final List<String> _categories = ['All', 'Jobs', 'System', 'Alerts'];
+  // A8: filter chip LABELS localize (keys existed unused); VALUES stay
+  // canonical English so filtering logic remains stable across locales.
+  List<PillFilterItem<String>> _categoryItems(AppLocalizations l10n) => [
+        PillFilterItem(label: l10n.notificationsAll, value: 'All'),
+        PillFilterItem(label: l10n.notificationsJobs, value: 'Jobs'),
+        PillFilterItem(label: l10n.notificationsSystem, value: 'System'),
+        PillFilterItem(label: l10n.notificationsAlerts, value: 'Alerts'),
+      ];
 
   DateTime _now() => widget.clock?.call() ?? DateTime.now();
 
@@ -114,6 +122,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // A8/E2-F1: distinct retryable error state when the SSE stream
+              // has errored — the connectivity banner alone reads as a neutral
+              // "offline" state and offers no recovery affordance.
+              if (provider.error != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.marginMobile,
+                    AppSpacing.sm,
+                    AppSpacing.marginMobile,
+                    0,
+                  ),
+                  child: ThemedErrorBanner(
+                    key: const Key('notifications_error_banner'),
+                    message: provider.error!,
+                    onRetry: () {
+                      final auth =
+                          Provider.of<AuthProvider>(context, listen: false);
+                      if (auth.token != null) {
+                        provider.initSse(auth.token!);
+                      }
+                    },
+                  ),
+                ),
+
               // 1. Connectivity Status Banner
               _buildConnectivityBanner(provider),
 
@@ -124,12 +156,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   vertical: AppSpacing.xs,
                 ),
                 child: PillFilterBar<String>(
-                  items: _categories
-                      .map((cat) => PillFilterItem<String>(
-                            label: cat,
-                            value: cat,
-                          ))
-                      .toList(),
+                  items: _categoryItems(context.l10n),
                   selectedValue: _selectedCategory,
                   onSelected: (val) {
                     setState(() {
@@ -147,7 +174,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         icon: Icons.notifications_none,
         title: l10n.notificationsTitle,
         description: l10n.notificationsTitle,
-        actionText: "Back to Home",
+        actionText: l10n.backToHomeBtn,
         onActionPressed: () => Navigator.pop(context),
       ),
       itemSpacing: 0,
@@ -163,6 +190,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _buildConnectivityBanner(NotificationsProvider provider) {
+    final l10n = context.l10n;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.marginMobile,
@@ -194,8 +222,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             Expanded(
               child: Text(
                 provider.isConnected
-                    ? 'System Status: Operational.'
-                    : 'Sync paused. Showing offline notifications.',
+                    ? l10n.systemStatusOperationalMsg
+                    : l10n.syncPausedOfflineMsg,
                 style: AppTypography.labelMd.copyWith(
                   color: provider.isConnected
                       ? AppColors.onSurface

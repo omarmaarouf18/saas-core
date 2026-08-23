@@ -29,6 +29,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
+    final l10n = context.l10n;
 
     try {
       final res = await ownerProvider.updateSubscription(
@@ -37,7 +38,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       );
 
       if (mounted) {
-        String msg = "Subscription updated successfully!";
+        String msg = l10n.subscriptionUpdatedSuccessMsg;
         if (res.containsKey('message')) {
           msg = res['message'] as String;
         }
@@ -150,7 +151,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                         : AppColors.secondary,
                                     size: 16,
                                   ),
-                                  const SizedBox(width: 4),
+                                  const SizedBox(width: AppSpacing.xs),
                                   Text(
                                     currentTier == 'free' ? 'BASIC' : 'PRO',
                                     style: AppTypography.labelSm.copyWith(
@@ -342,7 +343,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           ),
           const SizedBox(height: AppSpacing.lg),
           SecondaryButton(
-            text: isCurrent ? 'Active Plan' : 'Downgrade to Free',
+            text: isCurrent ? l10n.activePlanLabel : l10n.downgradeToFreeBtn,
             isOutlined: true,
             onPressed: isCurrent || _isSubmitting
                 ? null
@@ -469,10 +470,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 children: [
                   PrimaryButton(
                     text: currentTier == 'paid'
-                        ? 'Active Plan'
+                        ? l10n.activePlanLabel
                         : (currentTier == 'pending_payment'
-                            ? 'Awaiting Payment'
-                            : 'Upgrade to Professional'),
+                            ? l10n.awaitingPaymentLabel
+                            : l10n.upgradeToProfessionalBtn),
                     trailingIcon: Icons.arrow_forward,
                     onPressed: isCurrent || _isSubmitting
                         ? null

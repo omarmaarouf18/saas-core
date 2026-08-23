@@ -47,7 +47,7 @@ class ThemedSnackBar {
           children: [
             const Icon(
               Icons.check_circle_outline,
-              color: Colors.white,
+              color: AppColors.onPrimary,
               size: AppIconSize.md,
             ),
             const SizedBox(width: AppSpacing.md),
@@ -55,7 +55,7 @@ class ThemedSnackBar {
               child: Text(
                 message,
                 style: AppTypography.bodyMd.copyWith(
-                  color: Colors.white,
+                  color: AppColors.onPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -85,7 +85,7 @@ class ThemedSnackBar {
         action: onRetry != null
             ? SnackBarAction(
                 label: AppTypography.uppercaseLabel(appL10n(context).retry),
-                textColor: Colors.white,
+                textColor: AppColors.onPrimary,
                 onPressed: onRetry,
               )
             : null,
@@ -93,7 +93,7 @@ class ThemedSnackBar {
           children: [
             const Icon(
               Icons.error_outline,
-              color: Colors.white,
+              color: AppColors.onPrimary,
               size: AppIconSize.md,
             ),
             const SizedBox(width: AppSpacing.md),
@@ -101,7 +101,7 @@ class ThemedSnackBar {
               child: Text(
                 message,
                 style: AppTypography.bodyMd.copyWith(
-                  color: Colors.white,
+                  color: AppColors.onPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -127,7 +127,7 @@ class ThemedSnackBar {
           children: [
             const Icon(
               Icons.warning_amber_rounded,
-              color: Colors.white,
+              color: AppColors.onPrimary,
               size: AppIconSize.md,
             ),
             const SizedBox(width: AppSpacing.md),
@@ -135,7 +135,7 @@ class ThemedSnackBar {
               child: Text(
                 message,
                 style: AppTypography.bodyMd.copyWith(
-                  color: Colors.white,
+                  color: AppColors.onPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -161,7 +161,7 @@ class ThemedSnackBar {
           children: [
             const Icon(
               Icons.info_outline,
-              color: Colors.white,
+              color: AppColors.onPrimary,
               size: AppIconSize.md,
             ),
             const SizedBox(width: AppSpacing.md),
@@ -169,7 +169,7 @@ class ThemedSnackBar {
               child: Text(
                 message,
                 style: AppTypography.bodyMd.copyWith(
-                  color: Colors.white,
+                  color: AppColors.onPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),

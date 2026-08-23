@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
-import '../providers/locale_provider.dart';
 import '../widgets/themed_panel.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/app_shell.dart';
@@ -25,13 +24,12 @@ class UpdateRequiredScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
-    final isArabic = localeProvider.locale?.languageCode == 'ar';
-
-    final titleText = isArabic ? 'تحديث التطبيق مطلوب' : 'App Update Required';
-    final subtitleText = isArabic
-        ? 'يتوفر تحديث إجباري هام للتطبيق. يرجى التحديث لمتابعة استخدام خدمة Quick Delivery.'
-        : 'A mandatory app update is available. Please update Quick Delivery to continue using the service.';
+    // A8: route all copy through generated l10n — the previous manual
+    // `isArabic ? … : …` ternaries bypassed context.l10n and duplicated ARB
+    // content inline.
+    final l10n = context.l10n;
+    final titleText = l10n.appUpdateRequiredTitle;
+    final subtitleText = l10n.mandatoryUpdateBody;
 
     final curVer = currentVersion ?? '1.0.0';
     final minVer = minimumVersion ?? '1.1.0';
@@ -89,25 +87,25 @@ class UpdateRequiredScreen extends StatelessWidget {
                           const SizedBox(height: AppSpacing.md),
 
                           // 3. What's New Feature List
-                          _buildWhatsNewList(isArabic),
+                          _buildWhatsNewList(l10n),
                           const SizedBox(height: AppSpacing.md),
 
                           // 4. Version Details Matrix Card
                           _buildVersionMatrix(
                             context,
+                            l10n: l10n,
                             curVer: curVer,
                             minVer: minVer,
                             latVer: latVer,
-                            isArabic: isArabic,
                           ),
                           const SizedBox(height: AppSpacing.md),
 
                           // 5. Warning Notice Callout Banner
-                          _buildWarningBanner(isArabic),
+                          _buildWarningBanner(l10n),
                           const SizedBox(height: AppSpacing.lg),
 
                           // 6. Primary Action CTA & Target URL
-                          _buildActionArea(isArabic, url),
+                          _buildActionArea(l10n, url),
                         ],
                       ),
                     ),
@@ -173,7 +171,7 @@ class UpdateRequiredScreen extends StatelessWidget {
         ));
   }
 
-  Widget _buildWhatsNewList(bool isArabic) {
+  Widget _buildWhatsNewList(AppLocalizations l10n) {
     return ThemedPanel(
         color: AppColors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -185,7 +183,7 @@ class UpdateRequiredScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              isArabic ? "الجديد في التحديث:" : "What's new:",
+              l10n.whatsNewTitle,
               style: AppTypography.titleMd.copyWith(
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,
@@ -194,23 +192,17 @@ class UpdateRequiredScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             _buildFeatureItem(
               icon: Icons.security,
-              text: isArabic
-                  ? "بروتوكولات أمان معززة لتتبع الطلبات والخدمات."
-                  : "Enhanced security protocols for order and delivery tracking.",
+              text: l10n.whatsNewSecurityItem,
             ),
             const SizedBox(height: AppSpacing.xs),
             _buildFeatureItem(
               icon: Icons.speed,
-              text: isArabic
-                  ? "خوارزميات توجيه محسنة لتسليم أسرع."
-                  : "Optimized routing algorithms for faster deliveries.",
+              text: l10n.whatsNewRoutingItem,
             ),
             const SizedBox(height: AppSpacing.xs),
             _buildFeatureItem(
               icon: Icons.bug_report,
-              text: isArabic
-                  ? "إصلاحات هامة وتحسينات في استقرار التطبيق."
-                  : "Critical bug fixes and stability improvements.",
+              text: l10n.whatsNewBugFixesItem,
             ),
           ],
         ));
@@ -218,10 +210,10 @@ class UpdateRequiredScreen extends StatelessWidget {
 
   Widget _buildVersionMatrix(
     BuildContext context, {
+    required AppLocalizations l10n,
     required String curVer,
     required String minVer,
     required String latVer,
-    required bool isArabic,
   }) {
     return ThemedPanel(
         color: AppColors.surface,
@@ -234,7 +226,7 @@ class UpdateRequiredScreen extends StatelessWidget {
           children: [
             _buildVersionRow(
               context,
-              label: isArabic ? 'الإصدار الحالي' : 'Installed Version',
+              label: l10n.installedVersionLabel,
               value: curVer,
               isHighlight: false,
             ),
@@ -244,7 +236,7 @@ class UpdateRequiredScreen extends StatelessWidget {
             ),
             _buildVersionRow(
               context,
-              label: isArabic ? 'الحد الأدنى المطلوب' : 'Minimum Required',
+              label: l10n.minimumRequiredLabel,
               value: minVer,
               isHighlight: true,
             ),
@@ -255,7 +247,7 @@ class UpdateRequiredScreen extends StatelessWidget {
               ),
               _buildVersionRow(
                 context,
-                label: isArabic ? 'أحدث إصدار متاح' : 'Latest Available',
+                label: l10n.latestAvailableLabel,
                 value: latVer,
                 isHighlight: false,
               ),
@@ -264,7 +256,7 @@ class UpdateRequiredScreen extends StatelessWidget {
         ));
   }
 
-  Widget _buildWarningBanner(bool isArabic) {
+  Widget _buildWarningBanner(AppLocalizations l10n) {
     return ThemedPanel(
         color: AppColors.errorContainer.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -282,9 +274,7 @@ class UpdateRequiredScreen extends StatelessWidget {
             const SizedBox(width: AppSpacing.xs),
             Expanded(
               child: Text(
-                isArabic
-                    ? "لا يمكنك متابعة استخدام التطبيق حتى يتم تثبيت هذا التحديث."
-                    : "You cannot continue using the app until this update is installed.",
+                l10n.updateCannotContinueBody,
                 style: AppTypography.caption.copyWith(
                   color: AppColors.onErrorContainer,
                   fontWeight: FontWeight.w500,
@@ -295,14 +285,14 @@ class UpdateRequiredScreen extends StatelessWidget {
         ));
   }
 
-  Widget _buildActionArea(bool isArabic, String url) {
+  Widget _buildActionArea(AppLocalizations l10n, String url) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         PrimaryButton(
           key: const Key('update_now_button'),
           trailingIcon: Icons.arrow_forward,
-          text: isArabic ? 'تحديث الآن' : 'Update Now',
+          text: l10n.updateNowBtn,
           onPressed: onUpdatePressed ?? () {},
         ),
         const SizedBox(height: AppSpacing.sm),

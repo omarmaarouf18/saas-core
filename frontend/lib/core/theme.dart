@@ -44,10 +44,17 @@ class AppColors {
   // Status colors (WCAG AA compliant contrast ratios >= 4.5:1 on light surfaces)
   static const Color success =
       Color(0xFF15803D); // Dark Green (contrast 5.02:1 on white)
+  static const Color onSuccess =
+      Color(0xFFFFFFFF); // Text/icon on success fills (contrast 5.02:1)
   static const Color danger =
       Color(0xFFBA1A1A); // Dark Red (contrast 10.1:1 on white)
   static const Color warning =
       Color(0xFFB45309); // Amber-700 (contrast 5.02:1 on white)
+
+  /// Base scrim color — always apply via `withValues(alpha: …)`.
+  /// Replaces raw `Colors.black.withValues(...)` shadow/tint sites
+  /// (UI/UX audit §3.3).
+  static const Color scrim = Color(0xFF000000);
 
   // Outline & Dim colors
   static const Color outline = Color(

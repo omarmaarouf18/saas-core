@@ -1016,5 +1016,141 @@
   "subProFeaturePricing": "Access to advanced pricing metrics",
   "subProEmployeeSuite": "Full employee management suite",
   "subProDedicatedSupport": "Premium 24/7 dedicated support",
-  "subProFeatureTrackingUnlock": "Unlocks live worker location tracking"
+  "subProFeatureTrackingUnlock": "Unlocks live worker location tracking",
+  "customerHomeTileDeliveryDesc": "Fast on-demand delivery for orders, packages, and essentials.",
+  "customerHomeTileRideDesc": "Local ride booking, moving transport, and courier transport.",
+  "customerHomeTileCleaningDesc": "On-demand home cleaning, maintenance, and handyman services.",
+  "customerHomeTileBrowseAllDesc": "Browse all available home services and delivery options.",
+  "browseServicesBtn": "Browse Services",
+  "marketplaceEmptyHint": "Try broadening your search radius or changing your coordinates.",
+  "refreshHistoryBtn": "Refresh History",
+  "refreshJobsBtn": "Refresh Jobs",
+  "employeeRegisterIntro": "Register your first employee account using the form below.",
+  "addWorkerAction": "Add Worker",
+  "refreshAuditLogBtn": "Refresh Audit Log",
+  "manageServicesAction": "Manage Services",
+  "backToHomeBtn": "Back to Home",
+  "refreshQueueBtn": "Refresh Queue",
+  "createServiceAction": "Create Service",
+  "walletPayoutEmptyHint": "Submitted payout requests will appear here with processing status.",
+  "walletLedgerEmptyHint": "Your transaction history will appear here once deposits or charges occur.",
+  "refreshWalletBtn": "Refresh Wallet",
+  "expressDeliveryFallbackLabel": "Express Delivery",
+  "inTransitLiveTitle": "In Transit - Live Courier Tracking",
+  "liveRouteTrackingActive": "Live Route Tracking Active",
+  "pickupLocationLabel": "Pickup Location",
+  "orderDispatchedLabel": "Order Dispatched",
+  "clientAddressConfirmedLabel": "Client Address Confirmed",
+  "standardRouteLabel": "Standard Route",
+  "routeLoggedLabel": "Route Logged",
+  "workerStatusChangedSuccessMsg": "Successfully changed status.",
+  "freezeWorkerBtn": "Freeze Worker",
+  "unfreezeWorkerBtn": "Unfreeze Worker",
+  "passwordResetSuccessMsg": "Password reset successfully! You can now log in with your new password.",
+  "enterValidNumberError": "Enter a valid number",
+  "priceProposalAcceptedMsg": "Price proposal accepted! Job is now active.",
+  "priceProposalDeclinedMsg": "Price proposal declined. Job cancelled.",
+  "courierDriverLabel": "Courier Driver",
+  "assignedCourierLabel": "Assigned Courier",
+  "originalSystemPriceLabel": "Original System Price",
+  "agreedPriceLabel": "Agreed Price",
+  "selectFileSourceTitle": "Select File Source",
+  "selectImageSourceTitle": "Select Image Source",
+  "kycInvalidFormatDocs": "Invalid file format. Only JPEG, PNG, and PDF files are allowed for {slot}.",
+  "@kycInvalidFormatDocs": {
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "kycInvalidFormatImages": "Invalid file format. Only JPEG and PNG image files are allowed for {slot}.",
+  "@kycInvalidFormatImages": {
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "kycApprovedBanner": "Your account verification has been approved by administrators. Your account is fully active.",
+  "kycPendingBanner": "All required documents have been uploaded and are pending super admin review.",
+  "kycRejectedBanner": "Your document submission was rejected. Please review the reason below and re-upload the corrected document(s).",
+  "kycUploadAllBanner": "Please upload all required verification documents below to complete identity verification.",
+  "ownerKybTitle": "Owner Verification (KYB)",
+  "employeeKyeTitle": "Employee Verification (KYE)",
+  "idFrontTitle": "ID Card (Front)",
+  "idFrontDesc": "Clear photo of the front side of your National ID or Passport.",
+  "idBackTitle": "ID Card (Back)",
+  "idBackDesc": "Clear photo of the back side of your National ID.",
+  "selfieTitle": "Selfie Photo",
+  "selfieDesc": "Selfie holding your ID card next to your face.",
+  "businessProofTitle": "Business Proof / Commercial Register",
+  "businessProofDesc": "Official commercial register or tax registration document (PDF, JPEG, or PNG).",
+  "userProfileTitle": "User Profile",
+  "syncPausedOfflineMsg": "Sync paused. Showing offline notifications.",
+  "systemStatusOperationalMsg": "System Status: Operational.",
+  "userNotAuthenticatedError": "User not authenticated.",
+  "noLocationSelectedLabel": "No location selected",
+  "unknownActionLabel": "Unknown Action",
+  "clientOwnerRoleLabel": "Client / Owner",
+  "quickDeliveryUserFallback": "Quick Delivery User",
+  "subscriptionUpdatedSuccessMsg": "Subscription updated successfully!",
+  "activePlanLabel": "Active Plan",
+  "downgradeToFreeBtn": "Downgrade to Free",
+  "awaitingPaymentLabel": "Awaiting Payment",
+  "upgradeToProfessionalBtn": "Upgrade to Professional",
+  "appUpdateRequiredTitle": "App Update Required",
+  "mandatoryUpdateBody": "A mandatory app update is available. Please update Quick Delivery to continue using the service.",
+  "whatsNewSecurityItem": "Enhanced security protocols for order and delivery tracking.",
+  "whatsNewRoutingItem": "Optimized routing algorithms for faster deliveries.",
+  "whatsNewBugFixesItem": "Critical bug fixes and stability improvements.",
+  "installedVersionLabel": "Installed Version",
+  "minimumRequiredLabel": "Minimum Required",
+  "latestAvailableLabel": "Latest Available",
+  "updateCannotContinueBody": "You cannot continue using the app until this update is installed.",
+  "updateNowBtn": "Update Now",
+  "searchServicesTooltip": "Search services",
+  "ratingStarSemantic": "Rate {n} of 5 stars",
+  "@ratingStarSemantic": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "otpDigitSemantic": "PIN digit {index} of {length}",
+  "@otpDigitSemantic": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "length": {
+        "type": "int"
+      }
+    }
+  },
+  "whatsNewTitle": "What's new:",
+  "specialistRoleLabel": "Specialist",
+  "jobMapInTransitTitle": "In Transit - Live Courier Tracking",
+  "jobMapLiveTrackingActive": "Live Route Tracking Active",
+  "roleOwnerLabel": "Owner",
+  "inProgressLabel": "In Progress",
+  "roleEmployeeLabel": "Employee",
+  "notificationsAll": "All",
+  "notificationsJobs": "Jobs",
+  "notificationsSystem": "System",
+  "notificationsAlerts": "Alerts",
+  "confirmActionDefault": "Confirm",
+  "cancelActionDefault": "Cancel",
+  "nameRequiredError": "Name is required",
+  "depositMaxLimitError": "Maximum single deposit is 1,000,000 credits",
+  "verifyNewEmailBtn": "Verify New Email",
+  "enterCompleteOtpError": "Enter complete 6-digit code",
+  "listEmptyTitle": "No items found",
+  "listEmptyBody": "There are no items to display at this time.",
+  "confirmPayoutBtn": "Confirm Payout",
+  "continueActionLabel": "Continue",
+  "kycUploadedStatus": "Uploaded",
+  "defaultErrorTitle": "Error occurred",
+  "serviceFallbackLabel": "Service"
 }

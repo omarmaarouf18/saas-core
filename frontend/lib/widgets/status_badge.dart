@@ -104,7 +104,7 @@ class StatusBadge extends StatelessWidget {
         label = l10n.statusCompleted;
         break;
       case 'uploaded':
-        label = "Uploaded";
+        label = l10n.kycUploadedStatus;
         break;
       case 'paid':
         label = l10n.statusPaid;

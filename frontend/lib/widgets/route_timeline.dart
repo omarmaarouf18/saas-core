@@ -51,7 +51,7 @@ class RouteTimeline extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      margin: const EdgeInsets.only(top: 2),
+                      margin: const EdgeInsets.only(top: AppSpacing.xxs),
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
@@ -107,7 +107,7 @@ class RouteTimeline extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      margin: const EdgeInsets.only(top: 2),
+                      margin: const EdgeInsets.only(top: AppSpacing.xxs),
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(

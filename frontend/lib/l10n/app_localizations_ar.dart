@@ -1944,4 +1944,347 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get subProFeatureTrackingUnlock => 'يفتح تتبع مباشر لموقع العامل';
+
+  @override
+  String get customerHomeTileDeliveryDesc =>
+      'توصيل سريع حسب الطلب للطلبات والطرود والمستلزمات.';
+
+  @override
+  String get customerHomeTileRideDesc =>
+      'حجز رحلات محلية، ونقل أثاث، وخدمات نقل طلبات.';
+
+  @override
+  String get customerHomeTileCleaningDesc =>
+      'تنظيف منازل وصيانة وخدمات فنيين عند الطلب.';
+
+  @override
+  String get customerHomeTileBrowseAllDesc =>
+      'استعرض كل خدمات المنزل وخيارات التوصيل المتاحة.';
+
+  @override
+  String get browseServicesBtn => 'استعرض الخدمات';
+
+  @override
+  String get marketplaceEmptyHint => 'جرّب توسيع نطاق البحث أو تغيير موقعك.';
+
+  @override
+  String get refreshHistoryBtn => 'تحديث السجل';
+
+  @override
+  String get refreshJobsBtn => 'تحديث المهام';
+
+  @override
+  String get employeeRegisterIntro =>
+      'سجّل أول حساب موظف باستخدام النموذج أدناه.';
+
+  @override
+  String get addWorkerAction => 'إضافة عامل';
+
+  @override
+  String get refreshAuditLogBtn => 'تحديث سجل النشاطات';
+
+  @override
+  String get manageServicesAction => 'إدارة الخدمات';
+
+  @override
+  String get backToHomeBtn => 'العودة للرئيسية';
+
+  @override
+  String get refreshQueueBtn => 'تحديث القائمة';
+
+  @override
+  String get createServiceAction => 'إنشاء خدمة';
+
+  @override
+  String get walletPayoutEmptyHint =>
+      'طلبات سحب الأرباح المرسومة ستظهر هنا مع حالة المعالجة.';
+
+  @override
+  String get walletLedgerEmptyHint =>
+      'ستظهر سجل عملياتك هنا بعد أول إيداع أو خصم.';
+
+  @override
+  String get refreshWalletBtn => 'تحديث المحفظة';
+
+  @override
+  String get expressDeliveryFallbackLabel => 'توصيل سريع';
+
+  @override
+  String get inTransitLiveTitle => 'في الطريق - تتبع مباشر للمندوب';
+
+  @override
+  String get liveRouteTrackingActive => 'التتبع المباشر للرحلة مُفعّل';
+
+  @override
+  String get pickupLocationLabel => 'موقع الاستلام';
+
+  @override
+  String get orderDispatchedLabel => 'تم إرسال الطلب';
+
+  @override
+  String get clientAddressConfirmedLabel => 'تم تأكيد عنوان العميل';
+
+  @override
+  String get standardRouteLabel => 'المسار العادي';
+
+  @override
+  String get routeLoggedLabel => 'تم تسجيل المسار';
+
+  @override
+  String get workerStatusChangedSuccessMsg => 'تم تغيير الحالة بنجاح.';
+
+  @override
+  String get freezeWorkerBtn => 'إيقاف العامل';
+
+  @override
+  String get unfreezeWorkerBtn => 'إعادة تنشيط العامل';
+
+  @override
+  String get passwordResetSuccessMsg =>
+      'تم تغيير كلمة المرور بنجاح! يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.';
+
+  @override
+  String get enterValidNumberError => 'أدخل رقمًا صحيحًا';
+
+  @override
+  String get priceProposalAcceptedMsg => 'تم قبول عرض السعر! الطلب أصبح نشطًا.';
+
+  @override
+  String get priceProposalDeclinedMsg => 'تم رفض عرض السعر. تم إلغاء الطلب.';
+
+  @override
+  String get courierDriverLabel => 'مندوب التوصيل';
+
+  @override
+  String get assignedCourierLabel => 'المندوب المعيّن';
+
+  @override
+  String get originalSystemPriceLabel => 'سعر النظام الأصلي';
+
+  @override
+  String get agreedPriceLabel => 'السعر المتفق عليه';
+
+  @override
+  String get selectFileSourceTitle => 'اختر مصدر الملف';
+
+  @override
+  String get selectImageSourceTitle => 'اختر مصدر الصورة';
+
+  @override
+  String kycInvalidFormatDocs(String slot) {
+    return 'صيغة الملف غير صحيحة. المسموح لـ $slot: صور JPEG وPNG وملفات PDF فقط.';
+  }
+
+  @override
+  String kycInvalidFormatImages(String slot) {
+    return 'صيغة الملف غير صحيحة. المسموح لـ $slot: صور JPEG وPNG فقط.';
+  }
+
+  @override
+  String get kycApprovedBanner =>
+      'تمت الموافقة على حسابك من قبل الإدارة. حسابك مُفعّل بالكامل.';
+
+  @override
+  String get kycPendingBanner =>
+      'تم رفع كل المستندات المطلوبة وهي قيد مراجعة الإدارة.';
+
+  @override
+  String get kycRejectedBanner =>
+      'تم رفض مستنداتك. راجع السبب أدناه وأعد رفع المستندات المصحّحة.';
+
+  @override
+  String get kycUploadAllBanner =>
+      'من فضلك ارفع كل مستندات التحقق المطلوبة أدناه لإكمال توثيق الهوية.';
+
+  @override
+  String get ownerKybTitle => 'توثيق النشاط التجاري (KYB)';
+
+  @override
+  String get employeeKyeTitle => 'توثيق الموظف (KYE)';
+
+  @override
+  String get idFrontTitle => 'بطاقة الهوية (الوجه)';
+
+  @override
+  String get idFrontDesc =>
+      'صورة واضحة للوجه الأمامي من بطاقة الهوية أو جواز السفر.';
+
+  @override
+  String get idBackTitle => 'بطاقة الهوية (الظهر)';
+
+  @override
+  String get idBackDesc => 'صورة واضحة للوجه الخلفي من بطاقة الهوية.';
+
+  @override
+  String get selfieTitle => 'صورة سيلفي';
+
+  @override
+  String get selfieDesc => 'سيلفي وأنت ممسك ببطاقة الهوية بجانب وجهك.';
+
+  @override
+  String get businessProofTitle => 'إثبات النشاط / السجل التجاري';
+
+  @override
+  String get businessProofDesc =>
+      'سجل تجاري رسمي أو مستند ضريبي (PDF أو JPEG أو PNG).';
+
+  @override
+  String get userProfileTitle => 'الملف الشخصي';
+
+  @override
+  String get syncPausedOfflineMsg =>
+      'تم إيقاف المزامنة مؤقتًا. تُعرض الإشعارات دون اتصال.';
+
+  @override
+  String get systemStatusOperationalMsg => 'حالة النظام: تعمل بشكل طبيعي.';
+
+  @override
+  String get userNotAuthenticatedError => 'المستخدم غير مسجّل الدخول.';
+
+  @override
+  String get noLocationSelectedLabel => 'لم يتم اختيار موقع';
+
+  @override
+  String get unknownActionLabel => 'إجراء غير معروف';
+
+  @override
+  String get clientOwnerRoleLabel => 'العميل / صاحب الحساب';
+
+  @override
+  String get quickDeliveryUserFallback => 'مستخدم Quick Delivery';
+
+  @override
+  String get subscriptionUpdatedSuccessMsg => 'تم تحديث الاشتراك بنجاح!';
+
+  @override
+  String get activePlanLabel => 'الباقة الحالية';
+
+  @override
+  String get downgradeToFreeBtn => 'التحويل إلى الباقة المجانية';
+
+  @override
+  String get awaitingPaymentLabel => 'بانتظار الدفع';
+
+  @override
+  String get upgradeToProfessionalBtn => 'الترقية إلى الاحترافية';
+
+  @override
+  String get appUpdateRequiredTitle => 'تحديث التطبيق مطلوب';
+
+  @override
+  String get mandatoryUpdateBody =>
+      'يتوفر تحديث إجباري هام للتطبيق. يرجى التحديث لمتابعة استخدام خدمة Quick Delivery.';
+
+  @override
+  String get whatsNewSecurityItem =>
+      'بروتوكولات أمان محسّنة لتتبع الطلبات والتوصيل.';
+
+  @override
+  String get whatsNewRoutingItem => 'خوارزميات توجيه محسّنة لتوصيل أسرع.';
+
+  @override
+  String get whatsNewBugFixesItem =>
+      'إصلاحات مهمة للأخطاء وتحسينات في الاستقرار.';
+
+  @override
+  String get installedVersionLabel => 'النسخة المثبّتة';
+
+  @override
+  String get minimumRequiredLabel => 'الحد الأدنى المطلوب';
+
+  @override
+  String get latestAvailableLabel => 'أحدث نسخة متاحة';
+
+  @override
+  String get updateCannotContinueBody =>
+      'لا يمكنك متابعة استخدام التطبيق قبل تثبيت هذا التحديث.';
+
+  @override
+  String get updateNowBtn => 'حدّث الآن';
+
+  @override
+  String get searchServicesTooltip => 'ابحث عن خدمات';
+
+  @override
+  String ratingStarSemantic(int n) {
+    return 'قيّم $n من 5 نجوم';
+  }
+
+  @override
+  String otpDigitSemantic(int index, int length) {
+    return 'خانة الرمز $index من $length';
+  }
+
+  @override
+  String get whatsNewTitle => 'الجديد في التحديث:';
+
+  @override
+  String get specialistRoleLabel => 'فني مختص';
+
+  @override
+  String get jobMapInTransitTitle => 'في الطريق - تتبع مباشر للمندوب';
+
+  @override
+  String get jobMapLiveTrackingActive => 'التتبع المباشر للرحلة مُفعّل';
+
+  @override
+  String get roleOwnerLabel => 'صاحب الحساب';
+
+  @override
+  String get inProgressLabel => 'قيد التنفيذ';
+
+  @override
+  String get roleEmployeeLabel => 'موظف';
+
+  @override
+  String get notificationsAll => 'الكل';
+
+  @override
+  String get notificationsJobs => 'المهام';
+
+  @override
+  String get notificationsSystem => 'النظام';
+
+  @override
+  String get notificationsAlerts => 'تنبيهات';
+
+  @override
+  String get confirmActionDefault => 'تأكيد';
+
+  @override
+  String get cancelActionDefault => 'إلغاء';
+
+  @override
+  String get nameRequiredError => 'الاسم مطلوب';
+
+  @override
+  String get depositMaxLimitError =>
+      'أقصى مبلغ للإيداع الواحد هو 1,000,000 credit';
+
+  @override
+  String get verifyNewEmailBtn => 'تأكيد البريد الجديد';
+
+  @override
+  String get enterCompleteOtpError => 'أدخل الرمز المكوّن من 6 أرقام بالكامل';
+
+  @override
+  String get listEmptyTitle => 'لا توجد عناصر';
+
+  @override
+  String get listEmptyBody => 'لا يوجد شيء للعرض في الوقت الحالي.';
+
+  @override
+  String get confirmPayoutBtn => 'تأكيد طلب السحب';
+
+  @override
+  String get continueActionLabel => 'متابعة';
+
+  @override
+  String get kycUploadedStatus => 'تم الرفع';
+
+  @override
+  String get defaultErrorTitle => 'حدث خطأ';
+
+  @override
+  String get serviceFallbackLabel => 'خدمة';
 }

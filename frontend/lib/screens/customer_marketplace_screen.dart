@@ -113,10 +113,9 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         alignment: Alignment.center,
                         child: Text(
                           '${provider.unreadCount}',
-                          style: AppTypography.labelMd.copyWith(
+                          style: AppTypography.labelSm.copyWith(
                             color: AppColors.onPrimary,
                             fontWeight: FontWeight.bold,
-                            fontSize: 10,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -204,9 +203,8 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
             child: ThemedEmptyState(
               icon: Icons.search_off,
               title: l10n.noServicesNearby,
-              description:
-                  "Try broadening your search radius or changing your coordinates.",
-              actionText: "Refresh List",
+              description: l10n.marketplaceEmptyHint,
+              actionText: l10n.tooltipRefreshList,
               onActionPressed: _loadServices,
             ),
           ),
@@ -399,19 +397,21 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
-                ElevatedButton(
+                // A8/B3-F1+F2: shared icon button with semantics — replaces a
+                // raw ElevatedButton that bypassed the debounce machinery and
+                // exposed no screen-reader label.
+                IconButton(
+                  key: const Key('marketplace_search_button'),
+                  tooltip: l10n.searchServicesTooltip,
                   onPressed: _loadServices,
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(52, 52),
+                  style: IconButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: AppRadius.defaultBorder,
                     ),
-                    elevation: 0,
                   ),
-                  child: const Icon(Icons.search),
+                  icon: const Icon(Icons.search),
                 ),
               ],
             ),
@@ -527,7 +527,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSpacing.xxs),
                       Text(
                         l10n.estPriceLine("${service.finalPrice}"),
                         style: AppTypography.titleMd.copyWith(

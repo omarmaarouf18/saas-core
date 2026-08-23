@@ -198,7 +198,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
         icon: Icons.design_services_outlined,
         title: l10n.noServicesConfigured,
         description: l10n.noServicesDescription,
-        actionText: "Create Service",
+        actionText: l10n.createServiceAction,
         onActionPressed: () => CreateServiceDialog.show(
           context,
           ownerId: user.id,
@@ -214,13 +214,14 @@ class _ServiceScreenState extends State<ServiceScreen> {
     required AppLocalizations l10n,
   }) {
     final category = svc['category']?.toString();
-    final categoryLabel =
-        serviceCategoryLabels[category] ?? category ?? 'Service';
+    final categoryLabel = serviceCategoryLabels[category] ??
+        category ??
+        l10n.serviceFallbackLabel;
     final basePrice = (svc['tenant_base_price'] as num?)?.toDouble() ?? 0.0;
     final pricePerKm = (svc['tenant_price_per_km'] as num?)?.toDouble() ?? 0.0;
     final lat = (svc['latitude'] as num?)?.toDouble();
     final lon = (svc['longitude'] as num?)?.toDouble();
-    final name = svc['name']?.toString() ?? 'Service';
+    final name = svc['name']?.toString() ?? l10n.userProfileTitle;
 
     return ThemedCard(
       borderRadius: AppRadius.md,
@@ -256,7 +257,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xxs),
                     Row(
                       children: [
                         const ThemedPanel(
@@ -264,7 +265,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                             shape: BoxShape.circle,
                             width: 8,
                             height: 8),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: AppSpacing.baseSm),
                         Text(
                           AppTypography.uppercaseLabel(categoryLabel),
                           style: AppTypography.caption.copyWith(
@@ -307,7 +308,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                           letterSpacing: 0.5,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSpacing.xxs),
                       Text(
                         "\$${basePrice.toStringAsFixed(2)}",
                         style: AppTypography.titleMd.copyWith(
@@ -333,7 +334,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                           letterSpacing: 0.5,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSpacing.xxs),
                       Text(
                         "\$${pricePerKm.toStringAsFixed(2)}",
                         style: AppTypography.titleMd.copyWith(

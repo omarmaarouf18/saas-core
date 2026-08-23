@@ -87,7 +87,9 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              allowPdf ? "Select File Source" : "Select Image Source",
+              allowPdf
+                  ? l10n.selectFileSourceTitle
+                  : l10n.selectImageSourceTitle,
               style: AppTypography.titleMd.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.primary,
@@ -157,6 +159,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
 
   Future<void> _handleSlotUpload(
       String slotKey, String slotTitle, bool allowPdf) async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _slotErrors[slotKey] = null;
     });
@@ -189,8 +192,8 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
     if (!isValidImage && !isValidPdf) {
       setState(() {
         _slotErrors[slotKey] = allowPdf
-            ? "Invalid file format. Only JPEG, PNG, and PDF files are allowed for $slotTitle."
-            : "Invalid file format. Only JPEG and PNG image files are allowed for $slotTitle.";
+            ? l10n.kycInvalidFormatDocs(slotTitle)
+            : l10n.kycInvalidFormatImages(slotTitle);
       });
       return;
     }
@@ -248,6 +251,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
     required bool isPending,
     required bool isRejected,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     return ThemedPanel(
         color: AppColors.surfaceContainerLow,
         borderRadius: AppRadius.mdBorder,
@@ -303,12 +307,12 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
             const SizedBox(height: AppSpacing.xs),
             Text(
               isApproved
-                  ? "Your account verification has been approved by administrators. Your account is fully active."
+                  ? l10n.kycApprovedBanner
                   : (isPending
-                      ? "All required documents have been uploaded and are pending super admin review."
+                      ? l10n.kycPendingBanner
                       : (isRejected
-                          ? "Your document submission was rejected. Please review the reason below and re-upload the corrected document(s)."
-                          : "Please upload all required verification documents below to complete identity verification.")),
+                          ? l10n.kycRejectedBanner
+                          : l10n.kycUploadAllBanner)),
               style: AppTypography.bodyMd.copyWith(
                 color: AppColors.onSurfaceVariant,
               ),
@@ -555,8 +559,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
     final user = auth.user;
 
     final isOwner = user?.role == 'owner';
-    final roleTitle =
-        isOwner ? 'Owner Verification (KYB)' : 'Employee Verification (KYE)';
+    final roleTitle = isOwner ? l10n.ownerKybTitle : l10n.employeeKyeTitle;
 
     final status = user?.effectiveKycStatus ?? '';
     final displayStatus = status.isEmpty ? 'unverified' : status;
@@ -568,32 +571,30 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
     final slots = [
       {
         'key': 'id_front',
-        'title': 'ID Card (Front)',
-        'subtitle':
-            'Clear photo of the front side of your National ID or Passport.',
+        'title': l10n.idFrontTitle,
+        'subtitle': l10n.idFrontDesc,
         'allowPdf': false,
         'icon': Icons.badge_outlined,
       },
       {
         'key': 'id_back',
-        'title': 'ID Card (Back)',
-        'subtitle': 'Clear photo of the back side of your National ID.',
+        'title': l10n.idBackTitle,
+        'subtitle': l10n.idBackDesc,
         'allowPdf': false,
         'icon': Icons.flip_to_back_outlined,
       },
       {
         'key': 'selfie',
-        'title': 'Selfie Photo',
-        'subtitle': 'Selfie holding your ID card next to your face.',
+        'title': l10n.selfieTitle,
+        'subtitle': l10n.selfieDesc,
         'allowPdf': false,
         'icon': Icons.account_box_outlined,
       },
       if (isOwner)
         {
           'key': 'business_proof',
-          'title': 'Business Proof / Commercial Register',
-          'subtitle':
-              'Official commercial register or tax registration document (PDF, JPEG, or PNG).',
+          'title': l10n.businessProofTitle,
+          'subtitle': l10n.businessProofDesc,
           'allowPdf': true,
           'icon': Icons.business_outlined,
         },

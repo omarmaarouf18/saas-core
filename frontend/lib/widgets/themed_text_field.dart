@@ -86,8 +86,12 @@ class _ThemedTextFieldState extends State<ThemedTextField> {
           color: AppColors.onSurfaceVariant,
         ),
         tooltip: _obscureText
-            ? (AppLocalizations.of(context)?.showPassword ?? 'Show password')
-            : (AppLocalizations.of(context)?.hidePassword ?? 'Hide password'),
+            ? (AppLocalizations.of(context)?.showPassword ??
+                AppLocalizations.of(context)?.showPassword ??
+                '')
+            : (AppLocalizations.of(context)?.hidePassword ??
+                AppLocalizations.of(context)?.hidePassword ??
+                ''),
         onPressed: () {
           setState(() {
             _obscureText = !_obscureText;

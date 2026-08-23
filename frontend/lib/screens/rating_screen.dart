@@ -30,14 +30,18 @@ class _RatingScreenState extends State<RatingScreen> {
   bool _isSubmitting = false;
   bool _isLoadingOtherStatus = true;
   bool _otherPartyHasRated = false;
-  String _otherPartyName = "Driver / Employee";
-  String _otherPartyRole = "Specialist";
+  String _otherPartyName = '';
+  String _otherPartyRole = ""; // replaced at runtime (A8)
   String? _otherPartyId;
 
   @override
   void initState() {
     super.initState();
-    _determineParties();
+    // A8: party labels are localized now, so resolution must wait until
+    // Localizations is available (post-frame), unlike the old raw strings.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _determineParties();
+    });
     _checkOtherPartyRatingStatus();
   }
 
@@ -50,17 +54,18 @@ class _RatingScreenState extends State<RatingScreen> {
   void _determineParties() {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final user = auth.user;
+    final l10n = AppLocalizations.of(context)!;
     if (user != null) {
       if (user.role == 'employee') {
         // Employee is rating the Owner (customer)
         _otherPartyId = widget.job.ownerId;
-        _otherPartyName = "Client / Owner";
-        _otherPartyRole = "Owner";
+        _otherPartyName = l10n.clientOwnerRoleLabel;
+        _otherPartyRole = l10n.roleOwnerLabel;
       } else {
         // Owner/Customer is rating the Employee (driver)
         _otherPartyId = widget.job.employeeId;
-        _otherPartyName = "Driver / Employee";
-        _otherPartyRole = "Specialist";
+        _otherPartyName = l10n.proposalRoleDriverEmployee;
+        _otherPartyRole = l10n.specialistRoleLabel;
       }
     }
   }
@@ -355,20 +360,25 @@ class _RatingScreenState extends State<RatingScreen> {
         children: List.generate(5, (index) {
           final starValue = index + 1;
           final isSelected = starValue <= _selectedStars;
-          return IconButton(
-            tooltip: context.l10n.ratingTitle,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-            onPressed: () {
-              setState(() {
-                _selectedStars = starValue;
-              });
-            },
-            icon: Icon(
-              isSelected ? Icons.star : Icons.star_border,
-              color:
-                  isSelected ? AppColors.secondary : AppColors.outlineVariant,
-              size: 44,
+          // A8/E4-F1: announce which star this is, not a generic label.
+          return Semantics(
+            label: context.l10n.ratingStarSemantic(starValue),
+            button: true,
+            child: IconButton(
+              tooltip: context.l10n.ratingTitle,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+              onPressed: () {
+                setState(() {
+                  _selectedStars = starValue;
+                });
+              },
+              icon: Icon(
+                isSelected ? Icons.star : Icons.star_border,
+                color:
+                    isSelected ? AppColors.secondary : AppColors.outlineVariant,
+                size: 44,
+              ),
             ),
           );
         }),

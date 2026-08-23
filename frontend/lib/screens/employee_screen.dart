@@ -196,7 +196,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                                 color: AppColors.onSurface,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: AppSpacing.xxs),
                             Text(
                               context.l10n.employeeManageSubtitle,
                               style: AppTypography.bodyMd.copyWith(
@@ -272,9 +272,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                       key: const Key('employees_empty_state'),
                       icon: Icons.badge_outlined,
                       title: l10n.noEmployeesRegistered,
-                      description:
-                          "Register your first employee account using the form below.",
-                      actionText: "Add Worker",
+                      description: l10n.employeeRegisterIntro,
+                      actionText: l10n.addWorkerAction,
                       onActionPressed: () => _tabController.animateTo(1),
                     )
                   else if (filteredEmployees.isEmpty)
@@ -340,7 +339,9 @@ class _EmployeeScreenState extends State<EmployeeScreen>
         child: Row(
           children: [
             EntityAvatar(
-              name: username.isNotEmpty ? username : 'Employee',
+              name: username.isNotEmpty
+                  ? username
+                  : AppLocalizations.of(context)!.roleEmployeeLabel,
               radius: 22,
             ),
             const SizedBox(width: AppSpacing.md),
@@ -356,7 +357,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppSpacing.xxs),
                   Text(
                     email,
                     style: AppTypography.bodyMd.copyWith(
@@ -364,7 +365,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppSpacing.xxs),
                   Text(
                     context.l10n.workerIdBadge(displayId),
                     style: AppTypography.caption.copyWith(
@@ -636,7 +637,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                             _togPasswordController.clear();
                             ThemedSnackBar.showSuccess(
                               context,
-                              res['message'] ?? "Successfully changed status.",
+                              res['message'] ??
+                                  l10n.workerStatusChangedSuccessMsg,
                               key:
                                   const Key('employee_status_updated_snackbar'),
                             );
@@ -657,7 +659,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                         }
                       }
                     },
-              text: _togSetActive ? "Unfreeze Worker" : "Freeze Worker",
+              text:
+                  _togSetActive ? l10n.unfreezeWorkerBtn : l10n.freezeWorkerBtn,
               isDestructive: !_togSetActive,
               isLoading: _isTogSubmitting,
               icon: _togSetActive
@@ -692,7 +695,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                       icon: Icons.receipt_long_outlined,
                       title: l10n.noAuditEventsTitle,
                       description: l10n.noAuditEventsDesc,
-                      actionText: "Refresh Audit Log",
+                      actionText: l10n.refreshAuditLogBtn,
                       onActionPressed: _refreshAuditLog,
                     ),
                   );

@@ -42,7 +42,7 @@ class PillFilterBar<T> extends StatelessWidget {
         children: items.map((item) {
           final isSelected = item.value == selectedValue;
           return Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.base),
+            padding: const EdgeInsetsDirectional.only(end: AppSpacing.base),
             child: _PillFilterChip<T>(
               item: item,
               isSelected: isSelected,

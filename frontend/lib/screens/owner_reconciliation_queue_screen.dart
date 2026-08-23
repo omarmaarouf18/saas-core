@@ -217,7 +217,7 @@ class _OwnerReconciliationQueueScreenState
                   icon: Icons.check_circle_outline,
                   title: l10n.reconciliationEmptyTitle,
                   description: l10n.reconciliationEmptyDesc,
-                  actionText: "Refresh Queue",
+                  actionText: l10n.refreshQueueBtn,
                   onActionPressed: _onRefresh,
                 )
               : null,

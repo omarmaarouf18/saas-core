@@ -109,9 +109,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         onRetry: _submitReset,
       );
     } else if (success) {
+      final l10n = context.l10n;
       ThemedSnackBar.showSuccess(
         context,
-        "Password reset successfully! You can now log in with your new password.",
+        l10n.passwordResetSuccessMsg,
       );
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const LoginScreen()),

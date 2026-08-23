@@ -3668,6 +3668,636 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unlocks live worker location tracking'**
   String get subProFeatureTrackingUnlock;
+
+  /// No description provided for @customerHomeTileDeliveryDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast on-demand delivery for orders, packages, and essentials.'**
+  String get customerHomeTileDeliveryDesc;
+
+  /// No description provided for @customerHomeTileRideDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Local ride booking, moving transport, and courier transport.'**
+  String get customerHomeTileRideDesc;
+
+  /// No description provided for @customerHomeTileCleaningDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'On-demand home cleaning, maintenance, and handyman services.'**
+  String get customerHomeTileCleaningDesc;
+
+  /// No description provided for @customerHomeTileBrowseAllDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse all available home services and delivery options.'**
+  String get customerHomeTileBrowseAllDesc;
+
+  /// No description provided for @browseServicesBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse Services'**
+  String get browseServicesBtn;
+
+  /// No description provided for @marketplaceEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Try broadening your search radius or changing your coordinates.'**
+  String get marketplaceEmptyHint;
+
+  /// No description provided for @refreshHistoryBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh History'**
+  String get refreshHistoryBtn;
+
+  /// No description provided for @refreshJobsBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Jobs'**
+  String get refreshJobsBtn;
+
+  /// No description provided for @employeeRegisterIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Register your first employee account using the form below.'**
+  String get employeeRegisterIntro;
+
+  /// No description provided for @addWorkerAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Worker'**
+  String get addWorkerAction;
+
+  /// No description provided for @refreshAuditLogBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Audit Log'**
+  String get refreshAuditLogBtn;
+
+  /// No description provided for @manageServicesAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Services'**
+  String get manageServicesAction;
+
+  /// No description provided for @backToHomeBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Home'**
+  String get backToHomeBtn;
+
+  /// No description provided for @refreshQueueBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Queue'**
+  String get refreshQueueBtn;
+
+  /// No description provided for @createServiceAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Service'**
+  String get createServiceAction;
+
+  /// No description provided for @walletPayoutEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted payout requests will appear here with processing status.'**
+  String get walletPayoutEmptyHint;
+
+  /// No description provided for @walletLedgerEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your transaction history will appear here once deposits or charges occur.'**
+  String get walletLedgerEmptyHint;
+
+  /// No description provided for @refreshWalletBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Wallet'**
+  String get refreshWalletBtn;
+
+  /// No description provided for @expressDeliveryFallbackLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Express Delivery'**
+  String get expressDeliveryFallbackLabel;
+
+  /// No description provided for @inTransitLiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'In Transit - Live Courier Tracking'**
+  String get inTransitLiveTitle;
+
+  /// No description provided for @liveRouteTrackingActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Live Route Tracking Active'**
+  String get liveRouteTrackingActive;
+
+  /// No description provided for @pickupLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup Location'**
+  String get pickupLocationLabel;
+
+  /// No description provided for @orderDispatchedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Dispatched'**
+  String get orderDispatchedLabel;
+
+  /// No description provided for @clientAddressConfirmedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Client Address Confirmed'**
+  String get clientAddressConfirmedLabel;
+
+  /// No description provided for @standardRouteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard Route'**
+  String get standardRouteLabel;
+
+  /// No description provided for @routeLoggedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Route Logged'**
+  String get routeLoggedLabel;
+
+  /// No description provided for @workerStatusChangedSuccessMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Successfully changed status.'**
+  String get workerStatusChangedSuccessMsg;
+
+  /// No description provided for @freezeWorkerBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Freeze Worker'**
+  String get freezeWorkerBtn;
+
+  /// No description provided for @unfreezeWorkerBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfreeze Worker'**
+  String get unfreezeWorkerBtn;
+
+  /// No description provided for @passwordResetSuccessMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Password reset successfully! You can now log in with your new password.'**
+  String get passwordResetSuccessMsg;
+
+  /// No description provided for @enterValidNumberError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid number'**
+  String get enterValidNumberError;
+
+  /// No description provided for @priceProposalAcceptedMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Price proposal accepted! Job is now active.'**
+  String get priceProposalAcceptedMsg;
+
+  /// No description provided for @priceProposalDeclinedMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Price proposal declined. Job cancelled.'**
+  String get priceProposalDeclinedMsg;
+
+  /// No description provided for @courierDriverLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Courier Driver'**
+  String get courierDriverLabel;
+
+  /// No description provided for @assignedCourierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned Courier'**
+  String get assignedCourierLabel;
+
+  /// No description provided for @originalSystemPriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Original System Price'**
+  String get originalSystemPriceLabel;
+
+  /// No description provided for @agreedPriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Agreed Price'**
+  String get agreedPriceLabel;
+
+  /// No description provided for @selectFileSourceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select File Source'**
+  String get selectFileSourceTitle;
+
+  /// No description provided for @selectImageSourceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Image Source'**
+  String get selectImageSourceTitle;
+
+  /// No description provided for @kycInvalidFormatDocs.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid file format. Only JPEG, PNG, and PDF files are allowed for {slot}.'**
+  String kycInvalidFormatDocs(String slot);
+
+  /// No description provided for @kycInvalidFormatImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid file format. Only JPEG and PNG image files are allowed for {slot}.'**
+  String kycInvalidFormatImages(String slot);
+
+  /// No description provided for @kycApprovedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account verification has been approved by administrators. Your account is fully active.'**
+  String get kycApprovedBanner;
+
+  /// No description provided for @kycPendingBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'All required documents have been uploaded and are pending super admin review.'**
+  String get kycPendingBanner;
+
+  /// No description provided for @kycRejectedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Your document submission was rejected. Please review the reason below and re-upload the corrected document(s).'**
+  String get kycRejectedBanner;
+
+  /// No description provided for @kycUploadAllBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Please upload all required verification documents below to complete identity verification.'**
+  String get kycUploadAllBanner;
+
+  /// No description provided for @ownerKybTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner Verification (KYB)'**
+  String get ownerKybTitle;
+
+  /// No description provided for @employeeKyeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee Verification (KYE)'**
+  String get employeeKyeTitle;
+
+  /// No description provided for @idFrontTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ID Card (Front)'**
+  String get idFrontTitle;
+
+  /// No description provided for @idFrontDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear photo of the front side of your National ID or Passport.'**
+  String get idFrontDesc;
+
+  /// No description provided for @idBackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ID Card (Back)'**
+  String get idBackTitle;
+
+  /// No description provided for @idBackDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear photo of the back side of your National ID.'**
+  String get idBackDesc;
+
+  /// No description provided for @selfieTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Selfie Photo'**
+  String get selfieTitle;
+
+  /// No description provided for @selfieDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Selfie holding your ID card next to your face.'**
+  String get selfieDesc;
+
+  /// No description provided for @businessProofTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Business Proof / Commercial Register'**
+  String get businessProofTitle;
+
+  /// No description provided for @businessProofDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Official commercial register or tax registration document (PDF, JPEG, or PNG).'**
+  String get businessProofDesc;
+
+  /// No description provided for @userProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'User Profile'**
+  String get userProfileTitle;
+
+  /// No description provided for @syncPausedOfflineMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync paused. Showing offline notifications.'**
+  String get syncPausedOfflineMsg;
+
+  /// No description provided for @systemStatusOperationalMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'System Status: Operational.'**
+  String get systemStatusOperationalMsg;
+
+  /// No description provided for @userNotAuthenticatedError.
+  ///
+  /// In en, this message translates to:
+  /// **'User not authenticated.'**
+  String get userNotAuthenticatedError;
+
+  /// No description provided for @noLocationSelectedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No location selected'**
+  String get noLocationSelectedLabel;
+
+  /// No description provided for @unknownActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Action'**
+  String get unknownActionLabel;
+
+  /// No description provided for @clientOwnerRoleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Client / Owner'**
+  String get clientOwnerRoleLabel;
+
+  /// No description provided for @quickDeliveryUserFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Delivery User'**
+  String get quickDeliveryUserFallback;
+
+  /// No description provided for @subscriptionUpdatedSuccessMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription updated successfully!'**
+  String get subscriptionUpdatedSuccessMsg;
+
+  /// No description provided for @activePlanLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Plan'**
+  String get activePlanLabel;
+
+  /// No description provided for @downgradeToFreeBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Downgrade to Free'**
+  String get downgradeToFreeBtn;
+
+  /// No description provided for @awaitingPaymentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting Payment'**
+  String get awaitingPaymentLabel;
+
+  /// No description provided for @upgradeToProfessionalBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade to Professional'**
+  String get upgradeToProfessionalBtn;
+
+  /// No description provided for @appUpdateRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'App Update Required'**
+  String get appUpdateRequiredTitle;
+
+  /// No description provided for @mandatoryUpdateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A mandatory app update is available. Please update Quick Delivery to continue using the service.'**
+  String get mandatoryUpdateBody;
+
+  /// No description provided for @whatsNewSecurityItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Enhanced security protocols for order and delivery tracking.'**
+  String get whatsNewSecurityItem;
+
+  /// No description provided for @whatsNewRoutingItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Optimized routing algorithms for faster deliveries.'**
+  String get whatsNewRoutingItem;
+
+  /// No description provided for @whatsNewBugFixesItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical bug fixes and stability improvements.'**
+  String get whatsNewBugFixesItem;
+
+  /// No description provided for @installedVersionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed Version'**
+  String get installedVersionLabel;
+
+  /// No description provided for @minimumRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum Required'**
+  String get minimumRequiredLabel;
+
+  /// No description provided for @latestAvailableLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest Available'**
+  String get latestAvailableLabel;
+
+  /// No description provided for @updateCannotContinueBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot continue using the app until this update is installed.'**
+  String get updateCannotContinueBody;
+
+  /// No description provided for @updateNowBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Now'**
+  String get updateNowBtn;
+
+  /// No description provided for @searchServicesTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search services'**
+  String get searchServicesTooltip;
+
+  /// No description provided for @ratingStarSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate {n} of 5 stars'**
+  String ratingStarSemantic(int n);
+
+  /// No description provided for @otpDigitSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'PIN digit {index} of {length}'**
+  String otpDigitSemantic(int index, int length);
+
+  /// No description provided for @whatsNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s new:'**
+  String get whatsNewTitle;
+
+  /// No description provided for @specialistRoleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Specialist'**
+  String get specialistRoleLabel;
+
+  /// No description provided for @jobMapInTransitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'In Transit - Live Courier Tracking'**
+  String get jobMapInTransitTitle;
+
+  /// No description provided for @jobMapLiveTrackingActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Live Route Tracking Active'**
+  String get jobMapLiveTrackingActive;
+
+  /// No description provided for @roleOwnerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get roleOwnerLabel;
+
+  /// No description provided for @inProgressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'In Progress'**
+  String get inProgressLabel;
+
+  /// No description provided for @roleEmployeeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee'**
+  String get roleEmployeeLabel;
+
+  /// No description provided for @notificationsAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get notificationsAll;
+
+  /// No description provided for @notificationsJobs.
+  ///
+  /// In en, this message translates to:
+  /// **'Jobs'**
+  String get notificationsJobs;
+
+  /// No description provided for @notificationsSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get notificationsSystem;
+
+  /// No description provided for @notificationsAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts'**
+  String get notificationsAlerts;
+
+  /// No description provided for @confirmActionDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirmActionDefault;
+
+  /// No description provided for @cancelActionDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelActionDefault;
+
+  /// No description provided for @nameRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Name is required'**
+  String get nameRequiredError;
+
+  /// No description provided for @depositMaxLimitError.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum single deposit is 1,000,000 credits'**
+  String get depositMaxLimitError;
+
+  /// No description provided for @verifyNewEmailBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify New Email'**
+  String get verifyNewEmailBtn;
+
+  /// No description provided for @enterCompleteOtpError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter complete 6-digit code'**
+  String get enterCompleteOtpError;
+
+  /// No description provided for @listEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No items found'**
+  String get listEmptyTitle;
+
+  /// No description provided for @listEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no items to display at this time.'**
+  String get listEmptyBody;
+
+  /// No description provided for @confirmPayoutBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Payout'**
+  String get confirmPayoutBtn;
+
+  /// No description provided for @continueActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueActionLabel;
+
+  /// No description provided for @kycUploadedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded'**
+  String get kycUploadedStatus;
+
+  /// No description provided for @defaultErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Error occurred'**
+  String get defaultErrorTitle;
+
+  /// No description provided for @serviceFallbackLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Service'**
+  String get serviceFallbackLabel;
 }
 
 class _AppLocalizationsDelegate

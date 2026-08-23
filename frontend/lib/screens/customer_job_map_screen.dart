@@ -205,7 +205,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
                   fontWeight: FontWeight.bold,
                 ),
               )),
-          const SizedBox(height: 2),
+          const SizedBox(height: AppSpacing.xxs),
           const ThemedPanel(
               color: AppColors.primaryContainer,
               shape: BoxShape.circle,
@@ -249,7 +249,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
                 ),
                 overflow: TextOverflow.ellipsis,
               )),
-          const SizedBox(height: 2),
+          const SizedBox(height: AppSpacing.xxs),
           ThemedPanel(
               color: AppColors.secondary,
               shape: BoxShape.circle,
@@ -363,6 +363,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
     required String displayJobId,
     required bool hasActiveMarkers,
   }) {
+    final l10n = context.l10n;
     return Positioned(
       bottom: 0,
       left: 0,
@@ -375,7 +376,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
+              color: AppColors.scrim.withValues(alpha: 0.12),
               offset: const Offset(0, -4),
               blurRadius: 16,
             ),
@@ -422,8 +423,8 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
                     Expanded(
                       child: Text(
                         hasActiveMarkers
-                            ? "In Transit - Live Courier Tracking"
-                            : "Live Route Tracking Active",
+                            ? l10n.jobMapInTransitTitle
+                            : l10n.jobMapLiveTrackingActive,
                         style: AppTypography.bodyMd.copyWith(
                           color: AppColors.onSurfaceVariant,
                           fontWeight: FontWeight.w500,

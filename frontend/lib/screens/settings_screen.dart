@@ -93,7 +93,7 @@ class SettingsScreen extends StatelessWidget {
                         Text(
                           user.username.isNotEmpty
                               ? user.username
-                              : 'Quick Delivery User',
+                              : l10n.quickDeliveryUserFallback,
                           style: AppTypography.titleMd.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppColors.onSurface,

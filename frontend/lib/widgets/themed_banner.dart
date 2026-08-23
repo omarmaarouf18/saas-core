@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
 
 enum ThemedBannerType {
@@ -108,7 +109,8 @@ class _ThemedBannerState extends State<ThemedBanner> {
   String? _defaultTitle() {
     switch (widget.type) {
       case ThemedBannerType.error:
-        return "Error occurred";
+        return AppLocalizations.of(context)?.defaultErrorTitle ??
+            "Error occurred";
       case ThemedBannerType.success:
       case ThemedBannerType.warning:
       case ThemedBannerType.info:

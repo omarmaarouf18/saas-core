@@ -567,7 +567,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
           icon: Icons.assignment_late_outlined,
           title: l10n.employeeJobsNoJobsTitle,
           description: l10n.employeeJobsNoJobsDesc,
-          actionText: "Refresh Jobs",
+          actionText: l10n.refreshJobsBtn,
           onActionPressed: _refreshJobs,
         ),
       );
@@ -636,15 +636,15 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             ),
             // Route Timeline Card Module
             RouteTimeline(
-              pickupAddress: "Pickup Location",
-              pickupDetail: "Client Address Confirmed",
-              dropoffAddress: "Delivery Destination",
+              pickupAddress: l10n.pickupLocationLabel,
+              pickupDetail: l10n.clientAddressConfirmedLabel,
+              dropoffAddress: l10n.deliveryDestinationLabel,
               dropoffDetail: l10n.employeeJobsDestinationCoordinates,
               distanceText: job.lockedEscrowAmount != null
                   ? "${job.lockedEscrowAmount!.toStringAsFixed(0)} Credits"
-                  : "Standard Route",
+                  : l10n.standardRouteLabel,
               timeText: isActive
-                  ? "In Progress"
+                  ? l10n.inProgressLabel
                   : AppTypography.uppercaseLabel(job.status),
               cargoText: AppTypography.uppercaseLabel(job.paymentMethod),
             ),

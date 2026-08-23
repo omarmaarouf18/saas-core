@@ -813,5 +813,141 @@
   "subProFeaturePricing": "وصول لمؤشرات أسعار متقدمة",
   "subProEmployeeSuite": "إدارة كاملة للموظفين",
   "subProDedicatedSupport": "دعم مخصص 24/7",
-  "subProFeatureTrackingUnlock": "يفتح تتبع مباشر لموقع العامل"
+  "subProFeatureTrackingUnlock": "يفتح تتبع مباشر لموقع العامل",
+  "customerHomeTileDeliveryDesc": "توصيل سريع حسب الطلب للطلبات والطرود والمستلزمات.",
+  "customerHomeTileRideDesc": "حجز رحلات محلية، ونقل أثاث، وخدمات نقل طلبات.",
+  "customerHomeTileCleaningDesc": "تنظيف منازل وصيانة وخدمات فنيين عند الطلب.",
+  "customerHomeTileBrowseAllDesc": "استعرض كل خدمات المنزل وخيارات التوصيل المتاحة.",
+  "browseServicesBtn": "استعرض الخدمات",
+  "marketplaceEmptyHint": "جرّب توسيع نطاق البحث أو تغيير موقعك.",
+  "refreshHistoryBtn": "تحديث السجل",
+  "refreshJobsBtn": "تحديث المهام",
+  "employeeRegisterIntro": "سجّل أول حساب موظف باستخدام النموذج أدناه.",
+  "addWorkerAction": "إضافة عامل",
+  "refreshAuditLogBtn": "تحديث سجل النشاطات",
+  "manageServicesAction": "إدارة الخدمات",
+  "backToHomeBtn": "العودة للرئيسية",
+  "refreshQueueBtn": "تحديث القائمة",
+  "createServiceAction": "إنشاء خدمة",
+  "walletPayoutEmptyHint": "طلبات سحب الأرباح المرسومة ستظهر هنا مع حالة المعالجة.",
+  "walletLedgerEmptyHint": "ستظهر سجل عملياتك هنا بعد أول إيداع أو خصم.",
+  "refreshWalletBtn": "تحديث المحفظة",
+  "expressDeliveryFallbackLabel": "توصيل سريع",
+  "inTransitLiveTitle": "في الطريق - تتبع مباشر للمندوب",
+  "liveRouteTrackingActive": "التتبع المباشر للرحلة مُفعّل",
+  "pickupLocationLabel": "موقع الاستلام",
+  "orderDispatchedLabel": "تم إرسال الطلب",
+  "clientAddressConfirmedLabel": "تم تأكيد عنوان العميل",
+  "standardRouteLabel": "المسار العادي",
+  "routeLoggedLabel": "تم تسجيل المسار",
+  "workerStatusChangedSuccessMsg": "تم تغيير الحالة بنجاح.",
+  "freezeWorkerBtn": "إيقاف العامل",
+  "unfreezeWorkerBtn": "إعادة تنشيط العامل",
+  "passwordResetSuccessMsg": "تم تغيير كلمة المرور بنجاح! يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.",
+  "enterValidNumberError": "أدخل رقمًا صحيحًا",
+  "priceProposalAcceptedMsg": "تم قبول عرض السعر! الطلب أصبح نشطًا.",
+  "priceProposalDeclinedMsg": "تم رفض عرض السعر. تم إلغاء الطلب.",
+  "courierDriverLabel": "مندوب التوصيل",
+  "assignedCourierLabel": "المندوب المعيّن",
+  "originalSystemPriceLabel": "سعر النظام الأصلي",
+  "agreedPriceLabel": "السعر المتفق عليه",
+  "selectFileSourceTitle": "اختر مصدر الملف",
+  "selectImageSourceTitle": "اختر مصدر الصورة",
+  "kycInvalidFormatDocs": "صيغة الملف غير صحيحة. المسموح لـ {slot}: صور JPEG وPNG وملفات PDF فقط.",
+  "@kycInvalidFormatDocs": {
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "kycInvalidFormatImages": "صيغة الملف غير صحيحة. المسموح لـ {slot}: صور JPEG وPNG فقط.",
+  "@kycInvalidFormatImages": {
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "kycApprovedBanner": "تمت الموافقة على حسابك من قبل الإدارة. حسابك مُفعّل بالكامل.",
+  "kycPendingBanner": "تم رفع كل المستندات المطلوبة وهي قيد مراجعة الإدارة.",
+  "kycRejectedBanner": "تم رفض مستنداتك. راجع السبب أدناه وأعد رفع المستندات المصحّحة.",
+  "kycUploadAllBanner": "من فضلك ارفع كل مستندات التحقق المطلوبة أدناه لإكمال توثيق الهوية.",
+  "ownerKybTitle": "توثيق النشاط التجاري (KYB)",
+  "employeeKyeTitle": "توثيق الموظف (KYE)",
+  "idFrontTitle": "بطاقة الهوية (الوجه)",
+  "idFrontDesc": "صورة واضحة للوجه الأمامي من بطاقة الهوية أو جواز السفر.",
+  "idBackTitle": "بطاقة الهوية (الظهر)",
+  "idBackDesc": "صورة واضحة للوجه الخلفي من بطاقة الهوية.",
+  "selfieTitle": "صورة سيلفي",
+  "selfieDesc": "سيلفي وأنت ممسك ببطاقة الهوية بجانب وجهك.",
+  "businessProofTitle": "إثبات النشاط / السجل التجاري",
+  "businessProofDesc": "سجل تجاري رسمي أو مستند ضريبي (PDF أو JPEG أو PNG).",
+  "userProfileTitle": "الملف الشخصي",
+  "syncPausedOfflineMsg": "تم إيقاف المزامنة مؤقتًا. تُعرض الإشعارات دون اتصال.",
+  "systemStatusOperationalMsg": "حالة النظام: تعمل بشكل طبيعي.",
+  "userNotAuthenticatedError": "المستخدم غير مسجّل الدخول.",
+  "noLocationSelectedLabel": "لم يتم اختيار موقع",
+  "unknownActionLabel": "إجراء غير معروف",
+  "clientOwnerRoleLabel": "العميل / صاحب الحساب",
+  "quickDeliveryUserFallback": "مستخدم Quick Delivery",
+  "subscriptionUpdatedSuccessMsg": "تم تحديث الاشتراك بنجاح!",
+  "activePlanLabel": "الباقة الحالية",
+  "downgradeToFreeBtn": "التحويل إلى الباقة المجانية",
+  "awaitingPaymentLabel": "بانتظار الدفع",
+  "upgradeToProfessionalBtn": "الترقية إلى الاحترافية",
+  "appUpdateRequiredTitle": "تحديث التطبيق مطلوب",
+  "mandatoryUpdateBody": "يتوفر تحديث إجباري هام للتطبيق. يرجى التحديث لمتابعة استخدام خدمة Quick Delivery.",
+  "whatsNewSecurityItem": "بروتوكولات أمان محسّنة لتتبع الطلبات والتوصيل.",
+  "whatsNewRoutingItem": "خوارزميات توجيه محسّنة لتوصيل أسرع.",
+  "whatsNewBugFixesItem": "إصلاحات مهمة للأخطاء وتحسينات في الاستقرار.",
+  "installedVersionLabel": "النسخة المثبّتة",
+  "minimumRequiredLabel": "الحد الأدنى المطلوب",
+  "latestAvailableLabel": "أحدث نسخة متاحة",
+  "updateCannotContinueBody": "لا يمكنك متابعة استخدام التطبيق قبل تثبيت هذا التحديث.",
+  "updateNowBtn": "حدّث الآن",
+  "searchServicesTooltip": "ابحث عن خدمات",
+  "ratingStarSemantic": "قيّم {n} من 5 نجوم",
+  "@ratingStarSemantic": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "otpDigitSemantic": "خانة الرمز {index} من {length}",
+  "@otpDigitSemantic": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "length": {
+        "type": "int"
+      }
+    }
+  },
+  "whatsNewTitle": "الجديد في التحديث:",
+  "specialistRoleLabel": "فني مختص",
+  "jobMapInTransitTitle": "في الطريق - تتبع مباشر للمندوب",
+  "jobMapLiveTrackingActive": "التتبع المباشر للرحلة مُفعّل",
+  "roleOwnerLabel": "صاحب الحساب",
+  "inProgressLabel": "قيد التنفيذ",
+  "roleEmployeeLabel": "موظف",
+  "notificationsAll": "الكل",
+  "notificationsJobs": "المهام",
+  "notificationsSystem": "النظام",
+  "notificationsAlerts": "تنبيهات",
+  "confirmActionDefault": "تأكيد",
+  "cancelActionDefault": "إلغاء",
+  "nameRequiredError": "الاسم مطلوب",
+  "depositMaxLimitError": "أقصى مبلغ للإيداع الواحد هو 1,000,000 credit",
+  "verifyNewEmailBtn": "تأكيد البريد الجديد",
+  "enterCompleteOtpError": "أدخل الرمز المكوّن من 6 أرقام بالكامل",
+  "listEmptyTitle": "لا توجد عناصر",
+  "listEmptyBody": "لا يوجد شيء للعرض في الوقت الحالي.",
+  "confirmPayoutBtn": "تأكيد طلب السحب",
+  "continueActionLabel": "متابعة",
+  "kycUploadedStatus": "تم الرفع",
+  "defaultErrorTitle": "حدث خطأ",
+  "serviceFallbackLabel": "خدمة"
 }

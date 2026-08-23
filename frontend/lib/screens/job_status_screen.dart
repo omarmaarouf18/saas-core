@@ -115,6 +115,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
   }
 
   Future<void> _submitCounterOffer(double suggestedPrice) async {
+    final l10n = context.l10n;
     final input = _counterOfferController.text.trim();
     final proposed = double.tryParse(input);
 
@@ -122,7 +123,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     final maxPrice = 1.5 * suggestedPrice;
 
     if (proposed == null) {
-      setState(() => _proposalError = "Enter a valid number");
+      setState(() => _proposalError = l10n.enterValidNumberError);
       return;
     }
     const eps = 1e-9;
@@ -185,6 +186,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     final provider = Provider.of<MarketplaceProvider>(context, listen: false);
     if (auth.token == null) return;
 
+    final l10n = context.l10n;
     try {
       final updated = await provider.respondPrice(
         jobId: _currentJob.id,
@@ -198,12 +200,12 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         if (decision == 'accept') {
           ThemedSnackBar.showSuccess(
             context,
-            "Price proposal accepted! Job is now active.",
+            l10n.priceProposalAcceptedMsg,
           );
         } else {
           ThemedSnackBar.showError(
             context,
-            "Price proposal declined. Job cancelled.",
+            l10n.priceProposalDeclinedMsg,
           );
         }
         _refreshJobStatus();
@@ -418,6 +420,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     bool isActive,
     String displayId,
   ) {
+    final l10n = context.l10n;
     return ThemedPanel(
         color: AppColors.surface,
         borderRadius: AppRadius.smBorder,
@@ -426,10 +429,17 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           horizontal: AppSpacing.md,
           vertical: AppSpacing.sm,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        // A8/B4-F1: Wrap never overflows — the tracking-ID + badge cluster
+        // drops to a second line on narrow screens instead of being crushed
+        // (this row previously overflowed by up to 213px at 360dp).
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.xs,
           children: [
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 ThemedPanel(
                     shape: BoxShape.circle,
@@ -443,12 +453,12 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 const SizedBox(width: AppSpacing.sm),
                 Text(
                   isCancelled
-                      ? "Cancelled"
+                      ? l10n.statusCancelled
                       : isCompleted
-                          ? "Completed"
+                          ? l10n.statusCompleted
                           : isActive
-                              ? "In Transit"
-                              : "Pending",
+                              ? l10n.stepInTransitTitle
+                              : l10n.statusPending,
                   style: AppTypography.titleMd.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.onSurface,
@@ -456,7 +466,11 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 ),
               ],
             ),
-            Row(
+            // A8: inner Wrap — a long status badge can exceed the whole
+            // line on very narrow screens; wrapping beats clipping here.
+            Wrap(
+              spacing: AppSpacing.sm,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
                   "#QD-$displayId",
@@ -465,7 +479,6 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.sm),
                 StatusBadge(status: _currentJob.status),
               ],
             ),
@@ -516,7 +529,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                     color: AppColors.onPrimary,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.xxs),
                 Text(
                   context.l10n.trackJobHeroSubtitle,
                   style: AppTypography.caption.copyWith(
@@ -656,7 +669,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                         : AppColors.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.xxs),
                 Text(
                   subtitle,
                   style: AppTypography.caption.copyWith(
@@ -777,7 +790,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                             color: AppColors.onSurfaceVariant,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: AppSpacing.xxs),
                         Text(
                           AppTypography.uppercaseLabel(
                               _currentJob.paymentMethod),
@@ -804,7 +817,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                             color: AppColors.onSurfaceVariant,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: AppSpacing.xxs),
                         Text(
                           "\$${(_currentJob.agreedPrice ?? _currentJob.suggestedPrice ?? 0).toStringAsFixed(2)}",
                           style: AppTypography.bodySm.copyWith(
@@ -823,13 +836,14 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
   }
 
   Widget _buildAssignedCourierCard(BuildContext context) {
+    final l10n = context.l10n;
     return ThemedCard(
       borderRadius: AppRadius.md,
       padding: AppSpacing.md,
       child: Row(
         children: [
           EntityAvatar(
-            name: _resolvedUsername ?? "Courier Driver",
+            name: _resolvedUsername ?? l10n.courierDriverLabel,
             radius: 22,
           ),
           const SizedBox(width: AppSpacing.md),
@@ -840,13 +854,13 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 Text(
                   _resolvedUsername != null && _resolvedUsername!.isNotEmpty
                       ? _resolvedUsername!
-                      : "Assigned Courier",
+                      : l10n.assignedCourierLabel,
                   style: AppTypography.bodyLg.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.onSurface,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.xxs),
                 Text(
                   context.l10n.verifiedCourierDriver,
                   style: AppTypography.caption.copyWith(
@@ -943,11 +957,12 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   userToken: auth.token!,
                 );
                 if (mounted) {
+                  final cancelL10n = this.context.l10n;
                   final isNonCod =
                       _currentJob.paymentMethod.toLowerCase() != 'cod';
                   final msg = isNonCod
-                      ? "Job cancelled successfully. Escrow refunded to wallet."
-                      : "Job cancelled successfully.";
+                      ? cancelL10n.ownerHomeJobCancelledEscrowRefunded
+                      : cancelL10n.ownerHomeJobCancelled;
                   ThemedSnackBar.showSuccess(this.context, msg);
                   _refreshJobStatus();
                 }
@@ -1058,11 +1073,11 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           ],
 
           // System Suggested Price display
-          _buildInfoRow(
-              "Original System Price", "\$${suggested.toStringAsFixed(2)}"),
+          _buildInfoRow(l10n.originalSystemPriceLabel,
+              "\$${suggested.toStringAsFixed(2)}"),
 
           if (_currentJob.agreedPrice != null)
-            _buildInfoRow("Agreed Price",
+            _buildInfoRow(l10n.agreedPriceLabel,
                 "\$${_currentJob.agreedPrice!.toStringAsFixed(2)}"),
 
           // If an active price proposal exists (proposed != null)
@@ -1084,39 +1099,58 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          l10n.incomingProposalCard,
-                          style: AppTypography.bodyMd.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                        // A8: flexible + ellipsis — inflexible pair overflowed
+                        // at 360dp inside the proposal card.
+                        Expanded(
+                          child: Text(
+                            l10n.incomingProposalCard,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.bodyMd.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
                           ),
                         ),
-                        Text(
-                          l10n.proposalByLine(proposedBy == 'customer'
-                              ? l10n.proposalRoleCustomer
-                              : l10n.proposalRoleDriverEmployee),
-                          style: AppTypography.labelMd.copyWith(
-                            color: AppColors.onSurfaceVariant,
-                            fontStyle: FontStyle.italic,
+                        const SizedBox(width: AppSpacing.sm),
+                        Flexible(
+                          child: Text(
+                            l10n.proposalByLine(proposedBy == 'customer'
+                                ? l10n.proposalRoleCustomer
+                                : l10n.proposalRoleDriverEmployee),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.labelMd.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                              fontStyle: FontStyle.italic,
+                            ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          l10n.proposedFareLabel,
-                          style: AppTypography.bodyMd
-                              .copyWith(color: AppColors.onSurface),
+                        Expanded(
+                          child: Text(
+                            l10n.proposedFareLabel,
+                            style: AppTypography.bodyMd
+                                .copyWith(color: AppColors.onSurface),
+                          ),
                         ),
-                        Text(
-                          "\$${proposed.toStringAsFixed(2)}",
-                          key: const Key('proposed_price_text'),
-                          style: AppTypography.headlineLgMobile.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.secondary,
+                        const SizedBox(width: AppSpacing.sm),
+                        Flexible(
+                          child: Text(
+                            "\$${proposed.toStringAsFixed(2)}",
+                            key: const Key('proposed_price_text'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.headlineLgMobile.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.secondary,
+                            ),
                           ),
                         ),
                       ],
@@ -1195,50 +1229,66 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ThemedTextField(
-                        key: const Key('counter_offer_input'),
-                        controller: _counterOfferController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        hintText: l10n.negotiationHintExample(
-                            suggested.toStringAsFixed(2)),
-                        prefixIcon: const Icon(
-                          Icons.attach_money,
-                          size: AppIconSize.sm,
-                          color: AppColors.outline,
-                        ),
+            // A8/B4-F1: below ~340dp the fixed-width button starves the
+            // offer input; stack the pair vertically instead.
+            LayoutBuilder(builder: (context, constraints) {
+              final narrow = constraints.maxWidth < 340;
+              final fieldContent = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ThemedTextField(
+                    key: const Key('counter_offer_input'),
+                    controller: _counterOfferController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    hintText: l10n
+                        .negotiationHintExample(suggested.toStringAsFixed(2)),
+                    prefixIcon: const Icon(
+                      Icons.attach_money,
+                      size: AppIconSize.sm,
+                      color: AppColors.outline,
+                    ),
+                  ),
+                  if (_proposalError != null) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      _proposalError!,
+                      style: AppTypography.labelMd.copyWith(
+                        color: AppColors.error,
                       ),
-                      if (_proposalError != null) ...[
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          _proposalError!,
-                          style: AppTypography.labelMd.copyWith(
-                            color: AppColors.error,
-                          ),
-                        ),
+                    ),
+                  ],
+                ],
+              );
+              final submitButton = SizedBox(
+                width: narrow ? double.infinity : 150,
+                child: PrimaryButton(
+                  key: const Key('submit_proposal_button'),
+                  text: l10n.submit,
+                  isLoading: _isSubmittingProposal,
+                  onPressed: () => _submitCounterOffer(suggested),
+                ),
+              );
+              // A8/B4-F1: Expanded is horizontal-only; the stacked path must
+              // not place flex children inside an unbounded-height column.
+              return narrow
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        fieldContent,
+                        const SizedBox(height: AppSpacing.sm),
+                        submitButton,
                       ],
-                    ],
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                SizedBox(
-                  width: 150,
-                  child: PrimaryButton(
-                    key: const Key('submit_proposal_button'),
-                    text: l10n.submit,
-                    isLoading: _isSubmittingProposal,
-                    onPressed: () => _submitCounterOffer(suggested),
-                  ),
-                ),
-              ],
-            ),
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: fieldContent),
+                        const SizedBox(width: AppSpacing.sm),
+                        submitButton,
+                      ],
+                    );
+            }),
           ],
         ],
       ),
@@ -1251,10 +1301,14 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: AppTypography.bodyMd.copyWith(
-              color: AppColors.onSurfaceVariant,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
             ),
           ),
           const SizedBox(width: AppSpacing.md),

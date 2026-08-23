@@ -208,7 +208,7 @@ class _WalletScreenState extends State<WalletScreen> {
                         color: AppColors.success,
                         size: 14,
                       ),
-                      const SizedBox(width: 2),
+                      const SizedBox(width: AppSpacing.xxs),
                       Text(
                         l10n.balanceTrendChipMock,
                         style: AppTypography.caption.copyWith(
@@ -226,7 +226,6 @@ class _WalletScreenState extends State<WalletScreen> {
             style: AppTypography.headlineLg.copyWith(
               color: AppColors.secondary,
               fontWeight: FontWeight.bold,
-              fontSize: 32,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -308,8 +307,7 @@ class _WalletScreenState extends State<WalletScreen> {
             child: ThemedEmptyState(
               icon: Icons.history_rounded,
               title: l10n.payoutHistoryEmpty,
-              description:
-                  "Submitted payout requests will appear here with processing status.",
+              description: l10n.walletPayoutEmptyHint,
               actionText: l10n.payoutWithdrawButton,
               onActionPressed: () => PayoutRequestDialog.show(context),
             ),
@@ -349,9 +347,8 @@ class _WalletScreenState extends State<WalletScreen> {
             child: ThemedEmptyState(
               icon: Icons.receipt_long_outlined,
               title: l10n.walletNoTransactions,
-              description:
-                  "Your transaction history will appear here once deposits or charges occur.",
-              actionText: "Refresh Wallet",
+              description: l10n.walletLedgerEmptyHint,
+              actionText: l10n.refreshWalletBtn,
               onActionPressed: () {
                 if (auth.token != null) {
                   ownerProvider.fetchDashboardData(auth.token!);
@@ -405,7 +402,7 @@ class _WalletScreenState extends State<WalletScreen> {
           ),
           if (payout.accountDetails != null &&
               payout.accountDetails!.isNotEmpty) ...[
-            const SizedBox(height: 2),
+            const SizedBox(height: AppSpacing.xxs),
             Text(
               payout.accountDetails!,
               style: AppTypography.labelMd

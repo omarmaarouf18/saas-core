@@ -200,7 +200,7 @@ class _ChatScreenState extends State<ChatScreen>
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: AppSpacing.xxs),
           statusIndicator,
         ],
       ),
@@ -307,7 +307,7 @@ class _ChatScreenState extends State<ChatScreen>
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
+                    color: AppColors.scrim.withValues(alpha: 0.04),
                     offset: const Offset(0, -2),
                     blurRadius: 6,
                   ),
@@ -412,7 +412,7 @@ class _ChatScreenState extends State<ChatScreen>
                     ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: AppColors.scrim.withValues(alpha: 0.04),
                   blurRadius: 3,
                   offset: const Offset(0, 1),
                 ),

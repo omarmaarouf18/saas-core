@@ -104,7 +104,7 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
             icon: Icons.history_outlined,
             title: l10n.ownerHistoryNoJobsTitle,
             description: l10n.ownerHistoryNoJobsDesc,
-            actionText: "Refresh History",
+            actionText: l10n.refreshHistoryBtn,
             onActionPressed: _refreshHistory,
           ),
         ),
@@ -178,14 +178,15 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
               color: AppColors.outlineVariant,
             ),
             RouteTimeline(
-              pickupAddress: "Pickup Location",
-              pickupDetail: "Order Dispatched",
-              dropoffAddress: "Delivery Destination",
+              pickupAddress: l10n.pickupLocationLabel,
+              pickupDetail: l10n.orderDispatchedLabel,
+              dropoffAddress: l10n.deliveryDestinationLabel,
               dropoffDetail: "Customer: ${job.userId}",
               distanceText: job.lockedEscrowAmount != null
                   ? "${job.lockedEscrowAmount!.toStringAsFixed(0)} Credits"
-                  : "Route Logged",
-              timeText: isCancelled ? "Cancelled" : "Completed",
+                  : l10n.routeLoggedLabel,
+              timeText:
+                  isCancelled ? l10n.statusCancelled : l10n.statusCompleted,
               cargoText: AppTypography.uppercaseLabel(job.paymentMethod),
             ),
             const SizedBox(height: AppSpacing.md),

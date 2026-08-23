@@ -1976,4 +1976,352 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get subProFeatureTrackingUnlock =>
       'Unlocks live worker location tracking';
+
+  @override
+  String get customerHomeTileDeliveryDesc =>
+      'Fast on-demand delivery for orders, packages, and essentials.';
+
+  @override
+  String get customerHomeTileRideDesc =>
+      'Local ride booking, moving transport, and courier transport.';
+
+  @override
+  String get customerHomeTileCleaningDesc =>
+      'On-demand home cleaning, maintenance, and handyman services.';
+
+  @override
+  String get customerHomeTileBrowseAllDesc =>
+      'Browse all available home services and delivery options.';
+
+  @override
+  String get browseServicesBtn => 'Browse Services';
+
+  @override
+  String get marketplaceEmptyHint =>
+      'Try broadening your search radius or changing your coordinates.';
+
+  @override
+  String get refreshHistoryBtn => 'Refresh History';
+
+  @override
+  String get refreshJobsBtn => 'Refresh Jobs';
+
+  @override
+  String get employeeRegisterIntro =>
+      'Register your first employee account using the form below.';
+
+  @override
+  String get addWorkerAction => 'Add Worker';
+
+  @override
+  String get refreshAuditLogBtn => 'Refresh Audit Log';
+
+  @override
+  String get manageServicesAction => 'Manage Services';
+
+  @override
+  String get backToHomeBtn => 'Back to Home';
+
+  @override
+  String get refreshQueueBtn => 'Refresh Queue';
+
+  @override
+  String get createServiceAction => 'Create Service';
+
+  @override
+  String get walletPayoutEmptyHint =>
+      'Submitted payout requests will appear here with processing status.';
+
+  @override
+  String get walletLedgerEmptyHint =>
+      'Your transaction history will appear here once deposits or charges occur.';
+
+  @override
+  String get refreshWalletBtn => 'Refresh Wallet';
+
+  @override
+  String get expressDeliveryFallbackLabel => 'Express Delivery';
+
+  @override
+  String get inTransitLiveTitle => 'In Transit - Live Courier Tracking';
+
+  @override
+  String get liveRouteTrackingActive => 'Live Route Tracking Active';
+
+  @override
+  String get pickupLocationLabel => 'Pickup Location';
+
+  @override
+  String get orderDispatchedLabel => 'Order Dispatched';
+
+  @override
+  String get clientAddressConfirmedLabel => 'Client Address Confirmed';
+
+  @override
+  String get standardRouteLabel => 'Standard Route';
+
+  @override
+  String get routeLoggedLabel => 'Route Logged';
+
+  @override
+  String get workerStatusChangedSuccessMsg => 'Successfully changed status.';
+
+  @override
+  String get freezeWorkerBtn => 'Freeze Worker';
+
+  @override
+  String get unfreezeWorkerBtn => 'Unfreeze Worker';
+
+  @override
+  String get passwordResetSuccessMsg =>
+      'Password reset successfully! You can now log in with your new password.';
+
+  @override
+  String get enterValidNumberError => 'Enter a valid number';
+
+  @override
+  String get priceProposalAcceptedMsg =>
+      'Price proposal accepted! Job is now active.';
+
+  @override
+  String get priceProposalDeclinedMsg =>
+      'Price proposal declined. Job cancelled.';
+
+  @override
+  String get courierDriverLabel => 'Courier Driver';
+
+  @override
+  String get assignedCourierLabel => 'Assigned Courier';
+
+  @override
+  String get originalSystemPriceLabel => 'Original System Price';
+
+  @override
+  String get agreedPriceLabel => 'Agreed Price';
+
+  @override
+  String get selectFileSourceTitle => 'Select File Source';
+
+  @override
+  String get selectImageSourceTitle => 'Select Image Source';
+
+  @override
+  String kycInvalidFormatDocs(String slot) {
+    return 'Invalid file format. Only JPEG, PNG, and PDF files are allowed for $slot.';
+  }
+
+  @override
+  String kycInvalidFormatImages(String slot) {
+    return 'Invalid file format. Only JPEG and PNG image files are allowed for $slot.';
+  }
+
+  @override
+  String get kycApprovedBanner =>
+      'Your account verification has been approved by administrators. Your account is fully active.';
+
+  @override
+  String get kycPendingBanner =>
+      'All required documents have been uploaded and are pending super admin review.';
+
+  @override
+  String get kycRejectedBanner =>
+      'Your document submission was rejected. Please review the reason below and re-upload the corrected document(s).';
+
+  @override
+  String get kycUploadAllBanner =>
+      'Please upload all required verification documents below to complete identity verification.';
+
+  @override
+  String get ownerKybTitle => 'Owner Verification (KYB)';
+
+  @override
+  String get employeeKyeTitle => 'Employee Verification (KYE)';
+
+  @override
+  String get idFrontTitle => 'ID Card (Front)';
+
+  @override
+  String get idFrontDesc =>
+      'Clear photo of the front side of your National ID or Passport.';
+
+  @override
+  String get idBackTitle => 'ID Card (Back)';
+
+  @override
+  String get idBackDesc => 'Clear photo of the back side of your National ID.';
+
+  @override
+  String get selfieTitle => 'Selfie Photo';
+
+  @override
+  String get selfieDesc => 'Selfie holding your ID card next to your face.';
+
+  @override
+  String get businessProofTitle => 'Business Proof / Commercial Register';
+
+  @override
+  String get businessProofDesc =>
+      'Official commercial register or tax registration document (PDF, JPEG, or PNG).';
+
+  @override
+  String get userProfileTitle => 'User Profile';
+
+  @override
+  String get syncPausedOfflineMsg =>
+      'Sync paused. Showing offline notifications.';
+
+  @override
+  String get systemStatusOperationalMsg => 'System Status: Operational.';
+
+  @override
+  String get userNotAuthenticatedError => 'User not authenticated.';
+
+  @override
+  String get noLocationSelectedLabel => 'No location selected';
+
+  @override
+  String get unknownActionLabel => 'Unknown Action';
+
+  @override
+  String get clientOwnerRoleLabel => 'Client / Owner';
+
+  @override
+  String get quickDeliveryUserFallback => 'Quick Delivery User';
+
+  @override
+  String get subscriptionUpdatedSuccessMsg =>
+      'Subscription updated successfully!';
+
+  @override
+  String get activePlanLabel => 'Active Plan';
+
+  @override
+  String get downgradeToFreeBtn => 'Downgrade to Free';
+
+  @override
+  String get awaitingPaymentLabel => 'Awaiting Payment';
+
+  @override
+  String get upgradeToProfessionalBtn => 'Upgrade to Professional';
+
+  @override
+  String get appUpdateRequiredTitle => 'App Update Required';
+
+  @override
+  String get mandatoryUpdateBody =>
+      'A mandatory app update is available. Please update Quick Delivery to continue using the service.';
+
+  @override
+  String get whatsNewSecurityItem =>
+      'Enhanced security protocols for order and delivery tracking.';
+
+  @override
+  String get whatsNewRoutingItem =>
+      'Optimized routing algorithms for faster deliveries.';
+
+  @override
+  String get whatsNewBugFixesItem =>
+      'Critical bug fixes and stability improvements.';
+
+  @override
+  String get installedVersionLabel => 'Installed Version';
+
+  @override
+  String get minimumRequiredLabel => 'Minimum Required';
+
+  @override
+  String get latestAvailableLabel => 'Latest Available';
+
+  @override
+  String get updateCannotContinueBody =>
+      'You cannot continue using the app until this update is installed.';
+
+  @override
+  String get updateNowBtn => 'Update Now';
+
+  @override
+  String get searchServicesTooltip => 'Search services';
+
+  @override
+  String ratingStarSemantic(int n) {
+    return 'Rate $n of 5 stars';
+  }
+
+  @override
+  String otpDigitSemantic(int index, int length) {
+    return 'PIN digit $index of $length';
+  }
+
+  @override
+  String get whatsNewTitle => 'What\'s new:';
+
+  @override
+  String get specialistRoleLabel => 'Specialist';
+
+  @override
+  String get jobMapInTransitTitle => 'In Transit - Live Courier Tracking';
+
+  @override
+  String get jobMapLiveTrackingActive => 'Live Route Tracking Active';
+
+  @override
+  String get roleOwnerLabel => 'Owner';
+
+  @override
+  String get inProgressLabel => 'In Progress';
+
+  @override
+  String get roleEmployeeLabel => 'Employee';
+
+  @override
+  String get notificationsAll => 'All';
+
+  @override
+  String get notificationsJobs => 'Jobs';
+
+  @override
+  String get notificationsSystem => 'System';
+
+  @override
+  String get notificationsAlerts => 'Alerts';
+
+  @override
+  String get confirmActionDefault => 'Confirm';
+
+  @override
+  String get cancelActionDefault => 'Cancel';
+
+  @override
+  String get nameRequiredError => 'Name is required';
+
+  @override
+  String get depositMaxLimitError =>
+      'Maximum single deposit is 1,000,000 credits';
+
+  @override
+  String get verifyNewEmailBtn => 'Verify New Email';
+
+  @override
+  String get enterCompleteOtpError => 'Enter complete 6-digit code';
+
+  @override
+  String get listEmptyTitle => 'No items found';
+
+  @override
+  String get listEmptyBody => 'There are no items to display at this time.';
+
+  @override
+  String get confirmPayoutBtn => 'Confirm Payout';
+
+  @override
+  String get continueActionLabel => 'Continue';
+
+  @override
+  String get kycUploadedStatus => 'Uploaded';
+
+  @override
+  String get defaultErrorTitle => 'Error occurred';
+
+  @override
+  String get serviceFallbackLabel => 'Service';
 }

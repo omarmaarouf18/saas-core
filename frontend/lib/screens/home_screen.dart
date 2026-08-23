@@ -490,7 +490,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: AppColors.success,
                       size: 14,
                     ),
-                    const SizedBox(width: 2),
+                    const SizedBox(width: AppSpacing.xxs),
                     Text(
                       l10n.jobsTrendChipMock,
                       style: AppTypography.caption.copyWith(
@@ -600,7 +600,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xxs),
                     Text(
                       l10n.ownerHomeSubTitle,
                       style: AppTypography.labelMd.copyWith(
@@ -646,7 +646,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xxs),
                     Text(
                       l10n.ownerHomeEmployeesSub,
                       style: AppTypography.labelMd.copyWith(
@@ -697,7 +697,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xxs),
                     Text(
                       l10n.ownerHomeReviewQueueSub,
                       style: AppTypography.labelMd.copyWith(
@@ -756,7 +756,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: AppSpacing.xxs),
                             Text(
                               l10n.ownerHomeWalletSub,
                               style: AppTypography.labelMd.copyWith(
@@ -812,7 +812,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: AppSpacing.xxs),
                             Text(
                               l10n.ownerHomeServicesSub,
                               style: AppTypography.labelMd.copyWith(
@@ -869,7 +869,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSpacing.xxs),
                       Text(
                         l10n.quickConfigSubtitle,
                         style: AppTypography.labelMd.copyWith(
@@ -926,7 +926,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: AppSpacing.xxs),
                         Text(
                           l10n.vehicleMaintenanceDesc,
                           style: AppTypography.bodySm.copyWith(
@@ -937,19 +937,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
-                  TextButton(
+                  // A8/C1-F1: shared button (inherits A4 in-flight lock).
+                  SecondaryButton(
+                    text: l10n.scheduleAction,
+                    isFullWidth: false,
                     onPressed: () {
                       onTabTapped(1); // Switch to Employees / Fleet tab
                     },
-                    style: TextButton.styleFrom(
-                      backgroundColor: AppColors.secondary,
-                      foregroundColor: AppColors.onSecondary,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.xs,
-                      ),
-                    ),
-                    child: Text(l10n.scheduleAction),
                   ),
                 ],
               ),
@@ -981,7 +975,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: AppSpacing.xxs),
                         Text(
                           l10n.reconciliationPendingDesc,
                           style: AppTypography.bodySm.copyWith(
@@ -992,7 +986,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
-                  TextButton(
+                  // A8/C1-F1: shared outlined button (inherits A4 lock).
+                  SecondaryButton(
+                    text: l10n.reviewAction,
+                    isOutlined: true,
+                    isFullWidth: false,
                     onPressed: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -1001,15 +999,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     },
-                    style: TextButton.styleFrom(
-                      backgroundColor: AppColors.surfaceContainerHigh,
-                      foregroundColor: AppColors.onSurface,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.xs,
-                      ),
-                    ),
-                    child: Text(l10n.reviewAction),
                   ),
                 ],
               ),
@@ -1069,7 +1058,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           borderRadius: BorderRadius.circular(AppRadius.sm),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
+                              color: AppColors.scrim.withValues(alpha: 0.1),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -1168,7 +1157,7 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.assignment_outlined,
               title: l10n.ownerHomeNoJobsTitle,
               description: l10n.ownerHomeNoJobsDesc,
-              actionText: "Manage Services",
+              actionText: l10n.manageServicesAction,
               onActionPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ServiceScreen()),

@@ -181,7 +181,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                         icon: Icons.history_outlined,
                         title: l10n.ownerHistoryNoActivityTitle,
                         description: l10n.ownerHistoryNoActivityDesc,
-                        actionText: "Refresh History",
+                        actionText: l10n.refreshHistoryBtn,
                         onActionPressed: _refreshDataForCurrentTab,
                       ),
                     )
@@ -206,7 +206,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
   }
 
   Widget _buildActivityCard(Map<String, dynamic> entry, AppLocalizations l10n) {
-    final rawAction = entry['action']?.toString() ?? 'Unknown Action';
+    final rawAction = entry['action']?.toString() ?? l10n.unknownActionLabel;
     final actionTitle =
         AppTypography.uppercaseLabel(rawAction.replaceAll('_', ' '));
     final details = entry['details']?.toString() ?? '';
@@ -366,7 +366,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                         icon: Icons.assignment_turned_in_outlined,
                         title: l10n.ownerHistoryNoJobsTitle,
                         description: l10n.ownerHistoryNoJobsDesc,
-                        actionText: "Refresh History",
+                        actionText: l10n.refreshHistoryBtn,
                         onActionPressed: _refreshDataForCurrentTab,
                       ),
                     )
@@ -476,7 +476,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                         icon: Icons.receipt_long_outlined,
                         title: l10n.ownerHistoryNoLedgerTitle,
                         description: l10n.ownerHistoryNoLedgerDesc,
-                        actionText: "Refresh History",
+                        actionText: l10n.refreshHistoryBtn,
                         onActionPressed: _refreshLedger,
                       ),
                     )

@@ -263,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Password Header Row with Inline "Forgot Password?"
+          // Password Header Row with Inline l10n.loginForgotPassword
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
