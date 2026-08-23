@@ -73,7 +73,7 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                     children: [
                       Expanded(
                         child: Text(
-                          "Deposit Funds",
+                          l10n.depositFundsTitle,
                           style: AppTypography.titleMd.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,
@@ -91,7 +91,7 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    "Enter the amount in credits to deposit to your wallet.",
+                    l10n.depositDialogDesc,
                     style: AppTypography.bodyMd.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
@@ -109,11 +109,11 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return "Amount is required";
+                        return l10n.amountRequired;
                       }
                       final amount = double.tryParse(value.trim());
                       if (amount == null || amount <= 0) {
-                        return "Please enter a valid positive number";
+                        return l10n.positiveNumberRequired;
                       }
                       if (amount > 1000000) {
                         return "Maximum single deposit is 1,000,000 credits";
@@ -134,7 +134,7 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                     children: [
                       Expanded(
                         child: SecondaryButton(
-                          text: "Cancel",
+                          text: l10n.cancel,
                           isOutlined: true,
                           onPressed: _isSubmitting
                               ? null
@@ -145,7 +145,7 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                       Expanded(
                         child: PrimaryButton(
                           key: const Key('deposit_confirm_button'),
-                          text: "Confirm",
+                          text: l10n.confirm,
                           isLoading: _isSubmitting,
                           onPressed: () async {
                             if (_formKey.currentState!.validate()) {

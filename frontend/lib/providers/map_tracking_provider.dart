@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../core/api_client.dart';
+import '../core/constants.dart';
 import '../core/error_messages.dart';
 import '../models/employee_marker.dart';
 import '../models/job.dart';
@@ -29,6 +30,12 @@ class MapTrackingProvider extends ChangeNotifier {
   int _reconnectDelaySeconds = 2;
   String? _currentChannel;
   String? _currentToken;
+
+  // A6: guards notifyListeners() after disposal — the screen-level teardown
+  // mixin defers disconnect() to the end of the frame, which can land AFTER
+  // an ancestor ChangeNotifierProvider has disposed this provider (same-frame
+  // unmount, e.g. logout swapping the whole tree).
+  bool _isDisposed = false;
 
   Map<String, EmployeeMarkerData> get employeeMarkers => _employeeMarkers;
   List<EmployeeMarkerData> get markersList => _employeeMarkers.values.toList();
@@ -103,9 +110,13 @@ class MapTrackingProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // requester_id (not the legacy user_token alias): the backend resolves
+      // the job ID solely from `id` and requires requester_id for party
+      // authorization. Sending user_token here previously caused 404s because
+      // it was once preferred as the job-ID parameter.
       final res = await apiClient.get(
         '/users/jobs/get',
-        queryParams: {'id': jobId, 'user_token': userToken},
+        queryParams: {'id': jobId, 'requester_id': userToken},
       );
 
       Map<String, dynamic>? jobMap;
@@ -193,7 +204,9 @@ class MapTrackingProvider extends ChangeNotifier {
 
       _webSocketChannel = IOWebSocketChannel.connect(
         Uri.parse(wsUrl),
-        headers: {'Origin': 'http://localhost:3000'},
+        headers: {
+          'Origin': chatWsOrigin
+        }, // see core/constants.dart (CHAT_WS_ORIGIN)
       );
 
       // Immediately send subscribe action on connection
@@ -298,6 +311,15 @@ class MapTrackingProvider extends ChangeNotifier {
   }
 
   void disconnect() {
+    // A6: safe against post-dispose invocation (see _isDisposed note).
+    if (_isDisposed) return;
+    _teardownConnection();
+    notifyListeners();
+  }
+
+  /// Releases the socket, subscription, and reconnect timer without
+  /// notifying listeners (used both by [disconnect] and [dispose]).
+  void _teardownConnection() {
     _reconnectTimer?.cancel();
     _webSocketSubscription?.cancel();
     _webSocketChannel?.sink.close();
@@ -309,12 +331,12 @@ class MapTrackingProvider extends ChangeNotifier {
     _employeeMarkers.clear();
     _customerJobLocation = null;
     _assignedEmployeeId = null;
-    notifyListeners();
   }
 
   @override
   void dispose() {
-    disconnect();
+    _isDisposed = true;
+    _teardownConnection();
     super.dispose();
   }
 }

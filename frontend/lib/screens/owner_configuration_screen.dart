@@ -9,6 +9,8 @@ import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/themed_panel.dart';
+import '../widgets/form_screen_template.dart';
 import '../widgets/location_picker_map.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
@@ -135,6 +137,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
   }
 
   void _openLocationPickerDialog(BuildContext context) {
+    final l10n = context.l10n;
     LatLng tempLocation = (_latitude != null && _longitude != null)
         ? LatLng(_latitude!, _longitude!)
         : LocationPickerMap.cairoDefault;
@@ -172,6 +175,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                         ),
                       ),
                       IconButton(
+                        tooltip: l10n.tooltipClose,
                         icon: const Icon(Icons.close),
                         onPressed: () => Navigator.of(dialogCtx).pop(),
                       ),
@@ -192,7 +196,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                   const SizedBox(height: AppSpacing.md),
                   PrimaryButton(
                     key: const Key('confirm_location_button'),
-                    text: "Confirm Location",
+                    text: context.l10n.locationPickerConfirmBtn,
                     onPressed: () {
                       setState(() {
                         _latitude = tempLocation.latitude;
@@ -323,52 +327,46 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
-    return Scaffold(
+    return FormScreenTemplate(
+      title: l10n.ownerConfigTitle,
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        title: Text(l10n.ownerConfigTitle),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-      ),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       body: !_isInitialized
           ? Center(child: ThemedLoadingIndicator(message: l10n.loading))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ThemedSectionHeader(
-                      title: l10n.ownerConfigHeader,
-                      subtitle: l10n.ownerConfigHeaderSub,
+          : Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ThemedSectionHeader(
+                    title: l10n.ownerConfigHeader,
+                    subtitle: l10n.ownerConfigHeaderSub,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  if (_errorMessage != null) ...[
+                    ThemedErrorBanner(
+                      key: const Key('owner_config_error_banner'),
+                      message: _errorMessage!,
+                      onRetry: _submitForm,
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    if (_errorMessage != null) ...[
-                      ThemedErrorBanner(
-                        key: const Key('owner_config_error_banner'),
-                        message: _errorMessage!,
-                        onRetry: _submitForm,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                    ],
-
-                    // Section 1: Business Identity Card (Stitch Reference)
-                    _buildBusinessIdentityCard(l10n),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Section 2: Location & Operations Card (Stitch Reference)
-                    _buildLocationOperationsCard(l10n),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Section 3: Pricing Structure Card (Stitch Reference)
-                    _buildPricingStructureCard(l10n),
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Section 4: Primary Save Action Button
-                    _buildSaveButton(l10n),
                   ],
-                ),
+
+                  // Section 1: Business Identity Card (Stitch Reference)
+                  _buildBusinessIdentityCard(l10n),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Section 2: Location & Operations Card (Stitch Reference)
+                  _buildLocationOperationsCard(l10n),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Section 3: Pricing Structure Card (Stitch Reference)
+                  _buildPricingStructureCard(l10n),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // Section 4: Primary Save Action Button
+                  _buildSaveButton(l10n),
+                ],
               ),
             ),
     );
@@ -383,35 +381,32 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
         children: [
           Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
+              ThemedPanel(
                   color: AppColors.primaryContainer,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.storefront_outlined,
-                    color: AppColors.secondary,
-                    size: 20,
-                  ),
-                ),
-              ),
+                  width: 36,
+                  height: 36,
+                  child: const Center(
+                    child: Icon(
+                      Icons.storefront_outlined,
+                      color: AppColors.secondary,
+                      size: 20,
+                    ),
+                  )),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Business Identity",
+                      context.l10n.sectionBusinessIdentity,
                       style: AppTypography.titleMd.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
                       ),
                     ),
                     Text(
-                      "Company details and classification",
+                      context.l10n.sectionBusinessIdentitySub,
                       style: AppTypography.caption.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
@@ -428,39 +423,36 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
           // Logo Upload / Picker Area
           Row(
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
+              ThemedPanel(
                   color: AppColors.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(AppRadius.full),
                   border: Border.all(
                     color: AppColors.outlineVariant,
                   ),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: _photoUrlController.text.isNotEmpty
-                    ? (_photoUrlController.text.startsWith('http')
-                        ? Image.network(
-                            _photoUrlController.text,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(
-                              Icons.business_outlined,
+                  width: 64,
+                  height: 64,
+                  clipBehavior: Clip.antiAlias,
+                  child: _photoUrlController.text.isNotEmpty
+                      ? (_photoUrlController.text.startsWith('http')
+                          ? Image.network(
+                              _photoUrlController.text,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.business_outlined,
+                                color: AppColors.primary,
+                                size: 32,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.image_outlined,
                               color: AppColors.primary,
                               size: 32,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.image_outlined,
-                            color: AppColors.primary,
-                            size: 32,
-                          ))
-                    : const Icon(
-                        Icons.add_a_photo_outlined,
-                        color: AppColors.outline,
-                        size: 32,
-                      ),
-              ),
+                            ))
+                      : const Icon(
+                          Icons.add_a_photo_outlined,
+                          color: AppColors.outline,
+                          size: 32,
+                        )),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
@@ -556,35 +548,32 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
         children: [
           Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
+              ThemedPanel(
                   color: AppColors.primaryContainer,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.location_on_outlined,
-                    color: AppColors.secondary,
-                    size: 20,
-                  ),
-                ),
-              ),
+                  width: 36,
+                  height: 36,
+                  child: const Center(
+                    child: Icon(
+                      Icons.location_on_outlined,
+                      color: AppColors.secondary,
+                      size: 20,
+                    ),
+                  )),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Location & Operations",
+                      context.l10n.sectionLocationOperations,
                       style: AppTypography.titleMd.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
                       ),
                     ),
                     Text(
-                      "Headquarters and coverage boundary",
+                      context.l10n.sectionLocationOperationsSub,
                       style: AppTypography.caption.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
@@ -612,48 +601,45 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
+          ThemedPanel(
               color: AppColors.surfaceContainerLow,
               borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(
                 color: AppColors.outlineVariant.withValues(alpha: 0.4),
               ),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.location_on_outlined,
-                  color: AppColors.primary,
-                  size: 24,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    (_latitude != null && _longitude != null)
-                        ? "Lat: ${_latitude!.toStringAsFixed(4)}, Lon: ${_longitude!.toStringAsFixed(4)}"
-                        : "No location selected",
-                    key: const Key('owner_config_location_text'),
-                    style: AppTypography.bodyMd.copyWith(
-                      color: (_latitude != null && _longitude != null)
-                          ? AppColors.onSurface
-                          : AppColors.outline,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.location_on_outlined,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      (_latitude != null && _longitude != null)
+                          ? "Lat: ${_latitude!.toStringAsFixed(4)}, Lon: ${_longitude!.toStringAsFixed(4)}"
+                          : "No location selected",
+                      key: const Key('owner_config_location_text'),
+                      style: AppTypography.bodyMd.copyWith(
+                        color: (_latitude != null && _longitude != null)
+                            ? AppColors.onSurface
+                            : AppColors.outline,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                SecondaryButton(
-                  key: const Key('owner_config_location_picker_button'),
-                  icon: Icons.map_outlined,
-                  text: l10n.customerMarketplaceChooseMap,
-                  isOutlined: true,
-                  isFullWidth: false,
-                  onPressed: () => _openLocationPickerDialog(context),
-                ),
-              ],
-            ),
-          ),
+                  const SizedBox(width: AppSpacing.sm),
+                  SecondaryButton(
+                    key: const Key('owner_config_location_picker_button'),
+                    icon: Icons.map_outlined,
+                    text: l10n.customerMarketplaceChooseMap,
+                    isOutlined: true,
+                    isFullWidth: false,
+                    onPressed: () => _openLocationPickerDialog(context),
+                  ),
+                ],
+              )),
           const SizedBox(height: AppSpacing.md),
           ThemedTextField(
             key: const Key('owner_config_working_hours_field'),
@@ -695,35 +681,32 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
         children: [
           Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
+              ThemedPanel(
                   color: AppColors.primaryContainer,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.payments_outlined,
-                    color: AppColors.secondary,
-                    size: 20,
-                  ),
-                ),
-              ),
+                  width: 36,
+                  height: 36,
+                  child: const Center(
+                    child: Icon(
+                      Icons.payments_outlined,
+                      color: AppColors.secondary,
+                      size: 20,
+                    ),
+                  )),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Pricing Structure",
+                      context.l10n.sectionPricingStructure,
                       style: AppTypography.titleMd.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
                       ),
                     ),
                     Text(
-                      "Base fare and distance-based fees",
+                      context.l10n.sectionPricingStructureSub,
                       style: AppTypography.caption.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
@@ -786,34 +769,31 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
           ),
           if (est10km > 0) ...[
             const SizedBox(height: AppSpacing.md),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
-              decoration: BoxDecoration(
+            ThemedPanel(
                 color: AppColors.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Est. 10KM Delivery:",
-                    style: AppTypography.labelMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      context.l10n.estDelivery10kmLabel,
+                      style: AppTypography.labelMd.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                  Text(
-                    "\$${est10km.toStringAsFixed(2)}",
-                    style: AppTypography.titleMd.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.secondary,
+                    Text(
+                      "\$${est10km.toStringAsFixed(2)}",
+                      style: AppTypography.titleMd.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.secondary,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                )),
           ],
         ],
       ),

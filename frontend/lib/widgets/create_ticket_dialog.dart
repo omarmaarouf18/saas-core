@@ -63,11 +63,15 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> {
       );
 
       if (mounted) {
-        Navigator.of(context).pop(res);
+        // Show the confirmation BEFORE popping: popping first deactivated this
+        // context, so ScaffoldMessenger.of(context) resolved against an
+        // unmounted element and the success snackbar never appeared.
         ThemedSnackBar.showSuccess(
           context,
-          "Ticket submitted successfully! (Ticket ID: ${res['id'] ?? ''})",
+          // chat-service serializes ComplaintTicket.ID with JSON tag "ticket_id".
+          "Ticket submitted successfully! (Ticket ID: ${res['ticket_id'] ?? ''})",
         );
+        Navigator.of(context).pop(res);
       }
     } catch (e) {
       if (mounted) {
@@ -101,7 +105,9 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> {
             children: [
               if (hasContextId) ...[
                 Text(
-                  "Reference ID: #${widget.contextId!.length > 8 ? widget.contextId!.substring(0, 8) : widget.contextId}",
+                  l10n.referenceIdLine(widget.contextId!.length > 8
+                      ? widget.contextId!.substring(0, 8)
+                      : widget.contextId!),
                   style: AppTypography.bodySm.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),

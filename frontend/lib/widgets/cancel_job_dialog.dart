@@ -60,7 +60,7 @@ class _CancelJobDialogState extends State<CancelJobDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Please provide a reason for cancelling this job. A valid cancellation reason is required.",
+              l10n.cancelReasonRequiredLong,
               style: AppTypography.bodyMd.copyWith(
                 color: AppColors.onSurfaceVariant,
               ),

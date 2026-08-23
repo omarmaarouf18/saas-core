@@ -54,6 +54,39 @@ class AppColors {
       0xFF57585E); // Dark Gray (contrast 5.61:1 on scaffold, 7.09:1 on white)
   static const Color outlineVariant =
       Color(0xFF8E8F95); // Mid Gray (contrast 3.34:1 for UI borders)
+
+  // Dark Mode tokens (WCAG AA compliant contrast ratios >= 4.5:1 for text, >= 3:1 for controls)
+  static const Color primaryDark =
+      Color(0xFFFFC107); // Amber Gold primary accent in dark mode
+  static const Color onPrimaryDark =
+      Color(0xFF0F172A); // Dark Navy text on Amber Gold
+  static const Color primaryContainerDark =
+      Color(0xFF1E293B); // Dark Slate container
+  static const Color onPrimaryContainerDark = Color(0xFFF8FAFC);
+  static const Color secondaryDark = Color(0xFFFFC107); // Amber Gold secondary
+  static const Color onSecondaryDark = Color(0xFF0F172A);
+  static const Color secondaryContainerDark = Color(0xFF334155);
+  static const Color onSecondaryContainerDark = Color(0xFFFFDF9E);
+  static const Color backgroundDark = Color(0xFF0A0E17);
+  static const Color scaffoldBackgroundDark = Color(0xFF0A0E17);
+  static const Color surfaceDark =
+      Color(0xFF0F172A); // Dark Navy/Slate surface background
+  static const Color onSurfaceDark =
+      Color(0xFFF8FAFC); // High contrast off-white text
+  static const Color surfaceDimDark = Color(0xFF0A0E17);
+  static const Color surfaceContainerLowestDark = Color(0xFF0F172A);
+  static const Color surfaceContainerLowDark = Color(0xFF1E293B);
+  static const Color surfaceContainerDark =
+      Color(0xFF1E293B); // Card background in dark mode
+  static const Color surfaceContainerHighDark = Color(0xFF334155);
+  static const Color surfaceContainerHighestDark = Color(0xFF475569);
+  static const Color onSurfaceVariantDark =
+      Color(0xFFCBD5E1); // Light Slate subtitle text
+  static const Color outlineDark = Color(0xFF64748B); // Slate border
+  static const Color outlineVariantDark =
+      Color(0xFF475569); // Darker slate divider
+  static const Color errorDark = Color(0xFFF87171); // High contrast Red
+  static const Color onErrorDark = Color(0xFF0F172A);
 }
 
 // Backwards-compatible global constants
@@ -165,12 +198,6 @@ class AppElevation {
   static List<BoxShadow> get shadowLevel2List => [shadowLevel2];
   static List<BoxShadow> get shadowLevel3List => [shadowLevel3];
   static List<BoxShadow> get shadowLevel4List => [shadowLevel4];
-}
-
-// Backwards-compatible AppShadows class
-class AppShadows {
-  static const BoxShadow level1 = AppElevation.shadowLevel1;
-  static const BoxShadow level2 = AppElevation.shadowLevel2;
 }
 
 // 5. Motion & Animation Tokens
@@ -295,6 +322,21 @@ class AppTypography {
         fontWeight: FontWeight.w400,
         height: 14 / 11,
       );
+
+  /// Canonical uppercase label style for small badges, chips, and status tags.
+  /// The ONLY sanctioned way to render uppercase labels — screens must not
+  /// hand-roll `.toUpperCase()` + ad-hoc text styles.
+  static TextStyle get labelUppercase => labelSm.copyWith(
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.8,
+      );
+
+  /// Centralized uppercase transform for short display labels (tracking IDs,
+  /// payment methods, roles, statuses). Screens must route all uppercase
+  /// transforms through this helper instead of calling `.toUpperCase()`
+  /// directly, so the rule stays enforceable in one place. Not intended for
+  /// headings or body copy.
+  static String uppercaseLabel(String text) => text.toUpperCase();
 }
 
 // ThemeData light setup
@@ -378,45 +420,42 @@ final ThemeData quickDeliveryTheme = ThemeData(
 
 // Hand-crafted dark mode color scheme (WCAG AA compliant contrast ratios >= 4.5:1 for text, >= 3:1 for controls)
 const ColorScheme quickDeliveryDarkColorScheme = ColorScheme.dark(
-  primary: Color(
-      0xFFFFC107), // Amber Gold primary accent in dark mode (contrast 13.5:1 on dark surface)
-  onPrimary: Color(0xFF0F172A), // Dark Navy text on Amber Gold
-  primaryContainer: Color(0xFF1E293B), // Dark Slate container
-  onPrimaryContainer: Color(0xFFF8FAFC),
-  secondary: Color(0xFFFFC107), // Amber Gold secondary
-  onSecondary: Color(0xFF0F172A),
-  secondaryContainer: Color(0xFF334155),
-  onSecondaryContainer: Color(0xFFFFDF9E),
-  surface: Color(0xFF0F172A), // Dark Navy/Slate surface background
-  onSurface:
-      Color(0xFFF8FAFC), // High contrast off-white text (contrast 15.8:1)
-  surfaceDim: Color(0xFF0A0E17),
-  surfaceContainerLowest: Color(0xFF0F172A),
-  surfaceContainerLow: Color(0xFF1E293B),
-  surfaceContainer: Color(0xFF1E293B), // Card background in dark mode
-  surfaceContainerHigh: Color(0xFF334155),
-  surfaceContainerHighest: Color(0xFF475569),
-  onSurfaceVariant:
-      Color(0xFFCBD5E1), // Light Slate subtitle text (contrast 10.5:1)
-  outline: Color(0xFF64748B), // Slate border
-  outlineVariant: Color(0xFF475569), // Darker slate divider
-  error: Color(0xFFF87171), // High contrast Red (contrast 7.8:1)
-  onError: Color(0xFF0F172A),
+  primary: AppColors.primaryDark,
+  onPrimary: AppColors.onPrimaryDark,
+  primaryContainer: AppColors.primaryContainerDark,
+  onPrimaryContainer: AppColors.onPrimaryContainerDark,
+  secondary: AppColors.secondaryDark,
+  onSecondary: AppColors.onSecondaryDark,
+  secondaryContainer: AppColors.secondaryContainerDark,
+  onSecondaryContainer: AppColors.onSecondaryContainerDark,
+  surface: AppColors.surfaceDark,
+  onSurface: AppColors.onSurfaceDark,
+  surfaceDim: AppColors.surfaceDimDark,
+  surfaceContainerLowest: AppColors.surfaceContainerLowestDark,
+  surfaceContainerLow: AppColors.surfaceContainerLowDark,
+  surfaceContainer: AppColors.surfaceContainerDark,
+  surfaceContainerHigh: AppColors.surfaceContainerHighDark,
+  surfaceContainerHighest: AppColors.surfaceContainerHighestDark,
+  onSurfaceVariant: AppColors.onSurfaceVariantDark,
+  outline: AppColors.outlineDark,
+  outlineVariant: AppColors.outlineVariantDark,
+  error: AppColors.errorDark,
+  onError: AppColors.onErrorDark,
 );
 
 final ThemeData quickDeliveryDarkTheme = ThemeData(
   useMaterial3: true,
   colorScheme: quickDeliveryDarkColorScheme,
-  scaffoldBackgroundColor: const Color(0xFF0A0E17),
+  scaffoldBackgroundColor: AppColors.scaffoldBackgroundDark,
   appBarTheme: const AppBarTheme(
     backgroundColor: Colors.transparent,
-    foregroundColor: Color(0xFFF8FAFC),
+    foregroundColor: AppColors.onSurfaceDark,
     elevation: 0,
     scrolledUnderElevation: 0,
     surfaceTintColor: Colors.transparent,
   ),
   navigationBarTheme: NavigationBarThemeData(
-    backgroundColor: const Color(0xFF0F172A).withValues(alpha: 0.90),
+    backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.90),
     indicatorColor: AppColors.secondary.withValues(alpha: 0.25),
     elevation: 0,
   ),
@@ -424,7 +463,7 @@ final ThemeData quickDeliveryDarkTheme = ThemeData(
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
       backgroundColor: AppColors.secondary,
-      foregroundColor: const Color(0xFF0F172A),
+      foregroundColor: AppColors.onPrimaryDark,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.defaultValue),
       ),
@@ -446,22 +485,22 @@ final ThemeData quickDeliveryDarkTheme = ThemeData(
         if (states.contains(WidgetState.selected)) {
           return AppColors.secondary;
         }
-        return const Color(0xFF1E293B);
+        return AppColors.surfaceContainerDark;
       }),
       foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
         if (states.contains(WidgetState.selected)) {
-          return const Color(0xFF0F172A);
+          return AppColors.onPrimaryDark;
         }
-        return const Color(0xFFF8FAFC);
+        return AppColors.onSurfaceDark;
       }),
       iconColor: WidgetStateProperty.resolveWith<Color?>((states) {
         if (states.contains(WidgetState.selected)) {
-          return const Color(0xFF0F172A);
+          return AppColors.onPrimaryDark;
         }
-        return const Color(0xFFF8FAFC);
+        return AppColors.onSurfaceDark;
       }),
       side: const WidgetStatePropertyAll(
-        BorderSide(color: Color(0xFF475569), width: 1.0),
+        BorderSide(color: AppColors.outlineVariantDark, width: 1.0),
       ),
       shape: WidgetStatePropertyAll(
         RoundedRectangleBorder(

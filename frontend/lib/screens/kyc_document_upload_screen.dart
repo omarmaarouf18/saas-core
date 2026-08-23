@@ -9,6 +9,8 @@ import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../models/user_profile.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/themed_panel.dart';
+import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
@@ -246,9 +248,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
     required bool isPending,
     required bool isRejected,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
+    return ThemedPanel(
         color: AppColors.surfaceContainerLow,
         borderRadius: AppRadius.mdBorder,
         border: Border(
@@ -261,61 +261,60 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
             width: 4,
           ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    isApproved
-                        ? Icons.check_circle_outline
-                        : (isRejected
-                            ? Icons.error_outline
-                            : (isPending
-                                ? Icons.schedule
-                                : Icons.info_outline)),
-                    color: isApproved
-                        ? AppColors.success
-                        : (isRejected
-                            ? AppColors.error
-                            : (isPending
-                                ? AppColors.secondary
-                                : AppColors.primary)),
-                    size: 20,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    "Verification Status",
-                    style: AppTypography.titleMd.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      isApproved
+                          ? Icons.check_circle_outline
+                          : (isRejected
+                              ? Icons.error_outline
+                              : (isPending
+                                  ? Icons.schedule
+                                  : Icons.info_outline)),
+                      color: isApproved
+                          ? AppColors.success
+                          : (isRejected
+                              ? AppColors.error
+                              : (isPending
+                                  ? AppColors.secondary
+                                  : AppColors.primary)),
+                      size: 20,
                     ),
-                  ),
-                ],
-              ),
-              StatusBadge(status: displayStatus),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            isApproved
-                ? "Your account verification has been approved by administrators. Your account is fully active."
-                : (isPending
-                    ? "All required documents have been uploaded and are pending super admin review."
-                    : (isRejected
-                        ? "Your document submission was rejected. Please review the reason below and re-upload the corrected document(s)."
-                        : "Please upload all required verification documents below to complete identity verification.")),
-            style: AppTypography.bodyMd.copyWith(
-              color: AppColors.onSurfaceVariant,
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      context.l10n.verificationStatusCardTitle,
+                      style: AppTypography.titleMd.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                StatusBadge(status: displayStatus),
+              ],
             ),
-          ),
-        ],
-      ),
-    );
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              isApproved
+                  ? "Your account verification has been approved by administrators. Your account is fully active."
+                  : (isPending
+                      ? "All required documents have been uploaded and are pending super admin review."
+                      : (isRejected
+                          ? "Your document submission was rejected. Please review the reason below and re-upload the corrected document(s)."
+                          : "Please upload all required verification documents below to complete identity verification.")),
+              style: AppTypography.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ));
   }
 
   Widget _buildRejectionReasonBanner(AppLocalizations l10n, String reason) {
@@ -326,8 +325,8 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
   }
 
   Widget _buildApprovedLockedBanner() {
-    return const ThemedSuccessBanner(
-      message: "Documents are locked because your account is approved.",
+    return ThemedSuccessBanner(
+      message: context.l10n.documentsLockedMessage,
     );
   }
 
@@ -361,20 +360,17 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(
+                ThemedPanel(
                     color: isUploaded
                         ? AppColors.success.withValues(alpha: 0.12)
                         : AppColors.primary.withValues(alpha: 0.08),
                     borderRadius: AppRadius.smBorder,
-                  ),
-                  child: Icon(
-                    icon,
-                    color: isUploaded ? AppColors.success : AppColors.primary,
-                    size: 26,
-                  ),
-                ),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: Icon(
+                      icon,
+                      color: isUploaded ? AppColors.success : AppColors.primary,
+                      size: 26,
+                    )),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
@@ -420,82 +416,80 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                   ? Padding(
                       key: ValueKey('preview_$slotKey'),
                       padding: const EdgeInsets.only(top: AppSpacing.md),
-                      child: Container(
-                        padding: const EdgeInsets.all(AppSpacing.sm),
-                        decoration: BoxDecoration(
+                      child: ThemedPanel(
                           color: AppColors.surfaceContainerLow,
                           borderRadius: AppRadius.smBorder,
                           border: Border.all(
                             color:
                                 AppColors.outlineVariant.withValues(alpha: 0.5),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            if (localPicked != null &&
-                                !localPicked.filename
-                                    .toLowerCase()
-                                    .endsWith('.pdf'))
-                              ClipRRect(
-                                borderRadius: AppRadius.smBorder,
-                                child: Image.memory(
-                                  localPicked.bytes,
-                                  width: 48,
-                                  height: 48,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      const Icon(
-                                    Icons.image,
-                                    size: 36,
-                                    color: AppColors.primary,
+                          padding: const EdgeInsets.all(AppSpacing.sm),
+                          child: Row(
+                            children: [
+                              if (localPicked != null &&
+                                  !localPicked.filename
+                                      .toLowerCase()
+                                      .endsWith('.pdf'))
+                                ClipRRect(
+                                  borderRadius: AppRadius.smBorder,
+                                  child: Image.memory(
+                                    localPicked.bytes,
+                                    width: 48,
+                                    height: 48,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Icon(
+                                      Icons.image,
+                                      size: 36,
+                                      color: AppColors.primary,
+                                    ),
                                   ),
+                                )
+                              else if (allowPdf ||
+                                  (localPicked?.filename
+                                          .toLowerCase()
+                                          .endsWith('.pdf') ??
+                                      false))
+                                const Icon(
+                                  Icons.picture_as_pdf,
+                                  size: 36,
+                                  color: AppColors.error,
+                                )
+                              else
+                                const Icon(
+                                  Icons.insert_drive_file,
+                                  size: 36,
+                                  color: AppColors.primary,
                                 ),
-                              )
-                            else if (allowPdf ||
-                                (localPicked?.filename
-                                        .toLowerCase()
-                                        .endsWith('.pdf') ??
-                                    false))
-                              const Icon(
-                                Icons.picture_as_pdf,
-                                size: 36,
-                                color: AppColors.error,
-                              )
-                            else
-                              const Icon(
-                                Icons.insert_drive_file,
-                                size: 36,
-                                color: AppColors.primary,
-                              ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: Text(
-                                localPicked != null
-                                    ? localPicked.filename
-                                    : "Document on file (${existingPath!.split('/').last})",
-                                style: AppTypography.bodyMd.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.onSurface,
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: Text(
+                                  localPicked != null
+                                      ? localPicked.filename
+                                      : "Document on file (${existingPath!.split('/').last})",
+                                  style: AppTypography.bodyMd.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.onSurface,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                            if (!isApproved)
-                              IconButton(
-                                icon: const Icon(Icons.close, size: 18),
-                                color: AppColors.error,
-                                tooltip: "Remove selection",
-                                onPressed: isUploading
-                                    ? null
-                                    : () {
-                                        setState(() {
-                                          _pickedFiles.remove(slotKey);
-                                        });
-                                      },
-                              ),
-                          ],
-                        ),
-                      ),
+                              if (!isApproved)
+                                IconButton(
+                                  icon: const Icon(Icons.close, size: 18),
+                                  color: AppColors.error,
+                                  tooltip: context.l10n.removeSelectionAction,
+                                  onPressed: isUploading
+                                      ? null
+                                      : () {
+                                          setState(() {
+                                            _pickedFiles.remove(slotKey);
+                                          });
+                                        },
+                                ),
+                            ],
+                          )),
                     )
                   : const SizedBox.shrink(key: ValueKey('empty_preview')),
             ),
@@ -527,7 +521,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                   ? (isUploaded
                       ? SecondaryButton(
                           key: ValueKey('btn_replace_$slotKey'),
-                          text: "Replace Document",
+                          text: context.l10n.replaceDocumentBtn,
                           icon: Icons.refresh,
                           isLoading: isUploading,
                           onPressed: isUploading
@@ -537,7 +531,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                         )
                       : PrimaryButton(
                           key: ValueKey('btn_upload_$slotKey'),
-                          text: "Upload Document",
+                          text: context.l10n.uploadDocumentBtn,
                           icon: Icons.upload_file,
                           trailingIcon: Icons.arrow_forward,
                           isLoading: isUploading,
@@ -605,32 +599,22 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
         },
     ];
 
-    return Scaffold(
+    return FormScreenTemplate(
+      title: roleTitle,
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        title: Text(
-          roleTitle,
-          style: AppTypography.titleMd.copyWith(
-            color: AppColors.onPrimary,
-            fontWeight: FontWeight.bold,
-          ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: l10n.tooltipRefreshStatus,
+          onPressed: _refreshUserData,
         ),
-        foregroundColor: AppColors.onPrimary,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: l10n.tooltipRefreshStatus,
-            onPressed: _refreshUserData,
-          ),
-        ],
-      ),
+      ],
+      padding: const EdgeInsets.all(AppSpacing.lg),
       body: RefreshIndicator(
         onRefresh: _refreshUserData,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: EdgeInsets.zero,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -658,10 +642,10 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
 
               // Section Header
               ThemedSectionHeader(
-                title: "Required Verification Documents",
+                title: context.l10n.requiredDocsHeader,
                 subtitle: isOwner
-                    ? "Owners must upload all 4 documents (ID Front, ID Back, Selfie, Business Proof)."
-                    : "Employees must upload all 3 documents (ID Front, ID Back, Selfie).",
+                    ? context.l10n.kycOwnerDocsSub
+                    : context.l10n.kycEmployeeDocsSub,
               ),
               const SizedBox(height: AppSpacing.lg),
 

@@ -1,6 +1,7 @@
 package resilience
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -354,5 +355,76 @@ func TestResilienceRoundTripper(t *testing.T) {
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected 200 OK, got %d", resp.StatusCode)
+	}
+}
+
+func TestResilienceRoundTripper_StreamingResponseSurvivesBodyRead(t *testing.T) {
+	// Regression guard: the per-attempt timeout context must NOT be cancelled
+	// when the breaker closure returns. Streamed responses (SSE) must remain
+	// readable for their full lifetime, bounded only by the caller's request
+	// context — otherwise every proxied stream through the API gateway is
+	// truncated right after the first buffered chunk.
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		fl := w.(http.Flusher)
+		for i := 0; i < 5; i++ {
+			fmt.Fprintf(w, "data: tick %d\n\n", i)
+			fl.Flush()
+			time.Sleep(120 * time.Millisecond)
+		}
+	}))
+	defer ts.Close()
+
+	rt := NewRoundTripper(http.DefaultTransport, "test-streaming-rt", 0, 100*time.Millisecond)
+	req, _ := http.NewRequest("GET", ts.URL, nil)
+
+	resp, err := rt.RoundTrip(req)
+	if err != nil {
+		t.Fatalf("RoundTrip failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("reading streamed body failed (stream was likely cancelled early): %v", err)
+	}
+	for i := 0; i < 5; i++ {
+		want := fmt.Sprintf("data: tick %d", i)
+		if !strings.Contains(string(body), want) {
+			t.Errorf("streamed body missing %q; got body=%q", want, string(body))
+		}
+	}
+}
+
+func TestResilienceClient_StreamingResponseBodyReadable(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		fl := w.(http.Flusher)
+		for i := 0; i < 5; i++ {
+			fmt.Fprintf(w, "data: tick %d\n\n", i)
+			fl.Flush()
+			time.Sleep(120 * time.Millisecond)
+		}
+	}))
+	defer ts.Close()
+
+	client := NewClient(&http.Client{Transport: http.DefaultTransport}, "test-streaming-client", 0, 100*time.Millisecond)
+	req, _ := http.NewRequest("GET", ts.URL, nil)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("Do failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("reading streamed body failed (stream was likely cancelled early): %v", err)
+	}
+	for i := 0; i < 5; i++ {
+		want := fmt.Sprintf("data: tick %d", i)
+		if !strings.Contains(string(body), want) {
+			t.Errorf("streamed body missing %q; got body=%q", want, string(body))
+		}
 	}
 }

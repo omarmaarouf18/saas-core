@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/error_messages.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
@@ -8,8 +9,10 @@ import '../models/marketplace_service.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../providers/notifications_provider.dart';
+import '../widgets/list_screen_template.dart';
 import '../widgets/location_picker_map.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/themed_card.dart';
@@ -96,24 +99,28 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                 Positioned(
                   right: 8,
                   top: 8,
-                  child: Container(
-                    padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
-                    decoration: BoxDecoration(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
+                    child: ColoredBox(
                       color: AppColors.error,
-                      borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      '${provider.unreadCount}',
-                      style: AppTypography.labelMd.copyWith(
-                        color: AppColors.onPrimary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
+                      child: Container(
+                        padding:
+                            const EdgeInsetsDirectional.all(AppSpacing.xxs),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${provider.unreadCount}',
+                          style: AppTypography.labelMd.copyWith(
+                            color: AppColors.onPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ),
                 ),
@@ -156,34 +163,63 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
             .where((s) => s.category == _selectedCategory)
             .toList();
 
-    final bodyContent = Column(
-      children: [
-        // 1. Filter & Location Control Panel (Stitch Filter Card)
-        _buildFilterControlCard(l10n),
-
-        // 2. Services Listing (Stitch Bento / Service Cards)
-        _buildServiceList(marketplace, filteredServices, auth, l10n),
+    return ListScreenTemplate<MarketplaceService>(
+      title: l10n.customerMarketplaceTitle,
+      isEmbeddedInTab: widget.isEmbeddedInTab,
+      actions: [
+        _buildNotificationBell(context),
       ],
-    );
-
-    if (widget.isEmbeddedInTab) {
-      return Scaffold(
-        backgroundColor: AppColors.scaffoldBackground,
-        body: SizedBox.expand(child: bodyContent),
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        title: Text(l10n.customerMarketplaceTitle),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        actions: [
-          _buildNotificationBell(context),
-        ],
+      header: _buildFilterControlCard(l10n),
+      items: filteredServices,
+      isLoading: marketplace.isLoading,
+      // QA audit A5: a failed fetch previously fell through to the
+      // "no services nearby" empty state — customers read a backend outage
+      // as "no couriers exist". Surface the error with retry instead.
+      errorMessage: marketplace.error,
+      onRefresh: () async => _loadServices(),
+      listViewKey: const ValueKey('marketplace_services_list'),
+      loadingWidget: ListView.builder(
+        key: const ValueKey('marketplace_skeleton_list'),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        itemCount: 4,
+        itemBuilder: (context, index) => const MarketplaceCardSkeleton(),
       ),
-      body: bodyContent,
+      errorWidget: Padding(
+        key: const ValueKey('marketplace_error_banner'),
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: ThemedErrorBanner(
+          message: marketplace.error ?? '',
+          onRetry: _loadServices,
+        ),
+      ),
+      emptyWidget: SingleChildScrollView(
+        key: const ValueKey('marketplace_empty_state'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: ThemedCard(
+            elevation: AppElevation.shadowLevel1List,
+            borderRadius: AppRadius.md,
+            padding: AppSpacing.lg,
+            child: ThemedEmptyState(
+              icon: Icons.search_off,
+              title: l10n.noServicesNearby,
+              description:
+                  "Try broadening your search radius or changing your coordinates.",
+              actionText: "Refresh List",
+              onActionPressed: _loadServices,
+            ),
+          ),
+        ),
+      ),
+      listPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
+      itemSpacing: 0,
+      itemBuilder: (context, service, index) {
+        return _buildServiceCard(context, service, l10n, auth);
+      },
     );
   }
 
@@ -385,63 +421,6 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
     );
   }
 
-  Widget _buildServiceList(
-    MarketplaceProvider marketplace,
-    List<MarketplaceService> filteredServices,
-    AuthProvider auth,
-    AppLocalizations l10n,
-  ) {
-    return Expanded(
-      child: AnimatedSwitcher(
-        duration: AppMotion.durationMedium,
-        switchInCurve: AppMotion.curveStateChange,
-        switchOutCurve: AppMotion.curveStateChange,
-        child: marketplace.isLoading
-            ? ListView.builder(
-                key: const ValueKey('marketplace_skeleton_list'),
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                itemCount: 4,
-                itemBuilder: (context, index) =>
-                    const MarketplaceCardSkeleton(),
-              )
-            : filteredServices.isEmpty
-                ? SingleChildScrollView(
-                    key: const ValueKey('marketplace_empty_state'),
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                      child: ThemedCard(
-                        elevation: AppElevation.shadowLevel1List,
-                        borderRadius: AppRadius.md,
-                        padding: AppSpacing.lg,
-                        child: ThemedEmptyState(
-                          icon: Icons.search_off,
-                          title: l10n.noServicesNearby,
-                          description:
-                              "Try broadening your search radius or changing your coordinates.",
-                          actionText: "Refresh List",
-                          onActionPressed: _loadServices,
-                        ),
-                      ),
-                    ),
-                  )
-                : ListView.builder(
-                    key: const ValueKey('marketplace_services_list'),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.xs,
-                    ),
-                    itemCount: filteredServices.length,
-                    itemBuilder: (context, index) {
-                      final service = filteredServices[index];
-                      return _buildServiceCard(context, service, l10n, auth);
-                    },
-                  ),
-      ),
-    );
-  }
-
   Widget _buildServiceCard(
     BuildContext context,
     MarketplaceService service,
@@ -463,13 +442,9 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
+                CircleAvatar(
+                  radius: 22,
+                  backgroundColor: AppColors.secondary.withValues(alpha: 0.15),
                   child: Icon(
                     _getCategoryIcon(service.category),
                     color: AppColors.primary,
@@ -494,25 +469,27 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         runSpacing: AppSpacing.xxs,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.sm,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(AppRadius.xs),
+                            child: ColoredBox(
                               color: AppColors.surfaceContainerHigh,
-                              borderRadius: BorderRadius.circular(AppRadius.xs),
-                            ),
-                            child: Text(
-                              categoryLabel,
-                              style: AppTypography.caption.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.onSurfaceVariant,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.sm,
+                                  vertical: 2,
+                                ),
+                                child: Text(
+                                  categoryLabel,
+                                  style: AppTypography.caption.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.onSurfaceVariant,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                           Text(
-                            "${service.distanceKM} km away",
+                            l10n.distanceAwayLine("${service.distanceKM}"),
                             style: AppTypography.bodySm.copyWith(
                               color: AppColors.onSurfaceVariant,
                             ),
@@ -542,7 +519,8 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Base: \$${service.tenantBasePrice} + \$${service.tenantPricePerKM}/km",
+                        l10n.pricingBreakdownLine("${service.tenantBasePrice}",
+                            "${service.tenantPricePerKM}"),
                         style: AppTypography.caption.copyWith(
                           color: AppColors.onSurfaceVariant,
                         ),
@@ -551,7 +529,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        "Est. Price: \$${service.finalPrice}",
+                        l10n.estPriceLine("${service.finalPrice}"),
                         style: AppTypography.titleMd.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,
@@ -564,7 +542,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                 SizedBox(
                   width: 80,
                   child: PrimaryButton(
-                    text: "Book",
+                    text: l10n.bookNowBtn,
                     isFullWidth: false,
                     onPressed: () => _showBookingDialog(
                       context,
@@ -582,6 +560,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
   }
 
   void _openLocationPickerDialog(BuildContext context) {
+    final l10n = context.l10n;
     LatLng tempLocation = LatLng(_customerLat, _customerLon);
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
@@ -610,13 +589,14 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          "Choose Search Location",
+                          context.l10n.chooseSearchLocation,
                           style: AppTypography.titleMd.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                       IconButton(
+                        tooltip: l10n.tooltipClose,
                         icon: const Icon(Icons.close),
                         onPressed: () => Navigator.of(dialogCtx).pop(),
                       ),
@@ -637,7 +617,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                   const SizedBox(height: AppSpacing.md),
                   PrimaryButton(
                     key: const Key('confirm_location_button'),
-                    text: "Confirm Location",
+                    text: context.l10n.locationPickerConfirmBtn,
                     trailingIcon: Icons.arrow_forward,
                     onPressed: () {
                       setState(() {
@@ -727,7 +707,7 @@ class _BookingDialogState extends State<_BookingDialog> {
       final l10n = AppLocalizations.of(context)!;
       ThemedSnackBar.showError(
         context,
-        l10n.bookingFailed(e.toString()),
+        l10n.bookingFailed(friendlyErrorMessage(e)),
       );
     }
   }
@@ -745,7 +725,7 @@ class _BookingDialogState extends State<_BookingDialog> {
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       title: Text(
-        "Confirm Booking",
+        l10n.confirmBookingTitle,
         style: AppTypography.titleMd.copyWith(
           color: AppColors.primary,
           fontWeight: FontWeight.bold,
@@ -767,7 +747,7 @@ class _BookingDialogState extends State<_BookingDialog> {
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                "Category: $categoryLabel",
+                l10n.categoryLine(categoryLabel),
                 style: AppTypography.bodyMd.copyWith(
                   color: AppColors.onSurfaceVariant,
                 ),
@@ -780,7 +760,7 @@ class _BookingDialogState extends State<_BookingDialog> {
                 children: [
                   Expanded(
                     child: Text(
-                      "Pickup Distance:",
+                      l10n.pickupDistanceLabel,
                       style: AppTypography.bodyMd.copyWith(
                         color: AppColors.onSurface,
                       ),
@@ -788,7 +768,7 @@ class _BookingDialogState extends State<_BookingDialog> {
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Text(
-                    "${widget.service.distanceKM} km",
+                    l10n.kmUnitLine("${widget.service.distanceKM}"),
                     style: AppTypography.bodyMd.copyWith(
                       color: AppColors.onSurface,
                       fontWeight: FontWeight.bold,
@@ -802,7 +782,7 @@ class _BookingDialogState extends State<_BookingDialog> {
                 children: [
                   Expanded(
                     child: Text(
-                      "Estimated Total:",
+                      l10n.estimatedTotalLabel,
                       style: AppTypography.bodyMd.copyWith(
                         color: AppColors.onSurface,
                       ),
@@ -830,13 +810,13 @@ class _BookingDialogState extends State<_BookingDialog> {
                   color: AppColors.primary,
                 ),
                 title: Text(
-                  "Cash on Delivery (COD)",
+                  l10n.codOptionTitle,
                   style: AppTypography.bodyMd.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 subtitle: Text(
-                  "Pay in cash directly to the driver upon arrival",
+                  l10n.codOptionSubtitle,
                   style: AppTypography.labelMd.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),
@@ -846,9 +826,8 @@ class _BookingDialogState extends State<_BookingDialog> {
               ),
               const SizedBox(height: AppSpacing.sm),
               // Inline note explaining escrow/other methods are deferred
-              const ThemedWarningBanner(
-                message:
-                    "Note: Escrow payments and wallet deductions are currently deferred for this beta launch.",
+              ThemedWarningBanner(
+                message: l10n.betaEscrowNote,
               ),
             ],
           ),
@@ -874,7 +853,7 @@ class _BookingDialogState extends State<_BookingDialog> {
             Expanded(
               child: PrimaryButton(
                 key: const Key('confirm_booking_button'),
-                text: "Confirm & Request",
+                text: l10n.confirmAndRequestBtn,
                 trailingIcon: Icons.arrow_forward,
                 isLoading: _isSubmitting,
                 isFullWidth: false,
@@ -935,7 +914,7 @@ class _ServiceRatingWidgetState extends State<ServiceRatingWidget> {
     }
     if (_count == null || _count == 0) {
       return Text(
-        "No ratings",
+        context.l10n.noRatingsLabel,
         style: AppTypography.labelMd.copyWith(color: AppColors.outline),
       );
     }

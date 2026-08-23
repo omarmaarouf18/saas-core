@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -59,10 +60,18 @@ func Logging(allowedOrigin string) func(http.Handler) http.Handler {
 
 			duration := time.Since(start)
 
-			// #nosec G706 //nolint:gosec -- log statement contains HTTP method and request path, log injection not possible here
+			// CR/LF bytes in a decoded request path would let a client forge
+			// additional log lines; strip them before interpolation.
+			sanitizedPath := strings.Map(func(r rune) rune {
+				if r == '\n' || r == '\r' {
+					return ' '
+				}
+				return r
+			}, r.URL.Path)
+			// #nosec G706 //nolint:gosec -- method is from the fixed HTTP verb set and the path is CR/LF-sanitized above
 			log.Printf("[TRAFFIC] %s %s → %d (%s)",
 				r.Method,
-				r.URL.Path,
+				sanitizedPath,
 				rec.statusCode,
 				duration.Round(time.Microsecond),
 			)

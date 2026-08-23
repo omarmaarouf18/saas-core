@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
+import '../widgets/themed_panel.dart';
+import '../widgets/dashboard_screen_template.dart';
 import '../providers/auth_provider.dart';
 import '../providers/employee_jobs_provider.dart';
 import '../providers/notifications_provider.dart';
@@ -98,47 +100,9 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
-    return Scaffold(
+    return DashboardScreenTemplate(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: _buildAppBar(context, l10n),
-      body: _buildTabBody(),
-      bottomNavigationBar: _buildBottomNavigationBar(l10n),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(
-      BuildContext context, AppLocalizations l10n) {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      surfaceTintColor: Colors.transparent,
-      foregroundColor: Theme.of(context).colorScheme.onSurface,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: AppSpacing.sm),
-        child: Center(
-          child: Container(
-            key: const Key('app_header_logo'),
-            padding: const EdgeInsets.all(AppSpacing.xs),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: const Icon(
-              Icons.storefront,
-              color: AppColors.secondary,
-              size: 18,
-            ),
-          ),
-        ),
-      ),
-      title: Text(
-        _getTabTitle(context, _currentIndex),
-        style: AppTypography.titleMd.copyWith(
-          color: Theme.of(context).colorScheme.onSurface,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      title: _getTabTitle(context, _currentIndex),
       actions: [
         IconButton(
           key: const Key('employee_verification_button'),
@@ -157,6 +121,11 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
         ),
         _buildNotificationBell(context),
       ],
+      currentIndex: _currentIndex,
+      onDestinationSelected: onTabTapped,
+      tabs: _buildTabBody(),
+      navigationBarKey: const Key('employee_bottom_navigation_bar'),
+      destinations: _buildDestinations(l10n),
     );
   }
 
@@ -182,25 +151,22 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
               Positioned(
                 right: 8,
                 top: 8,
-                child: Container(
-                  padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
-                  decoration: BoxDecoration(
+                child: ThemedPanel(
                     color: AppColors.error,
                     borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  ),
-                  child: Text(
-                    '${provider.unreadCount}',
-                    style: AppTypography.labelMd.copyWith(
-                      color: AppColors.onPrimary,
-                      fontWeight: FontWeight.bold,
+                    padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+                    child: Text(
+                      '${provider.unreadCount}',
+                      style: AppTypography.labelMd.copyWith(
+                        color: AppColors.onPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    )),
               ),
           ],
         );
@@ -208,48 +174,40 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
     );
   }
 
-  Widget _buildTabBody() {
-    return IndexedStack(
-      index: _currentIndex,
-      children: [
-        _visitedTabs.contains(0)
-            ? const EmployeeJobsScreen(isEmbeddedInTab: true)
-            : const SizedBox.shrink(),
-        _visitedTabs.contains(1)
-            ? const EmployeeHistoryScreen(isEmbeddedInTab: true)
-            : const SizedBox.shrink(),
-        _visitedTabs.contains(2)
-            ? const SettingsScreen(isEmbeddedInTab: true)
-            : const SizedBox.shrink(),
-      ],
-    );
+  List<Widget> _buildTabBody() {
+    return [
+      _visitedTabs.contains(0)
+          ? const EmployeeJobsScreen(isEmbeddedInTab: true)
+          : const SizedBox.shrink(),
+      _visitedTabs.contains(1)
+          ? const EmployeeHistoryScreen(isEmbeddedInTab: true)
+          : const SizedBox.shrink(),
+      _visitedTabs.contains(2)
+          ? const SettingsScreen(isEmbeddedInTab: true)
+          : const SizedBox.shrink(),
+    ];
   }
 
-  Widget _buildBottomNavigationBar(AppLocalizations l10n) {
-    return NavigationBar(
-      key: const Key('employee_bottom_navigation_bar'),
-      selectedIndex: _currentIndex,
-      onDestinationSelected: onTabTapped,
-      destinations: [
-        NavigationDestination(
-          key: const Key('employee_nav_tab_home'),
-          icon: const Icon(Icons.assignment_outlined),
-          selectedIcon: const Icon(Icons.assignment),
-          label: l10n.employeeJobsTitle,
-        ),
-        NavigationDestination(
-          key: const Key('employee_nav_tab_history'),
-          icon: const Icon(Icons.history_outlined),
-          selectedIcon: const Icon(Icons.history),
-          label: l10n.ownerHistoryTitle,
-        ),
-        NavigationDestination(
-          key: const Key('employee_nav_tab_settings'),
-          icon: const Icon(Icons.settings_outlined),
-          selectedIcon: const Icon(Icons.settings),
-          label: l10n.settingsTitle,
-        ),
-      ],
-    );
+  List<NavigationDestination> _buildDestinations(AppLocalizations l10n) {
+    return [
+      NavigationDestination(
+        key: const Key('employee_nav_tab_home'),
+        icon: const Icon(Icons.assignment_outlined),
+        selectedIcon: const Icon(Icons.assignment),
+        label: l10n.employeeJobsTitle,
+      ),
+      NavigationDestination(
+        key: const Key('employee_nav_tab_history'),
+        icon: const Icon(Icons.history_outlined),
+        selectedIcon: const Icon(Icons.history),
+        label: l10n.ownerHistoryTitle,
+      ),
+      NavigationDestination(
+        key: const Key('employee_nav_tab_settings'),
+        icon: const Icon(Icons.settings_outlined),
+        selectedIcon: const Icon(Icons.settings),
+        label: l10n.settingsTitle,
+      ),
+    ];
   }
 }

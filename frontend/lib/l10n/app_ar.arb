@@ -1,20 +1,16 @@
 {
   "@@locale": "ar",
-  "ok": "تمام",
   "cancel": "إلغاء",
-  "save": "حفظ",
   "submit": "إرسال",
   "confirm": "تأكيد",
   "close": "إغلاق",
   "retry": "حاول تاني",
   "search": "بحث...",
   "loading": "جاري التحميل...",
-  "comingSoon": "قريباً",
   "navHome": "الرئيسية",
   "navServices": "الخدمات",
   "navHistory": "السجل",
   "navSettings": "الإعدادات",
-  "navEmployees": "العمالة",
   "themeLight": "فاتح",
   "themeDark": "داكن",
   "themeSystem": "حسب الجهاز",
@@ -22,8 +18,6 @@
   "langEnglish": "English",
   "langArabic": "العربية (مصر)",
   "settingsTitle": "الإعدادات",
-  "settingsAppearance": "المظهر",
-  "settingsAppearanceSub": "خصص شكل الأبلكيشن والوضع الليلي",
   "settingsThemeMode": "وضع المظهر",
   "settingsPreferences": "التفضيلات",
   "settingsPreferencesSub": "خيارات اللغة والعرض",
@@ -52,7 +46,6 @@
   "confirmEmailChangeButton": "التحقق وتحديث البريد الإلكتروني",
   "emailChangeSuccess": "تم تحديث البريد الإلكتروني بنجاح",
   "invalidEmailError": "يرجى إدخال بريد إلكتروني صحيح",
-  "enterOtpPrompt": "أدخل رمز التحقق المكون من 6 أرقام المرسل إلى بريدك الجديد.",
   "myAccountUsernameLabel": "اسم المستخدم",
   "myAccountUsernameHint": "اكتب اسم المستخدم",
   "myAccountUsernameReq": "لازم تكتب اسم المستخدم.",
@@ -87,7 +80,6 @@
   "ownerConfigPricePerKmLabel": "سعر الكيلومتر ($)",
   "ownerConfigPricePerKmHint": "مثلاً: 1.50",
   "ownerConfigPricePerKmReq": "سعر الكيلومتر لازم يكون أكبر من أو يساوي 0.",
-  "ownerConfigPhotoUrlLabel": "رابط اللوجو / الصورة",
   "ownerConfigPhotoUrlHint": "https://example.com/logo.png",
   "ownerConfigLocationLabel": "موقع النشاط التجاري",
   "ownerConfigLocationReq": "يرجى تحديد موقع نشاطك التجاري على الخريطة.",
@@ -141,88 +133,34 @@
   "customerHomeCatShipping": "شحن",
   "customerHomeCatBrowseAll": "عرض الكل",
   "customerHomeRecentActivity": "آخر الأنشطة",
-  "customerHomeQuickBookBanner": "محتاج توصيلة سريعة؟",
   "customerHomeQuickBookBtn": "اطلب دلوقتي",
   "customerMarketplaceTitle": "استكشف الخدمات",
-  "customerMarketplaceSearchHint": "دور على خدمة...",
   "customerMarketplaceFilterCategory": "القسم",
   "customerMarketplaceFilterRadius": "أقصى مسافة (كم)",
   "customerMarketplaceChooseMap": "حدد المكان على الخريطة",
-  "customerMarketplaceBookBtn": "تأكيد الطلب",
-  "customerMarketplaceCodNote": "ملاحظة: الدفع عند الاستلام (كاش) هو المتاح حالياً.",
   "customerJobsTitle": "طلباتي",
   "customerJobsSub": "تتبع وإدارة سجل طلباتك.",
   "customerJobsSearchHint": "ابحث برقم الطلب أو الموقع...",
-  "customerJobsInvoiceAvailable": "الفاتورة متوفرة",
   "customerJobsInTransit": "في الطريق",
-  "customerJobsOrderPlaced": "تم إنشاء الطلب",
-  "customerJobsPayment": "طريقة الدفع",
   "customerJobsPrice": "السعر",
-  "customerJobsReason": "السبب",
   "customerJobsOrder": "طلب #",
   "customerJobsEmpty": "لا توجد طلبات",
   "customerJobsEmptyDescription": "لم تقم بإنشاء أي طلبات بعد. تصفح الخدمات في السوق للبدء.",
-  "customerJobsViewDetails": "عرض التفاصيل",
   "jobStatusTitle": "حالة الطلب",
-  "jobStatusPending": "قيد الانتظار",
-  "jobStatusActive": "جاري التنفيذ",
-  "jobStatusCompleted": "مكتمل",
-  "jobStatusCancelled": "ملغي",
-  "jobStatusCancelBtn": "إلغاء الطلب",
   "jobStatusOpenTicketBtn": "تقديم شكوى",
-  "jobStatusCounterOfferTitle": "تفاوض على السعر",
-  "jobStatusCounterOfferSubmit": "تقديم عرض سعر",
-  "ownerHomeGreeting": "لوحة التحكم",
-  "ownerHomeKycAlert": "طلب توثيق حسابك مستني موافقة الإدارة.",
-  "ownerHomeMetricsWallet": "رصيد المحفظة",
-  "ownerHomeMetricsSubscription": "باقة الاشتراك",
-  "ownerHomeEntryWallet": "إدارة المحفظة",
-  "ownerHomeEntryService": "إعدادات الخدمة",
   "ownerHistoryTitle": "السجل وسجلات المراجعة",
-  "ownerHistoryTabAudit": "سجل العمليات",
   "ownerHistoryTabJobs": "الطلبات",
   "ownerHistoryTabLedger": "المعاملات المالية",
-  "ownerFleetMapTitle": "خريطة السائقين",
-  "customerJobMapTitle": "التتبع المباشر",
   "employeeJobsTitle": "المهام والطلبات",
-  "employeeJobsCompleteBtn": "إكمال الطلب",
-  "employeeJobsVerifyDocsBtn": "أوراق التوثيق",
-  "employeeJobsChatBtn": "محادثة العميل",
-  "employeeJobsCashConfirmTitle": "تأكيد استلام الكاش",
-  "employeeJobsCashConfirmMsg": "هل استلمت المبلغ كاش من العميل بالفعل؟",
   "employeeScreenTitle": "إدارة العمالة",
-  "employeeRegisterHeader": "تسجيل عامل جديد",
-  "employeeFreezeBtn": "إيقاف",
-  "employeeUnfreezeBtn": "تفعيل",
   "chatTitle": "محادثة الطلب",
   "chatTypeHint": "اكتب رسالة...",
-  "chatSendBtn": "إرسال",
   "notificationsTitle": "الإشعارات",
-  "notificationsAll": "الكل",
-  "notificationsJobs": "الطلبات",
-  "notificationsSystem": "النظام",
-  "notificationsAlerts": "تنبيهات",
   "notificationsClear": "مسح الكل",
-  "kycTitle": "توثيق الحساب",
-  "kycRejectionBanner": "تم رفض أوراق التوثيق. السبب:",
-  "kycApprovedBadge": "مُوثق",
-  "kybKyeReviewTitle": "مراجعة التوثيق",
-  "kybKyeApproveBtn": "موافقة",
-  "kybKyeRejectBtn": "رفض",
-  "walletTitle": "محفظة المحل",
   "walletTotalBalance": "إجمالي الرصيد",
   "walletWithdrawable": "القابل للسحب",
-  "walletEscrow": "معلق بالشحن",
-  "walletDepositBtn": "إيداع رصيد",
-  "reconciliationTitle": "تسوية الأمانات",
-  "reconciliationReleaseBtn": "تحرير المبلغ",
-  "reconciliationRefundBtn": "إعادة للعميل",
   "ratingTitle": "تقييم الخدمة",
   "ratingSubmitBtn": "إرسال التقييم",
-  "subscriptionTitle": "باقات الاشتراك",
-  "subscriptionFree": "الباقة المجانية",
-  "subscriptionPro": "الباقة الاحترافية",
-  "locationPickerTitle": "حدد المكان على الخريطة",
   "locationPickerUseMyLocation": "موقعي الحالي",
   "locationPickerConfirmBtn": "تأكيد الموقع",
   "ticketSubjectReq": "عنوان التذكرة مطلوب.",
@@ -230,10 +168,7 @@
   "liveCourierTracking": "تتبع المندوب مباشر",
   "subscriptionPlansTitle": "خطط الاشتراك",
   "fleetLiveMapTitle": "خريطة الأسطول الحية",
-  "pendingKybKyeSubmissions": "طلبات التوثيق المعلقة (KYB/KYE)",
-  "reviewCompletedSuccess": "تمت مراجعة طلب {username} بنجاح.",
   "reconciliationReviewTitle": "مراجعة تسوية الضمان",
-  "tooltipRefreshQueue": "تحديث القائمة",
   "reconciliationEmptyTitle": "مفيش طلبات معلقة للتسوية",
   "reconciliationEmptyDesc": "كل معاملات الضمان سليمة. مفيش طلبات محتاجة مراجعة يدوية.",
   "reconciliationFailureReason": "سبب التعثر",
@@ -251,22 +186,6 @@
   "reconciliationFailed": "فشل في إجراء تسوية الضمان",
   "roleEmployeeTenant": "العامل/المندوب",
   "roleCustomer": "العميل",
-  "docViewerTitle": "عرض المستندات والوثائق",
-  "docTabIdFront": "بطاقة الرقم القومي (وجه)",
-  "docTabIdBack": "بطاقة الرقم القومي (ظهر)",
-  "docTabSelfie": "صورة شخصية (سيلفي)",
-  "docTabBusinessProof": "إثبات النشاط التجاري",
-  "docLoadingPreview": "جاري تحميل معاينة المستند...",
-  "docNotProvided": "المستند غير مرفق في هذا الطلب.",
-  "docFailedLoad": "فشل في تحميل معاينة المستند",
-  "docPdfPreviewTitle": "معاينة ملف PDF",
-  "docFileSize": "حجم الملف: {size} بايت",
-  "docDecodeError": "فشل في قراءة صورة المستند.",
-  "docNoDocument": "لم يتم تحميل أي مستند.",
-  "docRejectionReasonLabel": "سبب الرفض / ملاحظات المراجع",
-  "docRejectionReasonHint": "اكتب سبب رفض طلب التوثيق...",
-  "docRejectionReasonReq": "لازم تكتب سبب الرفض.",
-  "docConfirmReject": "تأكيد الرفض",
   "chatFailedSend": "فشل في إرسال الرسالة: {error}",
   "filterSortPrice": "السعر",
   "filterSortNone": "بدون",
@@ -297,14 +216,12 @@
   "settingsKycSubtitlePending": "التوثيق قيد المراجعة والاعتماد",
   "ownerHomeTabTitleDashboard": "لوحة تحكم صاحب العمل",
   "ownerHomeTabTitleWorkers": "إدارة العمال",
-  "ownerHomeTabTitleHistory": "السجل وسجلات المراجعة",
   "ownerHomeWelcomeUser": "أهلاً بك مجدداً، {name}!",
   "ownerHomeAccountId": "معرف الحساب: {id}",
   "ownerHomeProfileInfo": "بيانات الملف الشخصي",
   "ownerHomeLabelUsername": "اسم المستخدم",
   "ownerHomeLabelEmail": "البريد الإلكتروني",
   "ownerHomeLabelRole": "الدور",
-  "ownerHomeTooltipReviewQueue": "قائمة مراجعة التوثيق",
   "ownerHomeTooltipEscrowReconciliation": "تسوية الضمان المالي",
   "ownerHomeTooltipNotifications": "الإشعارات",
   "ownerHomeTooltipSettings": "الإعدادات",
@@ -330,8 +247,8 @@
   "ownerHomeJobId": "طلب #{id}",
   "ownerHomePaymentInfo": "الدفع: {method}{escrowInfo}",
   "ownerHomeCancelJob": "إلغاء الطلب",
-  "ownerHomeJobCancelledEscrowRefunded": "تم إلغاء الطلب بنجاح واسترجاع المبلغ الضامن للمحفظة.",
   "ownerHomeJobCancelled": "تم إلغاء الطلب بنجاح.",
+  "ownerHomeJobCancelledEscrowRefunded": "تم إلغاء الطلب بنجاح واسترجاع المبلغ الضامن للمحفظة.",
   "ownerHistoryTabActivity": "النشاط",
   "ownerHistoryNoActivityTitle": "لا يوجد نشاط للموظفين",
   "ownerHistoryNoActivityDesc": "لم يتم تسجيل أي أحداث في سجل مراجعة النشاط حتى الآن.",
@@ -355,7 +272,6 @@
   "employeeJobsSimulatorValidation": "يرجى كتابة أو اختيار حدث خدمة لتسجيله",
   "employeeJobsSimulateButton": "تسجيل حدث الخدمة",
   "employeeJobsSectionAssigned": "الطلبات المسندة إليك",
-  "employeeJobsLoading": "جاري تحميل الطلبات المسندة...",
   "employeeJobsNoJobsTitle": "لا توجد طلبات مسندة",
   "employeeJobsNoJobsDesc": "لا توجد طلبات مسندة إليك حالياً.",
   "employeeJobsWelcomeGreeting": "أهلاً بك مجدداً!",
@@ -380,7 +296,6 @@
   "employeeJobsCompleteJobButton": "إكمال الطلب",
   "planFreeBasic": "الباقة الأساسية المجانية",
   "planProfessionalPaid": "الباقة الاحترافية المدفوعة",
-  "walletLoading": "جاري تحميل المحفظة...",
   "walletLockedEscrow": "المحجوز (الضمان)",
   "walletTransactionLedger": "سجل المعاملات",
   "walletNoTransactions": "لا توجد معاملات مسجلة حتى الآن.",
@@ -408,8 +323,13 @@
   "tooltipToggleLanguage": "تغيير اللغة",
   "tooltipDismiss": "إغلاق",
   "tooltipPickImage": "اختيار صورة",
+  "tooltipClose": "إغلاق",
+  "tooltipOpenChat": "فتح المحادثة",
+  "tooltipRemoveAddress": "حذف العنوان",
+  "tooltipZoomIn": "تكبير الخريطة",
+  "tooltipZoomOut": "تصغير الخريطة",
+  "tooltipRecenter": "إعادة توسيط الخريطة",
   "sortByLabel": "ترتيب حسب",
-  "searchingServices": "جاري البحث عن الخدمات...",
   "noServicesNearby": "لم يتم العثور على خدمات قريبة.",
   "paymentMethodLabel": "طريقة الدفع",
   "registeredEmployees": "الموظفون المسجلون",
@@ -422,31 +342,18 @@
   "employeeEmailHint": "مثال: john@company.com",
   "employeePasswordLabel": "كلمة سر الموظف",
   "employeePasswordHint": "6 أحرف على الأقل",
-  "employeeRegisteredTitle": "تم تسجيل الموظف",
   "freezeUnfreezeWorker": "تجميد / إلغاء تجميد العامل",
   "confirmOwnerPassword": "تأكيد كلمة سر المالك",
-  "workerStatusUpdated": "تم تحديث حالة العامل",
   "loadingAuditTrail": "جاري تحميل سجل التدقيق...",
   "noAuditEventsTitle": "لا توجد أحداث تدقيق مسجلة",
   "noAuditEventsDesc": "لا توجد أحداث تدقيق مسجلة لهذا الحساب.",
-  "liveTrackingTitle": "المتابعة الحية",
-  "stepRequestPlaced": "تم تقديم الطلب",
-  "stepWaitingApproval": "في انتظار موافقة المشغل",
-  "stepWorkerDispatched": "تم إرسال العامل",
-  "stepJobCompleted": "تم إكمال الطلب",
-  "stepCompletedSuccessfully": "تم التوصيل بنجاح",
-  "jobDetailsTitle": "تفاصيل الطلب",
   "priceNegotiationTitle": "التفاوض على السعر",
   "negotiationHintExample": "مثال: {price}",
-  "accessDeniedTitle": "تم رفض الوصول",
-  "loadingPendingSubmissions": "جاري تحميل الطلبات المعلقة...",
-  "noPendingSubmissions": "لا توجد طلبات معلقة",
   "rejectionReasonMessage": "سبب الرفض: {reason}",
   "ratingFeatureUnbiased": "تقييمات محايدة",
   "ratingFeatureTrust": "حماية الثقة",
   "ratingFeatureWindow": "مهلة 24 ساعة",
   "privateFeedbackLabel": "ملاحظة خاصة (اختياري)",
-  "privateFeedbackHint": "ما الذي تم بشكل جيد؟ وما الذي يمكن تحسينه؟",
   "loadingStatus": "جاري تحميل الحالة...",
   "loadingServices": "جاري تحميل الخدمات...",
   "noServicesConfigured": "لم يتم ضبط أي خدمات",
@@ -478,5 +385,433 @@
   "payoutErrorAmountExceeds": "المبلغ يتجاوز الرصيد المتاح حالياً.",
   "payoutErrorAmountInvalid": "يرجى إدخال مبلغ صحيح أكبر من 0.",
   "payoutErrorDetailsRequired": "تفاصيل الحساب مطلوبة.",
-  "payoutRejectionReasonLabel": "سبب الرفض:"
+  "payoutRejectionReasonLabel": "سبب الرفض:",
+  "chatStatusLive": "مباشر",
+  "chatStatusDisconnected": "مقطوع",
+  "chatJobTag": "شحنة #{shortId}",
+  "@chatJobTag": {
+    "placeholders": {
+      "shortId": {
+        "type": "String"
+      }
+    }
+  },
+  "chatDirectChannel": "قناة مباشرة لحظية",
+  "chatAccessDeniedJob": "ممنوع الدخول: مش مسموحلك تشوف أو تنضم لشات الشحنة #{jobId}.",
+  "@chatAccessDeniedJob": {
+    "placeholders": {
+      "jobId": {
+        "type": "String"
+      }
+    }
+  },
+  "customerHomeWhereDeliver": "هتوصّل فين؟",
+  "customerHomeSearchHint": "اكتب مكان التسليم أو الاستلام...",
+  "commonOrigin": "الاستلام",
+  "commonDestination": "التسليم",
+  "courierAssignedLabel": "الكورير: اتحدد",
+  "findingCourierLabel": "بنجيب كورير...",
+  "paymentMethodLine": "الدفع: {method}",
+  "@paymentMethodLine": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "mapPickupBadge": "استلام",
+  "waitingCourierUpdates": "مستنيين تحديثات موقع الكورير...",
+  "reconnectingTrackingStream": "بنعيد الاتصال ببث التتبع المباشر...",
+  "filterAll": "الكل",
+  "distanceAwayLine": "{distance} كم بعيد",
+  "@distanceAwayLine": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "pricingBreakdownLine": "الأساس: {base} + {perKm}/كم",
+  "@pricingBreakdownLine": {
+    "placeholders": {
+      "base": {
+        "type": "String"
+      },
+      "perKm": {
+        "type": "String"
+      }
+    }
+  },
+  "estPriceLine": "التقديري: {price}",
+  "@estPriceLine": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "chooseSearchLocation": "اختار مكان البحث",
+  "confirmBookingTitle": "تأكيد الحجز",
+  "categoryLine": "الفئة: {category}",
+  "@categoryLine": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "pickupDistanceLabel": "مسافة الاستلام:",
+  "kmUnitLine": "{distance} كم",
+  "@kmUnitLine": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "estimatedTotalLabel": "الإجمالي التقديري:",
+  "codOptionTitle": "الدفع عند الاستلام (كاش)",
+  "codOptionSubtitle": "ادفع كاش للسايق مباشرة لما يوصلك",
+  "betaEscrowNote": "ملحوظة: الدفع بالضمان والخصم من المحفظة متأجلين حاليًا في الإطلاق التجريبي ده.",
+  "noRatingsLabel": "مفيش تقييمات",
+  "reasonLine": "السبب: {reason}",
+  "@reasonLine": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "recentActivityHeader": "آخر النشاطات",
+  "employeeHistorySubtitle": "الشحنات المكتملة والملغاة.",
+  "employeeManageSubtitle": "أدر العاملين وحالاتهم.",
+  "employeeSearchHint": "دوّر على عامل بالاسم أو الإيميل...",
+  "employeeFrozenStatus": "مجمّد",
+  "noWorkersMatchFilter": "مفيش عاملين مطابقين للفلتر.",
+  "workerIdBadge": "الرقم: #QD-{id}",
+  "@workerIdBadge": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "targetStatusLabel": "الحالة المطلوبة",
+  "secureVerificationNote": "مطلوب لتأكيد العمليات الحساسة بشكل آمن.",
+  "clientIpLine": "الـ IP: {ip}",
+  "@clientIpLine": {
+    "placeholders": {
+      "ip": {
+        "type": "String"
+      }
+    }
+  },
+  "usernameRequired": "اسم المستخدم مطلوب",
+  "usernameTooShort": "اسم المستخدم لازم يكون 3 حروف على الأقل",
+  "usernameTooLong": "اسم المستخدم أقصاه 30 حرف",
+  "usernameInvalidChars": "اسم المستخدم فيه حروف غير مسموحة",
+  "emailRequired": "الإيميل مطلوب",
+  "invalidEmailFormat": "اكتب إيميل صحيح",
+  "passwordRequired": "الباسورد مطلوب",
+  "passwordTooShort": "الباسورد لازم يكون 6 حروف على الأقل",
+  "employeeEmailRequired": "إيميل الموظف مطلوب",
+  "ownerPasswordRequired": "لازم باسورد المالك لإعادة التأكيد",
+  "enterOtp6Digits": "اكتب كود التحقق المكوّن من 6 أرقام",
+  "otpExactly6Digits": "كود التحقق لازم يكون 6 أرقام بالظبط",
+  "devOtpBanner": "كود التجربة: {otp}",
+  "@devOtpBanner": {
+    "placeholders": {
+      "otp": {
+        "type": "String"
+      }
+    }
+  },
+  "devOtpAutoFilled": "وضع التجربة: كود التحقق '{otp}' اتضاف تلقائيًا.",
+  "@devOtpAutoFilled": {
+    "placeholders": {
+      "otp": {
+        "type": "String"
+      }
+    }
+  },
+  "enterpriseTrustNote": "محمي ببروتوكول الحماية المؤسسي",
+  "jobsTrendChipMock": "+12% عن الأسبوع اللي فات",
+  "activeFleetMetricLabel": "الأسطول النشط",
+  "quickConfigSubtitle": "ظبّط بيانات نشاطك وأسعارك وتغطيتك",
+  "urgentActionsHeader": "إجراءات عاجلة",
+  "vehicleMaintenanceTitle": "محتاج صيانة للمركبة",
+  "vehicleMaintenanceDesc": "الميكروبص رقم 402 بلّغ عن تحذير في المحرك. احجز صيانة فورًا.",
+  "scheduleAction": "حدّد موعد",
+  "pendingReconciliationsHeader": "تسويات معلّقة",
+  "reconciliationPendingDesc": "ورديات الأمس لسه مستنية تسوية الضمان.",
+  "reviewAction": "راجع",
+  "fleetOverviewHeader": "نظرة على الأسطول",
+  "activeZoneLabel": "المنطقة النشطة",
+  "downtownCoverageLabel": "تغطية وسط المدينة",
+  "trackJobHeroTitle": "تابع الشحنة",
+  "trackJobHeroSubtitle": "شوف الموقع اللحظي على الخريطة",
+  "fulfillmentProgressHeader": "تقدم التنفيذ",
+  "stepRequestQueuedSub": "الطلب اتسجل وفي الطابور",
+  "stepAssignedTitle": "اتحدد",
+  "matchingCourierLabel": "بنختار كورير...",
+  "assignedToLine": "اتحدد لـ{name}",
+  "@assignedToLine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "courierAssignedShort": "الكورير اتحدد",
+  "stepInTransitSub": "الشحنة في الطريق للمكان",
+  "stepDeliveredOkSub": "اتسلّمت بنجاح",
+  "stepPendingDeliverySub": "مستنية التسليم",
+  "itineraryHeader": "المسار",
+  "pickupStageBadge": "استلام",
+  "originCustomerLocation": "البداية / موقع العميل",
+  "dropoffStageBadge": "تسليم",
+  "deliveryDestinationLabel": "مكان التسليم",
+  "paymentSectionHeader": "الدفع",
+  "totalFareLabel": "إجمالي الأجرة",
+  "verifiedCourierDriver": "كورير موثّق",
+  "cancellationReasonLine": "سبب الإلغاء: {reason}",
+  "@cancellationReasonLine": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "negotiationExpiredBanner": "مهلة التفاوض خلصت (عدّت 5 دقايق)",
+  "incomingProposalCard": "عرض واصل من الطرف التاني",
+  "proposalByLine": "بواسطة {role}",
+  "@proposalByLine": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "proposalRoleCustomer": "العميل",
+  "proposalRoleDriverEmployee": "السائق / الموظف",
+  "proposedFareLabel": "الأجرة المعروضة:",
+  "comparisonPrefix": "المقارنة:",
+  "vsSystemPrice": "مقابل سعر النظام",
+  "waitingProposalResponse": "مستنيين الرد على عرضك...",
+  "submitCounterOfferBtn": "ابعت عرض مضاد",
+  "allowedBoundLine": "الحدود المسموحة: {min} – {max} (±50%)",
+  "@allowedBoundLine": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "verificationStatusCardTitle": "حالة التوثيق",
+  "documentsLockedMessage": "المستندات مقفولة لأن حسابك معتمد.",
+  "removeSelectionAction": "شيل الاختيار",
+  "requiredDocsHeader": "مستندات التوثيق المطلوبة",
+  "kycOwnerDocsSub": "الملاك لازم يرفعوا الـ4 مستندات (هوية وش، هية ضهر، سيلفي، سجل تجاري).",
+  "kycEmployeeDocsSub": "الموظفين لازم يرفعوا الـ3 مستندات (هوية وش، هية ضهر، سيلفي).",
+  "profileInfoCardTitle": "بيانات الحساب",
+  "sectionBusinessIdentity": "هوية النشاط",
+  "sectionBusinessIdentitySub": "تفاصيل الشركة وتصنيفها",
+  "sectionLocationOperations": "الموقع والتشغيل",
+  "sectionLocationOperationsSub": "المقر الرئيسي وحدود التغطية",
+  "sectionPricingStructure": "هيكل الأسعار",
+  "sectionPricingStructureSub": "الأجرة الأساسية ورسوم المسافة",
+  "estDelivery10kmLabel": "تقدير توصيل 10 كم:",
+  "fleetFilterAllFleet": "كل الأسطول",
+  "fleetFilterOnRoute": "في الطريق",
+  "fleetFilterIdle": "واقف",
+  "noEmployeesTransmitting": "مفيش موظفين نشطين بينضبط موقعهم.",
+  "assignedJobLine": "الشحنة المسندة: #{jobId}",
+  "@assignedJobLine": {
+    "placeholders": {
+      "jobId": {
+        "type": "String"
+      }
+    }
+  },
+  "ownerJobsSearchHint": "دوّر برقم الشحنة أو العميل أو السبب...",
+  "noJobsMatchFilter": "مفيش شحنات مطابقة للفلتر.",
+  "reconQueueSearchHint": "دوّر في القائمة برقم الشحنة أو العميل أو السائق...",
+  "reconFilterDistance": "مسافة",
+  "reconFilterTimeSpeed": "وقت / سرعة",
+  "reconFilterOther": "تاني",
+  "noReconMatchFilter": "مفيش تسويات مطابقة للفلتر.",
+  "deliveryIdTag": "رقم التوصيل: #QD-{id}",
+  "@deliveryIdTag": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "howWasDeliveryQuestion": "كانت تجربة التوصيل إزاي؟",
+  "ratingsBlindExplanation": "التقييم مخبي. محدش هيشوف تقييم التاني غير لما الاتنين يقيّموا.",
+  "feedbackExperienceHint": "احكيلنا أكتر عن تجربتك...",
+  "feedbackLockedInTitle": "تقييمك اتقفل!",
+  "bothRatingsVisibleDesc": "الطرف التاني قيّم. التقييمين بقوا ظاهرين في ملخص البروفايل.",
+  "waitingOtherPartyTitle": "مستنيين الطرف التاني...",
+  "otherPartyNotRatedDesc": "الطرف التاني لسه ما قيمش. تقييمك هيفضل مخبي لحد ما يقيم.",
+  "unbiasedRatingDesc": "منع تقييمات الانتقام أو ضغط الأصحاب.",
+  "reliabilityRanksDesc": "التقييمات بتأثر على ترتيب الموثوقية.",
+  "windowDeadlineDesc": "قيّم خلال 24 ساعة عشان صوتك يتحسب.",
+  "serviceMgmtHeader": "إدارة الخدمات",
+  "serviceMgmtSubtitle": "ظبّط وتابع خدمات الشحن النشطة.",
+  "verificationRequiredHeader": "لازم توثيق",
+  "kycRequiredDesc": "كمّل توثيق KYC عشان تقدر تضيف أو تعدل خدمات.",
+  "baseRateBadge": "الأجرة الأساسية",
+  "perKmBadge": "لكل كم",
+  "serviceLocationLine": "الموقع: ({lat}, {lon})",
+  "@serviceLocationLine": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lon": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionManageDesc": "أدر باقتك. الترقية بتفتح تتبع السايقين المباشر ومؤشرات أسعار متقدمة ودعم أولوية.",
+  "yourCurrentPlanBadge": "خطتك الحالية",
+  "pendingActivationNote": "مستنية التفعيل. كلّم الدعم لإتمام الدفع.",
+  "availablePlansHeader": "الباقات المتاحة",
+  "freeTierDesc": "أدوات أساسية للأعمال الفردية.",
+  "proTierDesc": "حل متكامل لمديري الأسطول والأعمال اللي بتكبر.",
+  "billedMonthlyNote": "الفاتورة شهرية. تقدر تلغي وقت ما تحب.",
+  "recommendedBadge": "موصى بيها",
+  "platformFeeLine": "نسبة المنصة: {fee}%",
+  "@platformFeeLine": {
+    "placeholders": {
+      "fee": {
+        "type": "String"
+      }
+    }
+  },
+  "walletMyWalletTitle": "محفظتي",
+  "walletCorporateSubtitle": "أدر فلوس الشركة والمصروفات.",
+  "availableBalanceBadge": "الرصيد المتاح",
+  "balanceTrendChipMock": "+8.4% عن الشهر اللي فات",
+  "totalPortfolioLine": "إجمالي المحفظة: {amount} كريدت",
+  "@totalPortfolioLine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "creditsAmountLine": "{amount} كريدت",
+  "@creditsAmountLine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ledgerJobLine": "شحنة: {jobId}",
+  "@ledgerJobLine": {
+    "placeholders": {
+      "jobId": {
+        "type": "String"
+      }
+    }
+  },
+  "ledgerBalanceLine": "الرصيد: {balance}",
+  "@ledgerBalanceLine": {
+    "placeholders": {
+      "balance": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelReasonRequiredLong": "اكتب سبب إلغاء الشحنة. لازم سبب إلغاء صحيح.",
+  "createNewServiceTitle": "إنشاء خدمة جديدة",
+  "referenceIdLine": "رقم المرجع: #{ref}",
+  "@referenceIdLine": {
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "depositFundsTitle": "إيداع رصيد",
+  "depositDialogDesc": "اكتب المبلغ بالكريدت لإيداعه في محفظتك.",
+  "amountRequired": "المبلغ مطلوب",
+  "positiveNumberRequired": "اكتب رقم موجب صحيح",
+  "basePriceRequired": "السعر الأساسي مطلوب",
+  "invalidPriceValue": "سعر غير صحيح",
+  "rateRequired": "السعر لكل كم مطلوب",
+  "invalidRateValue": "قيمة غير صحيحة",
+  "fieldRequiredGeneric": "مطلوب",
+  "latRangeMessage": "لازم تكون بين -90 و 90",
+  "lonRangeMessage": "لازم تكون بين -180 و 180",
+  "otpSentToEmail": "اكتب كود التحقق (6 أرقام) اللي اتبعت على {email}.",
+  "@otpSentToEmail": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "devModeOtpLabel": "كود وضع التجربة",
+  "verificationCodeLine": "كود التحقق: {code}",
+  "@verificationCodeLine": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "verificationCodeLabel": "كود التحقق",
+  "verificationCodeRequired": "كود التحقق مطلوب",
+  "accountDetailsLine": "الحساب: {account}",
+  "@accountDetailsLine": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "verifiedServiceScoreLabel": "درجة الخدمة الموثقة",
+  "basedOnRatingsLine": "بناءً على {count} تقييم",
+  "@basedOnRatingsLine": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "employeeSetActiveStatus": "تحويل الحساب لنشط (فك التجميد)",
+  "employeeSetFrozenStatus": "تحويل الحساب لمجمّد (موقوف)",
+  "stepInTransitTitle": "في الطريق",
+  "findNearbyCouriers": "دوّر على كورير قريب",
+  "confirmAndRequestBtn": "تأكيد وإرسال الطلب",
+  "auditTrailTabLabel": "سجل التدقيق",
+  "registerEmployeeBtn": "تسجيل موظف",
+  "rateYourExperienceCta": "قيّم تجربتك",
+  "openComplaintTicketBtn": "افتح تذكرة شكوى",
+  "backToDirectoryBtn": "رجوع للخدمات",
+  "acceptProposalBtn": "اقبل العرض",
+  "declineProposalBtn": "ارفض",
+  "replaceDocumentBtn": "استبدل المستند",
+  "uploadDocumentBtn": "ارفع المستند",
+  "createActionLabel": "إنشاء",
+  "backToStatusBtn": "رجوع لحالة الشحنة",
+  "bookNowBtn": "احجز",
+  "subFreeFeatureMatching": "مطابقة توصيل أساسية",
+  "subFreeFeatureRouting": "تحسين مسارات قياسي",
+  "subFreeFeatureCod": "حجوزات دفع عند الاستلام (كاش)",
+  "subFreeFeatureSupport": "دعم من المجتمع",
+  "subProFeatureTracking": "تتبع مباشر لموقع العامل",
+  "subProFeatureDispatch": "أولوية في توزيع الطلبات",
+  "subProFeaturePricing": "وصول لمؤشرات أسعار متقدمة",
+  "subProEmployeeSuite": "إدارة كاملة للموظفين",
+  "subProDedicatedSupport": "دعم مخصص 24/7",
+  "subProFeatureTrackingUnlock": "يفتح تتبع مباشر لموقع العامل"
 }

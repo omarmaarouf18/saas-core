@@ -9,13 +9,7 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
-  String get ok => 'تمام';
-
-  @override
   String get cancel => 'إلغاء';
-
-  @override
-  String get save => 'حفظ';
 
   @override
   String get submit => 'إرسال';
@@ -36,9 +30,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get loading => 'جاري التحميل...';
 
   @override
-  String get comingSoon => 'قريباً';
-
-  @override
   String get navHome => 'الرئيسية';
 
   @override
@@ -49,9 +40,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get navSettings => 'الإعدادات';
-
-  @override
-  String get navEmployees => 'العمالة';
 
   @override
   String get themeLight => 'فاتح';
@@ -73,12 +61,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsTitle => 'الإعدادات';
-
-  @override
-  String get settingsAppearance => 'المظهر';
-
-  @override
-  String get settingsAppearanceSub => 'خصص شكل الأبلكيشن والوضع الليلي';
 
   @override
   String get settingsThemeMode => 'وضع المظهر';
@@ -165,10 +147,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get invalidEmailError => 'يرجى إدخال بريد إلكتروني صحيح';
-
-  @override
-  String get enterOtpPrompt =>
-      'أدخل رمز التحقق المكون من 6 أرقام المرسل إلى بريدك الجديد.';
 
   @override
   String get myAccountUsernameLabel => 'اسم المستخدم';
@@ -274,9 +252,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get ownerConfigPricePerKmReq =>
       'سعر الكيلومتر لازم يكون أكبر من أو يساوي 0.';
-
-  @override
-  String get ownerConfigPhotoUrlLabel => 'رابط اللوجو / الصورة';
 
   @override
   String get ownerConfigPhotoUrlHint => 'https://example.com/logo.png';
@@ -439,16 +414,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get customerHomeRecentActivity => 'آخر الأنشطة';
 
   @override
-  String get customerHomeQuickBookBanner => 'محتاج توصيلة سريعة؟';
-
-  @override
   String get customerHomeQuickBookBtn => 'اطلب دلوقتي';
 
   @override
   String get customerMarketplaceTitle => 'استكشف الخدمات';
-
-  @override
-  String get customerMarketplaceSearchHint => 'دور على خدمة...';
 
   @override
   String get customerMarketplaceFilterCategory => 'القسم';
@@ -460,13 +429,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get customerMarketplaceChooseMap => 'حدد المكان على الخريطة';
 
   @override
-  String get customerMarketplaceBookBtn => 'تأكيد الطلب';
-
-  @override
-  String get customerMarketplaceCodNote =>
-      'ملاحظة: الدفع عند الاستلام (كاش) هو المتاح حالياً.';
-
-  @override
   String get customerJobsTitle => 'طلباتي';
 
   @override
@@ -476,22 +438,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get customerJobsSearchHint => 'ابحث برقم الطلب أو الموقع...';
 
   @override
-  String get customerJobsInvoiceAvailable => 'الفاتورة متوفرة';
-
-  @override
   String get customerJobsInTransit => 'في الطريق';
 
   @override
-  String get customerJobsOrderPlaced => 'تم إنشاء الطلب';
-
-  @override
-  String get customerJobsPayment => 'طريقة الدفع';
-
-  @override
   String get customerJobsPrice => 'السعر';
-
-  @override
-  String get customerJobsReason => 'السبب';
 
   @override
   String get customerJobsOrder => 'طلب #';
@@ -504,58 +454,13 @@ class AppLocalizationsAr extends AppLocalizations {
       'لم تقم بإنشاء أي طلبات بعد. تصفح الخدمات في السوق للبدء.';
 
   @override
-  String get customerJobsViewDetails => 'عرض التفاصيل';
-
-  @override
   String get jobStatusTitle => 'حالة الطلب';
-
-  @override
-  String get jobStatusPending => 'قيد الانتظار';
-
-  @override
-  String get jobStatusActive => 'جاري التنفيذ';
-
-  @override
-  String get jobStatusCompleted => 'مكتمل';
-
-  @override
-  String get jobStatusCancelled => 'ملغي';
-
-  @override
-  String get jobStatusCancelBtn => 'إلغاء الطلب';
 
   @override
   String get jobStatusOpenTicketBtn => 'تقديم شكوى';
 
   @override
-  String get jobStatusCounterOfferTitle => 'تفاوض على السعر';
-
-  @override
-  String get jobStatusCounterOfferSubmit => 'تقديم عرض سعر';
-
-  @override
-  String get ownerHomeGreeting => 'لوحة التحكم';
-
-  @override
-  String get ownerHomeKycAlert => 'طلب توثيق حسابك مستني موافقة الإدارة.';
-
-  @override
-  String get ownerHomeMetricsWallet => 'رصيد المحفظة';
-
-  @override
-  String get ownerHomeMetricsSubscription => 'باقة الاشتراك';
-
-  @override
-  String get ownerHomeEntryWallet => 'إدارة المحفظة';
-
-  @override
-  String get ownerHomeEntryService => 'إعدادات الخدمة';
-
-  @override
   String get ownerHistoryTitle => 'السجل وسجلات المراجعة';
-
-  @override
-  String get ownerHistoryTabAudit => 'سجل العمليات';
 
   @override
   String get ownerHistoryTabJobs => 'الطلبات';
@@ -564,41 +469,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownerHistoryTabLedger => 'المعاملات المالية';
 
   @override
-  String get ownerFleetMapTitle => 'خريطة السائقين';
-
-  @override
-  String get customerJobMapTitle => 'التتبع المباشر';
-
-  @override
   String get employeeJobsTitle => 'المهام والطلبات';
 
   @override
-  String get employeeJobsCompleteBtn => 'إكمال الطلب';
-
-  @override
-  String get employeeJobsVerifyDocsBtn => 'أوراق التوثيق';
-
-  @override
-  String get employeeJobsChatBtn => 'محادثة العميل';
-
-  @override
-  String get employeeJobsCashConfirmTitle => 'تأكيد استلام الكاش';
-
-  @override
-  String get employeeJobsCashConfirmMsg =>
-      'هل استلمت المبلغ كاش من العميل بالفعل؟';
-
-  @override
   String get employeeScreenTitle => 'إدارة العمالة';
-
-  @override
-  String get employeeRegisterHeader => 'تسجيل عامل جديد';
-
-  @override
-  String get employeeFreezeBtn => 'إيقاف';
-
-  @override
-  String get employeeUnfreezeBtn => 'تفعيل';
 
   @override
   String get chatTitle => 'محادثة الطلب';
@@ -607,46 +481,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatTypeHint => 'اكتب رسالة...';
 
   @override
-  String get chatSendBtn => 'إرسال';
-
-  @override
   String get notificationsTitle => 'الإشعارات';
 
   @override
-  String get notificationsAll => 'الكل';
-
-  @override
-  String get notificationsJobs => 'الطلبات';
-
-  @override
-  String get notificationsSystem => 'النظام';
-
-  @override
-  String get notificationsAlerts => 'تنبيهات';
-
-  @override
   String get notificationsClear => 'مسح الكل';
-
-  @override
-  String get kycTitle => 'توثيق الحساب';
-
-  @override
-  String get kycRejectionBanner => 'تم رفض أوراق التوثيق. السبب:';
-
-  @override
-  String get kycApprovedBadge => 'مُوثق';
-
-  @override
-  String get kybKyeReviewTitle => 'مراجعة التوثيق';
-
-  @override
-  String get kybKyeApproveBtn => 'موافقة';
-
-  @override
-  String get kybKyeRejectBtn => 'رفض';
-
-  @override
-  String get walletTitle => 'محفظة المحل';
 
   @override
   String get walletTotalBalance => 'إجمالي الرصيد';
@@ -655,37 +493,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get walletWithdrawable => 'القابل للسحب';
 
   @override
-  String get walletEscrow => 'معلق بالشحن';
-
-  @override
-  String get walletDepositBtn => 'إيداع رصيد';
-
-  @override
-  String get reconciliationTitle => 'تسوية الأمانات';
-
-  @override
-  String get reconciliationReleaseBtn => 'تحرير المبلغ';
-
-  @override
-  String get reconciliationRefundBtn => 'إعادة للعميل';
-
-  @override
   String get ratingTitle => 'تقييم الخدمة';
 
   @override
   String get ratingSubmitBtn => 'إرسال التقييم';
-
-  @override
-  String get subscriptionTitle => 'باقات الاشتراك';
-
-  @override
-  String get subscriptionFree => 'الباقة المجانية';
-
-  @override
-  String get subscriptionPro => 'الباقة الاحترافية';
-
-  @override
-  String get locationPickerTitle => 'حدد المكان على الخريطة';
 
   @override
   String get locationPickerUseMyLocation => 'موقعي الحالي';
@@ -709,18 +520,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fleetLiveMapTitle => 'خريطة الأسطول الحية';
 
   @override
-  String get pendingKybKyeSubmissions => 'طلبات التوثيق المعلقة (KYB/KYE)';
-
-  @override
-  String reviewCompletedSuccess(String username) {
-    return 'تمت مراجعة طلب $username بنجاح.';
-  }
-
-  @override
   String get reconciliationReviewTitle => 'مراجعة تسوية الضمان';
-
-  @override
-  String get tooltipRefreshQueue => 'تحديث القائمة';
 
   @override
   String get reconciliationEmptyTitle => 'مفيش طلبات معلقة للتسوية';
@@ -780,56 +580,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get roleCustomer => 'العميل';
-
-  @override
-  String get docViewerTitle => 'عرض المستندات والوثائق';
-
-  @override
-  String get docTabIdFront => 'بطاقة الرقم القومي (وجه)';
-
-  @override
-  String get docTabIdBack => 'بطاقة الرقم القومي (ظهر)';
-
-  @override
-  String get docTabSelfie => 'صورة شخصية (سيلفي)';
-
-  @override
-  String get docTabBusinessProof => 'إثبات النشاط التجاري';
-
-  @override
-  String get docLoadingPreview => 'جاري تحميل معاينة المستند...';
-
-  @override
-  String get docNotProvided => 'المستند غير مرفق في هذا الطلب.';
-
-  @override
-  String get docFailedLoad => 'فشل في تحميل معاينة المستند';
-
-  @override
-  String get docPdfPreviewTitle => 'معاينة ملف PDF';
-
-  @override
-  String docFileSize(int size) {
-    return 'حجم الملف: $size بايت';
-  }
-
-  @override
-  String get docDecodeError => 'فشل في قراءة صورة المستند.';
-
-  @override
-  String get docNoDocument => 'لم يتم تحميل أي مستند.';
-
-  @override
-  String get docRejectionReasonLabel => 'سبب الرفض / ملاحظات المراجع';
-
-  @override
-  String get docRejectionReasonHint => 'اكتب سبب رفض طلب التوثيق...';
-
-  @override
-  String get docRejectionReasonReq => 'لازم تكتب سبب الرفض.';
-
-  @override
-  String get docConfirmReject => 'تأكيد الرفض';
 
   @override
   String chatFailedSend(String error) {
@@ -939,9 +689,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownerHomeTabTitleWorkers => 'إدارة العمال';
 
   @override
-  String get ownerHomeTabTitleHistory => 'السجل وسجلات المراجعة';
-
-  @override
   String ownerHomeWelcomeUser(String name) {
     return 'أهلاً بك مجدداً، $name!';
   }
@@ -962,9 +709,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownerHomeLabelRole => 'الدور';
-
-  @override
-  String get ownerHomeTooltipReviewQueue => 'قائمة مراجعة التوثيق';
 
   @override
   String get ownerHomeTooltipEscrowReconciliation => 'تسوية الضمان المالي';
@@ -1051,11 +795,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownerHomeCancelJob => 'إلغاء الطلب';
 
   @override
-  String get ownerHomeJobCancelledEscrowRefunded =>
-      'تم إلغاء الطلب بنجاح واسترجاع المبلغ الضامن للمحفظة.';
+  String get ownerHomeJobCancelled => 'تم إلغاء الطلب بنجاح.';
 
   @override
-  String get ownerHomeJobCancelled => 'تم إلغاء الطلب بنجاح.';
+  String get ownerHomeJobCancelledEscrowRefunded =>
+      'تم إلغاء الطلب بنجاح واسترجاع المبلغ الضامن للمحفظة.';
 
   @override
   String get ownerHistoryTabActivity => 'النشاط';
@@ -1141,9 +885,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get employeeJobsSectionAssigned => 'الطلبات المسندة إليك';
 
   @override
-  String get employeeJobsLoading => 'جاري تحميل الطلبات المسندة...';
-
-  @override
   String get employeeJobsNoJobsTitle => 'لا توجد طلبات مسندة';
 
   @override
@@ -1223,9 +964,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get planProfessionalPaid => 'الباقة الاحترافية المدفوعة';
-
-  @override
-  String get walletLoading => 'جاري تحميل المحفظة...';
 
   @override
   String get walletLockedEscrow => 'المحجوز (الضمان)';
@@ -1309,10 +1047,25 @@ class AppLocalizationsAr extends AppLocalizations {
   String get tooltipPickImage => 'اختيار صورة';
 
   @override
-  String get sortByLabel => 'ترتيب حسب';
+  String get tooltipClose => 'إغلاق';
 
   @override
-  String get searchingServices => 'جاري البحث عن الخدمات...';
+  String get tooltipOpenChat => 'فتح المحادثة';
+
+  @override
+  String get tooltipRemoveAddress => 'حذف العنوان';
+
+  @override
+  String get tooltipZoomIn => 'تكبير الخريطة';
+
+  @override
+  String get tooltipZoomOut => 'تصغير الخريطة';
+
+  @override
+  String get tooltipRecenter => 'إعادة توسيط الخريطة';
+
+  @override
+  String get sortByLabel => 'ترتيب حسب';
 
   @override
   String get noServicesNearby => 'لم يتم العثور على خدمات قريبة.';
@@ -1351,16 +1104,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get employeePasswordHint => '6 أحرف على الأقل';
 
   @override
-  String get employeeRegisteredTitle => 'تم تسجيل الموظف';
-
-  @override
   String get freezeUnfreezeWorker => 'تجميد / إلغاء تجميد العامل';
 
   @override
   String get confirmOwnerPassword => 'تأكيد كلمة سر المالك';
-
-  @override
-  String get workerStatusUpdated => 'تم تحديث حالة العامل';
 
   @override
   String get loadingAuditTrail => 'جاري تحميل سجل التدقيق...';
@@ -1372,42 +1119,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noAuditEventsDesc => 'لا توجد أحداث تدقيق مسجلة لهذا الحساب.';
 
   @override
-  String get liveTrackingTitle => 'المتابعة الحية';
-
-  @override
-  String get stepRequestPlaced => 'تم تقديم الطلب';
-
-  @override
-  String get stepWaitingApproval => 'في انتظار موافقة المشغل';
-
-  @override
-  String get stepWorkerDispatched => 'تم إرسال العامل';
-
-  @override
-  String get stepJobCompleted => 'تم إكمال الطلب';
-
-  @override
-  String get stepCompletedSuccessfully => 'تم التوصيل بنجاح';
-
-  @override
-  String get jobDetailsTitle => 'تفاصيل الطلب';
-
-  @override
   String get priceNegotiationTitle => 'التفاوض على السعر';
 
   @override
   String negotiationHintExample(String price) {
     return 'مثال: $price';
   }
-
-  @override
-  String get accessDeniedTitle => 'تم رفض الوصول';
-
-  @override
-  String get loadingPendingSubmissions => 'جاري تحميل الطلبات المعلقة...';
-
-  @override
-  String get noPendingSubmissions => 'لا توجد طلبات معلقة';
 
   @override
   String rejectionReasonMessage(String reason) {
@@ -1425,10 +1142,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get privateFeedbackLabel => 'ملاحظة خاصة (اختياري)';
-
-  @override
-  String get privateFeedbackHint =>
-      'ما الذي تم بشكل جيد؟ وما الذي يمكن تحسينه؟';
 
   @override
   String get loadingStatus => 'جاري تحميل الحالة...';
@@ -1530,4 +1243,705 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get payoutRejectionReasonLabel => 'سبب الرفض:';
+
+  @override
+  String get chatStatusLive => 'مباشر';
+
+  @override
+  String get chatStatusDisconnected => 'مقطوع';
+
+  @override
+  String chatJobTag(String shortId) {
+    return 'شحنة #$shortId';
+  }
+
+  @override
+  String get chatDirectChannel => 'قناة مباشرة لحظية';
+
+  @override
+  String chatAccessDeniedJob(String jobId) {
+    return 'ممنوع الدخول: مش مسموحلك تشوف أو تنضم لشات الشحنة #$jobId.';
+  }
+
+  @override
+  String get customerHomeWhereDeliver => 'هتوصّل فين؟';
+
+  @override
+  String get customerHomeSearchHint => 'اكتب مكان التسليم أو الاستلام...';
+
+  @override
+  String get commonOrigin => 'الاستلام';
+
+  @override
+  String get commonDestination => 'التسليم';
+
+  @override
+  String get courierAssignedLabel => 'الكورير: اتحدد';
+
+  @override
+  String get findingCourierLabel => 'بنجيب كورير...';
+
+  @override
+  String paymentMethodLine(String method) {
+    return 'الدفع: $method';
+  }
+
+  @override
+  String get mapPickupBadge => 'استلام';
+
+  @override
+  String get waitingCourierUpdates => 'مستنيين تحديثات موقع الكورير...';
+
+  @override
+  String get reconnectingTrackingStream =>
+      'بنعيد الاتصال ببث التتبع المباشر...';
+
+  @override
+  String get filterAll => 'الكل';
+
+  @override
+  String distanceAwayLine(String distance) {
+    return '$distance كم بعيد';
+  }
+
+  @override
+  String pricingBreakdownLine(String base, String perKm) {
+    return 'الأساس: $base + $perKm/كم';
+  }
+
+  @override
+  String estPriceLine(String price) {
+    return 'التقديري: $price';
+  }
+
+  @override
+  String get chooseSearchLocation => 'اختار مكان البحث';
+
+  @override
+  String get confirmBookingTitle => 'تأكيد الحجز';
+
+  @override
+  String categoryLine(String category) {
+    return 'الفئة: $category';
+  }
+
+  @override
+  String get pickupDistanceLabel => 'مسافة الاستلام:';
+
+  @override
+  String kmUnitLine(String distance) {
+    return '$distance كم';
+  }
+
+  @override
+  String get estimatedTotalLabel => 'الإجمالي التقديري:';
+
+  @override
+  String get codOptionTitle => 'الدفع عند الاستلام (كاش)';
+
+  @override
+  String get codOptionSubtitle => 'ادفع كاش للسايق مباشرة لما يوصلك';
+
+  @override
+  String get betaEscrowNote =>
+      'ملحوظة: الدفع بالضمان والخصم من المحفظة متأجلين حاليًا في الإطلاق التجريبي ده.';
+
+  @override
+  String get noRatingsLabel => 'مفيش تقييمات';
+
+  @override
+  String reasonLine(String reason) {
+    return 'السبب: $reason';
+  }
+
+  @override
+  String get recentActivityHeader => 'آخر النشاطات';
+
+  @override
+  String get employeeHistorySubtitle => 'الشحنات المكتملة والملغاة.';
+
+  @override
+  String get employeeManageSubtitle => 'أدر العاملين وحالاتهم.';
+
+  @override
+  String get employeeSearchHint => 'دوّر على عامل بالاسم أو الإيميل...';
+
+  @override
+  String get employeeFrozenStatus => 'مجمّد';
+
+  @override
+  String get noWorkersMatchFilter => 'مفيش عاملين مطابقين للفلتر.';
+
+  @override
+  String workerIdBadge(String id) {
+    return 'الرقم: #QD-$id';
+  }
+
+  @override
+  String get targetStatusLabel => 'الحالة المطلوبة';
+
+  @override
+  String get secureVerificationNote =>
+      'مطلوب لتأكيد العمليات الحساسة بشكل آمن.';
+
+  @override
+  String clientIpLine(String ip) {
+    return 'الـ IP: $ip';
+  }
+
+  @override
+  String get usernameRequired => 'اسم المستخدم مطلوب';
+
+  @override
+  String get usernameTooShort => 'اسم المستخدم لازم يكون 3 حروف على الأقل';
+
+  @override
+  String get usernameTooLong => 'اسم المستخدم أقصاه 30 حرف';
+
+  @override
+  String get usernameInvalidChars => 'اسم المستخدم فيه حروف غير مسموحة';
+
+  @override
+  String get emailRequired => 'الإيميل مطلوب';
+
+  @override
+  String get invalidEmailFormat => 'اكتب إيميل صحيح';
+
+  @override
+  String get passwordRequired => 'الباسورد مطلوب';
+
+  @override
+  String get passwordTooShort => 'الباسورد لازم يكون 6 حروف على الأقل';
+
+  @override
+  String get employeeEmailRequired => 'إيميل الموظف مطلوب';
+
+  @override
+  String get ownerPasswordRequired => 'لازم باسورد المالك لإعادة التأكيد';
+
+  @override
+  String get enterOtp6Digits => 'اكتب كود التحقق المكوّن من 6 أرقام';
+
+  @override
+  String get otpExactly6Digits => 'كود التحقق لازم يكون 6 أرقام بالظبط';
+
+  @override
+  String devOtpBanner(String otp) {
+    return 'كود التجربة: $otp';
+  }
+
+  @override
+  String devOtpAutoFilled(String otp) {
+    return 'وضع التجربة: كود التحقق \'$otp\' اتضاف تلقائيًا.';
+  }
+
+  @override
+  String get enterpriseTrustNote => 'محمي ببروتوكول الحماية المؤسسي';
+
+  @override
+  String get jobsTrendChipMock => '+12% عن الأسبوع اللي فات';
+
+  @override
+  String get activeFleetMetricLabel => 'الأسطول النشط';
+
+  @override
+  String get quickConfigSubtitle => 'ظبّط بيانات نشاطك وأسعارك وتغطيتك';
+
+  @override
+  String get urgentActionsHeader => 'إجراءات عاجلة';
+
+  @override
+  String get vehicleMaintenanceTitle => 'محتاج صيانة للمركبة';
+
+  @override
+  String get vehicleMaintenanceDesc =>
+      'الميكروبص رقم 402 بلّغ عن تحذير في المحرك. احجز صيانة فورًا.';
+
+  @override
+  String get scheduleAction => 'حدّد موعد';
+
+  @override
+  String get pendingReconciliationsHeader => 'تسويات معلّقة';
+
+  @override
+  String get reconciliationPendingDesc =>
+      'ورديات الأمس لسه مستنية تسوية الضمان.';
+
+  @override
+  String get reviewAction => 'راجع';
+
+  @override
+  String get fleetOverviewHeader => 'نظرة على الأسطول';
+
+  @override
+  String get activeZoneLabel => 'المنطقة النشطة';
+
+  @override
+  String get downtownCoverageLabel => 'تغطية وسط المدينة';
+
+  @override
+  String get trackJobHeroTitle => 'تابع الشحنة';
+
+  @override
+  String get trackJobHeroSubtitle => 'شوف الموقع اللحظي على الخريطة';
+
+  @override
+  String get fulfillmentProgressHeader => 'تقدم التنفيذ';
+
+  @override
+  String get stepRequestQueuedSub => 'الطلب اتسجل وفي الطابور';
+
+  @override
+  String get stepAssignedTitle => 'اتحدد';
+
+  @override
+  String get matchingCourierLabel => 'بنختار كورير...';
+
+  @override
+  String assignedToLine(String name) {
+    return 'اتحدد لـ$name';
+  }
+
+  @override
+  String get courierAssignedShort => 'الكورير اتحدد';
+
+  @override
+  String get stepInTransitSub => 'الشحنة في الطريق للمكان';
+
+  @override
+  String get stepDeliveredOkSub => 'اتسلّمت بنجاح';
+
+  @override
+  String get stepPendingDeliverySub => 'مستنية التسليم';
+
+  @override
+  String get itineraryHeader => 'المسار';
+
+  @override
+  String get pickupStageBadge => 'استلام';
+
+  @override
+  String get originCustomerLocation => 'البداية / موقع العميل';
+
+  @override
+  String get dropoffStageBadge => 'تسليم';
+
+  @override
+  String get deliveryDestinationLabel => 'مكان التسليم';
+
+  @override
+  String get paymentSectionHeader => 'الدفع';
+
+  @override
+  String get totalFareLabel => 'إجمالي الأجرة';
+
+  @override
+  String get verifiedCourierDriver => 'كورير موثّق';
+
+  @override
+  String cancellationReasonLine(String reason) {
+    return 'سبب الإلغاء: $reason';
+  }
+
+  @override
+  String get negotiationExpiredBanner => 'مهلة التفاوض خلصت (عدّت 5 دقايق)';
+
+  @override
+  String get incomingProposalCard => 'عرض واصل من الطرف التاني';
+
+  @override
+  String proposalByLine(String role) {
+    return 'بواسطة $role';
+  }
+
+  @override
+  String get proposalRoleCustomer => 'العميل';
+
+  @override
+  String get proposalRoleDriverEmployee => 'السائق / الموظف';
+
+  @override
+  String get proposedFareLabel => 'الأجرة المعروضة:';
+
+  @override
+  String get comparisonPrefix => 'المقارنة:';
+
+  @override
+  String get vsSystemPrice => 'مقابل سعر النظام';
+
+  @override
+  String get waitingProposalResponse => 'مستنيين الرد على عرضك...';
+
+  @override
+  String get submitCounterOfferBtn => 'ابعت عرض مضاد';
+
+  @override
+  String allowedBoundLine(String min, String max) {
+    return 'الحدود المسموحة: $min – $max (±50%)';
+  }
+
+  @override
+  String get verificationStatusCardTitle => 'حالة التوثيق';
+
+  @override
+  String get documentsLockedMessage => 'المستندات مقفولة لأن حسابك معتمد.';
+
+  @override
+  String get removeSelectionAction => 'شيل الاختيار';
+
+  @override
+  String get requiredDocsHeader => 'مستندات التوثيق المطلوبة';
+
+  @override
+  String get kycOwnerDocsSub =>
+      'الملاك لازم يرفعوا الـ4 مستندات (هوية وش، هية ضهر، سيلفي، سجل تجاري).';
+
+  @override
+  String get kycEmployeeDocsSub =>
+      'الموظفين لازم يرفعوا الـ3 مستندات (هوية وش، هية ضهر، سيلفي).';
+
+  @override
+  String get profileInfoCardTitle => 'بيانات الحساب';
+
+  @override
+  String get sectionBusinessIdentity => 'هوية النشاط';
+
+  @override
+  String get sectionBusinessIdentitySub => 'تفاصيل الشركة وتصنيفها';
+
+  @override
+  String get sectionLocationOperations => 'الموقع والتشغيل';
+
+  @override
+  String get sectionLocationOperationsSub => 'المقر الرئيسي وحدود التغطية';
+
+  @override
+  String get sectionPricingStructure => 'هيكل الأسعار';
+
+  @override
+  String get sectionPricingStructureSub => 'الأجرة الأساسية ورسوم المسافة';
+
+  @override
+  String get estDelivery10kmLabel => 'تقدير توصيل 10 كم:';
+
+  @override
+  String get fleetFilterAllFleet => 'كل الأسطول';
+
+  @override
+  String get fleetFilterOnRoute => 'في الطريق';
+
+  @override
+  String get fleetFilterIdle => 'واقف';
+
+  @override
+  String get noEmployeesTransmitting => 'مفيش موظفين نشطين بينضبط موقعهم.';
+
+  @override
+  String assignedJobLine(String jobId) {
+    return 'الشحنة المسندة: #$jobId';
+  }
+
+  @override
+  String get ownerJobsSearchHint => 'دوّر برقم الشحنة أو العميل أو السبب...';
+
+  @override
+  String get noJobsMatchFilter => 'مفيش شحنات مطابقة للفلتر.';
+
+  @override
+  String get reconQueueSearchHint =>
+      'دوّر في القائمة برقم الشحنة أو العميل أو السائق...';
+
+  @override
+  String get reconFilterDistance => 'مسافة';
+
+  @override
+  String get reconFilterTimeSpeed => 'وقت / سرعة';
+
+  @override
+  String get reconFilterOther => 'تاني';
+
+  @override
+  String get noReconMatchFilter => 'مفيش تسويات مطابقة للفلتر.';
+
+  @override
+  String deliveryIdTag(String id) {
+    return 'رقم التوصيل: #QD-$id';
+  }
+
+  @override
+  String get howWasDeliveryQuestion => 'كانت تجربة التوصيل إزاي؟';
+
+  @override
+  String get ratingsBlindExplanation =>
+      'التقييم مخبي. محدش هيشوف تقييم التاني غير لما الاتنين يقيّموا.';
+
+  @override
+  String get feedbackExperienceHint => 'احكيلنا أكتر عن تجربتك...';
+
+  @override
+  String get feedbackLockedInTitle => 'تقييمك اتقفل!';
+
+  @override
+  String get bothRatingsVisibleDesc =>
+      'الطرف التاني قيّم. التقييمين بقوا ظاهرين في ملخص البروفايل.';
+
+  @override
+  String get waitingOtherPartyTitle => 'مستنيين الطرف التاني...';
+
+  @override
+  String get otherPartyNotRatedDesc =>
+      'الطرف التاني لسه ما قيمش. تقييمك هيفضل مخبي لحد ما يقيم.';
+
+  @override
+  String get unbiasedRatingDesc => 'منع تقييمات الانتقام أو ضغط الأصحاب.';
+
+  @override
+  String get reliabilityRanksDesc => 'التقييمات بتأثر على ترتيب الموثوقية.';
+
+  @override
+  String get windowDeadlineDesc => 'قيّم خلال 24 ساعة عشان صوتك يتحسب.';
+
+  @override
+  String get serviceMgmtHeader => 'إدارة الخدمات';
+
+  @override
+  String get serviceMgmtSubtitle => 'ظبّط وتابع خدمات الشحن النشطة.';
+
+  @override
+  String get verificationRequiredHeader => 'لازم توثيق';
+
+  @override
+  String get kycRequiredDesc => 'كمّل توثيق KYC عشان تقدر تضيف أو تعدل خدمات.';
+
+  @override
+  String get baseRateBadge => 'الأجرة الأساسية';
+
+  @override
+  String get perKmBadge => 'لكل كم';
+
+  @override
+  String serviceLocationLine(String lat, String lon) {
+    return 'الموقع: ($lat, $lon)';
+  }
+
+  @override
+  String get subscriptionManageDesc =>
+      'أدر باقتك. الترقية بتفتح تتبع السايقين المباشر ومؤشرات أسعار متقدمة ودعم أولوية.';
+
+  @override
+  String get yourCurrentPlanBadge => 'خطتك الحالية';
+
+  @override
+  String get pendingActivationNote =>
+      'مستنية التفعيل. كلّم الدعم لإتمام الدفع.';
+
+  @override
+  String get availablePlansHeader => 'الباقات المتاحة';
+
+  @override
+  String get freeTierDesc => 'أدوات أساسية للأعمال الفردية.';
+
+  @override
+  String get proTierDesc => 'حل متكامل لمديري الأسطول والأعمال اللي بتكبر.';
+
+  @override
+  String get billedMonthlyNote => 'الفاتورة شهرية. تقدر تلغي وقت ما تحب.';
+
+  @override
+  String get recommendedBadge => 'موصى بيها';
+
+  @override
+  String platformFeeLine(String fee) {
+    return 'نسبة المنصة: $fee%';
+  }
+
+  @override
+  String get walletMyWalletTitle => 'محفظتي';
+
+  @override
+  String get walletCorporateSubtitle => 'أدر فلوس الشركة والمصروفات.';
+
+  @override
+  String get availableBalanceBadge => 'الرصيد المتاح';
+
+  @override
+  String get balanceTrendChipMock => '+8.4% عن الشهر اللي فات';
+
+  @override
+  String totalPortfolioLine(String amount) {
+    return 'إجمالي المحفظة: $amount كريدت';
+  }
+
+  @override
+  String creditsAmountLine(String amount) {
+    return '$amount كريدت';
+  }
+
+  @override
+  String ledgerJobLine(String jobId) {
+    return 'شحنة: $jobId';
+  }
+
+  @override
+  String ledgerBalanceLine(String balance) {
+    return 'الرصيد: $balance';
+  }
+
+  @override
+  String get cancelReasonRequiredLong =>
+      'اكتب سبب إلغاء الشحنة. لازم سبب إلغاء صحيح.';
+
+  @override
+  String get createNewServiceTitle => 'إنشاء خدمة جديدة';
+
+  @override
+  String referenceIdLine(String ref) {
+    return 'رقم المرجع: #$ref';
+  }
+
+  @override
+  String get depositFundsTitle => 'إيداع رصيد';
+
+  @override
+  String get depositDialogDesc => 'اكتب المبلغ بالكريدت لإيداعه في محفظتك.';
+
+  @override
+  String get amountRequired => 'المبلغ مطلوب';
+
+  @override
+  String get positiveNumberRequired => 'اكتب رقم موجب صحيح';
+
+  @override
+  String get basePriceRequired => 'السعر الأساسي مطلوب';
+
+  @override
+  String get invalidPriceValue => 'سعر غير صحيح';
+
+  @override
+  String get rateRequired => 'السعر لكل كم مطلوب';
+
+  @override
+  String get invalidRateValue => 'قيمة غير صحيحة';
+
+  @override
+  String get fieldRequiredGeneric => 'مطلوب';
+
+  @override
+  String get latRangeMessage => 'لازم تكون بين -90 و 90';
+
+  @override
+  String get lonRangeMessage => 'لازم تكون بين -180 و 180';
+
+  @override
+  String otpSentToEmail(String email) {
+    return 'اكتب كود التحقق (6 أرقام) اللي اتبعت على $email.';
+  }
+
+  @override
+  String get devModeOtpLabel => 'كود وضع التجربة';
+
+  @override
+  String verificationCodeLine(String code) {
+    return 'كود التحقق: $code';
+  }
+
+  @override
+  String get verificationCodeLabel => 'كود التحقق';
+
+  @override
+  String get verificationCodeRequired => 'كود التحقق مطلوب';
+
+  @override
+  String accountDetailsLine(String account) {
+    return 'الحساب: $account';
+  }
+
+  @override
+  String get verifiedServiceScoreLabel => 'درجة الخدمة الموثقة';
+
+  @override
+  String basedOnRatingsLine(String count) {
+    return 'بناءً على $count تقييم';
+  }
+
+  @override
+  String get employeeSetActiveStatus => 'تحويل الحساب لنشط (فك التجميد)';
+
+  @override
+  String get employeeSetFrozenStatus => 'تحويل الحساب لمجمّد (موقوف)';
+
+  @override
+  String get stepInTransitTitle => 'في الطريق';
+
+  @override
+  String get findNearbyCouriers => 'دوّر على كورير قريب';
+
+  @override
+  String get confirmAndRequestBtn => 'تأكيد وإرسال الطلب';
+
+  @override
+  String get auditTrailTabLabel => 'سجل التدقيق';
+
+  @override
+  String get registerEmployeeBtn => 'تسجيل موظف';
+
+  @override
+  String get rateYourExperienceCta => 'قيّم تجربتك';
+
+  @override
+  String get openComplaintTicketBtn => 'افتح تذكرة شكوى';
+
+  @override
+  String get backToDirectoryBtn => 'رجوع للخدمات';
+
+  @override
+  String get acceptProposalBtn => 'اقبل العرض';
+
+  @override
+  String get declineProposalBtn => 'ارفض';
+
+  @override
+  String get replaceDocumentBtn => 'استبدل المستند';
+
+  @override
+  String get uploadDocumentBtn => 'ارفع المستند';
+
+  @override
+  String get createActionLabel => 'إنشاء';
+
+  @override
+  String get backToStatusBtn => 'رجوع لحالة الشحنة';
+
+  @override
+  String get bookNowBtn => 'احجز';
+
+  @override
+  String get subFreeFeatureMatching => 'مطابقة توصيل أساسية';
+
+  @override
+  String get subFreeFeatureRouting => 'تحسين مسارات قياسي';
+
+  @override
+  String get subFreeFeatureCod => 'حجوزات دفع عند الاستلام (كاش)';
+
+  @override
+  String get subFreeFeatureSupport => 'دعم من المجتمع';
+
+  @override
+  String get subProFeatureTracking => 'تتبع مباشر لموقع العامل';
+
+  @override
+  String get subProFeatureDispatch => 'أولوية في توزيع الطلبات';
+
+  @override
+  String get subProFeaturePricing => 'وصول لمؤشرات أسعار متقدمة';
+
+  @override
+  String get subProEmployeeSuite => 'إدارة كاملة للموظفين';
+
+  @override
+  String get subProDedicatedSupport => 'دعم مخصص 24/7';
+
+  @override
+  String get subProFeatureTrackingUnlock => 'يفتح تتبع مباشر لموقع العامل';
 }

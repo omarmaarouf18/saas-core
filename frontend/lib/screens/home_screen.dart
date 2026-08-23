@@ -7,12 +7,15 @@ import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../providers/marketplace_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_success_banner.dart';
 import '../widgets/rating_summary_card.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/cancel_job_dialog.dart';
+import '../widgets/dashboard_screen_template.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/skeleton_loader.dart';
@@ -119,25 +122,22 @@ class _HomeScreenState extends State<HomeScreen> {
               Positioned(
                 right: 8,
                 top: 8,
-                child: Container(
-                  padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
-                  decoration: BoxDecoration(
+                child: ThemedPanel(
                     color: AppColors.error,
                     borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  ),
-                  child: Text(
-                    '${provider.unreadCount}',
-                    style: AppTypography.labelMd.copyWith(
-                      color: AppColors.onPrimary,
-                      fontWeight: FontWeight.bold,
+                    padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+                    child: Text(
+                      '${provider.unreadCount}',
+                      style: AppTypography.labelMd.copyWith(
+                        color: AppColors.onPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    )),
               ),
           ],
         );
@@ -162,114 +162,73 @@ class _HomeScreenState extends State<HomeScreen> {
       return const CustomerHomeScreen();
     }
     if (user.role != 'owner') {
-      return _buildNonOwnerScaffold(user, l10n);
+      return _buildNonOwnerShell(user, l10n);
     }
 
-    return _buildOwnerScaffold(user, l10n);
+    return _buildOwnerShell(user, l10n);
   }
 
-  Widget _buildOwnerScaffold(UserProfile user, AppLocalizations l10n) {
-    return Scaffold(
+  Widget _buildOwnerShell(UserProfile user, AppLocalizations l10n) {
+    return DashboardScreenTemplate(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.sm),
-          child: Center(
-            child: Container(
-              key: const Key('app_header_logo'),
-              padding: const EdgeInsets.all(AppSpacing.xs),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
+      title: _getTabTitle(context, _currentIndex),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.gavel_outlined),
+          tooltip: l10n.ownerHomeTooltipEscrowReconciliation,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const OwnerReconciliationQueueScreen(),
               ),
-              child: const Icon(
-                Icons.storefront,
-                color: AppColors.secondary,
-                size: 18,
-              ),
-            ),
-          ),
+            );
+          },
         ),
-        title: Text(
-          _getTabTitle(context, _currentIndex),
-          style: AppTypography.titleMd
-              .copyWith(color: Theme.of(context).colorScheme.onSurface),
+        _buildNotificationBell(context),
+      ],
+      currentIndex: _currentIndex,
+      onDestinationSelected: onTabTapped,
+      tabs: [
+        _visitedTabs.contains(0)
+            ? _buildDashboardTab(context, user)
+            : const SizedBox.shrink(),
+        _visitedTabs.contains(1)
+            ? const EmployeeScreen()
+            : const SizedBox.shrink(),
+        _visitedTabs.contains(2)
+            ? const OwnerHistoryScreen(isEmbeddedInTab: true)
+            : const SizedBox.shrink(),
+        _visitedTabs.contains(3)
+            ? const SettingsScreen(isEmbeddedInTab: true)
+            : const SizedBox.shrink(),
+      ],
+      navigationBarKey: const Key('owner_bottom_navigation_bar'),
+      destinations: [
+        NavigationDestination(
+          key: const Key('owner_nav_tab_home'),
+          icon: const Icon(Icons.home_outlined),
+          selectedIcon: const Icon(Icons.home),
+          label: l10n.ownerHomeNavHome,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.gavel_outlined),
-            tooltip: l10n.ownerHomeTooltipEscrowReconciliation,
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const OwnerReconciliationQueueScreen(),
-                ),
-              );
-            },
-          ),
-          _buildNotificationBell(context),
-        ],
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: IndexedStack(
-              index: _currentIndex,
-              children: [
-                _visitedTabs.contains(0)
-                    ? _buildDashboardTab(context, user)
-                    : const SizedBox.shrink(),
-                _visitedTabs.contains(1)
-                    ? const EmployeeScreen()
-                    : const SizedBox.shrink(),
-                _visitedTabs.contains(2)
-                    ? const OwnerHistoryScreen(isEmbeddedInTab: true)
-                    : const SizedBox.shrink(),
-                _visitedTabs.contains(3)
-                    ? const SettingsScreen(isEmbeddedInTab: true)
-                    : const SizedBox.shrink(),
-              ],
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        key: const Key('owner_bottom_navigation_bar'),
-        selectedIndex: _currentIndex,
-        onDestinationSelected: onTabTapped,
-        destinations: [
-          NavigationDestination(
-            key: const Key('owner_nav_tab_home'),
-            icon: const Icon(Icons.home_outlined),
-            selectedIcon: const Icon(Icons.home),
-            label: l10n.ownerHomeNavHome,
-          ),
-          NavigationDestination(
-            key: const Key('owner_nav_tab_employees'),
-            icon: const Icon(Icons.people_outline),
-            selectedIcon: const Icon(Icons.people),
-            label: l10n.ownerHomeNavEmployees,
-          ),
-          NavigationDestination(
-            key: const Key('owner_nav_tab_history'),
-            icon: const Icon(Icons.history_outlined),
-            selectedIcon: const Icon(Icons.history),
-            label: l10n.ownerHomeNavHistory,
-          ),
-          NavigationDestination(
-            key: const Key('owner_nav_tab_settings'),
-            icon: const Icon(Icons.settings_outlined),
-            selectedIcon: const Icon(Icons.settings),
-            label: l10n.ownerHomeNavSettings,
-          ),
-        ],
-      ),
+        NavigationDestination(
+          key: const Key('owner_nav_tab_employees'),
+          icon: const Icon(Icons.people_outline),
+          selectedIcon: const Icon(Icons.people),
+          label: l10n.ownerHomeNavEmployees,
+        ),
+        NavigationDestination(
+          key: const Key('owner_nav_tab_history'),
+          icon: const Icon(Icons.history_outlined),
+          selectedIcon: const Icon(Icons.history),
+          label: l10n.ownerHomeNavHistory,
+        ),
+        NavigationDestination(
+          key: const Key('owner_nav_tab_settings'),
+          icon: const Icon(Icons.settings_outlined),
+          selectedIcon: const Icon(Icons.settings),
+          label: l10n.ownerHomeNavSettings,
+        ),
+      ],
     );
   }
 
@@ -285,7 +244,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final subText = ownerProvider.isLoading
         ? "..."
-        : ownerProvider.subscriptionTier.toUpperCase().replaceAll('_', ' ');
+        : AppTypography.uppercaseLabel(ownerProvider.subscriptionTier)
+            .replaceAll('_', ' ');
 
     final subColor = ownerProvider.subscriptionTier == "paid"
         ? AppColors.success
@@ -390,25 +350,22 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
+              ThemedPanel(
                   color: AppColors.secondary.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: AppColors.secondary.withValues(alpha: 0.4),
                     width: 1.5,
                   ),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.admin_panel_settings_rounded,
-                    color: AppColors.secondary,
-                    size: 26,
-                  ),
-                ),
-              ),
+                  width: 48,
+                  height: 48,
+                  child: const Center(
+                    child: Icon(
+                      Icons.admin_panel_settings_rounded,
+                      color: AppColors.secondary,
+                      size: 26,
+                    ),
+                  )),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
@@ -446,38 +403,35 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
                 borderRadius: BorderRadius.circular(AppRadius.full),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm,
-                  ),
-                  decoration: BoxDecoration(
+                child: ThemedPanel(
                     color: AppColors.secondary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(AppRadius.full),
                     border: Border.all(
                       color: AppColors.secondary,
                       width: 1,
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.account_balance_wallet,
-                        color: AppColors.secondary,
-                        size: 18,
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Text(
-                        walletText,
-                        style: AppTypography.labelLg.copyWith(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.account_balance_wallet,
                           color: AppColors.secondary,
-                          fontWeight: FontWeight.bold,
+                          size: 18,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          walletText,
+                          style: AppTypography.labelLg.copyWith(
+                            color: AppColors.secondary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    )),
               ),
             ],
           ),
@@ -507,7 +461,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      l10n.ownerHomeOwnerJobs.toUpperCase(),
+                      AppTypography.uppercaseLabel(l10n.ownerHomeOwnerJobs),
                       style: AppTypography.labelMd.copyWith(
                         color: AppColors.onSurfaceVariant,
                         letterSpacing: 0.5,
@@ -538,7 +492,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(width: 2),
                     Text(
-                      "+12% vs last week",
+                      l10n.jobsTrendChipMock,
                       style: AppTypography.caption.copyWith(
                         color: AppColors.success,
                         fontWeight: FontWeight.w600,
@@ -564,7 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "ACTIVE FLEET",
+                      l10n.activeFleetMetricLabel,
                       style: AppTypography.labelMd.copyWith(
                         color: AppColors.onSurfaceVariant,
                         letterSpacing: 0.5,
@@ -782,18 +736,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: AppSpacing.md,
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.sm),
-                        decoration: BoxDecoration(
+                      ThemedPanel(
                           color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        child: const Icon(
-                          Icons.account_balance_wallet,
-                          color: AppColors.primary,
-                          size: 24,
-                        ),
-                      ),
+                          padding: const EdgeInsets.all(AppSpacing.sm),
+                          child: const Icon(
+                            Icons.account_balance_wallet,
+                            color: AppColors.primary,
+                            size: 24,
+                          )),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Column(
@@ -841,18 +792,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: AppSpacing.md,
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.sm),
-                        decoration: BoxDecoration(
+                      ThemedPanel(
                           color: AppColors.secondary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        child: const Icon(
-                          Icons.storefront,
-                          color: AppColors.secondary,
-                          size: 24,
-                        ),
-                      ),
+                          padding: const EdgeInsets.all(AppSpacing.sm),
+                          child: const Icon(
+                            Icons.storefront,
+                            color: AppColors.secondary,
+                            size: 24,
+                          )),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Column(
@@ -901,18 +849,15 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: AppSpacing.md,
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(
+                ThemedPanel(
                     color: AppColors.primaryContainer,
                     borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: const Icon(
-                    Icons.business_outlined,
-                    color: AppColors.secondary,
-                    size: 24,
-                  ),
-                ),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: const Icon(
+                      Icons.business_outlined,
+                      color: AppColors.secondary,
+                      size: 24,
+                    )),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
@@ -926,7 +871,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        "Configure business profile, rates & coverage",
+                        l10n.quickConfigSubtitle,
                         style: AppTypography.labelMd.copyWith(
                           color: AppColors.onSurfaceVariant,
                         ),
@@ -951,7 +896,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const ThemedSectionHeader(title: "Urgent Actions"),
+        ThemedSectionHeader(title: l10n.urgentActionsHeader),
         const SizedBox(height: AppSpacing.sm),
         ThemedCard(
           padding: AppSpacing.md,
@@ -960,33 +905,30 @@ class _HomeScreenState extends State<HomeScreen> {
               // Action 1: Vehicle Maintenance / Fleet Alert
               Row(
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: const BoxDecoration(
+                  const ThemedPanel(
                       color: AppColors.errorContainer,
                       shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.warning_amber_rounded,
-                      color: AppColors.onErrorContainer,
-                      size: 22,
-                    ),
-                  ),
+                      width: 40,
+                      height: 40,
+                      child: Icon(
+                        Icons.warning_amber_rounded,
+                        color: AppColors.onErrorContainer,
+                        size: 22,
+                      )),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Vehicle Maintenance Required",
+                          l10n.vehicleMaintenanceTitle,
                           style: AppTypography.titleMd.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          "Van #402 reported engine warning. Schedule service immediately.",
+                          l10n.vehicleMaintenanceDesc,
                           style: AppTypography.bodySm.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
@@ -1007,7 +949,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         vertical: AppSpacing.xs,
                       ),
                     ),
-                    child: const Text("Schedule"),
+                    child: Text(l10n.scheduleAction),
                   ),
                 ],
               ),
@@ -1018,33 +960,30 @@ class _HomeScreenState extends State<HomeScreen> {
               // Action 2: Pending Reconciliations
               Row(
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
+                  ThemedPanel(
                       color: AppColors.secondary.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.person_add_outlined,
-                      color: AppColors.secondary,
-                      size: 22,
-                    ),
-                  ),
+                      width: 40,
+                      height: 40,
+                      child: const Icon(
+                        Icons.person_add_outlined,
+                        color: AppColors.secondary,
+                        size: 22,
+                      )),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Pending Reconciliations",
+                          l10n.pendingReconciliationsHeader,
                           style: AppTypography.titleMd.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          "Driver shifts from yesterday awaiting escrow settlement.",
+                          l10n.reconciliationPendingDesc,
                           style: AppTypography.bodySm.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
@@ -1070,7 +1009,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         vertical: AppSpacing.xs,
                       ),
                     ),
-                    child: const Text("Review"),
+                    child: Text(l10n.reviewAction),
                   ),
                 ],
               ),
@@ -1089,7 +1028,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const ThemedSectionHeader(title: "Fleet Overview"),
+        ThemedSectionHeader(title: l10n.fleetOverviewHeader),
         const SizedBox(height: AppSpacing.sm),
         InkWell(
           onTap: () {
@@ -1105,80 +1044,71 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(AppRadius.md),
           child: ThemedCard(
             padding: 0,
-            child: Container(
-              height: 140,
-              decoration: BoxDecoration(
+            child: ThemedPanel(
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 color: AppColors.primaryContainer,
-              ),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Center(
-                      child: Icon(
-                        Icons.map_outlined,
-                        size: 64,
-                        color: AppColors.onPrimaryContainer
-                            .withValues(alpha: 0.15),
+                height: 140,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Center(
+                        child: Icon(
+                          Icons.map_outlined,
+                          size: 64,
+                          color: AppColors.onPrimaryContainer
+                              .withValues(alpha: 0.15),
+                        ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    left: AppSpacing.md,
-                    bottom: AppSpacing.md,
-                    right: AppSpacing.md,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.sm,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
+                    Positioned(
+                      left: AppSpacing.md,
+                      bottom: AppSpacing.md,
+                      right: AppSpacing.md,
+                      child: ThemedPanel(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                            vertical: AppSpacing.sm,
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.secondary,
-                                  shape: BoxShape.circle,
-                                ),
+                              Row(
+                                children: [
+                                  const ThemedPanel(
+                                      color: AppColors.secondary,
+                                      shape: BoxShape.circle,
+                                      width: 10,
+                                      height: 10),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Text(
+                                    l10n.activeZoneLabel,
+                                    style: AppTypography.bodyMd.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.onSurface,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: AppSpacing.sm),
                               Text(
-                                "Active Zone",
-                                style: AppTypography.bodyMd.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.onSurface,
+                                l10n.downtownCoverageLabel,
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.onSurfaceVariant,
                                 ),
                               ),
                             ],
-                          ),
-                          Text(
-                            "Downtown Metro Coverage",
-                            style: AppTypography.caption.copyWith(
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
+                          )),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                )),
           ),
         ),
       ],
@@ -1255,8 +1185,8 @@ class _HomeScreenState extends State<HomeScreen> {
               final canCancel =
                   job.status == 'pending' || job.status == 'active';
               final displayJobId = job.id.length > 8
-                  ? job.id.substring(0, 8).toUpperCase()
-                  : job.id.toUpperCase();
+                  ? AppTypography.uppercaseLabel(job.id.substring(0, 8))
+                  : AppTypography.uppercaseLabel(job.id);
               return Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.md),
                 child: ThemedCard(
@@ -1287,7 +1217,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         l10n.ownerHomePaymentInfo(
-                          job.paymentMethod.toUpperCase(),
+                          AppTypography.uppercaseLabel(job.paymentMethod),
                           job.lockedEscrowAmount != null
                               ? ' (\$${job.lockedEscrowAmount!.toStringAsFixed(2)})'
                               : '',
@@ -1299,7 +1229,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (canCancel) ...[
                         const SizedBox(height: AppSpacing.sm),
                         Align(
-                          alignment: Alignment.centerRight,
+                          alignment: AlignmentDirectional.centerEnd,
                           child: SecondaryButton(
                             key: Key('cancel_owner_job_button_${job.id}'),
                             text: l10n.ownerHomeCancelJob,
@@ -1341,54 +1271,29 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNonOwnerScaffold(UserProfile user, AppLocalizations l10n) {
-    return Scaffold(
+  Widget _buildNonOwnerShell(UserProfile user, AppLocalizations l10n) {
+    return AppShell(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.sm),
-          child: Center(
-            child: Container(
-              key: const Key('app_header_logo'),
-              padding: const EdgeInsets.all(AppSpacing.xs),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
+      appBarBackgroundColor: Colors.transparent,
+      appBarForegroundColor: Theme.of(context).colorScheme.onSurface,
+      leading: DashboardScreenTemplate.brandLogo(),
+      showBackButton: false,
+      title: l10n.quickDeliveryDashboard,
+      actions: [
+        _buildNotificationBell(context),
+        IconButton(
+          key: const Key('settings_button'),
+          icon: const Icon(Icons.settings_outlined),
+          tooltip: l10n.ownerHomeTooltipSettings,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const SettingsScreen(),
               ),
-              child: const Icon(
-                Icons.storefront,
-                color: AppColors.secondary,
-                size: 18,
-              ),
-            ),
-          ),
+            );
+          },
         ),
-        title: Text(
-          l10n.quickDeliveryDashboard,
-          style: AppTypography.titleMd
-              .copyWith(color: Theme.of(context).colorScheme.onSurface),
-        ),
-        actions: [
-          _buildNotificationBell(context),
-          IconButton(
-            key: const Key('settings_button'),
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: l10n.ownerHomeTooltipSettings,
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -1426,7 +1331,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildDetailRow(l10n.ownerHomeLabelEmail, user.email),
                   _buildDetailRow(
                     l10n.ownerHomeLabelRole,
-                    user.role.toUpperCase(),
+                    AppTypography.uppercaseLabel(user.role),
                   ),
                 ],
               ),

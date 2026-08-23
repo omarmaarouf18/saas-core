@@ -9,12 +9,14 @@ import '../providers/auth_provider.dart';
 import '../providers/employee_jobs_provider.dart';
 import '../providers/employee_location_provider.dart';
 import '../providers/notifications_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/confirm_action_dialog.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/route_timeline.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/skeleton_loader.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
@@ -246,27 +248,9 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
       return bodyContent;
     }
 
-    return Scaffold(
+    return AppShell(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: _buildAppBar(context, l10n),
-      body: bodyContent,
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(
-      BuildContext context, AppLocalizations l10n) {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      surfaceTintColor: Colors.transparent,
-      title: Text(
-        l10n.employeeJobsTitle,
-        style: AppTypography.titleMd.copyWith(
-          color: Theme.of(context).colorScheme.onSurface,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      title: l10n.employeeJobsTitle,
       actions: [
         IconButton(
           key: const Key('employee_verification_button'),
@@ -300,6 +284,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
           },
         ),
       ],
+      body: bodyContent,
     );
   }
 
@@ -325,25 +310,22 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               Positioned(
                 right: 8,
                 top: 8,
-                child: Container(
-                  padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
-                  decoration: BoxDecoration(
+                child: ThemedPanel(
                     color: AppColors.error,
                     borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  ),
-                  child: Text(
-                    '${provider.unreadCount}',
-                    style: AppTypography.labelMd.copyWith(
-                      color: AppColors.onPrimary,
-                      fontWeight: FontWeight.bold,
+                    padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+                    child: Text(
+                      '${provider.unreadCount}',
+                      style: AppTypography.labelMd.copyWith(
+                        color: AppColors.onPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    )),
               ),
           ],
         );
@@ -361,10 +343,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 LocationSharingStatus.permissionDenied ||
             locationProvider.status == LocationSharingStatus.serviceDisabled;
 
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          decoration: BoxDecoration(
+        return ThemedPanel(
             gradient: LinearGradient(
               colors: [
                 AppColors.primary.withValues(alpha: 0.08),
@@ -377,104 +356,95 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             border: Border.all(
               color: AppColors.primary.withValues(alpha: 0.15),
             ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.badge_outlined,
-                  color: AppColors.primary,
-                  size: 26,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.employeeJobsWelcomeGreeting,
-                      style: AppTypography.headlineLgMobile.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      l10n.employeeJobsLoggedInAs(displayName),
-                      style: AppTypography.bodyMd.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              if (isTracking || isDenied)
-                TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.8, end: 1.0),
-                  duration: AppMotion.durationMedium,
-                  curve: AppMotion.curveEntrance,
-                  builder: (context, scale, child) {
-                    return Transform.scale(
-                      scale: scale,
-                      child: child,
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isTracking
-                          ? AppColors.success.withValues(alpha: 0.12)
-                          : AppColors.warning.withValues(alpha: 0.12),
-                      borderRadius: AppRadius.smBorder,
-                      border: Border.all(
-                        color: isTracking
-                            ? AppColors.success.withValues(alpha: 0.4)
-                            : AppColors.warning.withValues(alpha: 0.4),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isTracking
-                                ? AppColors.success
-                                : AppColors.warning,
-                          ),
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Row(
+              children: [
+                ThemedPanel(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                    width: 48,
+                    height: 48,
+                    child: const Icon(
+                      Icons.badge_outlined,
+                      color: AppColors.primary,
+                      size: 26,
+                    )),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.employeeJobsWelcomeGreeting,
+                        style: AppTypography.headlineLgMobile.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          isTracking
-                              ? l10n.employeeJobsGpsLive
-                              : l10n.employeeJobsGpsOff,
-                          style: AppTypography.labelMd.copyWith(
-                            color: isTracking
-                                ? AppColors.success
-                                : AppColors.warning,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        l10n.employeeJobsLoggedInAs(displayName),
+                        style: AppTypography.bodyMd.copyWith(
+                          color: AppColors.onSurfaceVariant,
                         ),
-                      ],
-                    ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
-            ],
-          ),
-        );
+                if (isTracking || isDenied)
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.8, end: 1.0),
+                    duration: AppMotion.durationMedium,
+                    curve: AppMotion.curveEntrance,
+                    builder: (context, scale, child) {
+                      return Transform.scale(
+                        scale: scale,
+                        child: child,
+                      );
+                    },
+                    child: ThemedPanel(
+                        color: isTracking
+                            ? AppColors.success.withValues(alpha: 0.12)
+                            : AppColors.warning.withValues(alpha: 0.12),
+                        borderRadius: AppRadius.smBorder,
+                        border: Border.all(
+                          color: isTracking
+                              ? AppColors.success.withValues(alpha: 0.4)
+                              : AppColors.warning.withValues(alpha: 0.4),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: AppSpacing.xs,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ThemedPanel(
+                                shape: BoxShape.circle,
+                                color: isTracking
+                                    ? AppColors.success
+                                    : AppColors.warning,
+                                width: 8,
+                                height: 8),
+                            const SizedBox(width: AppSpacing.xs),
+                            Text(
+                              isTracking
+                                  ? l10n.employeeJobsGpsLive
+                                  : l10n.employeeJobsGpsOff,
+                              style: AppTypography.labelMd.copyWith(
+                                color: isTracking
+                                    ? AppColors.success
+                                    : AppColors.warning,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        )),
+                  ),
+              ],
+            ));
       },
     );
   }
@@ -494,18 +464,15 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
           children: [
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.xs),
-                  decoration: BoxDecoration(
+                ThemedPanel(
                     color: AppColors.secondary.withValues(alpha: 0.12),
                     borderRadius: AppRadius.smBorder,
-                  ),
-                  child: const Icon(
-                    Icons.bolt_outlined,
-                    color: AppColors.secondary,
-                    size: 20,
-                  ),
-                ),
+                    padding: const EdgeInsets.all(AppSpacing.xs),
+                    child: const Icon(
+                      Icons.bolt_outlined,
+                      color: AppColors.secondary,
+                      size: 20,
+                    )),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
@@ -636,18 +603,15 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 Expanded(
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.xs),
-                        decoration: BoxDecoration(
+                      ThemedPanel(
                           color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: AppRadius.smBorder,
-                        ),
-                        child: const Icon(
-                          Icons.local_shipping_outlined,
-                          color: AppColors.primary,
-                          size: 18,
-                        ),
-                      ),
+                          padding: const EdgeInsets.all(AppSpacing.xs),
+                          child: const Icon(
+                            Icons.local_shipping_outlined,
+                            color: AppColors.primary,
+                            size: 18,
+                          )),
                       const SizedBox(width: AppSpacing.xs),
                       Expanded(
                         child: Text(
@@ -679,8 +643,10 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               distanceText: job.lockedEscrowAmount != null
                   ? "${job.lockedEscrowAmount!.toStringAsFixed(0)} Credits"
                   : "Standard Route",
-              timeText: isActive ? "In Progress" : job.status.toUpperCase(),
-              cargoText: job.paymentMethod.toUpperCase(),
+              timeText: isActive
+                  ? "In Progress"
+                  : AppTypography.uppercaseLabel(job.status),
+              cargoText: AppTypography.uppercaseLabel(job.paymentMethod),
             ),
             const SizedBox(height: AppSpacing.md),
             // Subordinate Info Badges / Chips
@@ -696,7 +662,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 _buildSubordinateChip(
                   Icons.payment_outlined,
                   l10n.employeeJobsLabelPayment,
-                  job.paymentMethod.toUpperCase(),
+                  AppTypography.uppercaseLabel(job.paymentMethod),
                 ),
                 if (job.lockedEscrowAmount != null &&
                     job.lockedEscrowAmount! > 0)
@@ -711,22 +677,20 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             if (job.cancellationReason != null &&
                 job.cancellationReason!.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.sm),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
+              ThemedPanel(
                   color: AppColors.error.withValues(alpha: 0.1),
                   borderRadius: AppRadius.defaultBorder,
                   border:
                       Border.all(color: AppColors.error.withValues(alpha: 0.3)),
-                ),
-                child: Text(
-                  l10n.employeeJobsCancellationReason(job.cancellationReason!),
-                  style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.error,
-                  ),
-                ),
-              ),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  child: Text(
+                    l10n.employeeJobsCancellationReason(
+                        job.cancellationReason!),
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.error,
+                    ),
+                  )),
             ],
             if (isActive) ...[
               Consumer<EmployeeLocationProvider>(
@@ -735,89 +699,80 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                           LocationSharingStatus.permissionDenied ||
                       locationProvider.status ==
                           LocationSharingStatus.serviceDisabled) {
-                    return Container(
-                      key: const Key('location_permission_denied_banner'),
-                      margin: const EdgeInsets.only(top: AppSpacing.sm),
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
+                    return ThemedPanel(
                         color: AppColors.warning.withValues(alpha: 0.1),
                         borderRadius: AppRadius.defaultBorder,
                         border: Border.all(color: AppColors.warning),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.location_off_outlined,
-                                  color: AppColors.warning, size: 20),
-                              const SizedBox(width: AppSpacing.xs),
-                              Text(
-                                l10n.employeeJobsLocationPermissionTitle,
-                                style: AppTypography.bodyMd.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.warning,
+                        key: const Key('location_permission_denied_banner'),
+                        margin: const EdgeInsets.only(top: AppSpacing.sm),
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.location_off_outlined,
+                                    color: AppColors.warning, size: 20),
+                                const SizedBox(width: AppSpacing.xs),
+                                Text(
+                                  l10n.employeeJobsLocationPermissionTitle,
+                                  style: AppTypography.bodyMd.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.warning,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            l10n.employeeJobsLocationPermissionDesc,
-                            style: AppTypography.bodyMd.copyWith(
-                              color: AppColors.onSurface,
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          SecondaryButton(
-                            key: const Key('open_app_settings_button'),
-                            text: l10n.employeeJobsOpenAppSettings,
-                            icon: Icons.settings_outlined,
-                            isOutlined: true,
-                            onPressed: () {
-                              Geolocator.openAppSettings();
-                            },
-                          ),
-                        ],
-                      ),
-                    );
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              l10n.employeeJobsLocationPermissionDesc,
+                              style: AppTypography.bodyMd.copyWith(
+                                color: AppColors.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            SecondaryButton(
+                              key: const Key('open_app_settings_button'),
+                              text: l10n.employeeJobsOpenAppSettings,
+                              icon: Icons.settings_outlined,
+                              isOutlined: true,
+                              onPressed: () {
+                                Geolocator.openAppSettings();
+                              },
+                            ),
+                          ],
+                        ));
                   }
 
                   if (locationProvider.status ==
                       LocationSharingStatus.tracking) {
-                    return Container(
-                      key: const Key('location_sharing_indicator'),
-                      margin: const EdgeInsets.only(top: AppSpacing.sm),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-                      decoration: BoxDecoration(
+                    return ThemedPanel(
                         color: AppColors.success.withValues(alpha: 0.1),
                         borderRadius: AppRadius.smBorder,
                         border: Border.all(
                             color: AppColors.success.withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.success,
+                        key: const Key('location_sharing_indicator'),
+                        margin: const EdgeInsets.only(top: AppSpacing.sm),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const ThemedPanel(
+                                shape: BoxShape.circle,
+                                color: AppColors.success,
+                                width: 8,
+                                height: 8),
+                            const SizedBox(width: AppSpacing.xs),
+                            Text(
+                              l10n.employeeJobsSharingLiveLocation,
+                              style: AppTypography.labelMd.copyWith(
+                                color: AppColors.success,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: AppSpacing.xs),
-                          Text(
-                            l10n.employeeJobsSharingLiveLocation,
-                            style: AppTypography.labelMd.copyWith(
-                              color: AppColors.success,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
+                          ],
+                        ));
                   }
 
                   if (locationProvider.status == LocationSharingStatus.error &&
@@ -887,37 +842,34 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   }
 
   Widget _buildSubordinateChip(IconData icon, String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
+    return ThemedPanel(
         color: AppColors.surface,
         borderRadius: AppRadius.smBorder,
         border: Border.all(color: AppColors.outlineVariant),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: AppColors.onSurfaceVariant),
-          const SizedBox(width: AppSpacing.xs),
-          Text(
-            "$label: ",
-            style: AppTypography.labelLg.copyWith(
-              color: AppColors.onSurfaceVariant,
-              fontWeight: FontWeight.normal,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: AppColors.onSurfaceVariant),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              "$label: ",
+              style: AppTypography.labelLg.copyWith(
+                color: AppColors.onSurfaceVariant,
+                fontWeight: FontWeight.normal,
+              ),
             ),
-          ),
-          Text(
-            value,
-            style: AppTypography.labelLg.copyWith(
-              color: AppColors.onSurface,
-              fontWeight: FontWeight.bold,
+            Text(
+              value,
+              style: AppTypography.labelLg.copyWith(
+                color: AppColors.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ));
   }
 }

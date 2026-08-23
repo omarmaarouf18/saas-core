@@ -208,6 +208,10 @@ class AuthProvider extends ChangeNotifier {
         );
         return true;
       }
+      // QA audit A5: a 2xx without a token previously returned false with
+      // _error == null, leaving the OTP screen with no visible feedback at
+      // all — a silent dead-end on an auth-critical flow.
+      _error = ErrorMessages.genericFallback;
       return false;
     } catch (e) {
       debugPrint('Verify OTP error: $e');

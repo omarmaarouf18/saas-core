@@ -318,3 +318,65 @@ This file tracks historical entries for the primary category: **Infrastructure &
 
 
 
+
+## Frontend Composition-Layer Gate (P5 CI Enforcement)
+
+- **Implementation Detail**:
+  - Created `scripts/frontend_composition_gate.sh`: rejects `Scaffold(`, `AppBar(`, `BoxDecoration(`, `Color(0xFF`, and `.toUpperCase()` inside `frontend/lib/screens/**` (PCRE negative-lookbehind so identifier substrings don't false-positive). Shared widgets (`widgets/**`) and design tokens (`core/theme.dart`) are outside the gated path and remain the single sources of truth.
+  - Wired into `.githooks/pre-push` (gate step before flutter analyze/test) and `.github/workflows/ci.yml` (`Frontend Composition Gate` step before Flutter Analyze) preserving the strict hook/CI parity principle.
+  - Prevents recurrence of the drift documented in FRONTEND_ARCHITECTURE_PLAN §0 where phases marked "Complete" silently regressed to hardcoded values.
+- **Commit SHA**: ``07d4898257bb6bb13502acf9dc4a37ad4ce12fe1``
+- **Verification**: Verified via negative audit — injected violation block into `frontend/lib/screens/wallet_screen.dart` produced `BLOCKED: 4 composition-layer rule(s) violated` with exit code 1 listing every hit with file:line; reverting via `git checkout` restored exit code 0. YAML validated with Python yaml.safe_load; hook syntax validated with bash -n. ✅
+
+## Golden Baseline Environment Contract — Root Cause of All Historical Golden CI Failures
+
+**Date**: 2026-08-22
+**Category**: Infrastructure / CI Hardening
+**Related Commit SHAs**: ``e596b8092a03ed93952877ad718862764690386c`` (pin + deterministic fonts + regen workflow), ``2f8af6d189bab7b397050dc4074916cf17628121`` (self-path trigger bridge)
+
+- **Root Cause (confirmed with literal evidence)**: Every "Flutter Lint & Test" golden failure since goldens were introduced was an environment mismatch, not a code regression. Baselines were generated on the developer machine (Fedora 44, Flutter 3.44.6) while CI installed an UNPINNED stable SDK (`subosito/flutter-action@v2` with only `channel: stable`; literal `FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.47.1-x64` from failed run 32552945499) on ubuntu-24.04. Two commits on two days produced byte-identical diff numbers because zero baseline bytes changed between them — the diffs were constant engine-version rendering differences.
+- **Fix**: (1) `ci.yml` pins `flutter-version: '3.44.6'` with an explanatory comment; (2) new manual `regen-goldens.yml` workflow renders baselines inside the SAME pinned comparator environment and uploads them as a reviewed artifact (least privilege — no token write access); (3) `golden_screens_test.dart` setUpAll preloads the five bundled Poppins TTFs via `FontLoader` so glyph rasterization depends only on the pinned engine, replacing reliance on google_fonts' async path (a global `flutter_test_config.dart` binding-init was attempted first and reverted — it broke suites constructing HTTP clients outside test zones).
+- **Diagnostic Finding**: After pinning alone (before any baseline change), CI-rendered baselines were **sha256-identical to all 12 existing repo baselines** (`gh run download` + checksum comparison) — proving the Flutter ENGINE VERSION was the sole failing variable and cross-distro fontconfig contributed nothing for these screens (all text renders from bundled Poppins). Consequently no baseline commit was required; the pre-existing baselines are canonical under the pin.
+- **Standing Rule**: any Flutter bump must regenerate goldens in the same change (procedure + rationale documented in `frontend/README.md`, root-cause table in `docs/frontend/STATUS.md`). `workflow_dispatch` on `regen-goldens.yml` becomes available once the file reaches `main`; until then a self-path push trigger fires it when the mechanism itself changes.
+- **Verification (GitHub Actions, not local)**: Run 32555159762 on `e596b80` — all 8 CI Gate jobs success including "Flutter Lint & Test", log line `🎉 305 tests passed.`; Run 32555473575 on `2f8af6d` — "Flutter Lint & Test" success. Local suite additionally 305/305 (not counted as verification). ✅
+
+## A3 Test Coverage Pass — P1 Money & P2 Auth Provider Gaps Closed
+
+**Date**: 2026-08-22
+**Category**: Infrastructure / Test Coverage
+**Related Commit SHA**: ``84bd5aa447099d7cd7bb0a2b26650feb3ebe26d9``
+
+- **Re-runnable auditor**: `scripts/frontend_coverage_audit.py` parses `frontend/coverage/lcov.info` and prints per-file line coverage for screens/providers/widgets/services with risk-tier flags (0% always flagged; floors: 60% money/auth/job-state, 40% presentational).
+- **Stale-flag correction**: the previously reported zero-coverage trio was wrong on two counts — `utils/logout_helper.dart` measures **100%**, `screens/chat_screen.dart` **81.5%**; the only true zero is `screens/rating_screen.dart` (still open, P3). The real concentration of risk was PROVIDERS starved by widget tests that mock providers wholesale.
+- **Coverage deltas** (line coverage): reconciliation_provider 2.9%→**100%**, employee_jobs_provider 4.3%→**94.3%**, marketplace_provider 18.6%→**89.0%**, auth_provider 25.1%→**75.8%**, core/api_client.dart 24.7%→**63.9%**. Overall audited coverage 69.4%→**73.2%**. Suite 305→**355 tests**.
+- **New test infrastructure**: dart:io `HttpClient` fake via `HttpOverrides` (`test/helpers/mock_http_harness.dart`, request recording + canned routing — no production code changes) and a `FlutterSecureStorage` method-channel mock with in-memory store.
+- **Behavioral find (documented as contract)**: ALL auth flows surface `ApiClientException.message` verbatim (e.g. "email exists", "invalid OTP") unlike every other provider which routes through `friendlyErrorMessage`. Auth endpoints return safe strings by contract, so this is intentional; asserted in tests to prevent silent drift.
+- **Deferred (Still OPEN)**: rating_screen widget suite (P3), map_tracking_provider WebSocket fake layer (P3), notifications/chat providers + low-coverage data models + service_screen (P4 cosmetic/data-class risk only).
+- **Verification**: local full suite `flutter test` 355/355 pass; `flutter analyze` No issues found!; coverage re-run literal before/after above. ✅
+
+## A3-P3: rating_screen First Coverage + Two 360dp Layout Bug Fixes
+
+**Date**: 2026-08-22
+**Category**: Bug Fix / Test Coverage
+**Related Commit SHA**: ``c133f0e4fa32915a7892013f7c4c204b19f9163d``
+
+- **Two real production layout bugs** caught by the screen's first-ever widget tests at its target 360dp width (screen previously had 0% coverage and no golden):
+  1. Star selector RenderFlex overflowed **38px right**: five IconButton(44px icon)s each render ~60px wide with default padding/density. Fixed by constraining each to a 44dp square.
+  2. Blind-rating info cards overflowed **25/11px bottom**: the 1-column GridView forced `childAspectRatio: 3.5` (~84px tiles) under ~110px of content. Mobile path replaced with an intrinsic-height Column (wide path keeps the 3-column grid).
+- **l10n blind-spot find**: CTA used hardcoded `"Submit Rating"` — `PrimaryButton`'s `text:` property was not in the A2 scanner's property list; existing ARB key `ratingSubmitBtn` ('SUBMIT RATING') was sitting unused. Now routed through it.
+- **Mock-default cleanup**: leftover Stitch placeholder party defaults ('Marcus J.' / 'Driver / Specialist') replaced with role-neutral labels for the auth-race edge case.
+- **Coverage**: rating_screen.dart **0.0% → 92.5%**; overall audited coverage 73.2% → **75.2%**; suite 355 → **361 tests**.
+- **Suite**: 6 widget tests covering party determination both directions, blind-status waiting vs locked-in branches, submit payload contract incl. comment trimming, success pop flow, failure snackbar retention, identity guard with zero network calls.
+- **Verification**: flutter analyze No issues found!; full suite 361/361 pass locally; CI verification recorded separately in AI_CONTEXT. ✅
+
+## l10n Scanner `text:` Property Gap Closure — 39 Strings Across 11 Files
+
+**Date**: 2026-08-22
+**Category**: Bug Fix / Localization
+**Related Commit SHA**: ``018c79551f978b3b67b7346b53ee08599d80d515``
+
+- **Gap**: the A2 audit scanner's property list omitted `text:` (PrimaryButton/SecondaryButton/Tab/_buildFeatureRow style params), letting hardcoded CTA/tab-label strings survive despite matching ARB keys existing (e.g. 'Submit Rating' vs unused `ratingSubmitBtn`).
+- **Scope found**: 39 production strings across 11 files — job_status_screen CTAs (7), subscription feature lists (9), employee_screen tabs/register (3), marketplace booking dialog (3), kyc upload/replace (2), dialogs Cancel/Confirm/Create (4), plus wallet/home/map/config singles.
+- **Remediation**: 9 exact-value REUSES of existing keys + 24 new en+ar keys (`subFreeFeature*`, `subProFeature*`, CTA labels). Post-fix audit: zero non-exception flags (38 remaining = 33 documented accepted exceptions + 5 debug-only component-library literals newly visible to the widened scanner).
+- **Hydration-race scan (follow-up)**: rating_screen was the sole stuck-placeholder instance; all other screens read auth at build time (reactive) or use post-frame refreshes. No further action needed.
+- **Verification**: flutter analyze No issues found!; full suite 361/361 pass locally. ✅

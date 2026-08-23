@@ -3,6 +3,8 @@ import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/themed_panel.dart';
+import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_text_field.dart';
@@ -75,32 +77,28 @@ class _SignupScreenState extends State<SignupScreen> {
     final auth = Provider.of<AuthProvider>(context);
     final l10n = context.l10n;
 
-    return Scaffold(
+    return FormScreenTemplate(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.marginMobile,
-              vertical: AppSpacing.md,
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Main Stitch Signup Card
-                    _buildSignupFormCard(auth, l10n),
-                    const SizedBox(height: AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.marginMobile,
+        vertical: AppSpacing.md,
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Main Stitch Signup Card
+                _buildSignupFormCard(auth, l10n),
+                const SizedBox(height: AppSpacing.lg),
 
-                    // External Footer Navigation Link
-                    _buildFooterLink(l10n),
-                  ],
-                ),
-              ),
+                // External Footer Navigation Link
+                _buildFooterLink(l10n),
+              ],
             ),
           ),
         ),
@@ -119,22 +117,19 @@ class _SignupScreenState extends State<SignupScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Centered Brand Shipping Icon
-          Center(
-            child: Container(
-              width: 64,
-              height: 64,
-              decoration: const BoxDecoration(
+          const Center(
+            child: ThemedPanel(
                 color: AppColors.primaryContainer,
                 shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.local_shipping,
-                  size: 32,
-                  color: AppColors.secondary,
-                ),
-              ),
-            ),
+                width: 64,
+                height: 64,
+                child: Center(
+                  child: Icon(
+                    Icons.local_shipping,
+                    size: 32,
+                    color: AppColors.secondary,
+                  ),
+                )),
           ),
           const SizedBox(height: AppSpacing.md),
 
@@ -189,14 +184,14 @@ class _SignupScreenState extends State<SignupScreen> {
               final trimmed = val.trim();
               final runeCount = trimmed.runes.length;
               if (runeCount < 3) {
-                return "Username must be at least 3 characters";
+                return l10n.usernameTooShort;
               }
               if (runeCount > 30) {
-                return "Username must be at most 30 characters";
+                return l10n.usernameTooLong;
               }
               final usernameRegex = RegExp(r'^[a-zA-Z0-9_\s\u0600-\u06FF]+$');
               if (!usernameRegex.hasMatch(trimmed)) {
-                return "Username contains invalid characters";
+                return l10n.usernameInvalidChars;
               }
               return null;
             },
@@ -306,20 +301,17 @@ class _SignupScreenState extends State<SignupScreen> {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        child: AnimatedContainer(
+        child: AnimatedThemedPanel(
           duration: AppMotion.durationFast,
           padding: const EdgeInsets.symmetric(
             vertical: AppSpacing.md,
             horizontal: AppSpacing.sm,
           ),
-          decoration: BoxDecoration(
-            color:
-                isSelected ? AppColors.surfaceContainerLow : AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.outlineVariant,
-              width: isSelected ? 2.0 : 1.0,
-            ),
+          color: isSelected ? AppColors.surfaceContainerLow : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.outlineVariant,
+            width: isSelected ? 2.0 : 1.0,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import '../core/error_messages.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
+import '../widgets/themed_panel.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/entity_avatar.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
@@ -27,8 +30,8 @@ class _RatingScreenState extends State<RatingScreen> {
   bool _isSubmitting = false;
   bool _isLoadingOtherStatus = true;
   bool _otherPartyHasRated = false;
-  String _otherPartyName = "Marcus J.";
-  String _otherPartyRole = "Driver / Specialist";
+  String _otherPartyName = "Driver / Employee";
+  String _otherPartyRole = "Specialist";
   String? _otherPartyId;
 
   @override
@@ -136,7 +139,7 @@ class _RatingScreenState extends State<RatingScreen> {
         final l10n = AppLocalizations.of(context)!;
         ThemedSnackBar.showError(
           context,
-          l10n.ratingFailed(e.toString()),
+          l10n.ratingFailed(friendlyErrorMessage(e)),
           onRetry: _submitRating,
         );
       }
@@ -157,24 +160,20 @@ class _RatingScreenState extends State<RatingScreen> {
     final isWide = MediaQuery.of(context).size.width > 600;
 
     final displayId = widget.job.id.length > 8
-        ? widget.job.id.substring(0, 8).toUpperCase()
-        : widget.job.id.toUpperCase();
+        ? AppTypography.uppercaseLabel(widget.job.id.substring(0, 8))
+        : AppTypography.uppercaseLabel(widget.job.id);
 
-    return Scaffold(
+    return AppShell(
+      title: l10n.ratingTitle,
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        title: Text(l10n.ratingTitle),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: l10n.tooltipRefreshStatus,
-            onPressed: _checkOtherPartyRatingStatus,
-          ),
-        ],
-      ),
+      appBarBackgroundColor: Colors.transparent,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: l10n.tooltipRefreshStatus,
+          onPressed: _checkOtherPartyRatingStatus,
+        ),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Center(
@@ -250,7 +249,7 @@ class _RatingScreenState extends State<RatingScreen> {
           ),
           const SizedBox(height: AppSpacing.xxs),
           Text(
-            "Delivery ID: #QD-$displayId",
+            context.l10n.deliveryIdTag(displayId),
             style: AppTypography.labelMd.copyWith(
               color: AppColors.onSurfaceVariant,
               fontFamily: 'monospace',
@@ -266,7 +265,7 @@ class _RatingScreenState extends State<RatingScreen> {
       child: Column(
         children: [
           Text(
-            'How was your delivery?',
+            context.l10n.howWasDeliveryQuestion,
             style: AppTypography.headlineLgMobile.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.primary,
@@ -276,7 +275,7 @@ class _RatingScreenState extends State<RatingScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
-              'Ratings are blind. Neither party will see the other\'s feedback until both have submitted.',
+              context.l10n.ratingsBlindExplanation,
               textAlign: TextAlign.center,
               style: AppTypography.bodyMd.copyWith(
                 color: AppColors.onSurfaceVariant,
@@ -333,14 +332,14 @@ class _RatingScreenState extends State<RatingScreen> {
         ThemedTextField(
           controller: _commentController,
           labelText: l10n.privateFeedbackLabel,
-          hintText: "Tell us more about your experience...",
+          hintText: l10n.feedbackExperienceHint,
           maxLines: 4,
         ),
         const SizedBox(height: AppSpacing.lg),
 
         // Submit Button (Stitch Primary CTA)
         PrimaryButton(
-          text: "Submit Rating",
+          text: l10n.ratingSubmitBtn,
           trailingIcon: Icons.send,
           onPressed: _submitRating,
           isLoading: _isSubmitting,
@@ -357,6 +356,9 @@ class _RatingScreenState extends State<RatingScreen> {
           final starValue = index + 1;
           final isSelected = starValue <= _selectedStars;
           return IconButton(
+            tooltip: context.l10n.ratingTitle,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
             onPressed: () {
               setState(() {
                 _selectedStars = starValue;
@@ -389,21 +391,18 @@ class _RatingScreenState extends State<RatingScreen> {
           if (_isLoadingOtherStatus)
             ThemedLoadingIndicator(message: l10n.loadingStatus)
           else if (_otherPartyHasRated) ...[
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
+            ThemedPanel(
                 color: AppColors.success.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_circle_outline,
-                color: AppColors.success,
-                size: 48,
-              ),
-            ),
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: const Icon(
+                  Icons.check_circle_outline,
+                  color: AppColors.success,
+                  size: 48,
+                )),
             const SizedBox(height: AppSpacing.md),
             Text(
-              "Feedback Locked In!",
+              l10n.feedbackLockedInTitle,
               style: AppTypography.titleMd.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.success,
@@ -411,7 +410,7 @@ class _RatingScreenState extends State<RatingScreen> {
             ),
             const SizedBox(height: AppSpacing.base),
             Text(
-              "The other party has submitted their rating. Both feedbacks are now visible under profile summary.",
+              l10n.bothRatingsVisibleDesc,
               textAlign: TextAlign.center,
               style: AppTypography.bodySm.copyWith(
                 color: AppColors.onSurfaceVariant,
@@ -426,23 +425,20 @@ class _RatingScreenState extends State<RatingScreen> {
                   size: 48,
                   color: AppColors.onSurfaceVariant.withValues(alpha: 0.3),
                 ),
-                Positioned(
+                const Positioned(
                   right: 0,
                   top: 0,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
+                  child: ThemedPanel(
                       color: AppColors.secondary,
                       shape: BoxShape.circle,
-                    ),
-                  ),
+                      width: 10,
+                      height: 10),
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              "Waiting for other party...",
+              l10n.waitingOtherPartyTitle,
               style: AppTypography.titleMd.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.onSurface,
@@ -450,7 +446,7 @@ class _RatingScreenState extends State<RatingScreen> {
             ),
             const SizedBox(height: AppSpacing.base),
             Text(
-              "The other party has not yet rated this transaction. Your ratings will remain hidden until they submit.",
+              l10n.otherPartyNotRatedDesc,
               textAlign: TextAlign.center,
               style: AppTypography.bodySm.copyWith(
                 color: AppColors.onSurfaceVariant,
@@ -461,23 +457,17 @@ class _RatingScreenState extends State<RatingScreen> {
             Row(
               children: [
                 Expanded(
-                  child: Container(
-                    height: 6,
-                    decoration: BoxDecoration(
+                  child: ThemedPanel(
                       color: colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(AppRadius.radiusXxs),
-                    ),
-                  ),
+                      height: 6),
                 ),
                 const SizedBox(width: AppSpacing.base),
                 Expanded(
-                  child: Container(
-                    height: 6,
-                    decoration: BoxDecoration(
+                  child: ThemedPanel(
                       color: AppColors.outline.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(AppRadius.radiusXxs),
-                    ),
-                  ),
+                      height: 6),
                 ),
               ],
             ),
@@ -488,28 +478,54 @@ class _RatingScreenState extends State<RatingScreen> {
   }
 
   Widget _buildInfoCards(AppLocalizations l10n, bool isWide) {
+    // Mobile: intrinsic-height column — the previous 1-column GridView with
+    // childAspectRatio 3.5 forced ~84px tiles under ~110px of content and
+    // overflowed at 360dp (caught by the rating_screen widget suite).
+    if (!isWide) {
+      return Column(
+        children: [
+          _buildInfoCard(
+            icon: Icons.security_outlined,
+            title: l10n.ratingFeatureUnbiased,
+            subtitle: l10n.unbiasedRatingDesc,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _buildInfoCard(
+            icon: Icons.verified_outlined,
+            title: l10n.ratingFeatureTrust,
+            subtitle: l10n.reliabilityRanksDesc,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _buildInfoCard(
+            icon: Icons.history_toggle_off_outlined,
+            title: l10n.ratingFeatureWindow,
+            subtitle: l10n.windowDeadlineDesc,
+          ),
+        ],
+      );
+    }
     return GridView.count(
-      crossAxisCount: isWide ? 3 : 1,
+      crossAxisCount: 3,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: AppSpacing.md,
       mainAxisSpacing: AppSpacing.md,
-      childAspectRatio: isWide ? 1.8 : 3.5,
+      childAspectRatio: 1.8,
       children: [
         _buildInfoCard(
           icon: Icons.security_outlined,
           title: l10n.ratingFeatureUnbiased,
-          subtitle: "Preventing retaliatory or social-pressure ratings.",
+          subtitle: l10n.unbiasedRatingDesc,
         ),
         _buildInfoCard(
           icon: Icons.verified_outlined,
           title: l10n.ratingFeatureTrust,
-          subtitle: "Ratings directly impact platform reliability ranks.",
+          subtitle: l10n.reliabilityRanksDesc,
         ),
         _buildInfoCard(
           icon: Icons.history_toggle_off_outlined,
           title: l10n.ratingFeatureWindow,
-          subtitle: "Submit within 24 hours to ensure your score counts.",
+          subtitle: l10n.windowDeadlineDesc,
         ),
       ],
     );

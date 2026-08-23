@@ -31,6 +31,7 @@ class OtpPinInput extends StatefulWidget {
 class _OtpPinInputState extends State<OtpPinInput> {
   late List<TextEditingController> _boxControllers;
   late List<FocusNode> _focusNodes;
+  late List<FocusNode> _auxFocusNodes;
   late TextEditingController _internalController;
   bool _isSyncing = false;
 
@@ -46,6 +47,14 @@ class _OtpPinInputState extends State<OtpPinInput> {
       (_) => TextEditingController(),
     );
     _focusNodes = List.generate(
+      widget.length,
+      (_) => FocusNode(),
+    );
+    // A6: auxiliary backspace-capture nodes must be owned for the widget's
+    // lifetime, not allocated inline in _buildPinBox — the previous inline
+    // `FocusNode()` allocated 6 fresh nodes on every rebuild (each keystroke)
+    // that were never disposed.
+    _auxFocusNodes = List.generate(
       widget.length,
       (_) => FocusNode(),
     );
@@ -74,6 +83,9 @@ class _OtpPinInputState extends State<OtpPinInput> {
       c.dispose();
     }
     for (final f in _focusNodes) {
+      f.dispose();
+    }
+    for (final f in _auxFocusNodes) {
       f.dispose();
     }
     super.dispose();
@@ -181,7 +193,7 @@ class _OtpPinInputState extends State<OtpPinInput> {
     }
 
     return KeyboardListener(
-      focusNode: FocusNode(), // auxiliary for backspace capture
+      focusNode: _auxFocusNodes[index], // auxiliary for backspace capture
       onKeyEvent: (event) {
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.backspace) {

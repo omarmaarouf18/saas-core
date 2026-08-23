@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_client_sse/flutter_client_sse.dart';
@@ -9,26 +10,57 @@ import '../models/notification_model.dart';
 class NotificationsProvider extends ChangeNotifier {
   final ApiClient apiClient;
 
+  /// Injectable SSE stream source (QA audit A6). Defaults to the real
+  /// `flutter_client_sse` client; tests inject a fake stream to observe
+  /// subscription lifecycle without network access.
+  final Stream<SSEModel> Function({
+    required SSERequestType method,
+    required String url,
+    required Map<String, String> header,
+  }) _sseStreamSource;
+
   final List<NotificationModel> _notifications = [];
   bool _isConnected = false;
   String? _error;
+  StreamSubscription<SSEModel>? _sseSubscription;
 
   List<NotificationModel> get notifications => _notifications;
   bool get isConnected => _isConnected;
+
+  /// Visible for tests: proves whether an underlying SSE subscription is
+  /// currently held.
+  bool get hasActiveSubscription => _sseSubscription != null;
+
   String? get error => _error;
 
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
 
-  NotificationsProvider(this.apiClient);
+  NotificationsProvider(
+    this.apiClient, {
+    Stream<SSEModel> Function({
+      required SSERequestType method,
+      required String url,
+      required Map<String, String> header,
+    })? sseStreamSource,
+  }) : _sseStreamSource = sseStreamSource ?? SSEClient.subscribeToSSE;
 
   void initSse(String token) {
+    // Already connected: nothing to do (guards against every MyApp rebuild
+    // re-subscribing while healthy).
     if (_isConnected) return;
 
     try {
       final String sseUrl =
           '${apiClient.baseUrl}/notifications/stream?token=$token';
 
-      SSEClient.subscribeToSSE(
+      // A6: the subscription is now stored and owned by this provider.
+      // Previously the `.listen()` result was discarded, making it
+      // impossible to cancel the stream; every re-init after a connection
+      // error spawned a duplicate SSE HTTP connection that nothing could
+      // ever close. Any stale subscription is cancelled BEFORE a new one is
+      // created, so at most one underlying connection is ever held.
+      _sseSubscription?.cancel();
+      _sseSubscription = _sseStreamSource(
         method: SSERequestType.GET,
         url: sseUrl,
         header: {
@@ -64,6 +96,9 @@ class NotificationsProvider extends ChangeNotifier {
           _error = friendlyErrorMessage(e);
           notifyListeners();
         },
+        onDone: () {
+          _isConnected = false;
+        },
       );
     } catch (e) {
       debugPrint('SSE connection error: $e');
@@ -74,14 +109,27 @@ class NotificationsProvider extends ChangeNotifier {
   }
 
   void unsubscribe() {
-    if (!_isConnected) return;
+    // A6: unconditional teardown. The previous early-return
+    // (`if (!_isConnected) return`) skipped cleanup whenever the socket had
+    // errored before its first event — exactly the state in which a stale
+    // underlying connection most needs releasing. Cancel our own
+    // subscription first so no late events can arrive afterwards.
+    _sseSubscription?.cancel();
+    _sseSubscription = null;
+    _isConnected = false;
     try {
       SSEClient.unsubscribeFromSSE();
     } catch (e) {
       debugPrint('Error unsubscribing from SSE: $e');
     }
-    _isConnected = false;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _sseSubscription?.cancel();
+    _sseSubscription = null;
+    super.dispose();
   }
 
   void markAsRead(String id) {

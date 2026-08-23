@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Flutter test golden-failure artifacts (generated on mismatch)
+test/failures/

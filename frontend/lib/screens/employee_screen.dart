@@ -5,10 +5,12 @@ import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/entity_avatar.dart';
 import '../widgets/pill_filter_bar.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/status_badge.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
@@ -109,28 +111,25 @@ class _EmployeeScreenState extends State<EmployeeScreen>
       return const EmployeeJobsScreen();
     }
 
-    return Scaffold(
+    return AppShell(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: Container(
-          color: AppColors.surface,
-          child: SafeArea(
-            child: TabBar(
-              controller: _tabController,
-              labelColor: AppColors.primary,
-              unselectedLabelColor: AppColors.outline,
-              indicatorColor: AppColors.primary,
-              tabs: const [
-                Tab(icon: Icon(Icons.people_outline), text: "Manage Workers"),
-                Tab(
-                  icon: Icon(Icons.receipt_long_outlined),
-                  text: "Audit Trail",
-                ),
-              ],
-            ),
+      showBackButton: false,
+      appBarBackgroundColor: AppColors.surface,
+      appBarForegroundColor: AppColors.onSurface,
+      bottom: TabBar(
+        controller: _tabController,
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.outline,
+        indicatorColor: AppColors.primary,
+        tabs: [
+          Tab(
+              icon: const Icon(Icons.people_outline),
+              text: context.l10n.employeeScreenTitle),
+          Tab(
+            icon: const Icon(Icons.receipt_long_outlined),
+            text: context.l10n.auditTrailTabLabel,
           ),
-        ),
+        ],
       ),
       body: TabBarView(
         controller: _tabController,
@@ -199,7 +198,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              "Manage delivery personnel and status.",
+                              context.l10n.employeeManageSubtitle,
                               style: AppTypography.bodyMd.copyWith(
                                 color: AppColors.onSurfaceVariant,
                               ),
@@ -224,7 +223,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                   ThemedTextField(
                     key: const Key('employee_search_field'),
                     controller: _searchController,
-                    hintText: "Search workers by name or email...",
+                    hintText: context.l10n.employeeSearchHint,
                     prefixIcon:
                         const Icon(Icons.search, color: AppColors.outline),
                     onChanged: (_) => setState(() {}),
@@ -234,17 +233,17 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     padding: EdgeInsets.zero,
                     items: [
                       PillFilterItem(
-                        label: "All",
+                        label: l10n.filterAll,
                         value: "all",
                         count: ownerProvider.employees.length,
                       ),
                       PillFilterItem(
-                        label: "Active",
+                        label: l10n.statusActive,
                         value: "active",
                         count: activeCount,
                       ),
                       PillFilterItem(
-                        label: "Frozen",
+                        label: l10n.employeeFrozenStatus,
                         value: "frozen",
                         count: frozenCount,
                       ),
@@ -284,7 +283,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                           const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                       child: Center(
                         child: Text(
-                          "No workers found matching your filter.",
+                          l10n.noWorkersMatchFilter,
                           style: AppTypography.bodyMd.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
@@ -326,66 +325,63 @@ class _EmployeeScreenState extends State<EmployeeScreen>
     final email = emp['email']?.toString() ?? '';
     final isActive = emp['is_active'] == true;
     final displayId = empId.length > 8
-        ? empId.substring(0, 8).toUpperCase()
-        : empId.toUpperCase();
+        ? AppTypography.uppercaseLabel(empId.substring(0, 8))
+        : AppTypography.uppercaseLabel(empId);
 
-    return Container(
-      key: Key('employee_item_$empId'),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
+    return ThemedPanel(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
           color: AppColors.outlineVariant.withValues(alpha: 0.3),
           width: 1,
         ),
-      ),
-      child: Row(
-        children: [
-          EntityAvatar(
-            name: username.isNotEmpty ? username : 'Employee',
-            radius: 22,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  username,
-                  style: AppTypography.titleMd.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  email,
-                  style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  "ID: #QD-$displayId",
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.outline,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+        key: Key('employee_item_$empId'),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: [
+            EntityAvatar(
+              name: username.isNotEmpty ? username : 'Employee',
+              radius: 22,
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          StatusBadge(
-            status: isActive ? 'active' : 'frozen',
-            compact: true,
-          ),
-        ],
-      ),
-    );
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    username,
+                    style: AppTypography.titleMd.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    email,
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    context.l10n.workerIdBadge(displayId),
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.outline,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            StatusBadge(
+              status: isActive ? 'active' : 'frozen',
+              compact: true,
+            ),
+          ],
+        ));
   }
 
   Widget _buildRegisterEmployeeForm(
@@ -427,18 +423,18 @@ class _EmployeeScreenState extends State<EmployeeScreen>
               },
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return "Username is required";
+                  return l10n.usernameRequired;
                 }
                 final trimmed = value.trim();
                 if (trimmed.runes.length < 3) {
-                  return "Username must be at least 3 characters";
+                  return l10n.usernameTooShort;
                 }
                 if (trimmed.runes.length > 30) {
-                  return "Username must be at most 30 characters";
+                  return l10n.usernameTooLong;
                 }
                 final usernameRegex = RegExp(r'^[a-zA-Z0-9_\s\u0600-\u06FF]+$');
                 if (!usernameRegex.hasMatch(trimmed)) {
-                  return "Username contains invalid characters";
+                  return l10n.usernameInvalidChars;
                 }
                 return null;
               },
@@ -453,12 +449,12 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                   const Icon(Icons.email_outlined, color: AppColors.outline),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return "Email is required";
+                  return l10n.emailRequired;
                 }
                 final emailRegex =
                     RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
                 if (!emailRegex.hasMatch(value.trim())) {
-                  return "Please enter a valid email";
+                  return l10n.invalidEmailFormat;
                 }
                 return null;
               },
@@ -474,10 +470,10 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                   const Icon(Icons.lock_outline, color: AppColors.outline),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return "Password is required";
+                  return l10n.passwordRequired;
                 }
                 if (value.length < 6) {
-                  return "Password must be at least 6 characters";
+                  return l10n.passwordTooShort;
                 }
                 return null;
               },
@@ -525,7 +521,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                         }
                       }
                     },
-              text: "Register Employee",
+              text: l10n.registerEmployeeBtn,
               isLoading: _isRegSubmitting,
               icon: Icons.person_add_alt_1_outlined,
               trailingIcon: Icons.arrow_forward,
@@ -565,7 +561,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                   const Icon(Icons.email_outlined, color: AppColors.outline),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return "Employee email is required";
+                  return l10n.employeeEmailRequired;
                 }
                 return null;
               },
@@ -578,15 +574,15 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Target Status",
+                        l10n.targetStatusLabel,
                         style: AppTypography.titleMd.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
                         _togSetActive
-                            ? "Set account to Active (Unfreeze)"
-                            : "Set account to Frozen (Suspended)",
+                            ? l10n.employeeSetActiveStatus
+                            : l10n.employeeSetFrozenStatus,
                         style: AppTypography.bodyMd.copyWith(
                           color: AppColors.onSurfaceVariant,
                         ),
@@ -610,13 +606,12 @@ class _EmployeeScreenState extends State<EmployeeScreen>
               obscureText: true,
               isPasswordField: true,
               labelText: l10n.confirmOwnerPassword,
-              hintText:
-                  "Required for secure out-of-band operations verification.",
+              hintText: context.l10n.secureVerificationNote,
               prefixIcon:
                   const Icon(Icons.vpn_key_outlined, color: AppColors.outline),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return "Owner password is required to re-authenticate";
+                  return l10n.ownerPasswordRequired;
                 }
                 return null;
               },
@@ -730,7 +725,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              action.toString().toUpperCase(),
+                              AppTypography.uppercaseLabel(action.toString()),
                               style: AppTypography.bodyMd.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.primary,
@@ -747,7 +742,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                         if (clientIp.isNotEmpty) ...[
                           const SizedBox(height: AppSpacing.xs),
                           Text(
-                            "IP: $clientIp",
+                            context.l10n.clientIpLine(clientIp),
                             style: AppTypography.labelMd.copyWith(
                               color: AppColors.onSurfaceVariant,
                             ),

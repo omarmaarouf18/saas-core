@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import '../core/error_messages.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_success_banner.dart';
 
@@ -42,10 +45,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       }
     } catch (e) {
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
         ThemedSnackBar.showError(
           context,
-          l10n.ratingFailed(e.toString()),
+          // A5: was l10n.ratingFailed(e.toString()) — copy-pasted rating key that
+          // rendered a raw exception dump on a money flow.
+          friendlyErrorMessage(e),
           onRetry: () => _changeSubscription(tier),
         );
       }
@@ -64,14 +68,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     final ownerProvider = Provider.of<OwnerProvider>(context);
     final currentTier = ownerProvider.subscriptionTier;
 
-    return Scaffold(
+    return AppShell(
+      title: l10n.subscriptionPlansTitle,
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(l10n.subscriptionPlansTitle),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        elevation: 0,
-      ),
+      appBarBackgroundColor: AppColors.primary,
+      appBarForegroundColor: AppColors.onPrimary,
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.marginMobile,
@@ -97,7 +98,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
-                        "Manage your operational tier. Upgrade to unlock live driver tracking, advanced pricing metrics, and priority enterprise support.",
+                        l10n.subscriptionManageDesc,
                         style: AppTypography.bodyMd.copyWith(
                           color: AppColors.onSurfaceVariant,
                         ),
@@ -120,55 +121,53 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'YOUR CURRENT PLAN',
+                            l10n.yourCurrentPlanBadge,
                             style: AppTypography.labelLg.copyWith(
                               color: AppColors.onPrimary.withValues(alpha: 0.7),
                               letterSpacing: 1.2,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.sm,
-                              vertical: AppSpacing.xxs,
-                            ),
-                            decoration: BoxDecoration(
+                          ThemedPanel(
                               color: currentTier == 'free'
                                   ? AppColors.surfaceContainerHigh
                                       .withValues(alpha: 0.3)
                                   : AppColors.secondary.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(AppRadius.xl),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  currentTier == 'free'
-                                      ? Icons.star_border
-                                      : Icons.stars,
-                                  color: currentTier == 'free'
-                                      ? AppColors.onPrimary
-                                      : AppColors.secondary,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  currentTier == 'free' ? 'BASIC' : 'PRO',
-                                  style: AppTypography.labelSm.copyWith(
-                                    fontWeight: FontWeight.bold,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm,
+                                vertical: AppSpacing.xxs,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    currentTier == 'free'
+                                        ? Icons.star_border
+                                        : Icons.stars,
                                     color: currentTier == 'free'
                                         ? AppColors.onPrimary
                                         : AppColors.secondary,
+                                    size: 16,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    currentTier == 'free' ? 'BASIC' : 'PRO',
+                                    style: AppTypography.labelSm.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: currentTier == 'free'
+                                          ? AppColors.onPrimary
+                                          : AppColors.secondary,
+                                    ),
+                                  ),
+                                ],
+                              )),
                         ],
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
-                        currentTier.toUpperCase().replaceAll('_', ' '),
+                        AppTypography.uppercaseLabel(currentTier)
+                            .replaceAll('_', ' '),
                         style: AppTypography.headlineLgMobile.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppColors.onPrimary,
@@ -176,9 +175,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       ),
                       if (currentTier == 'pending_payment') ...[
                         const SizedBox(height: AppSpacing.md),
-                        const ThemedWarningBanner(
-                          message:
-                              'Pending activation. Please contact support to complete payment.',
+                        ThemedWarningBanner(
+                          message: l10n.pendingActivationNote,
                         ),
                       ],
                     ],
@@ -188,7 +186,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
                 // 3. Section Title
                 Text(
-                  'Available Plans',
+                  l10n.availablePlansHeader,
                   style: AppTypography.titleMd.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.onSurface,
@@ -275,7 +273,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               ),
               const SizedBox(height: AppSpacing.xxs),
               Text(
-                "Essential tools for independent operators.",
+                l10n.freeTierDesc,
                 style: AppTypography.bodyMd.copyWith(
                   color: AppColors.onSurfaceVariant,
                 ),
@@ -307,37 +305,37 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               _buildFeatureRow(
                 icon: Icons.check_circle,
                 iconColor: AppColors.primary,
-                text: "Basic delivery matching",
+                text: l10n.subFreeFeatureMatching,
                 isEnabled: true,
               ),
               _buildFeatureRow(
                 icon: Icons.check_circle,
                 iconColor: AppColors.primary,
-                text: "Standard routing optimization",
+                text: l10n.subFreeFeatureRouting,
                 isEnabled: true,
               ),
               _buildFeatureRow(
                 icon: Icons.check_circle,
                 iconColor: AppColors.primary,
-                text: "Cash on Delivery (COD) bookings",
+                text: l10n.subFreeFeatureCod,
                 isEnabled: true,
               ),
               _buildFeatureRow(
                 icon: Icons.check_circle,
                 iconColor: AppColors.primary,
-                text: "Community support",
+                text: l10n.subFreeFeatureSupport,
                 isEnabled: true,
               ),
               _buildFeatureRow(
                 icon: Icons.cancel_outlined,
                 iconColor: AppColors.outlineVariant,
-                text: "Live worker location tracking",
+                text: l10n.subProFeatureTracking,
                 isEnabled: false,
               ),
               _buildFeatureRow(
                 icon: Icons.cancel_outlined,
                 iconColor: AppColors.outlineVariant,
-                text: "Priority dispatch routing",
+                text: l10n.subProFeatureDispatch,
                 isEnabled: false,
               ),
             ],
@@ -400,7 +398,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xxs),
                   Text(
-                    "Complete suite for fleet managers and growing businesses.",
+                    l10n.proTierDesc,
                     style: AppTypography.bodyMd.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
@@ -432,35 +430,35 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   _buildFeatureRow(
                     icon: Icons.check_circle,
                     iconColor: AppColors.secondary,
-                    text: "Unlocks live worker location tracking",
+                    text: l10n.subProFeatureTrackingUnlock,
                     isEnabled: true,
                     isHighlighted: true,
                   ),
                   _buildFeatureRow(
                     icon: Icons.check_circle,
                     iconColor: AppColors.secondary,
-                    text: "Priority dispatch routing",
+                    text: l10n.subProFeatureDispatch,
                     isEnabled: true,
                     isHighlighted: true,
                   ),
                   _buildFeatureRow(
                     icon: Icons.check_circle,
                     iconColor: AppColors.secondary,
-                    text: "Access to advanced pricing metrics",
+                    text: l10n.subProFeaturePricing,
                     isEnabled: true,
                     isHighlighted: true,
                   ),
                   _buildFeatureRow(
                     icon: Icons.check_circle,
                     iconColor: AppColors.secondary,
-                    text: "Full employee management suite",
+                    text: l10n.subProEmployeeSuite,
                     isEnabled: true,
                     isHighlighted: true,
                   ),
                   _buildFeatureRow(
                     icon: Icons.check_circle,
                     iconColor: AppColors.secondary,
-                    text: "Premium 24/7 dedicated support",
+                    text: l10n.subProDedicatedSupport,
                     isEnabled: true,
                     isHighlighted: true,
                   ),
@@ -483,7 +481,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    "Billed monthly. Cancel anytime.",
+                    l10n.billedMonthlyNote,
                     style: AppTypography.caption.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
@@ -498,27 +496,24 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         PositionedDirectional(
           top: 0,
           end: 0,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.baseSm,
-              vertical: AppSpacing.xs,
-            ),
-            decoration: const BoxDecoration(
+          child: ThemedPanel(
               color: AppColors.secondary,
-              borderRadius: BorderRadius.only(
+              borderRadius: const BorderRadius.only(
                 topRight: Radius.circular(AppRadius.lg),
                 bottomLeft: Radius.circular(AppRadius.md),
               ),
-            ),
-            child: Text(
-              'RECOMMENDED',
-              style: AppTypography.labelMd.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.onSecondary,
-                letterSpacing: 0.5,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.baseSm,
+                vertical: AppSpacing.xs,
               ),
-            ),
-          ),
+              child: Text(
+                l10n.recommendedBadge,
+                style: AppTypography.labelMd.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.onSecondary,
+                  letterSpacing: 0.5,
+                ),
+              )),
         ),
       ],
     );

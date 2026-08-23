@@ -31,3 +31,12 @@ const String mapTileUserAgent = String.fromEnvironment(
   'MAP_TILE_USER_AGENT',
   defaultValue: 'QuickDeliveryApp/1.0',
 );
+
+/// WebSocket Origin header required by chat-service's origin allow-list.
+/// Configurable via compile-time environment variable CHAT_WS_ORIGIN so
+/// production builds can be paired with the server's ALLOWED_ORIGIN setting;
+/// defaults to the backend's own dev default.
+const String chatWsOrigin = String.fromEnvironment(
+  'CHAT_WS_ORIGIN',
+  defaultValue: 'http://localhost:3000',
+);

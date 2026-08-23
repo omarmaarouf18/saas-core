@@ -2,6 +2,10 @@
 set -e
 echo "== pre-push gate: running checks =="
 
+# Git exports GIT_DIR=. into hook environments; the Flutter tool misreads it
+# and fails package resolution ("Flutter SDK is not available"). Sanitize.
+unset GIT_DIR GIT_WORK_TREE
+
 # Set default authenticated Mongo & Redis URIs for host-level unit/integration tests
 export MONGO_URI="${MONGO_URI:-mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin}"
 export REDIS_URI="${REDIS_URI:-redis://:devpassword123@localhost:6380}"
@@ -163,7 +167,16 @@ for mod in services/api-gateway services/auth-service services/chat-service \
   fi
 done
 
-# 5. Flutter analyze & test checks parity (strict without ignoring warnings/infos)
+# 5. Frontend composition-layer gate (blocks Scaffold(/AppBar(/BoxDecoration(/Color(0xFF/.toUpperCase() in screens/)
+if [ -d "frontend" ]; then
+  echo "-- checking frontend composition gate --"
+  bash scripts/frontend_composition_gate.sh || {
+    echo "BLOCKED: frontend composition gate failed"
+    exit 1
+  }
+fi
+
+# 6. Flutter analyze & test checks parity (strict without ignoring warnings/infos)
 if [ -d "frontend" ]; then
   echo "-- checking frontend Flutter analyze/test --"
   (cd frontend && flutter analyze && flutter test) || {

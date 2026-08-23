@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/project/shared/infra/handlerutil"
@@ -92,6 +93,12 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": fmt.Sprintf("tenant_id and positive amount up to %d required", maxDepositAmount),
 		})
+		return
+	}
+	// Cent-boundary discipline: sub-cent residues must never enter balances.
+	req.Amount = roundMoney(req.Amount)
+	if req.Amount == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "amount rounds to zero"})
 		return
 	}
 
@@ -186,8 +193,18 @@ func (u *UserService) GetLedger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entries := u.store.GetLedger(r.Context(), tenantID)
-	writeJSON(w, http.StatusOK, map[string]any{"count": len(entries), "entries": entries})
+	// Server-side pagination: default page of 100, hard cap of 500, client
+	// tunable via ?limit/&offset. Previously this endpoint serialized every
+	// matching ledger document — an unbounded-response DoS surface.
+	limit := int64(parseIntDefault(r.URL.Query().Get("limit"), 100))
+	offset := int64(parseIntDefault(r.URL.Query().Get("offset"), 0))
+	entries := u.store.GetLedger(r.Context(), tenantID, limit, offset)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"count":   len(entries),
+		"entries": entries,
+		"limit":   limit,
+		"offset":  offset,
+	})
 }
 
 // RequestPayout processes a tenant owner's withdrawal request (POST /users/wallet/payout/request).
@@ -224,6 +241,12 @@ func (u *UserService) RequestPayout(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant owner token: " + err.Error()})
 		return
 	}
+	if u.payoutLimiter != nil {
+		if limited, remaining := u.payoutLimiter.CheckAndRecord(resolvedTenantID); limited {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many requests; retry in %.0f seconds", remaining.Seconds())})
+			return
+		}
+	}
 
 	if req.Amount <= 0 {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid payout amount: must be greater than 0"})
@@ -235,6 +258,58 @@ func (u *UserService) RequestPayout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Cent-boundary discipline for fund movements.
+	req.Amount = roundMoney(req.Amount)
+	if req.Amount == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid payout amount: must be greater than 0"})
+		return
+	}
+
+	// Payout idempotency (QA audit Q1): a client network retry of the same
+	// logical request previously created duplicate payout requests and
+	// deducted funds twice. With an Idempotency-Key present (header first,
+	// then body field), the request is reserved atomically; retries replay
+	// the stored payout instead of double-deducting.
+	idemKey := r.Header.Get("Idempotency-Key")
+	if idemKey == "" {
+		idemKey = r.Header.Get("X-Idempotency-Key")
+	}
+	if idemKey == "" {
+		idemKey = strings.TrimSpace(req.IdempotencyKey)
+	}
+
+	payoutRecorded := false
+	defer func() {
+		if idemKey != "" && u.rdb != nil && !payoutRecorded {
+			u.releasePayoutIdempotencyReservation(resolvedTenantID, idemKey)
+		}
+	}()
+
+	replayID, conflict := u.reservePayoutIdempotencyKey(resolvedTenantID, idemKey)
+	if conflict {
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":   "duplicate_request_in_progress",
+			"message": "An identical payout request is still being processed; retry shortly.",
+		})
+		return
+	}
+	if replayID != "" {
+		if requests, listErr := u.store.GetPayoutRequests(ctx, resolvedTenantID); listErr == nil {
+			for _, existing := range requests {
+				if existing.ID == replayID {
+					// Drop-in replay: identical top-level shape to the 201
+					// create response so clients parse both identically;
+					// the header signals this is not a new deduction.
+					w.Header().Set("X-Idempotent-Replay", "true")
+					writeJSON(w, http.StatusOK, existing)
+					return
+				}
+			}
+		}
+		// Stored payout no longer resolvable: fall through and create fresh;
+		// the save below overwrites the mapping with the new ID.
+	}
+
 	payoutReq, err := u.store.CreatePayoutRequest(ctx, resolvedTenantID, req)
 	if err != nil {
 		if strings.Contains(err.Error(), "insufficient withdrawable balance") {
@@ -244,6 +319,9 @@ func (u *UserService) RequestPayout(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create payout request: " + err.Error()})
 		return
 	}
+
+	payoutRecorded = true
+	u.savePayoutIdempotencyKey(resolvedTenantID, idemKey, payoutReq.ID)
 
 	// #nosec G706 //nolint:gosec -- IDs are from verified JWT tokens and database, log injection not possible
 	log.Printf("[USER] Payout request created: id=%s tenant=%s amount=%.2f method=%s", payoutReq.ID, resolvedTenantID, payoutReq.Amount, payoutReq.PayoutMethod)
@@ -275,6 +353,12 @@ func (u *UserService) GetPayoutRequests(w http.ResponseWriter, r *http.Request) 
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant owner token: " + err.Error()})
 		return
 	}
+	if u.payoutLimiter != nil {
+		if limited, remaining := u.payoutLimiter.CheckAndRecord(resolvedTenantID); limited {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many requests; retry in %.0f seconds", remaining.Seconds())})
+			return
+		}
+	}
 
 	requests, err := u.store.GetPayoutRequests(ctx, resolvedTenantID)
 	if err != nil {
@@ -287,4 +371,17 @@ func (u *UserService) GetPayoutRequests(w http.ResponseWriter, r *http.Request) 
 	}
 
 	writeJSON(w, http.StatusOK, requests)
+}
+
+// parseIntDefault parses a non-negative integer query value, falling back to
+// def on empty or malformed input.
+func parseIntDefault(s string, def int) int {
+	if s == "" {
+		return def
+	}
+	v, err := strconv.Atoi(s)
+	if err != nil || v < 0 {
+		return def
+	}
+	return v
 }

@@ -4,10 +4,13 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/constants.dart';
+import '../core/provider_connection_cleanup.dart';
 import '../core/theme.dart';
 import '../models/employee_marker.dart';
 import '../models/job.dart';
 import '../providers/map_tracking_provider.dart';
+import '../widgets/themed_panel.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
@@ -27,14 +30,21 @@ class CustomerJobMapScreen extends StatefulWidget {
   State<CustomerJobMapScreen> createState() => _CustomerJobMapScreenState();
 }
 
-class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
+class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
+    with ProviderConnectionCleanup<CustomerJobMapScreen> {
   final MapController _mapController = MapController();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final provider = context.read<MapTrackingProvider>();
+      // A6: register connection teardown while context is valid — this
+      // screen previously never disconnected the app-lifetime provider,
+      // leaving the job-location WebSocket and its auto-reconnect timer
+      // running after the map was closed.
+      addConnectionTeardown(provider.disconnect);
       provider.hydrateCustomerJob(widget.jobId, widget.token);
       provider.connectAndSubscribe('job:${widget.jobId}', widget.token);
     });
@@ -58,33 +68,24 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final displayJobId = widget.jobId.length > 8
-        ? widget.jobId.substring(0, 8).toUpperCase()
-        : widget.jobId.toUpperCase();
+        ? AppTypography.uppercaseLabel(widget.jobId.substring(0, 8))
+        : AppTypography.uppercaseLabel(widget.jobId);
 
-    return Scaffold(
+    return AppShell(
+      title: l10n.liveCourierTracking,
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          l10n.liveCourierTracking,
-          style: AppTypography.titleMd.copyWith(
-            color: AppColors.onPrimary,
-            fontWeight: FontWeight.bold,
-          ),
+      appBarBackgroundColor: AppColors.primary,
+      appBarForegroundColor: AppColors.onPrimary,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: l10n.tooltipRefreshStatus,
+          onPressed: () {
+            final provider = context.read<MapTrackingProvider>();
+            provider.hydrateCustomerJob(widget.jobId, widget.token);
+          },
         ),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: l10n.tooltipRefreshStatus,
-            onPressed: () {
-              final provider = context.read<MapTrackingProvider>();
-              provider.hydrateCustomerJob(widget.jobId, widget.token);
-            },
-          ),
-        ],
-      ),
+      ],
       body: Consumer<MapTrackingProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading && provider.markersList.isEmpty) {
@@ -188,38 +189,32 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: AppSpacing.xxs,
-            ),
-            decoration: BoxDecoration(
+          ThemedPanel(
               color: AppColors.primaryContainer,
               borderRadius: BorderRadius.circular(AppRadius.sm),
               border: Border.all(color: AppColors.surface, width: 1.5),
               boxShadow: AppElevation.shadowLevel2List,
-            ),
-            child: Text(
-              'Pickup',
-              style: AppTypography.labelSm.copyWith(
-                color: AppColors.onPrimary,
-                fontWeight: FontWeight.bold,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xxs,
               ),
-            ),
-          ),
+              child: Text(
+                context.l10n.mapPickupBadge,
+                style: AppTypography.labelSm.copyWith(
+                  color: AppColors.onPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              )),
           const SizedBox(height: 2),
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.xs),
-            decoration: const BoxDecoration(
+          const ThemedPanel(
               color: AppColors.primaryContainer,
               shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.flag,
-              color: AppColors.onPrimary,
-              size: 18,
-            ),
-          ),
+              padding: EdgeInsets.all(AppSpacing.xs),
+              child: Icon(
+                Icons.flag,
+                color: AppColors.onPrimary,
+                size: 18,
+              )),
         ],
       ),
     );
@@ -237,40 +232,34 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: AppSpacing.xxs,
-            ),
-            decoration: BoxDecoration(
+          ThemedPanel(
               color: AppColors.secondary,
               borderRadius: BorderRadius.circular(AppRadius.sm),
               border: Border.all(color: AppColors.primary, width: 1.5),
               boxShadow: AppElevation.shadowLevel2List,
-            ),
-            child: Text(
-              displayName,
-              style: AppTypography.labelSm.copyWith(
-                color: AppColors.onSecondary,
-                fontWeight: FontWeight.bold,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xxs,
               ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
+              child: Text(
+                displayName,
+                style: AppTypography.labelSm.copyWith(
+                  color: AppColors.onSecondary,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis,
+              )),
           const SizedBox(height: 2),
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.xs),
-            decoration: BoxDecoration(
+          ThemedPanel(
               color: AppColors.secondary,
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.surface, width: 2),
-            ),
-            child: const Icon(
-              Icons.directions_bike,
-              color: AppColors.onSecondary,
-              size: 20.0,
-            ),
-          ),
+              padding: const EdgeInsets.all(AppSpacing.xs),
+              child: const Icon(
+                Icons.directions_bike,
+                color: AppColors.onSecondary,
+                size: 20.0,
+              )),
         ],
       ),
     );
@@ -294,7 +283,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(
-                'Waiting for courier location updates...',
+                context.l10n.waitingCourierUpdates,
                 style: AppTypography.bodySm.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppColors.onSurface,
@@ -319,8 +308,8 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
           ? ThemedErrorBanner(
               message: provider.subscriptionError!,
             )
-          : const ThemedWarningBanner(
-              message: 'Reconnecting live tracking stream...',
+          : ThemedWarningBanner(
+              message: context.l10n.reconnectingTrackingStream,
             ),
     );
   }
@@ -331,46 +320,40 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
       bottom: 200.0,
       child: Column(
         children: [
-          Container(
-            decoration: BoxDecoration(
+          ThemedPanel(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.md),
               boxShadow: AppElevation.shadowLevel2List,
               border: Border.all(color: AppColors.outlineVariant),
-            ),
-            child: Column(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  color: AppColors.onSurface,
-                  tooltip: 'Zoom In',
-                  onPressed: _zoomIn,
-                ),
-                const Divider(height: 1, color: AppColors.outlineVariant),
-                IconButton(
-                  icon: const Icon(Icons.remove),
-                  color: AppColors.onSurface,
-                  tooltip: 'Zoom Out',
-                  onPressed: _zoomOut,
-                ),
-              ],
-            ),
-          ),
+              child: Column(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    color: AppColors.onSurface,
+                    tooltip: context.l10n.tooltipZoomIn,
+                    onPressed: _zoomIn,
+                  ),
+                  const Divider(height: 1, color: AppColors.outlineVariant),
+                  IconButton(
+                    icon: const Icon(Icons.remove),
+                    color: AppColors.onSurface,
+                    tooltip: context.l10n.tooltipZoomOut,
+                    onPressed: _zoomOut,
+                  ),
+                ],
+              )),
           const SizedBox(height: AppSpacing.sm),
-          Container(
-            decoration: BoxDecoration(
+          ThemedPanel(
               color: AppColors.surface,
               shape: BoxShape.circle,
               boxShadow: AppElevation.shadowLevel2List,
               border: Border.all(color: AppColors.outlineVariant),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.my_location),
-              color: AppColors.primary,
-              tooltip: 'Center Target',
-              onPressed: () => _centerOnTarget(centerPoint),
-            ),
-          ),
+              child: IconButton(
+                icon: const Icon(Icons.my_location),
+                color: AppColors.primary,
+                tooltip: context.l10n.tooltipRecenter,
+                onPressed: () => _centerOnTarget(centerPoint),
+              )),
         ],
       ),
     );
@@ -384,14 +367,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
       bottom: 0,
       left: 0,
       right: 0,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.sm,
-          AppSpacing.lg,
-          AppSpacing.lg,
-        ),
-        decoration: BoxDecoration(
+      child: ThemedPanel(
           color: AppColors.surface,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(AppRadius.xl),
@@ -404,67 +380,68 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
               blurRadius: 16,
             ),
           ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 48,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.outlineVariant,
-                    borderRadius: AppRadius.xsBorder,
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.sm,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Drag Handle
+                Center(
+                  child: ThemedPanel(
+                      color: AppColors.outlineVariant,
+                      borderRadius: AppRadius.xsBorder,
+                      width: 48,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: AppSpacing.md)),
+                ),
+                // Job ID Header
+                Text(
+                  "#QD-$displayJobId",
+                  style: AppTypography.titleMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.onSurface,
                   ),
                 ),
-              ),
-              // Job ID Header
-              Text(
-                "#QD-$displayJobId",
-                style: AppTypography.titleMd.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.onSurface,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xxs),
-              // Live Tracking Status Subtitle
-              Row(
-                children: [
-                  const Icon(
-                    Icons.local_shipping,
-                    size: 18,
-                    color: AppColors.secondary,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Expanded(
-                    child: Text(
-                      hasActiveMarkers
-                          ? "In Transit - Live Courier Tracking"
-                          : "Live Route Tracking Active",
-                      style: AppTypography.bodyMd.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
+                const SizedBox(height: AppSpacing.xxs),
+                // Live Tracking Status Subtitle
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.local_shipping,
+                      size: 18,
+                      color: AppColors.secondary,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Text(
+                        hasActiveMarkers
+                            ? "In Transit - Live Courier Tracking"
+                            : "Live Route Tracking Active",
+                        style: AppTypography.bodyMd.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              // Back to Status / View Details CTA
-              PrimaryButton(
-                text: "Back to Status",
-                trailingIcon: Icons.arrow_forward,
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-        ),
-      ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                // Back to Status / View Details CTA
+                PrimaryButton(
+                  text: context.l10n.backToStatusBtn,
+                  trailingIcon: Icons.arrow_forward,
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+          )),
     );
   }
 }

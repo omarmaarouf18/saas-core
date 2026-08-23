@@ -5,6 +5,8 @@ import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
 import '../providers/theme_provider.dart';
+import '../widgets/themed_panel.dart';
+import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_text_field.dart';
@@ -85,36 +87,32 @@ class _LoginScreenState extends State<LoginScreen> {
     final localeProvider = Provider.of<LocaleProvider?>(context);
     final l10n = context.l10n;
 
-    return Scaffold(
+    return FormScreenTemplate(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.marginMobile,
-              vertical: AppSpacing.md,
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // 1. Top Chrome Bar: QD Logo & Language/Theme Toggles
-                    _buildTopChromeBar(themeProvider, localeProvider, l10n),
-                    const SizedBox(height: AppSpacing.md),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.marginMobile,
+        vertical: AppSpacing.md,
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 1. Top Chrome Bar: QD Logo & Language/Theme Toggles
+                _buildTopChromeBar(themeProvider, localeProvider, l10n),
+                const SizedBox(height: AppSpacing.md),
 
-                    // 2. Main Stitch Card Container
-                    _buildLoginFormCard(auth, l10n),
-                    const SizedBox(height: AppSpacing.lg),
+                // 2. Main Stitch Card Container
+                _buildLoginFormCard(auth, l10n),
+                const SizedBox(height: AppSpacing.lg),
 
-                    // 3. External Footer Navigation Link
-                    _buildFooterLink(l10n),
-                  ],
-                ),
-              ),
+                // 3. External Footer Navigation Link
+                _buildFooterLink(l10n),
+              ],
             ),
           ),
         ),
@@ -130,36 +128,33 @@ class _LoginScreenState extends State<LoginScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Container(
-          key: const Key('login_qd_logo'),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.xs,
-          ),
-          decoration: BoxDecoration(
+        ThemedPanel(
             color: AppColors.primary,
             borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.storefront,
-                color: AppColors.secondary,
-                size: AppIconSize.md,
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              Text(
-                "QD",
-                style: AppTypography.titleMd.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.onPrimary,
-                  letterSpacing: 1.0,
+            key: const Key('login_qd_logo'),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.storefront,
+                  color: AppColors.secondary,
+                  size: AppIconSize.md,
                 ),
-              ),
-            ],
-          ),
-        ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  "QD",
+                  style: AppTypography.titleMd.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.onPrimary,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ],
+            )),
         Row(
           children: [
             IconButton(
@@ -212,22 +207,19 @@ class _LoginScreenState extends State<LoginScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Centered Brand Icon
-          Center(
-            child: Container(
-              width: 64,
-              height: 64,
-              decoration: const BoxDecoration(
+          const Center(
+            child: ThemedPanel(
                 color: AppColors.primaryContainer,
                 shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.local_shipping,
-                  size: 32,
-                  color: AppColors.secondary,
-                ),
-              ),
-            ),
+                width: 64,
+                height: 64,
+                child: Center(
+                  child: Icon(
+                    Icons.local_shipping,
+                    size: 32,
+                    color: AppColors.secondary,
+                  ),
+                )),
           ),
           const SizedBox(height: AppSpacing.md),
 

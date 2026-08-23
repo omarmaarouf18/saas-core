@@ -132,6 +132,12 @@ class MockChatProvider extends ChangeNotifier implements ChatProvider {
   @override
   void connectAndSubscribe(String jobId, String? userToken) {}
 
+  // A6: ChatScreen now guarantees provider disconnect on disposal, so the
+  // mock must honor the full connection contract instead of throwing via
+  // noSuchMethod during the teardown frame.
+  @override
+  void disconnect() {}
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

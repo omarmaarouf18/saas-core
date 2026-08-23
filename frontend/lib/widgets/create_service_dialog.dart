@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../core/error_messages.dart';
 import 'package:provider/provider.dart';
 import '../core/constants.dart';
 import '../core/theme.dart';
@@ -80,7 +81,7 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                     children: [
                       Expanded(
                         child: Text(
-                          "Create New Service",
+                          l10n.createNewServiceTitle,
                           style: AppTypography.titleMd.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,
@@ -161,11 +162,11 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                         const TextInputType.numberWithOptions(decimal: true),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return "Base price is required";
+                        return l10n.basePriceRequired;
                       }
                       final val = double.tryParse(value);
                       if (val == null || val < 0) {
-                        return "Invalid price";
+                        return l10n.invalidPriceValue;
                       }
                       return null;
                     },
@@ -179,11 +180,11 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                         const TextInputType.numberWithOptions(decimal: true),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return "Rate is required";
+                        return l10n.rateRequired;
                       }
                       final val = double.tryParse(value);
                       if (val == null || val < 0) {
-                        return "Invalid rate";
+                        return l10n.invalidRateValue;
                       }
                       return null;
                     },
@@ -197,11 +198,11 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                         const TextInputType.numberWithOptions(decimal: true),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return "Required";
+                        return l10n.fieldRequiredGeneric;
                       }
                       final val = double.tryParse(value);
                       if (val == null || val < -90.0 || val > 90.0) {
-                        return "Must be between -90 and 90";
+                        return l10n.latRangeMessage;
                       }
                       return null;
                     },
@@ -215,11 +216,11 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                         const TextInputType.numberWithOptions(decimal: true),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return "Required";
+                        return l10n.fieldRequiredGeneric;
                       }
                       final val = double.tryParse(value);
                       if (val == null || val < -180.0 || val > 180.0) {
-                        return "Must be between -180 and 180";
+                        return l10n.lonRangeMessage;
                       }
                       return null;
                     },
@@ -229,7 +230,7 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                     children: [
                       Expanded(
                         child: SecondaryButton(
-                          text: "Cancel",
+                          text: l10n.cancel,
                           isOutlined: true,
                           onPressed: _isSubmitting
                               ? null
@@ -240,7 +241,7 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                       Expanded(
                         child: PrimaryButton(
                           key: const Key('service_create_button'),
-                          text: "Create",
+                          text: l10n.createActionLabel,
                           trailingIcon: Icons.arrow_forward,
                           isLoading: _isSubmitting,
                           onPressed: () async {
@@ -275,7 +276,8 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                                   setState(() => _isSubmitting = false);
                                   ThemedSnackBar.showError(
                                     context,
-                                    l10n.serviceCreateFailed(e.toString()),
+                                    l10n.serviceCreateFailed(
+                                        friendlyErrorMessage(e)),
                                   );
                                 }
                               }

@@ -22,6 +22,7 @@ type Dispatcher interface {
 type Client struct {
 	httpClient           *http.Client
 	endpointURL          string
+	customEndpoint       bool // true when FCMEndpointURL pointed at an internal relay
 	projectID            string
 	serviceAccountJSON   string
 	enabled              bool
@@ -69,14 +70,16 @@ func NewClient(serviceAccountJSON, projectID, customEndpointURL, authServiceURL,
 		enabled = false
 	}
 
+	customEndpoint := strings.TrimSpace(customEndpointURL) != ""
 	endpoint := customEndpointURL
-	if endpoint == "" && projectID != "" {
+	if !customEndpoint && projectID != "" {
 		endpoint = fmt.Sprintf("https://fcm.googleapis.com/v1/projects/%s/messages:send", projectID)
 	}
 
 	return &Client{
 		httpClient:           httpClient,
 		endpointURL:          endpoint,
+		customEndpoint:       customEndpoint,
 		projectID:            projectID,
 		serviceAccountJSON:   serviceAccountJSON,
 		enabled:              enabled,
@@ -118,7 +121,10 @@ func (c *Client) SendPush(ctx context.Context, token, title, body string, data m
 		return false, fmt.Errorf("fcm: failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if c.internalServiceToken != "" {
+	// X-Internal-Token authenticates service-to-service calls inside our own
+	// network. It must never be handed to external hosts: only attach it when
+	// an explicit internal relay endpoint (FCMEndpointURL) is configured.
+	if c.customEndpoint && c.internalServiceToken != "" {
 		req.Header.Set("X-Internal-Token", c.internalServiceToken)
 	}
 

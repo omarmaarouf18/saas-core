@@ -509,3 +509,25 @@ This file tracks historical entries for the primary category: **New Features Cha
 
 
 
+
+## Payout Rejection-Refund Store Capability (ADR-0018 Console Prerequisite)
+
+- **Implementation Detail**: Owner payout requests deduct funds at creation time, but the rejection path did not exist — the `rejected` `PayoutStatus` was defined with no code path to reach it, so a rejected payout would silently consume the owner's money. Added `MongoDB.RejectPayoutRequest(ctx, payoutID, reason)` in `services/user-service/internal/store/mongodb.go`: a CAS-guarded `FindOneAndUpdate` on `status == "requested"` (making double-rejection and mutation of approved/paid requests impossible), atomic restoration of `withdrawable_balance` and `total_balance`, a new `models.TxPayoutRefund` ledger entry type recording the refund with the rejection reason, and reason persistence on the request document. Deliberately exposes NO public endpoint — administrative fulfillment/rejection remains deferred to the standalone Support Agent Console per ADR-0018; this commit delivers the store capability that console will invoke.
+- **Commit SHA**: ``4155c7370ab9b3d926bcaa69a05bfb3920029e7b``
+- **Verification**: New store regression test `TestRejectPayoutRequest_RestoresBalancesAndLedgers` passes: asserts balances 100→60 after request creation and 60→100 after rejection, `PayoutStatusRejected` + recorded reason on the request document, presence of a 40.0 `payout_refund` ledger entry, and an error on double-rejection via the CAS guard. Full user-service module suite passes (config/handlers/models/store all `ok`). ✅
+
+## Component Library Screen & Golden Snapshot Regression Tests (P6)
+
+- **Implementation Detail**:
+  - Built debug-only `ComponentLibraryScreen` (`frontend/lib/screens/component_library_screen.dart`) — Storybook-style catalog rendering all shared widgets in loading/error/empty/success/interactive states; assert-gated to kDebugMode and registered at `/component-library` only in debug builds.
+  - Added `test/golden_screens_test.dart`: 7 golden tests / 8 snapshot baselines covering the P0 migrated pair (`notifications_screen`, `owner_reconciliation_queue_screen`), P2 archetype representatives (`customer_jobs_screen` list template, `login_screen` form template), and the component library at mobile/tablet/desktop viewports.
+  - Bundled Poppins (OFL) under `assets/fonts/` with `GoogleFonts.config.allowRuntimeFetching = false` for deterministic, offline-safe typography (production behavior change: brand fonts no longer fetched at runtime).
+  - Fixed two real overflow defects surfaced by the multi-viewport golden pass: `StatusBadge` (shared widget — Flexible + ellipsis inside badge Row) and reconciliation queue AppBar titleWidget Row.
+- **Commit SHA**: ``35c7a2aa646f3fc296ee8f8496d11c413f4a5d94``
+- **Verification**: Verified via golden generation run (`flutter test --update-goldens test/golden_screens_test.dart`, 7/7 pass), baseline verification run without --update-goldens (7/7 pass), full suite `flutter test` (304/304 All tests passed), and `flutter analyze` (No issues found!). ✅
+
+## Breakpoint Goldens for P0 Proof-of-Concept Screens (Responsive QA Extension)
+
+- **Implementation Detail**: Extended `test/golden_screens_test.dart` with tablet (768x1024) and desktop web (1280x800) golden variants for both P0 proof-of-concept screens (`notifications_screen`, `owner_reconciliation_queue_screen`), completing the multi-viewport responsive check for the proof-of-concept pair before full-rollout viewport expansion. Golden count: 12 baselines across 7 tests.
+- **Commit SHA**: ``185cc9d4b5b9087242f5d902493918e0038747ea``
+- **Verification**: Verified via regeneration run (`flutter test --update-goldens`, 7/7 pass) and baseline verification run without --update-goldens (7/7 pass). ✅

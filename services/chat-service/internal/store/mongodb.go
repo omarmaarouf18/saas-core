@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -20,7 +21,9 @@ type SupportAgent struct {
 	ID              string `bson:"_id" json:"agent_id"`
 	Status          string `bson:"status" json:"status"` // "available", "busy", "offline"
 	AssignedTickets int    `bson:"assigned_tickets" json:"assigned_tickets"`
-	Token           string `bson:"token" json:"token"`
+	// Token is the agent's bearer credential: stored as a SHA-256 digest and
+	// never serialized (json:"-") so it cannot leak through any response.
+	Token string `bson:"token" json:"-"`
 }
 
 type ComplaintTicket struct {
@@ -198,8 +201,18 @@ func (s *MongoDB) GetHistory(ctx context.Context, channel string, limit int64) (
 	return res, nil
 }
 
-// AddSupportAgent inserts a new support agent.
+// hashAgentToken returns the SHA-256 hex digest used for bearer-token storage
+// at rest. Raw tokens are never persisted; lookups hash before querying, with
+// a plaintext fallback for rows written before this hardening.
+func hashAgentToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
+}
+
+// AddSupportAgent inserts a new support agent. The token is stored as a
+// SHA-256 digest, never plaintext.
 func (s *MongoDB) AddSupportAgent(ctx context.Context, agent *SupportAgent) error {
+	agent.Token = hashAgentToken(agent.Token)
 	_, err := s.agents.InsertOne(ctx, agent)
 	return err
 }
@@ -214,10 +227,15 @@ func (s *MongoDB) GetAgent(ctx context.Context, agentID string) (*SupportAgent, 
 	return &agent, nil
 }
 
-// GetAgentByToken retrieves an agent by their unique token.
+// GetAgentByToken retrieves an agent by their unique token, hashing the
+// presented credential first with a legacy plaintext fallback (migration
+// window for pre-hardening rows).
 func (s *MongoDB) GetAgentByToken(ctx context.Context, token string) (*SupportAgent, error) {
 	var agent SupportAgent
-	err := s.agents.FindOne(ctx, bson.M{"token": token}).Decode(&agent)
+	err := s.agents.FindOne(ctx, bson.M{"token": hashAgentToken(token)}).Decode(&agent)
+	if err != nil {
+		err = s.agents.FindOne(ctx, bson.M{"token": token}).Decode(&agent)
+	}
 	if err != nil {
 		return nil, err
 	}

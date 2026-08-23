@@ -34,9 +34,10 @@ class SecondaryButton extends StatefulWidget {
 class _SecondaryButtonState extends State<SecondaryButton> {
   DateTime? _lastTapTime;
   bool _isPressed = false;
+  bool _busy = false;
 
-  void _handleTap() {
-    if (widget.onPressed == null) return;
+  Future<void> _handleTap() async {
+    if (widget.onPressed == null || _busy) return;
     final now =
         widget.nowProvider != null ? widget.nowProvider!() : DateTime.now();
     if (_lastTapTime != null &&
@@ -44,7 +45,23 @@ class _SecondaryButtonState extends State<SecondaryButton> {
       return;
     }
     _lastTapTime = now;
-    widget.onPressed!();
+    // VoidCallback's static return type is `void`; dispatching through a
+    // dynamic binding lets us observe whether the closure actually returned
+    // a Future (i.e. is async) without widening the public widget API.
+    final dynamic result = (widget.onPressed as dynamic)();
+    // In-flight double-submit guard (QA audit A4): when the handler is
+    // asynchronous, ignore further taps until it completes. The timestamp
+    // debounce above only blocks taps within 600ms; network calls routinely
+    // outlive that window, so a second "nothing happened" tap must be
+    // blocked by completion tracking instead.
+    if (result is Future) {
+      _busy = true;
+      try {
+        await result;
+      } finally {
+        if (mounted) setState(() => _busy = false);
+      }
+    }
   }
 
   @override
@@ -121,7 +138,8 @@ class _SecondaryButtonState extends State<SecondaryButton> {
             ),
           );
 
-    final bool isEnabled = !widget.isLoading && widget.onPressed != null;
+    final bool isEnabled =
+        !widget.isLoading && !_busy && widget.onPressed != null;
     final VoidCallback? effectiveOnPressed = isEnabled ? _handleTap : null;
 
     return Listener(

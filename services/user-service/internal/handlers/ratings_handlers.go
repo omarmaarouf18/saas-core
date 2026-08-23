@@ -97,7 +97,7 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rating := &models.Rating{
-		ID:        fmt.Sprintf("rate-%d", time.Now().UnixNano()),
+		ID:        "rate-" + generateID(),
 		JobID:     req.JobID,
 		RatedBy:   req.RatedBy,
 		RatedUser: req.RatedUser,
@@ -177,9 +177,24 @@ func (u *UserService) GetRatings(w http.ResponseWriter, r *http.Request) {
 	resolvedTarget, err := resolveTokenWithRole(targetUserID, "owner", "employee", "user", "customer")
 	if err == nil {
 		targetUserID = resolvedTarget
+	} else {
+		// Raw-ID fall-through is restricted (QA audit Q24): business
+		// reputation (owner/employee targets) stays publicly queryable for
+		// the ADR-0014 directory/marketplace; customer rating histories are
+		// private blind-feedback data and require the customer's own token.
+		role, roleErr := u.fetchUserRole(r.Context(), targetUserID)
+		if roleErr != nil || (role != "owner" && role != "employee") {
+			writeJSON(w, http.StatusForbidden, map[string]string{
+				"error": "access denied: customer rating histories require the customer's own token",
+			})
+			return
+		}
 	}
 
-	ratings, err := u.store.GetRatingsForUser(r.Context(), targetUserID)
+	// Server-side pagination: default page of 50, hard cap of 200.
+	limit := int64(parseIntDefault(r.URL.Query().Get("limit"), 50))
+	offset := int64(parseIntDefault(r.URL.Query().Get("offset"), 0))
+	ratings, err := u.store.GetRatingsForUser(r.Context(), targetUserID, limit, offset)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return

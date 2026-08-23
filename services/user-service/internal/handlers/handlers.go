@@ -11,7 +11,9 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -79,6 +81,10 @@ type UserService struct {
 	ledgerIPLimiter           *handlerutil.RateLimiter
 	ratingsLimiter            *handlerutil.RateLimiter
 	reconciliationLimiter     *handlerutil.RateLimiter
+	completeJobLimiter        *handlerutil.RateLimiter
+	resolveReconLimiter       *handlerutil.RateLimiter
+	payoutLimiter             *handlerutil.RateLimiter
+	subscriptionLimiter       *handlerutil.RateLimiter
 	internalServiceToken      string
 	locationThrottleMu        sync.Mutex
 	locationLastUpdate        map[string]time.Time
@@ -171,13 +177,15 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		client = http.DefaultClient
 	}
 
-	rl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Minute, "user")
-	rlOwnerJobs := ratelimit.NewRateLimiter(rdb, 60, 1*time.Minute, "user:owner_jobs")
-	rlCustomerJobs := ratelimit.NewRateLimiter(rdb, 60, 1*time.Minute, "user:customer_jobs")
-	rlLedger := ratelimit.NewRateLimiter(rdb, 60, 1*time.Minute, "user:ledger")
-	rlLedgerIP := ratelimit.NewRateLimiter(rdb, 60, 1*time.Minute, "user:ledger_ip")
-	rlRatings := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "user:ratings")
-	rlReconciliation := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "user:reconciliation")
+	// Limiter construction is nil-safe: with a nil Redis client (some test
+	// harnesses), limiter FIELDS stay nil so per-endpoint guards skip limiting
+	// instead of wrapping a nil-Redis limiter that would panic on first use.
+	newHandlerLimiter := func(limit int, name string) *handlerutil.RateLimiter {
+		if rdb == nil {
+			return nil
+		}
+		return handlerutil.NewRateLimiter(ratelimit.NewRateLimiter(rdb, limit, 1*time.Minute, name))
+	}
 
 	authClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
 	chatClient := resilience.NewClient(client, "chat-service", 2, 5*time.Second)
@@ -188,13 +196,17 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		authServiceURL:            cfg.AuthServiceURL,
 		chatServiceURL:            chatServiceURL,
 		notificationServiceURL:    notificationServiceURL,
-		limiter:                   handlerutil.NewRateLimiter(rl),
-		ownerJobsLimiter:          handlerutil.NewRateLimiter(rlOwnerJobs),
-		customerJobsLimiter:       handlerutil.NewRateLimiter(rlCustomerJobs),
-		ledgerLimiter:             handlerutil.NewRateLimiter(rlLedger),
-		ledgerIPLimiter:           handlerutil.NewRateLimiter(rlLedgerIP),
-		ratingsLimiter:            handlerutil.NewRateLimiter(rlRatings),
-		reconciliationLimiter:     handlerutil.NewRateLimiter(rlReconciliation),
+		limiter:                   newHandlerLimiter(5, "user"),
+		ownerJobsLimiter:          newHandlerLimiter(60, "user:owner_jobs"),
+		customerJobsLimiter:       newHandlerLimiter(60, "user:customer_jobs"),
+		ledgerLimiter:             newHandlerLimiter(60, "user:ledger"),
+		ledgerIPLimiter:           newHandlerLimiter(60, "user:ledger_ip"),
+		ratingsLimiter:            newHandlerLimiter(30, "user:ratings"),
+		reconciliationLimiter:     newHandlerLimiter(30, "user:reconciliation"),
+		completeJobLimiter:        newHandlerLimiter(30, "user:complete_job"),
+		resolveReconLimiter:       newHandlerLimiter(30, "user:reconciliation_resolve"),
+		payoutLimiter:             newHandlerLimiter(30, "user:payout"),
+		subscriptionLimiter:       newHandlerLimiter(30, "user:subscription"),
 		internalServiceToken:      cfg.InternalServiceToken,
 		locationLastUpdate:        make(map[string]time.Time),
 		locationInFlight:          make(map[string]bool),
@@ -285,14 +297,131 @@ func resolveTokenWithRole(tokenStr string, allowedRoles ...string) (string, erro
 	return claims.UserID, nil
 }
 
-func (u *UserService) saveIdempotencyKey(ctx context.Context, key, jobID string) {
+// idempotencyPendingValue marks a reserved-but-incomplete idempotency slot.
+const idempotencyPendingValue = "__pending__"
+
+// saveIdempotencyKey records the completed job ID for a per-user idempotency
+// key. Idempotency bookkeeping is deliberately NOT tied to the inbound request
+// context: a client disconnect between job creation and key-set previously
+// cancelled the write, dropping the key and causing client retries to
+// double-book funded jobs.
+func (u *UserService) saveIdempotencyKey(userID, key, jobID string) {
 	if key != "" && u.rdb != nil {
-		redisKey := "idempotency:job:" + key
-		if err := u.rdb.Set(ctx, redisKey, jobID, 24*time.Hour).Err(); err != nil {
+		redisKey := "idempotency:job:" + userID + ":" + key
+		if err := u.rdb.Set(context.Background(), redisKey, jobID, 24*time.Hour).Err(); err != nil {
 			// #nosec G706 //nolint:gosec -- key comes from request header/body, used for failure diagnosis
 			log.Printf("[ERROR] failed to store idempotency key %s in Redis: %v", key, err)
 		}
 	}
+}
+
+// reserveIdempotencyKey atomically claims the per-user idempotency slot via
+// SET NX, closing the concurrent-duplicate race where two requests could both
+// miss the replay check and both create funded jobs. It returns:
+//   - replayJobID != "" : a completed request already exists under this key —
+//     serve its job as an idempotent replay.
+//   - conflict == true  : another identical request holds a pending
+//     reservation — reject with 409 instead of double-booking.
+//
+// Redis unavailability degrades to non-idempotent operation (logged), matching
+// the pre-existing availability behaviour of the replay check.
+func (u *UserService) reserveIdempotencyKey(userID, key string) (replayJobID string, conflict bool) {
+	if key == "" || u.rdb == nil {
+		return "", false
+	}
+	redisKey := "idempotency:job:" + userID + ":" + key
+
+	existing, err := u.rdb.Get(context.Background(), redisKey).Result()
+	if err == nil && existing != "" && existing != idempotencyPendingValue {
+		return existing, false
+	}
+
+	reserved, err := u.rdb.SetNX(context.Background(), redisKey, idempotencyPendingValue, 24*time.Hour).Result()
+	if err != nil {
+		log.Printf("[WARN] idempotency reservation unavailable, proceeding without dedupe: %v", err)
+		return "", false
+	}
+	if !reserved {
+		val, err := u.rdb.Get(context.Background(), redisKey).Result()
+		if err == nil && val != "" && val != idempotencyPendingValue {
+			return val, false // lost the race but the winner already finished
+		}
+		return "", true // genuine concurrent in-flight duplicate
+	}
+	return "", false
+}
+
+// releaseIdempotencyReservation drops a pending reservation after a failure
+// path that did NOT persist a job, so legitimate client retries are not
+// blocked by a stale pending marker. Safe to call when no reservation exists.
+func (u *UserService) releaseIdempotencyReservation(userID, key string) {
+	if key == "" || u.rdb == nil {
+		return
+	}
+	_ = u.rdb.Del(context.Background(), "idempotency:job:"+userID+":"+key).Err()
+}
+
+// ---------------------------------------------------------------------------
+// Payout idempotency (mirrors the TrackJob reservation pattern; QA audit Q1)
+// ---------------------------------------------------------------------------
+
+// reservePayoutIdempotencyKey atomically claims the per-owner payout
+// idempotency slot via SET NX. Returns:
+//   - replayID != "": an identical logical request already completed under
+//     this key — serve its stored payout request instead of double-deducting.
+//   - conflict == true: another identical request holds a pending
+//     reservation — reject with 409.
+//
+// Redis unavailability degrades to non-idempotent operation (logged),
+// matching TrackJob's availability behaviour.
+func (u *UserService) reservePayoutIdempotencyKey(tenantID, key string) (replayID string, conflict bool) {
+	if key == "" || u.rdb == nil {
+		return "", false
+	}
+	redisKey := "idempotency:payout:" + tenantID + ":" + key
+
+	existing, err := u.rdb.Get(context.Background(), redisKey).Result()
+	if err == nil && existing != "" && existing != idempotencyPendingValue {
+		return existing, false
+	}
+
+	reserved, err := u.rdb.SetNX(context.Background(), redisKey, idempotencyPendingValue, 24*time.Hour).Result()
+	if err != nil {
+		log.Printf("[WARN] payout idempotency reservation unavailable, proceeding without dedupe: %v", err)
+		return "", false
+	}
+	if !reserved {
+		val, err := u.rdb.Get(context.Background(), redisKey).Result()
+		if err == nil && val != "" && val != idempotencyPendingValue {
+			return val, false // lost the race but the winner already finished
+		}
+		return "", true // genuine concurrent in-flight duplicate
+	}
+	return "", false
+}
+
+func (u *UserService) savePayoutIdempotencyKey(tenantID, key, payoutID string) {
+	if key == "" || u.rdb == nil {
+		return
+	}
+	if err := u.rdb.Set(context.Background(), "idempotency:payout:"+tenantID+":"+key, payoutID, 24*time.Hour).Err(); err != nil {
+		// The key is client-controlled: CR/LF-sanitize before logging (G706).
+		safeKey := strings.Map(func(r rune) rune {
+			if r == '\n' || r == '\r' {
+				return ' '
+			}
+			return r
+		}, key)
+		// #nosec G706 //nolint:gosec -- key is client-controlled failure-diagnostic context and is CR/LF-sanitized above; matches saveIdempotencyKey
+		log.Printf("[ERROR] failed to store payout idempotency key %s: %v", safeKey, err)
+	}
+}
+
+func (u *UserService) releasePayoutIdempotencyReservation(tenantID, key string) {
+	if key == "" || u.rdb == nil {
+		return
+	}
+	_ = u.rdb.Del(context.Background(), "idempotency:payout:"+tenantID+":"+key).Err()
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
@@ -316,6 +445,13 @@ func parseFloat(s string, fallback float64) float64 {
 		return fallback
 	}
 	return v
+}
+
+// roundMoney rounds a monetary value to cents using half-away-from-zero,
+// the single sanctioned boundary treatment for client-supplied money until
+// the deferred integer-minor-units migration.
+func roundMoney(x float64) float64 {
+	return math.Round(x*100) / 100
 }
 
 func haversineKm(lat1, lon1, lat2, lon2 float64) float64 {
@@ -397,6 +533,43 @@ func (u *UserService) verifyEmployeeAssignment(employeeID, ownerID string) (bool
 	}
 
 	return true, nil
+}
+
+// fetchUserRole resolves a user's role via the auth-service by raw ID.
+// Used by GetRatings to classify unresolved raw-ID targets (QA audit Q24):
+// business reputation (owner/employee) is public-by-design for the ADR-0014
+// directory, while customer rating histories stay private.
+func (u *UserService) fetchUserRole(ctx context.Context, userID string) (string, error) {
+	// Nil-safe like the limiter fields: hand-built harnesses without an auth
+	// client fail closed instead of panicking.
+	if u.authClient == nil {
+		return "", ErrServiceUnavailable
+	}
+	url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, url.QueryEscape(userID))
+	// #nosec G704 //nolint:gosec -- sink marker: authServiceURL is trusted internal config and the query value is url.QueryEscape'd before reaching this request (QA audit Q24 target-role classification)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("X-Internal-Token", u.internalServiceToken)
+	resp, err := u.authClient.Do(req)
+	if err != nil {
+		return "", ErrServiceUnavailable
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return "", fmt.Errorf("user not found")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", ErrServiceUnavailable
+	}
+	var user struct {
+		Role string `json:"role"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return "", err
+	}
+	return user.Role, nil
 }
 
 // requireTier enforces that a tenant has at least the minimum subscription tier.

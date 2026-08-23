@@ -3,6 +3,8 @@ import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/themed_panel.dart';
+import '../widgets/form_screen_template.dart';
 import '../widgets/otp_pin_input.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
@@ -123,41 +125,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final auth = Provider.of<AuthProvider>(context);
     final l10n = context.l10n;
 
-    return Scaffold(
+    return FormScreenTemplate(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        foregroundColor: AppColors.primary,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.onBackground),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+      appBarBackgroundColor: Colors.transparent,
+      appBarForegroundColor: AppColors.onBackground,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.marginMobile,
+        vertical: AppSpacing.md,
       ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.marginMobile,
-              vertical: AppSpacing.md,
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Main Stitch Reset Password Card
-                    _buildForgotPasswordCard(auth, l10n),
-                    const SizedBox(height: AppSpacing.lg),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Main Stitch Reset Password Card
+                _buildForgotPasswordCard(auth, l10n),
+                const SizedBox(height: AppSpacing.lg),
 
-                    // External Footer Navigation Link (Back to Login)
-                    _buildFooterLink(l10n),
-                  ],
-                ),
-              ),
+                // External Footer Navigation Link (Back to Login)
+                _buildFooterLink(l10n),
+              ],
             ),
           ),
         ),
@@ -243,7 +234,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             validator: (val) {
               final code = _otpController.text.trim();
               if (code.isEmpty || code.length != 6) {
-                return "Enter 6-digit OTP code";
+                return context.l10n.enterOtp6Digits;
               }
               return null;
             },
@@ -330,22 +321,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget _buildHeader(AppLocalizations l10n) {
     return Column(
       children: [
-        Center(
-          child: Container(
-            width: 64,
-            height: 64,
-            decoration: const BoxDecoration(
+        const Center(
+          child: ThemedPanel(
               color: AppColors.primaryContainer,
               shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.lock_reset,
-                size: 32,
-                color: AppColors.secondary,
-              ),
-            ),
-          ),
+              width: 64,
+              height: 64,
+              child: Center(
+                child: Icon(
+                  Icons.lock_reset,
+                  size: 32,
+                  color: AppColors.secondary,
+                ),
+              )),
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
@@ -369,24 +357,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildDevOtpBanner() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
+    return ThemedPanel(
         color: AppColors.secondary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(
           color: AppColors.secondary.withValues(alpha: 0.4),
         ),
-      ),
-      child: Text(
-        "Dev OTP Code: $_currentDevOtp",
-        style: AppTypography.bodyLg.copyWith(
-          color: AppColors.primary,
-          fontWeight: FontWeight.bold,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    );
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Text(
+          context.l10n.devOtpBanner(_currentDevOtp ?? ''),
+          style: AppTypography.bodyLg.copyWith(
+            color: AppColors.primary,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ));
   }
 
   Widget _buildFooterLink(AppLocalizations l10n) {

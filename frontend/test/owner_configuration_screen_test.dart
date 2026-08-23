@@ -1,4 +1,6 @@
+import 'package:frontend/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/core/api_client.dart';
@@ -139,6 +141,14 @@ Widget createOwnerConfigApp({
       ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
     ],
     child: MaterialApp(
+      locale: const Locale('en'),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: homeScreen ?? const OwnerConfigurationScreen(),
     ),
   );

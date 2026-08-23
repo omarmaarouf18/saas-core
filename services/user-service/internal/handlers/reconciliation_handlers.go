@@ -142,6 +142,13 @@ func (u *UserService) ResolveReconciliation(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if u.resolveReconLimiter != nil {
+		if limited, remaining := u.resolveReconLimiter.CheckAndRecord(resolvedOwnerID); limited {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many requests; retry in %.0f seconds", remaining.Seconds())})
+			return
+		}
+	}
+
 	ctx := r.Context()
 	job := u.store.GetJob(ctx, req.JobID)
 	if job == nil {
@@ -169,7 +176,7 @@ func (u *UserService) ResolveReconciliation(w http.ResponseWriter, r *http.Reque
 	switch req.Decision {
 	case "release_to_employee":
 		if job.PaymentMethod == "cod" {
-			if err := u.store.CompleteCODJob(ctx, job.ID); err != nil && !strings.Contains(err.Error(), "not active") {
+			if err := u.store.CompleteCODJob(ctx, job.ID, 0); err != nil && !strings.Contains(err.Error(), "not active") {
 				log.Printf("[ERROR] Failed to complete COD job on reconciliation release for job %s: %v", job.ID, err)
 			}
 		} else if amount > 0 {

@@ -58,6 +58,27 @@ flutter run --dart-define=API_BASE_URL=https://staging.yourdomain.com/api/v1
 
 For detailed per-platform networking setups (including `adb reverse` port forwarding, iOS simulator loops, and dev-mode HTTPS certificate overrides), consult [CONNECTING_TO_BACKEND.md](CONNECTING_TO_BACKEND.md).
 
+### Golden Baseline Policy (Flutter Version Contract)
+
+Pixel goldens (`test/goldens/`) are only valid for the Flutter engine build that
+rendered them. The authoritative version is pinned in
+`.github/workflows/ci.yml` (`flutter-version:`).
+
+**Rule: any Flutter bump must regenerate the goldens in the same change.**
+
+WHY (environment contract, not superstition): goldens are compared byte-for-byte
+against PNGs produced by one specific Skia/engine build + OS font environment. A
+baseline rendered under Flutter X fails under Flutter Y with small constant pixel
+diffs (glyph anti-aliasing/hinting changes) even when no code changed — this was
+the root cause of every historical "Flutter Lint & Test" failure (see
+`docs/frontend/STATUS.md`). Matching the comparing environment to the generating
+environment is what keeps them green; the rule keeps them matched permanently.
+
+Regeneration procedure (CI-rendered, preferred):
+1. Actions tab → "Regenerate Golden Baselines" → Run workflow (your branch).
+2. Download the `ci-rendered-goldens` artifact.
+3. Review the PNGs locally, replace `frontend/test/goldens/`, commit.
+
 ---
 
 ## 3. Automated CI/CD & Release APKs

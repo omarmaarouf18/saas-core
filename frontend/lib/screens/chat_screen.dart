@@ -1,11 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../core/error_messages.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../models/chat_message.dart';
 import '../providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
+import '../core/provider_connection_cleanup.dart';
+import '../widgets/themed_panel.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
@@ -20,14 +24,26 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen>
+    with ProviderConnectionCleanup<ChatScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
+  Timer? _scrollToBottomTimer;
+  bool _isSending = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // A6: the ChatProvider is app-lifetime; this screen owns the live
+      // connection while open. Register teardown while context is valid —
+      // the previous post-frame `if (mounted)` guard inside dispose() was
+      // dead code (mounted is always false there), leaving the socket and
+      // its reconnect timer running after the screen was popped.
+      addConnectionTeardown(
+        Provider.of<ChatProvider>(context, listen: false).disconnect,
+      );
       _initChat();
     });
   }
@@ -48,11 +64,9 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        Provider.of<ChatProvider>(context, listen: false).disconnect();
-      }
-    });
+    // A6 hardening: a one-shot scroll timer scheduled by a just-sent message
+    // must not fire against a disposed controller.
+    _scrollToBottomTimer?.cancel();
     super.dispose();
   }
 
@@ -67,23 +81,32 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _sendMessage() async {
+    // In-flight guard (QA audit A4): the send button is a raw InkWell (and
+    // the keyboard send action routes here too); a double-tap must not push
+    // the same message twice. The controller is only cleared AFTER the
+    // await, so without this flag both sends carry identical text.
+    if (_isSending) return;
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
+    _isSending = true;
     final chat = Provider.of<ChatProvider>(context, listen: false);
     try {
       await chat.sendMessage(text);
       _messageController.clear();
-      Timer(AppMotion.durationFast, _scrollToBottom);
+      _scrollToBottomTimer?.cancel();
+      _scrollToBottomTimer = Timer(AppMotion.durationFast, _scrollToBottom);
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
         ThemedSnackBar.showError(
           context,
-          l10n.chatFailedSend(e.toString()),
+          l10n.chatFailedSend(friendlyErrorMessage(e)),
           onRetry: _sendMessage,
         );
       }
+    } finally {
+      _isSending = false;
     }
   }
 
@@ -106,17 +129,14 @@ class _ChatScreenState extends State<ChatScreen> {
       statusIndicator = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: const BoxDecoration(
+          const ThemedPanel(
               color: AppColors.success,
               shape: BoxShape.circle,
-            ),
-          ),
+              width: 7,
+              height: 7),
           const SizedBox(width: AppSpacing.xs),
           Text(
-            "Live",
+            l10n.chatStatusLive,
             style: AppTypography.labelSm.copyWith(
               color: AppColors.success,
               fontWeight: FontWeight.bold,
@@ -149,17 +169,14 @@ class _ChatScreenState extends State<ChatScreen> {
       statusIndicator = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: const BoxDecoration(
+          const ThemedPanel(
               color: AppColors.outline,
               shape: BoxShape.circle,
-            ),
-          ),
+              width: 7,
+              height: 7),
           const SizedBox(width: AppSpacing.xs),
           Text(
-            "Disconnected",
+            l10n.chatStatusDisconnected,
             style: AppTypography.labelSm.copyWith(
               color: AppColors.outline,
             ),
@@ -168,84 +185,75 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
 
-    return Scaffold(
+    return AppShell(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "${l10n.chatTitle} #$shortJobId",
-              style: AppTypography.titleMd.copyWith(
-                color: AppColors.onPrimary,
-                fontWeight: FontWeight.w600,
-              ),
+      appBarBackgroundColor: AppColors.primary,
+      appBarForegroundColor: AppColors.onPrimary,
+      titleWidget: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            "${l10n.chatTitle} #$shortJobId",
+            style: AppTypography.titleMd.copyWith(
+              color: AppColors.onPrimary,
+              fontWeight: FontWeight.w600,
             ),
-            const SizedBox(height: 2),
-            statusIndicator,
-          ],
-        ),
+          ),
+          const SizedBox(height: 2),
+          statusIndicator,
+        ],
       ),
       body: Column(
         children: [
           // Context Job Header Strip (Stitch DOM)
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-            decoration: BoxDecoration(
+          ThemedPanel(
               color: AppColors.surface,
               border: Border(
                 bottom: BorderSide(
                   color: AppColors.outlineVariant.withValues(alpha: 0.5),
                 ),
               ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.local_shipping,
-                    color: AppColors.primary,
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        "Job #$shortJobId",
-                        style: AppTypography.labelLg.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.onSurface,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              child: Row(
+                children: [
+                  ThemedPanel(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                      width: 36,
+                      height: 36,
+                      child: const Icon(
+                        Icons.local_shipping,
+                        color: AppColors.primary,
+                        size: 18,
+                      )),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          l10n.chatJobTag(shortJobId),
+                          style: AppTypography.labelLg.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.onSurface,
+                          ),
                         ),
-                      ),
-                      Text(
-                        "Direct Real-time Channel",
-                        style: AppTypography.labelSm.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                        Text(
+                          l10n.chatDirectChannel,
+                          style: AppTypography.labelSm.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
+                ],
+              )),
 
           if (chat.error != null && chat.subscriptionError == null)
             ThemedErrorBanner(
@@ -260,8 +268,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: Padding(
                       padding: const EdgeInsets.all(AppSpacing.lg),
                       child: ThemedErrorBanner(
-                        message:
-                            "Access Denied: You are not authorized to view or join the chat for Job #${widget.jobId}.",
+                        message: l10n.chatAccessDeniedJob(widget.jobId),
                         onRetry: _initChat,
                       ),
                     ),
@@ -291,12 +298,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
           // Sticky Input Row (Stitch DOM)
           if (chat.subscriptionError == null)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
-              decoration: BoxDecoration(
+            ThemedPanel(
                 color: AppColors.surface,
                 border: Border(
                   top: BorderSide(
@@ -310,68 +312,67 @@ class _ChatScreenState extends State<ChatScreen> {
                     blurRadius: 6,
                   ),
                 ],
-              ),
-              child: SafeArea(
-                top: false,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerLowest,
-                          borderRadius: AppRadius.defaultBorder,
-                          border: Border.all(
-                            color: AppColors.outlineVariant,
-                            width: 1,
-                          ),
-                        ),
-                        child: TextField(
-                          controller: _messageController,
-                          minLines: 1,
-                          maxLines: 4,
-                          textInputAction: TextInputAction.send,
-                          onSubmitted: (_) => _sendMessage(),
-                          style: AppTypography.bodyMd.copyWith(
-                            color: AppColors.onSurface,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: l10n.chatTypeHint,
-                            hintStyle: AppTypography.bodyMd.copyWith(
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.md,
-                              vertical: AppSpacing.sm,
-                            ),
-                            border: InputBorder.none,
-                            isDense: true,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Material(
-                      color: AppColors.secondary,
-                      shape: const CircleBorder(),
-                      elevation: 1,
-                      child: InkWell(
-                        onTap: _sendMessage,
-                        customBorder: const CircleBorder(),
-                        child: const Padding(
-                          padding: EdgeInsets.all(AppSpacing.sm),
-                          child: Icon(
-                            Icons.send_rounded,
-                            color: AppColors.onSecondary,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
                 ),
-              ),
-            ),
+                child: SafeArea(
+                  top: false,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: ThemedPanel(
+                            color: AppColors.surfaceContainerLowest,
+                            borderRadius: AppRadius.defaultBorder,
+                            border: Border.all(
+                              color: AppColors.outlineVariant,
+                              width: 1,
+                            ),
+                            child: TextField(
+                              controller: _messageController,
+                              minLines: 1,
+                              maxLines: 4,
+                              textInputAction: TextInputAction.send,
+                              onSubmitted: (_) => _sendMessage(),
+                              style: AppTypography.bodyMd.copyWith(
+                                color: AppColors.onSurface,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: l10n.chatTypeHint,
+                                hintStyle: AppTypography.bodyMd.copyWith(
+                                  color: AppColors.onSurfaceVariant,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md,
+                                  vertical: AppSpacing.sm,
+                                ),
+                                border: InputBorder.none,
+                                isDense: true,
+                              ),
+                            )),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Material(
+                        color: AppColors.secondary,
+                        shape: const CircleBorder(),
+                        elevation: 1,
+                        child: InkWell(
+                          onTap: _sendMessage,
+                          customBorder: const CircleBorder(),
+                          child: const Padding(
+                            padding: EdgeInsets.all(AppSpacing.sm),
+                            child: Icon(
+                              Icons.send_rounded,
+                              color: AppColors.onSecondary,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
         ],
       ),
     );
@@ -391,15 +392,7 @@ class _ChatScreenState extends State<ChatScreen> {
             isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           // Bubble Container
-          Container(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.78,
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm + 2,
-            ),
-            decoration: BoxDecoration(
+          ThemedPanel(
               color: isMe ? AppColors.primaryContainer : AppColors.surface,
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(AppRadius.md),
@@ -424,15 +417,20 @@ class _ChatScreenState extends State<ChatScreen> {
                   offset: const Offset(0, 1),
                 ),
               ],
-            ),
-            child: Text(
-              msg.content,
-              style: AppTypography.bodyMd.copyWith(
-                color: isMe ? AppColors.onPrimary : AppColors.onSurface,
-                height: 1.35,
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.78,
               ),
-            ),
-          ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm + 2,
+              ),
+              child: Text(
+                msg.content,
+                style: AppTypography.bodyMd.copyWith(
+                  color: isMe ? AppColors.onPrimary : AppColors.onSurface,
+                  height: 1.35,
+                ),
+              )),
           const SizedBox(height: AppSpacing.xxs),
           // Metadata Row: Username + Status icon
           Padding(

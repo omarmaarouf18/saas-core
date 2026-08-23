@@ -179,6 +179,11 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          # PINNED: pixel goldens (frontend/test/goldens/) are only valid for
+          # the engine build that rendered them. Bumping this version requires
+          # regenerating goldens in the same change — see
+          # .github/workflows/regen-goldens.yml and frontend/README.md.
+          flutter-version: '3.44.6'
 
       - name: Install dependencies
         working-directory: frontend
@@ -187,6 +192,9 @@ jobs:
       - name: Verify Formatting
         working-directory: frontend
         run: dart format --set-exit-if-changed lib/
+
+      - name: Frontend Composition Gate
+        run: bash scripts/frontend_composition_gate.sh
 
       - name: Flutter Analyze
         working-directory: frontend

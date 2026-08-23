@@ -6,6 +6,8 @@ import '../core/constants.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../providers/notifications_provider.dart';
+import '../widgets/themed_panel.dart';
+import '../widgets/dashboard_screen_template.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/primary_button.dart';
@@ -97,6 +99,7 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
             alignment: Alignment.center,
             children: [
               IconButton(
+                tooltip: context.l10n.tooltipNotifications,
                 key: const Key('notification_bell_button'),
                 icon: const Icon(Icons.notifications),
                 onPressed: () {
@@ -111,25 +114,22 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 Positioned(
                   right: 8,
                   top: 8,
-                  child: Container(
-                    padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
-                    decoration: BoxDecoration(
+                  child: ThemedPanel(
                       color: AppColors.error,
                       borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      '${provider.unreadCount}',
-                      style: AppTypography.labelMd.copyWith(
-                        color: AppColors.onPrimary,
-                        fontWeight: FontWeight.bold,
+                      padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+                      child: Text(
+                        '${provider.unreadCount}',
+                        style: AppTypography.labelMd.copyWith(
+                          color: AppColors.onPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      )),
                 ),
             ],
           ),
@@ -141,96 +141,62 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Scaffold(
+    return DashboardScreenTemplate(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.sm),
-          child: Center(
-            child: Container(
-              key: const Key('app_header_logo'),
-              padding: const EdgeInsets.all(AppSpacing.xs),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: const Icon(
-                Icons.storefront,
-                color: AppColors.secondary,
-                size: 18,
-              ),
-            ),
-          ),
+      title: _getTabTitle(_currentIndex, l10n),
+      actions: [
+        _buildNotificationBell(context),
+      ],
+      currentIndex: _currentIndex,
+      onDestinationSelected: onTabTapped,
+      tabs: [
+        _visitedTabs.contains(0)
+            ? _CustomerHomeDashboardTab(
+                onCategorySelected: _navigateToServicesCategory,
+                onGoToServices: () => onTabTapped(1),
+                onGoToHistory: () => onTabTapped(2),
+              )
+            : const SizedBox.shrink(),
+        _visitedTabs.contains(1)
+            ? CustomerMarketplaceScreen(
+                key: _marketplaceKey,
+                isEmbeddedInTab: true,
+              )
+            : const SizedBox.shrink(),
+        _visitedTabs.contains(2)
+            ? const CustomerJobsScreen(
+                isEmbeddedInTab: true,
+              )
+            : const SizedBox.shrink(),
+        _visitedTabs.contains(3)
+            ? const SettingsScreen(
+                isEmbeddedInTab: true,
+              )
+            : const SizedBox.shrink(),
+      ],
+      navigationBarKey: const Key('customer_bottom_navigation_bar'),
+      destinations: [
+        NavigationDestination(
+          key: const Key('nav_tab_home'),
+          icon: const Icon(Icons.home),
+          label: l10n.navHome,
         ),
-        title: Text(
-          _getTabTitle(_currentIndex, l10n),
-          style: AppTypography.titleMd
-              .copyWith(color: Theme.of(context).colorScheme.onSurface),
+        NavigationDestination(
+          key: const Key('nav_tab_services'),
+          icon: const Icon(Icons.storefront),
+          label: l10n.navServices,
         ),
-        actions: [
-          _buildNotificationBell(context),
-        ],
-      ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          _visitedTabs.contains(0)
-              ? _CustomerHomeDashboardTab(
-                  onCategorySelected: _navigateToServicesCategory,
-                  onGoToServices: () => onTabTapped(1),
-                  onGoToHistory: () => onTabTapped(2),
-                )
-              : const SizedBox.shrink(),
-          _visitedTabs.contains(1)
-              ? CustomerMarketplaceScreen(
-                  key: _marketplaceKey,
-                  isEmbeddedInTab: true,
-                )
-              : const SizedBox.shrink(),
-          _visitedTabs.contains(2)
-              ? const CustomerJobsScreen(
-                  isEmbeddedInTab: true,
-                )
-              : const SizedBox.shrink(),
-          _visitedTabs.contains(3)
-              ? const SettingsScreen(
-                  isEmbeddedInTab: true,
-                )
-              : const SizedBox.shrink(),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        key: const Key('customer_bottom_navigation_bar'),
-        selectedIndex: _currentIndex,
-        onDestinationSelected: onTabTapped,
-        destinations: [
-          NavigationDestination(
-            key: const Key('nav_tab_home'),
-            icon: const Icon(Icons.home),
-            label: l10n.navHome,
-          ),
-          NavigationDestination(
-            key: const Key('nav_tab_services'),
-            icon: const Icon(Icons.storefront),
-            label: l10n.navServices,
-          ),
-          NavigationDestination(
-            key: const Key('nav_tab_history'),
-            icon: const Icon(Icons.receipt_long),
-            label: l10n.navHistory,
-          ),
-          NavigationDestination(
-            key: const Key('nav_tab_settings'),
-            icon: const Icon(Icons.settings),
-            label: l10n.navSettings,
-          ),
-        ],
-      ),
+        NavigationDestination(
+          key: const Key('nav_tab_history'),
+          icon: const Icon(Icons.receipt_long),
+          label: l10n.navHistory,
+        ),
+        NavigationDestination(
+          key: const Key('nav_tab_settings'),
+          icon: const Icon(Icons.settings),
+          label: l10n.navSettings,
+        ),
+      ],
     );
   }
 }
@@ -304,69 +270,63 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
   }
 
   Widget _buildWelcomeBanner(AppLocalizations l10n, String username) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
+    return ThemedPanel(
         color: AppColors.primaryContainer,
         borderRadius: AppRadius.mdBorder,
         boxShadow: AppElevation.shadowLevel2List,
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Decorative Gold Ambient Glow
-          Positioned(
-            right: -20,
-            top: -20,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: AppColors.secondary.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Decorative Gold Ambient Glow
+            Positioned(
+              right: -20,
+              top: -20,
+              child: ThemedPanel(
+                  color: AppColors.secondary.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                  width: 100,
+                  height: 100),
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "${l10n.customerHomeGreeting} $username!",
-                style: AppTypography.headlineLgMobile.copyWith(
-                  color: AppColors.onPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                l10n.customerHomeSub,
-                style: AppTypography.bodyMd.copyWith(
-                  color: AppColors.onPrimary.withValues(alpha: 0.8),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: [
-                  SizedBox(
-                    width: 170,
-                    child: PrimaryButton(
-                      key: const Key('quick_book_now_button'),
-                      text: l10n.customerHomeQuickBookBtn,
-                      icon: Icons.local_shipping_outlined,
-                      trailingIcon: Icons.arrow_forward,
-                      onPressed: widget.onGoToServices,
-                    ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "${l10n.customerHomeGreeting} $username!",
+                  style: AppTypography.headlineLgMobile.copyWith(
+                    color: AppColors.onPrimary,
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  l10n.customerHomeSub,
+                  style: AppTypography.bodyMd.copyWith(
+                    color: AppColors.onPrimary.withValues(alpha: 0.8),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    SizedBox(
+                      width: 170,
+                      child: PrimaryButton(
+                        key: const Key('quick_book_now_button'),
+                        text: l10n.customerHomeQuickBookBtn,
+                        icon: Icons.local_shipping_outlined,
+                        trailingIcon: Icons.arrow_forward,
+                        onPressed: widget.onGoToServices,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ));
   }
 
   Widget _buildQuickSearchCard() {
@@ -378,21 +338,18 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.xs),
-                decoration: BoxDecoration(
+              ThemedPanel(
                   color: AppColors.secondary.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(AppRadius.xs),
-                ),
-                child: const Icon(
-                  Icons.near_me,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-              ),
+                  padding: const EdgeInsets.all(AppSpacing.xs),
+                  child: const Icon(
+                    Icons.near_me,
+                    color: AppColors.primary,
+                    size: 20,
+                  )),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                "Where to deliver?",
+                context.l10n.customerHomeWhereDeliver,
                 style: AppTypography.titleMd.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.onSurface,
@@ -404,43 +361,40 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
           InkWell(
             onTap: widget.onGoToServices,
             borderRadius: AppRadius.smBorder,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
-              decoration: BoxDecoration(
+            child: ThemedPanel(
                 color: AppColors.surfaceContainerLow,
                 borderRadius: AppRadius.smBorder,
                 border: Border.all(
                   color: AppColors.outlineVariant,
                   width: 1,
                 ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.search,
-                    color: AppColors.onSurfaceVariant,
-                    size: AppIconSize.md,
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      "Enter destination or pickup area...",
-                      style: AppTypography.bodyMd.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.search,
+                      color: AppColors.onSurfaceVariant,
+                      size: AppIconSize.md,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        context.l10n.customerHomeSearchHint,
+                        style: AppTypography.bodyMd.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                )),
           ),
           const SizedBox(height: AppSpacing.md),
           PrimaryButton(
             key: const Key('find_couriers_button'),
-            text: "Find Nearby Couriers",
+            text: context.l10n.findNearbyCouriers,
             icon: Icons.search,
             trailingIcon: Icons.arrow_forward,
             onPressed: widget.onGoToServices,
@@ -567,8 +521,8 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
           Column(
             children: activeJobs.map((job) {
               final displayId = job.id.length > 8
-                  ? job.id.substring(0, 8).toUpperCase()
-                  : job.id.toUpperCase();
+                  ? AppTypography.uppercaseLabel(job.id.substring(0, 8))
+                  : AppTypography.uppercaseLabel(job.id);
               return Container(
                 margin: const EdgeInsets.only(bottom: AppSpacing.md),
                 child: ThemedCard(
@@ -642,10 +596,10 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text("Origin",
+                          Text(context.l10n.commonOrigin,
                               style: AppTypography.caption
                                   .copyWith(color: AppColors.onSurfaceVariant)),
-                          Text("Destination",
+                          Text(context.l10n.commonDestination,
                               style: AppTypography.caption
                                   .copyWith(color: AppColors.onSurfaceVariant)),
                         ],
@@ -655,16 +609,13 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                       const SizedBox(height: AppSpacing.sm),
                       Row(
                         children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: const BoxDecoration(
+                          const ThemedPanel(
                               color: AppColors.surfaceContainerHigh,
                               shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.person,
-                                size: 18, color: AppColors.onSurfaceVariant),
-                          ),
+                              width: 32,
+                              height: 32,
+                              child: Icon(Icons.person,
+                                  size: 18, color: AppColors.onSurfaceVariant)),
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: Column(
@@ -672,15 +623,17 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                               children: [
                                 Text(
                                   job.employeeId != null
-                                      ? "Courier: Assigned"
-                                      : "Finding Courier...",
+                                      ? context.l10n.courierAssignedLabel
+                                      : context.l10n.findingCourierLabel,
                                   style: AppTypography.bodySm.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.onSurface,
                                   ),
                                 ),
                                 Text(
-                                  "Payment: ${job.paymentMethod.toUpperCase()}",
+                                  context.l10n.paymentMethodLine(
+                                      AppTypography.uppercaseLabel(
+                                          job.paymentMethod)),
                                   style: AppTypography.caption.copyWith(
                                     color: AppColors.onSurfaceVariant,
                                   ),
@@ -752,14 +705,11 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(
+                ThemedPanel(
                     color: iconBgColor,
                     borderRadius: BorderRadius.circular(AppRadius.xs),
-                  ),
-                  child: Icon(icon, color: iconColor, size: AppIconSize.md),
-                ),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: Icon(icon, color: iconColor, size: AppIconSize.md)),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   title,

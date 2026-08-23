@@ -202,9 +202,13 @@ class StatusBadge extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.xs),
           ],
-          Text(
-            config.label.toUpperCase(),
-            style: textStyle,
+          Flexible(
+            child: Text(
+              config.label.toUpperCase(),
+              style: textStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

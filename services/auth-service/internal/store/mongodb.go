@@ -4,7 +4,10 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -387,13 +390,24 @@ func (s *MongoDB) VerifyOTP(ctx context.Context, email, otp string) error {
 		return fmt.Errorf("invalid OTP")
 	}
 
-	// Mark as verified and clear the encrypted code atomically.
-	_, err = s.users.UpdateOne(ctx,
-		bson.M{"email": email},
+	// Consume atomically ONLY if the stored ciphertext is still exactly what
+	// we just validated. AES-GCM encrypts each issued code under a fresh
+	// random nonce, so the ciphertext doubles as an opaque one-time handle:
+	//   - a concurrent SetOTP (resend) replaces it -> this consume misses,
+	//     correctly rejecting the superseded code;
+	//   - a competing verifier clears it first -> this consume misses too,
+	//     so one code can never yield two successes (QA audit Q7).
+	res := s.users.FindOneAndUpdate(ctx,
+		bson.M{"email": email, "otp_code": user.OTPCode},
 		bson.M{"$set": bson.M{"otp_verified": true, "otp_code": ""}},
 	)
-	if err != nil {
-		return fmt.Errorf("store: verify OTP: %w", err)
+	if res.Err() != nil {
+		if errors.Is(res.Err(), mongo.ErrNoDocuments) {
+			// Superseded by a resend or already consumed by a racing verify;
+			// same generic rejection as a wrong code (anti-enumeration).
+			return fmt.Errorf("invalid OTP")
+		}
+		return fmt.Errorf("store: verify OTP: %w", res.Err())
 	}
 	return nil
 }
@@ -683,8 +697,19 @@ func (s *MongoDB) AuditCount(ctx context.Context) int {
 	return int(count)
 }
 
+// hashToken returns the SHA-256 hex digest used for bearer-token storage at
+// rest. Raw tokens are never persisted; lookups hash the presented credential
+// before querying, with a plaintext fallback for rows written before this
+// hardening (migration window).
+func hashToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
+}
+
 // AddReviewer saves a new reviewer to the reviewers collection.
+// The token is stored as a SHA-256 digest, never plaintext.
 func (s *MongoDB) AddReviewer(ctx context.Context, rev *models.Reviewer) error {
+	rev.Token = hashToken(rev.Token)
 	_, err := s.reviewers.InsertOne(ctx, rev)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
@@ -705,10 +730,16 @@ func (s *MongoDB) GetReviewerByID(ctx context.Context, id string) (*models.Revie
 	return &rev, nil
 }
 
-// GetReviewerByToken fetches a reviewer by their unique token.
+// GetReviewerByToken fetches a reviewer by their unique token. The presented
+// credential is hashed before querying; if no digest row matches, a legacy
+// plaintext lookup runs once so credentials issued before the at-rest
+// hashing migration keep working until re-onboarded.
 func (s *MongoDB) GetReviewerByToken(ctx context.Context, token string) (*models.Reviewer, error) {
 	var rev models.Reviewer
-	err := s.reviewers.FindOne(ctx, bson.M{"token": token}).Decode(&rev)
+	err := s.reviewers.FindOne(ctx, bson.M{"token": hashToken(token)}).Decode(&rev)
+	if err != nil {
+		err = s.reviewers.FindOne(ctx, bson.M{"token": token}).Decode(&rev)
+	}
 	if err != nil {
 		return nil, err
 	}

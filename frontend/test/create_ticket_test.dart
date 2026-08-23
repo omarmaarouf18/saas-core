@@ -52,7 +52,7 @@ class MockChatProviderForTest extends ChatProvider {
     }
 
     return {
-      'id': 'ticket-999',
+      'ticket_id': 'ticket-999',
       'user_id': 'cust-1',
       'context_id': contextId,
       'status': 'open',
@@ -229,5 +229,33 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(CreateTicketDialog), findsOneWidget);
+  });
+
+  testWidgets('Success snackbar displays the real backend ticket_id',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    // Regression guard: chat-service serializes ComplaintTicket.ID with the
+    // JSON tag "ticket_id"; the dialog previously read res['id'] and always
+    // rendered an empty Ticket ID.
+    final mockChat = MockChatProviderForTest(apiClient);
+
+    await tester.pumpWidget(createDialogWidget(chatProvider: mockChat));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+        find.byKey(const Key('ticket_subject_input')), 'Broken parcel');
+    await tester.enterText(find.byKey(const Key('ticket_description_input')),
+        'The parcel arrived crushed.');
+    await tester.tap(find.byKey(const Key('submit_ticket_button')));
+    // Assert on the frame where the snackbar is visible: pumpAndSettle would
+    // run past the snackbar's 2s auto-dismiss timer and remove it.
+    await tester.pump();
+    await tester.pump();
+
+    expect(mockChat.createTicketCalled, isTrue);
+    expect(find.textContaining('Ticket ID: ticket-999'), findsOneWidget,
+        reason: 'Snackbar must show the ticket_id returned by the backend');
+
+    await tester.pumpAndSettle();
   });
 }

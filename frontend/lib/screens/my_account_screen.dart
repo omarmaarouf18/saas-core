@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/email_change_dialog.dart';
+import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/themed_card.dart';
@@ -26,6 +28,11 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   final _usernameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _newAddressController = TextEditingController();
+  // A6: the read-only email field previously allocated a fresh inline
+  // `TextEditingController(text: userEmail)` on every build (every
+  // address edit / submit state change); it is now owned and disposed here.
+  // Email is display-only; the value is populated in _loadAndPrepopulate.
+  final _emailController = TextEditingController();
 
   List<String> _frequentAddresses = [];
   bool _isSubmitting = false;
@@ -51,6 +58,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
       if (user != null) {
         _usernameController.text = user.username;
         _phoneController.text = user.phone ?? '';
+        _emailController.text = user.email;
         _frequentAddresses = List<String>.from(user.frequentAddresses ?? []);
       }
 
@@ -65,6 +73,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     _usernameController.dispose();
     _phoneController.dispose();
     _newAddressController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -135,7 +144,11 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = friendlyErrorMessage(e);
+          // QA audit A5: PATCH /auth/user is an auth-path endpoint; prefer
+          // the provider's stored verbatim message (same contract as the
+          // email-change dialog beside it) with friendly fallback.
+          final auth = Provider.of<AuthProvider>(context, listen: false);
+          _errorMessage = auth.error ?? friendlyErrorMessage(e);
         });
       }
     } finally {
@@ -153,136 +166,127 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     final l10n = context.l10n;
     final user = authProvider.user;
 
-    return Scaffold(
+    return FormScreenTemplate(
+      title: l10n.myAccountTitle,
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(l10n.myAccountTitle),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        elevation: 0,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.marginMobile,
+        vertical: AppSpacing.lg,
       ),
       body: !_isInitialized
           ? Center(child: ThemedLoadingIndicator(message: l10n.loading))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.marginMobile,
-                vertical: AppSpacing.lg,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1000),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // 1. Stitch Display Header
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.myAccountHeader,
-                              style: AppTypography.headlineLgMobile.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                              ),
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1000),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // 1. Stitch Display Header
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.myAccountHeader,
+                            style: AppTypography.headlineLgMobile.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
                             ),
-                            const SizedBox(height: AppSpacing.xxs),
-                            Text(
-                              l10n.myAccountHeaderSub,
-                              style: AppTypography.bodyMd.copyWith(
-                                color: AppColors.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-
-                        // Error Banner
-                        if (_errorMessage != null) ...[
-                          ThemedErrorBanner(
-                            key: const Key('my_account_error_banner'),
-                            message: _errorMessage!,
-                            onRetry: _submitForm,
                           ),
-                          const SizedBox(height: AppSpacing.md),
+                          const SizedBox(height: AppSpacing.xxs),
+                          Text(
+                            l10n.myAccountHeaderSub,
+                            style: AppTypography.bodyMd.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
                         ],
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
 
-                        // 2. Responsive Stitch Grid Structure (LayoutBuilder)
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final isDesktop = constraints.maxWidth > 768;
-                            if (isDesktop) {
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Left Column: Profile Form (flex 2)
-                                  Expanded(
-                                    flex: 2,
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        _buildProfileInfoCard(
-                                          l10n: l10n,
-                                          userEmail: user?.email ?? '',
-                                        ),
-                                        const SizedBox(height: AppSpacing.lg),
-                                        PrimaryButton(
-                                          key: const Key(
-                                              'my_account_save_button'),
-                                          text: l10n.myAccountSaveButton,
-                                          trailingIcon: Icons.arrow_forward,
-                                          isLoading: _isSubmitting,
-                                          onPressed: _submitForm,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: AppSpacing.lg),
-                                  // Right Column: Avatar Summary & Addresses (flex 1)
-                                  Expanded(
-                                    flex: 1,
-                                    child: Column(
-                                      children: [
-                                        _buildUserOverviewCard(
-                                          username: user?.username ?? '',
-                                          role: user?.role ?? 'user',
-                                        ),
-                                        const SizedBox(height: AppSpacing.lg),
-                                        _buildFrequentAddressesCard(l10n: l10n),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }
+                      // Error Banner
+                      if (_errorMessage != null) ...[
+                        ThemedErrorBanner(
+                          key: const Key('my_account_error_banner'),
+                          message: _errorMessage!,
+                          onRetry: _submitForm,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                      ],
 
-                            // Mobile Layout (Stacked matching Stitch Mobile DOM)
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                      // 2. Responsive Stitch Grid Structure (LayoutBuilder)
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isDesktop = constraints.maxWidth > 768;
+                          if (isDesktop) {
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildProfileInfoCard(
-                                  l10n: l10n,
-                                  userEmail: user?.email ?? '',
+                                // Left Column: Profile Form (flex 2)
+                                Expanded(
+                                  flex: 2,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _buildProfileInfoCard(
+                                        l10n: l10n,
+                                      ),
+                                      const SizedBox(height: AppSpacing.lg),
+                                      PrimaryButton(
+                                        key:
+                                            const Key('my_account_save_button'),
+                                        text: l10n.myAccountSaveButton,
+                                        trailingIcon: Icons.arrow_forward,
+                                        isLoading: _isSubmitting,
+                                        onPressed: _submitForm,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(height: AppSpacing.lg),
-                                _buildFrequentAddressesCard(l10n: l10n),
-                                const SizedBox(height: AppSpacing.xl),
-                                PrimaryButton(
-                                  key: const Key('my_account_save_button'),
-                                  text: l10n.myAccountSaveButton,
-                                  trailingIcon: Icons.arrow_forward,
-                                  isLoading: _isSubmitting,
-                                  onPressed: _submitForm,
+                                const SizedBox(width: AppSpacing.lg),
+                                // Right Column: Avatar Summary & Addresses (flex 1)
+                                Expanded(
+                                  flex: 1,
+                                  child: Column(
+                                    children: [
+                                      _buildUserOverviewCard(
+                                        username: user?.username ?? '',
+                                        role: user?.role ?? 'user',
+                                      ),
+                                      const SizedBox(height: AppSpacing.lg),
+                                      _buildFrequentAddressesCard(l10n: l10n),
+                                    ],
+                                  ),
                                 ),
                               ],
                             );
-                          },
-                        ),
-                        const SizedBox(height: AppSpacing.xl),
-                      ],
-                    ),
+                          }
+
+                          // Mobile Layout (Stacked matching Stitch Mobile DOM)
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildProfileInfoCard(
+                                l10n: l10n,
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                              _buildFrequentAddressesCard(l10n: l10n),
+                              const SizedBox(height: AppSpacing.xl),
+                              PrimaryButton(
+                                key: const Key('my_account_save_button'),
+                                text: l10n.myAccountSaveButton,
+                                trailingIcon: Icons.arrow_forward,
+                                isLoading: _isSubmitting,
+                                onPressed: _submitForm,
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
                   ),
                 ),
               ),
@@ -293,7 +297,6 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   // --- Profile Information Card (Stitch Left Card) ---
   Widget _buildProfileInfoCard({
     required AppLocalizations l10n,
-    required String userEmail,
   }) {
     return ThemedCard(
       borderRadius: AppRadius.lg,
@@ -311,7 +314,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
               ),
               const SizedBox(width: AppSpacing.xs),
               Text(
-                'Profile Information',
+                context.l10n.profileInfoCardTitle,
                 style: AppTypography.titleMd.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,
@@ -328,7 +331,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
             key: const Key('my_account_email_field'),
             labelText: l10n.myAccountEmailLabel,
             hintText: l10n.myAccountEmailHint,
-            controller: TextEditingController(text: userEmail),
+            controller: _emailController,
             enabled: false,
             prefixIcon: const Icon(
               Icons.lock_outline,
@@ -384,8 +387,9 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     required String username,
     required String role,
   }) {
-    final String initial =
-        username.isNotEmpty ? username.substring(0, 1).toUpperCase() : 'U';
+    final String initial = username.isNotEmpty
+        ? AppTypography.uppercaseLabel(username.substring(0, 1))
+        : 'U';
 
     return ThemedCard(
       borderRadius: AppRadius.lg,
@@ -413,24 +417,21 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.xxs),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: AppSpacing.xxs,
-            ),
-            decoration: BoxDecoration(
+          ThemedPanel(
               color: AppColors.success.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: Text(
-              role.toUpperCase(),
-              style: AppTypography.labelSm.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.success,
-                letterSpacing: 0.8,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xxs,
               ),
-            ),
-          ),
+              child: Text(
+                AppTypography.uppercaseLabel(role),
+                style: AppTypography.labelSm.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.success,
+                  letterSpacing: 0.8,
+                ),
+              )),
         ],
       ),
     );
@@ -542,6 +543,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                         ),
                       ),
                       IconButton(
+                        tooltip: l10n.tooltipRemoveAddress,
                         key: Key('my_account_remove_address_$index'),
                         icon: const Icon(
                           Icons.delete_outline,

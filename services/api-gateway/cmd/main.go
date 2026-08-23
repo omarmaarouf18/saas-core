@@ -79,7 +79,8 @@ func main() {
 	// ---- Internal Health check endpoint ----
 	mux.HandleFunc("/health/internal", func(w http.ResponseWriter, r *http.Request) {
 		gotToken := r.Header.Get("X-Internal-Token")
-		if subtle.ConstantTimeCompare([]byte(gotToken), []byte(cfg.InternalServiceToken)) != 1 {
+		// Empty-secret guard (QA audit Q23): never authenticate when unconfigured.
+		if cfg.InternalServiceToken == "" || subtle.ConstantTimeCompare([]byte(gotToken), []byte(cfg.InternalServiceToken)) != 1 {
 			handlerutil.WriteJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: invalid internal token"})
 			return
 		}
@@ -92,7 +93,8 @@ func main() {
 	// ---- Admin App Version Configuration Endpoint ----
 	mux.HandleFunc("/api/v1/admin/version-config", func(w http.ResponseWriter, r *http.Request) {
 		gotToken := r.Header.Get("X-Internal-Token")
-		if subtle.ConstantTimeCompare([]byte(gotToken), []byte(cfg.InternalServiceToken)) != 1 {
+		// Empty-secret guard (QA audit Q23): never authenticate when unconfigured.
+		if cfg.InternalServiceToken == "" || subtle.ConstantTimeCompare([]byte(gotToken), []byte(cfg.InternalServiceToken)) != 1 {
 			handlerutil.WriteJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: invalid internal token"})
 			return
 		}
@@ -162,9 +164,16 @@ func main() {
 	log.Printf("API Gateway listening on HTTPS %s", addr)
 	log.Printf("Routes active: %d", len(cfg.Routes))
 	server := &http.Server{
-		Addr:              addr,
-		Handler:           logged,
+		Addr:    addr,
+		Handler: logged,
+		// ReadTimeout bounds slow-body slowloris reads (request headers
+		// were already capped at 3s). IdleTimeout reaps idle keep-alive
+		// connections. WriteTimeout is deliberately unset: SSE streams and
+		// proxied long-lived responses must never be truncated by a write
+		// deadline.
 		ReadHeaderTimeout: 3 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 	// Graceful shutdown.
 	go func() {

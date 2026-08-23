@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/l10n.dart';
 import '../core/theme.dart';
 import 'themed_banner.dart';
 
@@ -83,7 +84,7 @@ class ThemedSnackBar {
         ),
         action: onRetry != null
             ? SnackBarAction(
-                label: 'RETRY',
+                label: AppTypography.uppercaseLabel(appL10n(context).retry),
                 textColor: Colors.white,
                 onPressed: onRetry,
               )

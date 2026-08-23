@@ -1562,3 +1562,147 @@ func TestHandleWebSocket_RateLimiting(t *testing.T) {
 		t.Fatalf("Expected 429 Too Many Requests on 31st call, got %d. Body: %s", rec31.Code, rec31.Body.String())
 	}
 }
+
+// TestWebSocket_MessageRateLimiting verifies the post-handshake per-client
+// flood guard: beyond the per-minute message budget the server replies with
+// a rate_limited error frame, stops persisting/broadcasting further messages,
+// and leaves already-accepted messages intact.
+func TestWebSocket_MessageRateLimiting(t *testing.T) {
+	c, mongoStore, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/chat/ws", c.HandleWebSocket)
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/chat/ws"
+
+	tokenOwner, _ := jwtutil.GenerateToken("owner-1", "owner", "tenant-1", "owner@test.com")
+
+	dialer := websocket.Dialer{}
+	header := http.Header{}
+	header.Set("Origin", "http://localhost:3000")
+	conn, _, err := dialer.Dial(wsURL+"?token="+tokenOwner, header)
+	if err != nil {
+		t.Fatalf("Failed to dial ws: %v", err)
+	}
+	defer conn.Close()
+
+	// Subscribe to an authorized channel.
+	if err := conn.WriteJSON(map[string]string{"action": "subscribe", "channel": "job:123"}); err != nil {
+		t.Fatalf("subscribe write failed: %v", err)
+	}
+	subDeadline := time.Now().Add(3 * time.Second)
+	for {
+		_, raw, err := conn.ReadMessage()
+		if err != nil {
+			t.Fatalf("read during subscribe failed: %v", err)
+		}
+		if strings.Contains(string(raw), `"subscribed"`) {
+			break
+		}
+		if time.Now().After(subDeadline) {
+			t.Fatalf("never received subscribed confirmation")
+		}
+	}
+
+	// Drain server frames in the background while flooding.
+	const totalMessages = 70
+	var mu sync.Mutex
+	accepted := 0
+	rateLimitedErrs := 0
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		deadline := time.Now().Add(3 * time.Second)
+		for time.Now().Before(deadline) {
+			conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
+			_, raw, err := conn.ReadMessage()
+			if err != nil {
+				return
+			}
+			// Frames may be newline-batched; evaluate each line.
+			for _, line := range strings.Split(string(raw), "\n") {
+				var frame map[string]any
+				if json.Unmarshal([]byte(line), &frame) != nil {
+					continue
+				}
+				mu.Lock()
+				if frame["error"] == "rate_limited" {
+					rateLimitedErrs++
+				} else if _, ok := frame["content"].(string); ok && strings.HasPrefix(frame["content"].(string), "flood-") {
+					accepted++
+				}
+				mu.Unlock()
+			}
+		}
+	}()
+
+	for i := 0; i < totalMessages; i++ {
+		if err := conn.WriteJSON(map[string]string{
+			"action":  "message",
+			"channel": "job:123",
+			"content": fmt.Sprintf("flood-%d", i),
+		}); err != nil {
+			t.Fatalf("message write %d failed: %v", i+1, err)
+		}
+	}
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("drain goroutine did not finish")
+	}
+
+	mu.Lock()
+	a, rl := accepted, rateLimitedErrs
+	mu.Unlock()
+
+	if rl == 0 {
+		t.Errorf("Expected at least one rate_limited error frame when sending %d messages, got none", totalMessages)
+	}
+	if a >= totalMessages {
+		t.Errorf("Expected some messages to be rejected by the flood guard, but all %d were accepted", totalMessages)
+	}
+
+	// Persisted history must match the accepted (pre-limit) count only.
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	history, err := mongoStore.GetHistory(ctx, "job:123", 200)
+	if err != nil {
+		t.Fatalf("GetHistory failed: %v", err)
+	}
+	if len(history) != a {
+		t.Errorf("Expected %d persisted messages (accepted count), got %d", a, len(history))
+	}
+	if len(history) >= totalMessages {
+		t.Errorf("Flood guard failed: all %d messages were persisted", totalMessages)
+	}
+}
+
+// WS Origin policy regression guards: non-browser clients (dart:io WebSocket
+// on mobile, CLI tooling) send NO Origin header and must be admitted, while a
+// PRESENT Origin must still match the configured allow-list entry exactly.
+func TestIsOriginAllowed(t *testing.T) {
+	c := &Chat{allowedOrigin: "http://localhost:3000"}
+
+	cases := []struct {
+		origin string
+		want   bool
+	}{
+		{"", true},                                // non-browser client (no Origin)
+		{"http://localhost:3000", true},           // exact match
+		{"https://localhost:3000", false},         // scheme mismatch
+		{"http://localhost:3000.evil.com", false}, // suffix spoof
+		{"http://evil.com", false},                // foreign origin
+	}
+	for _, tc := range cases {
+		if got := c.isOriginAllowed(tc.origin); got != tc.want {
+			t.Errorf("isOriginAllowed(%q) = %v, want %v", tc.origin, got, tc.want)
+		}
+	}
+}

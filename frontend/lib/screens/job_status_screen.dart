@@ -8,11 +8,13 @@ import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
+import '../widgets/themed_panel.dart';
 import '../widgets/cancel_job_dialog.dart';
 import '../widgets/create_ticket_dialog.dart';
 import '../widgets/entity_avatar.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
@@ -333,32 +335,31 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     final isActive = _currentJob.status == 'active';
     final isPending = _currentJob.status == 'pending';
     final displayId = _currentJob.id.length > 8
-        ? _currentJob.id.substring(0, 8).toUpperCase()
-        : _currentJob.id.toUpperCase();
+        ? AppTypography.uppercaseLabel(_currentJob.id.substring(0, 8))
+        : AppTypography.uppercaseLabel(_currentJob.id);
 
-    return Scaffold(
+    return AppShell(
+      title: context.l10n.jobStatusTitle,
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        title: Text(context.l10n.jobStatusTitle),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        actions: [
-          IconButton(
-            key: const Key('job_status_refresh_button'),
-            icon: _isRefreshing
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.onPrimary,
-                    ),
-                  )
-                : const Icon(Icons.refresh),
-            onPressed: () => _refreshJobStatus(),
-          ),
-        ],
-      ),
+      appBarBackgroundColor: AppColors.primary,
+      appBarForegroundColor: AppColors.onPrimary,
+      actions: [
+        IconButton(
+          tooltip: context.l10n.tooltipRefreshStatus,
+          key: const Key('job_status_refresh_button'),
+          icon: _isRefreshing
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.onPrimary,
+                  ),
+                )
+              : const Icon(Icons.refresh),
+          onPressed: () => _refreshJobStatus(),
+        ),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
@@ -417,65 +418,59 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     bool isActive,
     String displayId,
   ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
+    return ThemedPanel(
         color: AppColors.surface,
         borderRadius: AppRadius.smBorder,
         border: Border.all(color: AppColors.outlineVariant, width: 1),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isCancelled
-                      ? AppColors.error
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                ThemedPanel(
+                    shape: BoxShape.circle,
+                    color: isCancelled
+                        ? AppColors.error
+                        : isCompleted
+                            ? AppColors.success
+                            : AppColors.secondary,
+                    width: 10,
+                    height: 10),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  isCancelled
+                      ? "Cancelled"
                       : isCompleted
-                          ? AppColors.success
-                          : AppColors.secondary,
+                          ? "Completed"
+                          : isActive
+                              ? "In Transit"
+                              : "Pending",
+                  style: AppTypography.titleMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.onSurface,
+                  ),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                isCancelled
-                    ? "Cancelled"
-                    : isCompleted
-                        ? "Completed"
-                        : isActive
-                            ? "In Transit"
-                            : "Pending",
-                style: AppTypography.titleMd.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.onSurface,
+              ],
+            ),
+            Row(
+              children: [
+                Text(
+                  "#QD-$displayId",
+                  style: AppTypography.labelSm.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              Text(
-                "#QD-$displayId",
-                style: AppTypography.labelSm.copyWith(
-                  color: AppColors.onSurfaceVariant,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              StatusBadge(status: _currentJob.status),
-            ],
-          ),
-        ],
-      ),
-    );
+                const SizedBox(width: AppSpacing.sm),
+                StatusBadge(status: _currentJob.status),
+              ],
+            ),
+          ],
+        ));
   }
 
   Widget _buildTrackJobBanner(BuildContext context) {
@@ -499,26 +494,23 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       },
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
+          ThemedPanel(
               color: AppColors.surface.withValues(alpha: 0.15),
               shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.map_outlined,
-              color: AppColors.secondary,
-              size: 24,
-            ),
-          ),
+              width: 44,
+              height: 44,
+              child: const Icon(
+                Icons.map_outlined,
+                color: AppColors.secondary,
+                size: 24,
+              )),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Track Job",
+                  context.l10n.trackJobHeroTitle,
                   style: AppTypography.titleMd.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.onPrimary,
@@ -526,7 +518,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  "View real-time location on map",
+                  context.l10n.trackJobHeroSubtitle,
                   style: AppTypography.caption.copyWith(
                     color: AppColors.onPrimary.withValues(alpha: 0.8),
                   ),
@@ -556,7 +548,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Fulfillment Progress",
+            context.l10n.fulfillmentProgressHeader,
             style: AppTypography.titleMd.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.onSurface,
@@ -565,8 +557,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           const SizedBox(height: AppSpacing.lg),
           _buildFulfillmentStep(
             index: 0,
-            title: "Pending",
-            subtitle: "Request placed & queued",
+            title: context.l10n.statusPending,
+            subtitle: context.l10n.stepRequestQueuedSub,
             icon: Icons.check,
             isDone: step > 0 || isCompleted || isActive,
             isActive: step == 0 && !isCancelled,
@@ -574,12 +566,12 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           ),
           _buildFulfillmentStep(
             index: 1,
-            title: "Assigned",
+            title: context.l10n.stepAssignedTitle,
             subtitle: _currentJob.employeeId == null
-                ? "Matching courier..."
+                ? context.l10n.matchingCourierLabel
                 : (_resolvedUsername != null && _resolvedUsername!.isNotEmpty
-                    ? "Assigned to $_resolvedUsername"
-                    : "Courier assigned"),
+                    ? context.l10n.assignedToLine(_resolvedUsername!)
+                    : context.l10n.courierAssignedShort),
             icon: Icons.person_pin_circle_outlined,
             isDone: step > 1 || isCompleted,
             isActive: step == 1 && !isCancelled,
@@ -587,8 +579,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           ),
           _buildFulfillmentStep(
             index: 2,
-            title: "In Transit",
-            subtitle: "Package on route to destination",
+            title: context.l10n.stepInTransitTitle,
+            subtitle: context.l10n.stepInTransitSub,
             icon: Icons.local_shipping_outlined,
             isDone: isCompleted,
             isActive: isActive,
@@ -596,9 +588,10 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           ),
           _buildFulfillmentStep(
             index: 3,
-            title: "Completed",
-            subtitle:
-                isCompleted ? "Delivered successfully" : "Pending delivery",
+            title: context.l10n.statusCompleted,
+            subtitle: isCompleted
+                ? context.l10n.stepDeliveredOkSub
+                : context.l10n.stepPendingDeliverySub,
             icon: Icons.flag_outlined,
             isDone: isCompleted,
             isActive: false,
@@ -631,16 +624,13 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       children: [
         Column(
           children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
+            ThemedPanel(
                 shape: BoxShape.circle,
                 color: nodeBg,
                 boxShadow: isActive ? AppElevation.shadowLevel1List : null,
-              ),
-              child: Icon(icon, size: 16, color: nodeColor),
-            ),
+                width: 32,
+                height: 32,
+                child: Icon(icon, size: 16, color: nodeColor)),
             if (!isLast)
               Container(
                 width: 2,
@@ -694,7 +684,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   size: 20, color: AppColors.onSurfaceVariant),
               const SizedBox(width: AppSpacing.xs),
               Text(
-                "Itinerary",
+                context.l10n.itineraryHeader,
                 style: AppTypography.titleMd.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.onSurface,
@@ -709,29 +699,23 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             children: [
               Column(
                 children: [
-                  Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
+                  ThemedPanel(
                       shape: BoxShape.circle,
                       color: AppColors.primaryContainer,
                       border: Border.all(color: AppColors.surface, width: 2),
-                    ),
-                  ),
+                      width: 14,
+                      height: 14),
                   Container(
                     width: 2,
                     height: 36,
                     color: AppColors.outlineVariant,
                   ),
-                  Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
+                  ThemedPanel(
                       shape: BoxShape.circle,
                       color: AppColors.secondary,
                       border: Border.all(color: AppColors.surface, width: 2),
-                    ),
-                  ),
+                      width: 14,
+                      height: 14),
                 ],
               ),
               const SizedBox(width: AppSpacing.md),
@@ -740,14 +724,14 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "PICKUP",
+                      context.l10n.pickupStageBadge,
                       style: AppTypography.labelSm.copyWith(
                         color: AppColors.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      "Origin / Customer Location",
+                      context.l10n.originCustomerLocation,
                       style: AppTypography.bodyMd.copyWith(
                         fontWeight: FontWeight.w500,
                         color: AppColors.onSurface,
@@ -755,14 +739,14 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      "DROPOFF",
+                      context.l10n.dropoffStageBadge,
                       style: AppTypography.labelSm.copyWith(
                         color: AppColors.secondary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      "Delivery Destination",
+                      context.l10n.deliveryDestinationLabel,
                       style: AppTypography.bodyMd.copyWith(
                         fontWeight: FontWeight.w500,
                         color: AppColors.onSurface,
@@ -780,61 +764,56 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           Row(
             children: [
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(
+                child: ThemedPanel(
                     color: AppColors.surfaceContainerLow,
                     borderRadius: AppRadius.smBorder,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Payment",
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.l10n.paymentSectionHeader,
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _currentJob.paymentMethod.toUpperCase(),
-                        style: AppTypography.bodySm.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.onSurface,
+                        const SizedBox(height: 2),
+                        Text(
+                          AppTypography.uppercaseLabel(
+                              _currentJob.paymentMethod),
+                          style: AppTypography.bodySm.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.onSurface,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                      ],
+                    )),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(
+                child: ThemedPanel(
                     color: AppColors.surfaceContainerLow,
                     borderRadius: AppRadius.smBorder,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Total Fare",
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.l10n.totalFareLabel,
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        "\$${(_currentJob.agreedPrice ?? _currentJob.suggestedPrice ?? 0).toStringAsFixed(2)}",
-                        style: AppTypography.bodySm.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                        const SizedBox(height: 2),
+                        Text(
+                          "\$${(_currentJob.agreedPrice ?? _currentJob.suggestedPrice ?? 0).toStringAsFixed(2)}",
+                          style: AppTypography.bodySm.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                      ],
+                    )),
               ),
             ],
           ),
@@ -869,7 +848,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  "Verified Courier Driver",
+                  context.l10n.verifiedCourierDriver,
                   style: AppTypography.caption.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),
@@ -878,6 +857,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             ),
           ),
           IconButton(
+            tooltip: context.l10n.tooltipOpenChat,
             key: const Key('open_chat_button'),
             icon: const Icon(
               Icons.chat_outlined,
@@ -897,29 +877,27 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
   }
 
   Widget _buildCancellationBanner() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
+    return ThemedPanel(
         color: AppColors.error.withValues(alpha: 0.1),
         borderRadius: AppRadius.smBorder,
         border: Border.all(color: AppColors.error),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.info_outline, color: AppColors.error),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              "Cancellation Reason: ${_currentJob.cancellationReason!}",
-              style: AppTypography.bodySm.copyWith(
-                color: AppColors.error,
-                fontWeight: FontWeight.bold,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: [
+            const Icon(Icons.info_outline, color: AppColors.error),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                context.l10n
+                    .cancellationReasonLine(_currentJob.cancellationReason!),
+                style: AppTypography.bodySm.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ));
   }
 
   List<Widget> _buildActionButtons(
@@ -932,7 +910,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       if (isCompleted) ...[
         PrimaryButton(
           key: const Key('rate_job_button'),
-          text: "Rate Your Experience",
+          text: context.l10n.rateYourExperienceCta,
           icon: Icons.star_outline,
           trailingIcon: Icons.arrow_forward,
           onPressed: () {
@@ -948,7 +926,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       if (isPending) ...[
         SecondaryButton(
           key: const Key('cancel_job_button'),
-          text: "Cancel Job",
+          text: context.l10n.ownerHomeCancelJob,
           icon: Icons.cancel_outlined,
           isOutlined: true,
           onPressed: () async {
@@ -981,7 +959,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       ] else if (isActive) ...[
         SecondaryButton(
           key: const Key('open_complaint_ticket_button'),
-          text: "Open a Complaint Ticket",
+          text: context.l10n.openComplaintTicketBtn,
           icon: Icons.report_problem_outlined,
           isOutlined: true,
           onPressed: () {
@@ -996,7 +974,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         const SizedBox(height: AppSpacing.sm),
       ],
       SecondaryButton(
-        text: "Back to Directory",
+        text: context.l10n.backToDirectoryBtn,
         isOutlined: true,
         onPressed: () => Navigator.of(context).pop(),
       ),
@@ -1027,14 +1005,12 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           ThemedSectionHeader(
             title: l10n.priceNegotiationTitle,
             trailing: (status == 'awaiting_price_response' && !expired)
-                ? Container(
+                ? ThemedPanel(
+                    color: AppColors.warning.withValues(alpha: 0.15),
+                    borderRadius: AppRadius.smBorder,
+                    border: Border.all(color: AppColors.warning),
                     padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.sm, vertical: AppSpacing.xs / 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.warning.withValues(alpha: 0.15),
-                      borderRadius: AppRadius.smBorder,
-                      border: Border.all(color: AppColors.warning),
-                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -1050,38 +1026,34 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                           ),
                         ),
                       ],
-                    ),
-                  )
+                    ))
                 : null,
           ),
           const SizedBox(height: AppSpacing.md),
 
           // Expired state banner
           if (expired) ...[
-            Container(
-              key: const Key('negotiation_expired_banner'),
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
+            ThemedPanel(
                 color: AppColors.error.withValues(alpha: 0.1),
                 borderRadius: AppRadius.smBorder,
                 border: Border.all(color: AppColors.error),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.alarm_off, color: AppColors.error),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      "Negotiation Window Expired (5-min limit lapsed)",
-                      style: AppTypography.bodyMd.copyWith(
-                        color: AppColors.error,
-                        fontWeight: FontWeight.bold,
+                key: const Key('negotiation_expired_banner'),
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Row(
+                  children: [
+                    const Icon(Icons.alarm_off, color: AppColors.error),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        context.l10n.negotiationExpiredBanner,
+                        style: AppTypography.bodyMd.copyWith(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                )),
             const SizedBox(height: AppSpacing.sm),
           ],
 
@@ -1099,77 +1071,76 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               !expired) ...[
             const Divider(
                 height: AppSpacing.md, color: AppColors.outlineVariant),
-            Container(
-              key: const Key('incoming_proposal_card'),
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
+            ThemedPanel(
                 color: AppColors.primary.withValues(alpha: 0.08),
                 borderRadius: AppRadius.smBorder,
                 border:
                     Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Incoming Proposal",
-                        style: AppTypography.bodyMd.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                key: const Key('incoming_proposal_card'),
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          l10n.incomingProposalCard,
+                          style: AppTypography.bodyMd.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
                         ),
-                      ),
-                      Text(
-                        "by ${proposedBy == 'customer' ? 'Customer' : 'Driver / Employee'}",
-                        style: AppTypography.labelMd.copyWith(
-                          color: AppColors.onSurfaceVariant,
-                          fontStyle: FontStyle.italic,
+                        Text(
+                          l10n.proposalByLine(proposedBy == 'customer'
+                              ? l10n.proposalRoleCustomer
+                              : l10n.proposalRoleDriverEmployee),
+                          style: AppTypography.labelMd.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Proposed Fare:",
-                        style: AppTypography.bodyMd
-                            .copyWith(color: AppColors.onSurface),
-                      ),
-                      Text(
-                        "\$${proposed.toStringAsFixed(2)}",
-                        key: const Key('proposed_price_text'),
-                        style: AppTypography.headlineLgMobile.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.secondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    "Comparison: ${proposed - suggested >= 0 ? '+' : ''}\$${(proposed - suggested).toStringAsFixed(2)} (${proposed - suggested >= 0 ? '+' : ''}${(suggested > 0 ? ((proposed - suggested) / suggested) * 100 : 0.0).toStringAsFixed(1)}% vs System Price)",
-                    key: const Key('proposal_comparison_text'),
-                    style: AppTypography.labelMd.copyWith(
-                      color: (proposed - suggested) > 0
-                          ? AppColors.warning
-                          : AppColors.success,
-                      fontWeight: FontWeight.w600,
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          l10n.proposedFareLabel,
+                          style: AppTypography.bodyMd
+                              .copyWith(color: AppColors.onSurface),
+                        ),
+                        Text(
+                          "\$${proposed.toStringAsFixed(2)}",
+                          key: const Key('proposed_price_text'),
+                          style: AppTypography.headlineLgMobile.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.secondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      "${l10n.comparisonPrefix} ${proposed - suggested >= 0 ? '+' : ''}\$${(proposed - suggested).toStringAsFixed(2)} (${proposed - suggested >= 0 ? '+' : ''}${(suggested > 0 ? ((proposed - suggested) / suggested) * 100 : 0.0).toStringAsFixed(1)}% ${l10n.vsSystemPrice})",
+                      key: const Key('proposal_comparison_text'),
+                      style: AppTypography.labelMd.copyWith(
+                        color: (proposed - suggested) > 0
+                            ? AppColors.warning
+                            : AppColors.success,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                )),
             const SizedBox(height: AppSpacing.md),
             if ((proposedBy == 'customer' &&
                     currentUserId == _currentJob.userId) ||
                 (proposedBy == 'employee' &&
                     currentUserId == _currentJob.employeeId))
               Text(
-                "Waiting for response to your proposal...",
+                l10n.waitingProposalResponse,
                 style: AppTypography.bodyMd.copyWith(
                   color: AppColors.onSurfaceVariant,
                   fontStyle: FontStyle.italic,
@@ -1181,7 +1152,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   Expanded(
                     child: PrimaryButton(
                       key: const Key('accept_proposal_button'),
-                      text: "Accept Proposal",
+                      text: l10n.acceptProposalBtn,
                       icon: Icons.check,
                       isLoading: _isRespondingProposal,
                       onPressed: () => _respondToProposal('accept'),
@@ -1191,7 +1162,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   Expanded(
                     child: SecondaryButton(
                       key: const Key('decline_proposal_button'),
-                      text: "Decline",
+                      text: l10n.declineProposalBtn,
                       icon: Icons.close,
                       isOutlined: true,
                       isLoading: _isRespondingProposal,
@@ -1209,7 +1180,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             const Divider(
                 height: AppSpacing.md, color: AppColors.outlineVariant),
             Text(
-              "Submit Counter-Offer",
+              l10n.submitCounterOfferBtn,
               style: AppTypography.bodyMd.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.onSurface,
@@ -1217,7 +1188,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              "Allowed bound: \$${minPrice.toStringAsFixed(2)} – \$${maxPrice.toStringAsFixed(2)} (±50%)",
+              l10n.allowedBoundLine(
+                  minPrice.toStringAsFixed(2), maxPrice.toStringAsFixed(2)),
               style: AppTypography.labelMd.copyWith(
                 color: AppColors.onSurfaceVariant,
               ),
@@ -1260,7 +1232,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   width: 150,
                   child: PrimaryButton(
                     key: const Key('submit_proposal_button'),
-                    text: "Submit",
+                    text: l10n.submit,
                     isLoading: _isSubmittingProposal,
                     onPressed: () => _submitCounterOffer(suggested),
                   ),

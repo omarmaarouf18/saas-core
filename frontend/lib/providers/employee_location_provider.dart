@@ -50,7 +50,6 @@ class EmployeeLocationProvider extends ChangeNotifier {
     final permResult = await requestLocationPermission(platform: _geolocator);
     if (permResult == LocationPermissionResult.serviceDisabled) {
       _status = LocationSharingStatus.serviceDisabled;
-      _error = "Location services (GPS) are disabled on your device.";
       notifyListeners();
       return;
     }
@@ -58,8 +57,6 @@ class EmployeeLocationProvider extends ChangeNotifier {
     if (permResult == LocationPermissionResult.denied ||
         permResult == LocationPermissionResult.deniedForever) {
       _status = LocationSharingStatus.permissionDenied;
-      _error =
-          "Location permission is required to share your live delivery location.";
       notifyListeners();
       return;
     }

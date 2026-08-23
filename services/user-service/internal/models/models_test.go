@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"testing"
 )
 
@@ -111,5 +112,34 @@ func TestValidPriceProposal(t *testing.T) {
 				t.Errorf("ValidPriceProposal(%.2f, %.2f) = %v; want %v", tc.suggested, tc.proposed, result, tc.expected)
 			}
 		})
+	}
+}
+
+// Regression: cancelled customer orders must carry the cancellation reason
+// through the CustomerJobResponse DTO. The Flutter "My Orders" screen reads
+// job.cancellation_reason, which the DTO previously dropped entirely.
+func TestNewCustomerJobResponse_IncludesCancellationReason(t *testing.T) {
+	job := &Job{
+		ID:                 "job-cxl-1",
+		ServiceID:          "svc-1",
+		Status:             JobStatusCancelled,
+		PaymentMethod:      "cod",
+		CancellationReason: "Customer moved out of area",
+	}
+	resp := NewCustomerJobResponse(job)
+	data, err := json.Marshal(resp)
+	if err != nil {
+		t.Fatalf("marshal failed: %v", err)
+	}
+	var parsed map[string]any
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	reason, ok := parsed["cancellation_reason"].(string)
+	if !ok {
+		t.Fatalf("expected cancellation_reason in marshaled DTO, got: %s", string(data))
+	}
+	if reason != "Customer moved out of area" {
+		t.Errorf("unexpected reason value: %q", reason)
 	}
 }

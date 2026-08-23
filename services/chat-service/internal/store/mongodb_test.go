@@ -131,10 +131,10 @@ func TestMongoDB_SupportAgentOperations(t *testing.T) {
 		t.Fatalf("AddSupportAgent failed: %v", err)
 	}
 
-	// 2. GetAgent
+	// 2. GetAgent — token is now stored as a SHA-256 digest, never plaintext
 	gotAgent, err := s.GetAgent(ctx, "agent-1")
-	if err != nil || gotAgent.Token != "agent-token-123" {
-		t.Errorf("GetAgent failed: %v, err=%v", gotAgent, err)
+	if err != nil || gotAgent == nil || gotAgent.Token == "agent-token-123" || len(gotAgent.Token) != 64 {
+		t.Errorf("GetAgent failed or token not hashed at rest: %v, err=%v", gotAgent, err)
 	}
 
 	// 3. GetAgentByToken

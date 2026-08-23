@@ -1,0 +1,46 @@
+name: Regenerate Golden Baselines
+
+# Manual, least-privilege golden regeneration. Renders baselines inside the
+# SAME pinned environment CI compares against (generator == comparator).
+# Procedure: dispatch this workflow on your branch, download the
+# ci-rendered-goldens artifact, REVIEW THE PNGs, land as a normal commit.
+
+on:
+  workflow_dispatch:
+  # Bridge until this file reaches the default branch: GitHub resolves
+  # workflow_dispatch by filename against the DEFAULT branch only, so while
+  # regen-goldens.yml lives only on feature branches we re-run regeneration
+  # whenever this file itself changes (self-path filter keeps noise at zero).
+  push:
+    branches: [logic-exploitation]
+    paths:
+      - '.github/workflows/regen-goldens.yml'
+
+jobs:
+  regenerate-goldens:
+    name: Regenerate Goldens (CI-rendered)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter (pinned — must match ci.yml)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.44.6'
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: flutter pub get
+
+      - name: Regenerate golden baselines
+        working-directory: frontend
+        run: flutter test --update-goldens test/golden_screens_test.dart
+
+      - name: Upload CI-rendered baselines
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-rendered-goldens
+          path: frontend/test/goldens/
+          if-no-files-found: error

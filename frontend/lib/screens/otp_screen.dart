@@ -3,6 +3,8 @@ import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/themed_panel.dart';
+import '../widgets/form_screen_template.dart';
 import '../widgets/otp_pin_input.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
@@ -94,36 +96,26 @@ class _OtpScreenState extends State<OtpScreen> {
     final auth = Provider.of<AuthProvider>(context);
     final l10n = context.l10n;
 
-    return Scaffold(
+    return FormScreenTemplate(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.onBackground),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+      appBarBackgroundColor: Colors.transparent,
+      appBarForegroundColor: AppColors.onBackground,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.marginMobile,
+        vertical: AppSpacing.md,
       ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.marginMobile,
-              vertical: AppSpacing.md,
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Main Stitch Verification Card
-                    _buildOtpCard(auth, l10n),
-                  ],
-                ),
-              ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Main Stitch Verification Card
+                _buildOtpCard(auth, l10n),
+              ],
             ),
           ),
         ),
@@ -179,22 +171,19 @@ class _OtpScreenState extends State<OtpScreen> {
   Widget _buildSecurityHeader(AppLocalizations l10n) {
     return Column(
       children: [
-        Center(
-          child: Container(
-            width: 64,
-            height: 64,
-            decoration: const BoxDecoration(
+        const Center(
+          child: ThemedPanel(
               color: AppColors.primaryContainer,
               shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.security_outlined,
-                size: 32,
-                color: AppColors.secondary,
-              ),
-            ),
-          ),
+              width: 64,
+              height: 64,
+              child: Center(
+                child: Icon(
+                  Icons.security_outlined,
+                  size: 32,
+                  color: AppColors.secondary,
+                ),
+              )),
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
@@ -225,7 +214,7 @@ class _OtpScreenState extends State<OtpScreen> {
             ? val.trim()
             : _otpController.text.trim();
         if (code.length != 6) {
-          return "OTP must be exactly 6 digits";
+          return context.l10n.otpExactly6Digits;
         }
         return null;
       },
@@ -262,34 +251,31 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   Widget _buildDevModeBanner() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      decoration: BoxDecoration(
+    return ThemedPanel(
         color: AppColors.secondary.withValues(alpha: 0.1),
         border: Border.all(
           color: AppColors.secondary.withValues(alpha: 0.4),
         ),
         borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.bug_report_outlined,
-            color: AppColors.warning,
-            size: 18,
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Expanded(
-            child: Text(
-              "Dev Mode: Auto-populated OTP '$_currentDevOtp' from response.",
-              style: AppTypography.labelMd.copyWith(
-                color: AppColors.onSurfaceVariant,
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.bug_report_outlined,
+              color: AppColors.warning,
+              size: 18,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: Text(
+                context.l10n.devOtpAutoFilled(_currentDevOtp ?? ''),
+                style: AppTypography.labelMd.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ));
   }
 
   Widget _buildActionButtons(AuthProvider auth, AppLocalizations l10n) {
@@ -327,7 +313,7 @@ class _OtpScreenState extends State<OtpScreen> {
           color: AppColors.outline,
         ),
         Text(
-          "Secured by Enterprise Trust Protocol",
+          context.l10n.enterpriseTrustNote,
           style: AppTypography.caption.copyWith(
             color: AppColors.outline,
           ),

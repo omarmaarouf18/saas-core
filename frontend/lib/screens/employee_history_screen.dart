@@ -5,6 +5,8 @@ import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/employee_jobs_provider.dart';
+import '../widgets/themed_panel.dart';
+import '../widgets/list_screen_template.dart';
 import '../widgets/route_timeline.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
@@ -49,66 +51,72 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
       return s == 'completed' || s == 'cancelled';
     }).toList();
 
-    final bodyContent = RefreshIndicator(
-      onRefresh: _refreshHistory,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(AppSpacing.lg),
+    return ListScreenTemplate<Job>(
+      title: l10n.ownerHistoryTitle,
+      isEmbeddedInTab: widget.isEmbeddedInTab,
+      header: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.sm,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(l10n),
             const SizedBox(height: AppSpacing.lg),
-            const ThemedSectionHeader(title: "Recent Activity"),
-            const SizedBox(height: AppSpacing.sm),
-            AnimatedSwitcher(
-              duration: AppMotion.durationMedium,
-              switchInCurve: AppMotion.curveStateChange,
-              switchOutCurve: AppMotion.curveStateChange,
-              child: (jobsProvider.isLoading && completedJobs.isEmpty)
-                  ? Column(
-                      key: const ValueKey('employee_history_skeleton_list'),
-                      children: List.generate(
-                        3,
-                        (index) => const EmployeeJobCardSkeleton(),
-                      ),
-                    )
-                  : (jobsProvider.error != null && completedJobs.isEmpty)
-                      ? ThemedErrorBanner(
-                          key: const ValueKey('employee_history_error'),
-                          message: jobsProvider.error!,
-                          onRetry: _refreshHistory,
-                        )
-                      : KeyedSubtree(
-                          key: const ValueKey('employee_history_content'),
-                          child: _buildHistoryList(completedJobs),
-                        ),
-            ),
+            ThemedSectionHeader(title: context.l10n.recentActivityHeader),
           ],
         ),
       ),
-    );
-
-    if (widget.isEmbeddedInTab) {
-      return bodyContent;
-    }
-
-    return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        title: Text(
-          l10n.ownerHistoryTitle,
-          style: AppTypography.titleMd.copyWith(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
+      items: completedJobs,
+      isLoading: jobsProvider.isLoading,
+      errorMessage: jobsProvider.error,
+      onRefresh: _refreshHistory,
+      onRetry: _refreshHistory,
+      listViewKey: const Key('employee_history_list'),
+      loadingWidget: ListView.builder(
+        key: const ValueKey('employee_history_skeleton_list'),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        itemCount: 3,
+        itemBuilder: (context, index) => const Padding(
+          padding: EdgeInsets.only(bottom: AppSpacing.md),
+          child: EmployeeJobCardSkeleton(),
+        ),
+      ),
+      errorWidget: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: ThemedErrorBanner(
+          key: const ValueKey('employee_history_error'),
+          message: jobsProvider.error ?? '',
+          onRetry: _refreshHistory,
+        ),
+      ),
+      emptyWidget: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        child: ThemedCard(
+          elevation: AppElevation.shadowLevel1List,
+          borderRadius: AppRadius.lg,
+          padding: AppSpacing.xl,
+          child: ThemedEmptyState(
+            key: const Key('employee_history_empty_state'),
+            icon: Icons.history_outlined,
+            title: l10n.ownerHistoryNoJobsTitle,
+            description: l10n.ownerHistoryNoJobsDesc,
+            actionText: "Refresh History",
+            onActionPressed: _refreshHistory,
           ),
         ),
       ),
-      body: bodyContent,
+      listPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xs,
+      ),
+      itemSpacing: 0,
+      itemBuilder: (context, job, index) {
+        return _buildHistoryCard(job);
+      },
     );
   }
 
@@ -125,41 +133,12 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
         ),
         const SizedBox(height: AppSpacing.xxs),
         Text(
-          "Completed and cancelled jobs.",
+          context.l10n.employeeHistorySubtitle,
           style: AppTypography.bodyMd.copyWith(
             color: AppColors.onSurfaceVariant,
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildHistoryList(List<Job> jobs) {
-    final l10n = context.l10n;
-    if (jobs.isEmpty) {
-      return ThemedCard(
-        elevation: AppElevation.shadowLevel1List,
-        borderRadius: AppRadius.lg,
-        padding: AppSpacing.xl,
-        child: ThemedEmptyState(
-          key: const Key('employee_history_empty_state'),
-          icon: Icons.history_outlined,
-          title: l10n.ownerHistoryNoJobsTitle,
-          description: l10n.ownerHistoryNoJobsDesc,
-          actionText: "Refresh History",
-          onActionPressed: _refreshHistory,
-        ),
-      );
-    }
-
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: jobs.length,
-      itemBuilder: (context, index) {
-        final job = jobs[index];
-        return _buildHistoryCard(job);
-      },
     );
   }
 
@@ -207,7 +186,7 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
                   ? "${job.lockedEscrowAmount!.toStringAsFixed(0)} Credits"
                   : "Route Logged",
               timeText: isCancelled ? "Cancelled" : "Completed",
-              cargoText: job.paymentMethod.toUpperCase(),
+              cargoText: AppTypography.uppercaseLabel(job.paymentMethod),
             ),
             const SizedBox(height: AppSpacing.md),
             Wrap(
@@ -222,7 +201,7 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
                 _buildChip(
                   Icons.payment_outlined,
                   l10n.employeeJobsLabelPayment,
-                  job.paymentMethod.toUpperCase(),
+                  AppTypography.uppercaseLabel(job.paymentMethod),
                 ),
                 if (job.lockedEscrowAmount != null &&
                     job.lockedEscrowAmount! > 0)
@@ -238,22 +217,20 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
                 job.cancellationReason != null &&
                 job.cancellationReason!.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.sm),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
+              ThemedPanel(
                   color: AppColors.error.withValues(alpha: 0.1),
                   borderRadius: AppRadius.defaultBorder,
                   border:
                       Border.all(color: AppColors.error.withValues(alpha: 0.3)),
-                ),
-                child: Text(
-                  l10n.employeeJobsCancellationReason(job.cancellationReason!),
-                  style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.error,
-                  ),
-                ),
-              ),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  child: Text(
+                    l10n.employeeJobsCancellationReason(
+                        job.cancellationReason!),
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.error,
+                    ),
+                  )),
             ],
           ],
         ),
@@ -262,37 +239,34 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
   }
 
   Widget _buildChip(IconData icon, String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
+    return ThemedPanel(
         color: AppColors.surface,
         borderRadius: AppRadius.smBorder,
         border: Border.all(color: AppColors.outlineVariant),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: AppColors.onSurfaceVariant),
-          const SizedBox(width: AppSpacing.xs),
-          Text(
-            "$label: ",
-            style: AppTypography.labelLg.copyWith(
-              color: AppColors.onSurfaceVariant,
-              fontWeight: FontWeight.normal,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: AppIconSize.xs, color: AppColors.onSurfaceVariant),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              "$label: ",
+              style: AppTypography.labelLg.copyWith(
+                color: AppColors.onSurfaceVariant,
+                fontWeight: FontWeight.normal,
+              ),
             ),
-          ),
-          Text(
-            value,
-            style: AppTypography.labelLg.copyWith(
-              color: AppColors.onSurface,
-              fontWeight: FontWeight.bold,
+            Text(
+              value,
+              style: AppTypography.labelLg.copyWith(
+                color: AppColors.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ));
   }
 }

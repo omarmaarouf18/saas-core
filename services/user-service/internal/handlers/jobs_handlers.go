@@ -53,30 +53,6 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idempotencyKey := r.Header.Get("Idempotency-Key")
-	if idempotencyKey == "" {
-		idempotencyKey = r.Header.Get("X-Idempotency-Key")
-	}
-	if idempotencyKey == "" {
-		idempotencyKey = req.IdempotencyKey
-	}
-
-	if idempotencyKey != "" && u.rdb != nil {
-		redisKey := "idempotency:job:" + idempotencyKey
-		existingJobID, err := u.rdb.Get(r.Context(), redisKey).Result()
-		if err == nil && existingJobID != "" {
-			existingJob := u.store.GetJob(r.Context(), existingJobID)
-			if existingJob != nil {
-				writeJSON(w, http.StatusOK, map[string]any{
-					"message":         "job tracking record already created (idempotent response)",
-					"job":             existingJob,
-					"idempotency_key": idempotencyKey,
-				})
-				return
-			}
-		}
-	}
-
 	if !isValidCoordinate(req.Location.Latitude, req.Location.Longitude) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error":   "invalid_coordinates",
@@ -105,6 +81,53 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.UserID = resolvedUserID
+
+	// Idempotency replay check. Deliberately runs only AFTER the caller's
+	// identity has been resolved from a signed JWT, and keys are namespaced
+	// per user ("idempotency:job:<userID>:<key>") so a known or guessed
+	// idempotency key can never disclose another user's job record.
+	idempotencyKey := r.Header.Get("Idempotency-Key")
+	if idempotencyKey == "" {
+		idempotencyKey = r.Header.Get("X-Idempotency-Key")
+	}
+	if idempotencyKey == "" {
+		idempotencyKey = req.IdempotencyKey
+	}
+
+	// Atomic reservation closes the concurrent-duplicate race: two requests
+	// sharing a key can no longer both miss the replay check and both create
+	// funded jobs. The loser replays (200) or receives an explicit in-progress
+	// conflict (409).
+	replayJobID, conflict := u.reserveIdempotencyKey(resolvedUserID, idempotencyKey)
+	if replayJobID != "" {
+		existingJob := u.store.GetJob(r.Context(), replayJobID)
+		if existingJob != nil {
+			writeJSON(w, http.StatusOK, map[string]any{
+				"message":         "job tracking record already created (idempotent response)",
+				"job":             existingJob,
+				"idempotency_key": idempotencyKey,
+			})
+			return
+		}
+	}
+	if conflict {
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":   "duplicate_request_in_progress",
+			"message": "An identical request is still being processed; retry shortly.",
+		})
+		return
+	}
+
+	// From here on, this request holds a pending reservation (when Redis and
+	// a key are present). One deferred guard releases it unless a job was
+	// actually persisted, so every validation-failure exit below frees the
+	// slot for legitimate retries without per-exit bookkeeping.
+	jobRecorded := false
+	defer func() {
+		if idempotencyKey != "" && u.rdb != nil && !jobRecorded {
+			u.releaseIdempotencyReservation(resolvedUserID, idempotencyKey)
+		}
+	}()
 
 	ctx := r.Context()
 	var svc *models.Service
@@ -214,7 +237,9 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		initialStatus = models.JobStatusAwaitingPriceResponse
 
 		if req.ProposedPrice != nil {
-			if !models.ValidPriceProposal(suggestedPrice, *req.ProposedPrice) {
+			pp := roundMoney(*req.ProposedPrice)
+			req.ProposedPrice = &pp
+			if !models.ValidPriceProposal(suggestedPrice, pp) {
 				writeJSON(w, http.StatusBadRequest, map[string]string{
 					"error":   "invalid_proposed_price",
 					"message": "proposed_price must be between 50% and 150% of the suggested price",
@@ -253,7 +278,8 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	// For transport category jobs, skip escrow locking entirely during TrackJob regardless of payment method.
 	if isTransport {
 		log.Printf("[USER] Transport Job %s created awaiting price proposal response (suggested=%.2f)", job.ID, suggestedPrice)
-		u.saveIdempotencyKey(r.Context(), idempotencyKey, job.ID)
+		jobRecorded = true
+		u.saveIdempotencyKey(resolvedUserID, idempotencyKey, job.ID)
 		writeJSON(w, http.StatusCreated, map[string]any{
 			"message": "job tracking record created",
 			"job":     job,
@@ -272,7 +298,8 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		job.Status = models.JobStatusActive
 		job.UpdatedAt = time.Now().UTC()
 
-		u.saveIdempotencyKey(r.Context(), idempotencyKey, job.ID)
+		jobRecorded = true
+		u.saveIdempotencyKey(resolvedUserID, idempotencyKey, job.ID)
 
 		writeJSON(w, http.StatusCreated, map[string]any{
 			"message":        "job tracking record created",
@@ -286,10 +313,14 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	if err := u.store.LockEscrow(ctx, req.OwnerID, job.ID, escrowAmount); err != nil {
 		log.Printf("[USER] Escrow lock failed for job %s: %v", job.ID, err)
 		// Job created but unfunded — still report it.
-		u.saveIdempotencyKey(r.Context(), idempotencyKey, job.ID)
+		jobRecorded = true
+		u.saveIdempotencyKey(resolvedUserID, idempotencyKey, job.ID)
 		writeJSON(w, http.StatusCreated, map[string]any{
 			"message": "job created but escrow lock failed — deposit funds first",
-			"warning": err.Error(), "job": job, "escrow_amount": escrowAmount,
+			// Generic client-facing warning: the raw store error discloses the
+			// owner's exact withdrawable balance to other tenants; details stay
+			// in the server log line above.
+			"warning": "escrow lock failed — owner must deposit funds before this booking can be funded", "job": job, "escrow_amount": escrowAmount,
 		})
 		return
 	}
@@ -337,7 +368,8 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	job.Status = models.JobStatusActive
 	job.UpdatedAt = time.Now().UTC()
 
-	u.saveIdempotencyKey(r.Context(), idempotencyKey, job.ID)
+	jobRecorded = true
+	u.saveIdempotencyKey(resolvedUserID, idempotencyKey, job.ID)
 
 	writeJSON(w, http.StatusCreated, map[string]any{
 		"message": "job tracking record created", "lifecycle_note": "escrow locked, all up to date",
@@ -380,7 +412,10 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 
 	// Authorization check
 	resolvedRequester := "internal_service"
-	isInternal := subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
+	// Empty-secret guard (QA audit Q23): an unconfigured token must never
+	// authenticate internal callers even if config.Load() is bypassed.
+	isInternal := u.internalServiceToken != "" &&
+		subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
 	if !isInternal {
 		if req.RequesterToken != "" {
 			req.RequesterID = req.RequesterToken
@@ -401,6 +436,12 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 			return
+		}
+		if u.completeJobLimiter != nil {
+			if limited, remaining := u.completeJobLimiter.CheckAndRecord(resolvedRequester); limited {
+				writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many requests; retry in %.0f seconds", remaining.Seconds())})
+				return
+			}
 		}
 
 		if resolvedRequester != job.OwnerID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
@@ -499,7 +540,15 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := u.store.CompleteCODJob(ctx, job.ID); err != nil {
+		// Record the cash actually collected at the door (cent-rounded).
+		// Previously only a recomputed price estimate was logged — real
+		// collections that differed from the estimate were silently lost.
+		cashAmount := amount
+		if req.ActualCashAmount > 0 {
+			cashAmount = math.Round(req.ActualCashAmount*100) / 100
+		}
+
+		if err := u.store.CompleteCODJob(ctx, job.ID, cashAmount); err != nil {
 			if strings.Contains(err.Error(), "not active") {
 				writeJSON(w, http.StatusConflict, map[string]string{"error": "job already completed or not active: " + err.Error()})
 				return
@@ -508,23 +557,26 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		log.Printf("[USER] COD Job %s completed: cash_collected=%.2f logged (0%% platform commission)", job.ID, amount)
+		log.Printf("[USER] COD Job %s completed: actual_cash_collected=%.2f logged (0%% platform commission)", job.ID, cashAmount)
 		writeJSON(w, http.StatusOK, map[string]any{
-			"message":          "COD job completed and collection logged (0% platform commission)",
-			"job_id":           job.ID,
-			"total_amount":     amount,
-			"platform_fee":     0.0,
-			"platform_fee_pct": 0.0,
+			"message":              "COD job completed and collection recorded (0% platform commission)",
+			"job_id":               job.ID,
+			"total_amount":         cashAmount,
+			"cash_amount_recorded": cashAmount,
+			"platform_fee":         0.0,
+			"platform_fee_pct":     0.0,
 		})
 		return
 	}
 
-	// Cap the release amount at LockedEscrowAmount to prevent drawing down other jobs' escrow
-	if amount > job.LockedEscrowAmount {
-		log.Printf("[SECURITY WARNING] Recomputed completion amount %.2f exceeds locked escrow amount %.2f for job %s. Capping to locked amount.", amount, job.LockedEscrowAmount, job.ID)
-		handlerutil.ShipSecurityEvent(ctx, "ESCROW_LIMIT_EXCEEDED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("CompleteJob amount %.2f exceeds locked escrow %.2f, capped", amount, job.LockedEscrowAmount), handlerutil.GetClientIP(r))
-		amount = job.LockedEscrowAmount
-	}
+	// Release exactly the amount that was locked for THIS job at booking
+	// time. Recomputing from current service pricing (above) is only used for
+	// COD logging and ADR-0007 reconciliation math: if the owner repriced the
+	// service mid-job, a recomputed release would strand the residual
+	// (LockedEscrowAmount - amount) in escrow forever on a completed job.
+	// Releasing the exact locked amount both prevents drawing down other
+	// jobs' escrow (ADR-0002 wallet isolation) and eliminates stranded funds.
+	amount = job.LockedEscrowAmount
 
 	// Release escrow with profit splitting (Non-COD flow)
 	if err := u.store.ReleaseEscrowWithSplit(ctx, job.OwnerID, job.ID, amount); err != nil {
@@ -537,19 +589,18 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg := u.store.GetPlatformConfig(ctx)
-	feePercent := 15.0
-	if cfg != nil {
-		feePercent = cfg.PlatformFeePercentage
-	}
-	fee := math.Round(amount*feePercent) / 100
-	net := amount - fee
+	// The response must reflect the ACTUAL fund movement. ReleaseEscrowWithSplit
+	// credits 100% of the released amount (ADR-0017 zero-commission model);
+	// deriving a percentage-based fee/net split from mutable platform_config
+	// here previously displayed a phantom fee that was never deducted.
+	fee := 0.0
+	net := amount
 
-	log.Printf("[USER] Job %s completed: total=%.2f fee=%.2f net=%.2f", job.ID, amount, fee, net)
+	log.Printf("[USER] Job %s completed: released=%.2f fee=0.00 net_to_tenant=%.2f (zero-commission release)", job.ID, amount, net)
 	writeJSON(w, http.StatusOK, map[string]any{
-		"message": "job completed — profit split executed",
+		"message": "job completed — escrow released (0% platform commission)",
 		"job_id":  job.ID, "total_amount": amount,
-		"platform_fee": fee, "platform_fee_pct": feePercent,
+		"platform_fee": fee, "platform_fee_pct": 0.0,
 		"net_to_tenant": net,
 	})
 }
@@ -563,10 +614,11 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 		return
 	}
-	id := r.URL.Query().Get("user_token")
-	if id == "" {
-		id = r.URL.Query().Get("id")
-	}
+	// The job ID comes ONLY from `id`. The legacy `user_token` alias must NOT
+	// participate in job-ID resolution: clients (e.g. Flutter map hydration)
+	// send `?id=<jobID>&user_token=<JWT>`, and preferring user_token looked up
+	// the JWT string as a job ID, breaking hydration with 404s.
+	id := r.URL.Query().Get("id")
 	if id == "" {
 		requesterToken := r.URL.Query().Get("requester_token")
 		if requesterToken == "" {
@@ -606,8 +658,9 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 
 	u.checkLazyPriceProposalExpiry(ctx, job)
 
-	// 1. Internal trusted token check
-	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1 {
+	// 1. Internal trusted token check (empty-secret guard, QA audit Q23)
+	if u.internalServiceToken != "" &&
+		subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1 {
 		writeJSON(w, http.StatusOK, job)
 		return
 	}
@@ -772,8 +825,9 @@ func (u *UserService) GetCustomerJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify customer role
-	if claims.Role != "user" {
+	// Verify customer role. JWTs are issued with either "user" or "customer"
+	// for customer identities depending on flow; accept both aliases.
+	if claims.Role != "user" && claims.Role != "customer" {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: customer role required"})
 		return
 	}
@@ -828,6 +882,16 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 
 	if req.JobID == "" || req.RequesterID == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id and requester_id are required"})
+		return
+	}
+
+	// Authentication MUST precede the throttle reservation: reserving the
+	// per-job Redis slot before verifying the caller let any unauthenticated
+	// party holding a job ID continuously claim the reservation window,
+	// starving the assigned employee's legitimate updates with 429s.
+	resolvedRequester, err := resolveTokenWithRole(req.RequesterID, "employee", "owner")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 		return
 	}
 
@@ -916,13 +980,6 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 			lastTime = lastUpdate
 		}
 		u.locationThrottleMu.Unlock()
-	}
-
-	resolvedRequester, err := resolveTokenWithRole(req.RequesterID, "employee", "owner")
-	if err != nil {
-		clearInFlight()
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
-		return
 	}
 
 	if !isValidCoordinate(req.Latitude, req.Longitude) {
@@ -1226,7 +1283,11 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 
 	// Resolve requester
 	var requesterToken string
-	isInternal := subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
+	// Empty-secret guard (QA audit Q23 follow-up): an unconfigured token must
+	// never authenticate internal callers even if config.Load() is bypassed.
+	// (Missed by the 804c390 batch despite being listed in its commit message.)
+	isInternal := u.internalServiceToken != "" &&
+		subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
 	if isInternal {
 		// For internal calls, use the requester_id passed in JSON
 		requesterToken = req.RequesterID
@@ -1306,12 +1367,13 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Cap the refund amount at LockedEscrowAmount to prevent drawing down other jobs' escrow
-		if amount > job.LockedEscrowAmount {
-			log.Printf("[SECURITY WARNING] Recomputed refund amount %.2f exceeds locked escrow amount %.2f for job %s. Capping to locked amount.", amount, job.LockedEscrowAmount, job.ID)
-			handlerutil.ShipSecurityEvent(ctx, "ESCROW_LIMIT_EXCEEDED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("CancelJob refund %.2f exceeds locked escrow %.2f, capped", amount, job.LockedEscrowAmount), handlerutil.GetClientIP(r))
-			amount = job.LockedEscrowAmount
-		}
+		// Refund exactly the amount that was locked for THIS job at booking
+		// time. Recomputing from current service pricing (above) would strand
+		// the residual (LockedEscrowAmount - amount) in escrow forever on a
+		// cancelled job if the owner repriced the service mid-job. Refunding
+		// the exact locked amount both prevents drawing down other jobs'
+		// escrow (ADR-0002 wallet isolation) and eliminates stranded funds.
+		amount = job.LockedEscrowAmount
 
 		if err := u.store.RefundEscrow(ctx, job.OwnerID, job.ID, amount); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to refund escrow: " + err.Error()})
@@ -1319,14 +1381,24 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Perform cancellation in DB
-	if err := u.store.CancelJob(ctx, job.ID, req.Reason); err != nil {
-		if strings.Contains(err.Error(), "not in a cancellable state") {
-			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+	if job.PaymentMethod == "cod" {
+		// COD jobs hold no escrow; the narrowed non-money cancel applies directly.
+		if err := u.store.CancelJob(ctx, job.ID, req.Reason); err != nil {
+			if strings.Contains(err.Error(), "not in a cancellable state") {
+				writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+				return
+			}
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to cancel job: " + err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to cancel job: " + err.Error()})
-		return
+	} else {
+		// Non-COD: RefundEscrow above performed the guarded money transition
+		// and flipped the job to cancelled; stamp the caller's reason through
+		// the narrow reason-only operation (QA audit Q5).
+		if err := u.store.SetCancellationReason(ctx, job.ID, req.Reason); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to record cancellation reason: " + err.Error()})
+			return
+		}
 	}
 
 	// Audit-log job cancellation
@@ -1477,6 +1549,15 @@ func (u *UserService) ProposePrice(w http.ResponseWriter, r *http.Request) {
 		proposerRole = "employee"
 	}
 
+	if !models.ValidPriceProposal(job.SuggestedPrice, req.ProposedPrice) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_proposed_price",
+			"message": "proposed price must be between 50% and 150% of the suggested price",
+		})
+		return
+	}
+
+	req.ProposedPrice = roundMoney(req.ProposedPrice)
 	if !models.ValidPriceProposal(job.SuggestedPrice, req.ProposedPrice) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error":   "invalid_proposed_price",
@@ -1650,15 +1731,18 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 		if job.ProposedPrice != nil {
 			activePrice = *job.ProposedPrice
 		}
+		activePrice = roundMoney(activePrice)
 
 		// Lock escrow for non-COD negotiable transport jobs
 		if job.PaymentMethod != "cod" {
 			if err := u.store.LockEscrow(ctx, job.OwnerID, job.ID, activePrice); err != nil {
 				log.Printf("[USER] Escrow lock failed for negotiable transport job %s: %v", job.ID, err)
 				writeJSON(w, http.StatusBadRequest, map[string]any{
-					"error":         "escrow_lock_failed",
-					"message":       "price proposal acceptance failed — insufficient wallet funds for escrow lock",
-					"warning":       err.Error(),
+					"error":   "escrow_lock_failed",
+					"message": "price proposal acceptance failed — insufficient wallet funds for escrow lock",
+					// Generic client-facing warning: raw store error would disclose
+					// the owner's exact wallet balance cross-tenant; details are logged.
+					"warning":       "escrow lock failed — owner must deposit funds before accepting this price",
 					"job":           job,
 					"escrow_amount": activePrice,
 				})
