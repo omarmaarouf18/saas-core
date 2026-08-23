@@ -1283,7 +1283,11 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 
 	// Resolve requester
 	var requesterToken string
-	isInternal := subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
+	// Empty-secret guard (QA audit Q23 follow-up): an unconfigured token must
+	// never authenticate internal callers even if config.Load() is bypassed.
+	// (Missed by the 804c390 batch despite being listed in its commit message.)
+	isInternal := u.internalServiceToken != "" &&
+		subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
 	if isInternal {
 		// For internal calls, use the requester_id passed in JSON
 		requesterToken = req.RequesterID

@@ -37,6 +37,43 @@ func TestCompleteJob_EmptyInternalTokenNeverAuthenticates(t *testing.T) {
 	t.Logf("rejected with status %d: %s", w.Code, w.Body.String())
 }
 
+// CancelJob twin of the CompleteJob invariant above (QA audit Q23 follow-up:
+// the 804c390 batch claimed this site but its diff never touched it — the
+// comparator at the "Resolve requester" step stayed unguarded).
+//
+// Honesty note on exploitability: unlike CompleteJob, a bearerless request
+// against an empty-config CancelJob could not move funds even pre-guard,
+// because the internal path still routes requester_id through JWT
+// resolution and pair-equality against server-stored job parties — a raw
+// attacker-chosen ID fails resolution with 401 before any state change.
+// This test therefore pins the fail-closed CONTRACT (bearerless request
+// must never be classified internal; job and escrow untouched) rather than
+// discriminating a pre-fix fund loss. Its value is against future refactors
+// that might drop the downstream validation while keeping the loose
+// comparator — exactly the defense-in-depth rationale documented for the
+// other seven sites.
+func TestCancelJob_EmptyInternalTokenNeverAuthenticates(t *testing.T) {
+	harness := newRatingsRoleHarness(t)
+	h := harness.handler
+	// Simulate loader-bypass: blank out the configured secret AFTER construction.
+	h.internalServiceToken = ""
+
+	jobID := seedCompletedWalletJob(t, harness)
+
+	req := httptest.NewRequest("POST", "/users/jobs/cancel",
+		bytes.NewReader([]byte(`{"job_id":"`+jobID+`","requester_id":"q23-escrow-owner","reason":"q23 invariant probe"}`)))
+	w := httptest.NewRecorder()
+	h.CancelJob(w, req)
+
+	if w.Code == http.StatusOK {
+		t.Fatalf("EMPTY-SECRET INTERNAL AUTH ACCEPTED: CancelJob processed bearerless request for job %q when the configured secret is empty (want rejection)", jobID)
+	}
+	if job := h.store.GetJob(harness.ctx, jobID); job == nil || job.Status != models.JobStatusActive {
+		t.Fatalf("job %q state changed under empty-secret bearerless request: want active, got %+v", jobID, job)
+	}
+	t.Logf("rejected with status %d: %s", w.Code, w.Body.String())
+}
+
 // seedCompletedWalletJob funds and activates a non-COD escrow job, returning its ID.
 func seedCompletedWalletJob(t *testing.T, h *ratingsRoleHarness) string {
 	t.Helper()
