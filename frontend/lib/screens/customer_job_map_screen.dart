@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/constants.dart';
+import '../core/provider_connection_cleanup.dart';
 import '../core/theme.dart';
 import '../models/employee_marker.dart';
 import '../models/job.dart';
@@ -29,14 +30,21 @@ class CustomerJobMapScreen extends StatefulWidget {
   State<CustomerJobMapScreen> createState() => _CustomerJobMapScreenState();
 }
 
-class _CustomerJobMapScreenState extends State<CustomerJobMapScreen> {
+class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
+    with ProviderConnectionCleanup<CustomerJobMapScreen> {
   final MapController _mapController = MapController();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final provider = context.read<MapTrackingProvider>();
+      // A6: register connection teardown while context is valid — this
+      // screen previously never disconnected the app-lifetime provider,
+      // leaving the job-location WebSocket and its auto-reconnect timer
+      // running after the map was closed.
+      addConnectionTeardown(provider.disconnect);
       provider.hydrateCustomerJob(widget.jobId, widget.token);
       provider.connectAndSubscribe('job:${widget.jobId}', widget.token);
     });

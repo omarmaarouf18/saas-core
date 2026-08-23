@@ -7,6 +7,7 @@ import '../core/theme.dart';
 import '../models/chat_message.dart';
 import '../providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
+import '../core/provider_connection_cleanup.dart';
 import '../widgets/themed_panel.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/themed_empty_state.dart';
@@ -23,15 +24,26 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen>
+    with ProviderConnectionCleanup<ChatScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
+  Timer? _scrollToBottomTimer;
   bool _isSending = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // A6: the ChatProvider is app-lifetime; this screen owns the live
+      // connection while open. Register teardown while context is valid —
+      // the previous post-frame `if (mounted)` guard inside dispose() was
+      // dead code (mounted is always false there), leaving the socket and
+      // its reconnect timer running after the screen was popped.
+      addConnectionTeardown(
+        Provider.of<ChatProvider>(context, listen: false).disconnect,
+      );
       _initChat();
     });
   }
@@ -52,11 +64,9 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        Provider.of<ChatProvider>(context, listen: false).disconnect();
-      }
-    });
+    // A6 hardening: a one-shot scroll timer scheduled by a just-sent message
+    // must not fire against a disposed controller.
+    _scrollToBottomTimer?.cancel();
     super.dispose();
   }
 
@@ -84,7 +94,8 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       await chat.sendMessage(text);
       _messageController.clear();
-      Timer(AppMotion.durationFast, _scrollToBottom);
+      _scrollToBottomTimer?.cancel();
+      _scrollToBottomTimer = Timer(AppMotion.durationFast, _scrollToBottom);
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;

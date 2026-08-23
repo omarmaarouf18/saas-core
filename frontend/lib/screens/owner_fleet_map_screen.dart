@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/constants.dart';
+import '../core/provider_connection_cleanup.dart';
 import '../core/theme.dart';
 import '../models/employee_marker.dart';
 import '../providers/map_tracking_provider.dart';
@@ -27,7 +28,8 @@ class OwnerFleetMapScreen extends StatefulWidget {
   State<OwnerFleetMapScreen> createState() => _OwnerFleetMapScreenState();
 }
 
-class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
+class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
+    with ProviderConnectionCleanup<OwnerFleetMapScreen> {
   final MapController _mapController = MapController();
   EmployeeMarkerData? _selectedEmployee;
 
@@ -35,8 +37,14 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final provider = context.read<MapTrackingProvider>();
       if (widget.token != null) {
+        // A6: register connection teardown while context is valid — this
+        // screen previously never disconnected the app-lifetime provider,
+        // leaving the fleet WebSocket and its auto-reconnect timer running
+        // after the map was closed.
+        addConnectionTeardown(provider.disconnect);
         provider.hydrateOwnerFleet(widget.token!);
         provider.connectAndSubscribe('fleet:${widget.ownerId}', widget.token!);
       }

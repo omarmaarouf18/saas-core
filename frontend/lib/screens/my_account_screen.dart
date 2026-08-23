@@ -28,6 +28,11 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   final _usernameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _newAddressController = TextEditingController();
+  // A6: the read-only email field previously allocated a fresh inline
+  // `TextEditingController(text: userEmail)` on every build (every
+  // address edit / submit state change); it is now owned and disposed here.
+  // Email is display-only; the value is populated in _loadAndPrepopulate.
+  final _emailController = TextEditingController();
 
   List<String> _frequentAddresses = [];
   bool _isSubmitting = false;
@@ -53,6 +58,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
       if (user != null) {
         _usernameController.text = user.username;
         _phoneController.text = user.phone ?? '';
+        _emailController.text = user.email;
         _frequentAddresses = List<String>.from(user.frequentAddresses ?? []);
       }
 
@@ -67,6 +73,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     _usernameController.dispose();
     _phoneController.dispose();
     _newAddressController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -225,7 +232,6 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                                     children: [
                                       _buildProfileInfoCard(
                                         l10n: l10n,
-                                        userEmail: user?.email ?? '',
                                       ),
                                       const SizedBox(height: AppSpacing.lg),
                                       PrimaryButton(
@@ -264,7 +270,6 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                             children: [
                               _buildProfileInfoCard(
                                 l10n: l10n,
-                                userEmail: user?.email ?? '',
                               ),
                               const SizedBox(height: AppSpacing.lg),
                               _buildFrequentAddressesCard(l10n: l10n),
@@ -292,7 +297,6 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   // --- Profile Information Card (Stitch Left Card) ---
   Widget _buildProfileInfoCard({
     required AppLocalizations l10n,
-    required String userEmail,
   }) {
     return ThemedCard(
       borderRadius: AppRadius.lg,
@@ -327,7 +331,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
             key: const Key('my_account_email_field'),
             labelText: l10n.myAccountEmailLabel,
             hintText: l10n.myAccountEmailHint,
-            controller: TextEditingController(text: userEmail),
+            controller: _emailController,
             enabled: false,
             prefixIcon: const Icon(
               Icons.lock_outline,

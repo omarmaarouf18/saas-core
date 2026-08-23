@@ -31,6 +31,12 @@ class MapTrackingProvider extends ChangeNotifier {
   String? _currentChannel;
   String? _currentToken;
 
+  // A6: guards notifyListeners() after disposal — the screen-level teardown
+  // mixin defers disconnect() to the end of the frame, which can land AFTER
+  // an ancestor ChangeNotifierProvider has disposed this provider (same-frame
+  // unmount, e.g. logout swapping the whole tree).
+  bool _isDisposed = false;
+
   Map<String, EmployeeMarkerData> get employeeMarkers => _employeeMarkers;
   List<EmployeeMarkerData> get markersList => _employeeMarkers.values.toList();
   JobLocation? get customerJobLocation => _customerJobLocation;
@@ -305,6 +311,15 @@ class MapTrackingProvider extends ChangeNotifier {
   }
 
   void disconnect() {
+    // A6: safe against post-dispose invocation (see _isDisposed note).
+    if (_isDisposed) return;
+    _teardownConnection();
+    notifyListeners();
+  }
+
+  /// Releases the socket, subscription, and reconnect timer without
+  /// notifying listeners (used both by [disconnect] and [dispose]).
+  void _teardownConnection() {
     _reconnectTimer?.cancel();
     _webSocketSubscription?.cancel();
     _webSocketChannel?.sink.close();
@@ -316,12 +331,12 @@ class MapTrackingProvider extends ChangeNotifier {
     _employeeMarkers.clear();
     _customerJobLocation = null;
     _assignedEmployeeId = null;
-    notifyListeners();
   }
 
   @override
   void dispose() {
-    disconnect();
+    _isDisposed = true;
+    _teardownConnection();
     super.dispose();
   }
 }
