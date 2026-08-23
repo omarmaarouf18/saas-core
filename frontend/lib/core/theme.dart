@@ -200,12 +200,6 @@ class AppElevation {
   static List<BoxShadow> get shadowLevel4List => [shadowLevel4];
 }
 
-// Backwards-compatible AppShadows class
-class AppShadows {
-  static const BoxShadow level1 = AppElevation.shadowLevel1;
-  static const BoxShadow level2 = AppElevation.shadowLevel2;
-}
-
 // 5. Motion & Animation Tokens
 class AppMotion {
   // Durations
