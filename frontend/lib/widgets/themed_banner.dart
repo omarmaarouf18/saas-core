@@ -43,9 +43,8 @@ class _ThemedBannerState extends State<ThemedBanner> {
     // Tap-debounce guard (QA audit A4): banner retries are raw TextButtons
     // reachable while their parent screen has no busy state; rapid re-taps
     // must not re-fire refetches or state-changing submit retries.
-    final now = widget.nowProvider != null
-        ? widget.nowProvider!()
-        : DateTime.now();
+    final now =
+        widget.nowProvider != null ? widget.nowProvider!() : DateTime.now();
     if (_lastRetryTapTime != null &&
         now.difference(_lastRetryTapTime!) < AppMotion.debounceGuard) {
       return;
