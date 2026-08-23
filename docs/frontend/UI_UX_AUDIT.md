@@ -260,3 +260,29 @@ The following require real rendering/touch hardware and were **not verified head
 ---
 
 *End of audit. Every number in this document is the literal output of greps/scripts run this session against the working tree at merge commit `4ab627e` content; tool outputs quoted verbatim where relevant.*
+
+---
+
+## 7. Remediation Resolution Log (same-day pass)
+
+Remediation executed in this file's priority order on branch `a8-uiux-remediation`. Code commit: `c1862a25522897dc853670ddbc218bbf8a6771ed`. Verification behind every entry: `flutter analyze` → No issues found; full suite → **396 passed / 0 failed** (baseline 390; +6 new regression tests); production hardcoded-EN sweep re-run → **0** under the audited scope.
+
+| Finding | Status | Notes |
+|---|---|---|
+| B1-F1 customer_home silent fetch failure | ✅ RESOLVED (`c1862a2`) | Retryable `ThemedErrorBanner` (`customer_home_activity_error`); widget test asserts banner presence on error state and absence on success |
+| B4-F1 job_status counter-offer row | ✅ RESOLVED (`c1862a2`) | LayoutBuilder stack <340dp; tests pump 320dp & 360dp asserting zero overflow exceptions. Tests additionally exposed two PRE-EXISTING overflows on this screen (header row 213px @360dp; proposal-card rows 37px/17px) — both fixed (header → Wrap, info/proposal rows flexible+ellipsis) |
+| E3-F1 / B5-F1 / C1-F2 / D3-F2 + themed_success_banner ×10 | ✅ RESOLVED (`c1862a2`) | New tokens `AppColors.scrim` / `AppColors.onSuccess`; raw `Colors.*` sweep now **0** |
+| B3-F1 + B3-F2 marketplace search button | ✅ RESOLVED (`c1862a2`) | Raw ElevatedButton → labeled IconButton (Semantics tooltip); forced 52px sizing removed after it produced infinite-constraint crashes in unbounded harnesses |
+| C1-F1 home TextButtons ×2 | ✅ RESOLVED (`c1862a2`) | Shared `SecondaryButton` (`isFullWidth:false`) — inherits A4 in-flight lock |
+| B3-F3 / D3-F1 / D1-F1 raw font sizes | ✅ RESOLVED (`c1862a2`) | `labelSm` ×2, `headlineLg` ×1 |
+| E4-F1 rating star semantics | ✅ RESOLVED (`c1862a2`) | Per-star Semantics "Rate N of 5 stars" |
+| A3-F1 OTP digit semantics | ✅ RESOLVED (`c1862a2`) | Per-digit labels, null-safe when Localizations absent; covered by new test |
+| E2-F1 notifications error vs connectivity | ✅ RESOLVED (`c1862a2`) | Retryable banner keyed `notifications_error_banner` when `provider.error != null` |
+| Tier 3 RTL (`pill_filter_bar.dart:45`) | ✅ RESOLVED (`c1862a2`) | `EdgeInsetsDirectional.only(end:)`; repo-wide `.only(left/right` sweep clean afterwards |
+| Tier 3 spacers/margins | ✅ RESOLVED (`c1862a2`) | 32 SizedBox micro-spacers + 2 route_timeline EdgeInsets tokenized across 11 screens + widget |
+| §3.6 l10n completion (22 audited strings) | ✅ RESOLVED (`c1862a2`) | All localized; 1 exact ARB reuse (`tooltipRefreshList`) |
+| Deeper ternary/fallback l10n class surfaced during verification | ✅ RESOLVED (`c1862a2`) | ~45 additional keys (kyc copy, update_required manual isArabic ternaries removed, RouteTimeline stages, subscription/wallet/service copy, notifications chips via previously-unused keys, themed_text_field show/hide tooltips, status_badge Uploaded, themed_banner default title, employee avatar fallbacks) |
+| A5-F1, B1-F3, D1-F2, D5-F1 decorative fixed dimensions | ⏸ DEFERRED (documented) | Contained decorative containers; no overflow path found statically. Hoisting to constants is cosmetic churn |
+| Widget-default-parameter strings (confirm_action_dialog Confirm/Cancel, payout_request_dialog Cancel/Confirm Payout/Continue, email_change_dialog ×2, deposit_funds_dialog max-limit, create_service_dialog name-required, list_screen_template empty-state defaults) | ⏸ DEFERRED (counted: 12 sites) | Changing shared-widget constructor defaults requires caller-by-caller review across money flows per CLAUDE.md's shared-widget process rule — belongs to a focused follow-up, not a bulk sed |
+
+Post-pass literal counts: raw `Colors.*` = **0**; raw `fontSize:` outside theme = **2** (both parametric in entity_avatar.dart); `BorderRadius.circular(<raw>)` = **0**; IconButton semantics coverage maintained; production hardcoded-EN (audited scope) = **0**.
