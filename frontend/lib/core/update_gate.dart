@@ -25,8 +25,8 @@ class UpdateGate {
       MaterialPageRoute(
         builder: (_) => UpdateRequiredScreen(
           currentVersion: _asString(info?['current_version']),
-          minimumVersion: _asString(
-              info?['minimum_version'] ?? info?['min_version']),
+          minimumVersion:
+              _asString(info?['minimum_version'] ?? info?['min_version']),
           latestVersion: _asString(info?['latest_version']),
           downloadUrl: _asString(info?['download_url']),
         ),

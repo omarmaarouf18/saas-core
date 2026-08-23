@@ -276,7 +276,8 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                                   setState(() => _isSubmitting = false);
                                   ThemedSnackBar.showError(
                                     context,
-                                    l10n.serviceCreateFailed(friendlyErrorMessage(e)),
+                                    l10n.serviceCreateFailed(
+                                        friendlyErrorMessage(e)),
                                   );
                                 }
                               }

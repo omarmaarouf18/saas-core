@@ -52,8 +52,7 @@ void main() {
   // HTTP 426 forced-update gate (QA audit A5): route any upgrade-required
   // response to the blocking UpdateRequiredScreen instead of letting it
   // surface as an unmapped generic error.
-  apiClient.onUpdateRequired =
-      UpdateGate(appNavigatorKey).handle;
+  apiClient.onUpdateRequired = UpdateGate(appNavigatorKey).handle;
 
   runApp(
     MultiProvider(

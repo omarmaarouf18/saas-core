@@ -297,10 +297,9 @@ class ApiClient {
       );
       final streamedResponse =
           await _client.send(request).timeout(requestTimeout);
-      final response =
-          await http.Response.fromStream(streamedResponse).timeout(
-                requestTimeout,
-              );
+      final response = await http.Response.fromStream(streamedResponse).timeout(
+        requestTimeout,
+      );
       return await _handleResponse(
         response,
         onRetry: isRetry
