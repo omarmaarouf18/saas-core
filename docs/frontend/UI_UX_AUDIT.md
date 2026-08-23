@@ -159,7 +159,22 @@ Raw numeric `EdgeInsets`: **2** (`widgets/route_timeline.dart:54,110` — `top: 
 `EdgeInsets.only(left:/right:` : **1** — `widgets/pill_filter_bar.dart:45` (`right: AppSpacing.base`) breaks mirrored padding in Arabic (should be `EdgeInsetsDirectional.only(end:)`). `Alignment.centerLeft/Right/bottomLeft/topRight`: 0. `TextAlign.left/right`: 0. Directional API adoption otherwise complete (P7a baseline held).
 
 ### 3.6 Localization audit (literal counts)
-Word-bearing hardcoded string literals in user-facing params across all of lib/: **24 total**, all inside the two documented A2 exception zones (`main.dart:100` brand title; `component_library_screen.dart` ×23, kDebugMode-gated). Production screens/widgets: **0**. The seven files flagged by the prior code review (customer_jobs, home, customer_home, customer_job_map, owner_fleet_map, themed_success_banner, themed_banner) were individually swept this session — **all previously-flagged hardcoded English is FIXED** (0 hits in each). ARB en/ar parity: 595 = 595 keys (post-A7).
+**CORRECTED (remediation pass, commit pending):** the original publication of this row claimed production-hardcoded English = 0. That claim was based on a single-quote-only regex and was WRONG. A dual-quote sweep (`'…'` and `"…"`) across all string-bearing params found **53 raw literals total**: 30 in the kDebugMode-gated `component_library_screen.dart` (documented A2 exception), 1 brand title (`main.dart:100`, documented A2 exception), and **22 genuine production strings across 12 screen files** requiring l10n routing:
+- `customer_home_screen.dart` ×4 (:426, :441, :462, :476 — category tile descriptions)
+- `customer_jobs_screen.dart` ×1 (:154 "Browse Services")
+- `customer_marketplace_screen.dart` ×2 (:207 empty-state hint, :209 "Refresh List")
+- `employee_history_screen.dart` ×1 (:107), `owner_history_screen.dart` ×3 (:184, :369, :479) — "Refresh History"
+- `employee_jobs_screen.dart` ×1 (:570 "Refresh Jobs")
+- `employee_screen.dart` ×3 (:275, :277, :695)
+- `home_screen.dart` ×1 (:1171 "Manage Services")
+- `notifications_screen.dart` ×1 (:150 "Back to Home")
+- `owner_reconciliation_queue_screen.dart` ×1 (:220 "Refresh Queue")
+- `service_screen.dart` ×1 (:201 "Create Service")
+- `wallet_screen.dart` ×3 (:311, :352, :354)
+
+ARB cross-check: 1 exact reusable key (`tooltipRefreshList` = "Refresh List"); 18 unique strings need NEW keys in en+ar.
+**Premise correction recorded:** a claimed 7 hardcoded strings in `job_status_screen.dart` ("Rate Your Experience", "Cancel Job", etc.) were verified NOT to exist as Dart literals — grep returns zero hits in that file; each exists already as an ARB key (`app_en.arb:1000-1003`, `:150`, `:266`, `:366`) and renders via `context.l10n`. The file requires localization work only for its Tier-1 layout fix, not strings.
+The seven files individually cleared by the original single-quote sweep remain clear under the dual-quote sweep as well.
 
 ### 3.7 Accessibility audit (counts)
 IconButton tooltip/Semantics coverage: **34/34 labeled** (0 unlabeled — P7b holds). Custom-control semantics gaps: rating stars per-star identity (**missing**, E4-F1) and OTP PIN boxes (**missing**, A3-F1). Static tap-target spot-checks passed where measurable in code (star selector 44×44; marketplace search button 52×52); full target-size matrix requires device testing (§6).
