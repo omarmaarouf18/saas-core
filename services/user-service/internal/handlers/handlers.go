@@ -546,12 +546,12 @@ func (u *UserService) fetchUserRole(ctx context.Context, userID string) (string,
 		return "", ErrServiceUnavailable
 	}
 	url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, url.QueryEscape(userID))
+	// #nosec G704 //nolint:gosec -- sink marker: authServiceURL is trusted internal config and the query value is url.QueryEscape'd before reaching this request (QA audit Q24 target-role classification)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
 	}
 	req.Header.Set("X-Internal-Token", u.internalServiceToken)
-	// #nosec G704 //nolint:gosec -- sink marker: authServiceURL is trusted internal config and the query value is url.QueryEscape'd before reaching this request (QA audit Q24 target-role classification)
 	resp, err := u.authClient.Do(req)
 	if err != nil {
 		return "", ErrServiceUnavailable
