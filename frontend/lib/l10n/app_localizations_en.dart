@@ -9,13 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get ok => 'OK';
-
-  @override
   String get cancel => 'Cancel';
-
-  @override
-  String get save => 'Save';
 
   @override
   String get submit => 'Submit';
@@ -36,9 +30,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loading => 'Loading...';
 
   @override
-  String get comingSoon => 'Coming Soon';
-
-  @override
   String get navHome => 'Home';
 
   @override
@@ -49,9 +40,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navSettings => 'Settings';
-
-  @override
-  String get navEmployees => 'Employees';
 
   @override
   String get themeLight => 'Light';
@@ -73,12 +61,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsTitle => 'Settings';
-
-  @override
-  String get settingsAppearance => 'Appearance';
-
-  @override
-  String get settingsAppearanceSub => 'Customize application look and feel';
 
   @override
   String get settingsThemeMode => 'Theme Mode';
@@ -167,10 +149,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get invalidEmailError => 'Please enter a valid email address';
-
-  @override
-  String get enterOtpPrompt =>
-      'Enter the 6-digit verification code sent to your new email.';
 
   @override
   String get myAccountUsernameLabel => 'Username';
@@ -276,9 +254,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownerConfigPricePerKmReq => 'Price per KM must be >= 0.';
-
-  @override
-  String get ownerConfigPhotoUrlLabel => 'Photo URL';
 
   @override
   String get ownerConfigPhotoUrlHint => 'https://example.com/logo.png';
@@ -442,16 +417,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customerHomeRecentActivity => 'Recent Activity';
 
   @override
-  String get customerHomeQuickBookBanner => 'Need a quick delivery?';
-
-  @override
   String get customerHomeQuickBookBtn => 'BOOK NOW';
 
   @override
   String get customerMarketplaceTitle => 'Explore Services';
-
-  @override
-  String get customerMarketplaceSearchHint => 'Search services...';
 
   @override
   String get customerMarketplaceFilterCategory => 'Category';
@@ -463,13 +432,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customerMarketplaceChooseMap => 'Choose Location on Map';
 
   @override
-  String get customerMarketplaceBookBtn => 'BOOK SERVICE';
-
-  @override
-  String get customerMarketplaceCodNote =>
-      'Note: COD (Cash on Delivery) is enforced during beta.';
-
-  @override
   String get customerJobsTitle => 'My Orders';
 
   @override
@@ -479,22 +441,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customerJobsSearchHint => 'Search by Order ID, Location...';
 
   @override
-  String get customerJobsInvoiceAvailable => 'Invoice Available';
-
-  @override
   String get customerJobsInTransit => 'In Transit';
 
   @override
-  String get customerJobsOrderPlaced => 'Order Placed';
-
-  @override
-  String get customerJobsPayment => 'Payment';
-
-  @override
   String get customerJobsPrice => 'Price';
-
-  @override
-  String get customerJobsReason => 'Reason';
 
   @override
   String get customerJobsOrder => 'Order #';
@@ -507,59 +457,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'You haven\'t placed any orders yet. Explore services in the marketplace to get started.';
 
   @override
-  String get customerJobsViewDetails => 'View Details';
-
-  @override
   String get jobStatusTitle => 'Order Status';
-
-  @override
-  String get jobStatusPending => 'Pending';
-
-  @override
-  String get jobStatusActive => 'Active';
-
-  @override
-  String get jobStatusCompleted => 'Completed';
-
-  @override
-  String get jobStatusCancelled => 'Cancelled';
-
-  @override
-  String get jobStatusCancelBtn => 'Cancel Order';
 
   @override
   String get jobStatusOpenTicketBtn => 'Open Complaint Ticket';
 
   @override
-  String get jobStatusCounterOfferTitle => 'Price Counter-Offer';
-
-  @override
-  String get jobStatusCounterOfferSubmit => 'Propose Counter Price';
-
-  @override
-  String get ownerHomeGreeting => 'Dashboard';
-
-  @override
-  String get ownerHomeKycAlert =>
-      'Your KYC verification is pending admin approval.';
-
-  @override
-  String get ownerHomeMetricsWallet => 'Wallet Balance';
-
-  @override
-  String get ownerHomeMetricsSubscription => 'Subscription Tier';
-
-  @override
-  String get ownerHomeEntryWallet => 'Manage Wallet';
-
-  @override
-  String get ownerHomeEntryService => 'Service Configuration';
-
-  @override
   String get ownerHistoryTitle => 'History & Audit Logs';
-
-  @override
-  String get ownerHistoryTabAudit => 'Audit Log';
 
   @override
   String get ownerHistoryTabJobs => 'Jobs';
@@ -568,41 +472,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownerHistoryTabLedger => 'Ledger';
 
   @override
-  String get ownerFleetMapTitle => 'Fleet Map';
-
-  @override
-  String get customerJobMapTitle => 'Live Tracking';
-
-  @override
   String get employeeJobsTitle => 'Assigned Jobs';
 
   @override
-  String get employeeJobsCompleteBtn => 'Complete Job';
-
-  @override
-  String get employeeJobsVerifyDocsBtn => 'KYC Documents';
-
-  @override
-  String get employeeJobsChatBtn => 'Chat with Customer';
-
-  @override
-  String get employeeJobsCashConfirmTitle => 'Confirm Cash Collection';
-
-  @override
-  String get employeeJobsCashConfirmMsg =>
-      'Did you collect cash from the customer for this COD job?';
-
-  @override
   String get employeeScreenTitle => 'Manage Workers';
-
-  @override
-  String get employeeRegisterHeader => 'Register New Worker';
-
-  @override
-  String get employeeFreezeBtn => 'Freeze';
-
-  @override
-  String get employeeUnfreezeBtn => 'Activate';
 
   @override
   String get chatTitle => 'Job Chat';
@@ -611,46 +484,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatTypeHint => 'Type a message...';
 
   @override
-  String get chatSendBtn => 'Send';
-
-  @override
   String get notificationsTitle => 'Notifications';
 
   @override
-  String get notificationsAll => 'All';
-
-  @override
-  String get notificationsJobs => 'Jobs';
-
-  @override
-  String get notificationsSystem => 'System';
-
-  @override
-  String get notificationsAlerts => 'Alerts';
-
-  @override
   String get notificationsClear => 'Clear All';
-
-  @override
-  String get kycTitle => 'Document Verification';
-
-  @override
-  String get kycRejectionBanner => 'Your documents were rejected. Reason:';
-
-  @override
-  String get kycApprovedBadge => 'Approved';
-
-  @override
-  String get kybKyeReviewTitle => 'KYC Review Queue';
-
-  @override
-  String get kybKyeApproveBtn => 'Approve';
-
-  @override
-  String get kybKyeRejectBtn => 'Reject';
-
-  @override
-  String get walletTitle => 'Owner Wallet';
 
   @override
   String get walletTotalBalance => 'Total Balance';
@@ -659,37 +496,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get walletWithdrawable => 'Withdrawable';
 
   @override
-  String get walletEscrow => 'In Escrow';
-
-  @override
-  String get walletDepositBtn => 'Deposit Funds';
-
-  @override
-  String get reconciliationTitle => 'Escrow Reconciliation';
-
-  @override
-  String get reconciliationReleaseBtn => 'Release Funds';
-
-  @override
-  String get reconciliationRefundBtn => 'Refund Customer';
-
-  @override
   String get ratingTitle => 'Rate Service';
 
   @override
   String get ratingSubmitBtn => 'SUBMIT RATING';
-
-  @override
-  String get subscriptionTitle => 'Subscription Plans';
-
-  @override
-  String get subscriptionFree => 'Free Tier';
-
-  @override
-  String get subscriptionPro => 'Professional Tier';
-
-  @override
-  String get locationPickerTitle => 'Choose Location on Map';
 
   @override
   String get locationPickerUseMyLocation => 'Use My Location';
@@ -713,18 +523,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fleetLiveMapTitle => 'Fleet Live Map';
 
   @override
-  String get pendingKybKyeSubmissions => 'Pending KYB/KYE Submissions';
-
-  @override
-  String reviewCompletedSuccess(String username) {
-    return 'Review completed successfully for $username.';
-  }
-
-  @override
   String get reconciliationReviewTitle => 'Escrow Reconciliation Review';
-
-  @override
-  String get tooltipRefreshQueue => 'Refresh Queue';
 
   @override
   String get reconciliationEmptyTitle => 'No jobs pending reconciliation';
@@ -784,57 +583,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get roleCustomer => 'customer';
-
-  @override
-  String get docViewerTitle => 'Document Viewer';
-
-  @override
-  String get docTabIdFront => 'Front ID';
-
-  @override
-  String get docTabIdBack => 'Back ID';
-
-  @override
-  String get docTabSelfie => 'Selfie';
-
-  @override
-  String get docTabBusinessProof => 'Business Proof';
-
-  @override
-  String get docLoadingPreview => 'Loading document preview...';
-
-  @override
-  String get docNotProvided => 'Document not provided for this submission.';
-
-  @override
-  String get docFailedLoad => 'Failed to load document preview';
-
-  @override
-  String get docPdfPreviewTitle => 'PDF Document Preview';
-
-  @override
-  String docFileSize(int size) {
-    return 'File Size: $size bytes';
-  }
-
-  @override
-  String get docDecodeError => 'Failed to decode image bytes.';
-
-  @override
-  String get docNoDocument => 'No document loaded.';
-
-  @override
-  String get docRejectionReasonLabel => 'Rejection Reason / Notes';
-
-  @override
-  String get docRejectionReasonHint =>
-      'Explain why this submission is being rejected...';
-
-  @override
-  String get docRejectionReasonReq => 'Rejection reason is required.';
-
-  @override
-  String get docConfirmReject => 'Confirm Reject';
 
   @override
   String chatFailedSend(String error) {
@@ -948,9 +696,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownerHomeTabTitleWorkers => 'Manage Workers';
 
   @override
-  String get ownerHomeTabTitleHistory => 'History & Audit Logs';
-
-  @override
   String ownerHomeWelcomeUser(String name) {
     return 'Welcome back, $name!';
   }
@@ -971,9 +716,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownerHomeLabelRole => 'Role';
-
-  @override
-  String get ownerHomeTooltipReviewQueue => 'KYB/KYE Review Queue';
 
   @override
   String get ownerHomeTooltipEscrowReconciliation => 'Escrow Reconciliation';
@@ -1060,11 +802,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownerHomeCancelJob => 'Cancel Job';
 
   @override
-  String get ownerHomeJobCancelledEscrowRefunded =>
-      'Job cancelled successfully. Escrow refunded to wallet.';
+  String get ownerHomeJobCancelled => 'Job cancelled successfully.';
 
   @override
-  String get ownerHomeJobCancelled => 'Job cancelled successfully.';
+  String get ownerHomeJobCancelledEscrowRefunded =>
+      'Job cancelled successfully. Escrow refunded to wallet.';
 
   @override
   String get ownerHistoryTabActivity => 'Activity';
@@ -1151,9 +893,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get employeeJobsSectionAssigned => 'Your Assigned Jobs';
 
   @override
-  String get employeeJobsLoading => 'Loading assigned jobs...';
-
-  @override
   String get employeeJobsNoJobsTitle => 'No Jobs Assigned';
 
   @override
@@ -1236,9 +975,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get planProfessionalPaid => 'Professional Paid Plan';
-
-  @override
-  String get walletLoading => 'Loading wallet...';
 
   @override
   String get walletLockedEscrow => 'Locked (Escrow)';
@@ -1344,9 +1080,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sortByLabel => 'Sort By';
 
   @override
-  String get searchingServices => 'Searching services...';
-
-  @override
   String get noServicesNearby => 'No services found nearby.';
 
   @override
@@ -1383,16 +1116,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get employeePasswordHint => 'At least 6 characters';
 
   @override
-  String get employeeRegisteredTitle => 'Employee Registered';
-
-  @override
   String get freezeUnfreezeWorker => 'Freeze / Unfreeze Worker';
 
   @override
   String get confirmOwnerPassword => 'Confirm Owner Password';
-
-  @override
-  String get workerStatusUpdated => 'Worker Status Updated';
 
   @override
   String get loadingAuditTrail => 'Loading audit trail...';
@@ -1404,42 +1131,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noAuditEventsDesc => 'No audit events recorded for this tenant.';
 
   @override
-  String get liveTrackingTitle => 'Live Tracking';
-
-  @override
-  String get stepRequestPlaced => 'Request Placed';
-
-  @override
-  String get stepWaitingApproval => 'Waiting for operator approval';
-
-  @override
-  String get stepWorkerDispatched => 'Worker Dispatched';
-
-  @override
-  String get stepJobCompleted => 'Job Completed';
-
-  @override
-  String get stepCompletedSuccessfully => 'Delivery completed successfully';
-
-  @override
-  String get jobDetailsTitle => 'Job Details';
-
-  @override
   String get priceNegotiationTitle => 'Price Negotiation';
 
   @override
   String negotiationHintExample(String price) {
     return 'e.g. $price';
   }
-
-  @override
-  String get accessDeniedTitle => 'Access Denied';
-
-  @override
-  String get loadingPendingSubmissions => 'Loading pending submissions...';
-
-  @override
-  String get noPendingSubmissions => 'No Pending Submissions';
 
   @override
   String rejectionReasonMessage(String reason) {
@@ -1457,9 +1154,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privateFeedbackLabel => 'Private Feedback (Optional)';
-
-  @override
-  String get privateFeedbackHint => 'What went well? What could be improved?';
 
   @override
   String get loadingStatus => 'Loading status...';

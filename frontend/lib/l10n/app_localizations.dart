@@ -98,23 +98,11 @@ abstract class AppLocalizations {
     Locale('en')
   ];
 
-  /// No description provided for @ok.
-  ///
-  /// In en, this message translates to:
-  /// **'OK'**
-  String get ok;
-
   /// No description provided for @cancel.
   ///
   /// In en, this message translates to:
   /// **'Cancel'**
   String get cancel;
-
-  /// No description provided for @save.
-  ///
-  /// In en, this message translates to:
-  /// **'Save'**
-  String get save;
 
   /// No description provided for @submit.
   ///
@@ -152,12 +140,6 @@ abstract class AppLocalizations {
   /// **'Loading...'**
   String get loading;
 
-  /// No description provided for @comingSoon.
-  ///
-  /// In en, this message translates to:
-  /// **'Coming Soon'**
-  String get comingSoon;
-
   /// No description provided for @navHome.
   ///
   /// In en, this message translates to:
@@ -181,12 +163,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get navSettings;
-
-  /// No description provided for @navEmployees.
-  ///
-  /// In en, this message translates to:
-  /// **'Employees'**
-  String get navEmployees;
 
   /// No description provided for @themeLight.
   ///
@@ -229,18 +205,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get settingsTitle;
-
-  /// No description provided for @settingsAppearance.
-  ///
-  /// In en, this message translates to:
-  /// **'Appearance'**
-  String get settingsAppearance;
-
-  /// No description provided for @settingsAppearanceSub.
-  ///
-  /// In en, this message translates to:
-  /// **'Customize application look and feel'**
-  String get settingsAppearanceSub;
 
   /// No description provided for @settingsThemeMode.
   ///
@@ -409,12 +373,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please enter a valid email address'**
   String get invalidEmailError;
-
-  /// No description provided for @enterOtpPrompt.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter the 6-digit verification code sent to your new email.'**
-  String get enterOtpPrompt;
 
   /// No description provided for @myAccountUsernameLabel.
   ///
@@ -619,12 +577,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Price per KM must be >= 0.'**
   String get ownerConfigPricePerKmReq;
-
-  /// No description provided for @ownerConfigPhotoUrlLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Photo URL'**
-  String get ownerConfigPhotoUrlLabel;
 
   /// No description provided for @ownerConfigPhotoUrlHint.
   ///
@@ -944,12 +896,6 @@ abstract class AppLocalizations {
   /// **'Recent Activity'**
   String get customerHomeRecentActivity;
 
-  /// No description provided for @customerHomeQuickBookBanner.
-  ///
-  /// In en, this message translates to:
-  /// **'Need a quick delivery?'**
-  String get customerHomeQuickBookBanner;
-
   /// No description provided for @customerHomeQuickBookBtn.
   ///
   /// In en, this message translates to:
@@ -961,12 +907,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Explore Services'**
   String get customerMarketplaceTitle;
-
-  /// No description provided for @customerMarketplaceSearchHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Search services...'**
-  String get customerMarketplaceSearchHint;
 
   /// No description provided for @customerMarketplaceFilterCategory.
   ///
@@ -986,18 +926,6 @@ abstract class AppLocalizations {
   /// **'Choose Location on Map'**
   String get customerMarketplaceChooseMap;
 
-  /// No description provided for @customerMarketplaceBookBtn.
-  ///
-  /// In en, this message translates to:
-  /// **'BOOK SERVICE'**
-  String get customerMarketplaceBookBtn;
-
-  /// No description provided for @customerMarketplaceCodNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Note: COD (Cash on Delivery) is enforced during beta.'**
-  String get customerMarketplaceCodNote;
-
   /// No description provided for @customerJobsTitle.
   ///
   /// In en, this message translates to:
@@ -1016,41 +944,17 @@ abstract class AppLocalizations {
   /// **'Search by Order ID, Location...'**
   String get customerJobsSearchHint;
 
-  /// No description provided for @customerJobsInvoiceAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Invoice Available'**
-  String get customerJobsInvoiceAvailable;
-
   /// No description provided for @customerJobsInTransit.
   ///
   /// In en, this message translates to:
   /// **'In Transit'**
   String get customerJobsInTransit;
 
-  /// No description provided for @customerJobsOrderPlaced.
-  ///
-  /// In en, this message translates to:
-  /// **'Order Placed'**
-  String get customerJobsOrderPlaced;
-
-  /// No description provided for @customerJobsPayment.
-  ///
-  /// In en, this message translates to:
-  /// **'Payment'**
-  String get customerJobsPayment;
-
   /// No description provided for @customerJobsPrice.
   ///
   /// In en, this message translates to:
   /// **'Price'**
   String get customerJobsPrice;
-
-  /// No description provided for @customerJobsReason.
-  ///
-  /// In en, this message translates to:
-  /// **'Reason'**
-  String get customerJobsReason;
 
   /// No description provided for @customerJobsOrder.
   ///
@@ -1070,47 +974,11 @@ abstract class AppLocalizations {
   /// **'You haven\'t placed any orders yet. Explore services in the marketplace to get started.'**
   String get customerJobsEmptyDescription;
 
-  /// No description provided for @customerJobsViewDetails.
-  ///
-  /// In en, this message translates to:
-  /// **'View Details'**
-  String get customerJobsViewDetails;
-
   /// No description provided for @jobStatusTitle.
   ///
   /// In en, this message translates to:
   /// **'Order Status'**
   String get jobStatusTitle;
-
-  /// No description provided for @jobStatusPending.
-  ///
-  /// In en, this message translates to:
-  /// **'Pending'**
-  String get jobStatusPending;
-
-  /// No description provided for @jobStatusActive.
-  ///
-  /// In en, this message translates to:
-  /// **'Active'**
-  String get jobStatusActive;
-
-  /// No description provided for @jobStatusCompleted.
-  ///
-  /// In en, this message translates to:
-  /// **'Completed'**
-  String get jobStatusCompleted;
-
-  /// No description provided for @jobStatusCancelled.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancelled'**
-  String get jobStatusCancelled;
-
-  /// No description provided for @jobStatusCancelBtn.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel Order'**
-  String get jobStatusCancelBtn;
 
   /// No description provided for @jobStatusOpenTicketBtn.
   ///
@@ -1118,65 +986,11 @@ abstract class AppLocalizations {
   /// **'Open Complaint Ticket'**
   String get jobStatusOpenTicketBtn;
 
-  /// No description provided for @jobStatusCounterOfferTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Price Counter-Offer'**
-  String get jobStatusCounterOfferTitle;
-
-  /// No description provided for @jobStatusCounterOfferSubmit.
-  ///
-  /// In en, this message translates to:
-  /// **'Propose Counter Price'**
-  String get jobStatusCounterOfferSubmit;
-
-  /// No description provided for @ownerHomeGreeting.
-  ///
-  /// In en, this message translates to:
-  /// **'Dashboard'**
-  String get ownerHomeGreeting;
-
-  /// No description provided for @ownerHomeKycAlert.
-  ///
-  /// In en, this message translates to:
-  /// **'Your KYC verification is pending admin approval.'**
-  String get ownerHomeKycAlert;
-
-  /// No description provided for @ownerHomeMetricsWallet.
-  ///
-  /// In en, this message translates to:
-  /// **'Wallet Balance'**
-  String get ownerHomeMetricsWallet;
-
-  /// No description provided for @ownerHomeMetricsSubscription.
-  ///
-  /// In en, this message translates to:
-  /// **'Subscription Tier'**
-  String get ownerHomeMetricsSubscription;
-
-  /// No description provided for @ownerHomeEntryWallet.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage Wallet'**
-  String get ownerHomeEntryWallet;
-
-  /// No description provided for @ownerHomeEntryService.
-  ///
-  /// In en, this message translates to:
-  /// **'Service Configuration'**
-  String get ownerHomeEntryService;
-
   /// No description provided for @ownerHistoryTitle.
   ///
   /// In en, this message translates to:
   /// **'History & Audit Logs'**
   String get ownerHistoryTitle;
-
-  /// No description provided for @ownerHistoryTabAudit.
-  ///
-  /// In en, this message translates to:
-  /// **'Audit Log'**
-  String get ownerHistoryTabAudit;
 
   /// No description provided for @ownerHistoryTabJobs.
   ///
@@ -1190,77 +1004,17 @@ abstract class AppLocalizations {
   /// **'Ledger'**
   String get ownerHistoryTabLedger;
 
-  /// No description provided for @ownerFleetMapTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Fleet Map'**
-  String get ownerFleetMapTitle;
-
-  /// No description provided for @customerJobMapTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Live Tracking'**
-  String get customerJobMapTitle;
-
   /// No description provided for @employeeJobsTitle.
   ///
   /// In en, this message translates to:
   /// **'Assigned Jobs'**
   String get employeeJobsTitle;
 
-  /// No description provided for @employeeJobsCompleteBtn.
-  ///
-  /// In en, this message translates to:
-  /// **'Complete Job'**
-  String get employeeJobsCompleteBtn;
-
-  /// No description provided for @employeeJobsVerifyDocsBtn.
-  ///
-  /// In en, this message translates to:
-  /// **'KYC Documents'**
-  String get employeeJobsVerifyDocsBtn;
-
-  /// No description provided for @employeeJobsChatBtn.
-  ///
-  /// In en, this message translates to:
-  /// **'Chat with Customer'**
-  String get employeeJobsChatBtn;
-
-  /// No description provided for @employeeJobsCashConfirmTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm Cash Collection'**
-  String get employeeJobsCashConfirmTitle;
-
-  /// No description provided for @employeeJobsCashConfirmMsg.
-  ///
-  /// In en, this message translates to:
-  /// **'Did you collect cash from the customer for this COD job?'**
-  String get employeeJobsCashConfirmMsg;
-
   /// No description provided for @employeeScreenTitle.
   ///
   /// In en, this message translates to:
   /// **'Manage Workers'**
   String get employeeScreenTitle;
-
-  /// No description provided for @employeeRegisterHeader.
-  ///
-  /// In en, this message translates to:
-  /// **'Register New Worker'**
-  String get employeeRegisterHeader;
-
-  /// No description provided for @employeeFreezeBtn.
-  ///
-  /// In en, this message translates to:
-  /// **'Freeze'**
-  String get employeeFreezeBtn;
-
-  /// No description provided for @employeeUnfreezeBtn.
-  ///
-  /// In en, this message translates to:
-  /// **'Activate'**
-  String get employeeUnfreezeBtn;
 
   /// No description provided for @chatTitle.
   ///
@@ -1274,89 +1028,17 @@ abstract class AppLocalizations {
   /// **'Type a message...'**
   String get chatTypeHint;
 
-  /// No description provided for @chatSendBtn.
-  ///
-  /// In en, this message translates to:
-  /// **'Send'**
-  String get chatSendBtn;
-
   /// No description provided for @notificationsTitle.
   ///
   /// In en, this message translates to:
   /// **'Notifications'**
   String get notificationsTitle;
 
-  /// No description provided for @notificationsAll.
-  ///
-  /// In en, this message translates to:
-  /// **'All'**
-  String get notificationsAll;
-
-  /// No description provided for @notificationsJobs.
-  ///
-  /// In en, this message translates to:
-  /// **'Jobs'**
-  String get notificationsJobs;
-
-  /// No description provided for @notificationsSystem.
-  ///
-  /// In en, this message translates to:
-  /// **'System'**
-  String get notificationsSystem;
-
-  /// No description provided for @notificationsAlerts.
-  ///
-  /// In en, this message translates to:
-  /// **'Alerts'**
-  String get notificationsAlerts;
-
   /// No description provided for @notificationsClear.
   ///
   /// In en, this message translates to:
   /// **'Clear All'**
   String get notificationsClear;
-
-  /// No description provided for @kycTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Document Verification'**
-  String get kycTitle;
-
-  /// No description provided for @kycRejectionBanner.
-  ///
-  /// In en, this message translates to:
-  /// **'Your documents were rejected. Reason:'**
-  String get kycRejectionBanner;
-
-  /// No description provided for @kycApprovedBadge.
-  ///
-  /// In en, this message translates to:
-  /// **'Approved'**
-  String get kycApprovedBadge;
-
-  /// No description provided for @kybKyeReviewTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'KYC Review Queue'**
-  String get kybKyeReviewTitle;
-
-  /// No description provided for @kybKyeApproveBtn.
-  ///
-  /// In en, this message translates to:
-  /// **'Approve'**
-  String get kybKyeApproveBtn;
-
-  /// No description provided for @kybKyeRejectBtn.
-  ///
-  /// In en, this message translates to:
-  /// **'Reject'**
-  String get kybKyeRejectBtn;
-
-  /// No description provided for @walletTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Owner Wallet'**
-  String get walletTitle;
 
   /// No description provided for @walletTotalBalance.
   ///
@@ -1370,36 +1052,6 @@ abstract class AppLocalizations {
   /// **'Withdrawable'**
   String get walletWithdrawable;
 
-  /// No description provided for @walletEscrow.
-  ///
-  /// In en, this message translates to:
-  /// **'In Escrow'**
-  String get walletEscrow;
-
-  /// No description provided for @walletDepositBtn.
-  ///
-  /// In en, this message translates to:
-  /// **'Deposit Funds'**
-  String get walletDepositBtn;
-
-  /// No description provided for @reconciliationTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Escrow Reconciliation'**
-  String get reconciliationTitle;
-
-  /// No description provided for @reconciliationReleaseBtn.
-  ///
-  /// In en, this message translates to:
-  /// **'Release Funds'**
-  String get reconciliationReleaseBtn;
-
-  /// No description provided for @reconciliationRefundBtn.
-  ///
-  /// In en, this message translates to:
-  /// **'Refund Customer'**
-  String get reconciliationRefundBtn;
-
   /// No description provided for @ratingTitle.
   ///
   /// In en, this message translates to:
@@ -1411,30 +1063,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'SUBMIT RATING'**
   String get ratingSubmitBtn;
-
-  /// No description provided for @subscriptionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Subscription Plans'**
-  String get subscriptionTitle;
-
-  /// No description provided for @subscriptionFree.
-  ///
-  /// In en, this message translates to:
-  /// **'Free Tier'**
-  String get subscriptionFree;
-
-  /// No description provided for @subscriptionPro.
-  ///
-  /// In en, this message translates to:
-  /// **'Professional Tier'**
-  String get subscriptionPro;
-
-  /// No description provided for @locationPickerTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose Location on Map'**
-  String get locationPickerTitle;
 
   /// No description provided for @locationPickerUseMyLocation.
   ///
@@ -1478,29 +1106,11 @@ abstract class AppLocalizations {
   /// **'Fleet Live Map'**
   String get fleetLiveMapTitle;
 
-  /// No description provided for @pendingKybKyeSubmissions.
-  ///
-  /// In en, this message translates to:
-  /// **'Pending KYB/KYE Submissions'**
-  String get pendingKybKyeSubmissions;
-
-  /// No description provided for @reviewCompletedSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Review completed successfully for {username}.'**
-  String reviewCompletedSuccess(String username);
-
   /// No description provided for @reconciliationReviewTitle.
   ///
   /// In en, this message translates to:
   /// **'Escrow Reconciliation Review'**
   String get reconciliationReviewTitle;
-
-  /// No description provided for @tooltipRefreshQueue.
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh Queue'**
-  String get tooltipRefreshQueue;
 
   /// No description provided for @reconciliationEmptyTitle.
   ///
@@ -1604,102 +1214,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'customer'**
   String get roleCustomer;
-
-  /// No description provided for @docViewerTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Document Viewer'**
-  String get docViewerTitle;
-
-  /// No description provided for @docTabIdFront.
-  ///
-  /// In en, this message translates to:
-  /// **'Front ID'**
-  String get docTabIdFront;
-
-  /// No description provided for @docTabIdBack.
-  ///
-  /// In en, this message translates to:
-  /// **'Back ID'**
-  String get docTabIdBack;
-
-  /// No description provided for @docTabSelfie.
-  ///
-  /// In en, this message translates to:
-  /// **'Selfie'**
-  String get docTabSelfie;
-
-  /// No description provided for @docTabBusinessProof.
-  ///
-  /// In en, this message translates to:
-  /// **'Business Proof'**
-  String get docTabBusinessProof;
-
-  /// No description provided for @docLoadingPreview.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading document preview...'**
-  String get docLoadingPreview;
-
-  /// No description provided for @docNotProvided.
-  ///
-  /// In en, this message translates to:
-  /// **'Document not provided for this submission.'**
-  String get docNotProvided;
-
-  /// No description provided for @docFailedLoad.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to load document preview'**
-  String get docFailedLoad;
-
-  /// No description provided for @docPdfPreviewTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'PDF Document Preview'**
-  String get docPdfPreviewTitle;
-
-  /// No description provided for @docFileSize.
-  ///
-  /// In en, this message translates to:
-  /// **'File Size: {size} bytes'**
-  String docFileSize(int size);
-
-  /// No description provided for @docDecodeError.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to decode image bytes.'**
-  String get docDecodeError;
-
-  /// No description provided for @docNoDocument.
-  ///
-  /// In en, this message translates to:
-  /// **'No document loaded.'**
-  String get docNoDocument;
-
-  /// No description provided for @docRejectionReasonLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Rejection Reason / Notes'**
-  String get docRejectionReasonLabel;
-
-  /// No description provided for @docRejectionReasonHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Explain why this submission is being rejected...'**
-  String get docRejectionReasonHint;
-
-  /// No description provided for @docRejectionReasonReq.
-  ///
-  /// In en, this message translates to:
-  /// **'Rejection reason is required.'**
-  String get docRejectionReasonReq;
-
-  /// No description provided for @docConfirmReject.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm Reject'**
-  String get docConfirmReject;
 
   /// No description provided for @chatFailedSend.
   ///
@@ -1881,12 +1395,6 @@ abstract class AppLocalizations {
   /// **'Manage Workers'**
   String get ownerHomeTabTitleWorkers;
 
-  /// No description provided for @ownerHomeTabTitleHistory.
-  ///
-  /// In en, this message translates to:
-  /// **'History & Audit Logs'**
-  String get ownerHomeTabTitleHistory;
-
   /// No description provided for @ownerHomeWelcomeUser.
   ///
   /// In en, this message translates to:
@@ -1922,12 +1430,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Role'**
   String get ownerHomeLabelRole;
-
-  /// No description provided for @ownerHomeTooltipReviewQueue.
-  ///
-  /// In en, this message translates to:
-  /// **'KYB/KYE Review Queue'**
-  String get ownerHomeTooltipReviewQueue;
 
   /// No description provided for @ownerHomeTooltipEscrowReconciliation.
   ///
@@ -2079,17 +1581,17 @@ abstract class AppLocalizations {
   /// **'Cancel Job'**
   String get ownerHomeCancelJob;
 
-  /// No description provided for @ownerHomeJobCancelledEscrowRefunded.
-  ///
-  /// In en, this message translates to:
-  /// **'Job cancelled successfully. Escrow refunded to wallet.'**
-  String get ownerHomeJobCancelledEscrowRefunded;
-
   /// No description provided for @ownerHomeJobCancelled.
   ///
   /// In en, this message translates to:
   /// **'Job cancelled successfully.'**
   String get ownerHomeJobCancelled;
+
+  /// No description provided for @ownerHomeJobCancelledEscrowRefunded.
+  ///
+  /// In en, this message translates to:
+  /// **'Job cancelled successfully. Escrow refunded to wallet.'**
+  String get ownerHomeJobCancelledEscrowRefunded;
 
   /// No description provided for @ownerHistoryTabActivity.
   ///
@@ -2228,12 +1730,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your Assigned Jobs'**
   String get employeeJobsSectionAssigned;
-
-  /// No description provided for @employeeJobsLoading.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading assigned jobs...'**
-  String get employeeJobsLoading;
 
   /// No description provided for @employeeJobsNoJobsTitle.
   ///
@@ -2378,12 +1874,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Professional Paid Plan'**
   String get planProfessionalPaid;
-
-  /// No description provided for @walletLoading.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading wallet...'**
-  String get walletLoading;
 
   /// No description provided for @walletLockedEscrow.
   ///
@@ -2589,12 +2079,6 @@ abstract class AppLocalizations {
   /// **'Sort By'**
   String get sortByLabel;
 
-  /// No description provided for @searchingServices.
-  ///
-  /// In en, this message translates to:
-  /// **'Searching services...'**
-  String get searchingServices;
-
   /// No description provided for @noServicesNearby.
   ///
   /// In en, this message translates to:
@@ -2667,12 +2151,6 @@ abstract class AppLocalizations {
   /// **'At least 6 characters'**
   String get employeePasswordHint;
 
-  /// No description provided for @employeeRegisteredTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Employee Registered'**
-  String get employeeRegisteredTitle;
-
   /// No description provided for @freezeUnfreezeWorker.
   ///
   /// In en, this message translates to:
@@ -2684,12 +2162,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm Owner Password'**
   String get confirmOwnerPassword;
-
-  /// No description provided for @workerStatusUpdated.
-  ///
-  /// In en, this message translates to:
-  /// **'Worker Status Updated'**
-  String get workerStatusUpdated;
 
   /// No description provided for @loadingAuditTrail.
   ///
@@ -2709,48 +2181,6 @@ abstract class AppLocalizations {
   /// **'No audit events recorded for this tenant.'**
   String get noAuditEventsDesc;
 
-  /// No description provided for @liveTrackingTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Live Tracking'**
-  String get liveTrackingTitle;
-
-  /// No description provided for @stepRequestPlaced.
-  ///
-  /// In en, this message translates to:
-  /// **'Request Placed'**
-  String get stepRequestPlaced;
-
-  /// No description provided for @stepWaitingApproval.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for operator approval'**
-  String get stepWaitingApproval;
-
-  /// No description provided for @stepWorkerDispatched.
-  ///
-  /// In en, this message translates to:
-  /// **'Worker Dispatched'**
-  String get stepWorkerDispatched;
-
-  /// No description provided for @stepJobCompleted.
-  ///
-  /// In en, this message translates to:
-  /// **'Job Completed'**
-  String get stepJobCompleted;
-
-  /// No description provided for @stepCompletedSuccessfully.
-  ///
-  /// In en, this message translates to:
-  /// **'Delivery completed successfully'**
-  String get stepCompletedSuccessfully;
-
-  /// No description provided for @jobDetailsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Job Details'**
-  String get jobDetailsTitle;
-
   /// No description provided for @priceNegotiationTitle.
   ///
   /// In en, this message translates to:
@@ -2762,24 +2192,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'e.g. {price}'**
   String negotiationHintExample(String price);
-
-  /// No description provided for @accessDeniedTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Access Denied'**
-  String get accessDeniedTitle;
-
-  /// No description provided for @loadingPendingSubmissions.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading pending submissions...'**
-  String get loadingPendingSubmissions;
-
-  /// No description provided for @noPendingSubmissions.
-  ///
-  /// In en, this message translates to:
-  /// **'No Pending Submissions'**
-  String get noPendingSubmissions;
 
   /// No description provided for @rejectionReasonMessage.
   ///
@@ -2810,12 +2222,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Private Feedback (Optional)'**
   String get privateFeedbackLabel;
-
-  /// No description provided for @privateFeedbackHint.
-  ///
-  /// In en, this message translates to:
-  /// **'What went well? What could be improved?'**
-  String get privateFeedbackHint;
 
   /// No description provided for @loadingStatus.
   ///
