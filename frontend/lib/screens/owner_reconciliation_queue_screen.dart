@@ -28,6 +28,10 @@ class _OwnerReconciliationQueueScreenState
     extends State<OwnerReconciliationQueueScreen> {
   final _searchController = TextEditingController();
   String _selectedCategory = 'all';
+  // In-flight guard (QA audit A4): resolveJob releases escrow / refunds the
+  // customer — a second confirm while the first POST is pending must be
+  // impossible. Set before the dialog opens, cleared when the await settles.
+  String? _resolvingJobId;
 
   @override
   void initState() {
@@ -53,6 +57,14 @@ class _OwnerReconciliationQueueScreenState
     required ReconciliationJob job,
     required String decision,
   }) async {
+    // Re-entrancy guard (QA audit A4): resolveJob moves escrow (release to
+    // employee / refund to customer). While one resolution POST is in
+    // flight the action buttons are disabled AND this entry point refuses
+    // re-entry, so a second confirm can never fire a duplicate money-moving
+    // request. The modal dialog itself protects the decision phase; the
+    // flag below covers the vulnerable window AFTER confirm while the call
+    // is still awaiting the backend.
+    if (_resolvingJobId != null) return;
     final l10n = AppLocalizations.of(context)!;
     final isRelease = decision == 'release_to_employee';
     final actionLabel = isRelease
@@ -75,33 +87,40 @@ class _OwnerReconciliationQueueScreenState
     );
 
     if (confirmed == true && context.mounted) {
-      final provider =
-          Provider.of<ReconciliationProvider>(context, listen: false);
-      final success = await provider.resolveJob(
-        jobId: job.id,
-        decision: decision,
-      );
-
-      if (!context.mounted) return;
-
-      if (success) {
-        ThemedSnackBar.showSuccess(
-          context,
-          isRelease
-              ? l10n.reconciliationSuccessRelease
-              : l10n.reconciliationSuccessRefund,
+      setState(() => _resolvingJobId = job.id);
+      try {
+        final provider =
+            Provider.of<ReconciliationProvider>(context, listen: false);
+        final success = await provider.resolveJob(
+          jobId: job.id,
+          decision: decision,
         );
-      } else {
-        final err = provider.error ?? l10n.reconciliationFailed;
-        ThemedSnackBar.showError(
-          context,
-          err,
-          onRetry: () => _showConfirmationDialog(
-            context: context,
-            job: job,
-            decision: decision,
-          ),
-        );
+
+        if (!context.mounted) return;
+
+        if (success) {
+          ThemedSnackBar.showSuccess(
+            context,
+            isRelease
+                ? l10n.reconciliationSuccessRelease
+                : l10n.reconciliationSuccessRefund,
+          );
+        } else {
+          final err = provider.error ?? l10n.reconciliationFailed;
+          ThemedSnackBar.showError(
+            context,
+            err,
+            onRetry: () => _showConfirmationDialog(
+              context: context,
+              job: job,
+              decision: decision,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _resolvingJobId = null);
+        }
       }
     }
   }
@@ -356,13 +375,16 @@ class _OwnerReconciliationQueueScreenState
                     isDestructive: true,
                     icon: Icons.undo,
                     text: l10n.reconciliationRefundCustomer,
-                    onPressed: () {
-                      _showConfirmationDialog(
-                        context: context,
-                        job: job,
-                        decision: 'refund_to_customer',
-                      );
-                    },
+                    isLoading: _resolvingJobId == job.id,
+                    onPressed: _resolvingJobId != null
+                        ? null
+                        : () {
+                            _showConfirmationDialog(
+                              context: context,
+                              job: job,
+                              decision: 'refund_to_customer',
+                            );
+                          },
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
@@ -372,13 +394,16 @@ class _OwnerReconciliationQueueScreenState
                     icon: Icons.check_circle_outline,
                     trailingIcon: Icons.arrow_forward,
                     text: l10n.reconciliationReleaseEmployee,
-                    onPressed: () {
-                      _showConfirmationDialog(
-                        context: context,
-                        job: job,
-                        decision: 'release_to_employee',
-                      );
-                    },
+                    isLoading: _resolvingJobId == job.id,
+                    onPressed: _resolvingJobId != null
+                        ? null
+                        : () {
+                            _showConfirmationDialog(
+                              context: context,
+                              job: job,
+                              decision: 'release_to_employee',
+                            );
+                          },
                   ),
                 ),
               ],

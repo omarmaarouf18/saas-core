@@ -25,6 +25,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
+  bool _isSending = false;
 
   @override
   void initState() {
@@ -69,9 +70,15 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _sendMessage() async {
+    // In-flight guard (QA audit A4): the send button is a raw InkWell (and
+    // the keyboard send action routes here too); a double-tap must not push
+    // the same message twice. The controller is only cleared AFTER the
+    // await, so without this flag both sends carry identical text.
+    if (_isSending) return;
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
+    _isSending = true;
     final chat = Provider.of<ChatProvider>(context, listen: false);
     try {
       await chat.sendMessage(text);
@@ -86,6 +93,8 @@ class _ChatScreenState extends State<ChatScreen> {
           onRetry: _sendMessage,
         );
       }
+    } finally {
+      _isSending = false;
     }
   }
 

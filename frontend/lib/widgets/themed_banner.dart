@@ -9,7 +9,7 @@ enum ThemedBannerType {
 }
 
 /// Unified, design-system compliant inline banner component.
-class ThemedBanner extends StatelessWidget {
+class ThemedBanner extends StatefulWidget {
   final ThemedBannerType type;
   final String message;
   final String? title;
@@ -17,6 +17,7 @@ class ThemedBanner extends StatelessWidget {
   final VoidCallback? onDismiss;
   final VoidCallback? onRetry;
   final String? retryLabel;
+  final DateTime Function()? nowProvider;
 
   const ThemedBanner({
     super.key,
@@ -27,10 +28,34 @@ class ThemedBanner extends StatelessWidget {
     this.onDismiss,
     this.onRetry,
     this.retryLabel = "Retry",
+    this.nowProvider,
   });
 
+  @override
+  State<ThemedBanner> createState() => _ThemedBannerState();
+}
+
+class _ThemedBannerState extends State<ThemedBanner> {
+  DateTime? _lastRetryTapTime;
+
+  void _handleRetry() {
+    if (widget.onRetry == null) return;
+    // Tap-debounce guard (QA audit A4): banner retries are raw TextButtons
+    // reachable while their parent screen has no busy state; rapid re-taps
+    // must not re-fire refetches or state-changing submit retries.
+    final now = widget.nowProvider != null
+        ? widget.nowProvider!()
+        : DateTime.now();
+    if (_lastRetryTapTime != null &&
+        now.difference(_lastRetryTapTime!) < AppMotion.debounceGuard) {
+      return;
+    }
+    _lastRetryTapTime = now;
+    widget.onRetry!();
+  }
+
   Color _accentColor() {
-    switch (type) {
+    switch (widget.type) {
       case ThemedBannerType.error:
         return AppColors.error;
       case ThemedBannerType.success:
@@ -43,7 +68,7 @@ class ThemedBanner extends StatelessWidget {
   }
 
   Color _backgroundColor() {
-    switch (type) {
+    switch (widget.type) {
       case ThemedBannerType.error:
         return AppColors.error.withValues(alpha: 0.1);
       case ThemedBannerType.success:
@@ -56,7 +81,7 @@ class ThemedBanner extends StatelessWidget {
   }
 
   Color _borderColor() {
-    switch (type) {
+    switch (widget.type) {
       case ThemedBannerType.error:
         return AppColors.error.withValues(alpha: 0.3);
       case ThemedBannerType.success:
@@ -69,7 +94,7 @@ class ThemedBanner extends StatelessWidget {
   }
 
   IconData _defaultIcon() {
-    switch (type) {
+    switch (widget.type) {
       case ThemedBannerType.error:
         return Icons.error_outline;
       case ThemedBannerType.success:
@@ -82,7 +107,7 @@ class ThemedBanner extends StatelessWidget {
   }
 
   String? _defaultTitle() {
-    switch (type) {
+    switch (widget.type) {
       case ThemedBannerType.error:
         return "Error occurred";
       case ThemedBannerType.success:
@@ -95,8 +120,8 @@ class ThemedBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = _accentColor();
-    final effectiveIcon = icon ?? _defaultIcon();
-    final effectiveTitle = title ?? _defaultTitle();
+    final effectiveIcon = widget.icon ?? _defaultIcon();
+    final effectiveTitle = widget.title ?? _defaultTitle();
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -133,7 +158,7 @@ class ThemedBanner extends StatelessWidget {
                   const SizedBox(height: AppSpacing.xs),
                 ],
                 Text(
-                  message,
+                  widget.message,
                   style: AppTypography.bodyMd.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),
@@ -141,10 +166,10 @@ class ThemedBanner extends StatelessWidget {
               ],
             ),
           ),
-          if (onRetry != null) ...[
+          if (widget.onRetry != null) ...[
             const SizedBox(width: AppSpacing.md),
             TextButton(
-              onPressed: onRetry,
+              onPressed: _handleRetry,
               style: TextButton.styleFrom(
                 foregroundColor: accent,
                 padding: EdgeInsets.zero,
@@ -152,7 +177,7 @@ class ThemedBanner extends StatelessWidget {
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
-                retryLabel ?? "Retry",
+                widget.retryLabel ?? "Retry",
                 style: AppTypography.labelLg.copyWith(
                   fontWeight: FontWeight.bold,
                   color: accent,
@@ -160,10 +185,10 @@ class ThemedBanner extends StatelessWidget {
               ),
             ),
           ],
-          if (onDismiss != null) ...[
+          if (widget.onDismiss != null) ...[
             const SizedBox(width: AppSpacing.md),
             IconButton(
-              onPressed: onDismiss,
+              onPressed: widget.onDismiss,
               icon: const Icon(Icons.close, size: 18),
               color: accent,
               padding: EdgeInsets.zero,
