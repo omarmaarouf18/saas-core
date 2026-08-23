@@ -143,6 +143,8 @@
  ---
 
  ## Verified Capabilities
+
+ *   **Release Promotion 2026-08-23 (main @ `4ab627e`)**: Frontend passes A4–A7 (debounce, error handling, disposal/teardown, dead-code) promoted to production `main` via merge commit `4ab627e92f5462511524f4e07b146ed124bdce32`. Verified locally this session: post-merge `make ci` green (`flutter test` 390/390), `make push` `PUSH_VERIFIED`; downstream verified via `gh`: build-and-publish run `32639941014` success, sync-mobile-frontend run `32639941004` success, quick-delivery-mobile build-apk run `32639952063` success with release `app-release-06a18b9`.
  *   **Owner/Customer Signup**: Sends email/password/role parameters to backend. Returns `dev_otp` in development.
  *   **2FA OTP Verification**: Validates 6-digit code and securely stores signed JWT session details.
  *   **Employee Direct Authentication**: Logs in directly bypassing 2FA.
