@@ -71,8 +71,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
     return AppShell(
       title: l10n.subscriptionPlansTitle,
-      appBarBackgroundColor: AppColors.primary,
-      appBarForegroundColor: AppColors.onPrimary,
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.marginMobile,

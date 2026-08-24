@@ -187,7 +187,12 @@ class AppShell extends StatelessWidget {
     }
 
     final effectiveBg = appBarBackgroundColor ?? AppColors.primary;
-    final effectiveFg = appBarForegroundColor ?? AppColors.onPrimary;
+    // Transparent chrome sits over the scaffold, so its foreground must
+    // adapt to the active theme rather than the on-primary pair.
+    final effectiveFg = appBarForegroundColor ??
+        (effectiveBg == Colors.transparent
+            ? theme.colorScheme.onSurface
+            : AppColors.onPrimary);
 
     Widget? effectiveTitle = titleWidget;
     if (effectiveTitle == null) {

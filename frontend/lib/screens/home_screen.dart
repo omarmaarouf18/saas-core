@@ -1273,7 +1273,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildNonOwnerShell(UserProfile user, AppLocalizations l10n) {
     return AppShell(
       appBarBackgroundColor: Colors.transparent,
-      appBarForegroundColor: Theme.of(context).colorScheme.onSurface,
       leading: DashboardScreenTemplate.brandLogo(),
       showBackButton: false,
       title: l10n.quickDeliveryDashboard,

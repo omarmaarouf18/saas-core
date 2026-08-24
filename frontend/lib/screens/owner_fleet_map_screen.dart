@@ -70,8 +70,6 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
     final l10n = AppLocalizations.of(context)!;
     return AppShell(
       title: l10n.fleetLiveMapTitle,
-      appBarBackgroundColor: AppColors.primary,
-      appBarForegroundColor: AppColors.onPrimary,
       actions: [
         IconButton(
           icon: const Icon(Icons.refresh),

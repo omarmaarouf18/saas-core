@@ -12,6 +12,10 @@ set -euo pipefail
 #   - BoxDecoration(       -> use ThemedCard / ThemedPanel (widgets/)
 #   - Color(0xFF literals  -> use AppColors tokens (core/theme.dart)
 #   - .toUpperCase() calls -> use AppTypography.uppercaseLabel (core/theme.dart)
+#   - appBarBackgroundColor:/appBarForegroundColor: overrides -> AppShell
+#     defaults keep chrome consistent (V1 pass regression guard: AppBar
+#     styling drifted twice via per-screen overrides). Sole exception:
+#     `Colors.transparent` backgrounds on the full-bleed auth screens.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -41,6 +45,9 @@ check_pattern "'AppBar(' construction" '(?<![A-Za-z0-9_])AppBar\('
 check_pattern "'BoxDecoration(' construction" '(?<![A-Za-z0-9_])BoxDecoration\('
 check_pattern "'.toUpperCase()' call" '\.toUpperCase\(\)'
 check_pattern "'Color(0xFF' literal" 'Color\(0x(?:FF|ff)'
+check_pattern "'appBarBackgroundColor' override (Colors.transparent excepted)" \
+  'appBarBackgroundColor:(?!.*Colors\.transparent)'
+check_pattern "'appBarForegroundColor' override" 'appBarForegroundColor:'
 
 if [ "$VIOLATIONS" -gt 0 ]; then
   echo ""

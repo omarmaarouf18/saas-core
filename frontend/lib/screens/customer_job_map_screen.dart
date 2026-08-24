@@ -73,8 +73,6 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
 
     return AppShell(
       title: l10n.liveCourierTracking,
-      appBarBackgroundColor: AppColors.primary,
-      appBarForegroundColor: AppColors.onPrimary,
       actions: [
         IconButton(
           icon: const Icon(Icons.refresh),

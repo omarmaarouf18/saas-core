@@ -186,8 +186,6 @@ class _ChatScreenState extends State<ChatScreen>
     }
 
     return AppShell(
-      appBarBackgroundColor: AppColors.primary,
-      appBarForegroundColor: AppColors.onPrimary,
       titleWidget: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,

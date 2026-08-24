@@ -342,8 +342,6 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
 
     return AppShell(
       title: context.l10n.jobStatusTitle,
-      appBarBackgroundColor: AppColors.primary,
-      appBarForegroundColor: AppColors.onPrimary,
       actions: [
         IconButton(
           tooltip: context.l10n.tooltipRefreshStatus,
