@@ -257,8 +257,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                 ),
                 items: [
                   DropdownMenuItem(
-                      value: 'all',
-                      child: Text(l10n.customerHomeCatBrowseAll)),
+                      value: 'all', child: Text(l10n.customerHomeCatBrowseAll)),
                   ...serviceCategoryLabels.entries.map(
                     (entry) => DropdownMenuItem(
                       value: entry.key,
@@ -352,8 +351,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                     Switch(
                       key: const Key('nearby_filter_switch'),
                       value: _nearBy,
-                      activeTrackColor:
-                          Theme.of(context).colorScheme.primary,
+                      activeTrackColor: Theme.of(context).colorScheme.primary,
                       onChanged: (val) {
                         Navigator.pop(sheetContext);
                         setState(() => _nearBy = val);
