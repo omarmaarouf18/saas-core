@@ -111,31 +111,46 @@ class _EmployeeScreenState extends State<EmployeeScreen>
       return const EmployeeJobsScreen();
     }
 
+    final l10n = context.l10n;
+    final tabBarView = TabBarView(
+      controller: _tabController,
+      children: [
+        _buildManageWorkersTab(),
+        _buildAuditTrailTab(),
+      ],
+    );
+
+    // Embedded inside the owner dashboard tab (IndexedStack): the outer
+    // DashboardScreenTemplate already renders the header + bottom nav, so
+    // this screen must not stack a second AppBar (same pattern as
+    // OwnerHistoryScreen). The Register/Audit TabBar renders in-body on the
+    // brand navy block instead.
     return AppShell(
-      backgroundColor: AppColors.scaffoldBackground,
+      title: l10n.employeeScreenTitle,
       showBackButton: false,
-      appBarBackgroundColor: AppColors.surface,
-      appBarForegroundColor: AppColors.onSurface,
-      bottom: TabBar(
-        controller: _tabController,
-        labelColor: AppColors.primary,
-        unselectedLabelColor: AppColors.outline,
-        indicatorColor: AppColors.primary,
-        tabs: [
-          Tab(
-              icon: const Icon(Icons.people_outline),
-              text: context.l10n.employeeScreenTitle),
-          Tab(
-            icon: const Icon(Icons.receipt_long_outlined),
-            text: context.l10n.auditTrailTabLabel,
-          ),
-        ],
-      ),
-      body: TabBarView(
-        controller: _tabController,
+      isEmbeddedInTab: true,
+      useSafeArea: false,
+      body: Column(
         children: [
-          _buildManageWorkersTab(),
-          _buildAuditTrailTab(),
+          Material(
+            color: AppColors.primary,
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: AppColors.secondary,
+              labelColor: AppColors.onPrimary,
+              unselectedLabelColor: AppColors.onPrimary.withValues(alpha: 0.7),
+              tabs: [
+                Tab(
+                    icon: const Icon(Icons.people_outline),
+                    text: l10n.employeeScreenTitle),
+                Tab(
+                  icon: const Icon(Icons.receipt_long_outlined),
+                  text: l10n.auditTrailTabLabel,
+                ),
+              ],
+            ),
+          ),
+          Expanded(child: tabBarView),
         ],
       ),
     );
@@ -193,14 +208,16 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                               l10n.registeredEmployees,
                               style: AppTypography.titleMd.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.onSurface,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: AppSpacing.xxs),
                             Text(
                               context.l10n.employeeManageSubtitle,
                               style: AppTypography.bodyMd.copyWith(
-                                color: AppColors.onSurfaceVariant,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -284,7 +301,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                         child: Text(
                           l10n.noWorkersMatchFilter,
                           style: AppTypography.bodyMd.copyWith(
-                            color: AppColors.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -328,7 +346,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
         : AppTypography.uppercaseLabel(empId);
 
     return ThemedPanel(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
           color: AppColors.outlineVariant.withValues(alpha: 0.3),
@@ -353,7 +371,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     username,
                     style: AppTypography.titleMd.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -361,7 +379,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                   Text(
                     email,
                     style: AppTypography.bodyMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -585,7 +603,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                             ? l10n.employeeSetActiveStatus
                             : l10n.employeeSetFrozenStatus,
                         style: AppTypography.bodyMd.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -731,7 +749,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                               AppTypography.uppercaseLabel(action.toString()),
                               style: AppTypography.bodyMd.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             Text(
@@ -747,7 +765,9 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                           Text(
                             context.l10n.clientIpLine(clientIp),
                             style: AppTypography.labelMd.copyWith(
-                              color: AppColors.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
                         ],

@@ -39,7 +39,7 @@ class RatingSummaryCard extends StatelessWidget {
 
     return ThemedCard(
       hasShadow: false,
-      color: AppColors.surfaceContainerLow,
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
       borderRadius: AppRadius.md,
       padding: AppSpacing.md,
       child: Column(
@@ -53,7 +53,7 @@ class RatingSummaryCard extends StatelessWidget {
                 style: AppTypography.headlineLg.copyWith(
                   fontWeight: FontWeight.bold,
                   height: 1.0,
-                  color: AppColors.onSurface,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -66,7 +66,7 @@ class RatingSummaryCard extends StatelessWidget {
                     AppLocalizations.of(context)?.verifiedServiceScoreLabel ??
                         'Verified Service Score',
                     style: AppTypography.labelMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -84,7 +84,7 @@ class RatingSummaryCard extends StatelessWidget {
             AppLocalizations.of(context)?.basedOnRatingsLine("$ratingCount") ??
                 'Based on $ratingCount ratings',
             style: AppTypography.bodySm.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w400,
             ),
           ),

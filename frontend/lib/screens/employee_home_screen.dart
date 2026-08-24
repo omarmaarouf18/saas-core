@@ -101,7 +101,6 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
     final l10n = context.l10n;
 
     return DashboardScreenTemplate(
-      backgroundColor: AppColors.scaffoldBackground,
       title: _getTabTitle(context, _currentIndex),
       actions: [
         IconButton(

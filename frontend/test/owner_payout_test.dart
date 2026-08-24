@@ -132,6 +132,10 @@ void main() {
     // Tap Request Payout button
     final requestBtn = find.byKey(const Key('request_payout_button'));
     expect(requestBtn, findsOneWidget);
+    // The AppBar added in the visual-fix pass nudges this button just below
+    // the 800px test viewport; bring it into view before tapping.
+    await tester.ensureVisible(requestBtn);
+    await tester.pumpAndSettle();
     await tester.tap(requestBtn);
     await tester.pumpAndSettle();
 
@@ -180,6 +184,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Open Request Payout dialog
+    await tester.ensureVisible(find.byKey(const Key('request_payout_button')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('request_payout_button')));
     await tester.pumpAndSettle();
 

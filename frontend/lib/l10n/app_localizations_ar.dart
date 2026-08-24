@@ -195,6 +195,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownerConfigTitle => 'إعدادات الخدمة والمحل';
 
   @override
+  String get myServicesTitle => 'خدماتي';
+
+  @override
   String get ownerConfigHeader => 'بيانات المحل/الخدمة';
 
   @override

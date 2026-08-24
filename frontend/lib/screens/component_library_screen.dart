@@ -75,8 +75,8 @@ class ComponentLibraryScreen extends StatelessWidget {
           _section('Cards & Panels'),
           ThemedCard(
             child: Text('ThemedCard.normal',
-                style:
-                    AppTypography.bodyMd.copyWith(color: AppColors.onSurface)),
+                style: AppTypography.bodyMd
+                    .copyWith(color: Theme.of(context).colorScheme.onSurface)),
           ),
           const SizedBox(height: AppSpacing.sm),
           const ThemedCard(

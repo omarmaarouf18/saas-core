@@ -62,7 +62,7 @@ class _CancelJobDialogState extends State<CancelJobDialog> {
             Text(
               l10n.cancelReasonRequiredLong,
               style: AppTypography.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: AppSpacing.md),

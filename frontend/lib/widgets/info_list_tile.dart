@@ -71,7 +71,7 @@ class InfoListTile extends StatelessWidget {
                 title,
                 style: AppTypography.titleMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.onSurface,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               if (subtitleWidget != null) ...[
@@ -82,7 +82,7 @@ class InfoListTile extends StatelessWidget {
                 Text(
                   subtitle!,
                   style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

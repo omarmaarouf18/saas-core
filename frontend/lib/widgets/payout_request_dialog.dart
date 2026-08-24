@@ -62,7 +62,7 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
         horizontal: AppSpacing.md,
         vertical: AppSpacing.lg,
       ),
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.mdBorder,
       ),
@@ -86,7 +86,7 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
                             : l10n.payoutDialogTitle,
                         style: AppTypography.titleMd.copyWith(
                           color: _isConfirming
-                              ? AppColors.warning
+                              ? context.semanticColors.warning
                               : AppColors.primary,
                           fontWeight: FontWeight.bold,
                         ),
@@ -108,15 +108,16 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
-                      color: AppColors.warning.withValues(alpha: 0.1),
+                      color:
+                          context.semanticColors.warning.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                      border: Border.all(color: AppColors.warning),
+                      border: Border.all(color: context.semanticColors.warning),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.warning_amber_rounded,
-                          color: AppColors.warning,
+                          color: context.semanticColors.warning,
                           size: 28,
                         ),
                         const SizedBox(width: AppSpacing.sm),
@@ -129,7 +130,7 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
                               methodLabel,
                             ),
                             style: AppTypography.bodyMd.copyWith(
-                              color: AppColors.onSurface,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -141,7 +142,7 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
                     l10n.accountDetailsLine(
                         _accountDetailsController.text.trim()),
                     style: AppTypography.labelMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -162,7 +163,8 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
                         Text(
                           l10n.payoutDialogDescription,
                           style: AppTypography.bodyMd.copyWith(
-                            color: AppColors.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.md),
@@ -201,10 +203,12 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
                           decoration: InputDecoration(
                             labelText: l10n.payoutMethodLabel,
                             labelStyle: AppTypography.labelLg.copyWith(
-                              color: AppColors.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                             filled: true,
-                            fillColor: AppColors.surface,
+                            fillColor: Theme.of(context).colorScheme.surface,
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: AppSpacing.md,
                               vertical: AppSpacing.md,

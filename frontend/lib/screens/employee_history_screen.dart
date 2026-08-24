@@ -128,14 +128,14 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
           l10n.ownerHistoryTitle,
           style: AppTypography.headlineLgMobile.copyWith(
             fontWeight: FontWeight.bold,
-            color: AppColors.primary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: AppSpacing.xxs),
         Text(
           context.l10n.employeeHistorySubtitle,
           style: AppTypography.bodyMd.copyWith(
-            color: AppColors.onSurfaceVariant,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -165,7 +165,7 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
                     style: AppTypography.titleMd.copyWith(
                       fontFamily: 'monospace',
                       fontWeight: FontWeight.bold,
-                      color: AppColors.onSurface,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -241,7 +241,7 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
 
   Widget _buildChip(IconData icon, String label, String value) {
     return ThemedPanel(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: AppRadius.smBorder,
         border: Border.all(color: AppColors.outlineVariant),
         padding: const EdgeInsets.symmetric(
@@ -251,19 +251,21 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: AppIconSize.xs, color: AppColors.onSurfaceVariant),
+            Icon(icon,
+                size: AppIconSize.xs,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(width: AppSpacing.xs),
             Text(
               "$label: ",
               style: AppTypography.labelLg.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.normal,
               ),
             ),
             Text(
               value,
               style: AppTypography.labelLg.copyWith(
-                color: AppColors.onSurface,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
               ),
             ),

@@ -70,7 +70,6 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
     final l10n = AppLocalizations.of(context)!;
     return AppShell(
       title: l10n.fleetLiveMapTitle,
-      backgroundColor: AppColors.scaffoldBackground,
       appBarBackgroundColor: AppColors.primary,
       appBarForegroundColor: AppColors.onPrimary,
       actions: [
@@ -248,7 +247,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                 )),
             const SizedBox(width: AppSpacing.xs),
             ThemedPanel(
-                color: AppColors.surface,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(AppRadius.full),
                 border: Border.all(color: AppColors.outlineVariant),
                 boxShadow: AppElevation.shadowLevel1List,
@@ -259,8 +258,8 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const ThemedPanel(
-                        color: AppColors.success,
+                    ThemedPanel(
+                        color: context.semanticColors.success,
                         shape: BoxShape.circle,
                         width: 8,
                         height: 8),
@@ -268,7 +267,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                     Text(
                       l10n.fleetFilterOnRoute,
                       style: AppTypography.labelMd.copyWith(
-                        color: AppColors.onSurface,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -276,7 +275,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                 )),
             const SizedBox(width: AppSpacing.xs),
             ThemedPanel(
-                color: AppColors.surface,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(AppRadius.full),
                 border: Border.all(color: AppColors.outlineVariant),
                 boxShadow: AppElevation.shadowLevel1List,
@@ -296,7 +295,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                     Text(
                       l10n.fleetFilterIdle,
                       style: AppTypography.labelMd.copyWith(
-                        color: AppColors.onSurface,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -325,7 +324,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                 context.l10n.noEmployeesTransmitting,
                 style: AppTypography.bodySm.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.onSurface,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
@@ -386,7 +385,9 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                           Text(
                             context.l10n.assignedJobLine(employee.jobId!),
                             style: AppTypography.caption.copyWith(
-                              color: AppColors.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
                       ],
@@ -428,7 +429,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
       child: Column(
         children: [
           ThemedPanel(
-              color: AppColors.surface,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: AppRadius.defaultBorder,
               boxShadow: AppElevation.shadowLevel2List,
               border: Border.all(color: AppColors.outlineVariant),
@@ -437,21 +438,21 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                   IconButton(
                     tooltip: context.l10n.tooltipZoomIn,
                     icon: const Icon(Icons.add),
-                    color: AppColors.onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                     onPressed: _zoomIn,
                   ),
                   const Divider(height: 1, color: AppColors.outlineVariant),
                   IconButton(
                     tooltip: context.l10n.tooltipZoomOut,
                     icon: const Icon(Icons.remove),
-                    color: AppColors.onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                     onPressed: _zoomOut,
                   ),
                 ],
               )),
           const SizedBox(height: AppSpacing.sm),
           ThemedPanel(
-              color: AppColors.surface,
+              color: Theme.of(context).colorScheme.surface,
               shape: BoxShape.circle,
               boxShadow: AppElevation.shadowLevel2List,
               border: Border.all(color: AppColors.outlineVariant),

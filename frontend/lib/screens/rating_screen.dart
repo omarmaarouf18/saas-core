@@ -170,8 +170,6 @@ class _RatingScreenState extends State<RatingScreen> {
 
     return AppShell(
       title: l10n.ratingTitle,
-      backgroundColor: AppColors.scaffoldBackground,
-      appBarBackgroundColor: Colors.transparent,
       actions: [
         IconButton(
           icon: const Icon(Icons.refresh),
@@ -249,14 +247,14 @@ class _RatingScreenState extends State<RatingScreen> {
             _otherPartyName,
             style: AppTypography.titleMd.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.onSurface,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: AppSpacing.xxs),
           Text(
             context.l10n.deliveryIdTag(displayId),
             style: AppTypography.labelMd.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontFamily: 'monospace',
             ),
           ),
@@ -283,7 +281,7 @@ class _RatingScreenState extends State<RatingScreen> {
               context.l10n.ratingsBlindExplanation,
               textAlign: TextAlign.center,
               style: AppTypography.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -313,13 +311,13 @@ class _RatingScreenState extends State<RatingScreen> {
                     _otherPartyName,
                     style: AppTypography.bodyLg.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.onSurface,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   Text(
                     _otherPartyRole,
                     style: AppTypography.labelLg.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -392,7 +390,7 @@ class _RatingScreenState extends State<RatingScreen> {
   ) {
     return ThemedCard(
       hasShadow: false,
-      color: AppColors.surfaceContainerLow,
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
       borderRadius: AppRadius.lg,
       padding: AppSpacing.lg,
       child: Column(
@@ -402,12 +400,12 @@ class _RatingScreenState extends State<RatingScreen> {
             ThemedLoadingIndicator(message: l10n.loadingStatus)
           else if (_otherPartyHasRated) ...[
             ThemedPanel(
-                color: AppColors.success.withValues(alpha: 0.1),
+                color: context.semanticColors.success.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
                 padding: const EdgeInsets.all(AppSpacing.sm),
-                child: const Icon(
+                child: Icon(
                   Icons.check_circle_outline,
-                  color: AppColors.success,
+                  color: context.semanticColors.success,
                   size: 48,
                 )),
             const SizedBox(height: AppSpacing.md),
@@ -415,7 +413,7 @@ class _RatingScreenState extends State<RatingScreen> {
               l10n.feedbackLockedInTitle,
               style: AppTypography.titleMd.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.success,
+                color: context.semanticColors.success,
               ),
             ),
             const SizedBox(height: AppSpacing.base),
@@ -423,7 +421,7 @@ class _RatingScreenState extends State<RatingScreen> {
               l10n.bothRatingsVisibleDesc,
               textAlign: TextAlign.center,
               style: AppTypography.bodySm.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ] else ...[
@@ -433,7 +431,10 @@ class _RatingScreenState extends State<RatingScreen> {
                 Icon(
                   Icons.visibility_off_outlined,
                   size: 48,
-                  color: AppColors.onSurfaceVariant.withValues(alpha: 0.3),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withValues(alpha: 0.3),
                 ),
                 const Positioned(
                   right: 0,
@@ -451,7 +452,7 @@ class _RatingScreenState extends State<RatingScreen> {
               l10n.waitingOtherPartyTitle,
               style: AppTypography.titleMd.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.onSurface,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: AppSpacing.base),
@@ -459,7 +460,7 @@ class _RatingScreenState extends State<RatingScreen> {
               l10n.otherPartyNotRatedDesc,
               textAlign: TextAlign.center,
               style: AppTypography.bodySm.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -548,7 +549,7 @@ class _RatingScreenState extends State<RatingScreen> {
   }) {
     return ThemedCard(
       hasShadow: false,
-      color: AppColors.surfaceContainerLow,
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
       borderRadius: AppRadius.md,
       padding: AppSpacing.md,
       child: Row(
@@ -565,14 +566,14 @@ class _RatingScreenState extends State<RatingScreen> {
                   title,
                   style: AppTypography.bodyMd.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   subtitle,
                   style: AppTypography.labelMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

@@ -168,7 +168,6 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
 
     return FormScreenTemplate(
       title: l10n.myAccountTitle,
-      backgroundColor: AppColors.background,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.marginMobile,
         vertical: AppSpacing.lg,
@@ -191,14 +190,16 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                             l10n.myAccountHeader,
                             style: AppTypography.headlineLgMobile.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: AppSpacing.xxs),
                           Text(
                             l10n.myAccountHeaderSub,
                             style: AppTypography.bodyMd.copyWith(
-                              color: AppColors.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -301,23 +302,23 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     return ThemedCard(
       borderRadius: AppRadius.lg,
       padding: AppSpacing.lg,
-      color: AppColors.surface,
+      color: Theme.of(context).colorScheme.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.person_outline,
                 size: 20,
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(width: AppSpacing.xs),
               Text(
                 context.l10n.profileInfoCardTitle,
                 style: AppTypography.titleMd.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -343,7 +344,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
           Text(
             l10n.myAccountEmailNote,
             style: AppTypography.caption.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -395,7 +396,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     return ThemedCard(
       borderRadius: AppRadius.lg,
       padding: AppSpacing.lg,
-      color: AppColors.surface,
+      color: Theme.of(context).colorScheme.surface,
       child: Column(
         children: [
           CircleAvatar(
@@ -414,12 +415,12 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
             username.isNotEmpty ? username : l10n.userProfileTitle,
             style: AppTypography.titleMd.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: AppSpacing.xxs),
           ThemedPanel(
-              color: AppColors.success.withValues(alpha: 0.15),
+              color: context.semanticColors.success.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(AppRadius.sm),
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.sm,
@@ -429,7 +430,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                 AppTypography.uppercaseLabel(role),
                 style: AppTypography.labelSm.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.success,
+                  color: context.semanticColors.success,
                   letterSpacing: 0.8,
                 ),
               )),
@@ -443,7 +444,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     return ThemedCard(
       borderRadius: AppRadius.lg,
       padding: AppSpacing.lg,
-      color: AppColors.surface,
+      color: Theme.of(context).colorScheme.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -452,17 +453,17 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.location_on_outlined,
                     size: 20,
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
                     "${l10n.myAccountAddressesHeader} (${_frequentAddresses.length}/10)",
                     style: AppTypography.titleMd.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -473,7 +474,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
           Text(
             l10n.myAccountAddressesSub,
             style: AppTypography.caption.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -509,7 +510,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
               child: Text(
                 l10n.myAccountNoAddresses,
                 style: AppTypography.bodyMd.copyWith(
-                  color: AppColors.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -538,7 +539,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                         child: Text(
                           address,
                           style: AppTypography.bodyMd.copyWith(
-                            color: AppColors.onSurface,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.w500,
                           ),
                         ),

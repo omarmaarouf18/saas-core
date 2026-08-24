@@ -96,7 +96,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     return ListScreenTemplate<NotificationModel>(
       title: l10n.notificationsTitle,
-      backgroundColor: AppColors.background,
       actions: [
         IconButton(
           icon: const Icon(Icons.delete_sweep),
@@ -201,12 +200,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: ThemedCard(
         padding: AppSpacing.sm,
         color: provider.isConnected
-            ? AppColors.success.withValues(alpha: 0.12)
-            : AppColors.errorContainer.withValues(alpha: 0.3),
+            ? context.semanticColors.success.withValues(alpha: 0.12)
+            : Theme.of(context)
+                .colorScheme
+                .errorContainer
+                .withValues(alpha: 0.3),
         borderRadius: AppRadius.md,
         borderSide: BorderSide(
           color: provider.isConnected
-              ? AppColors.success.withValues(alpha: 0.25)
+              ? context.semanticColors.success.withValues(alpha: 0.25)
               : AppColors.error.withValues(alpha: 0.25),
         ),
         child: Row(
@@ -215,7 +217,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               provider.isConnected
                   ? Icons.check_circle_outline
                   : Icons.wifi_off,
-              color: provider.isConnected ? AppColors.success : AppColors.error,
+              color: provider.isConnected
+                  ? context.semanticColors.success
+                  : AppColors.error,
               size: AppIconSize.sm,
             ),
             const SizedBox(width: AppSpacing.sm),
@@ -226,7 +230,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     : l10n.syncPausedOfflineMsg,
                 style: AppTypography.labelMd.copyWith(
                   color: provider.isConnected
-                      ? AppColors.onSurface
+                      ? Theme.of(context).colorScheme.onSurface
                       : AppColors.error,
                   fontWeight: FontWeight.w500,
                 ),
@@ -265,7 +269,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 child: Text(
                   currentSection,
                   style: AppTypography.labelMd.copyWith(
-                    color: AppColors.primary.withValues(alpha: 0.7),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.7),
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.8,
                   ),
@@ -302,16 +309,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final Color iconBgColor = isJob
         ? AppColors.primaryContainer
         : (isAlert
-            ? AppColors.errorContainer
+            ? Theme.of(context).colorScheme.errorContainer
             : (isSystem
-                ? AppColors.surfaceContainerHigh
-                : AppColors.surfaceContainerHigh));
+                ? Theme.of(context).colorScheme.surfaceContainerHigh
+                : Theme.of(context).colorScheme.surfaceContainerHigh));
 
     final Color iconColor = isJob
         ? AppColors.secondary
         : (isAlert
             ? AppColors.error
-            : (isSystem ? AppColors.onSurfaceVariant : AppColors.primary));
+            : (isSystem
+                ? Theme.of(context).colorScheme.onSurfaceVariant
+                : Theme.of(context).colorScheme.primary));
 
     final String tagLabel = isJob
         ? 'JOB ALERT'
@@ -321,8 +330,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: ThemedCard(
         padding: 0,
-        color:
-            notif.isRead ? AppColors.surface : AppColors.surfaceContainerLowest,
+        color: notif.isRead
+            ? Theme.of(context).colorScheme.surface
+            : Theme.of(context).colorScheme.surfaceContainerLowest,
         borderRadius: AppRadius.lg,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -366,9 +376,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               borderRadius: BorderRadius.circular(AppRadius.xs),
                               child: Container(
                                 color: isAlert
-                                    ? AppColors.errorContainer
+                                    ? Theme.of(context)
+                                        .colorScheme
+                                        .errorContainer
                                         .withValues(alpha: 0.5)
-                                    : AppColors.surfaceContainerHigh,
+                                    : Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerHigh,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: AppSpacing.xs,
                                   vertical: 2,
@@ -379,7 +393,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                     fontWeight: FontWeight.bold,
                                     color: isAlert
                                         ? AppColors.error
-                                        : AppColors.onSurfaceVariant,
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
                                   ),
                                 ),
                               ),
@@ -417,7 +433,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             fontWeight: notif.isRead
                                 ? FontWeight.w500
                                 : FontWeight.bold,
-                            color: AppColors.onSurface,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.xxs),
@@ -426,7 +442,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         Text(
                           notif.body,
                           style: AppTypography.bodyMd.copyWith(
-                            color: AppColors.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                             height: 1.4,
                           ),
                         ),

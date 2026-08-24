@@ -24,7 +24,7 @@ class ThemedLoadingIndicator extends StatelessWidget {
               Text(
                 message!,
                 style: AppTypography.bodyMd.copyWith(
-                  color: AppColors.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
               ),

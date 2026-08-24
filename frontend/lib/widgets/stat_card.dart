@@ -24,7 +24,8 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveIconColor = iconColor ?? AppColors.primary;
+    final effectiveIconColor =
+        iconColor ?? Theme.of(context).colorScheme.primary;
 
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,7 +39,7 @@ class StatCard extends StatelessWidget {
                 label,
                 style: AppTypography.bodyMd.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: AppColors.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -57,7 +58,7 @@ class StatCard extends StatelessWidget {
         Text(
           value,
           style: AppTypography.headlineLgMobile.copyWith(
-            color: AppColors.primary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -70,7 +71,9 @@ class StatCard extends StatelessWidget {
                 Icon(
                   isPositiveTrend! ? Icons.trending_up : Icons.trending_down,
                   size: AppIconSize.xs,
-                  color: isPositiveTrend! ? AppColors.success : AppColors.error,
+                  color: isPositiveTrend!
+                      ? context.semanticColors.success
+                      : AppColors.error,
                 ),
               if (isPositiveTrend != null) const SizedBox(width: AppSpacing.xs),
               Text(
@@ -79,7 +82,7 @@ class StatCard extends StatelessWidget {
                   color: isPositiveTrend == null
                       ? AppColors.outline
                       : (isPositiveTrend!
-                          ? AppColors.success
+                          ? context.semanticColors.success
                           : AppColors.error),
                   fontWeight: FontWeight.w500,
                 ),

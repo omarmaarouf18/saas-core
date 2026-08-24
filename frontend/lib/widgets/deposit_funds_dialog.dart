@@ -53,7 +53,7 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
         horizontal: AppSpacing.md,
         vertical: AppSpacing.lg,
       ),
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.mdBorder,
       ),
@@ -93,7 +93,7 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                   Text(
                     l10n.depositDialogDesc,
                     style: AppTypography.bodyMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),

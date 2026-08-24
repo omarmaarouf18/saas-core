@@ -198,6 +198,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownerConfigTitle => 'Owner Configuration';
 
   @override
+  String get myServicesTitle => 'My Services';
+
+  @override
   String get ownerConfigHeader => 'Business Details';
 
   @override

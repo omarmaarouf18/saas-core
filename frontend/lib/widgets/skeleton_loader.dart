@@ -80,7 +80,7 @@ class MarketplaceCardSkeleton extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
           color: AppColors.outlineVariant.withValues(alpha: 0.3),
@@ -140,7 +140,7 @@ class HomeDashboardSkeleton extends StatelessWidget {
                 height: 100,
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(
                     color: AppColors.outlineVariant.withValues(alpha: 0.3),
@@ -163,7 +163,7 @@ class HomeDashboardSkeleton extends StatelessWidget {
                 height: 100,
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(
                     color: AppColors.outlineVariant.withValues(alpha: 0.3),
@@ -193,7 +193,7 @@ class HomeDashboardSkeleton extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: AppSpacing.sm),
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(
                 color: AppColors.outlineVariant.withValues(alpha: 0.3),
@@ -232,7 +232,7 @@ class EmployeeJobCardSkeleton extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
           color: AppColors.outlineVariant.withValues(alpha: 0.3),
@@ -285,7 +285,7 @@ class WalletScreenSkeleton extends StatelessWidget {
                 height: 110,
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(
                     color: AppColors.outlineVariant.withValues(alpha: 0.3),
@@ -308,7 +308,7 @@ class WalletScreenSkeleton extends StatelessWidget {
                 height: 110,
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(
                     color: AppColors.outlineVariant.withValues(alpha: 0.3),
@@ -338,7 +338,7 @@ class WalletScreenSkeleton extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: AppSpacing.base),
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(AppRadius.defaultValue),
               border: Border.all(
                 color: AppColors.outlineVariant.withValues(alpha: 0.3),

@@ -71,7 +71,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
     return AppShell(
       title: l10n.subscriptionPlansTitle,
-      backgroundColor: AppColors.background,
       appBarBackgroundColor: AppColors.primary,
       appBarForegroundColor: AppColors.onPrimary,
       body: SingleChildScrollView(
@@ -87,25 +86,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               children: [
                 // 1. Centered Hero Header (Stitch Header)
                 Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        l10n.subscriptionPlansTitle,
-                        style: AppTypography.headlineLgMobile.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        l10n.subscriptionManageDesc,
-                        style: AppTypography.bodyMd.copyWith(
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                  child: Text(
+                    // Screen title lives in the AppBar; only the subtitle
+                    // stays in-body to avoid duplication (wallet pattern).
+                    l10n.subscriptionManageDesc,
+                    style: AppTypography.bodyMd.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
@@ -131,7 +119,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           ),
                           ThemedPanel(
                               color: currentTier == 'free'
-                                  ? AppColors.surfaceContainerHigh
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHigh
                                       .withValues(alpha: 0.3)
                                   : AppColors.secondary.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -190,7 +180,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   l10n.availablePlansHeader,
                   style: AppTypography.titleMd.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -257,7 +247,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       variant: ThemedCardVariant.normal,
       borderRadius: AppRadius.lg,
       padding: AppSpacing.lg,
-      color: AppColors.surface,
+      color: Theme.of(context).colorScheme.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -269,14 +259,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 l10n.planFreeBasic,
                 style: AppTypography.titleMd.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.onSurface,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: AppSpacing.xxs),
               Text(
                 l10n.freeTierDesc,
                 style: AppTypography.bodyMd.copyWith(
-                  color: AppColors.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -288,14 +278,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     '\$0',
                     style: AppTypography.headlineLg.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
                     '/ forever',
                     style: AppTypography.bodyMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -305,25 +295,25 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               const SizedBox(height: AppSpacing.md),
               _buildFeatureRow(
                 icon: Icons.check_circle,
-                iconColor: AppColors.primary,
+                iconColor: Theme.of(context).colorScheme.primary,
                 text: l10n.subFreeFeatureMatching,
                 isEnabled: true,
               ),
               _buildFeatureRow(
                 icon: Icons.check_circle,
-                iconColor: AppColors.primary,
+                iconColor: Theme.of(context).colorScheme.primary,
                 text: l10n.subFreeFeatureRouting,
                 isEnabled: true,
               ),
               _buildFeatureRow(
                 icon: Icons.check_circle,
-                iconColor: AppColors.primary,
+                iconColor: Theme.of(context).colorScheme.primary,
                 text: l10n.subFreeFeatureCod,
                 isEnabled: true,
               ),
               _buildFeatureRow(
                 icon: Icons.check_circle,
-                iconColor: AppColors.primary,
+                iconColor: Theme.of(context).colorScheme.primary,
                 text: l10n.subFreeFeatureSupport,
                 isEnabled: true,
               ),
@@ -370,7 +360,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           variant: ThemedCardVariant.highlighted,
           borderRadius: AppRadius.lg,
           padding: AppSpacing.lg,
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -385,7 +375,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           l10n.planProfessionalPaid,
                           style: AppTypography.titleMd.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -401,7 +391,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   Text(
                     l10n.proTierDesc,
                     style: AppTypography.bodyMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -413,14 +403,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         '\$19.99',
                         style: AppTypography.headlineLg.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       Text(
                         '/ month',
                         style: AppTypography.bodyMd.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -484,7 +474,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   Text(
                     l10n.billedMonthlyNote,
                     style: AppTypography.caption.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -543,8 +533,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               text,
               style: AppTypography.bodyMd.copyWith(
                 color: isEnabled
-                    ? (isHighlighted ? AppColors.primary : AppColors.onSurface)
-                    : AppColors.onSurfaceVariant.withValues(alpha: 0.6),
+                    ? (isHighlighted
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurface)
+                    : Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.6),
                 fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.normal,
               ),
             ),

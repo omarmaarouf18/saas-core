@@ -143,7 +143,6 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return DashboardScreenTemplate(
-      backgroundColor: AppColors.scaffoldBackground,
       title: _getTabTitle(_currentIndex, l10n),
       actions: [
         _buildNotificationBell(context),
@@ -343,9 +342,9 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                   color: AppColors.secondary.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(AppRadius.xs),
                   padding: const EdgeInsets.all(AppSpacing.xs),
-                  child: const Icon(
+                  child: Icon(
                     Icons.near_me,
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     size: 20,
                   )),
               const SizedBox(width: AppSpacing.sm),
@@ -358,7 +357,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.titleMd.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -369,7 +368,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
             onTap: widget.onGoToServices,
             borderRadius: AppRadius.smBorder,
             child: ThemedPanel(
-                color: AppColors.surfaceContainerLow,
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
                 borderRadius: AppRadius.smBorder,
                 border: Border.all(
                   color: AppColors.outlineVariant,
@@ -381,9 +380,9 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.search,
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       size: AppIconSize.md,
                     ),
                     const SizedBox(width: AppSpacing.sm),
@@ -391,7 +390,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                       child: Text(
                         context.l10n.customerHomeSearchHint,
                         style: AppTypography.bodyMd.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -466,8 +465,9 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                   title: l10n.customerHomeCatShipping,
                   description: l10n.customerHomeTileCleaningDesc,
                   icon: Icons.home_repair_service_outlined,
-                  iconBgColor: AppColors.success.withValues(alpha: 0.15),
-                  iconColor: AppColors.success,
+                  iconBgColor:
+                      context.semanticColors.success.withValues(alpha: 0.15),
+                  iconColor: context.semanticColors.success,
                   onTap: () => widget.onCategorySelected('shipping'),
                 ),
               ),
@@ -512,7 +512,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
               label: Text(
                 l10n.customerHomeCatBrowseAll,
                 style: AppTypography.labelLg.copyWith(
-                  color: AppColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -557,7 +557,9 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                               Text(
                                 "#QD-$displayId",
                                 style: AppTypography.caption.copyWith(
-                                  color: AppColors.onSurfaceVariant,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 0.5,
                                 ),
@@ -569,7 +571,8 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                                     : l10n.expressDeliveryFallbackLabel,
                                 style: AppTypography.titleMd.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.onSurface,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                             ],
@@ -583,7 +586,9 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                         borderRadius: AppRadius.smBorder,
                         child: Container(
                           height: 6,
-                          color: AppColors.surfaceContainerHigh,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHigh,
                           child: Row(
                             children: [
                               Expanded(
@@ -603,7 +608,9 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                                 Expanded(
                                   flex: 2,
                                   child: Container(
-                                      color: AppColors.surfaceContainerHigh),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceContainerHigh),
                                 ),
                             ],
                           ),
@@ -614,11 +621,15 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(context.l10n.commonOrigin,
-                              style: AppTypography.caption
-                                  .copyWith(color: AppColors.onSurfaceVariant)),
+                              style: AppTypography.caption.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant)),
                           Text(context.l10n.commonDestination,
-                              style: AppTypography.caption
-                                  .copyWith(color: AppColors.onSurfaceVariant)),
+                              style: AppTypography.caption.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant)),
                         ],
                       ),
                       const SizedBox(height: AppSpacing.sm),
@@ -626,13 +637,18 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                       const SizedBox(height: AppSpacing.sm),
                       Row(
                         children: [
-                          const ThemedPanel(
-                              color: AppColors.surfaceContainerHigh,
+                          ThemedPanel(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHigh,
                               shape: BoxShape.circle,
                               width: 32,
                               height: 32,
                               child: Icon(Icons.person,
-                                  size: 18, color: AppColors.onSurfaceVariant)),
+                                  size: 18,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant)),
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: Column(
@@ -644,7 +660,8 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                                       : context.l10n.findingCourierLabel,
                                   style: AppTypography.bodySm.copyWith(
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.onSurface,
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ),
                                 Text(
@@ -652,7 +669,9 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                                       AppTypography.uppercaseLabel(
                                           job.paymentMethod)),
                                   style: AppTypography.caption.copyWith(
-                                    color: AppColors.onSurfaceVariant,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -664,7 +683,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                               "\$${(job.agreedPrice ?? job.suggestedPrice ?? 0).toStringAsFixed(2)}",
                               style: AppTypography.titleMd.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                         ],
@@ -687,7 +706,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                   child: Text(
                     l10n.customerJobsEmpty,
                     style: AppTypography.bodyMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -732,14 +751,14 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                   title,
                   style: AppTypography.titleMd.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   description,
                   style: AppTypography.caption.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     height: 1.3,
                   ),
                   maxLines: 2,

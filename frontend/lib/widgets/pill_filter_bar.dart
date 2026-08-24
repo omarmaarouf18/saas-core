@@ -93,10 +93,12 @@ class _PillFilterChipState<T> extends State<_PillFilterChip<T>> {
     final Color selectedFg =
         widget.isDarkSelected ? AppColors.onPrimary : AppColors.onSecondary;
 
-    final Color bgColor =
-        widget.isSelected ? selectedBg : AppColors.surfaceContainerLowest;
-    final Color fgColor =
-        widget.isSelected ? selectedFg : AppColors.onSurfaceVariant;
+    final Color bgColor = widget.isSelected
+        ? selectedBg
+        : Theme.of(context).colorScheme.surfaceContainerLowest;
+    final Color fgColor = widget.isSelected
+        ? selectedFg
+        : Theme.of(context).colorScheme.onSurfaceVariant;
     final Border? border = widget.isSelected
         ? null
         : Border.all(color: AppColors.outlineVariant, width: 1.0);
@@ -148,7 +150,7 @@ class _PillFilterChipState<T> extends State<_PillFilterChip<T>> {
                   decoration: BoxDecoration(
                     color: widget.isSelected
                         ? fgColor.withValues(alpha: 0.2)
-                        : AppColors.surfaceContainerHigh,
+                        : Theme.of(context).colorScheme.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
                   ),
                   child: Text(

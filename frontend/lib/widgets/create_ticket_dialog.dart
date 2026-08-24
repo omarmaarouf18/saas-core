@@ -109,7 +109,7 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> {
                       ? widget.contextId!.substring(0, 8)
                       : widget.contextId!),
                   style: AppTypography.bodySm.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),

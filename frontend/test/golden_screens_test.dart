@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/core/api_client.dart';
+import 'package:frontend/core/theme.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/models/notification_model.dart';
@@ -148,17 +149,24 @@ Future<void> _pumpGolden(
   );
 }
 
-MaterialApp _localizedApp({required Widget home}) => MaterialApp(
-      locale: const Locale('en'),
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: home,
-    );
+MaterialApp _localizedApp(
+    {required Widget home, Brightness brightness = Brightness.light}) {
+  final dark = brightness == Brightness.dark;
+  return MaterialApp(
+    locale: const Locale('en'),
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
+    theme: quickDeliveryTheme,
+    darkTheme: quickDeliveryDarkTheme,
+    themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+    home: home,
+  );
+}
 
 void main() {
   setUpAll(() async {
@@ -311,5 +319,117 @@ void main() {
     );
     await _pumpGolden(tester, app, _mobile, 'login_screen_mobile_360x800');
     await _pumpGolden(tester, app, _tablet, 'login_screen_tablet_768x1024');
+  });
+
+  // ── A8 visual-fix pass: DARK MODE evidence set (mobile viewport) ──
+  testWidgets('GOLDEN dark component library — mobile', (tester) async {
+    await _pumpGolden(
+      tester,
+      _localizedApp(
+          brightness: Brightness.dark, home: const ComponentLibraryScreen()),
+      _mobile,
+      'component_library_dark_mobile_360x800',
+    );
+  });
+
+  testWidgets('GOLDEN dark login screen — mobile', (tester) async {
+    final api = ApiClient();
+    final app = MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider<AuthProvider>.value(
+          value: _MockAuthProvider(api, mockUser: _customer()),
+        ),
+      ],
+      child: _localizedApp(
+        brightness: Brightness.dark,
+        home: const LoginScreen(),
+      ),
+    );
+    await _pumpGolden(tester, app, _mobile, 'login_screen_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark notifications screen — mobile', (tester) async {
+    final api = ApiClient();
+    final now = DateTime(2026, 8, 21, 12, 0);
+    final app = MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthProvider>.value(
+            value: _MockAuthProvider(api)),
+        ChangeNotifierProvider<NotificationsProvider>.value(
+          value: _MockNotificationsProvider(api, [
+            _notification('n1', 'Order picked up',
+                now.subtract(const Duration(hours: 1))),
+            _notification('n2', 'Courier assigned',
+                now.subtract(const Duration(hours: 3))),
+          ]),
+        ),
+      ],
+      child: _localizedApp(
+        brightness: Brightness.dark,
+        home: NotificationsScreen(clock: () => now),
+      ),
+    );
+    await _pumpGolden(
+        tester, app, _mobile, 'notifications_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark customer jobs screen — mobile', (tester) async {
+    final api = ApiClient();
+    final app = MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthProvider>.value(
+            value: _MockAuthProvider(api)),
+        ChangeNotifierProvider<MarketplaceProvider>.value(
+          value: _MockMarketplaceProvider(api, [
+            _job('abcd1234abcd1234', 'active'),
+            _job('efgh5678efgh5678', 'completed'),
+            _job('ijkl9012ijkl9012', 'cancelled'),
+          ]),
+        ),
+      ],
+      child: _localizedApp(
+        brightness: Brightness.dark,
+        home: const CustomerJobsScreen(),
+      ),
+    );
+    await _pumpGolden(
+        tester, app, _mobile, 'customer_jobs_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark reconciliation queue — mobile', (tester) async {
+    final api = ApiClient();
+    final app = MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthProvider>.value(
+            value: _MockAuthProvider(api)),
+        ChangeNotifierProvider<ReconciliationProvider>.value(
+          value: _MockReconciliationProvider(api, [
+            ReconciliationJob(
+              id: 'job-golden-101',
+              ownerId: 'owner-1',
+              serviceId: 'service-shipping-1',
+              userId: 'customer-1',
+              employeeId: 'employee-1',
+              status: 'escrow_reconciliation_required',
+              location: JobLocation(latitude: 30.0444, longitude: 31.2357),
+              paymentMethod: 'escrow',
+              lockedEscrowAmount: 50.0,
+              reconciliationNote: 'actual 2.00 km vs booked 10.00 km',
+              escrowFailureReason: 'under_distance_mismatch',
+              createdAt: DateTime(2026, 8, 20, 9, 30),
+              updatedAt: DateTime(2026, 8, 20, 10, 0),
+            ),
+          ]),
+        ),
+      ],
+      child: _localizedApp(
+        brightness: Brightness.dark,
+        home: const OwnerReconciliationQueueScreen(),
+      ),
+    );
+    await _pumpGolden(
+        tester, app, _mobile, 'reconciliation_queue_dark_mobile_360x800');
   });
 }

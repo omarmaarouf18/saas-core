@@ -73,7 +73,6 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
 
     return AppShell(
       title: l10n.liveCourierTracking,
-      backgroundColor: AppColors.background,
       appBarBackgroundColor: AppColors.primary,
       appBarForegroundColor: AppColors.onPrimary,
       actions: [
@@ -286,7 +285,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
                 context.l10n.waitingCourierUpdates,
                 style: AppTypography.bodySm.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.onSurface,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
@@ -321,7 +320,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
       child: Column(
         children: [
           ThemedPanel(
-              color: AppColors.surface,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(AppRadius.md),
               boxShadow: AppElevation.shadowLevel2List,
               border: Border.all(color: AppColors.outlineVariant),
@@ -329,14 +328,14 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
                 children: [
                   IconButton(
                     icon: const Icon(Icons.add),
-                    color: AppColors.onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                     tooltip: context.l10n.tooltipZoomIn,
                     onPressed: _zoomIn,
                   ),
                   const Divider(height: 1, color: AppColors.outlineVariant),
                   IconButton(
                     icon: const Icon(Icons.remove),
-                    color: AppColors.onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                     tooltip: context.l10n.tooltipZoomOut,
                     onPressed: _zoomOut,
                   ),
@@ -344,7 +343,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
               )),
           const SizedBox(height: AppSpacing.sm),
           ThemedPanel(
-              color: AppColors.surface,
+              color: Theme.of(context).colorScheme.surface,
               shape: BoxShape.circle,
               boxShadow: AppElevation.shadowLevel2List,
               border: Border.all(color: AppColors.outlineVariant),
@@ -369,7 +368,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
       left: 0,
       right: 0,
       child: ThemedPanel(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(AppRadius.xl),
             topRight: Radius.circular(AppRadius.xl),
@@ -407,7 +406,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
                   "#QD-$displayJobId",
                   style: AppTypography.titleMd.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxs),
@@ -426,7 +425,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
                             ? l10n.jobMapInTransitTitle
                             : l10n.jobMapLiveTrackingActive,
                         style: AppTypography.bodyMd.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),

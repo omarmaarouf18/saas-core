@@ -28,13 +28,13 @@ class StatusBadge extends StatelessWidget {
     this.customColor,
   });
 
-  static Color getStatusColor(String status) {
+  static Color getStatusColor(String status, BuildContext context) {
     switch (status.toLowerCase().trim()) {
       case 'completed':
       case 'approved':
       case 'paid':
       case 'uploaded':
-        return AppColors.success;
+        return context.semanticColors.success;
       case 'active':
         return AppColors.primary;
       case 'awaiting_price_response':
@@ -44,7 +44,7 @@ class StatusBadge extends StatelessWidget {
       case 'reconciliation_required':
       case 'reconciliation required':
       case 'requested':
-        return AppColors.warning;
+        return context.semanticColors.warning;
       case 'cancelled':
       case 'canceled':
       case 'rejected':
@@ -96,7 +96,7 @@ class StatusBadge extends StatelessWidget {
 
   static StatusBadgeConfig getConfig(BuildContext context, String status) {
     final l10n = context.l10n;
-    final color = getStatusColor(status);
+    final color = getStatusColor(status, context);
     final icon = getStatusIcon(status);
     String label;
     switch (status.toLowerCase().trim()) {

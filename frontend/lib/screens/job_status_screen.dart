@@ -342,7 +342,6 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
 
     return AppShell(
       title: context.l10n.jobStatusTitle,
-      backgroundColor: AppColors.scaffoldBackground,
       appBarBackgroundColor: AppColors.primary,
       appBarForegroundColor: AppColors.onPrimary,
       actions: [
@@ -422,7 +421,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
   ) {
     final l10n = context.l10n;
     return ThemedPanel(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: AppRadius.smBorder,
         border: Border.all(color: AppColors.outlineVariant, width: 1),
         padding: const EdgeInsets.symmetric(
@@ -446,7 +445,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                     color: isCancelled
                         ? AppColors.error
                         : isCompleted
-                            ? AppColors.success
+                            ? context.semanticColors.success
                             : AppColors.secondary,
                     width: 10,
                     height: 10),
@@ -461,7 +460,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                               : l10n.statusPending,
                   style: AppTypography.titleMd.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -475,7 +474,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 Text(
                   "#QD-$displayId",
                   style: AppTypography.labelSm.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -508,7 +507,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       child: Row(
         children: [
           ThemedPanel(
-              color: AppColors.surface.withValues(alpha: 0.15),
+              color:
+                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.15),
               shape: BoxShape.circle,
               width: 44,
               height: 44,
@@ -564,7 +564,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             context.l10n.fulfillmentProgressHeader,
             style: AppTypography.titleMd.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.onSurface,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -628,9 +628,10 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         ? AppColors.primary
         : isActive
             ? AppColors.secondary
-            : AppColors.surfaceContainerHigh;
-    final Color nodeColor =
-        isDone || isActive ? AppColors.onPrimary : AppColors.onSurfaceVariant;
+            : Theme.of(context).colorScheme.surfaceContainerHigh;
+    final Color nodeColor = isDone || isActive
+        ? AppColors.onPrimary
+        : Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -648,8 +649,9 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               Container(
                 width: 2,
                 height: 28,
-                color:
-                    isDone ? AppColors.primary : AppColors.surfaceContainerHigh,
+                color: isDone
+                    ? AppColors.primary
+                    : Theme.of(context).colorScheme.surfaceContainerHigh,
               ),
           ],
         ),
@@ -665,15 +667,15 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   style: AppTypography.titleMd.copyWith(
                     fontWeight: FontWeight.bold,
                     color: isDone || isActive
-                        ? AppColors.onSurface
-                        : AppColors.onSurfaceVariant,
+                        ? Theme.of(context).colorScheme.onSurface
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxs),
                 Text(
                   subtitle,
                   style: AppTypography.caption.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -693,14 +695,15 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.route,
-                  size: 20, color: AppColors.onSurfaceVariant),
+              Icon(Icons.route,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
               const SizedBox(width: AppSpacing.xs),
               Text(
                 context.l10n.itineraryHeader,
                 style: AppTypography.titleMd.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.onSurface,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -715,7 +718,9 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   ThemedPanel(
                       shape: BoxShape.circle,
                       color: AppColors.primaryContainer,
-                      border: Border.all(color: AppColors.surface, width: 2),
+                      border: Border.all(
+                          color: Theme.of(context).colorScheme.surface,
+                          width: 2),
                       width: 14,
                       height: 14),
                   Container(
@@ -726,7 +731,9 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   ThemedPanel(
                       shape: BoxShape.circle,
                       color: AppColors.secondary,
-                      border: Border.all(color: AppColors.surface, width: 2),
+                      border: Border.all(
+                          color: Theme.of(context).colorScheme.surface,
+                          width: 2),
                       width: 14,
                       height: 14),
                 ],
@@ -739,7 +746,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                     Text(
                       context.l10n.pickupStageBadge,
                       style: AppTypography.labelSm.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -747,7 +754,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                       context.l10n.originCustomerLocation,
                       style: AppTypography.bodyMd.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: AppColors.onSurface,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -762,7 +769,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                       context.l10n.deliveryDestinationLabel,
                       style: AppTypography.bodyMd.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: AppColors.onSurface,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ],
@@ -778,7 +785,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             children: [
               Expanded(
                 child: ThemedPanel(
-                    color: AppColors.surfaceContainerLow,
+                    color: Theme.of(context).colorScheme.surfaceContainerLow,
                     borderRadius: AppRadius.smBorder,
                     padding: const EdgeInsets.all(AppSpacing.sm),
                     child: Column(
@@ -787,7 +794,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                         Text(
                           context.l10n.paymentSectionHeader,
                           style: AppTypography.caption.copyWith(
-                            color: AppColors.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.xxs),
@@ -796,7 +804,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                               _currentJob.paymentMethod),
                           style: AppTypography.bodySm.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.onSurface,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -805,7 +813,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: ThemedPanel(
-                    color: AppColors.surfaceContainerLow,
+                    color: Theme.of(context).colorScheme.surfaceContainerLow,
                     borderRadius: AppRadius.smBorder,
                     padding: const EdgeInsets.all(AppSpacing.sm),
                     child: Column(
@@ -814,7 +822,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                         Text(
                           context.l10n.totalFareLabel,
                           style: AppTypography.caption.copyWith(
-                            color: AppColors.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.xxs),
@@ -822,7 +831,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                           "\$${(_currentJob.agreedPrice ?? _currentJob.suggestedPrice ?? 0).toStringAsFixed(2)}",
                           style: AppTypography.bodySm.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -857,14 +866,14 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                       : l10n.assignedCourierLabel,
                   style: AppTypography.bodyLg.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxs),
                 Text(
                   context.l10n.verifiedCourierDriver,
                   style: AppTypography.caption.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -873,9 +882,9 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           IconButton(
             tooltip: context.l10n.tooltipOpenChat,
             key: const Key('open_chat_button'),
-            icon: const Icon(
+            icon: Icon(
               Icons.chat_outlined,
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
             ),
             onPressed: () {
               Navigator.of(context).push(
@@ -1021,22 +1030,23 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             title: l10n.priceNegotiationTitle,
             trailing: (status == 'awaiting_price_response' && !expired)
                 ? ThemedPanel(
-                    color: AppColors.warning.withValues(alpha: 0.15),
+                    color:
+                        context.semanticColors.warning.withValues(alpha: 0.15),
                     borderRadius: AppRadius.smBorder,
-                    border: Border.all(color: AppColors.warning),
+                    border: Border.all(color: context.semanticColors.warning),
                     padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.sm, vertical: AppSpacing.xs / 2),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.timer_outlined,
-                            size: 14, color: AppColors.warning),
+                        Icon(Icons.timer_outlined,
+                            size: 14, color: context.semanticColors.warning),
                         const SizedBox(width: AppSpacing.xs),
                         Text(
                           _remainingTimeString,
                           key: const Key('countdown_timer_text'),
                           style: AppTypography.labelMd.copyWith(
-                            color: AppColors.warning,
+                            color: context.semanticColors.warning,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -1108,7 +1118,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.bodyMd.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -1121,7 +1131,9 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.labelMd.copyWith(
-                              color: AppColors.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                               fontStyle: FontStyle.italic,
                             ),
                           ),
@@ -1136,8 +1148,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                         Expanded(
                           child: Text(
                             l10n.proposedFareLabel,
-                            style: AppTypography.bodyMd
-                                .copyWith(color: AppColors.onSurface),
+                            style: AppTypography.bodyMd.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface),
                           ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
@@ -1161,8 +1173,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                       key: const Key('proposal_comparison_text'),
                       style: AppTypography.labelMd.copyWith(
                         color: (proposed - suggested) > 0
-                            ? AppColors.warning
-                            : AppColors.success,
+                            ? context.semanticColors.warning
+                            : context.semanticColors.success,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1176,7 +1188,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               Text(
                 l10n.waitingProposalResponse,
                 style: AppTypography.bodyMd.copyWith(
-                  color: AppColors.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontStyle: FontStyle.italic,
                 ),
               )
@@ -1217,7 +1229,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               l10n.submitCounterOfferBtn,
               style: AppTypography.bodyMd.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.onSurface,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
@@ -1225,7 +1237,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               l10n.allowedBoundLine(
                   minPrice.toStringAsFixed(2), maxPrice.toStringAsFixed(2)),
               style: AppTypography.labelMd.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -1307,7 +1319,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -1318,7 +1330,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               textAlign: TextAlign.end,
               style: AppTypography.bodyMd.copyWith(
                 fontWeight: FontWeight.w500,
-                color: AppColors.onSurface,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

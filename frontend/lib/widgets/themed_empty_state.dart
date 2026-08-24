@@ -36,7 +36,7 @@ class ThemedEmptyState extends StatelessWidget {
             Text(
               title,
               style: AppTypography.titleMd.copyWith(
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
@@ -45,7 +45,7 @@ class ThemedEmptyState extends StatelessWidget {
             Text(
               description,
               style: AppTypography.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),

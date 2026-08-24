@@ -212,7 +212,7 @@ class _OtpPinInputState extends State<OtpPinInput> {
         },
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(
               color: borderColor,

@@ -83,7 +83,7 @@ class _ThemedTextFieldState extends State<ThemedTextField> {
           _obscureText
               ? Icons.visibility_outlined
               : Icons.visibility_off_outlined,
-          color: AppColors.onSurfaceVariant,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         tooltip: _obscureText
             ? (AppLocalizations.of(context)?.showPassword ??
@@ -108,7 +108,7 @@ class _ThemedTextFieldState extends State<ThemedTextField> {
           Text(
             widget.labelText!,
             style: AppTypography.labelLg.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: AppSpacing.base),
@@ -125,53 +125,55 @@ class _ThemedTextFieldState extends State<ThemedTextField> {
           maxLength: widget.maxLength,
           textAlign: widget.textAlign,
           style: widget.style ??
-              AppTypography.bodyMd.copyWith(color: AppColors.onSurface),
+              AppTypography.bodyMd
+                  .copyWith(color: Theme.of(context).colorScheme.onSurface),
           textInputAction: widget.textInputAction,
           onFieldSubmitted: widget.onFieldSubmitted,
           decoration: InputDecoration(
             hintText: widget.hintText,
-            hintStyle: AppTypography.bodyMd.copyWith(color: AppColors.outline),
+            hintStyle: AppTypography.bodyMd.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
             prefixIcon: widget.prefixIcon,
             suffixIcon: effectiveSuffixIcon,
             counterText: widget.counterText,
             filled: true,
-            fillColor: AppColors.surface,
+            fillColor: Theme.of(context).colorScheme.surface,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md,
               vertical: AppSpacing.md,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: AppRadius.defaultBorder,
-              borderSide: const BorderSide(
-                color: AppColors.outlineVariant,
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
                 width: 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: AppRadius.defaultBorder,
-              borderSide: const BorderSide(
-                color: AppColors.primary,
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.primary,
                 width: 1.5,
               ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: AppRadius.defaultBorder,
-              borderSide: const BorderSide(
-                color: AppColors.error,
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.error,
                 width: 1,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: AppRadius.defaultBorder,
-              borderSide: const BorderSide(
-                color: AppColors.error,
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.error,
                 width: 1.5,
               ),
             ),
             disabledBorder: OutlineInputBorder(
               borderRadius: AppRadius.defaultBorder,
-              borderSide: const BorderSide(
-                color: AppColors.surfaceDim,
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.surfaceDim,
                 width: 1,
               ),
             ),

@@ -464,6 +464,12 @@ abstract class AppLocalizations {
   /// **'Owner Configuration'**
   String get ownerConfigTitle;
 
+  /// No description provided for @myServicesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Services'**
+  String get myServicesTitle;
+
   /// No description provided for @ownerConfigHeader.
   ///
   /// In en, this message translates to:

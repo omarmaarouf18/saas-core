@@ -77,7 +77,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
     final l10n = AppLocalizations.of(context)!;
     return showModalBottomSheet<String>(
       context: context,
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
@@ -253,12 +253,12 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
   }) {
     final l10n = AppLocalizations.of(context)!;
     return ThemedPanel(
-        color: AppColors.surfaceContainerLow,
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: AppRadius.mdBorder,
         border: Border(
           left: BorderSide(
             color: isApproved
-                ? AppColors.success
+                ? context.semanticColors.success
                 : (isRejected
                     ? AppColors.error
                     : (isPending ? AppColors.secondary : AppColors.primary)),
@@ -270,37 +270,34 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      isApproved
-                          ? Icons.check_circle_outline
-                          : (isRejected
-                              ? Icons.error_outline
-                              : (isPending
-                                  ? Icons.schedule
-                                  : Icons.info_outline)),
-                      color: isApproved
-                          ? AppColors.success
-                          : (isRejected
-                              ? AppColors.error
-                              : (isPending
-                                  ? AppColors.secondary
-                                  : AppColors.primary)),
-                      size: 20,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      context.l10n.verificationStatusCardTitle,
-                      style: AppTypography.titleMd.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
+                Icon(
+                  isApproved
+                      ? Icons.check_circle_outline
+                      : (isRejected
+                          ? Icons.error_outline
+                          : (isPending ? Icons.schedule : Icons.info_outline)),
+                  color: isApproved
+                      ? context.semanticColors.success
+                      : (isRejected
+                          ? AppColors.error
+                          : (isPending
+                              ? AppColors.secondary
+                              : AppColors.primary)),
+                  size: 20,
                 ),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: Text(
+                    context.l10n.verificationStatusCardTitle,
+                    style: AppTypography.titleMd.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
                 StatusBadge(status: displayStatus),
               ],
             ),
@@ -314,7 +311,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                           ? l10n.kycRejectedBanner
                           : l10n.kycUploadAllBanner)),
               style: AppTypography.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -366,13 +363,15 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
               children: [
                 ThemedPanel(
                     color: isUploaded
-                        ? AppColors.success.withValues(alpha: 0.12)
+                        ? context.semanticColors.success.withValues(alpha: 0.12)
                         : AppColors.primary.withValues(alpha: 0.08),
                     borderRadius: AppRadius.smBorder,
                     padding: const EdgeInsets.all(AppSpacing.sm),
                     child: Icon(
                       icon,
-                      color: isUploaded ? AppColors.success : AppColors.primary,
+                      color: isUploaded
+                          ? context.semanticColors.success
+                          : AppColors.primary,
                       size: 26,
                     )),
                 const SizedBox(width: AppSpacing.md),
@@ -387,7 +386,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                               title,
                               style: AppTypography.titleMd.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.onSurface,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -402,7 +401,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                       Text(
                         subtitle,
                         style: AppTypography.bodySm.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -421,7 +420,8 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                       key: ValueKey('preview_$slotKey'),
                       padding: const EdgeInsets.only(top: AppSpacing.md),
                       child: ThemedPanel(
-                          color: AppColors.surfaceContainerLow,
+                          color:
+                              Theme.of(context).colorScheme.surfaceContainerLow,
                           borderRadius: AppRadius.smBorder,
                           border: Border.all(
                             color:
@@ -474,7 +474,8 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                                       : "Document on file (${existingPath!.split('/').last})",
                                   style: AppTypography.bodyMd.copyWith(
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.onSurface,
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -602,7 +603,6 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
 
     return FormScreenTemplate(
       title: roleTitle,
-      backgroundColor: AppColors.scaffoldBackground,
       actions: [
         IconButton(
           icon: const Icon(Icons.refresh),

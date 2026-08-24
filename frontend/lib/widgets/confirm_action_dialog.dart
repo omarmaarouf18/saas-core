@@ -55,7 +55,7 @@ class ConfirmActionDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.mdBorder,
       ),
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       title: Row(
         children: [
           Icon(dialogIcon, color: confirmColor),
@@ -65,7 +65,7 @@ class ConfirmActionDialog extends StatelessWidget {
               title,
               style: AppTypography.titleMd.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.onSurface,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
@@ -74,7 +74,7 @@ class ConfirmActionDialog extends StatelessWidget {
       content: Text(
         message,
         style: AppTypography.bodyMd.copyWith(
-          color: AppColors.onSurfaceVariant,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
       actions: [

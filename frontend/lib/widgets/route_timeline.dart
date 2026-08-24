@@ -55,7 +55,7 @@ class RouteTimeline extends StatelessWidget {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: Theme.of(context).colorScheme.surface,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: AppColors.outlineVariant,
@@ -82,7 +82,7 @@ class RouteTimeline extends StatelessWidget {
                             pickupAddress,
                             style: AppTypography.bodyMd.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: AppColors.onSurface,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           if (pickupDetail != null &&
@@ -91,7 +91,9 @@ class RouteTimeline extends StatelessWidget {
                             Text(
                               pickupDetail!,
                               style: AppTypography.labelSm.copyWith(
-                                color: AppColors.onSurfaceVariant,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -111,7 +113,7 @@ class RouteTimeline extends StatelessWidget {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: Theme.of(context).colorScheme.surface,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: AppColors.outlineVariant,
@@ -122,8 +124,8 @@ class RouteTimeline extends StatelessWidget {
                         child: Container(
                           width: 8,
                           height: 8,
-                          decoration: const BoxDecoration(
-                            color: AppColors.danger,
+                          decoration: BoxDecoration(
+                            color: context.semanticColors.danger,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -138,7 +140,7 @@ class RouteTimeline extends StatelessWidget {
                             dropoffAddress,
                             style: AppTypography.bodyMd.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: AppColors.onSurface,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           if (dropoffDetail != null &&
@@ -147,7 +149,9 @@ class RouteTimeline extends StatelessWidget {
                             Text(
                               dropoffDetail!,
                               style: AppTypography.labelSm.copyWith(
-                                color: AppColors.onSurfaceVariant,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -171,7 +175,7 @@ class RouteTimeline extends StatelessWidget {
               horizontal: AppSpacing.sm,
             ),
             decoration: BoxDecoration(
-              color: AppColors.surfaceContainerLow,
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: Row(
@@ -179,18 +183,21 @@ class RouteTimeline extends StatelessWidget {
               children: [
                 if (distanceText != null)
                   _buildMetricItem(
+                    context: context,
                     icon: Icons.route,
                     label: distanceText!,
                   ),
                 if (distanceText != null && timeText != null) _buildDivider(),
                 if (timeText != null)
                   _buildMetricItem(
+                    context: context,
                     icon: Icons.schedule,
                     label: timeText!,
                   ),
                 if (timeText != null && cargoText != null) _buildDivider(),
                 if (cargoText != null)
                   _buildMetricItem(
+                    context: context,
                     icon: Icons.inventory_2_outlined,
                     label: cargoText!,
                   ),
@@ -202,17 +209,22 @@ class RouteTimeline extends StatelessWidget {
     );
   }
 
-  Widget _buildMetricItem({required IconData icon, required String label}) {
+  Widget _buildMetricItem(
+      {required BuildContext context,
+      required IconData icon,
+      required String label}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: AppIconSize.sm, color: AppColors.onSurfaceVariant),
+        Icon(icon,
+            size: AppIconSize.sm,
+            color: Theme.of(context).colorScheme.onSurfaceVariant),
         const SizedBox(width: AppSpacing.xs),
         Text(
           label,
           style: AppTypography.labelSm.copyWith(
             fontWeight: FontWeight.w600,
-            color: AppColors.onSurface,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],

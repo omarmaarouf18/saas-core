@@ -166,31 +166,20 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
   }
 
   Widget _buildHeader(AppLocalizations l10n) {
+    // Screen title lives in the AppBar; the in-body heading would duplicate
+    // it, so only the subtitle stays (same pattern as wallet_screen).
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.md,
         AppSpacing.md,
         AppSpacing.md,
-        AppSpacing.xs,
+        0,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.customerJobsTitle,
-            style: AppTypography.headlineLgMobile.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.onSurface,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xxs),
-          Text(
-            l10n.customerJobsSub,
-            style: AppTypography.bodyMd.copyWith(
-              color: AppColors.onSurfaceVariant,
-            ),
-          ),
-        ],
+      child: Text(
+        l10n.customerJobsSub,
+        style: AppTypography.bodyMd.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }
@@ -286,7 +275,7 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                     "${l10n.customerJobsOrder}$displayId",
                     style: AppTypography.titleMd.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.onSurface,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -299,17 +288,17 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
             // Payment & Price Row
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.payment,
                   size: AppIconSize.sm,
-                  color: AppColors.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Text(
                   l10n.paymentMethodLine(
                       AppTypography.uppercaseLabel(job.paymentMethod)),
                   style: AppTypography.bodySm.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 if (displayPrice != null) ...[
@@ -317,7 +306,7 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                   Text(
                     "\$${displayPrice.toStringAsFixed(2)}",
                     style: AppTypography.titleMd.copyWith(
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -347,7 +336,7 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
           borderRadius: AppRadius.xxsBorder,
           child: Container(
             height: 4,
-            color: AppColors.surfaceContainerHigh,
+            color: Theme.of(context).colorScheme.surfaceContainerHigh,
             child: Row(
               children: [
                 Expanded(
@@ -356,7 +345,9 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                 ),
                 Expanded(
                   flex: job.status.toLowerCase() == 'active' ? 1 : 3,
-                  child: Container(color: AppColors.surfaceContainerHigh),
+                  child: Container(
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHigh),
                 ),
               ],
             ),

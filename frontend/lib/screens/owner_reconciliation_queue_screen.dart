@@ -195,7 +195,6 @@ class _OwnerReconciliationQueueScreenState
               ),
             ],
           ),
-          backgroundColor: AppColors.scaffoldBackground,
           isLoading: provider.isLoading && provider.queue.isEmpty,
           errorMessage: provider.queue.isEmpty ? provider.error : null,
           onRetry: () => provider.fetchQueue(),
@@ -278,7 +277,9 @@ class _OwnerReconciliationQueueScreenState
                           child: Text(
                             l10n.noReconMatchFilter,
                             style: AppTypography.bodyMd.copyWith(
-                              color: AppColors.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -323,7 +324,7 @@ class _OwnerReconciliationQueueScreenState
                   child: Text(
                     '${l10n.customerJobsOrder}${job.id}',
                     style: AppTypography.titleMd.copyWith(
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -355,7 +356,7 @@ class _OwnerReconciliationQueueScreenState
               l10n.reconciliationLockedEscrow,
               '${job.lockedEscrowAmount.toStringAsFixed(2)} Credits',
               isBold: true,
-              valueColor: AppColors.primary,
+              valueColor: Theme.of(context).colorScheme.primary,
             ),
             if (job.employeeId != null && job.employeeId!.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.xs),
@@ -430,7 +431,7 @@ class _OwnerReconciliationQueueScreenState
             child: Text(
               label,
               style: AppTypography.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -439,7 +440,7 @@ class _OwnerReconciliationQueueScreenState
             child: Text(
               value,
               style: AppTypography.bodyMd.copyWith(
-                color: valueColor ?? AppColors.onSurface,
+                color: valueColor ?? Theme.of(context).colorScheme.onSurface,
                 fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
               ),
             ),

@@ -170,7 +170,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildOwnerShell(UserProfile user, AppLocalizations l10n) {
     return DashboardScreenTemplate(
-      backgroundColor: AppColors.scaffoldBackground,
       title: _getTabTitle(context, _currentIndex),
       actions: [
         IconButton(
@@ -248,10 +247,10 @@ class _HomeScreenState extends State<HomeScreen> {
             .replaceAll('_', ' ');
 
     final subColor = ownerProvider.subscriptionTier == "paid"
-        ? AppColors.success
+        ? context.semanticColors.success
         : (ownerProvider.subscriptionTier == "pending_payment"
-            ? AppColors.primary
-            : AppColors.warning);
+            ? Theme.of(context).colorScheme.primary
+            : context.semanticColors.warning);
 
     final totalEmployees = ownerProvider.employees.length;
     final activeEmployees =
@@ -463,7 +462,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       AppTypography.uppercaseLabel(l10n.ownerHomeOwnerJobs),
                       style: AppTypography.labelMd.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -479,22 +478,22 @@ class _HomeScreenState extends State<HomeScreen> {
                   '${ownerProvider.ownerJobs.length}',
                   style: AppTypography.headlineLgMobile.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxs),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.trending_up,
-                      color: AppColors.success,
+                      color: context.semanticColors.success,
                       size: 14,
                     ),
                     const SizedBox(width: AppSpacing.xxs),
                     Text(
                       l10n.jobsTrendChipMock,
                       style: AppTypography.caption.copyWith(
-                        color: AppColors.success,
+                        color: context.semanticColors.success,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -520,7 +519,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       l10n.activeFleetMetricLabel,
                       style: AppTypography.labelMd.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -536,7 +535,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   '$activeEmployees / $totalEmployees',
                   style: AppTypography.headlineLgMobile.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -544,7 +543,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: AppRadius.smBorder,
                   child: LinearProgressIndicator(
                     value: fleetPercent,
-                    backgroundColor: AppColors.surfaceContainerHighest,
+                    backgroundColor:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                     valueColor: const AlwaysStoppedAnimation<Color>(
                       AppColors.secondary,
                     ),
@@ -604,7 +604,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       l10n.ownerHomeSubTitle,
                       style: AppTypography.labelMd.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -631,16 +631,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                 child: Column(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.people_outline,
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                       size: 22,
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       l10n.ownerHomeRosterTitle,
                       style: AppTypography.labelLg.copyWith(
-                        color: AppColors.onSurface,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 1,
@@ -650,7 +650,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       l10n.ownerHomeEmployeesSub,
                       style: AppTypography.labelMd.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -701,7 +701,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       l10n.ownerHomeReviewQueueSub,
                       style: AppTypography.labelMd.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -740,9 +740,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(AppRadius.sm),
                           padding: const EdgeInsets.all(AppSpacing.sm),
-                          child: const Icon(
+                          child: Icon(
                             Icons.account_balance_wallet,
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.primary,
                             size: 24,
                           )),
                       const SizedBox(width: AppSpacing.sm),
@@ -760,15 +760,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             Text(
                               l10n.ownerHomeWalletSub,
                               style: AppTypography.labelMd.copyWith(
-                                color: AppColors.onSurfaceVariant,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.chevron_right,
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         size: 18,
                       ),
                     ],
@@ -816,15 +818,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             Text(
                               l10n.ownerHomeServicesSub,
                               style: AppTypography.labelMd.copyWith(
-                                color: AppColors.onSurfaceVariant,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.chevron_right,
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         size: 18,
                       ),
                     ],
@@ -873,15 +877,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         l10n.quickConfigSubtitle,
                         style: AppTypography.labelMd.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.chevron_right,
-                  color: AppColors.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   size: 18,
                 ),
               ],
@@ -905,14 +909,14 @@ class _HomeScreenState extends State<HomeScreen> {
               // Action 1: Vehicle Maintenance / Fleet Alert
               Row(
                 children: [
-                  const ThemedPanel(
-                      color: AppColors.errorContainer,
+                  ThemedPanel(
+                      color: Theme.of(context).colorScheme.errorContainer,
                       shape: BoxShape.circle,
                       width: 40,
                       height: 40,
                       child: Icon(
                         Icons.warning_amber_rounded,
-                        color: AppColors.onErrorContainer,
+                        color: Theme.of(context).colorScheme.onErrorContainer,
                         size: 22,
                       )),
                   const SizedBox(width: AppSpacing.md),
@@ -930,7 +934,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         Text(
                           l10n.vehicleMaintenanceDesc,
                           style: AppTypography.bodySm.copyWith(
-                            color: AppColors.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -979,7 +984,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         Text(
                           l10n.reconciliationPendingDesc,
                           style: AppTypography.bodySm.copyWith(
-                            color: AppColors.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -1054,7 +1060,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       bottom: AppSpacing.md,
                       right: AppSpacing.md,
                       child: ThemedPanel(
-                          color: AppColors.surface,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(AppRadius.sm),
                           boxShadow: [
                             BoxShadow(
@@ -1082,7 +1088,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                     l10n.activeZoneLabel,
                                     style: AppTypography.bodyMd.copyWith(
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.onSurface,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
                                     ),
                                   ),
                                 ],
@@ -1090,7 +1098,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               Text(
                                 l10n.downtownCoverageLabel,
                                 style: AppTypography.caption.copyWith(
-                                  color: AppColors.onSurfaceVariant,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -1190,7 +1200,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             "#QD-$displayJobId",
                             style: AppTypography.titleMd.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           StatusBadge(status: job.status),
@@ -1212,7 +1222,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               : '',
                         ),
                         style: AppTypography.bodyMd.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       if (canCancel) ...[
@@ -1262,7 +1272,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildNonOwnerShell(UserProfile user, AppLocalizations l10n) {
     return AppShell(
-      backgroundColor: AppColors.scaffoldBackground,
       appBarBackgroundColor: Colors.transparent,
       appBarForegroundColor: Theme.of(context).colorScheme.onSurface,
       leading: DashboardScreenTemplate.brandLogo(),
@@ -1293,7 +1302,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 user.username.isNotEmpty ? user.username : user.email,
               ),
               style: AppTypography.headlineLgMobile.copyWith(
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -1301,7 +1310,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               l10n.ownerHomeAccountId(user.id),
               style: AppTypography.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -1341,14 +1350,14 @@ class _HomeScreenState extends State<HomeScreen> {
             label,
             style: AppTypography.bodyMd.copyWith(
               fontWeight: FontWeight.w500,
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           Text(
             value,
             style: AppTypography.bodyMd.copyWith(
               fontWeight: FontWeight.bold,
-              color: valueColor ?? AppColors.onSurface,
+              color: valueColor ?? Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],

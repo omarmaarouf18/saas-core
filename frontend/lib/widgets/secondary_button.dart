@@ -66,9 +66,13 @@ class _SecondaryButtonState extends State<SecondaryButton> {
 
   @override
   Widget build(BuildContext context) {
+    // Brightness-aware roles: in dark mode the scheme resolves to the
+    // high-contrast variants (gold accent / light red) — the static
+    // light-tuned constants are invisible on dark surfaces.
+    final scheme = Theme.of(context).colorScheme;
     final Color buttonColor = widget.isDestructive
-        ? AppColors.error
-        : (widget.isOutlined ? AppColors.primary : AppColors.onSecondary);
+        ? scheme.error
+        : (widget.isOutlined ? scheme.primary : AppColors.onSecondary);
 
     final Widget buttonChild = widget.isLoading
         ? SizedBox(
@@ -125,7 +129,7 @@ class _SecondaryButtonState extends State<SecondaryButton> {
           )
         : ElevatedButton.styleFrom(
             backgroundColor: widget.isDestructive
-                ? AppColors.error.withValues(alpha: 0.12)
+                ? scheme.error.withValues(alpha: 0.12)
                 : AppColors.secondary,
             foregroundColor: buttonColor,
             elevation: 0,

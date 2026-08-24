@@ -61,6 +61,7 @@
   "myAccountSaveButton": "SAVE PROFILE",
   "myAccountSuccessMsg": "Profile updated successfully",
   "ownerConfigTitle": "Owner Configuration",
+  "myServicesTitle": "My Services",
   "ownerConfigHeader": "Business Details",
   "ownerConfigHeaderSub": "Update business parameters and service terms",
   "ownerConfigNameLabel": "Business Name",

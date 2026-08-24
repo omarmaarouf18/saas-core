@@ -48,7 +48,7 @@ class SettingsScreen extends StatelessWidget {
       kycIconColor = AppColors.error;
     } else if (isKycPending) {
       kycSubtitle = l10n.settingsKycSubtitlePending;
-      kycIconColor = AppColors.warning;
+      kycIconColor = context.semanticColors.warning;
     }
 
     return FormScreenTemplate(
@@ -96,14 +96,15 @@ class SettingsScreen extends StatelessWidget {
                               : l10n.quickDeliveryUserFallback,
                           style: AppTypography.titleMd.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.onSurface,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.xxs),
                         Text(
                           user.email,
                           style: AppTypography.labelMd.copyWith(
-                            color: AppColors.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -122,7 +123,7 @@ class SettingsScreen extends StatelessWidget {
                       child: Text(
                         AppTypography.uppercaseLabel(user.role),
                         style: AppTypography.labelSm.copyWith(
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
                         ),
@@ -301,7 +302,7 @@ class SettingsScreen extends StatelessWidget {
                       subtitle: Text(
                         l10n.settingsOwnerConfigSub,
                         style: AppTypography.bodySm.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       trailing: Icon(
@@ -334,7 +335,7 @@ class SettingsScreen extends StatelessWidget {
                       subtitle: Text(
                         l10n.settingsMyAccountSub,
                         style: AppTypography.bodySm.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       trailing: Icon(
@@ -367,7 +368,7 @@ class SettingsScreen extends StatelessWidget {
                       subtitle: Text(
                         kycSubtitle,
                         style: AppTypography.bodySm.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       trailing: Icon(
@@ -414,7 +415,7 @@ class SettingsScreen extends StatelessWidget {
                 subtitle: Text(
                   l10n.settingsCustomerServiceSub,
                   style: AppTypography.bodySm.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 trailing: Icon(

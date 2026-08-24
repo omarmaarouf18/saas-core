@@ -61,7 +61,7 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
         horizontal: AppSpacing.md,
         vertical: AppSpacing.lg,
       ),
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.mdBorder,
       ),
@@ -111,15 +111,15 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                     key: const Key('service_category_dropdown'),
                     initialValue: _selectedCategory,
                     style: AppTypography.bodyMd.copyWith(
-                      color: AppColors.onSurface,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                     decoration: InputDecoration(
                       labelText: l10n.categoryLabel,
                       labelStyle: AppTypography.labelLg.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       filled: true,
-                      fillColor: AppColors.surface,
+                      fillColor: Theme.of(context).colorScheme.surface,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.md,
                         vertical: AppSpacing.md,

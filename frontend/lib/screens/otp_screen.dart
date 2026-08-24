@@ -97,9 +97,7 @@ class _OtpScreenState extends State<OtpScreen> {
     final l10n = context.l10n;
 
     return FormScreenTemplate(
-      backgroundColor: AppColors.background,
       appBarBackgroundColor: Colors.transparent,
-      appBarForegroundColor: AppColors.onBackground,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.marginMobile,
         vertical: AppSpacing.md,
@@ -141,7 +139,7 @@ class _OtpScreenState extends State<OtpScreen> {
           Text(
             l10n.otpCodeLabel,
             style: AppTypography.labelLg.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
@@ -189,7 +187,7 @@ class _OtpScreenState extends State<OtpScreen> {
         Text(
           l10n.otpTitle,
           style: AppTypography.headlineLgMobile.copyWith(
-            color: AppColors.primary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
           textAlign: TextAlign.center,
@@ -198,7 +196,7 @@ class _OtpScreenState extends State<OtpScreen> {
         Text(
           "${l10n.otpSubtitle}\n${widget.email}",
           style: AppTypography.bodyMd.copyWith(
-            color: AppColors.onSurfaceVariant,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           textAlign: TextAlign.center,
         ),
@@ -239,7 +237,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 child: Text(
                   state.errorText ?? '',
                   style: AppTypography.bodySm.copyWith(
-                    color: AppColors.danger,
+                    color: context.semanticColors.danger,
                   ),
                 ),
               ),
@@ -260,9 +258,9 @@ class _OtpScreenState extends State<OtpScreen> {
         padding: const EdgeInsets.all(AppSpacing.sm),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.bug_report_outlined,
-              color: AppColors.warning,
+              color: context.semanticColors.warning,
               size: 18,
             ),
             const SizedBox(width: AppSpacing.xs),
@@ -270,7 +268,7 @@ class _OtpScreenState extends State<OtpScreen> {
               child: Text(
                 context.l10n.devOtpAutoFilled(_currentDevOtp ?? ''),
                 style: AppTypography.labelMd.copyWith(
-                  color: AppColors.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ),

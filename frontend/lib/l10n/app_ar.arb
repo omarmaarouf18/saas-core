@@ -61,6 +61,7 @@
   "myAccountSaveButton": "حفظ البيانات",
   "myAccountSuccessMsg": "تم تحديث بيانات حسابك بنجاح",
   "ownerConfigTitle": "إعدادات الخدمة والمحل",
+  "myServicesTitle": "خدماتي",
   "ownerConfigHeader": "بيانات المحل/الخدمة",
   "ownerConfigHeaderSub": "تحديث اسم ومواعيد وأسعار الخدمة",
   "ownerConfigNameLabel": "اسم المحل أو الخدمة",

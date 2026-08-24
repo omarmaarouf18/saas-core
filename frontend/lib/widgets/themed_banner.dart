@@ -59,9 +59,9 @@ class _ThemedBannerState extends State<ThemedBanner> {
       case ThemedBannerType.error:
         return AppColors.error;
       case ThemedBannerType.success:
-        return AppColors.success;
+        return context.semanticColors.success;
       case ThemedBannerType.warning:
-        return AppColors.warning;
+        return context.semanticColors.warning;
       case ThemedBannerType.info:
         return AppColors.primary;
     }
@@ -72,9 +72,9 @@ class _ThemedBannerState extends State<ThemedBanner> {
       case ThemedBannerType.error:
         return AppColors.error.withValues(alpha: 0.1);
       case ThemedBannerType.success:
-        return AppColors.success.withValues(alpha: 0.1);
+        return context.semanticColors.success.withValues(alpha: 0.1);
       case ThemedBannerType.warning:
-        return AppColors.warning.withValues(alpha: 0.12);
+        return context.semanticColors.warning.withValues(alpha: 0.12);
       case ThemedBannerType.info:
         return AppColors.primary.withValues(alpha: 0.08);
     }
@@ -85,9 +85,9 @@ class _ThemedBannerState extends State<ThemedBanner> {
       case ThemedBannerType.error:
         return AppColors.error.withValues(alpha: 0.3);
       case ThemedBannerType.success:
-        return AppColors.success.withValues(alpha: 0.3);
+        return context.semanticColors.success.withValues(alpha: 0.3);
       case ThemedBannerType.warning:
-        return AppColors.warning.withValues(alpha: 0.4);
+        return context.semanticColors.warning.withValues(alpha: 0.4);
       case ThemedBannerType.info:
         return AppColors.primary.withValues(alpha: 0.25);
     }
@@ -161,7 +161,7 @@ class _ThemedBannerState extends State<ThemedBanner> {
                 Text(
                   widget.message,
                   style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

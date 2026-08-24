@@ -88,7 +88,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final l10n = context.l10n;
 
     return FormScreenTemplate(
-      backgroundColor: AppColors.background,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.marginMobile,
         vertical: AppSpacing.md,
@@ -227,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Text(
             l10n.loginTitle,
             style: AppTypography.headlineLgMobile.copyWith(
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
@@ -236,7 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Text(
             l10n.loginSubtitle,
             style: AppTypography.bodyMd.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
@@ -271,7 +270,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 l10n.loginPasswordLabel,
                 style: AppTypography.labelLg.copyWith(
-                  color: AppColors.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               InkWell(
@@ -293,7 +292,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Text(
                     l10n.loginForgotPassword,
                     style: AppTypography.labelLg.copyWith(
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -349,7 +348,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Text(
             "${l10n.loginNoAccount} ${l10n.loginSignUp}",
             style: AppTypography.bodyMd.copyWith(
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.w600,
             ),
           ),

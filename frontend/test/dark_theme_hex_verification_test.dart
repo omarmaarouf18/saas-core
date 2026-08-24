@@ -4,7 +4,7 @@ import 'package:frontend/core/theme.dart';
 
 void main() {
   testWidgets(
-      'Print and verify all 23 color mappings against exact original hex',
+      'Print and verify all dark color mappings against exact pinned hex',
       (tester) async {
     final theme = quickDeliveryDarkTheme;
     final scheme = theme.colorScheme;
@@ -42,10 +42,16 @@ void main() {
         0xFF475569
       ),
       'colorScheme.onSurfaceVariant': (scheme.onSurfaceVariant, 0xFFCBD5E1),
-      'colorScheme.outline': (scheme.outline, 0xFF64748B),
-      'colorScheme.outlineVariant': (scheme.outlineVariant, 0xFF475569),
+      // Visual-fix pass: outline hierarchy raised so both border roles clear
+      // the WCAG 3:1 UI-component floor on every dark surface
+      // (#7C8DA6 = 5.71/5.29/4.33, #64748B = 4.06/3.75/3.07 on
+      // scaffold/surface/container; the old values failed at 2.36:1).
+      'colorScheme.outline': (scheme.outline, 0xFF7C8DA6),
+      'colorScheme.outlineVariant': (scheme.outlineVariant, 0xFF64748B),
       'colorScheme.error': (scheme.error, 0xFFF87171),
       'colorScheme.onError': (scheme.onError, 0xFF0F172A),
+      'colorScheme.errorContainer': (scheme.errorContainer, 0xFF5C1A22),
+      'colorScheme.onErrorContainer': (scheme.onErrorContainer, 0xFFFFDAD6),
       'theme.scaffoldBackgroundColor': (
         theme.scaffoldBackgroundColor,
         0xFF0A0E17
@@ -69,6 +75,6 @@ void main() {
       expect(actualHex, equals(expectedHex));
     }
     debugPrint(
-        '=== Result: ${allMatched ? "ALL 23 COLORS EXACT MATCH - NO DRIFT" : "FAIL"} ===');
+        '=== Result: ${allMatched ? "ALL DARK COLORS EXACT MATCH - NO DRIFT" : "FAIL"} ===');
   });
 }

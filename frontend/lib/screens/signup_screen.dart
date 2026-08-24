@@ -78,7 +78,6 @@ class _SignupScreenState extends State<SignupScreen> {
     final l10n = context.l10n;
 
     return FormScreenTemplate(
-      backgroundColor: AppColors.background,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.marginMobile,
         vertical: AppSpacing.md,
@@ -137,7 +136,7 @@ class _SignupScreenState extends State<SignupScreen> {
           Text(
             l10n.signupTitle,
             style: AppTypography.headlineLgMobile.copyWith(
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
@@ -146,7 +145,7 @@ class _SignupScreenState extends State<SignupScreen> {
           Text(
             l10n.signupSubtitle,
             style: AppTypography.bodyMd.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
@@ -243,7 +242,7 @@ class _SignupScreenState extends State<SignupScreen> {
           Text(
             l10n.signupRoleLabel,
             style: AppTypography.labelLg.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -307,10 +306,14 @@ class _SignupScreenState extends State<SignupScreen> {
             vertical: AppSpacing.md,
             horizontal: AppSpacing.sm,
           ),
-          color: isSelected ? AppColors.surfaceContainerLow : AppColors.surface,
+          color: isSelected
+              ? Theme.of(context).colorScheme.surfaceContainerLow
+              : Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.outlineVariant,
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : AppColors.outlineVariant,
             width: isSelected ? 2.0 : 1.0,
           ),
           child: Column(
@@ -318,8 +321,9 @@ class _SignupScreenState extends State<SignupScreen> {
             children: [
               Icon(
                 icon,
-                color:
-                    isSelected ? AppColors.primary : AppColors.onSurfaceVariant,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
                 size: AppIconSize.md,
               ),
               const SizedBox(height: AppSpacing.xs),
@@ -328,8 +332,8 @@ class _SignupScreenState extends State<SignupScreen> {
                 style: AppTypography.labelLg.copyWith(
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   color: isSelected
-                      ? AppColors.primary
-                      : AppColors.onSurfaceVariant,
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -354,7 +358,7 @@ class _SignupScreenState extends State<SignupScreen> {
           child: Text(
             "${l10n.signupHasAccount} ${l10n.signupSignIn}",
             style: AppTypography.bodyMd.copyWith(
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.w600,
             ),
           ),

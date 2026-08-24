@@ -38,7 +38,7 @@ class ThemedSnackBar {
       SnackBar(
         key: key,
         duration: AppMotion.snackBarDisplay,
-        backgroundColor: AppColors.success,
+        backgroundColor: context.semanticColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.defaultBorder,
@@ -118,7 +118,7 @@ class ThemedSnackBar {
       SnackBar(
         key: key,
         duration: AppMotion.snackBarDisplay,
-        backgroundColor: AppColors.warning,
+        backgroundColor: context.semanticColors.warning,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.defaultBorder,

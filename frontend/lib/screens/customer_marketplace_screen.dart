@@ -242,7 +242,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                 Switch(
                   key: const Key('nearby_filter_switch'),
                   value: _nearBy,
-                  activeTrackColor: AppColors.primary,
+                  activeTrackColor: Theme.of(context).colorScheme.primary,
                   onChanged: (val) {
                     setState(() {
                       _nearBy = val;
@@ -254,7 +254,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                 Text(
                   l10n.customerMarketplaceFilterNearby,
                   style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -297,15 +297,15 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                     initialValue: _selectedCategory,
                     isExpanded: true,
                     style: AppTypography.bodyMd.copyWith(
-                      color: AppColors.onSurface,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                     decoration: InputDecoration(
                       labelText: l10n.customerMarketplaceFilterCategory,
                       labelStyle: AppTypography.labelLg.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       filled: true,
-                      fillColor: AppColors.surface,
+                      fillColor: Theme.of(context).colorScheme.surface,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.md,
                         vertical: AppSpacing.md,
@@ -319,8 +319,8 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: AppRadius.defaultBorder,
-                        borderSide: const BorderSide(
-                          color: AppColors.primary,
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
                           width: 1.5,
                         ),
                       ),
@@ -352,15 +352,15 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                     initialValue: _sortBy,
                     isExpanded: true,
                     style: AppTypography.bodyMd.copyWith(
-                      color: AppColors.onSurface,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                     decoration: InputDecoration(
                       labelText: l10n.sortByLabel,
                       labelStyle: AppTypography.labelLg.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       filled: true,
-                      fillColor: AppColors.surface,
+                      fillColor: Theme.of(context).colorScheme.surface,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.md,
                         vertical: AppSpacing.md,
@@ -374,8 +374,8 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: AppRadius.defaultBorder,
-                        borderSide: const BorderSide(
-                          color: AppColors.primary,
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
                           width: 1.5,
                         ),
                       ),
@@ -405,7 +405,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                   tooltip: l10n.searchServicesTooltip,
                   onPressed: _loadServices,
                   style: IconButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: AppColors.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: AppRadius.defaultBorder,
@@ -447,7 +447,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                   backgroundColor: AppColors.secondary.withValues(alpha: 0.15),
                   child: Icon(
                     _getCategoryIcon(service.category),
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     size: 22,
                   ),
                 ),
@@ -460,7 +460,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         service.name,
                         style: AppTypography.titleMd.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.onSurface,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xs),
@@ -472,7 +472,9 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(AppRadius.xs),
                             child: ColoredBox(
-                              color: AppColors.surfaceContainerHigh,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHigh,
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: AppSpacing.sm,
@@ -482,7 +484,9 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                                   categoryLabel,
                                   style: AppTypography.caption.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.onSurfaceVariant,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                   ),
                                 ),
                               ),
@@ -491,7 +495,9 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                           Text(
                             l10n.distanceAwayLine("${service.distanceKM}"),
                             style: AppTypography.bodySm.copyWith(
-                              color: AppColors.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
                           ServiceRatingWidget(
@@ -522,7 +528,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         l10n.pricingBreakdownLine("${service.tenantBasePrice}",
                             "${service.tenantPricePerKM}"),
                         style: AppTypography.caption.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -531,7 +537,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                       Text(
                         l10n.estPriceLine("${service.finalPrice}"),
                         style: AppTypography.titleMd.copyWith(
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -720,14 +726,14 @@ class _BookingDialogState extends State<_BookingDialog> {
     final categoryLabel = serviceCategoryLabels[widget.service.category] ??
         widget.service.category;
     return AlertDialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       title: Text(
         l10n.confirmBookingTitle,
         style: AppTypography.titleMd.copyWith(
-          color: AppColors.primary,
+          color: Theme.of(context).colorScheme.onSurface,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -742,14 +748,14 @@ class _BookingDialogState extends State<_BookingDialog> {
                 widget.service.name,
                 style: AppTypography.headlineLgMobile.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.onSurface,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 l10n.categoryLine(categoryLabel),
                 style: AppTypography.bodyMd.copyWith(
-                  color: AppColors.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -762,7 +768,7 @@ class _BookingDialogState extends State<_BookingDialog> {
                     child: Text(
                       l10n.pickupDistanceLabel,
                       style: AppTypography.bodyMd.copyWith(
-                        color: AppColors.onSurface,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -770,7 +776,7 @@ class _BookingDialogState extends State<_BookingDialog> {
                   Text(
                     l10n.kmUnitLine("${widget.service.distanceKM}"),
                     style: AppTypography.bodyMd.copyWith(
-                      color: AppColors.onSurface,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -784,7 +790,7 @@ class _BookingDialogState extends State<_BookingDialog> {
                     child: Text(
                       l10n.estimatedTotalLabel,
                       style: AppTypography.bodyMd.copyWith(
-                        color: AppColors.onSurface,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -793,7 +799,7 @@ class _BookingDialogState extends State<_BookingDialog> {
                     "\$${widget.service.finalPrice}",
                     style: AppTypography.titleMd.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.onSurface,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -805,9 +811,9 @@ class _BookingDialogState extends State<_BookingDialog> {
               const SizedBox(height: AppSpacing.xs),
               // Forced Option: Cash on Delivery (COD)
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.radio_button_checked,
-                  color: AppColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 title: Text(
                   l10n.codOptionTitle,
@@ -818,7 +824,7 @@ class _BookingDialogState extends State<_BookingDialog> {
                 subtitle: Text(
                   l10n.codOptionSubtitle,
                   style: AppTypography.labelMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 dense: true,
@@ -927,7 +933,7 @@ class _ServiceRatingWidgetState extends State<ServiceRatingWidget> {
           "${_avg!.toStringAsFixed(1)} ($_count)",
           style: AppTypography.labelMd.copyWith(
             fontWeight: FontWeight.bold,
-            color: AppColors.onSurface,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],

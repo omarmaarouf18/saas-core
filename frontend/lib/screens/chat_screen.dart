@@ -129,8 +129,8 @@ class _ChatScreenState extends State<ChatScreen>
       statusIndicator = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const ThemedPanel(
-              color: AppColors.success,
+          ThemedPanel(
+              color: context.semanticColors.success,
               shape: BoxShape.circle,
               width: 7,
               height: 7),
@@ -138,7 +138,7 @@ class _ChatScreenState extends State<ChatScreen>
           Text(
             l10n.chatStatusLive,
             style: AppTypography.labelSm.copyWith(
-              color: AppColors.success,
+              color: context.semanticColors.success,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -160,7 +160,7 @@ class _ChatScreenState extends State<ChatScreen>
           Text(
             l10n.loading,
             style: AppTypography.labelSm.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -186,7 +186,6 @@ class _ChatScreenState extends State<ChatScreen>
     }
 
     return AppShell(
-      backgroundColor: AppColors.scaffoldBackground,
       appBarBackgroundColor: AppColors.primary,
       appBarForegroundColor: AppColors.onPrimary,
       titleWidget: Column(
@@ -208,7 +207,7 @@ class _ChatScreenState extends State<ChatScreen>
         children: [
           // Context Job Header Strip (Stitch DOM)
           ThemedPanel(
-              color: AppColors.surface,
+              color: Theme.of(context).colorScheme.surface,
               border: Border(
                 bottom: BorderSide(
                   color: AppColors.outlineVariant.withValues(alpha: 0.5),
@@ -225,9 +224,9 @@ class _ChatScreenState extends State<ChatScreen>
                       shape: BoxShape.circle,
                       width: 36,
                       height: 36,
-                      child: const Icon(
+                      child: Icon(
                         Icons.local_shipping,
-                        color: AppColors.primary,
+                        color: Theme.of(context).colorScheme.primary,
                         size: 18,
                       )),
                   const SizedBox(width: AppSpacing.sm),
@@ -240,13 +239,14 @@ class _ChatScreenState extends State<ChatScreen>
                           l10n.chatJobTag(shortJobId),
                           style: AppTypography.labelLg.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.onSurface,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         Text(
                           l10n.chatDirectChannel,
                           style: AppTypography.labelSm.copyWith(
-                            color: AppColors.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -277,7 +277,7 @@ class _ChatScreenState extends State<ChatScreen>
                     ? const Center(child: ThemedLoadingIndicator())
                     : chat.messages.isEmpty
                         ? ThemedEmptyState(
-                            icon: Icons.chat_bubble_outline,
+                            icon: Icons.chat_outlined,
                             title: l10n.chatTitle,
                             description: l10n.chatTypeHint,
                           )
@@ -299,7 +299,7 @@ class _ChatScreenState extends State<ChatScreen>
           // Sticky Input Row (Stitch DOM)
           if (chat.subscriptionError == null)
             ThemedPanel(
-                color: AppColors.surface,
+                color: Theme.of(context).colorScheme.surface,
                 border: Border(
                   top: BorderSide(
                     color: AppColors.outlineVariant.withValues(alpha: 0.5),
@@ -323,7 +323,9 @@ class _ChatScreenState extends State<ChatScreen>
                     children: [
                       Expanded(
                         child: ThemedPanel(
-                            color: AppColors.surfaceContainerLowest,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerLowest,
                             borderRadius: AppRadius.defaultBorder,
                             border: Border.all(
                               color: AppColors.outlineVariant,
@@ -336,12 +338,14 @@ class _ChatScreenState extends State<ChatScreen>
                               textInputAction: TextInputAction.send,
                               onSubmitted: (_) => _sendMessage(),
                               style: AppTypography.bodyMd.copyWith(
-                                color: AppColors.onSurface,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                               decoration: InputDecoration(
                                 hintText: l10n.chatTypeHint,
                                 hintStyle: AppTypography.bodyMd.copyWith(
-                                  color: AppColors.onSurfaceVariant,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
                                 ),
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: AppSpacing.md,
@@ -393,7 +397,9 @@ class _ChatScreenState extends State<ChatScreen>
         children: [
           // Bubble Container
           ThemedPanel(
-              color: isMe ? AppColors.primaryContainer : AppColors.surface,
+              color: isMe
+                  ? AppColors.primaryContainer
+                  : Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(AppRadius.md),
                 topRight: const Radius.circular(AppRadius.md),
@@ -427,7 +433,9 @@ class _ChatScreenState extends State<ChatScreen>
               child: Text(
                 msg.content,
                 style: AppTypography.bodyMd.copyWith(
-                  color: isMe ? AppColors.onPrimary : AppColors.onSurface,
+                  color: isMe
+                      ? AppColors.onPrimary
+                      : Theme.of(context).colorScheme.onSurface,
                   height: 1.35,
                 ),
               )),
@@ -444,7 +452,7 @@ class _ChatScreenState extends State<ChatScreen>
                 Text(
                   senderLabel,
                   style: AppTypography.labelSm.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: isMe ? FontWeight.normal : FontWeight.w600,
                   ),
                 ),

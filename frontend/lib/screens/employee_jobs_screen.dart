@@ -249,7 +249,6 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     }
 
     return AppShell(
-      backgroundColor: AppColors.scaffoldBackground,
       title: l10n.employeeJobsTitle,
       actions: [
         IconButton(
@@ -347,7 +346,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             gradient: LinearGradient(
               colors: [
                 AppColors.primary.withValues(alpha: 0.08),
-                AppColors.surface,
+                Theme.of(context).colorScheme.surface,
               ],
               begin: AlignmentDirectional.topStart,
               end: AlignmentDirectional.bottomEnd,
@@ -378,7 +377,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                       Text(
                         l10n.employeeJobsWelcomeGreeting,
                         style: AppTypography.headlineLgMobile.copyWith(
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -386,7 +385,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                       Text(
                         l10n.employeeJobsLoggedInAs(displayName),
                         style: AppTypography.bodyMd.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -406,13 +405,17 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                     },
                     child: ThemedPanel(
                         color: isTracking
-                            ? AppColors.success.withValues(alpha: 0.12)
-                            : AppColors.warning.withValues(alpha: 0.12),
+                            ? context.semanticColors.success
+                                .withValues(alpha: 0.12)
+                            : context.semanticColors.warning
+                                .withValues(alpha: 0.12),
                         borderRadius: AppRadius.smBorder,
                         border: Border.all(
                           color: isTracking
-                              ? AppColors.success.withValues(alpha: 0.4)
-                              : AppColors.warning.withValues(alpha: 0.4),
+                              ? context.semanticColors.success
+                                  .withValues(alpha: 0.4)
+                              : context.semanticColors.warning
+                                  .withValues(alpha: 0.4),
                         ),
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.sm,
@@ -424,8 +427,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                             ThemedPanel(
                                 shape: BoxShape.circle,
                                 color: isTracking
-                                    ? AppColors.success
-                                    : AppColors.warning,
+                                    ? context.semanticColors.success
+                                    : context.semanticColors.warning,
                                 width: 8,
                                 height: 8),
                             const SizedBox(width: AppSpacing.xs),
@@ -435,8 +438,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                                   : l10n.employeeJobsGpsOff,
                               style: AppTypography.labelMd.copyWith(
                                 color: isTracking
-                                    ? AppColors.success
-                                    : AppColors.warning,
+                                    ? context.semanticColors.success
+                                    : context.semanticColors.warning,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -479,7 +482,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                     l10n.employeeJobsSimulatorTitle,
                     style: AppTypography.titleMd.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.onSurface,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -489,7 +492,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             Text(
               l10n.employeeJobsSimulatorDesc,
               style: AppTypography.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const Divider(
@@ -521,11 +524,11 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                   label: Text(suggestion),
                   selected: isSelected,
                   selectedColor: AppColors.primary.withValues(alpha: 0.15),
-                  backgroundColor: AppColors.surface,
+                  backgroundColor: Theme.of(context).colorScheme.surface,
                   labelStyle: AppTypography.labelMd.copyWith(
                     color: isSelected
                         ? AppColors.primary
-                        : AppColors.onSurfaceVariant,
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight:
                         isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
@@ -619,7 +622,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                           style: AppTypography.titleMd.copyWith(
                             fontFamily: 'monospace',
                             fontWeight: FontWeight.bold,
-                            color: AppColors.onSurface,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -700,9 +703,11 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                       locationProvider.status ==
                           LocationSharingStatus.serviceDisabled) {
                     return ThemedPanel(
-                        color: AppColors.warning.withValues(alpha: 0.1),
+                        color: context.semanticColors.warning
+                            .withValues(alpha: 0.1),
                         borderRadius: AppRadius.defaultBorder,
-                        border: Border.all(color: AppColors.warning),
+                        border:
+                            Border.all(color: context.semanticColors.warning),
                         key: const Key('location_permission_denied_banner'),
                         margin: const EdgeInsets.only(top: AppSpacing.sm),
                         padding: const EdgeInsets.all(AppSpacing.md),
@@ -711,14 +716,18 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.location_off_outlined,
-                                    color: AppColors.warning, size: 20),
+                                Icon(Icons.location_off_outlined,
+                                    color: context.semanticColors.warning,
+                                    size: 20),
                                 const SizedBox(width: AppSpacing.xs),
-                                Text(
-                                  l10n.employeeJobsLocationPermissionTitle,
-                                  style: AppTypography.bodyMd.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.warning,
+                                Expanded(
+                                  child: Text(
+                                    l10n.employeeJobsLocationPermissionTitle,
+                                    style: AppTypography.bodyMd.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: context.semanticColors.warning,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
@@ -727,7 +736,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                             Text(
                               l10n.employeeJobsLocationPermissionDesc,
                               style: AppTypography.bodyMd.copyWith(
-                                color: AppColors.onSurface,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: AppSpacing.sm),
@@ -747,10 +756,12 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                   if (locationProvider.status ==
                       LocationSharingStatus.tracking) {
                     return ThemedPanel(
-                        color: AppColors.success.withValues(alpha: 0.1),
+                        color: context.semanticColors.success
+                            .withValues(alpha: 0.1),
                         borderRadius: AppRadius.smBorder,
                         border: Border.all(
-                            color: AppColors.success.withValues(alpha: 0.3)),
+                            color: context.semanticColors.success
+                                .withValues(alpha: 0.3)),
                         key: const Key('location_sharing_indicator'),
                         margin: const EdgeInsets.only(top: AppSpacing.sm),
                         padding: const EdgeInsets.symmetric(
@@ -758,16 +769,16 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const ThemedPanel(
+                            ThemedPanel(
                                 shape: BoxShape.circle,
-                                color: AppColors.success,
+                                color: context.semanticColors.success,
                                 width: 8,
                                 height: 8),
                             const SizedBox(width: AppSpacing.xs),
                             Text(
                               l10n.employeeJobsSharingLiveLocation,
                               style: AppTypography.labelMd.copyWith(
-                                color: AppColors.success,
+                                color: context.semanticColors.success,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -843,7 +854,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
 
   Widget _buildSubordinateChip(IconData icon, String label, String value) {
     return ThemedPanel(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: AppRadius.smBorder,
         border: Border.all(color: AppColors.outlineVariant),
         padding: const EdgeInsets.symmetric(
@@ -853,19 +864,21 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: AppColors.onSurfaceVariant),
+            Icon(icon,
+                size: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(width: AppSpacing.xs),
             Text(
               "$label: ",
               style: AppTypography.labelLg.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.normal,
               ),
             ),
             Text(
               value,
               style: AppTypography.labelLg.copyWith(
-                color: AppColors.onSurface,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
               ),
             ),

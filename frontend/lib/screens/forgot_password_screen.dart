@@ -127,9 +127,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final l10n = context.l10n;
 
     return FormScreenTemplate(
-      backgroundColor: AppColors.background,
       appBarBackgroundColor: Colors.transparent,
-      appBarForegroundColor: AppColors.onBackground,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.marginMobile,
         vertical: AppSpacing.md,
@@ -225,7 +223,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           Text(
             l10n.otpCodeLabel,
             style: AppTypography.labelLg.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -254,7 +252,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     Text(
                       state.errorText ?? '',
                       style: AppTypography.bodySm.copyWith(
-                        color: AppColors.danger,
+                        color: context.semanticColors.danger,
                       ),
                     ),
                   ],
@@ -340,7 +338,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         Text(
           l10n.forgotPasswordTitle,
           style: AppTypography.headlineLgMobile.copyWith(
-            color: AppColors.primary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
           textAlign: TextAlign.center,
@@ -349,7 +347,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         Text(
           l10n.forgotPasswordSubtitle,
           style: AppTypography.bodyMd.copyWith(
-            color: AppColors.onSurfaceVariant,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           textAlign: TextAlign.center,
         ),
@@ -368,7 +366,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         child: Text(
           context.l10n.devOtpBanner(_currentDevOtp ?? ''),
           style: AppTypography.bodyLg.copyWith(
-            color: AppColors.primary,
+            color: Theme.of(context).colorScheme.primary,
             fontWeight: FontWeight.bold,
           ),
           textAlign: TextAlign.center,
@@ -385,7 +383,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           child: Text(
             "${l10n.signupHasAccount} ${l10n.signupSignIn}",
             style: AppTypography.bodyMd.copyWith(
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.w600,
             ),
           ),

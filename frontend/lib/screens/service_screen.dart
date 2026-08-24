@@ -65,8 +65,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
         owner.services.where((s) => s['tenant_id'] == user.id).toList();
 
     return AppShell(
-      title: l10n.ownerConfigTitle,
-      backgroundColor: AppColors.scaffoldBackground,
+      title: l10n.myServicesTitle,
       body: RefreshIndicator(
         onRefresh: _loadServices,
         child: owner.isLoading && myServices.isEmpty
@@ -117,8 +116,9 @@ class _ServiceScreenState extends State<ServiceScreen> {
             : null,
         backgroundColor:
             isKycApproved ? AppColors.secondary : AppColors.outline,
-        foregroundColor:
-            isKycApproved ? AppColors.onSecondary : AppColors.surface,
+        foregroundColor: isKycApproved
+            ? AppColors.onSecondary
+            : Theme.of(context).colorScheme.surface,
         tooltip: isKycApproved ? l10n.addService : l10n.kycPending,
         child: const Icon(Icons.add),
       ),
@@ -133,14 +133,14 @@ class _ServiceScreenState extends State<ServiceScreen> {
           context.l10n.serviceMgmtHeader,
           style: AppTypography.headlineLgMobile.copyWith(
             fontWeight: FontWeight.bold,
-            color: AppColors.primary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: AppSpacing.xxs),
         Text(
           context.l10n.serviceMgmtSubtitle,
           style: AppTypography.bodyMd.copyWith(
-            color: AppColors.onSurfaceVariant,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -149,7 +149,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
 
   Widget _buildKycBanner() {
     return ThemedPanel(
-        color: AppColors.surfaceContainerLow,
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
           color: AppColors.outlineVariant.withValues(alpha: 0.5),
@@ -173,14 +173,14 @@ class _ServiceScreenState extends State<ServiceScreen> {
                     context.l10n.verificationRequiredHeader,
                     style: AppTypography.titleMd.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.onSurface,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xxs),
                   Text(
                     context.l10n.kycRequiredDesc,
                     style: AppTypography.bodyMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -253,15 +253,15 @@ class _ServiceScreenState extends State<ServiceScreen> {
                       name,
                       style: AppTypography.titleMd.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: AppSpacing.xxs),
                     Row(
                       children: [
-                        const ThemedPanel(
-                            color: AppColors.success,
+                        ThemedPanel(
+                            color: context.semanticColors.success,
                             shape: BoxShape.circle,
                             width: 8,
                             height: 8),
@@ -269,7 +269,8 @@ class _ServiceScreenState extends State<ServiceScreen> {
                         Text(
                           AppTypography.uppercaseLabel(categoryLabel),
                           style: AppTypography.caption.copyWith(
-                            color: AppColors.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.5,
                           ),
@@ -288,7 +289,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
 
           // Rates Box (Base Rate + Per KM)
           ThemedPanel(
-              color: AppColors.surfaceContainerLow,
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(AppRadius.sm),
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md,
@@ -303,7 +304,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                       Text(
                         context.l10n.baseRateBadge,
                         style: AppTypography.caption.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.5,
                         ),
@@ -313,7 +314,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                         "\$${basePrice.toStringAsFixed(2)}",
                         style: AppTypography.titleMd.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ],
@@ -329,7 +330,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                       Text(
                         context.l10n.perKmBadge,
                         style: AppTypography.caption.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.5,
                         ),
@@ -339,7 +340,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                         "\$${pricePerKm.toStringAsFixed(2)}",
                         style: AppTypography.titleMd.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ],

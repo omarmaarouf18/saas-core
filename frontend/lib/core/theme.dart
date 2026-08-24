@@ -89,11 +89,27 @@ class AppColors {
   static const Color surfaceContainerHighestDark = Color(0xFF475569);
   static const Color onSurfaceVariantDark =
       Color(0xFFCBD5E1); // Light Slate subtitle text
-  static const Color outlineDark = Color(0xFF64748B); // Slate border
+  // Border hierarchy (both pass >= 3:1 UI-component contrast on every dark
+  // surface incl. #1E293B containers; variant stays subtler than outline):
+  // #7C8DA6 = 5.71/5.29/4.33 and #64748B = 4.06/3.75/3.07 on
+  // scaffold/surface/container. (#475569 previously failed at 2.36:1.)
+  static const Color outlineDark = Color(0xFF7C8DA6); // Slate border
   static const Color outlineVariantDark =
-      Color(0xFF475569); // Darker slate divider
+      Color(0xFF64748B); // Subtler slate divider
   static const Color errorDark = Color(0xFFF87171); // High contrast Red
   static const Color onErrorDark = Color(0xFF0F172A);
+
+  // Dark-mode container pair for error states. The light-mode pair above
+  // (#FFDAD6/#93000A) renders as a washed-out pink block on dark surfaces.
+  // #FFDAD6 on #5C1A22 = 10.00:1 (WCAG AA text).
+  static const Color errorContainerDark = Color(0xFF5C1A22);
+  static const Color onErrorContainerDark = Color(0xFFFFDAD6);
+
+  // Dark-tuned semantic status trio (AA >= 4.5:1 on every dark surface;
+  // the light-mode constants above collapse to ~2.3-3.9:1 here).
+  static const Color successDark = Color(0xFF4ADE80); // Emerald-400
+  static const Color warningDark = Color(0xFFFBBF24); // Amber-400
+  static const Color dangerDark = Color(0xFFF87171); // Red-400
 }
 
 // Backwards-compatible global constants
@@ -353,12 +369,27 @@ final ThemeData quickDeliveryTheme = ThemeData(
     brightness: Brightness.light,
     primary: AppColors.primary,
     onPrimary: AppColors.onPrimary,
+    primaryContainer: AppColors.primaryContainer,
+    onPrimaryContainer: AppColors.onPrimaryContainer,
     secondary: AppColors.secondary,
     onSecondary: AppColors.onSecondary,
+    secondaryContainer: AppColors.secondaryContainer,
+    onSecondaryContainer: AppColors.onSecondaryContainer,
     error: AppColors.error,
     onError: AppColors.onError,
+    errorContainer: AppColors.errorContainer,
+    onErrorContainer: AppColors.onErrorContainer,
     surface: AppColors.surface,
     onSurface: AppColors.onSurface,
+    surfaceDim: AppColors.surfaceDim,
+    surfaceContainerLowest: AppColors.surfaceContainerLowest,
+    surfaceContainerLow: AppColors.surfaceContainerLow,
+    surfaceContainer: AppColors.surfaceContainer,
+    surfaceContainerHigh: AppColors.surfaceContainerHigh,
+    surfaceContainerHighest: AppColors.surfaceContainerHighest,
+    onSurfaceVariant: AppColors.onSurfaceVariant,
+    outline: AppColors.outline,
+    outlineVariant: AppColors.outlineVariant,
   ),
   scaffoldBackgroundColor: AppColors.scaffoldBackground,
   appBarTheme: const AppBarTheme(
@@ -423,6 +454,7 @@ final ThemeData quickDeliveryTheme = ThemeData(
       ),
     ),
   ),
+  extensions: const [AppSemanticColors.light],
 );
 
 // Hand-crafted dark mode color scheme (WCAG AA compliant contrast ratios >= 4.5:1 for text, >= 3:1 for controls)
@@ -448,6 +480,8 @@ const ColorScheme quickDeliveryDarkColorScheme = ColorScheme.dark(
   outlineVariant: AppColors.outlineVariantDark,
   error: AppColors.errorDark,
   onError: AppColors.onErrorDark,
+  errorContainer: AppColors.errorContainerDark,
+  onErrorContainer: AppColors.onErrorContainerDark,
 );
 
 final ThemeData quickDeliveryDarkTheme = ThemeData(
@@ -516,4 +550,64 @@ final ThemeData quickDeliveryDarkTheme = ThemeData(
       ),
     ),
   ),
+  extensions: const [AppSemanticColors.dark],
 );
+
+/// Brightness-aware semantic status colors. The static `AppColors`
+/// success/warning/danger constants are tuned for light surfaces; in dark
+/// mode they collapse to ~2.3-3.9:1 contrast (WCAG FAIL). Screens must read
+/// these via `context.semanticColors` so the active theme decides the value.
+@immutable
+class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
+  final Color success;
+  final Color warning;
+  final Color danger;
+
+  const AppSemanticColors({
+    required this.success,
+    required this.warning,
+    required this.danger,
+  });
+
+  static const light = AppSemanticColors(
+    success: AppColors.success,
+    warning: AppColors.warning,
+    danger: AppColors.danger,
+  );
+
+  static const dark = AppSemanticColors(
+    success: AppColors.successDark,
+    warning: AppColors.warningDark,
+    danger: AppColors.dangerDark,
+  );
+
+  @override
+  AppSemanticColors copyWith({Color? success, Color? warning, Color? danger}) =>
+      AppSemanticColors(
+        success: success ?? this.success,
+        warning: warning ?? this.warning,
+        danger: danger ?? this.danger,
+      );
+
+  @override
+  AppSemanticColors lerp(AppSemanticColors? other, double t) {
+    if (other == null) return this;
+    return AppSemanticColors(
+      success: Color.lerp(success, other.success, t)!,
+      warning: Color.lerp(warning, other.warning, t)!,
+      danger: Color.lerp(danger, other.danger, t)!,
+    );
+  }
+}
+
+extension AppSemanticColorsContext on BuildContext {
+  /// Brightness-aware semantic status colors (success/warning/danger).
+  AppSemanticColors get semanticColors {
+    final theme = Theme.of(this);
+    final ext = theme.extension<AppSemanticColors>();
+    return ext ??
+        (theme.brightness == Brightness.dark
+            ? AppSemanticColors.dark
+            : AppSemanticColors.light);
+  }
+}

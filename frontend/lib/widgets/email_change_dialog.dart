@@ -115,7 +115,7 @@ class _EmailChangeDialogState extends State<EmailChangeDialog> {
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.mdBorder,
       ),
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       child: SizedBox(
         width: dialogWidth,
         child: Padding(
@@ -158,7 +158,7 @@ class _EmailChangeDialogState extends State<EmailChangeDialog> {
                   Text(
                     l10n.enterNewEmailPrompt,
                     style: AppTypography.bodyMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -191,7 +191,7 @@ class _EmailChangeDialogState extends State<EmailChangeDialog> {
                   Text(
                     l10n.otpSentToEmail(_targetEmail ?? ''),
                     style: AppTypography.bodyMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   if (_devOtp != null && _devOtp!.isNotEmpty) ...[

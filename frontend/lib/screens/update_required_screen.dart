@@ -40,7 +40,6 @@ class UpdateRequiredScreen extends StatelessWidget {
     return PopScope(
       canPop: false, // Non-dismissible
       child: AppShell(
-        backgroundColor: AppColors.background,
         showBackButton: false,
         body: Center(
           child: SingleChildScrollView(
@@ -71,7 +70,7 @@ class UpdateRequiredScreen extends StatelessWidget {
                             titleText,
                             style: AppTypography.headlineLgMobile.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: AppColors.onSurface,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -79,7 +78,9 @@ class UpdateRequiredScreen extends StatelessWidget {
                           Text(
                             subtitleText,
                             style: AppTypography.bodyMd.copyWith(
-                              color: AppColors.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                               height: 1.4,
                             ),
                             textAlign: TextAlign.center,
@@ -87,7 +88,7 @@ class UpdateRequiredScreen extends StatelessWidget {
                           const SizedBox(height: AppSpacing.md),
 
                           // 3. What's New Feature List
-                          _buildWhatsNewList(l10n),
+                          _buildWhatsNewList(context, l10n),
                           const SizedBox(height: AppSpacing.md),
 
                           // 4. Version Details Matrix Card
@@ -101,7 +102,7 @@ class UpdateRequiredScreen extends StatelessWidget {
                           const SizedBox(height: AppSpacing.md),
 
                           // 5. Warning Notice Callout Banner
-                          _buildWarningBanner(l10n),
+                          _buildWarningBanner(context, l10n),
                           const SizedBox(height: AppSpacing.lg),
 
                           // 6. Primary Action CTA & Target URL
@@ -171,9 +172,9 @@ class UpdateRequiredScreen extends StatelessWidget {
         ));
   }
 
-  Widget _buildWhatsNewList(AppLocalizations l10n) {
+  Widget _buildWhatsNewList(BuildContext context, AppLocalizations l10n) {
     return ThemedPanel(
-        color: AppColors.surfaceContainerLow,
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(
           color: AppColors.outlineVariant.withValues(alpha: 0.3),
@@ -185,22 +186,25 @@ class UpdateRequiredScreen extends StatelessWidget {
             Text(
               l10n.whatsNewTitle,
               style: AppTypography.titleMd.copyWith(
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
             _buildFeatureItem(
+              context,
               icon: Icons.security,
               text: l10n.whatsNewSecurityItem,
             ),
             const SizedBox(height: AppSpacing.xs),
             _buildFeatureItem(
+              context,
               icon: Icons.speed,
               text: l10n.whatsNewRoutingItem,
             ),
             const SizedBox(height: AppSpacing.xs),
             _buildFeatureItem(
+              context,
               icon: Icons.bug_report,
               text: l10n.whatsNewBugFixesItem,
             ),
@@ -216,7 +220,7 @@ class UpdateRequiredScreen extends StatelessWidget {
     required String latVer,
   }) {
     return ThemedPanel(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(
           color: AppColors.outlineVariant.withValues(alpha: 0.3),
@@ -256,9 +260,10 @@ class UpdateRequiredScreen extends StatelessWidget {
         ));
   }
 
-  Widget _buildWarningBanner(AppLocalizations l10n) {
+  Widget _buildWarningBanner(BuildContext context, AppLocalizations l10n) {
     return ThemedPanel(
-        color: AppColors.errorContainer.withValues(alpha: 0.4),
+        color:
+            Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(
           color: AppColors.error.withValues(alpha: 0.3),
@@ -276,7 +281,7 @@ class UpdateRequiredScreen extends StatelessWidget {
               child: Text(
                 l10n.updateCannotContinueBody,
                 style: AppTypography.caption.copyWith(
-                  color: AppColors.onErrorContainer,
+                  color: Theme.of(context).colorScheme.onErrorContainer,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -309,7 +314,8 @@ class UpdateRequiredScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFeatureItem({
+  Widget _buildFeatureItem(
+    BuildContext context, {
     required IconData icon,
     required String text,
   }) {
@@ -326,7 +332,7 @@ class UpdateRequiredScreen extends StatelessWidget {
           child: Text(
             text,
             style: AppTypography.bodySm.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -346,13 +352,13 @@ class UpdateRequiredScreen extends StatelessWidget {
         Text(
           label,
           style: AppTypography.bodySm.copyWith(
-            color: AppColors.onSurfaceVariant,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
         ThemedPanel(
             color: isHighlight
                 ? AppColors.error.withValues(alpha: 0.12)
-                : AppColors.surfaceContainerHighest,
+                : Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(AppRadius.sm),
             border: isHighlight
                 ? Border.all(
@@ -368,7 +374,9 @@ class UpdateRequiredScreen extends StatelessWidget {
               value,
               style: AppTypography.labelLg.copyWith(
                 fontWeight: FontWeight.bold,
-                color: isHighlight ? AppColors.error : AppColors.onSurface,
+                color: isHighlight
+                    ? AppColors.error
+                    : Theme.of(context).colorScheme.onSurface,
               ),
             )),
       ],

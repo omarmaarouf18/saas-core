@@ -43,8 +43,7 @@ class _WalletScreenState extends State<WalletScreen> {
     final ownerProvider = Provider.of<OwnerProvider>(context);
 
     return AppShell(
-      backgroundColor: AppColors.scaffoldBackground,
-      showBackButton: false,
+      title: l10n.walletMyWalletTitle,
       body: AnimatedSwitcher(
         duration: AppMotion.durationMedium,
         switchInCurve: AppMotion.curveStateChange,
@@ -110,7 +109,9 @@ class _WalletScreenState extends State<WalletScreen> {
                                     : "${ownerProvider.platformFeePercentage}"),
                             key: const Key('platform_fee_percentage_text'),
                             style: AppTypography.labelMd.copyWith(
-                              color: AppColors.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -132,28 +133,17 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Widget _buildHeader(AppLocalizations l10n) {
+    // Screen title lives in the AppBar now; the in-body heading would
+    // duplicate it, so only the subtitle stays next to the deposit action.
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.walletMyWalletTitle,
-                style: AppTypography.headlineLgMobile.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xxs),
-              Text(
-                l10n.walletCorporateSubtitle,
-                style: AppTypography.bodyMd.copyWith(
-                  color: AppColors.onSurfaceVariant,
-                ),
-              ),
-            ],
+          child: Text(
+            l10n.walletCorporateSubtitle,
+            style: AppTypography.bodyMd.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
@@ -194,7 +184,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 ),
               ),
               ThemedPanel(
-                  color: AppColors.success.withValues(alpha: 0.2),
+                  color: context.semanticColors.success.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(AppRadius.full),
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.baseSm,
@@ -203,16 +193,16 @@ class _WalletScreenState extends State<WalletScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.trending_up,
-                        color: AppColors.success,
+                        color: context.semanticColors.success,
                         size: 14,
                       ),
                       const SizedBox(width: AppSpacing.xxs),
                       Text(
                         l10n.balanceTrendChipMock,
                         style: AppTypography.caption.copyWith(
-                          color: AppColors.success,
+                          color: context.semanticColors.success,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -269,7 +259,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 value: l10n.creditsAmountLine(
                     ownerProvider.withdrawableBalance.toStringAsFixed(2)),
                 icon: Icons.check_circle_outline_rounded,
-                iconColor: AppColors.success,
+                iconColor: context.semanticColors.success,
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -279,7 +269,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 value: l10n.creditsAmountLine(
                     ownerProvider.escrowBalance.toStringAsFixed(2)),
                 icon: Icons.lock_outline_rounded,
-                iconColor: AppColors.warning,
+                iconColor: context.semanticColors.warning,
               ),
             ),
           ],
@@ -405,8 +395,8 @@ class _WalletScreenState extends State<WalletScreen> {
             const SizedBox(height: AppSpacing.xxs),
             Text(
               payout.accountDetails!,
-              style: AppTypography.labelMd
-                  .copyWith(color: AppColors.onSurfaceVariant),
+              style: AppTypography.labelMd.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
           if (payout.status.toLowerCase() == 'rejected' &&
@@ -452,11 +442,11 @@ class _WalletScreenState extends State<WalletScreen> {
     switch (type) {
       case 'deposit':
         icon = Icons.add_circle_outline_rounded;
-        color = AppColors.success;
+        color = context.semanticColors.success;
         break;
       case 'escrow_lock':
         icon = Icons.lock_outline_rounded;
-        color = AppColors.warning;
+        color = context.semanticColors.warning;
         break;
       case 'escrow_release':
         icon = Icons.lock_open_rounded;
@@ -464,7 +454,7 @@ class _WalletScreenState extends State<WalletScreen> {
         break;
       case 'refund':
         icon = Icons.replay_rounded;
-        color = AppColors.success;
+        color = context.semanticColors.success;
         break;
       case 'fee_deduction':
         icon = Icons.remove_circle_outline_rounded;
@@ -524,14 +514,15 @@ class _WalletScreenState extends State<WalletScreen> {
             "${isPositive ? '+' : '-'}${amount.toStringAsFixed(2)}",
             style: AppTypography.bodyLg.copyWith(
               fontWeight: FontWeight.bold,
-              color: isPositive ? AppColors.success : AppColors.error,
+              color:
+                  isPositive ? context.semanticColors.success : AppColors.error,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
             context.l10n.ledgerBalanceLine(balanceAfter.toStringAsFixed(2)),
             style: AppTypography.labelMd.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],

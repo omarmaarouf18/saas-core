@@ -26,7 +26,7 @@ class ThemedSectionHeader extends StatelessWidget {
               Text(
                 title,
                 style: AppTypography.titleMd.copyWith(
-                  color: AppColors.primary,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -35,7 +35,7 @@ class ThemedSectionHeader extends StatelessWidget {
                 Text(
                   subtitle!,
                   style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

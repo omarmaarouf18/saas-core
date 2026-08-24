@@ -253,7 +253,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
             Text(
               details,
               style: AppTypography.bodyMd.copyWith(
-                color: AppColors.onSurface,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -265,7 +265,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                 Text(
                   l10n.ownerHistoryActorId(actorId),
                   style: AppTypography.labelMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               Text(
@@ -378,7 +378,8 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                         child: Text(
                           l10n.noJobsMatchFilter,
                           style: AppTypography.bodyMd.copyWith(
-                            color: AppColors.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -428,7 +429,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                   : '',
             ),
             style: AppTypography.bodyMd.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           if (isCancelled &&
@@ -524,11 +525,11 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
     switch (rawType) {
       case 'deposit':
         icon = Icons.add_circle_outline_rounded;
-        color = AppColors.success;
+        color = context.semanticColors.success;
         break;
       case 'escrow_lock':
         icon = Icons.lock_outline_rounded;
-        color = AppColors.warning;
+        color = context.semanticColors.warning;
         break;
       case 'escrow_release':
         icon = Icons.lock_open_rounded;
@@ -536,7 +537,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
         break;
       case 'refund':
         icon = Icons.replay_rounded;
-        color = AppColors.success;
+        color = context.semanticColors.success;
         break;
       case 'fee_deduction':
         icon = Icons.remove_circle_outline_rounded;
@@ -585,7 +586,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                     jobId.isNotEmpty ? ' • Job #$jobId' : '',
                   ),
                   style: AppTypography.labelMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxs),
@@ -602,7 +603,8 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
             "${isPositive ? '+' : '-'}\$${amount.toStringAsFixed(2)}",
             style: AppTypography.titleMd.copyWith(
               fontWeight: FontWeight.bold,
-              color: isPositive ? AppColors.success : AppColors.error,
+              color:
+                  isPositive ? context.semanticColors.success : AppColors.error,
             ),
           ),
         ],

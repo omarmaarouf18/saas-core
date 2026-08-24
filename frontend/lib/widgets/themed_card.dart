@@ -37,6 +37,7 @@ class ThemedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     // Resolve border based on borderSide override or card variant
     final Border resolvedBorder;
     if (borderSide != null) {
@@ -51,13 +52,13 @@ class ThemedCard extends StatelessWidget {
           break;
         case ThemedCardVariant.elevated:
           resolvedBorder = Border.all(
-            color: AppColors.outlineVariant.withValues(alpha: 0.2),
+            color: scheme.outlineVariant.withValues(alpha: 0.2),
             width: 1,
           );
           break;
         case ThemedCardVariant.normal:
           resolvedBorder = Border.all(
-            color: AppColors.outlineVariant.withValues(alpha: 0.3),
+            color: scheme.outlineVariant.withValues(alpha: 0.3),
             width: 1,
           );
           break;
@@ -116,7 +117,7 @@ class ThemedCard extends StatelessWidget {
 
     final cardContent = Container(
       decoration: BoxDecoration(
-        color: color ?? AppColors.surface,
+        color: color ?? scheme.surface,
         borderRadius: cardRadius,
         border: resolvedBorder,
         boxShadow: resolvedShadow,

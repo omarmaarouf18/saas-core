@@ -329,7 +329,6 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
 
     return FormScreenTemplate(
       title: l10n.ownerConfigTitle,
-      backgroundColor: AppColors.scaffoldBackground,
       padding: const EdgeInsets.all(AppSpacing.lg),
       body: !_isInitialized
           ? Center(child: ThemedLoadingIndicator(message: l10n.loading))
@@ -408,7 +407,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                     Text(
                       context.l10n.sectionBusinessIdentitySub,
                       style: AppTypography.caption.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -424,7 +423,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
           Row(
             children: [
               ThemedPanel(
-                  color: AppColors.surfaceContainerHigh,
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(AppRadius.full),
                   border: Border.all(
                     color: AppColors.outlineVariant,
@@ -467,7 +466,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.bodyMd.copyWith(
                         color: _photoUrlController.text.isNotEmpty
-                            ? AppColors.onSurface
+                            ? Theme.of(context).colorScheme.onSurface
                             : AppColors.outline,
                       ),
                     ),
@@ -499,7 +498,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
             l10n.ownerConfigCategoryLabel,
             style: AppTypography.labelMd.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.onSurface,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -510,7 +509,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                 : 'delivery',
             decoration: InputDecoration(
               filled: true,
-              fillColor: AppColors.surface,
+              fillColor: Theme.of(context).colorScheme.surface,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md,
                 vertical: AppSpacing.sm,
@@ -575,7 +574,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                     Text(
                       context.l10n.sectionLocationOperationsSub,
                       style: AppTypography.caption.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -597,49 +596,71 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
           Text(
             l10n.ownerConfigLocationLabel,
             style: AppTypography.labelLg.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
           ThemedPanel(
-              color: AppColors.surfaceContainerLow,
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(
                 color: AppColors.outlineVariant.withValues(alpha: 0.4),
               ),
               padding: const EdgeInsets.all(AppSpacing.md),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.location_on_outlined,
-                    color: AppColors.primary,
-                    size: 24,
+              child: LayoutBuilder(builder: (context, constraints) {
+                final wide = constraints.maxWidth > 420;
+                final coordinateText = Text(
+                  (_latitude != null && _longitude != null)
+                      ? "Lat: ${_latitude!.toStringAsFixed(4)}, Lon: ${_longitude!.toStringAsFixed(4)}"
+                      : l10n.noLocationSelectedLabel,
+                  key: const Key('owner_config_location_text'),
+                  style: AppTypography.bodyMd.copyWith(
+                    color: (_latitude != null && _longitude != null)
+                        ? Theme.of(context).colorScheme.onSurface
+                        : AppColors.outline,
                   ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      (_latitude != null && _longitude != null)
-                          ? "Lat: ${_latitude!.toStringAsFixed(4)}, Lon: ${_longitude!.toStringAsFixed(4)}"
-                          : l10n.noLocationSelectedLabel,
-                      key: const Key('owner_config_location_text'),
-                      style: AppTypography.bodyMd.copyWith(
-                        color: (_latitude != null && _longitude != null)
-                            ? AppColors.onSurface
-                            : AppColors.outline,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  SecondaryButton(
-                    key: const Key('owner_config_location_picker_button'),
-                    icon: Icons.map_outlined,
-                    text: l10n.customerMarketplaceChooseMap,
-                    isOutlined: true,
-                    isFullWidth: false,
-                    onPressed: () => _openLocationPickerDialog(context),
-                  ),
-                ],
-              )),
+                );
+                final pickerButton = SecondaryButton(
+                  key: const Key('owner_config_location_picker_button'),
+                  icon: Icons.map_outlined,
+                  text: l10n.customerMarketplaceChooseMap,
+                  isOutlined: true,
+                  isFullWidth: !wide,
+                  onPressed: () => _openLocationPickerDialog(context),
+                );
+                return wide
+                    ? Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on_outlined,
+                            color: AppColors.primary,
+                            size: 24,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(child: coordinateText),
+                          const SizedBox(width: AppSpacing.sm),
+                          pickerButton,
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on_outlined,
+                                color: AppColors.primary,
+                                size: 24,
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(child: coordinateText),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          pickerButton,
+                        ],
+                      );
+              })),
           const SizedBox(height: AppSpacing.md),
           ThemedTextField(
             key: const Key('owner_config_working_hours_field'),
@@ -708,7 +729,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                     Text(
                       context.l10n.sectionPricingStructureSub,
                       style: AppTypography.caption.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -770,7 +791,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
           if (est10km > 0) ...[
             const SizedBox(height: AppSpacing.md),
             ThemedPanel(
-                color: AppColors.surfaceContainerLow,
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md,
@@ -782,7 +803,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                     Text(
                       context.l10n.estDelivery10kmLabel,
                       style: AppTypography.labelMd.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     Text(
