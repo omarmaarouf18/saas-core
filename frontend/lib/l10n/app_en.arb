@@ -345,6 +345,8 @@
   "ownerHomeOwnerJobs": "Owner Jobs",
   "ownerHomeNoJobsTitle": "No Owner Jobs Found",
   "ownerHomeNoJobsDesc": "You currently have no jobs registered under your tenant account.",
+  "ownerHomeViewAllJobs": "VIEW ALL JOBS",
+  "ownerHomeFleetSub": "Track couriers live",
   "ownerHomeJobId": "Job #{id}",
   "@ownerHomeJobId": {
     "placeholders": {
@@ -1111,6 +1113,8 @@
   "updateCannotContinueBody": "You cannot continue using the app until this update is installed.",
   "updateNowBtn": "Update Now",
   "searchServicesTooltip": "Search services",
+  "marketplaceFiltersTooltip": "More filters",
+  "jobCardDetailsToggle": "Details",
   "ratingStarSemantic": "Rate {n} of 5 stars",
   "@ratingStarSemantic": {
     "placeholders": {

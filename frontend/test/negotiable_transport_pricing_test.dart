@@ -162,6 +162,8 @@ void main() {
     await tester.pump();
 
     expect(find.text('Price Negotiation'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('negotiation_panel_toggle')));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('counter_offer_input')), findsOneWidget);
 
     await tester.scrollUntilVisible(
@@ -219,6 +221,8 @@ void main() {
     await tester.pump();
     await tester.pump();
 
+    await tester.tap(find.byKey(const Key('negotiation_panel_toggle')));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('incoming_proposal_card')), findsOneWidget);
     expect(find.byKey(const Key('proposed_price_text')), findsOneWidget);
     expect(find.text('\$25.00'), findsWidgets);
@@ -265,6 +269,8 @@ void main() {
     await tester.pump();
     await tester.pump();
 
+    await tester.tap(find.byKey(const Key('negotiation_panel_toggle')));
+    await tester.pumpAndSettle();
     await tester
         .ensureVisible(find.byKey(const Key('decline_proposal_button')));
     await tester.tap(find.byKey(const Key('decline_proposal_button')));
@@ -311,6 +317,8 @@ void main() {
     await tester.pump();
     await tester.pump();
 
+    await tester.tap(find.byKey(const Key('negotiation_panel_toggle')));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const Key('accept_proposal_button')));
     await tester.tap(find.byKey(const Key('accept_proposal_button')));
     await tester.pump();

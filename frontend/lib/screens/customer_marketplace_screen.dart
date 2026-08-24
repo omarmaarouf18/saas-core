@@ -222,6 +222,9 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
   }
 
   Widget _buildFilterControlCard(AppLocalizations l10n) {
+    // Declutter V2: single quick-filter row (Category / Sort / Filters).
+    // The Nearby toggle, map location picker, and radius input live in the
+    // Filters bottom sheet.
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.md,
@@ -233,191 +236,162 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
         elevation: AppElevation.shadowLevel1List,
         borderRadius: AppRadius.md,
         padding: AppSpacing.md,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Row(
           children: [
-            // Nearby Distance Filter Toggle Row
-            Row(
-              children: [
-                Switch(
-                  key: const Key('nearby_filter_switch'),
-                  value: _nearBy,
-                  activeTrackColor: Theme.of(context).colorScheme.primary,
-                  onChanged: (val) {
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                initialValue: _selectedCategory,
+                isExpanded: true,
+                style: AppTypography.bodyMd.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
+                  labelText: l10n.customerMarketplaceFilterCategory,
+                  border: OutlineInputBorder(
+                    borderRadius: AppRadius.defaultBorder,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
+                  ),
+                ),
+                items: [
+                  DropdownMenuItem(
+                      value: 'all',
+                      child: Text(l10n.customerHomeCatBrowseAll)),
+                  ...serviceCategoryLabels.entries.map(
+                    (entry) => DropdownMenuItem(
+                      value: entry.key,
+                      child: Text(entry.value),
+                    ),
+                  ),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
                     setState(() {
-                      _nearBy = val;
+                      _selectedCategory = val;
+                    });
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                initialValue: _sortBy,
+                isExpanded: true,
+                style: AppTypography.bodyMd.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
+                  labelText: l10n.sortByLabel,
+                  border: OutlineInputBorder(
+                    borderRadius: AppRadius.defaultBorder,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
+                  ),
+                ),
+                items: [
+                  DropdownMenuItem(
+                      value: 'price', child: Text(l10n.filterSortPrice)),
+                  DropdownMenuItem(
+                      value: 'none', child: Text(l10n.filterSortNone)),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _sortBy = val;
                     });
                     _loadServices();
-                  },
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                Text(
-                  l10n.customerMarketplaceFilterNearby,
-                  style: AppTypography.bodyMd.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+                  }
+                },
+              ),
             ),
-            const SizedBox(height: AppSpacing.xs),
-            // Location Picker & Radius row
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: SecondaryButton(
-                    key: const Key('choose_location_map_button'),
-                    isOutlined: true,
-                    icon: Icons.map_outlined,
-                    text: l10n.customerMarketplaceChooseMap,
-                    onPressed: () => _openLocationPickerDialog(context),
-                  ),
+            const SizedBox(width: AppSpacing.sm),
+            IconButton(
+              key: const Key('marketplace_filters_button'),
+              tooltip: l10n.marketplaceFiltersTooltip,
+              onPressed: _showFiltersSheet,
+              style: IconButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: AppColors.onPrimary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppRadius.defaultBorder,
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  flex: 1,
-                  child: ThemedTextField(
-                    controller: _radiusController,
-                    labelText: l10n.customerMarketplaceFilterRadius,
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            // Category & Sort Dropdowns Row
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _selectedCategory,
-                    isExpanded: true,
-                    style: AppTypography.bodyMd.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    decoration: InputDecoration(
-                      labelText: l10n.customerMarketplaceFilterCategory,
-                      labelStyle: AppTypography.labelLg.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.md,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: AppRadius.defaultBorder,
-                        borderSide: const BorderSide(
-                          color: AppColors.outlineVariant,
-                          width: 1,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: AppRadius.defaultBorder,
-                        borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                    items: [
-                      DropdownMenuItem(
-                          value: 'all',
-                          child: Text(l10n.customerHomeCatBrowseAll)),
-                      ...serviceCategoryLabels.entries.map(
-                        (entry) => DropdownMenuItem(
-                          value: entry.key,
-                          child: Text(entry.value),
-                        ),
-                      ),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedCategory = val;
-                        });
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  flex: 2,
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _sortBy,
-                    isExpanded: true,
-                    style: AppTypography.bodyMd.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    decoration: InputDecoration(
-                      labelText: l10n.sortByLabel,
-                      labelStyle: AppTypography.labelLg.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.md,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: AppRadius.defaultBorder,
-                        borderSide: const BorderSide(
-                          color: AppColors.outlineVariant,
-                          width: 1,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: AppRadius.defaultBorder,
-                        borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                    items: [
-                      DropdownMenuItem(
-                          value: 'price', child: Text(l10n.filterSortPrice)),
-                      DropdownMenuItem(
-                          value: 'none', child: Text(l10n.filterSortNone)),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _sortBy = val;
-                        });
-                        _loadServices();
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                // A8/B3-F1+F2: shared icon button with semantics — replaces a
-                // raw ElevatedButton that bypassed the debounce machinery and
-                // exposed no screen-reader label.
-                IconButton(
-                  key: const Key('marketplace_search_button'),
-                  tooltip: l10n.searchServicesTooltip,
-                  onPressed: _loadServices,
-                  style: IconButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: AppColors.onPrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.defaultBorder,
-                    ),
-                  ),
-                  icon: const Icon(Icons.search),
-                ),
-              ],
+              ),
+              icon: const Icon(Icons.tune),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _showFiltersSheet() {
+    // Declutter V2: secondary filter controls (nearby toggle, map location
+    // picker, radius) moved into a bottom sheet.
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      builder: (sheetContext) {
+        final l10n = context.l10n;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Switch(
+                      key: const Key('nearby_filter_switch'),
+                      value: _nearBy,
+                      activeTrackColor:
+                          Theme.of(context).colorScheme.primary,
+                      onChanged: (val) {
+                        Navigator.pop(sheetContext);
+                        setState(() => _nearBy = val);
+                        _loadServices();
+                      },
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      l10n.customerMarketplaceFilterNearby,
+                      style: AppTypography.bodyMd.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                SecondaryButton(
+                  key: const Key('choose_location_map_button'),
+                  isOutlined: true,
+                  icon: Icons.map_outlined,
+                  text: l10n.customerMarketplaceChooseMap,
+                  onPressed: () {
+                    Navigator.pop(sheetContext);
+                    _openLocationPickerDialog(context);
+                  },
+                ),
+                const SizedBox(height: AppSpacing.md),
+                ThemedTextField(
+                  controller: _radiusController,
+                  labelText: l10n.customerMarketplaceFilterRadius,
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -511,37 +485,17 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            const Divider(
-              height: 1,
-              color: AppColors.outlineVariant,
-            ),
-            const SizedBox(height: AppSpacing.sm),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.pricingBreakdownLine("${service.tenantBasePrice}",
-                            "${service.tenantPricePerKM}"),
-                        style: AppTypography.caption.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: AppSpacing.xxs),
-                      Text(
-                        l10n.estPriceLine("${service.finalPrice}"),
-                        style: AppTypography.titleMd.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    l10n.estPriceLine("${service.finalPrice}"),
+                    style: AppTypography.titleMd.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),

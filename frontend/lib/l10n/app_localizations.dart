@@ -1569,6 +1569,18 @@ abstract class AppLocalizations {
   /// **'You currently have no jobs registered under your tenant account.'**
   String get ownerHomeNoJobsDesc;
 
+  /// No description provided for @ownerHomeViewAllJobs.
+  ///
+  /// In en, this message translates to:
+  /// **'VIEW ALL JOBS'**
+  String get ownerHomeViewAllJobs;
+
+  /// No description provided for @ownerHomeFleetSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Track couriers live'**
+  String get ownerHomeFleetSub;
+
   /// No description provided for @ownerHomeJobId.
   ///
   /// In en, this message translates to:
@@ -4148,6 +4160,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search services'**
   String get searchServicesTooltip;
+
+  /// No description provided for @marketplaceFiltersTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'More filters'**
+  String get marketplaceFiltersTooltip;
+
+  /// No description provided for @jobCardDetailsToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get jobCardDetailsToggle;
 
   /// No description provided for @ratingStarSemantic.
   ///

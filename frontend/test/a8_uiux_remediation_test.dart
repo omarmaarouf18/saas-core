@@ -164,6 +164,8 @@ void main() {
       // A RenderFlex overflow throws in widget tests; a clean pump proves
       // the LayoutBuilder stack path holds at sub-360dp widths.
       await pumpJobStatus(tester, const Size(320, 900));
+      await tester.tap(find.byKey(const Key('negotiation_panel_toggle')));
+      await tester.pump();
       expect(find.byKey(const Key('submit_proposal_button')), findsOneWidget);
       await tester.binding.setSurfaceSize(null);
     });
@@ -171,6 +173,8 @@ void main() {
     testWidgets('renders without overflow at 360dp (stacked threshold edge)',
         (tester) async {
       await pumpJobStatus(tester, const Size(360, 900));
+      await tester.tap(find.byKey(const Key('negotiation_panel_toggle')));
+      await tester.pump();
       expect(find.byKey(const Key('submit_proposal_button')), findsOneWidget);
       await tester.binding.setSurfaceSize(null);
     });

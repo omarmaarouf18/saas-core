@@ -785,6 +785,12 @@ class AppLocalizationsAr extends AppLocalizations {
       'ليس لديك أي طلبات مسجلة تحت حساب نشاطك التجاري حالياً.';
 
   @override
+  String get ownerHomeViewAllJobs => 'عرض كل المهام';
+
+  @override
+  String get ownerHomeFleetSub => 'تتبع المناديب مباشرة';
+
+  @override
   String ownerHomeJobId(String id) {
     return 'طلب #$id';
   }
@@ -2207,6 +2213,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get searchServicesTooltip => 'ابحث عن خدمات';
+
+  @override
+  String get marketplaceFiltersTooltip => 'فلاتر إضافية';
+
+  @override
+  String get jobCardDetailsToggle => 'التفاصيل';
 
   @override
   String ratingStarSemantic(int n) {

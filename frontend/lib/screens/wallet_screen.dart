@@ -10,7 +10,6 @@ import '../widgets/deposit_funds_dialog.dart';
 import '../widgets/info_list_tile.dart';
 import '../widgets/payout_request_dialog.dart';
 import '../widgets/primary_button.dart';
-import '../widgets/stat_card.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/skeleton_loader.dart';
@@ -235,44 +234,71 @@ class _WalletScreenState extends State<WalletScreen> {
     OwnerProvider ownerProvider,
     AppLocalizations l10n,
   ) {
+    // Declutter V2: the three full StatCards collapse into one slim inline
+    // breakdown row (the hero already carries the headline balances).
+    return ThemedCard(
+      elevation: AppElevation.shadowLevel1List,
+      borderRadius: AppRadius.md,
+      padding: AppSpacing.md,
+      child: Row(
+        children: [
+          Expanded(
+            child: _breakdownItem(
+              l10n.walletTotalBalance,
+              ownerProvider.walletBalance.toStringAsFixed(0),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Container(
+              width: 1,
+              height: 28,
+              color: AppColors.outlineVariant.withValues(alpha: 0.4)),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: _breakdownItem(
+              l10n.walletWithdrawable,
+              ownerProvider.withdrawableBalance.toStringAsFixed(0),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Container(
+              width: 1,
+              height: 28,
+              color: AppColors.outlineVariant.withValues(alpha: 0.4)),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: _breakdownItem(
+              l10n.walletLockedEscrow,
+              ownerProvider.escrowBalance.toStringAsFixed(0),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _breakdownItem(String label, String value) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: StatCard(
-                label: l10n.walletTotalBalance,
-                value: l10n.creditsAmountLine(
-                    ownerProvider.walletBalance.toStringAsFixed(2)),
-                icon: Icons.account_balance_rounded,
-                iconColor: AppColors.primary,
-              ),
-            ),
-          ],
+        Text(
+          value,
+          style: AppTypography.bodyLg.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: AppSpacing.md),
-        Row(
-          children: [
-            Expanded(
-              child: StatCard(
-                label: l10n.walletWithdrawable,
-                value: l10n.creditsAmountLine(
-                    ownerProvider.withdrawableBalance.toStringAsFixed(2)),
-                icon: Icons.check_circle_outline_rounded,
-                iconColor: context.semanticColors.success,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: StatCard(
-                label: l10n.walletLockedEscrow,
-                value: l10n.creditsAmountLine(
-                    ownerProvider.escrowBalance.toStringAsFixed(2)),
-                icon: Icons.lock_outline_rounded,
-                iconColor: context.semanticColors.warning,
-              ),
-            ),
-          ],
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          label,
+          style: AppTypography.caption.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
         ),
       ],
     );

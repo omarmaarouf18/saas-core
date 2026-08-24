@@ -792,6 +792,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'You currently have no jobs registered under your tenant account.';
 
   @override
+  String get ownerHomeViewAllJobs => 'VIEW ALL JOBS';
+
+  @override
+  String get ownerHomeFleetSub => 'Track couriers live';
+
+  @override
   String ownerHomeJobId(String id) {
     return 'Job #$id';
   }
@@ -2244,6 +2250,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchServicesTooltip => 'Search services';
+
+  @override
+  String get marketplaceFiltersTooltip => 'More filters';
+
+  @override
+  String get jobCardDetailsToggle => 'Details';
 
   @override
   String ratingStarSemantic(int n) {

@@ -17,7 +17,6 @@ import '../widgets/secondary_button.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
-import '../widgets/themed_section_header.dart';
 import '../widgets/themed_success_banner.dart';
 import '../widgets/themed_text_field.dart';
 import 'chat_screen.dart';
@@ -43,6 +42,9 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
   Timer? _pollingTimer;
   Timer? _countdownTimer;
   bool _isRefreshing = false;
+  // Declutter V2: collapsed-by-default fare details and negotiation panel.
+  bool _fareDetailsExpanded = false;
+  bool _negotiationExpanded = false;
   String? _resolvedUsername;
   String? _lastResolvedEmployeeId;
 
@@ -778,64 +780,91 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           const SizedBox(height: AppSpacing.md),
           const Divider(height: 1, color: AppColors.outlineVariant),
           const SizedBox(height: AppSpacing.sm),
-          // Payment method & fare details
-          Row(
-            children: [
-              Expanded(
-                child: ThemedPanel(
-                    color: Theme.of(context).colorScheme.surfaceContainerLow,
-                    borderRadius: AppRadius.smBorder,
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.l10n.paymentSectionHeader,
-                          style: AppTypography.caption.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
+          // Payment method & fare summary (declutter V2): one compact row;
+          // the itemized breakdown expands on demand.
+          InkWell(
+            key: const Key('fare_details_toggle'),
+            onTap: () =>
+                setState(() => _fareDetailsExpanded = !_fareDetailsExpanded),
+            borderRadius: AppRadius.smBorder,
+            child: ThemedPanel(
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                borderRadius: AppRadius.smBorder,
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Text(
+                            AppTypography.uppercaseLabel(
+                                _currentJob.paymentMethod),
+                            style: AppTypography.bodySm.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: AppSpacing.xxs),
-                        Text(
-                          AppTypography.uppercaseLabel(
-                              _currentJob.paymentMethod),
-                          style: AppTypography.bodySm.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
+                          const SizedBox(width: AppSpacing.sm),
+                          Text(
+                            context.l10n.totalFareLabel,
+                            style: AppTypography.caption.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
                           ),
-                        ),
-                      ],
-                    )),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      "\$${(_currentJob.agreedPrice ?? _currentJob.suggestedPrice ?? 0).toStringAsFixed(2)}",
+                      style: AppTypography.bodySm.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Icon(
+                      _fareDetailsExpanded
+                          ? Icons.expand_less
+                          : Icons.expand_more,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                )),
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: Column(
+                children: [
+                  _buildInfoRow(
+                    context.l10n.paymentSectionHeader,
+                    AppTypography.uppercaseLabel(_currentJob.paymentMethod),
+                  ),
+                  _buildInfoRow(
+                    context.l10n.totalFareLabel,
+                    "\$${(_currentJob.agreedPrice ?? _currentJob.suggestedPrice ?? 0).toStringAsFixed(2)}",
+                  ),
+                  if (_currentJob.proposedPrice != null)
+                    _buildInfoRow(
+                      context.l10n.proposedFareLabel,
+                      "\$${_currentJob.proposedPrice!.toStringAsFixed(2)}",
+                    ),
+                  if (_currentJob.lockedEscrowAmount != null)
+                    _buildInfoRow(
+                      context.l10n.reconciliationLockedEscrow,
+                      "\$${_currentJob.lockedEscrowAmount!.toStringAsFixed(2)}",
+                    ),
+                ],
               ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: ThemedPanel(
-                    color: Theme.of(context).colorScheme.surfaceContainerLow,
-                    borderRadius: AppRadius.smBorder,
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.l10n.totalFareLabel,
-                          style: AppTypography.caption.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xxs),
-                        Text(
-                          "\$${(_currentJob.agreedPrice ?? _currentJob.suggestedPrice ?? 0).toStringAsFixed(2)}",
-                          style: AppTypography.bodySm.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    )),
-              ),
-            ],
+            ),
+            crossFadeState: _fareDetailsExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: AppMotion.durationFast,
           ),
         ],
       ),
@@ -1017,6 +1046,9 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final currentUserId = auth.user?.id;
 
+    // Declutter V2: collapsed by default behind a compact CTA row; the full
+    // matrix (proposal comparison, counter-offer input) expands on demand.
+    final negotiationActive = status == 'awaiting_price_response' && !expired;
     return ThemedCard(
       elevation: AppElevation.shadowLevel2List,
       borderRadius: AppRadius.md,
@@ -1024,33 +1056,61 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ThemedSectionHeader(
-            title: l10n.priceNegotiationTitle,
-            trailing: (status == 'awaiting_price_response' && !expired)
-                ? ThemedPanel(
-                    color:
-                        context.semanticColors.warning.withValues(alpha: 0.15),
-                    borderRadius: AppRadius.smBorder,
-                    border: Border.all(color: context.semanticColors.warning),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm, vertical: AppSpacing.xs / 2),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.timer_outlined,
-                            size: 14, color: context.semanticColors.warning),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          _remainingTimeString,
-                          key: const Key('countdown_timer_text'),
-                          style: AppTypography.labelMd.copyWith(
-                            color: context.semanticColors.warning,
-                            fontWeight: FontWeight.bold,
+          InkWell(
+            key: const Key('negotiation_panel_toggle'),
+            onTap: () =>
+                setState(() => _negotiationExpanded = !_negotiationExpanded),
+            borderRadius: AppRadius.smBorder,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.handshake_outlined,
+                  size: 20,
+                  color: context.semanticColors.warning,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: Text(
+                    l10n.priceNegotiationTitle,
+                    style: AppTypography.titleMd.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                if (negotiationActive)
+                  ThemedPanel(
+                      color: context.semanticColors.warning
+                          .withValues(alpha: 0.15),
+                      borderRadius: AppRadius.smBorder,
+                      border: Border.all(color: context.semanticColors.warning),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: AppSpacing.xs / 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.timer_outlined,
+                              size: 14, color: context.semanticColors.warning),
+                          const SizedBox(width: AppSpacing.xs),
+                          Text(
+                            _remainingTimeString,
+                            key: const Key('countdown_timer_text'),
+                            style: AppTypography.labelMd.copyWith(
+                              color: context.semanticColors.warning,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                      ],
-                    ))
-                : null,
+                        ],
+                      )),
+                const SizedBox(width: AppSpacing.xs),
+                Icon(
+                  _negotiationExpanded ? Icons.expand_less : Icons.expand_more,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
 
@@ -1080,225 +1140,228 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             const SizedBox(height: AppSpacing.sm),
           ],
 
-          // System Suggested Price display
-          _buildInfoRow(l10n.originalSystemPriceLabel,
-              "\$${suggested.toStringAsFixed(2)}"),
+          if (_negotiationExpanded) ...[
+            // System Suggested Price display
+            _buildInfoRow(l10n.originalSystemPriceLabel,
+                "\$${suggested.toStringAsFixed(2)}"),
 
-          if (_currentJob.agreedPrice != null)
-            _buildInfoRow(l10n.agreedPriceLabel,
-                "\$${_currentJob.agreedPrice!.toStringAsFixed(2)}"),
+            if (_currentJob.agreedPrice != null)
+              _buildInfoRow(l10n.agreedPriceLabel,
+                  "\$${_currentJob.agreedPrice!.toStringAsFixed(2)}"),
 
-          // If an active price proposal exists (proposed != null)
-          if (proposed != null &&
-              status == 'awaiting_price_response' &&
-              !expired) ...[
-            const Divider(
-                height: AppSpacing.md, color: AppColors.outlineVariant),
-            ThemedPanel(
-                color: AppColors.primary.withValues(alpha: 0.08),
-                borderRadius: AppRadius.smBorder,
-                border:
-                    Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                key: const Key('incoming_proposal_card'),
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Column(
+            // If an active price proposal exists (proposed != null)
+            if (proposed != null &&
+                status == 'awaiting_price_response' &&
+                !expired) ...[
+              const Divider(
+                  height: AppSpacing.md, color: AppColors.outlineVariant),
+              ThemedPanel(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderRadius: AppRadius.smBorder,
+                  border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.3)),
+                  key: const Key('incoming_proposal_card'),
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // A8: flexible + ellipsis — inflexible pair overflowed
+                          // at 360dp inside the proposal card.
+                          Expanded(
+                            child: Text(
+                              l10n.incomingProposalCard,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.bodyMd.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Flexible(
+                            child: Text(
+                              l10n.proposalByLine(proposedBy == 'customer'
+                                  ? l10n.proposalRoleCustomer
+                                  : l10n.proposalRoleDriverEmployee),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.labelMd.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              l10n.proposedFareLabel,
+                              style: AppTypography.bodyMd.copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Flexible(
+                            child: Text(
+                              "\$${proposed.toStringAsFixed(2)}",
+                              key: const Key('proposed_price_text'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.headlineLgMobile.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.secondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        "${l10n.comparisonPrefix} ${proposed - suggested >= 0 ? '+' : ''}\$${(proposed - suggested).toStringAsFixed(2)} (${proposed - suggested >= 0 ? '+' : ''}${(suggested > 0 ? ((proposed - suggested) / suggested) * 100 : 0.0).toStringAsFixed(1)}% ${l10n.vsSystemPrice})",
+                        key: const Key('proposal_comparison_text'),
+                        style: AppTypography.labelMd.copyWith(
+                          color: (proposed - suggested) > 0
+                              ? context.semanticColors.warning
+                              : context.semanticColors.success,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  )),
+              const SizedBox(height: AppSpacing.md),
+              if ((proposedBy == 'customer' &&
+                      currentUserId == _currentJob.userId) ||
+                  (proposedBy == 'employee' &&
+                      currentUserId == _currentJob.employeeId))
+                Text(
+                  l10n.waitingProposalResponse,
+                  style: AppTypography.bodyMd.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                  ),
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: PrimaryButton(
+                        key: const Key('accept_proposal_button'),
+                        text: l10n.acceptProposalBtn,
+                        icon: Icons.check,
+                        isLoading: _isRespondingProposal,
+                        onPressed: () => _respondToProposal('accept'),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: SecondaryButton(
+                        key: const Key('decline_proposal_button'),
+                        text: l10n.declineProposalBtn,
+                        icon: Icons.close,
+                        isOutlined: true,
+                        isLoading: _isRespondingProposal,
+                        onPressed: () => _respondToProposal('decline'),
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+
+            // If NO proposal exists yet (proposed == null) and state is awaiting_price_response and not expired
+            if (proposed == null &&
+                status == 'awaiting_price_response' &&
+                !expired) ...[
+              const Divider(
+                  height: AppSpacing.md, color: AppColors.outlineVariant),
+              Text(
+                l10n.submitCounterOfferBtn,
+                style: AppTypography.bodyMd.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                l10n.allowedBoundLine(
+                    minPrice.toStringAsFixed(2), maxPrice.toStringAsFixed(2)),
+                style: AppTypography.labelMd.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              // A8/B4-F1: below ~340dp the fixed-width button starves the
+              // offer input; stack the pair vertically instead.
+              LayoutBuilder(builder: (context, constraints) {
+                final narrow = constraints.maxWidth < 340;
+                final fieldContent = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // A8: flexible + ellipsis — inflexible pair overflowed
-                        // at 360dp inside the proposal card.
-                        Expanded(
-                          child: Text(
-                            l10n.incomingProposalCard,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.bodyMd.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Flexible(
-                          child: Text(
-                            l10n.proposalByLine(proposedBy == 'customer'
-                                ? l10n.proposalRoleCustomer
-                                : l10n.proposalRoleDriverEmployee),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.labelMd.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            l10n.proposedFareLabel,
-                            style: AppTypography.bodyMd.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Flexible(
-                          child: Text(
-                            "\$${proposed.toStringAsFixed(2)}",
-                            key: const Key('proposed_price_text'),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.headlineLgMobile.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.secondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      "${l10n.comparisonPrefix} ${proposed - suggested >= 0 ? '+' : ''}\$${(proposed - suggested).toStringAsFixed(2)} (${proposed - suggested >= 0 ? '+' : ''}${(suggested > 0 ? ((proposed - suggested) / suggested) * 100 : 0.0).toStringAsFixed(1)}% ${l10n.vsSystemPrice})",
-                      key: const Key('proposal_comparison_text'),
-                      style: AppTypography.labelMd.copyWith(
-                        color: (proposed - suggested) > 0
-                            ? context.semanticColors.warning
-                            : context.semanticColors.success,
-                        fontWeight: FontWeight.w600,
+                    ThemedTextField(
+                      key: const Key('counter_offer_input'),
+                      controller: _counterOfferController,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      hintText: l10n
+                          .negotiationHintExample(suggested.toStringAsFixed(2)),
+                      prefixIcon: const Icon(
+                        Icons.attach_money,
+                        size: AppIconSize.sm,
+                        color: AppColors.outline,
                       ),
                     ),
-                  ],
-                )),
-            const SizedBox(height: AppSpacing.md),
-            if ((proposedBy == 'customer' &&
-                    currentUserId == _currentJob.userId) ||
-                (proposedBy == 'employee' &&
-                    currentUserId == _currentJob.employeeId))
-              Text(
-                l10n.waitingProposalResponse,
-                style: AppTypography.bodyMd.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontStyle: FontStyle.italic,
-                ),
-              )
-            else
-              Row(
-                children: [
-                  Expanded(
-                    child: PrimaryButton(
-                      key: const Key('accept_proposal_button'),
-                      text: l10n.acceptProposalBtn,
-                      icon: Icons.check,
-                      isLoading: _isRespondingProposal,
-                      onPressed: () => _respondToProposal('accept'),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: SecondaryButton(
-                      key: const Key('decline_proposal_button'),
-                      text: l10n.declineProposalBtn,
-                      icon: Icons.close,
-                      isOutlined: true,
-                      isLoading: _isRespondingProposal,
-                      onPressed: () => _respondToProposal('decline'),
-                    ),
-                  ),
-                ],
-              ),
-          ],
-
-          // If NO proposal exists yet (proposed == null) and state is awaiting_price_response and not expired
-          if (proposed == null &&
-              status == 'awaiting_price_response' &&
-              !expired) ...[
-            const Divider(
-                height: AppSpacing.md, color: AppColors.outlineVariant),
-            Text(
-              l10n.submitCounterOfferBtn,
-              style: AppTypography.bodyMd.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              l10n.allowedBoundLine(
-                  minPrice.toStringAsFixed(2), maxPrice.toStringAsFixed(2)),
-              style: AppTypography.labelMd.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            // A8/B4-F1: below ~340dp the fixed-width button starves the
-            // offer input; stack the pair vertically instead.
-            LayoutBuilder(builder: (context, constraints) {
-              final narrow = constraints.maxWidth < 340;
-              final fieldContent = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ThemedTextField(
-                    key: const Key('counter_offer_input'),
-                    controller: _counterOfferController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    hintText: l10n
-                        .negotiationHintExample(suggested.toStringAsFixed(2)),
-                    prefixIcon: const Icon(
-                      Icons.attach_money,
-                      size: AppIconSize.sm,
-                      color: AppColors.outline,
-                    ),
-                  ),
-                  if (_proposalError != null) ...[
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      _proposalError!,
-                      style: AppTypography.labelMd.copyWith(
-                        color: AppColors.error,
+                    if (_proposalError != null) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        _proposalError!,
+                        style: AppTypography.labelMd.copyWith(
+                          color: AppColors.error,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
-              );
-              final submitButton = SizedBox(
-                width: narrow ? double.infinity : 150,
-                child: PrimaryButton(
-                  key: const Key('submit_proposal_button'),
-                  text: l10n.submit,
-                  isLoading: _isSubmittingProposal,
-                  onPressed: () => _submitCounterOffer(suggested),
-                ),
-              );
-              // A8/B4-F1: Expanded is horizontal-only; the stacked path must
-              // not place flex children inside an unbounded-height column.
-              return narrow
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        fieldContent,
-                        const SizedBox(height: AppSpacing.sm),
-                        submitButton,
-                      ],
-                    )
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: fieldContent),
-                        const SizedBox(width: AppSpacing.sm),
-                        submitButton,
-                      ],
-                    );
-            }),
+                );
+                final submitButton = SizedBox(
+                  width: narrow ? double.infinity : 150,
+                  child: PrimaryButton(
+                    key: const Key('submit_proposal_button'),
+                    text: l10n.submit,
+                    isLoading: _isSubmittingProposal,
+                    onPressed: () => _submitCounterOffer(suggested),
+                  ),
+                );
+                // A8/B4-F1: Expanded is horizontal-only; the stacked path must
+                // not place flex children inside an unbounded-height column.
+                return narrow
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          fieldContent,
+                          const SizedBox(height: AppSpacing.sm),
+                          submitButton,
+                        ],
+                      )
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: fieldContent),
+                          const SizedBox(width: AppSpacing.sm),
+                          submitButton,
+                        ],
+                      );
+              }),
+            ],
           ],
         ],
       ),

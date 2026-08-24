@@ -40,6 +40,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   final _actionController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isSimulating = false;
+  // Declutter V2: subordinate info chips collapse behind a per-card toggle.
+  final Set<String> _expandedJobCardIds = <String>{};
   String? _completingJobId;
   String? _completeError;
   String? _completeErrorJobId;
@@ -362,34 +364,23 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 ThemedPanel(
                     color: AppColors.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
-                    width: 48,
-                    height: 48,
+                    width: 36,
+                    height: 36,
                     child: const Icon(
                       Icons.badge_outlined,
                       color: AppColors.primary,
-                      size: 26,
+                      size: 20,
                     )),
-                const SizedBox(width: AppSpacing.md),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.employeeJobsWelcomeGreeting,
-                        style: AppTypography.headlineLgMobile.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        l10n.employeeJobsLoggedInAs(displayName),
-                        style: AppTypography.bodyMd.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                  child: Text(
+                    l10n.employeeJobsLoggedInAs(displayName),
+                    style: AppTypography.titleMd.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 if (isTracking || isDenied)
@@ -652,31 +643,64 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               cargoText: AppTypography.uppercaseLabel(job.paymentMethod),
             ),
             const SizedBox(height: AppSpacing.md),
-            // Subordinate Info Badges / Chips
-            Wrap(
-              spacing: AppSpacing.xs,
-              runSpacing: AppSpacing.xs,
-              children: [
-                _buildSubordinateChip(
-                  Icons.person_outline,
-                  l10n.employeeJobsLabelCustomer,
-                  job.userId,
+            // Subordinate Info Badges / Chips — collapsed by default
+            // (declutter V2); expand via the details toggle.
+            InkWell(
+              key: Key('job_card_details_toggle_${job.id}'),
+              onTap: () => setState(() {
+                if (!_expandedJobCardIds.add(job.id)) {
+                  _expandedJobCardIds.remove(job.id);
+                }
+              }),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _expandedJobCardIds.contains(job.id)
+                          ? Icons.expand_less
+                          : Icons.expand_more,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: AppSpacing.xxs),
+                    Text(
+                      l10n.jobCardDetailsToggle,
+                      style: AppTypography.labelMd.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
-                _buildSubordinateChip(
-                  Icons.payment_outlined,
-                  l10n.employeeJobsLabelPayment,
-                  AppTypography.uppercaseLabel(job.paymentMethod),
-                ),
-                if (job.lockedEscrowAmount != null &&
-                    job.lockedEscrowAmount! > 0)
-                  _buildSubordinateChip(
-                    Icons.lock_clock_outlined,
-                    l10n.employeeJobsLabelEscrow,
-                    l10n.ownerHomeCreditsAmount(
-                        job.lockedEscrowAmount!.toStringAsFixed(2)),
-                  ),
-              ],
+              ),
             ),
+            if (_expandedJobCardIds.contains(job.id))
+              Wrap(
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.xs,
+                children: [
+                  _buildSubordinateChip(
+                    Icons.person_outline,
+                    l10n.employeeJobsLabelCustomer,
+                    job.userId,
+                  ),
+                  _buildSubordinateChip(
+                    Icons.payment_outlined,
+                    l10n.employeeJobsLabelPayment,
+                    AppTypography.uppercaseLabel(job.paymentMethod),
+                  ),
+                  if (job.lockedEscrowAmount != null &&
+                      job.lockedEscrowAmount! > 0)
+                    _buildSubordinateChip(
+                      Icons.lock_clock_outlined,
+                      l10n.employeeJobsLabelEscrow,
+                      l10n.ownerHomeCreditsAmount(
+                          job.lockedEscrowAmount!.toStringAsFixed(2)),
+                    ),
+                ],
+              ),
             if (job.cancellationReason != null &&
                 job.cancellationReason!.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.sm),

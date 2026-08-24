@@ -245,6 +245,8 @@
   "ownerHomeOwnerJobs": "طلبات العمل",
   "ownerHomeNoJobsTitle": "لا توجد طلبات عمل",
   "ownerHomeNoJobsDesc": "ليس لديك أي طلبات مسجلة تحت حساب نشاطك التجاري حالياً.",
+  "ownerHomeViewAllJobs": "عرض كل المهام",
+  "ownerHomeFleetSub": "تتبع المناديب مباشرة",
   "ownerHomeJobId": "طلب #{id}",
   "ownerHomePaymentInfo": "الدفع: {method}{escrowInfo}",
   "ownerHomeCancelJob": "إلغاء الطلب",
@@ -908,6 +910,8 @@
   "updateCannotContinueBody": "لا يمكنك متابعة استخدام التطبيق قبل تثبيت هذا التحديث.",
   "updateNowBtn": "حدّث الآن",
   "searchServicesTooltip": "ابحث عن خدمات",
+  "marketplaceFiltersTooltip": "فلاتر إضافية",
+  "jobCardDetailsToggle": "التفاصيل",
   "ratingStarSemantic": "قيّم {n} من 5 نجوم",
   "@ratingStarSemantic": {
     "placeholders": {

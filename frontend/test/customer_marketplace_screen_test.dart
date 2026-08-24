@@ -112,7 +112,9 @@ void main() {
     expect(find.widgetWithText(TextField, "Longitude"), findsNothing);
 
     // 2. Verify Map Picker button exists
-    final mapBtn = find.byKey(const Key('choose_location_map_button'));
+await tester.tap(find.byKey(const Key('marketplace_filters_button')));
+    await tester.pumpAndSettle();
+        final mapBtn = find.byKey(const Key('choose_location_map_button'));
     expect(mapBtn, findsOneWidget);
     expect(find.text("Choose Location on Map"), findsOneWidget);
 
@@ -154,7 +156,9 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    final mapBtn = find.byKey(const Key('choose_location_map_button'));
+await tester.tap(find.byKey(const Key('marketplace_filters_button')));
+    await tester.pumpAndSettle();
+        final mapBtn = find.byKey(const Key('choose_location_map_button'));
     expect(mapBtn, findsOneWidget);
     await tester.tap(mapBtn);
     await tester.pumpAndSettle();
@@ -189,7 +193,9 @@ void main() {
     expect(mockMarketplaceProvider.lastFetchNearBy, isFalse);
 
     // 2. Verify nearby filter switch exists
-    final switchFinder = find.byKey(const Key('nearby_filter_switch'));
+await tester.tap(find.byKey(const Key('marketplace_filters_button')));
+    await tester.pumpAndSettle();
+        final switchFinder = find.byKey(const Key('nearby_filter_switch'));
     expect(switchFinder, findsOneWidget);
 
     // 3. Toggle switch ON

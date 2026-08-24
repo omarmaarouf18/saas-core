@@ -44,6 +44,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late int _currentIndex;
   late Set<int> _visitedTabs;
+  // Session-only dismissal of the compact urgent-actions row (declutter V2).
+  bool _urgentActionsDismissed = false;
 
   @override
   void initState() {
@@ -307,22 +309,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       _buildSummaryBar(subText, subColor, l10n),
                       const SizedBox(height: AppSpacing.lg),
 
-                      // 4. Quick Access Management Cards (Wallet & Services & Config)
-                      _buildQuickAccessCards(l10n),
+                      // 4. Quick Access Management Cards (Wallet, Services,
+                      //    Fleet Map, Config + compact reputation summary).
+                      //    Declutter V2: the former standalone Fleet Overview
+                      //    and Service Reputation sections live here now.
+                      _buildQuickAccessCards(authUser, auth, l10n),
                       const SizedBox(height: AppSpacing.lg),
 
-                      // 5. Urgent Actions Split (Stitch Reference)
+                      // 5. Compact dismissible urgent-actions row.
                       _buildUrgentActions(l10n),
                       const SizedBox(height: AppSpacing.lg),
 
-                      // 6. Fleet Map / Active Zone Preview
-                      _buildFleetMapPreview(authUser, auth, l10n),
-                      const SizedBox(height: AppSpacing.lg),
-
-                      // 7. Service Reputation
-                      _buildReputationSection(auth, l10n),
-
-                      // 8. Active Owner Orders
+                      // 6. Active Owner Orders (capped, with View-all)
                       _buildOwnerJobsSection(ownerProvider, auth, l10n),
                     ],
                   ),
@@ -346,94 +344,119 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ThemedPanel(
-                  color: AppColors.secondary.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.secondary.withValues(alpha: 0.4),
-                    width: 1.5,
-                  ),
-                  width: 48,
-                  height: 48,
-                  child: const Center(
-                    child: Icon(
-                      Icons.admin_panel_settings_rounded,
-                      color: AppColors.secondary,
-                      size: 26,
-                    ),
-                  )),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.ownerHomeWelcomeUser(
-                        authUser.username.isNotEmpty
-                            ? authUser.username
-                            : authUser.email,
-                      ),
-                      style: AppTypography.headlineLgMobile.copyWith(
-                        color: AppColors.onPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      l10n.ownerHomeTenantId(authUser.id),
-                      style: AppTypography.bodyMd.copyWith(
-                        color: AppColors.onPrimaryContainer,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              InkWell(
-                key: const Key('owner_dashboard_wallet_badge'),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const WalletScreen(),
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(AppRadius.full),
-                child: ThemedPanel(
-                    color: AppColors.secondary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(AppRadius.full),
+          // Declutter V2 fix: at 360dp the wallet badge's intrinsic width
+          // starved the Expanded title down to a few px (one glyph per
+          // line). Narrow layouts stack the badge under the identity row.
+          LayoutBuilder(builder: (context, heroConstraints) {
+            final wide = heroConstraints.maxWidth > 420;
+            final identityBlock = Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ThemedPanel(
+                    color: AppColors.secondary.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
                     border: Border.all(
-                      color: AppColors.secondary,
-                      width: 1,
+                      color: AppColors.secondary.withValues(alpha: 0.4),
+                      width: 1.5,
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.account_balance_wallet,
-                          color: AppColors.secondary,
-                          size: 18,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          walletText,
-                          style: AppTypography.labelLg.copyWith(
-                            color: AppColors.secondary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    width: 48,
+                    height: 48,
+                    child: const Center(
+                      child: Icon(
+                        Icons.admin_panel_settings_rounded,
+                        color: AppColors.secondary,
+                        size: 26,
+                      ),
                     )),
-              ),
-            ],
-          ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.ownerHomeWelcomeUser(
+                          authUser.username.isNotEmpty
+                              ? authUser.username
+                              : authUser.email,
+                        ),
+                        style: AppTypography.headlineLgMobile.copyWith(
+                          color: AppColors.onPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xxs),
+                      Text(
+                        l10n.ownerHomeTenantId(authUser.id),
+                        style: AppTypography.bodyMd.copyWith(
+                          color: AppColors.onPrimaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+            final badge = InkWell(
+              key: const Key('owner_dashboard_wallet_badge'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const WalletScreen(),
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(AppRadius.full),
+              child: ThemedPanel(
+                  color: AppColors.secondary.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  border: Border.all(
+                    color: AppColors.secondary,
+                    width: 1,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.account_balance_wallet,
+                        color: AppColors.secondary,
+                        size: 18,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        walletText,
+                        style: AppTypography.labelLg.copyWith(
+                          color: AppColors.secondary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  )),
+            );
+            return wide
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: identityBlock),
+                      const SizedBox(width: AppSpacing.sm),
+                      badge,
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      identityBlock,
+                      const SizedBox(height: AppSpacing.md),
+                      Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: badge,
+                      ),
+                    ],
+                  );
+          }),
         ],
       ),
     );
@@ -490,11 +513,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       size: 14,
                     ),
                     const SizedBox(width: AppSpacing.xxs),
-                    Text(
-                      l10n.jobsTrendChipMock,
-                      style: AppTypography.caption.copyWith(
-                        color: context.semanticColors.success,
-                        fontWeight: FontWeight.w600,
+                    Flexible(
+                      child: Text(
+                        l10n.jobsTrendChipMock,
+                        style: AppTypography.caption.copyWith(
+                          color: context.semanticColors.success,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -716,316 +743,50 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildQuickAccessCards(AppLocalizations l10n) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: InkWell(
-                key: const Key('owner_dashboard_wallet_card'),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const WalletScreen(),
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                child: ThemedCard(
-                  padding: AppSpacing.md,
-                  child: Row(
-                    children: [
-                      ThemedPanel(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                          padding: const EdgeInsets.all(AppSpacing.sm),
-                          child: Icon(
-                            Icons.account_balance_wallet,
-                            color: Theme.of(context).colorScheme.primary,
-                            size: 24,
-                          )),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.ownerHomeMyWallet,
-                              style: AppTypography.titleMd.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.xxs),
-                            Text(
-                              l10n.ownerHomeWalletSub,
-                              style: AppTypography.labelMd.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.chevron_right,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        size: 18,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: InkWell(
-                key: const Key('owner_dashboard_services_card'),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ServiceScreen(),
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                child: ThemedCard(
-                  padding: AppSpacing.md,
-                  child: Row(
-                    children: [
-                      ThemedPanel(
-                          color: AppColors.secondary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                          padding: const EdgeInsets.all(AppSpacing.sm),
-                          child: const Icon(
-                            Icons.storefront,
-                            color: AppColors.secondary,
-                            size: 24,
-                          )),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.ownerHomeServices,
-                              style: AppTypography.titleMd.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.xxs),
-                            Text(
-                              l10n.ownerHomeServicesSub,
-                              style: AppTypography.labelMd.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.chevron_right,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        size: 18,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        InkWell(
-          key: const Key('owner_dashboard_config_card'),
+  Widget _buildQuickAccessCards(
+      UserProfile authUser, AuthProvider auth, AppLocalizations l10n) {
+    // Declutter V2: on narrow viewports the two-per-row cards squeeze their
+    // titles to a few px; stack full-width rows instead.
+    return LayoutBuilder(builder: (context, qaConstraints) {
+      final narrow = qaConstraints.maxWidth < 420;
+      final cards = [
+        _quickAccessCard(
+          key: const Key('owner_dashboard_wallet_card'),
+          icon: Icons.account_balance_wallet,
+          iconBg: AppColors.primary.withValues(alpha: 0.1),
+          iconColor: Theme.of(context).colorScheme.primary,
+          title: l10n.ownerHomeMyWallet,
+          subtitle: l10n.ownerHomeWalletSub,
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => const OwnerConfigurationScreen(),
+                builder: (context) => const WalletScreen(),
               ),
             );
           },
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          child: ThemedCard(
-            padding: AppSpacing.md,
-            child: Row(
-              children: [
-                ThemedPanel(
-                    color: AppColors.primaryContainer,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    child: const Icon(
-                      Icons.business_outlined,
-                      color: AppColors.secondary,
-                      size: 24,
-                    )),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.ownerConfigTitle,
-                        style: AppTypography.titleMd.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xxs),
-                      Text(
-                        l10n.quickConfigSubtitle,
-                        style: AppTypography.labelMd.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  size: 18,
-                ),
-              ],
-            ),
-          ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildUrgentActions(AppLocalizations l10n) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ThemedSectionHeader(title: l10n.urgentActionsHeader),
-        const SizedBox(height: AppSpacing.sm),
-        ThemedCard(
-          padding: AppSpacing.md,
-          child: Column(
-            children: [
-              // Action 1: Vehicle Maintenance / Fleet Alert
-              Row(
-                children: [
-                  ThemedPanel(
-                      color: Theme.of(context).colorScheme.errorContainer,
-                      shape: BoxShape.circle,
-                      width: 40,
-                      height: 40,
-                      child: Icon(
-                        Icons.warning_amber_rounded,
-                        color: Theme.of(context).colorScheme.onErrorContainer,
-                        size: 22,
-                      )),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.vehicleMaintenanceTitle,
-                          style: AppTypography.titleMd.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xxs),
-                        Text(
-                          l10n.vehicleMaintenanceDesc,
-                          style: AppTypography.bodySm.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  // A8/C1-F1: shared button (inherits A4 in-flight lock).
-                  SecondaryButton(
-                    text: l10n.scheduleAction,
-                    isFullWidth: false,
-                    onPressed: () {
-                      onTabTapped(1); // Switch to Employees / Fleet tab
-                    },
-                  ),
-                ],
+        _quickAccessCard(
+          key: const Key('owner_dashboard_services_card'),
+          icon: Icons.storefront,
+          iconBg: AppColors.secondary.withValues(alpha: 0.1),
+          iconColor: AppColors.secondary,
+          title: l10n.ownerHomeServices,
+          subtitle: l10n.ownerHomeServicesSub,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const ServiceScreen(),
               ),
-              const Divider(
-                height: AppSpacing.lg,
-                color: AppColors.outlineVariant,
-              ),
-              // Action 2: Pending Reconciliations
-              Row(
-                children: [
-                  ThemedPanel(
-                      color: AppColors.secondary.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                      width: 40,
-                      height: 40,
-                      child: const Icon(
-                        Icons.person_add_outlined,
-                        color: AppColors.secondary,
-                        size: 22,
-                      )),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.pendingReconciliationsHeader,
-                          style: AppTypography.titleMd.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xxs),
-                        Text(
-                          l10n.reconciliationPendingDesc,
-                          style: AppTypography.bodySm.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  // A8/C1-F1: shared outlined button (inherits A4 lock).
-                  SecondaryButton(
-                    text: l10n.reviewAction,
-                    isOutlined: true,
-                    isFullWidth: false,
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const OwnerReconciliationQueueScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
+            );
+          },
         ),
-      ],
-    );
-  }
-
-  Widget _buildFleetMapPreview(
-    UserProfile authUser,
-    AuthProvider auth,
-    AppLocalizations l10n,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ThemedSectionHeader(title: l10n.fleetOverviewHeader),
-        const SizedBox(height: AppSpacing.sm),
-        InkWell(
+        _quickAccessCard(
+          key: const Key('owner_dashboard_fleet_card'),
+          icon: Icons.map_outlined,
+          iconBg: AppColors.primaryContainer,
+          iconColor: AppColors.secondary,
+          title: l10n.fleetLiveMapTitle,
+          subtitle: l10n.ownerHomeFleetSub,
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -1036,85 +797,214 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             );
           },
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          child: ThemedCard(
-            padding: 0,
-            child: ThemedPanel(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                color: AppColors.primaryContainer,
-                height: 140,
-                child: Stack(
+        ),
+        _quickAccessCard(
+          key: const Key('owner_dashboard_config_card'),
+          icon: Icons.business_outlined,
+          iconBg: AppColors.primaryContainer,
+          iconColor: AppColors.secondary,
+          title: l10n.ownerConfigTitle,
+          subtitle: l10n.quickConfigSubtitle,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const OwnerConfigurationScreen(),
+              ),
+            );
+          },
+        ),
+      ];
+      if (narrow) {
+        return Column(
+          children: [
+            for (final card in cards)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: card,
+              ),
+            _buildReputationSection(auth, l10n),
+          ],
+        );
+      }
+      return Column(
+        children: [
+          Row(children: [
+            Expanded(child: cards[0]),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(child: cards[1]),
+          ]),
+          const SizedBox(height: AppSpacing.md),
+          Row(children: [
+            Expanded(child: cards[2]),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(child: cards[3]),
+          ]),
+          _buildReputationSection(auth, l10n),
+        ],
+      );
+    });
+  }
+
+  Widget _quickAccessCard({
+    required Key key,
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      key: key,
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: ThemedCard(
+        padding: AppSpacing.md,
+        child: Row(
+          children: [
+            ThemedPanel(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Icon(icon, color: iconColor, size: 24)),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTypography.titleMd.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    subtitle,
+                    style: AppTypography.labelMd.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUrgentActions(AppLocalizations l10n) {
+    // Declutter V2: the former two stacked action cards are now a single
+    // compact dismissible row (session-only dismissal).
+    if (_urgentActionsDismissed) return const SizedBox.shrink();
+    return ThemedCard(
+      key: const Key('urgent_actions_row'),
+      padding: AppSpacing.sm,
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              key: const Key('urgent_maintenance_chip'),
+              onTap: () {
+                onTabTapped(1); // Switch to Employees / Fleet tab
+              },
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xs),
+                child: Row(
                   children: [
-                    Positioned.fill(
-                      child: Center(
+                    ThemedPanel(
+                        color: Theme.of(context).colorScheme.errorContainer,
+                        shape: BoxShape.circle,
+                        width: 32,
+                        height: 32,
                         child: Icon(
-                          Icons.map_outlined,
-                          size: 64,
-                          color: AppColors.onPrimaryContainer
-                              .withValues(alpha: 0.15),
+                          Icons.warning_amber_rounded,
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                          size: 18,
+                        )),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Text(
+                        l10n.vehicleMaintenanceTitle,
+                        style: AppTypography.labelMd.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Positioned(
-                      left: AppSpacing.md,
-                      bottom: AppSpacing.md,
-                      right: AppSpacing.md,
-                      child: ThemedPanel(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.scrim.withValues(alpha: 0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
-                            vertical: AppSpacing.sm,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  const ThemedPanel(
-                                      color: AppColors.secondary,
-                                      shape: BoxShape.circle,
-                                      width: 10,
-                                      height: 10),
-                                  const SizedBox(width: AppSpacing.sm),
-                                  Text(
-                                    l10n.activeZoneLabel,
-                                    style: AppTypography.bodyMd.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                l10n.downtownCoverageLabel,
-                                style: AppTypography.caption.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          )),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: InkWell(
+              key: const Key('urgent_reconciliation_chip'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const OwnerReconciliationQueueScreen(),
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xs),
+                child: Row(
+                  children: [
+                    ThemedPanel(
+                        color: AppColors.secondary.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                        width: 32,
+                        height: 32,
+                        child: const Icon(
+                          Icons.person_add_outlined,
+                          color: AppColors.secondary,
+                          size: 18,
+                        )),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Text(
+                        l10n.pendingReconciliationsHeader,
+                        style: AppTypography.labelMd.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
-                )),
+                ),
+              ),
+            ),
           ),
-        ),
-      ],
+          IconButton(
+            key: const Key('urgent_actions_dismiss'),
+            icon: const Icon(Icons.close),
+            tooltip: l10n.tooltipClose,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            iconSize: 18,
+            onPressed: () => setState(() => _urgentActionsDismissed = true),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildReputationSection(AuthProvider auth, AppLocalizations l10n) {
+    // Declutter V2: compact summary card without its own section header.
     return FutureBuilder<Map<String, dynamic>>(
       future: Provider.of<MarketplaceProvider>(context, listen: false)
           .fetchRatings(auth.token!),
@@ -1134,16 +1024,9 @@ class _HomeScreenState extends State<HomeScreen> {
         final data = snapshot.data!;
         final double avg = (data['average_rating'] as num?)?.toDouble() ?? 0.0;
         final int count = (data['count'] as num?)?.toInt() ?? 0;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ThemedSectionHeader(
-              title: l10n.ownerHomeServiceReputation,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            RatingSummaryCard(averageRating: avg, ratingCount: count),
-            const SizedBox(height: AppSpacing.lg),
-          ],
+        return Padding(
+          padding: const EdgeInsets.only(top: AppSpacing.md),
+          child: RatingSummaryCard(averageRating: avg, ratingCount: count),
         );
       },
     );
@@ -1178,7 +1061,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: ownerProvider.ownerJobs.length,
+            // Declutter V2: cap the dashboard preview at 3 jobs; the rest
+            // live in the History tab behind the View-all action.
+            itemCount: ownerProvider.ownerJobs.length > 3
+                ? 3
+                : ownerProvider.ownerJobs.length,
             itemBuilder: (context, index) {
               final job = ownerProvider.ownerJobs[index];
               final canCancel =
@@ -1265,6 +1152,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
             },
+          ),
+        if (ownerProvider.ownerJobs.length > 3)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.xs),
+            child: SecondaryButton(
+              key: const Key('owner_dashboard_view_all_jobs'),
+              text: l10n.ownerHomeViewAllJobs,
+              isOutlined: true,
+              onPressed: () => onTabTapped(2),
+            ),
           ),
       ],
     );
