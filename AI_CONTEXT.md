@@ -216,6 +216,8 @@ To address naming clarity issues where request fields expected signed JWT tokens
 
 The Go backend handles both legacy and preferred naming conventions compatibly (preferring `_token` if both are supplied). *Note: The Flutter frontend has not yet been updated to use the preferred fields.*
 
+* **Verified UI/UX Audit Re-Verification & Shared-Widget Accessibility/l10n Remediation**: Re-ran the A8 audit methodology (raw color/hex/fontSize/RTL/uppercase/hardcoded-string/semantics sweeps) against the post-V2 decluttering tree — all prior remediations held. Three live defects found and fixed in shared widgets: (1) hardcoded English `"Retry"` constructor default + fallback in `ThemedBanner` rendered English on every retryable banner (~10+ screens) in all locales despite the existing ARB key (`retry`/`حاول تاني`) — default removed, fallback resolves via null-safe `context.l10n.retry`; (2) five icon-only close IconButtons in shared widgets (`themed_banner`, `create_service_dialog`, `deposit_funds_dialog`, `email_change_dialog`, `payout_request_dialog`) lacked tooltips/Semantics because the P7b sweep was screens/-scoped — now labeled with localized `tooltipClose`; (3) banner dismiss tap target restored to Material 48dp minimum (was ~18×18px). Verified via 6 new regression tests (incl. Arabic ARB-delegate retry-label test), full suite 407/407, `flutter analyze` 0 issues, byte-identical goldens, clean dart-format gate. (Commit `31a7941254a4322585c116de8c66d589a7048302`).
+
 ---
 
 ## Standing Working Rule
