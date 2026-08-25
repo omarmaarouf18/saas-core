@@ -99,6 +99,22 @@ void main() {
     expect(find.text('Cancel'), findsOneWidget);
   });
 
+  testWidgets('CreateServiceDialog close button exposes tooltip semantics',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final owner = MockOwnerProviderForCreateService(apiClient);
+
+    await tester.pumpWidget(buildCreateServiceTestApp(ownerProvider: owner));
+    await tester.tap(find.text('Open Create Service Dialog'));
+    await tester.pumpAndSettle();
+
+    final button = tester.widget<IconButton>(
+      find.byKey(const Key('close_create_service_dialog')),
+    );
+    expect(button.tooltip, isNotNull);
+    expect(button.tooltip, isNotEmpty);
+  });
+
   testWidgets('CreateServiceDialog validates required fields',
       (WidgetTester tester) async {
     final apiClient = ApiClient();

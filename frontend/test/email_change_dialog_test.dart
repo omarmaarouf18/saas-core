@@ -122,6 +122,22 @@ void main() {
     expect(find.byType(EmailChangeDialog), findsNothing);
   });
 
+  testWidgets('EmailChangeDialog close button exposes tooltip semantics',
+      (WidgetTester tester) async {
+    final auth = MockAuthProviderForDialog(apiClient);
+    await tester.pumpWidget(createDialogTestApp(authProvider: auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('open_dialog_button')));
+    await tester.pumpAndSettle();
+
+    final button = tester.widget<IconButton>(
+      find.byKey(const Key('close_email_change_dialog')),
+    );
+    expect(button.tooltip, isNotNull);
+    expect(button.tooltip, isNotEmpty);
+  });
+
   testWidgets('EmailChangeDialog validates empty and malformed email inputs',
       (WidgetTester tester) async {
     final auth = MockAuthProviderForDialog(apiClient);

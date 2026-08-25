@@ -142,6 +142,7 @@ class _EmailChangeDialogState extends State<EmailChangeDialog> {
                     IconButton(
                       key: const Key('close_email_change_dialog'),
                       icon: const Icon(Icons.close),
+                      tooltip: context.l10n.tooltipClose,
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
