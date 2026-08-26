@@ -82,7 +82,7 @@ The platform is comprised of **5 microservices** and **1 compile-time shared pac
   * `chat-service` (calls `/auth/user` to authenticate WebSockets).
   * `notification-service` (calls `/auth/user` to authenticate SSE streams).
   * `user-service` (calls `/auth/user` to verify KYC status).
-* **Outbound HTTP calls**: None.
+* **Outbound HTTP calls**: `notification-service` (invokes `/notifications/send` internally to dispatch KYC/KYB/KYE review outcome notifications per ADR-0021).
 
 ### 3. `chat-service` (Port: `3001`)
 * **Core Responsibility**: Real-time communication server. Hosts WebSockets for active chat channels (segregated per job/ticket), manages location broadcasts, and coordinates support agent ticket assignments.
@@ -104,7 +104,8 @@ The platform is comprised of **5 microservices** and **1 compile-time shared pac
 * **Security & TLS Policy**: Serves mTLS HTTPS API routes and maintains SSE streams.
 * **Inbound HTTP calls**:
   * `api-gateway` (public `/notifications/stream` routes).
-  * `user-service` (invokes `/notifications/send` and `/notifications/broadcast/job-alert` internally).
+  * `user-service` (invokes `/notifications/broadcast/job-alert` internally).
+  * `auth-service` (invokes `/notifications/send` internally for KYC/KYB/KYE review outcome notifications per ADR-0021).
 * **Outbound HTTP calls**:
   * `auth-service`: Queries `/auth/user?id=<user_id>` to verify connecting SSE client tokens.
 

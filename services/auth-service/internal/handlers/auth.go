@@ -2,6 +2,8 @@
 package handlers
 
 import (
+	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/hex"
@@ -44,6 +46,8 @@ type Auth struct {
 	storage              storage.Storage
 	userServiceClient    *resilience.ResilienceClient
 	userServiceURL       string
+	notificationClient   *resilience.ResilienceClient
+	notificationURL      string
 }
 
 // NewAuth creates a new Auth handler group.
@@ -72,6 +76,7 @@ func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config,
 	}
 
 	userServiceClient := resilience.NewClient(client, "user-service", 2, 5*time.Second)
+	notificationClient := resilience.NewClient(client, "notification-service", 2, 5*time.Second)
 
 	return &Auth{
 		store:                s,
@@ -83,6 +88,8 @@ func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config,
 		storage:              storage,
 		userServiceClient:    userServiceClient,
 		userServiceURL:       cfg.UserServiceURL,
+		notificationClient:   notificationClient,
+		notificationURL:      cfg.NotificationServiceURL,
 	}
 }
 
@@ -1667,6 +1674,20 @@ func (a *Auth) ReviewKYBKYESubmissions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// ADR-0021: a rejection must always carry an explanation. Enforced at the
+	// API layer (defense in depth) so the rule holds regardless of which
+	// client calls this endpoint.
+	if req.Action == "reject" && strings.TrimSpace(req.Reason) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason is required for rejection"})
+		return
+	}
+
+	// Bound the reason length, mirroring the RateJob comment limit.
+	if len(req.Reason) > 1000 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason exceeds maximum length of 1000 characters"})
+		return
+	}
+
 	ctx := r.Context()
 	targetUser := a.store.GetByID(ctx, req.UserID)
 	if targetUser == nil {
@@ -1736,7 +1757,92 @@ func (a *Auth) ReviewKYBKYESubmissions(w http.ResponseWriter, r *http.Request) {
 
 	handlerutil.ShipSecurityEvent(ctx, "KYC_REVIEWED", "auth-service", reviewer.ID, req.UserID, fmt.Sprintf("action: %s, reason: %s", req.Action, req.Reason), handlerutil.GetClientIP(r))
 
+	// ADR-0021: fire-and-forget user notification. Deliberately decoupled from
+	// the review transaction — a dispatch failure must never fail the
+	// already-persisted review (see dispatchReviewOutcomeNotification).
+	a.dispatchReviewOutcomeNotification(targetUser, finalStatus, req.Reason)
+
 	writeJSON(w, http.StatusOK, map[string]string{"status": "reviewed", "action": req.Action})
+}
+
+// dispatchReviewOutcomeNotification informs the reviewed user of an approve or
+// reject decision via notification-service's internal send endpoint
+// (POST /notifications/send). It runs asynchronously: if the dispatch fails,
+// the failure is logged distinctly under [KYC-NOTIFY] and swallowed — the
+// review itself remains recorded and auditable, and the existing KYC status
+// screens remain the source of truth. No inline retry in this iteration
+// (deferred per ADR-0021).
+func (a *Auth) dispatchReviewOutcomeNotification(targetUser *models.User, finalStatus models.KYCStatus, reason string) {
+	if a.notificationURL == "" || a.notificationClient == nil {
+		log.Printf("[KYC-NOTIFY] notification-service not configured; skipping outcome notification for user %s", targetUser.ID)
+		return
+	}
+
+	kind := "KYE"
+	if targetUser.Role == models.RoleOwner {
+		kind = "KYB"
+	}
+
+	var notifType, title, body string
+	switch finalStatus {
+	case models.KYCApproved:
+		notifType = "kyc_approved"
+		title = "Verification approved"
+		body = fmt.Sprintf("Your %s verification has been approved.", kind)
+	case models.KYCRejected:
+		notifType = "kyc_rejected"
+		title = "Verification rejected"
+		body = fmt.Sprintf("Your %s verification was rejected. Reason: %s", kind, reason)
+	default:
+		return
+	}
+
+	payload := map[string]any{
+		"type":      notifType,
+		"tenant_id": targetUser.TenantID,
+		"user_id":   targetUser.ID,
+		"title":     title,
+		"body":      body,
+	}
+	bodyBytes, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("[KYC-NOTIFY] Failed to marshal outcome notification for user %s: %v", targetUser.ID, err)
+		return
+	}
+
+	go func() {
+		defer func() {
+			if rec := recover(); rec != nil {
+				log.Printf("[KYC-NOTIFY] Recovered from panic dispatching outcome notification for user %s: %v", targetUser.ID, rec)
+			}
+		}()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		sendURL := strings.TrimSuffix(a.notificationURL, "/") + "/notifications/send"
+		// #nosec G704 //nolint:gosec -- sendURL is constructed from internal service config (NOTIFICATION_SERVICE_URL)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, sendURL, bytes.NewReader(bodyBytes))
+		if err != nil {
+			log.Printf("[KYC-NOTIFY] Failed to build outcome notification request for user %s: %v", targetUser.ID, err)
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Internal-Token", a.internalServiceToken)
+
+		resp, err := a.notificationClient.Do(req)
+		if err != nil {
+			log.Printf("[KYC-NOTIFY] FAILED to dispatch %s notification for user %s: %v (review remains recorded; status screens are source of truth)", notifType, targetUser.ID, err)
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			// #nosec G706 //nolint:gosec -- status code only; no user-controlled data interpolated
+			log.Printf("[KYC-NOTIFY] notification-service returned status %d for %s notification targeting user %s", resp.StatusCode, notifType, targetUser.ID)
+			return
+		}
+	}()
 }
 
 // GET /auth/documents/view?token=xxx
