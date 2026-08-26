@@ -591,3 +591,14 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
   - **Banner dismiss tap target restored to Material 48dp minimum**: removed `padding: EdgeInsets.zero` + empty `BoxConstraints()` + visual-only `splashRadius: 20` overrides (effective touch target was ~18×18px).
 - **Commit SHA**: ``31a7941254a4322585c116de8c66d589a7048302``
 - **Verification**: 6 new regression tests (Arabic retry label via ARB delegate; null-safe English fallback without delegate; tooltip presence ×5 dialogs/banner; ≥44dp tap-target assertion). Full suite 407/407 passed; `flutter analyze` 0 issues; golden baselines byte-identical (no regeneration needed); `dart format --set-exit-if-changed lib/` clean. Verified via local execution only. ✅
+
+## Global Per-IP Rate Bucket Exhausted by SSE Reconnect Churn (Full API Lockout)
+
+**Date**: 2026-08-26
+**Category**: Bug Fix / Availability
+**Related Commit SHA**: ``70def3268ee14d087977e72698e7ebd882b1b613``
+
+- **Observed live on quickdelivery-vm**: after the day's stack force-recreates killed open SSE streams, one mobile client's EventSource reconnect loop drove 438 `GET /api/v1/notifications/stream` 429s in ~6 minutes — and because the gateway enforced ONE global 100 req/min per-client-IP bucket across ALL routes, every unrelated endpoint for that user (auth/user, ratings, employees) locked out with exponential backoff up to 300s. Steady-state single-user load measured at 39/min: uncomfortably near the shared ceiling even without churn.
+- **Root cause**: connect attempts of a long-lived/reconnecting endpoint drew from the same per-IP budget as ordinary REST traffic; aggressive client reconnect behavior (multiple concurrent streams per tenant observed in notification-service hub logs) turned any network blip or deploy into a full-API lockout cascade.
+- **Fix**: route-aware rate limiting via `middleware.RateLimitWithOverrides` — `/api/v1/notifications/stream` now draws from its own isolated Redis bucket (`gateway-sse`, same 100/min budget) so stream churn can no longer starve general API access; all other routes keep the original bucket and budgets unchanged.
+- **Regression tests**: SSE-bucket exhaustion leaves the general bucket untouched and vice versa; nil-overrides path reproduces legacy shared-bucket semantics. Full api-gateway suite green locally.

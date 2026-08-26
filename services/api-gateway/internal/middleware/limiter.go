@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/project/gateway/internal/iputil"
@@ -36,10 +37,25 @@ func (rl *RateLimiter) getIP(r *http.Request) string {
 
 // RateLimit is a middleware that enforces rate limiting on all incoming requests.
 func RateLimit(limiter *RateLimiter) func(http.Handler) http.Handler {
+	return RateLimitWithOverrides(limiter, nil)
+}
+
+// RateLimitWithOverrides enforces per-client-IP rate limiting with dedicated
+// buckets for specific path prefixes. Long-lived or aggressively-reconnecting
+// endpoints (e.g. the SSE notifications stream) must be isolated into their
+// own bucket: their connect churn would otherwise exhaust the single global
+// per-IP budget and lock the client out of every unrelated API endpoint.
+// The longest matching registered prefix wins; unmatched paths use the
+// general limiter.
+func RateLimitWithOverrides(limiter *RateLimiter, overrides map[string]*RateLimiter) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ip := limiter.getIP(r)
-			if limited, remaining := limiter.CheckAndRecord(ip); limited {
+			effective := limiter
+			if prefix := longestOf(overrides, r.URL.Path); prefix != "" {
+				effective = overrides[prefix]
+			}
+			ip := effective.getIP(r)
+			if limited, remaining := effective.CheckAndRecord(ip); limited {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusTooManyRequests)
 				// #nosec G705 //nolint:gosec -- raw JSON response does not contain user-provided HTML, XSS not possible
@@ -49,4 +65,16 @@ func RateLimit(limiter *RateLimiter) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// longestOf returns the longest registered override prefix that path starts
+// with, or "" when none match.
+func longestOf(overrides map[string]*RateLimiter, path string) string {
+	best := ""
+	for prefix := range overrides {
+		if strings.HasPrefix(path, prefix) && len(prefix) > len(best) {
+			best = prefix
+		}
+	}
+	return best
 }
