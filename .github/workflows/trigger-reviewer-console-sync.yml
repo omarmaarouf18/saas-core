@@ -1,0 +1,35 @@
+name: Trigger Reviewer Console Contract Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/auth-service/**"
+      - "services/notification-service/**"
+  workflow_dispatch:
+
+# Fires a repository_dispatch to omarmaarouf18/kyc-reviewer-console so its
+# contract test suite runs against the reviewer API surface whenever the
+# KYB/KYE review endpoints or notification send path change (ADR-0021).
+# Modeled on the cross-repo sync pattern in frontend/docs/CI_CD.md; this is
+# a dispatch trigger rather than git subtree split because the console repo
+# holds original code, not a mirror.
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify reviewer console repo
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.REVIEWER_CONSOLE_PAT }}
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: 'omarmaarouf18',
+              repo: 'kyc-reviewer-console',
+              event_type: 'reviewer-api-contract',
+              client_payload: {
+                source_repo: context.repo.full_name,
+                source_sha: context.sha,
+                ref: context.ref
+              }
+            });
