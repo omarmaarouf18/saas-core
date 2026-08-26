@@ -239,6 +239,40 @@ services:
     networks:
       - saas-net
 
+  # ---------------------------------------------------------------------------
+  # KYC/KYB/KYE Reviewer Console (saas-core ADR-0021, separate repo)
+  # ---------------------------------------------------------------------------
+  # Internal-network component that holds the internal token and proxies
+  # reviewer actions to auth-service. NOT publicly bound: Caddy (host network,
+  # sibling stack) terminates kyc.<domain> and reaches it on loopback only.
+  # Image is built by omarmaarouf18/kyc-reviewer-console's own CI; pin via
+  # KYC_CONSOLE_IMAGE_TAG in .env (falls back to latest).
+  kyc-reviewer-console:
+    image: ghcr.io/omarmaarouf18/kyc-reviewer-console:${KYC_CONSOLE_IMAGE_TAG:-latest}
+    container_name: saas-kyc-reviewer-console
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8090:8090"
+    volumes:
+      - ./certs/ca.crt:/app/certs/ca.crt:ro
+      - ./certs/reviewer-console.crt:/app/certs/reviewer-console.crt:ro
+      - ./certs/reviewer-console.key:/app/certs/reviewer-console.key:ro
+    environment:
+      PORT: 8090
+      AUTH_SERVICE_URL: https://auth-service:${AUTH_SERVICE_PORT}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      APP_ENV: ${APP_ENV}
+      TLS_CERT_PATH: /app/certs/reviewer-console.crt
+      TLS_KEY_PATH: /app/certs/reviewer-console.key
+      TLS_CA_PATH: /app/certs/ca.crt
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - saas-net
+
 # ---------------------------------------------------------------------------
 # Persistent Volumes
 # ---------------------------------------------------------------------------

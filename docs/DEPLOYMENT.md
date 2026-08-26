@@ -165,6 +165,10 @@ USER_SERVICE_URL=https://user-service:3003
 CHAT_SERVICE_URL=https://chat-service:3001
 NOTIFICATION_SERVICE_URL=https://notification-service:3004
 
+# Reviewer console image pin (saas-core ADR-0021). `latest` tracks the
+# kyc-reviewer-console repo's main branch; pin a SHA tag for reproducibility.
+KYC_CONSOLE_IMAGE_TAG=latest
+
 # -----------------------------------------------------------------------------
 # Production Environment & Security Secrets
 # -----------------------------------------------------------------------------
@@ -198,7 +202,7 @@ cd certs
 openssl genrsa -out ca.key 4096
 openssl req -x509 -new -nodes -key ca.key -sha256 -days 3650 -out ca.crt -subj "/CN=SaaS-Platform-Prod-Root-CA"
 
-SERVICES=("api-gateway" "auth-service" "chat-service" "notification-service" "user-service")
+SERVICES=("api-gateway" "auth-service" "chat-service" "notification-service" "user-service" "reviewer-console")
 for service in "${SERVICES[@]}"; do
   openssl genrsa -out "${service}.key" 2048
   openssl req -new -key "${service}.key" -out "${service}.csr" -subj "/CN=${service}" -addext "subjectAltName = DNS:${service}, DNS:localhost, IP:127.0.0.1"
@@ -244,6 +248,12 @@ Test internal gateway health endpoint:
 curl -k https://localhost:8080/health
 ```
 Output: `{"status":"ok"}`
+
+Test reviewer console health (saas-core ADR-0021; loopback only):
+```bash
+curl http://127.0.0.1:8090/healthz
+```
+Output: `ok`. The console fails fast at startup if `INTERNAL_SERVICE_TOKEN` is unset, and its document/review proxies require a valid reviewer token — an unauthenticated `curl /api/queue` must return 401.
 
 ### Step 6.4: Non-Root Container Execution & Docker Native HEALTHCHECK Directives
 All 5 production microservice Dockerfiles (`api-gateway`, `auth-service`, `chat-service`, `notification-service`, `user-service`) enforce non-root runtime execution and container-level liveness monitoring:
@@ -347,6 +357,24 @@ api.logiclinkeg.tech {
 
 #### 2. Automatic Lifecycle Management
 Because Caddy is defined as a service in `docker-compose.yml`, running `docker compose up -d` handles container creation, networking, port binding, and automatic restart (`restart: unless-stopped`). ACME certificates issued by Let's Encrypt are persisted across container restarts using the named volume `caddy_data:/data`.
+
+#### 3. Reviewer Console Route (saas-core ADR-0021)
+The KYC/KYB/KYE reviewer console (`kyc-reviewer-console` service) must stay off the public API surface: it holds `INTERNAL_SERVICE_TOKEN` and exists precisely because reviewer endpoints cannot be reached through the public gateway. Expose it on its own subdomain so remote reviewers can reach it over HTTPS:
+
+```caddy
+kyc.logiclinkeg.tech {
+    reverse_proxy kyc-reviewer-console:8090
+}
+```
+
+> [!IMPORTANT]
+> **Proxy target depends on Caddy's network mode**:
+> - If `saas-caddy` runs on the `saas-net` bridge network (default per this doc): use the service name `kyc-reviewer-console:8090` as shown above.
+> - If Caddy runs as a host-network sibling stack (`docker-compose.caddy.yml`, `network_mode: host`): use `http://127.0.0.1:8090` instead — the console binds loopback-only (`127.0.0.1:8090:8090`) so it is never directly reachable from the internet either way.
+>
+> All console API routes require a valid `X-Reviewer-Token` enforced by auth-service upstream; the login page itself carries no privilege.
+
+DNS: create an additional `A` record for the chosen subdomain (e.g., `kyc`) pointing at the same VM public IP, using the same registrar guidance as Step 8.2 (delegated-nameserver warning applies).
 
 ---
 
