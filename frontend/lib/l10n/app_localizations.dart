@@ -2277,6 +2277,12 @@ abstract class AppLocalizations {
   /// **'KYC Pending'**
   String get kycPending;
 
+  /// No description provided for @kycRejectedDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification Rejected'**
+  String get kycRejectedDialogTitle;
+
   /// No description provided for @serviceNameLabel.
   ///
   /// In en, this message translates to:

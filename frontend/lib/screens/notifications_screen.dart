@@ -70,7 +70,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
     if (_selectedCategory == 'Alerts') {
       return list
-          .where((n) => n.type == 'status_update' || n.type == 'popup')
+          .where((n) =>
+              n.type == 'status_update' ||
+              n.type == 'popup' ||
+              n.type == 'kyc_approved' ||
+              n.type == 'kyc_rejected')
           .toList();
     }
     return list;
@@ -295,7 +299,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     required String? userToken,
   }) {
     final bool isJob = notif.type == 'job_alert' || notif.id.startsWith('job-');
-    final bool isAlert = notif.type == 'status_update' || notif.type == 'popup';
+    final bool isAlert = notif.type == 'status_update' ||
+        notif.type == 'popup' ||
+        notif.type == 'kyc_approved' ||
+        notif.type == 'kyc_rejected';
     final bool isSystem = notif.type == 'system';
 
     final IconData typeIcon = isJob

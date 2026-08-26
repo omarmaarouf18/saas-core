@@ -276,6 +276,7 @@
     * `cancel_job_dialog.dart`
     * `dashboard_screen_template.dart`
     * `form_screen_template.dart`
+    * `kyc_rejection_dialog_host.dart`
     * `themed_panel.dart`
     * `confirm_action_dialog.dart`
     * `create_service_dialog.dart`
@@ -283,6 +284,7 @@
     * `deposit_funds_dialog.dart`
     * `email_change_dialog.dart`
     * `entity_avatar.dart`
+    * `info_alert_dialog.dart`
     * `info_list_tile.dart`
     * `list_screen_template.dart`
     * `location_picker_map.dart`

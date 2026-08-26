@@ -556,6 +556,7 @@
   "noServicesDescription": "No services configured yet.\nTap the + button to create a service.",
   "addService": "Add Service",
   "kycPending": "KYC Pending",
+  "kycRejectedDialogTitle": "Verification Rejected",
   "serviceNameLabel": "Service Name",
   "categoryLabel": "Category",
   "basePriceLabel": "Base Price ($)",
