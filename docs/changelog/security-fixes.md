@@ -823,3 +823,28 @@ This section consolidates the resolution status for all 10 findings from the ext
 - **Commit SHA**: ``804c3900b4e811df7eed520b83b5c7c18e6aff8d``
 - **Verification**: Representative repro test `TestCompleteJob_EmptyInternalTokenNeverAuthenticates` (handler constructed with empty secret post-construction, simulating loader bypass): pre-fix literal acceptance quoted above; post-fix rejects with 400 requiring requester identity, 3/3 passes. Remaining seven sites are the identical mechanical guard, verified by grep counts per service (2 each for notif/gateway) plus build/vet/test across all four services and full suites green. ✅
 - **CORRECTION (session re-audit)**: The claim above that `804c390` covered CancelJob was FALSE — its diff never touched the site, and the "verified by grep counts" check missed it. The CancelJob comparator at the "Resolve requester" step in `jobs_handlers.go` remained unguarded until follow-up commit ``84a8c49`` added the identical guard plus `TestCancelJob_EmptyInternalTokenNeverAuthenticates`. Exploitability honesty: at THIS site the pre-guard gap could not move funds — the internal path still routes requester_id through JWT resolution and pair-equality against server-stored job parties, so raw attacker-chosen IDs fail 401 before any state change; fixed for invariant uniformity and pinned against future refactors dropping that downstream validation. Repo-wide sweep for other unguarded comparators found exactly one more same-class site OUTSIDE this finding's X-Internal-Token scope: auth-service `getClientIP`'s `X-Gateway-Secret` comparator (`auth.go`, gates XFF trust for audit attribution only) — still OPEN, flagged for follow-up. Local test-infrastructure note: during verification the shared `saas-mongo` was found requiring root auth, silently SKIPping all mongo-backed user-service tests (skip-as-pass); suites were re-run against a dedicated no-auth container before any green claim.
+
+## Reviewer Credential Confirmation Compared Raw Token Against Digest-At-Rest Row
+
+**Date**: 2026-08-26
+**Severity**: High (complete authentication failure for a credential class — not an auth bypass)
+**Related Commit SHA**: ``33afe307875e1c929445909c940f1a381802fd37``
+
+- **Defect**: `authenticateReviewer` (auth-service) confirmed the candidate row with
+  `ConstantTimeCompare(rev.Token, presentedRaw)`. Since the at-rest hashing migration,
+  `AddReviewer` stores only `sha256(raw)` — so this comparison could never succeed for any properly
+  onboarded reviewer. Net effect: every digest-row reviewer received 401 on all `/auth/kyb-kye/*`
+  endpoints; only legacy plaintext rows (via `GetReviewerByToken`'s fallback lookup) could authenticate.
+  Discovered live while onboarding the first production reviewer for kyc-reviewer-console: valid raw
+  credential → HTTP 401 through the full Caddy→console→auth-service chain despite the stored digest
+  verifiably matching the presented token.
+- **Why tests missed it**: handler suites set `X-Reviewer-Token` to `reviewer.Token` AFTER calling
+  `AddReviewer`, which mutates the struct field to the digest — i.e., tests authenticated with the
+  digest-as-header, a presentation no real client can produce. Store-level regression test
+  (`TestReviewerTokenHashedAtRest`) validated lookup but never the handler's confirmation step.
+- **Fix**: exported `store.MatchesStoredReviewerCredential(stored, presented)` performing era-aware
+  constant-time confirmation (digest-vs-hash(presented) OR raw-vs-raw), used by the handler.
+- **Regression tests**: `reviewer_credential_era_test.go` — (1) raw issued credential authenticates
+  against a digest-at-rest row through `GetPendingKYBKYESubmissions`; (2) legacy plaintext rows keep
+  authenticating via the fallback path. Verified locally against live Mongo
+  (`MONGO_URI=... go test -run TestAuthenticateReviewer -v`: both PASS); full auth-service suite green.
