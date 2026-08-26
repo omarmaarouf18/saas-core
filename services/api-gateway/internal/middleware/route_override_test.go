@@ -100,3 +100,51 @@ func TestRateLimitWithOverrides_NilOverridesMatchesLegacyBehavior(t *testing.T) 
 		t.Fatalf("second request on other route: expected 429 from shared bucket, got %d", got)
 	}
 }
+
+// TestRateLimitWithOverrides_LoopbackExempt verifies that loopback callers
+// (Docker HEALTHCHECK probes, local diagnostics) are never rate limited:
+// they share one ::1 bucket that health verification depends on, and a locked
+// healthcheck surfaces as a false "unhealthy" container state.
+func TestRateLimitWithOverrides_LoopbackExempt(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	general := NewRateLimiter(ratelimit.NewRateLimiter(rdb, 2, 1*time.Minute, "gw-loopback"), nil)
+	handler := RateLimitWithOverrides(general, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	for i := 0; i < 50; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/health", nil)
+		req.RemoteAddr = "[::1]:9999"
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("loopback request %d was limited (got %d); health probes must be exempt", i+1, rec.Code)
+		}
+	}
+
+	// External callers remain limited under the same configuration.
+	for i := 0; i < 2; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/health", nil)
+		req.RemoteAddr = "198.51.100.9:5555"
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("external request %d should pass before the limit, got %d", i+1, rec.Code)
+		}
+	}
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	req.RemoteAddr = "198.51.100.9:5555"
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("external caller over limit: expected 429, got %d", rec.Code)
+	}
+}

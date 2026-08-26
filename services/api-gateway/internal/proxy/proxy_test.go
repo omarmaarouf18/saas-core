@@ -334,7 +334,10 @@ func TestLimiterHardenAndFailClosed(t *testing.T) {
 		handler := middleware.RateLimit(limiter)(mux)
 
 		req := httptest.NewRequest("GET", "/test", nil)
-		req.RemoteAddr = "127.0.0.1:1234"
+		// Non-loopback address: loopback callers are exempt from rate limiting
+		// entirely (health probes must not be lockable), but fail-closed MUST
+		// still apply to external traffic when Redis is unreachable.
+		req.RemoteAddr = "203.0.113.200:1234"
 		rec := httptest.NewRecorder()
 
 		handler.ServeHTTP(rec, req)

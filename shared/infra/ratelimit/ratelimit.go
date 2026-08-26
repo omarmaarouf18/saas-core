@@ -117,6 +117,12 @@ redis.call('EXPIRE', countKey, window)
 
 -- 3. Check if limit exceeded
 if count > limit then
+    -- Reset the counter so the client starts with a clean budget when the
+    -- lockout expires. Without this, a client that crosses the threshold
+    -- resumes ABOVE the limit after a short (sub-window) lockout and is
+    -- instantly re-locked with an exponentially longer penalty — an
+    -- escalation spiral that persists for as long as it keeps using the app.
+    redis.call('DEL', countKey)
     local diff = count - limit - 1
     local backoff = 30 * (2 ^ diff)
     if backoff > cap then

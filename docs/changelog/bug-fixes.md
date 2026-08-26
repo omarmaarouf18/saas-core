@@ -602,3 +602,14 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Root cause**: connect attempts of a long-lived/reconnecting endpoint drew from the same per-IP budget as ordinary REST traffic; aggressive client reconnect behavior (multiple concurrent streams per tenant observed in notification-service hub logs) turned any network blip or deploy into a full-API lockout cascade.
 - **Fix**: route-aware rate limiting via `middleware.RateLimitWithOverrides` — `/api/v1/notifications/stream` now draws from its own isolated Redis bucket (`gateway-sse`, same 100/min budget) so stream churn can no longer starve general API access; all other routes keep the original bucket and budgets unchanged.
 - **Regression tests**: SSE-bucket exhaustion leaves the general bucket untouched and vice versa; nil-overrides path reproduces legacy shared-bucket semantics. Full api-gateway suite green locally.
+
+## Rate-Limit Escalation Spiral, Undersized General Budget, Lockable Health Probes
+
+**Date**: 2026-08-26
+**Category**: Bug Fix / Availability
+**Related Commit SHA**: ``dab71b90de4e58c1d9cd6bcbb6c1c2ee8be8dbc9``
+
+- **Escalation spiral**: `checkAndRecord` left the counter in place when a lockout engaged, so a client crossing 100/min resumed ABOVE the limit after the first (30s, sub-window) lockout and was instantly re-locked with a doubled penalty — for as long as the app kept retrying. Counter is now deleted on lockout engage; post-lockout always starts from a fresh budget. Verified via miniredis test incl. fast-forward past expiry.
+- **Undersized budget**: general gateway bucket raised 100 → 300 req/min per IP against measured ~40/min single-user steady state (headroom for multi-device CGNAT households). SSE bucket unchanged.
+- **Lockable health probes**: Docker HEALTHCHECK probes (::1) shared the loopback bucket with local diagnostics; when it locked, probes returned 429 and the container flapped "unhealthy". Loopback callers are now exempt from gateway rate limiting entirely; fail-closed on Redis outage still applies to all external traffic (fail-closed test updated to a non-loopback address to match the new contract).
+- Follow-up to ``70def3268ee14d087977e72698e7ebd882b1b613`` (SSE bucket isolation).
