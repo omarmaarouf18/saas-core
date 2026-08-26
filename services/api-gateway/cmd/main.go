@@ -153,8 +153,12 @@ func main() {
 	}
 
 	// ---- Wrap with version gate, rate limiting, and logging middleware ----
-	// General bucket: 100 req/min per client IP across all REST routes.
-	rl := ratelimit.NewRateLimiter(redisClient, 100, 1*time.Minute, "gateway")
+	// General bucket: 300 req/min per client IP across all REST routes.
+	// Sized against measured steady-state single-user load (~40/min) with
+	// headroom for multi-device households behind one CGNAT address; the
+	// lockout counter resets when a lockout engages (shared/infra), so the
+	// worst case is one short pause rather than an escalating spiral.
+	rl := ratelimit.NewRateLimiter(redisClient, 300, 1*time.Minute, "gateway")
 	limiter := middleware.NewRateLimiter(rl, cfg.TrustedProxyIPs)
 	// Isolated SSE bucket: the notifications stream is long-lived but mobile
 	// clients reconnect aggressively after network blips or stack redeploys.

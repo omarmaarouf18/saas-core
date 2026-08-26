@@ -47,6 +47,10 @@ func RateLimit(limiter *RateLimiter) func(http.Handler) http.Handler {
 // per-IP budget and lock the client out of every unrelated API endpoint.
 // The longest matching registered prefix wins; unmatched paths use the
 // general limiter.
+//
+// Loopback callers (Docker HEALTHCHECK probes, local diagnostics) are exempt:
+// they share one tiny ::1 bucket that health verification depends on, and a
+// locked healthcheck surfaces as a false "unhealthy" container state.
 func RateLimitWithOverrides(limiter *RateLimiter, overrides map[string]*RateLimiter) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -55,6 +59,10 @@ func RateLimitWithOverrides(limiter *RateLimiter, overrides map[string]*RateLimi
 				effective = overrides[prefix]
 			}
 			ip := effective.getIP(r)
+			if ip == "127.0.0.1" || ip == "::1" {
+				next.ServeHTTP(w, r)
+				return
+			}
 			if limited, remaining := effective.CheckAndRecord(ip); limited {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusTooManyRequests)

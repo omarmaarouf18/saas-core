@@ -462,3 +462,42 @@ func TestNewRedisClient_SentinelAndStandaloneBranching(t *testing.T) {
 		}
 	})
 }
+
+// TestRateLimiter_CounterResetsOnLockoutEngage verifies that crossing the
+// limit clears the counter, so the client starts with a fresh budget when
+// the lockout expires instead of resuming above the limit and being
+// instantly re-locked with an exponentially longer penalty.
+func TestRateLimiter_CounterResetsOnLockoutEngage(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	rl := NewRateLimiter(rdb, 2, 1*time.Minute, "reset-test")
+
+	limited := false
+	for i := 0; i < 3; i++ {
+		if l, _ := rl.CheckAndRecord("client-a"); l {
+			limited = true
+		}
+	}
+	if !limited {
+		t.Fatalf("expected lockout to engage after exceeding limit of 2")
+	}
+
+	countKey := "ratelimit:reset-test:count:client-a"
+	if mr.Exists(countKey) {
+		t.Errorf("counter key survived lockout engage; client would resume above the limit after expiry")
+	}
+
+	// Fast-forward past the (short) initial lockout: the next request must be
+	// allowed with a fresh budget rather than immediately re-locked.
+	mr.FastForward(31 * time.Second)
+	if l, _ := rl.CheckAndRecord("client-a"); l {
+		t.Errorf("request right after lockout expiry was limited; counter was not reset")
+	}
+}
