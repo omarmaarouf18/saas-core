@@ -222,6 +222,19 @@ chmod 644 *.crt
 cd ..
 ```
 
+> [!IMPORTANT]
+> **Key file permissions must match the containers' runtime UID (deployed reality)**
+> All production containers run as non-root users (`appuser` UID 100, console user UID 1000), while files in
+> `certs/` are owned by the host service account (e.g. `deploybot`, UID 1001). A `600` key is therefore
+> unreadable inside the container and the service crash-loops with
+> `failed to load TLS keypair: ... permission denied` (observed live with `reviewer-console.key`). The
+> deployed stack runs all private keys at mode `644` (world-readable but only reachable on the VM's local
+> disk). When generating certs per this section on `quickdelivery-vm`, use:
+> ```bash
+> chmod 644 *.key *.crt
+> ```
+> Tightening this (e.g. group-based access mapped into the containers via `group_add`) is tracked as hardening follow-up work; until then `644` is required for services to boot.
+
 ---
 
 ## 6. Running the Production Stack
@@ -375,6 +388,27 @@ kyc.logiclinkeg.tech {
 > All console API routes require a valid `X-Reviewer-Token` enforced by auth-service upstream; the login page itself carries no privilege.
 
 DNS: create an additional `A` record for the chosen subdomain (e.g., `kyc`) pointing at the same VM public IP, using the same registrar guidance as Step 8.2 (delegated-nameserver warning applies).
+
+> [!WARNING]
+> **Live `Caddyfile` location on `quickdelivery-vm` differs from the repo checkout copies**
+> The running `saas-caddy` container mounts its config from
+> `/home/azureuser/saas-core-deploy/Caddyfile` — NOT from `/opt/saas-platform/Caddyfile` nor the CD runner
+> workspace copy (`/home/deploybot/actions-runner/_work/saas-core-deploy/saas-core-deploy/Caddyfile`),
+> both of which hold stale placeholder content (`api.yourdomain.com`). Editing either of those has no
+> effect on live routing. The container also carries no compose project labels (started outside the
+> current stack's project), so CD runs do not manage or recreate it.
+>
+> Route changes must therefore be made in `/home/azureuser/saas-core-deploy/Caddyfile` and applied with a
+> zero-downtime reload:
+> ```bash
+> sudo cp /home/azureuser/saas-core-deploy/Caddyfile /home/azureuser/saas-core-deploy/Caddyfile.bak-$(date +%Y%m%d)
+> # edit: append the kyc.<domain> site block from above
+> docker exec saas-caddy caddy validate --config /etc/caddy/Caddyfile
+> docker exec saas-caddy caddy reload --config /etc/caddy/Caddyfile
+> ```
+> Verify DNS resolves to this VM **before** adding a new site block: while a hostname still points
+> elsewhere (e.g. Vercel), Caddy cannot complete the ACME HTTP-01 challenge and will retry with backoff,
+> burning Let's Encrypt rate-limit attempts without affecting already-issued certificates.
 
 ---
 
