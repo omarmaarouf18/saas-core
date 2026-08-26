@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/core/theme.dart';
@@ -791,6 +792,66 @@ void main() {
 
       await tester.tap(find.text('Retry'));
       expect(retryClicked, isTrue);
+    });
+
+    testWidgets('Banner retry label localizes to Arabic via ARB delegate',
+        (tester) async {
+      void noopRetry() {}
+
+      // No delegate: null-safe l10n falls back to English "Retry".
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body:
+                ThemedErrorBanner(message: 'Network error', onRetry: noopRetry),
+          ),
+        ),
+      );
+      expect(find.text('Retry'), findsOneWidget);
+
+      // Arabic locale: default retryLabel must render the ARB string.
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('ar'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body:
+                ThemedErrorBanner(message: 'Network error', onRetry: noopRetry),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Retry'), findsNothing);
+      expect(find.text('حاول تاني'), findsOneWidget);
+    });
+
+    testWidgets('Dismiss close button exposes tooltip and meets tap target',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ThemedWarningBanner(
+              message: 'Pending activation',
+              onDismiss: () {},
+            ),
+          ),
+        ),
+      );
+
+      final button = tester.widget<IconButton>(find.byType(IconButton));
+      expect(button.tooltip, isNotNull);
+      expect(button.tooltip, isNotEmpty);
+
+      final size = tester.getSize(find.byType(IconButton));
+      expect(size.width, greaterThanOrEqualTo(44));
+      expect(size.height, greaterThanOrEqualTo(44));
     });
   });
 

@@ -1172,6 +1172,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get kycPending => 'في انتظار التوثيق';
 
   @override
+  String get kycRejectedDialogTitle => 'تم رفض التحقق';
+
+  @override
   String get serviceNameLabel => 'اسم الخدمة';
 
   @override

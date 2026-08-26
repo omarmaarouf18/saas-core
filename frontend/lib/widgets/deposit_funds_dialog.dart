@@ -83,6 +83,7 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                       IconButton(
                         key: const Key('close_deposit_dialog'),
                         icon: const Icon(Icons.close),
+                        tooltip: context.l10n.tooltipClose,
                         onPressed: _isSubmitting
                             ? null
                             : () => Navigator.of(context).pop(),

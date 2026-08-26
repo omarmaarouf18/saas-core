@@ -91,6 +91,7 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                       IconButton(
                         key: const Key('close_create_service_dialog'),
                         icon: const Icon(Icons.close),
+                        tooltip: context.l10n.tooltipClose,
                         onPressed: _isSubmitting
                             ? null
                             : () => Navigator.of(context).pop(),

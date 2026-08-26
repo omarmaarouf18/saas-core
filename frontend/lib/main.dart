@@ -24,6 +24,7 @@ import 'providers/locale_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/component_library_screen.dart';
+import 'widgets/kyc_rejection_dialog_host.dart';
 
 class DevHttpOverrides extends HttpOverrides {
   @override
@@ -119,6 +120,10 @@ class MyApp extends StatelessWidget {
         return const Locale('en');
       },
       debugShowCheckedModeBanner: false,
+      builder: (context, child) => KycRejectionDialogHost(
+        navigatorKey: appNavigatorKey,
+        child: child,
+      ),
       onGenerateRoute: (settings) {
         // Debug-only component library route (Storybook-style shared widget
         // catalog). Never registered in release builds.

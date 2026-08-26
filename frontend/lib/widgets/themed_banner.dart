@@ -28,7 +28,7 @@ class ThemedBanner extends StatefulWidget {
     this.icon,
     this.onDismiss,
     this.onRetry,
-    this.retryLabel = "Retry",
+    this.retryLabel,
     this.nowProvider,
   });
 
@@ -178,7 +178,7 @@ class _ThemedBannerState extends State<ThemedBanner> {
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
-                widget.retryLabel ?? "Retry",
+                widget.retryLabel ?? context.l10n.retry,
                 style: AppTypography.labelLg.copyWith(
                   fontWeight: FontWeight.bold,
                   color: accent,
@@ -187,14 +187,12 @@ class _ThemedBannerState extends State<ThemedBanner> {
             ),
           ],
           if (widget.onDismiss != null) ...[
-            const SizedBox(width: AppSpacing.md),
+            const SizedBox(width: AppSpacing.xxs),
             IconButton(
               onPressed: widget.onDismiss,
               icon: const Icon(Icons.close, size: 18),
               color: accent,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              splashRadius: 20,
+              tooltip: context.l10n.tooltipClose,
             ),
           ],
         ],

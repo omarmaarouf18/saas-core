@@ -86,8 +86,12 @@ jobs:
           echo "=== Syncing docker-compose.prod.yml → docker-compose.yml ==="
           cp saas-core/infrastructure/deploy/docker-compose.prod.yml saas-core-deploy/docker-compose.yml
 
-          echo "=== Substituting IMAGE_TAG with commit SHA ==="
-          sed -i "s|IMAGE_TAG|${{ github.sha }}|g" saas-core-deploy/docker-compose.yml
+          echo "=== Substituting :IMAGE_TAG with commit SHA (colon-prefixed so the"
+          echo "=== KYC_CONSOLE_IMAGE_TAG env var name is NOT mangled) ==="
+          sed -i "s|:IMAGE_TAG|:${{ github.sha }}|g" saas-core-deploy/docker-compose.yml
+          grep -n "KYC_CONSOLE_IMAGE_TAG" saas-core-deploy/docker-compose.yml >/dev/null || {
+            echo "::error::KYC_CONSOLE_IMAGE_TAG placeholder lost during sync"; exit 1;
+          }
 
           echo "=== Syncing deploy.yml workflow ==="
           mkdir -p saas-core-deploy/.github/workflows

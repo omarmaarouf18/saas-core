@@ -24,6 +24,15 @@ class NotificationsProvider extends ChangeNotifier {
   String? _error;
   StreamSubscription<SSEModel>? _sseSubscription;
 
+  /// Broadcast stream of KYC/KYE rejection outcome notifications (ADR-0021).
+  /// The app root listens to this to present an immediate in-app dialog with
+  /// the rejection reason; the notification also lands in the normal list.
+  final StreamController<NotificationModel> _kycRejectionController =
+      StreamController<NotificationModel>.broadcast();
+
+  Stream<NotificationModel> get kycRejectionStream =>
+      _kycRejectionController.stream;
+
   List<NotificationModel> get notifications => _notifications;
   bool get isConnected => _isConnected;
 
@@ -82,6 +91,12 @@ class NotificationsProvider extends ChangeNotifier {
                 _notifications.insert(0, notif);
                 notifyListeners();
               }
+
+              // ADR-0021: surface rejections for the immediate in-app dialog.
+              if (notif.type == 'kyc_rejected' &&
+                  !_kycRejectionController.isClosed) {
+                _kycRejectionController.add(notif);
+              }
             } catch (e) {
               debugPrint('Error parsing notification JSON: $e');
             }
@@ -129,6 +144,7 @@ class NotificationsProvider extends ChangeNotifier {
   void dispose() {
     _sseSubscription?.cancel();
     _sseSubscription = null;
+    _kycRejectionController.close();
     super.dispose();
   }
 

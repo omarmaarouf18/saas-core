@@ -363,6 +363,7 @@
   "noServicesDescription": "لم يتم ضبط أي خدمات بعد.\nإضغط على زر + لإنشاء خدمة جديدة.",
   "addService": "إضافة خدمة",
   "kycPending": "في انتظار التوثيق",
+  "kycRejectedDialogTitle": "تم رفض التحقق",
   "serviceNameLabel": "اسم الخدمة",
   "categoryLabel": "الفئة",
   "basePriceLabel": "السعر الأساسي ($)",

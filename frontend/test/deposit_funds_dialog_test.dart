@@ -94,6 +94,26 @@ void main() {
     expect(find.text('Cancel'), findsOneWidget);
   });
 
+  testWidgets('DepositFundsDialog close button exposes tooltip semantics',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final auth = MockAuthProviderForDeposit(apiClient);
+    final owner = MockOwnerProviderForDepositDialog(apiClient);
+
+    await tester.pumpWidget(buildDepositTestApp(
+      ownerProvider: owner,
+      authProvider: auth,
+    ));
+    await tester.tap(find.text('Open Deposit Dialog'));
+    await tester.pumpAndSettle();
+
+    final button = tester.widget<IconButton>(
+      find.byKey(const Key('close_deposit_dialog')),
+    );
+    expect(button.tooltip, isNotNull);
+    expect(button.tooltip, isNotEmpty);
+  });
+
   testWidgets('DepositFundsDialog validates empty amount',
       (WidgetTester tester) async {
     final apiClient = ApiClient();

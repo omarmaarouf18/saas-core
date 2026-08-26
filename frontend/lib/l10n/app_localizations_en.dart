@@ -1184,6 +1184,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get kycPending => 'KYC Pending';
 
   @override
+  String get kycRejectedDialogTitle => 'Verification Rejected';
+
+  @override
   String get serviceNameLabel => 'Service Name';
 
   @override

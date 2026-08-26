@@ -121,6 +121,24 @@ void main() {
     expect(find.text('Continue'), findsOneWidget);
   });
 
+  testWidgets('PayoutRequestDialog close button exposes tooltip semantics',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final auth = MockAuthProviderForPayout(apiClient);
+    final owner = MockOwnerProviderForPayoutDialog(apiClient);
+
+    await tester
+        .pumpWidget(buildTestApp(ownerProvider: owner, authProvider: auth));
+    await tester.tap(find.text('Open Dialog'));
+    await tester.pumpAndSettle();
+
+    final button = tester.widget<IconButton>(
+      find.byKey(const Key('close_payout_dialog')),
+    );
+    expect(button.tooltip, isNotNull);
+    expect(button.tooltip, isNotEmpty);
+  });
+
   testWidgets('PayoutRequestDialog validates empty fields',
       (WidgetTester tester) async {
     final apiClient = ApiClient();
