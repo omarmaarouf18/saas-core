@@ -1927,7 +1927,11 @@ func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 		return nil, errors.New("invalid reviewer token")
 	}
 
-	if subtle.ConstantTimeCompare([]byte(rev.Token), []byte(reviewerToken)) != 1 {
+	// Constant-time confirmation against the single candidate row. The stored
+	// credential is a SHA-256 digest for all reviewers onboarded since the
+	// at-rest hashing migration, so the presented RAW token must be hashed
+	// before comparison; legacy plaintext rows compare directly.
+	if !store.MatchesStoredReviewerCredential(rev.Token, reviewerToken) {
 		return nil, errors.New("invalid reviewer token")
 	}
 
