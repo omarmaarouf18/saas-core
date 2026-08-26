@@ -153,10 +153,21 @@ func main() {
 	}
 
 	// ---- Wrap with version gate, rate limiting, and logging middleware ----
+	// General bucket: 100 req/min per client IP across all REST routes.
 	rl := ratelimit.NewRateLimiter(redisClient, 100, 1*time.Minute, "gateway")
 	limiter := middleware.NewRateLimiter(rl, cfg.TrustedProxyIPs)
+	// Isolated SSE bucket: the notifications stream is long-lived but mobile
+	// clients reconnect aggressively after network blips or stack redeploys.
+	// Without isolation, that connect churn exhausts the shared per-IP budget
+	// and locks the client out of every unrelated endpoint (observed live:
+	// 438 stream-driven 429s in ~6 minutes after a deploy, cascading into
+	// lockouts on auth/user and ratings for the same IP).
+	sseRl := ratelimit.NewRateLimiter(redisClient, 100, 1*time.Minute, "gateway-sse")
+	sseLimiter := middleware.NewRateLimiter(sseRl, cfg.TrustedProxyIPs)
 	versionGated := middleware.VersionGate(versionStore)(mux)
-	rateLimited := middleware.RateLimit(limiter)(versionGated)
+	rateLimited := middleware.RateLimitWithOverrides(limiter, map[string]*middleware.RateLimiter{
+		"/api/v1/notifications/stream": sseLimiter,
+	})(versionGated)
 	logged := middleware.Logging(cfg.AllowedOrigin)(rateLimited)
 
 	// ---- Start server ----
