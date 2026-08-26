@@ -18,10 +18,19 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     steps:
+      - name: Generate GitHub App token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: omarmaarouf18
+          repositories: kyc-reviewer-console
+
       - name: Notify reviewer console repo
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.REVIEWER_CONSOLE_PAT }}
+          github-token: ${{ steps.app-token.outputs.token }}
           script: |
             await github.rest.repos.createDispatchEvent({
               owner: 'omarmaarouf18',
