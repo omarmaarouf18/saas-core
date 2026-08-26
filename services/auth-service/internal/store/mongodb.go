@@ -706,6 +706,20 @@ func hashToken(token string) string {
 	return hex.EncodeToString(sum[:])
 }
 
+// MatchesStoredReviewerCredential reports whether a presented raw reviewer
+// token corresponds to the stored credential. Accepts both credential eras:
+// the current SHA-256-digest-at-rest form and the legacy plaintext form. The
+// caller has already narrowed to exactly one candidate row via
+// GetReviewerByToken, so this is the constant-time confirmation step — it must
+// compare digest-vs-presented for hashed rows (the raw value is never stored),
+// and raw-vs-raw for legacy rows.
+func MatchesStoredReviewerCredential(stored, presented string) bool {
+	if subtle.ConstantTimeCompare([]byte(stored), []byte(presented)) == 1 {
+		return true
+	}
+	return subtle.ConstantTimeCompare([]byte(stored), []byte(hashToken(presented))) == 1
+}
+
 // AddReviewer saves a new reviewer to the reviewers collection.
 // The token is stored as a SHA-256 digest, never plaintext.
 func (s *MongoDB) AddReviewer(ctx context.Context, rev *models.Reviewer) error {
