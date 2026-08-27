@@ -170,15 +170,18 @@ class _OtpPinInputState extends State<OtpPinInput> {
             ((totalWidth - totalSpacing) / widget.length).clamp(38.0, 52.0);
         final double boxHeight = boxWidth * 1.25;
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(widget.length, (index) {
-            return SizedBox(
-              width: boxWidth,
-              height: boxHeight,
-              child: _buildPinBox(index),
-            );
-          }),
+        return Directionality(
+          textDirection: TextDirection.ltr,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(widget.length, (index) {
+              return SizedBox(
+                width: boxWidth,
+                height: boxHeight,
+                child: _buildPinBox(index),
+              );
+            }),
+          ),
         );
       },
     );
@@ -186,11 +189,12 @@ class _OtpPinInputState extends State<OtpPinInput> {
 
   Widget _buildPinBox(int index) {
     final isFocused = _focusNodes[index].hasFocus;
-    Color borderColor = AppColors.outlineVariant;
+    final theme = Theme.of(context);
+    Color borderColor = theme.colorScheme.outlineVariant;
     if (widget.hasError) {
-      borderColor = AppColors.error;
+      borderColor = theme.colorScheme.error;
     } else if (isFocused) {
-      borderColor = AppColors.primary;
+      borderColor = theme.colorScheme.primary;
     }
 
     final l10n = AppLocalizations.of(context);
@@ -212,7 +216,7 @@ class _OtpPinInputState extends State<OtpPinInput> {
         },
         child: Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(
               color: borderColor,
@@ -229,8 +233,9 @@ class _OtpPinInputState extends State<OtpPinInput> {
               autofocus: widget.autoFocus && index == 0,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
+              textDirection: TextDirection.ltr,
               style: AppTypography.headlineMd.copyWith(
-                color: AppColors.primary,
+                color: theme.colorScheme.primary,
                 fontWeight: FontWeight.bold,
               ),
               maxLength: 1,

@@ -236,8 +236,9 @@ class _OwnerReconciliationQueueScreenState
                         key: const Key('reconciliation_search_field'),
                         controller: _searchController,
                         hintText: l10n.reconQueueSearchHint,
-                        prefixIcon:
-                            const Icon(Icons.search, color: AppColors.outline),
+                        prefixIcon: Icon(Icons.search,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant),
                         onChanged: (_) => setState(() {}),
                       ),
                       const SizedBox(height: AppSpacing.sm),

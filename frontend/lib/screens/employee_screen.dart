@@ -241,8 +241,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     key: const Key('employee_search_field'),
                     controller: _searchController,
                     hintText: context.l10n.employeeSearchHint,
-                    prefixIcon:
-                        const Icon(Icons.search, color: AppColors.outline),
+                    prefixIcon: Icon(Icons.search,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -387,7 +387,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                   Text(
                     context.l10n.workerIdBadge(displayId),
                     style: AppTypography.caption.copyWith(
-                      color: AppColors.outline,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -428,8 +428,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
               textDirection: _regUsernameDirection,
               labelText: l10n.employeeUsernameLabel,
               hintText: l10n.employeeUsernameHint,
-              prefixIcon:
-                  const Icon(Icons.person_outline, color: AppColors.outline),
+              prefixIcon: Icon(Icons.person_outline,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
               onChanged: (val) {
                 final trimmed = val.trim();
                 final isRtl = trimmed.isNotEmpty &&
@@ -464,8 +464,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
               keyboardType: TextInputType.emailAddress,
               labelText: l10n.employeeEmailLabel,
               hintText: l10n.employeeEmailHint,
-              prefixIcon:
-                  const Icon(Icons.email_outlined, color: AppColors.outline),
+              prefixIcon: Icon(Icons.email_outlined,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return l10n.emailRequired;
@@ -485,8 +485,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
               isPasswordField: true,
               labelText: l10n.employeePasswordLabel,
               hintText: l10n.employeePasswordHint,
-              prefixIcon:
-                  const Icon(Icons.lock_outline, color: AppColors.outline),
+              prefixIcon: Icon(Icons.lock_outline,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return l10n.passwordRequired;
@@ -576,8 +576,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
               keyboardType: TextInputType.emailAddress,
               labelText: l10n.employeeEmailLabel,
               hintText: l10n.employeeEmailHint,
-              prefixIcon:
-                  const Icon(Icons.email_outlined, color: AppColors.outline),
+              prefixIcon: Icon(Icons.email_outlined,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return l10n.employeeEmailRequired;
@@ -626,8 +626,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
               isPasswordField: true,
               labelText: l10n.confirmOwnerPassword,
               hintText: context.l10n.secureVerificationNote,
-              prefixIcon:
-                  const Icon(Icons.vpn_key_outlined, color: AppColors.outline),
+              prefixIcon: Icon(Icons.vpn_key_outlined,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return l10n.ownerPasswordRequired;
@@ -755,7 +755,9 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                             Text(
                               dateStr,
                               style: AppTypography.labelMd.copyWith(
-                                color: AppColors.outline,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ),
                           ],

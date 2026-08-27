@@ -75,7 +75,7 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                         child: Text(
                           l10n.depositFundsTitle,
                           style: AppTypography.titleMd.copyWith(
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -104,9 +104,9 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     labelText: l10n.walletAmountCredits,
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.attach_money,
-                      color: AppColors.outline,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {

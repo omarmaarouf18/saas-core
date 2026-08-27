@@ -873,7 +873,9 @@ class _ServiceRatingWidgetState extends State<ServiceRatingWidget> {
     if (_count == null || _count == 0) {
       return Text(
         context.l10n.noRatingsLabel,
-        style: AppTypography.labelMd.copyWith(color: AppColors.outline),
+        style: AppTypography.labelMd.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       );
     }
     return Row(

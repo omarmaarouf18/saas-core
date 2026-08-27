@@ -271,7 +271,7 @@ class _RatingScreenState extends State<RatingScreen> {
             context.l10n.howWasDeliveryQuestion,
             style: AppTypography.headlineLgMobile.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),

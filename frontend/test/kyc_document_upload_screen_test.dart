@@ -425,4 +425,179 @@ void main() {
     expect(find.text('Upload Document'), findsNothing);
     expect(find.text('Replace Document'), findsNothing);
   });
+
+  testWidgets(
+      '(f) Content is fully scrollable on 360x800 viewport without nested scroll freeze',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final apiClient = ApiClient();
+    final rejectedUser = UserProfile(
+      id: 'owner-scroll',
+      email: 'owner@test.com',
+      username: 'testowner',
+      role: 'owner',
+      kycStatus: 'rejected',
+      rejectionReason:
+          'The provided business registration is expired and illegible. Please provide a clear updated copy.',
+    );
+    final mockAuth = MockAuthProvider(apiClient, initialUser: rejectedUser);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ChangeNotifierProvider<AuthProvider>.value(
+          value: mockAuth,
+          child: const KycDocumentUploadScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify there is exactly ONE Scrollable container (no conflicting nested scrollviews)
+    final scrollables = find.byType(Scrollable);
+    expect(scrollables, findsOneWidget);
+
+    final scrollState = tester.state<ScrollableState>(scrollables.first);
+    expect(scrollState.position.pixels, 0.0);
+    expect(scrollState.position.maxScrollExtent, greaterThan(0.0));
+
+    // Dragging down scrolls content without getting frozen at 0.0
+    await tester.drag(find.byKey(const ValueKey('btn_upload_id_front')),
+        const Offset(0, -300));
+    await tester.pumpAndSettle();
+
+    expect(scrollState.position.pixels, greaterThan(0.0));
+
+    // Last slot (business proof) is reachable via scroll
+    final lastSlotFinder =
+        find.byKey(const ValueKey('btn_upload_business_proof'));
+    await tester.ensureVisible(lastSlotFinder);
+    await tester.pumpAndSettle();
+    expect(lastSlotFinder, findsOneWidget);
+  });
+
+  testWidgets(
+      '(g) Uploaded document image preview uses bounded cacheWidth and cacheHeight',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockAuth = MockAuthProvider(apiClient, initialUser: ownerUser);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ChangeNotifierProvider<AuthProvider>.value(
+          value: mockAuth,
+          child: KycDocumentUploadScreen(
+            onPickFile: (context, slotKey, allowPdf) async {
+              // 1x1 transparent PNG bytes
+              return PickedDocumentFile(
+                filename: 'passport.png',
+                bytes: Uint8List.fromList([
+                  0x89,
+                  0x50,
+                  0x4E,
+                  0x47,
+                  0x0D,
+                  0x0A,
+                  0x1A,
+                  0x0A,
+                  0x00,
+                  0x00,
+                  0x00,
+                  0x0D,
+                  0x49,
+                  0x48,
+                  0x44,
+                  0x52,
+                  0x00,
+                  0x00,
+                  0x00,
+                  0x01,
+                  0x00,
+                  0x00,
+                  0x00,
+                  0x01,
+                  0x08,
+                  0x06,
+                  0x00,
+                  0x00,
+                  0x00,
+                  0x1F,
+                  0x15,
+                  0xC4,
+                  0x89,
+                  0x00,
+                  0x00,
+                  0x00,
+                  0x0A,
+                  0x49,
+                  0x44,
+                  0x41,
+                  0x54,
+                  0x78,
+                  0x9C,
+                  0x63,
+                  0x00,
+                  0x01,
+                  0x00,
+                  0x00,
+                  0x05,
+                  0x00,
+                  0x01,
+                  0x0D,
+                  0x0A,
+                  0x2D,
+                  0xB4,
+                  0x00,
+                  0x00,
+                  0x00,
+                  0x00,
+                  0x49,
+                  0x45,
+                  0x4E,
+                  0x44,
+                  0xAE,
+                  0x42,
+                  0x60,
+                  0x82,
+                ]),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Tap upload for front ID
+    await tester.tap(find.byKey(const ValueKey('btn_upload_id_front')));
+    await tester.pumpAndSettle();
+
+    // Verify Image.memory widget has bounded cache dimensions to prevent decode jank
+    final imageFinder = find.byType(Image);
+    expect(imageFinder, findsOneWidget);
+    final imageWidget = tester.widget<Image>(imageFinder);
+    expect(imageWidget.image, isA<ResizeImage>());
+    final resizeImage = imageWidget.image as ResizeImage;
+    expect(resizeImage.width, equals(144));
+    expect(resizeImage.height, equals(144));
+  });
 }

@@ -120,7 +120,7 @@
   "signupSignIn": "تسجيل الدخول",
   "otpTitle": "تأكيد كود التحقق",
   "otpSubtitle": "ادخل الكود المكون من 6 أرقام المبعوت على إيميلك",
-  "otpCodeLabel": "كود التحقق الـ 6 أرقام",
+  "otpCodeLabel": "كود التحقق المكون من 6 أرقام",
   "otpSubmitButton": "تأكيد الكود",
   "otpResendButton": "إعادة إرسال الكود",
   "forgotPasswordTitle": "إعادة تعيين كلمة السر",
@@ -530,7 +530,7 @@
       }
     }
   },
-  "devOtpAutoFilled": "وضع التجربة: كود التحقق '{otp}' اتضاف تلقائيًا.",
+  "devOtpAutoFilled": "وضع التجربة: كود التحقق ({otp}) اتضاف تلقائيًا.",
   "@devOtpAutoFilled": {
     "placeholders": {
       "otp": {

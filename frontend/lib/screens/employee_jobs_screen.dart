@@ -366,9 +366,9 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                     shape: BoxShape.circle,
                     width: 36,
                     height: 36,
-                    child: const Icon(
+                    child: Icon(
                       Icons.badge_outlined,
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                       size: 20,
                     )),
                 const SizedBox(width: AppSpacing.sm),
@@ -518,14 +518,14 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                   backgroundColor: Theme.of(context).colorScheme.surface,
                   labelStyle: AppTypography.labelMd.copyWith(
                     color: isSelected
-                        ? AppColors.primary
+                        ? Theme.of(context).colorScheme.primary
                         : Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight:
                         isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                   side: BorderSide(
                     color: isSelected
-                        ? AppColors.primary
+                        ? Theme.of(context).colorScheme.primary
                         : AppColors.outlineVariant,
                   ),
                   onSelected: (selected) {
@@ -601,9 +601,9 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                           color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: AppRadius.smBorder,
                           padding: const EdgeInsets.all(AppSpacing.xs),
-                          child: const Icon(
+                          child: Icon(
                             Icons.local_shipping_outlined,
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.primary,
                             size: 18,
                           )),
                       const SizedBox(width: AppSpacing.xs),

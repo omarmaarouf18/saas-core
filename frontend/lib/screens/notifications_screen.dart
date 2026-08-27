@@ -411,7 +411,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             Text(
                               _formatTime(notif.timestamp),
                               style: AppTypography.caption.copyWith(
-                                color: AppColors.outline,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ),
                             const SizedBox(width: AppSpacing.xs),
@@ -421,7 +423,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 size: AppIconSize.sm,
                               ),
                               tooltip: context.l10n.tooltipDismiss,
-                              color: AppColors.outline,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(
                                 minWidth: 24,

@@ -334,10 +334,10 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
             hintText: l10n.myAccountEmailHint,
             controller: _emailController,
             enabled: false,
-            prefixIcon: const Icon(
+            prefixIcon: Icon(
               Icons.lock_outline,
               size: 18,
-              color: AppColors.outline,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -547,9 +547,9 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                       IconButton(
                         tooltip: l10n.tooltipRemoveAddress,
                         key: Key('my_account_remove_address_$index'),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.delete_outline,
-                          color: AppColors.error,
+                          color: Theme.of(context).colorScheme.error,
                           size: 20,
                         ),
                         onPressed: () => _removeAddress(index),

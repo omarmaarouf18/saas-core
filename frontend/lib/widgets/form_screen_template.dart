@@ -69,6 +69,9 @@ class FormScreenTemplate extends StatelessWidget {
   /// Optional scroll controller.
   final ScrollController? scrollController;
 
+  /// Optional pull-to-refresh callback. When supplied, wraps the form scroll view in a [RefreshIndicator].
+  final RefreshCallback? onRefresh;
+
   // --- Card Wrapping Option ---
   /// Whether to wrap the form fields in a [ThemedCard].
   final bool cardWrapper;
@@ -178,6 +181,7 @@ class FormScreenTemplate extends StatelessWidget {
     this.footer,
     this.physics = const AlwaysScrollableScrollPhysics(),
     this.scrollController,
+    this.onRefresh,
     this.cardWrapper = false,
     this.cardPadding,
     this.cardTopAccentColor,
@@ -326,6 +330,13 @@ class FormScreenTemplate extends StatelessWidget {
         children: assembledElements,
       ),
     );
+
+    if (onRefresh != null) {
+      scrollableBody = RefreshIndicator(
+        onRefresh: onRefresh!,
+        child: scrollableBody,
+      );
+    }
 
     if (disableOnSubmit && busy) {
       scrollableBody = IgnorePointer(

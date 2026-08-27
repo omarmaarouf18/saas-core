@@ -414,7 +414,9 @@ class _WalletScreenState extends State<WalletScreen> {
         children: [
           Text(
             "$methodLabel • $dateStr",
-            style: AppTypography.labelMd.copyWith(color: AppColors.outline),
+            style: AppTypography.labelMd.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           if (payout.accountDetails != null &&
               payout.accountDetails!.isNotEmpty) ...[
@@ -433,7 +435,7 @@ class _WalletScreenState extends State<WalletScreen> {
               "${l10n.payoutRejectionReasonLabel} ${payout.rejectionReason}",
               key: Key('payout_rejection_reason_${payout.id}'),
               style: AppTypography.labelMd.copyWith(
-                color: AppColors.error,
+                color: Theme.of(context).colorScheme.error,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -510,7 +512,9 @@ class _WalletScreenState extends State<WalletScreen> {
         children: [
           Text(
             dateStr,
-            style: AppTypography.labelMd.copyWith(color: AppColors.outline),
+            style: AppTypography.labelMd.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           if (jobId.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.xs),
@@ -525,7 +529,7 @@ class _WalletScreenState extends State<WalletScreen> {
                   context.l10n.ledgerJobLine(
                       jobId.substring(0, jobId.length > 8 ? 8 : jobId.length)),
                   style: AppTypography.labelMd.copyWith(
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 )),

@@ -625,12 +625,12 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     required bool isLast,
   }) {
     final Color nodeBg = isDone
-        ? AppColors.primary
+        ? Theme.of(context).colorScheme.primary
         : isActive
             ? AppColors.secondary
             : Theme.of(context).colorScheme.surfaceContainerHigh;
     final Color nodeColor = isDone || isActive
-        ? AppColors.onPrimary
+        ? Theme.of(context).colorScheme.onPrimary
         : Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Row(
@@ -650,7 +650,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 width: 2,
                 height: 28,
                 color: isDone
-                    ? AppColors.primary
+                    ? Theme.of(context).colorScheme.primary
                     : Theme.of(context).colorScheme.surfaceContainerHigh,
               ),
           ],

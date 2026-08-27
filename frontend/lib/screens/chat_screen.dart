@@ -169,8 +169,8 @@ class _ChatScreenState extends State<ChatScreen>
       statusIndicator = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const ThemedPanel(
-              color: AppColors.outline,
+          ThemedPanel(
+              color: AppColors.onPrimary.withValues(alpha: 0.7),
               shape: BoxShape.circle,
               width: 7,
               height: 7),
@@ -178,7 +178,7 @@ class _ChatScreenState extends State<ChatScreen>
           Text(
             l10n.chatStatusDisconnected,
             style: AppTypography.labelSm.copyWith(
-              color: AppColors.outline,
+              color: AppColors.onPrimary.withValues(alpha: 0.7),
             ),
           ),
         ],

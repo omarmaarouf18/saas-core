@@ -87,7 +87,7 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
                         style: AppTypography.titleMd.copyWith(
                           color: _isConfirming
                               ? context.semanticColors.warning
-                              : AppColors.primary,
+                              : Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -177,9 +177,10 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
                           keyboardType: const TextInputType.numberWithOptions(
                               decimal: true),
                           labelText: l10n.walletAmountCredits,
-                          prefixIcon: const Icon(
+                          prefixIcon: Icon(
                             Icons.account_balance_wallet_outlined,
-                            color: AppColors.outline,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
@@ -216,15 +217,17 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: AppRadius.defaultBorder,
-                              borderSide: const BorderSide(
-                                color: AppColors.outlineVariant,
+                              borderSide: BorderSide(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant,
                                 width: 1,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: AppRadius.defaultBorder,
-                              borderSide: const BorderSide(
-                                color: AppColors.primary,
+                              borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.primary,
                                 width: 1.5,
                               ),
                             ),
@@ -261,7 +264,8 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
                             _selectedMethod == 'bank_transfer'
                                 ? Icons.account_balance_rounded
                                 : Icons.phone_android_rounded,
-                            color: AppColors.outline,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {

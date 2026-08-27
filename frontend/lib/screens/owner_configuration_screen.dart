@@ -401,7 +401,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                       context.l10n.sectionBusinessIdentity,
                       style: AppTypography.titleMd.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     Text(
@@ -436,20 +436,20 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                           ? Image.network(
                               _photoUrlController.text,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => const Icon(
+                              errorBuilder: (_, __, ___) => Icon(
                                 Icons.business_outlined,
-                                color: AppColors.primary,
+                                color: Theme.of(context).colorScheme.primary,
                                 size: 32,
                               ),
                             )
-                          : const Icon(
+                          : Icon(
                               Icons.image_outlined,
-                              color: AppColors.primary,
+                              color: Theme.of(context).colorScheme.primary,
                               size: 32,
                             ))
-                      : const Icon(
+                      : Icon(
                           Icons.add_a_photo_outlined,
-                          color: AppColors.outline,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           size: 32,
                         )),
               const SizedBox(width: AppSpacing.md),
@@ -568,7 +568,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                       context.l10n.sectionLocationOperations,
                       style: AppTypography.titleMd.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     Text(
@@ -617,7 +617,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                   style: AppTypography.bodyMd.copyWith(
                     color: (_latitude != null && _longitude != null)
                         ? Theme.of(context).colorScheme.onSurface
-                        : AppColors.outline,
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 );
                 final pickerButton = SecondaryButton(
@@ -631,9 +631,9 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                 return wide
                     ? Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.location_on_outlined,
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.primary,
                             size: 24,
                           ),
                           const SizedBox(width: AppSpacing.sm),
@@ -647,9 +647,9 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.location_on_outlined,
-                                color: AppColors.primary,
+                                color: Theme.of(context).colorScheme.primary,
                                 size: 24,
                               ),
                               const SizedBox(width: AppSpacing.sm),
@@ -723,7 +723,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                       context.l10n.sectionPricingStructure,
                       style: AppTypography.titleMd.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     Text(

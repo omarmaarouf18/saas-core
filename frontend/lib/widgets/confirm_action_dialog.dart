@@ -45,7 +45,9 @@ class ConfirmActionDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final confirmColor = isDestructive ? AppColors.error : AppColors.primary;
+    final confirmColor = isDestructive
+        ? context.semanticColors.danger
+        : Theme.of(context).colorScheme.primary;
     final dialogIcon = icon ??
         (isDestructive
             ? Icons.warning_amber_rounded

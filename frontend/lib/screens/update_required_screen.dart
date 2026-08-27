@@ -106,7 +106,7 @@ class UpdateRequiredScreen extends StatelessWidget {
                           const SizedBox(height: AppSpacing.lg),
 
                           // 6. Primary Action CTA & Target URL
-                          _buildActionArea(l10n, url),
+                          _buildActionArea(context, l10n, url),
                         ],
                       ),
                     ),
@@ -266,14 +266,14 @@ class UpdateRequiredScreen extends StatelessWidget {
             Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(
-          color: AppColors.error.withValues(alpha: 0.3),
+          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
         ),
         padding: const EdgeInsets.all(AppSpacing.sm),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.warning_amber_rounded,
-              color: AppColors.error,
+              color: Theme.of(context).colorScheme.error,
               size: 20,
             ),
             const SizedBox(width: AppSpacing.xs),
@@ -290,7 +290,8 @@ class UpdateRequiredScreen extends StatelessWidget {
         ));
   }
 
-  Widget _buildActionArea(AppLocalizations l10n, String url) {
+  Widget _buildActionArea(
+      BuildContext context, AppLocalizations l10n, String url) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -304,7 +305,7 @@ class UpdateRequiredScreen extends StatelessWidget {
         Text(
           url,
           style: AppTypography.caption.copyWith(
-            color: AppColors.outline,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           textAlign: TextAlign.center,
           maxLines: 1,

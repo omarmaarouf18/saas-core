@@ -489,9 +489,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.assignment_outlined,
-                      color: AppColors.outline,
+                      color: Theme.of(context).colorScheme.primary,
                       size: 18,
                     ),
                   ],
@@ -550,9 +550,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.local_shipping_outlined,
-                      color: AppColors.outline,
+                      color: Theme.of(context).colorScheme.primary,
                       size: 18,
                     ),
                   ],
@@ -1097,7 +1097,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         l10n.ownerHomeJobId(job.id),
                         style: AppTypography.caption.copyWith(
-                          color: AppColors.outline,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xs),

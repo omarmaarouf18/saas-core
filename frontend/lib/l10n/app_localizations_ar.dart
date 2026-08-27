@@ -375,7 +375,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get otpSubtitle => 'ادخل الكود المكون من 6 أرقام المبعوت على إيميلك';
 
   @override
-  String get otpCodeLabel => 'كود التحقق الـ 6 أرقام';
+  String get otpCodeLabel => 'كود التحقق المكون من 6 أرقام';
 
   @override
   String get otpSubmitButton => 'تأكيد الكود';
@@ -1444,7 +1444,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String devOtpAutoFilled(String otp) {
-    return 'وضع التجربة: كود التحقق \'$otp\' اتضاف تلقائيًا.';
+    return 'وضع التجربة: كود التحقق ($otp) اتضاف تلقائيًا.';
   }
 
   @override

@@ -135,7 +135,7 @@ class _EmailChangeDialogState extends State<EmailChangeDialog> {
                             : "Verify New Email",
                         style: AppTypography.titleMd.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),

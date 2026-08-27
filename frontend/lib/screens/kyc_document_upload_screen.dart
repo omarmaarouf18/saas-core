@@ -92,25 +92,26 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                   : l10n.selectImageSourceTitle,
               style: AppTypography.titleMd.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: AppSpacing.md),
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+              leading: Icon(Icons.camera_alt,
+                  color: Theme.of(context).colorScheme.primary),
               title: Text(l10n.kycTakeCamera),
               onTap: () => Navigator.pop(ctx, 'camera'),
             ),
             ListTile(
-              leading:
-                  const Icon(Icons.photo_library, color: AppColors.primary),
+              leading: Icon(Icons.photo_library,
+                  color: Theme.of(context).colorScheme.primary),
               title: Text(l10n.kycChooseGallery),
               onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
             if (allowPdf)
               ListTile(
-                leading:
-                    const Icon(Icons.picture_as_pdf, color: AppColors.primary),
+                leading: Icon(Icons.picture_as_pdf,
+                    color: Theme.of(context).colorScheme.primary),
                 title: Text(l10n.kycSelectPdf),
                 onTap: () => Navigator.pop(ctx, 'pdf'),
               ),
@@ -129,14 +130,24 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
 
     if (source == 'camera') {
       final picker = ImagePicker();
-      final xfile = await picker.pickImage(source: ImageSource.camera);
+      final xfile = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
       if (xfile != null) {
         final bytes = await xfile.readAsBytes();
         return PickedDocumentFile(filename: xfile.name, bytes: bytes);
       }
     } else if (source == 'gallery') {
       final picker = ImagePicker();
-      final xfile = await picker.pickImage(source: ImageSource.gallery);
+      final xfile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
       if (xfile != null) {
         final bytes = await xfile.readAsBytes();
         return PickedDocumentFile(filename: xfile.name, bytes: bytes);
@@ -260,8 +271,10 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
             color: isApproved
                 ? context.semanticColors.success
                 : (isRejected
-                    ? AppColors.error
-                    : (isPending ? AppColors.secondary : AppColors.primary)),
+                    ? Theme.of(context).colorScheme.error
+                    : (isPending
+                        ? AppColors.secondary
+                        : Theme.of(context).colorScheme.primary)),
             width: 4,
           ),
         ),
@@ -280,10 +293,10 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                   color: isApproved
                       ? context.semanticColors.success
                       : (isRejected
-                          ? AppColors.error
+                          ? Theme.of(context).colorScheme.error
                           : (isPending
                               ? AppColors.secondary
-                              : AppColors.primary)),
+                              : Theme.of(context).colorScheme.primary)),
                   size: 20,
                 ),
                 const SizedBox(width: AppSpacing.xs),
@@ -364,14 +377,17 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                 ThemedPanel(
                     color: isUploaded
                         ? context.semanticColors.success.withValues(alpha: 0.12)
-                        : AppColors.primary.withValues(alpha: 0.08),
+                        : Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.08),
                     borderRadius: AppRadius.smBorder,
                     padding: const EdgeInsets.all(AppSpacing.sm),
                     child: Icon(
                       icon,
                       color: isUploaded
                           ? context.semanticColors.success
-                          : AppColors.primary,
+                          : Theme.of(context).colorScheme.primary,
                       size: 26,
                     )),
                 const SizedBox(width: AppSpacing.md),
@@ -440,13 +456,15 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                                     localPicked.bytes,
                                     width: 48,
                                     height: 48,
+                                    cacheWidth: 144,
+                                    cacheHeight: 144,
                                     fit: BoxFit.cover,
                                     errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            const Icon(
+                                        (context, error, stackTrace) => Icon(
                                       Icons.image,
                                       size: 36,
-                                      color: AppColors.primary,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
                                     ),
                                   ),
                                 )
@@ -455,16 +473,16 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                                           .toLowerCase()
                                           .endsWith('.pdf') ??
                                       false))
-                                const Icon(
+                                Icon(
                                   Icons.picture_as_pdf,
                                   size: 36,
-                                  color: AppColors.error,
+                                  color: Theme.of(context).colorScheme.error,
                                 )
                               else
-                                const Icon(
+                                Icon(
                                   Icons.insert_drive_file,
                                   size: 36,
-                                  color: AppColors.primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               const SizedBox(width: AppSpacing.md),
                               Expanded(
@@ -483,7 +501,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                               if (!isApproved)
                                 IconButton(
                                   icon: const Icon(Icons.close, size: 18),
-                                  color: AppColors.error,
+                                  color: Theme.of(context).colorScheme.error,
                                   tooltip: context.l10n.removeSelectionAction,
                                   onPressed: isUploading
                                       ? null
@@ -610,57 +628,51 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
           onPressed: _refreshUserData,
         ),
       ],
+      onRefresh: _refreshUserData,
       padding: const EdgeInsets.all(AppSpacing.lg),
-      body: RefreshIndicator(
-        onRefresh: _refreshUserData,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Stitch Status Banner
-              _buildStatusBanner(
-                displayStatus: displayStatus,
-                isApproved: isApproved,
-                isPending: isPending,
-                isRejected: isRejected,
-              ),
-
-              if (isRejected &&
-                  user?.rejectionReason != null &&
-                  user!.rejectionReason!.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.md),
-                _buildRejectionReasonBanner(l10n, user.rejectionReason!),
-              ],
-
-              if (isApproved) ...[
-                const SizedBox(height: AppSpacing.md),
-                _buildApprovedLockedBanner(),
-              ],
-
-              const SizedBox(height: AppSpacing.xl),
-
-              // Section Header
-              ThemedSectionHeader(
-                title: context.l10n.requiredDocsHeader,
-                subtitle: isOwner
-                    ? context.l10n.kycOwnerDocsSub
-                    : context.l10n.kycEmployeeDocsSub,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Per-Document Upload Slots
-              ...slots.map(
-                (slot) => _buildDocumentSlotCard(
-                  slot: slot,
-                  user: user,
-                  isApproved: isApproved,
-                ),
-              ),
-            ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Stitch Status Banner
+          _buildStatusBanner(
+            displayStatus: displayStatus,
+            isApproved: isApproved,
+            isPending: isPending,
+            isRejected: isRejected,
           ),
-        ),
+
+          if (isRejected &&
+              user?.rejectionReason != null &&
+              user!.rejectionReason!.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
+            _buildRejectionReasonBanner(l10n, user.rejectionReason!),
+          ],
+
+          if (isApproved) ...[
+            const SizedBox(height: AppSpacing.md),
+            _buildApprovedLockedBanner(),
+          ],
+
+          const SizedBox(height: AppSpacing.xl),
+
+          // Section Header
+          ThemedSectionHeader(
+            title: context.l10n.requiredDocsHeader,
+            subtitle: isOwner
+                ? context.l10n.kycOwnerDocsSub
+                : context.l10n.kycEmployeeDocsSub,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // Per-Document Upload Slots
+          ...slots.map(
+            (slot) => _buildDocumentSlotCard(
+              slot: slot,
+              user: user,
+              isApproved: isApproved,
+            ),
+          ),
+        ],
       ),
     );
   }
