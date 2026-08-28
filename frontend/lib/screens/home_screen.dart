@@ -11,6 +11,7 @@ import '../widgets/themed_panel.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_success_banner.dart';
 import '../widgets/rating_summary_card.dart';
 import '../widgets/app_shell.dart';
@@ -294,6 +295,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       // 1. Stitch Hero Welcome Banner (Deep Navy + Gold Accent)
                       _buildHeroCard(authUser, walletText, l10n),
                       const SizedBox(height: AppSpacing.lg),
+
+                      // Surface dashboard fetch errors with retry path
+                      if (ownerProvider.error != null) ...[
+                        ThemedErrorBanner(
+                          key: const Key('owner_home_dashboard_error'),
+                          message: ownerProvider.error!,
+                          onRetry: _refreshData,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                      ],
 
                       // 2. Stitch Metrics Bento Grid
                       _buildMetricsGrid(

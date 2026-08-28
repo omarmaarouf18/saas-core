@@ -38,7 +38,17 @@ class MockAuthProviderForTest extends AuthProvider {
 }
 
 class MockOwnerProviderForTest extends OwnerProvider {
-  MockOwnerProviderForTest(super.apiClient);
+  final String? testError;
+  final VoidCallback? onFetchDashboardData;
+
+  MockOwnerProviderForTest(
+    super.apiClient, {
+    this.testError,
+    this.onFetchDashboardData,
+  });
+
+  @override
+  String? get error => testError;
 
   @override
   double get walletBalance => 500.0;
@@ -53,7 +63,9 @@ class MockOwnerProviderForTest extends OwnerProvider {
   List<Job> get ownerJobs => [];
 
   @override
-  Future<void> fetchDashboardData(String ownerToken) async {}
+  Future<void> fetchDashboardData(String ownerToken) async {
+    onFetchDashboardData?.call();
+  }
 
   @override
   Future<void> fetchOwnerJobs(String ownerToken) async {}
@@ -93,14 +105,17 @@ class MockThemeProviderForTest extends ThemeProvider {
   ThemeMode get themeMode => ThemeMode.light;
 }
 
-Widget createOwnerHomeScreenApp({int initialTabIndex = 0}) {
+Widget createOwnerHomeScreenApp({
+  int initialTabIndex = 0,
+  OwnerProvider? ownerProvider,
+}) {
   final apiClient = ApiClient();
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<AuthProvider>(
           create: (_) => MockAuthProviderForTest(apiClient)),
       ChangeNotifierProvider<OwnerProvider>(
-          create: (_) => MockOwnerProviderForTest(apiClient)),
+          create: (_) => ownerProvider ?? MockOwnerProviderForTest(apiClient)),
       ChangeNotifierProvider<MarketplaceProvider>(
           create: (_) => MockMarketplaceProviderForTest(apiClient)),
       ChangeNotifierProvider<NotificationsProvider>(
@@ -303,5 +318,62 @@ void main() {
     final indexedStack = tester.widget<IndexedStack>(find.byType(IndexedStack));
     expect(indexedStack.children.length, equals(4));
     expect(indexedStack.index, equals(0));
+  });
+
+  testWidgets('Dashboard error banner renders when ownerProvider.error is set',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final errorProvider = MockOwnerProviderForTest(
+      apiClient,
+      testError: 'Failed to load dashboard metrics. Network timeout.',
+    );
+
+    await tester
+        .pumpWidget(createOwnerHomeScreenApp(ownerProvider: errorProvider));
+    await tester.pumpAndSettle();
+
+    final errorBanner = find.byKey(const Key('owner_home_dashboard_error'));
+    expect(errorBanner, findsOneWidget);
+    expect(find.text('Failed to load dashboard metrics. Network timeout.'),
+        findsOneWidget);
+  });
+
+  testWidgets(
+      'Dashboard error banner is absent on successful load (error is null)',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createOwnerHomeScreenApp());
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('owner_home_dashboard_error')), findsNothing);
+  });
+
+  testWidgets('Tapping retry button on error banner triggers dashboard refresh',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    int retryCalls = 0;
+    final errorProvider = MockOwnerProviderForTest(
+      apiClient,
+      testError: 'Connection refused',
+      onFetchDashboardData: () => retryCalls++,
+    );
+
+    await tester
+        .pumpWidget(createOwnerHomeScreenApp(ownerProvider: errorProvider));
+    await tester.pumpAndSettle();
+
+    // The screen loads data once upon initial mount
+    expect(retryCalls, equals(1));
+
+    final retryButton = find.descendant(
+      of: find.byKey(const Key('owner_home_dashboard_error')),
+      matching: find.byType(TextButton),
+    );
+    expect(retryButton, findsOneWidget);
+
+    await tester.tap(retryButton);
+    await tester.pumpAndSettle();
+
+    // Tapping the retry button triggers an additional refresh call
+    expect(retryCalls, equals(2));
   });
 }
