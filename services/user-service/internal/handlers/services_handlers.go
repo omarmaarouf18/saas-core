@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/user-service/internal/models"
@@ -48,6 +49,22 @@ func (u *UserService) ListServices(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func resolveOwnerAuthToken(r *http.Request, bodyOwnerToken, bodyOwnerID string) string {
+	tokenStr := r.Header.Get("Authorization")
+	if strings.HasPrefix(tokenStr, "Bearer ") || strings.HasPrefix(tokenStr, "bearer ") {
+		tokenStr = strings.TrimSpace(tokenStr[7:])
+	} else {
+		tokenStr = ""
+	}
+	if tokenStr == "" {
+		tokenStr = bodyOwnerToken
+	}
+	if tokenStr == "" {
+		tokenStr = bodyOwnerID
+	}
+	return tokenStr
+}
+
 // ---------------------------------------------------------------------------
 // POST /users/services
 // ---------------------------------------------------------------------------
@@ -68,14 +85,12 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	if req.OwnerToken != "" {
-		req.OwnerID = req.OwnerToken
-	}
-	if req.OwnerID == "" || req.Name == "" || req.Category == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "owner_id, name, and category are required"})
+	authToken := resolveOwnerAuthToken(r, req.OwnerToken, req.OwnerID)
+	if authToken == "" || req.Name == "" || req.Category == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "owner authorization, name, and category are required"})
 		return
 	}
-	resolvedOwnerID, err := resolveTokenWithRole(req.OwnerID, "owner")
+	resolvedOwnerID, err := resolveTokenWithRole(authToken, "owner")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
 		return
@@ -85,6 +100,7 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 	// Verify owner exists and has approved KYC
 	kycStatus, err := u.checkKYC(req.OwnerID)
 	if err != nil {
+		// #nosec G706 //nolint:gosec -- req.OwnerID is resolved from cryptographically verified JWT claims
 		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.OwnerID, err)
 		if errors.Is(err, ErrServiceUnavailable) {
 			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
@@ -100,6 +116,7 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if kycStatus != "approved" {
+		// #nosec G706 //nolint:gosec -- req.OwnerID is resolved from cryptographically verified JWT claims
 		log.Printf("[KYC BLOCKED] Owner %s attempted to create service, but KYC status is %q", req.OwnerID, kycStatus)
 		handlerutil.ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("attempted to create service, KYC status is %s", kycStatus), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
@@ -163,15 +180,13 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 	if req.ID == "" {
 		req.ID = r.URL.Query().Get("service_id")
 	}
-	if req.OwnerToken != "" {
-		req.OwnerID = req.OwnerToken
-	}
-	if req.ID == "" || req.OwnerID == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service id and owner_id are required"})
+	authToken := resolveOwnerAuthToken(r, req.OwnerToken, req.OwnerID)
+	if req.ID == "" || authToken == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service id and owner authorization are required"})
 		return
 	}
 
-	resolvedOwnerID, err := resolveTokenWithRole(req.OwnerID, "owner")
+	resolvedOwnerID, err := resolveTokenWithRole(authToken, "owner")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
 		return
@@ -181,6 +196,7 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 	// Verify owner exists and has approved KYC
 	kycStatus, err := u.checkKYC(req.OwnerID)
 	if err != nil {
+		// #nosec G706 //nolint:gosec -- req.OwnerID is resolved from cryptographically verified JWT claims
 		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.OwnerID, err)
 		if errors.Is(err, ErrServiceUnavailable) {
 			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
@@ -196,6 +212,7 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if kycStatus != "approved" {
+		// #nosec G706 //nolint:gosec -- req.OwnerID is resolved from cryptographically verified JWT claims
 		log.Printf("[KYC BLOCKED] Owner %s attempted to update service, but KYC status is %q", req.OwnerID, kycStatus)
 		handlerutil.ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("attempted to update service, KYC status is %s", kycStatus), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{

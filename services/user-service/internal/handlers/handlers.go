@@ -465,7 +465,8 @@ func haversineKm(lat1, lon1, lat2, lon2 float64) float64 {
 }
 
 func (u *UserService) checkKYC(ownerID string) (string, error) {
-	url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, ownerID)
+	url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, url.QueryEscape(ownerID))
+	// #nosec G704 //nolint:gosec -- authServiceURL is trusted internal config and ownerID is authenticated via JWT claims
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
