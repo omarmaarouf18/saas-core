@@ -144,6 +144,7 @@
 
  ## Verified Capabilities
 
+ *   **Release Promotion 2026-08-28 (main @ `9b01704`)**: Error-state banners across 4 money/service screens (`wallet_screen`, `subscription_screen`, `service_screen`, `job_status_screen`), full 29-screen golden regression coverage (60 tests across {light, dark} at 360x800 plus responsive breakpoints for component catalog, 65 total PNG snapshots in repo), 19-site l10n audit completion, navigation-inferred AppBar chrome (Option C), and Arabic RTL OTP pin improvements promoted to production `main` via merge commit `9b017040965f7f6433ce908fac328a6bbc1d6541`. Verified locally this session: pre-merge and post-merge `make ci` green (`flutter test` 488/488, `flutter analyze` 0 issues, gosec/govulncheck clean), `make push` `PUSH_VERIFIED: 9b017040965f7f6433ce908fac328a6bbc1d6541`; downstream pipeline verified live: `build-and-publish.yml` run `33152764012` success, `sync-mobile-frontend.yml` run `33152763997` success, `quick-delivery-mobile` `build-apk.yml` run `33152782538` success with release `app-release-20f2b21` published (HEAD SHA `20f2b21`).
  *   **Release Promotion 2026-08-23 (main @ `4ab627e`)**: Frontend passes A4–A7 (debounce, error handling, disposal/teardown, dead-code) promoted to production `main` via merge commit `4ab627e92f5462511524f4e07b146ed124bdce32`. Verified locally this session: post-merge `make ci` green (`flutter test` 390/390), `make push` `PUSH_VERIFIED`; downstream verified via `gh`: build-and-publish run `32639941014` success, sync-mobile-frontend run `32639941004` success, quick-delivery-mobile build-apk run `32639952063` success with release `app-release-06a18b9`.
  *   **Owner/Customer Signup**: Sends email/password/role parameters to backend. Returns `dev_otp` in development.
  *   **2FA OTP Verification**: Validates 6-digit code and securely stores signed JWT session details.
@@ -310,6 +311,8 @@
 ---
 
 ## Known Gaps & Limitations
+
+*   **Release Promotion 2026-08-28 (main @ `9b01704`)**: Error-state banners across 4 money/service screens, full 29-screen golden test coverage, and l10n/chrome remediations promoted to production main via merge commit `9b017040965f7f6433ce908fac328a6bbc1d6541`. Verified live: build-and-publish run `33152764012` success, sync-mobile-frontend run `33152763997` success, quick-delivery-mobile build-apk run `33152782538` success (APK built and published), release `app-release-20f2b21` published.
 
 *   **UI/UX Audit Re-Verification & Shared-Widget Remediation (2026-08-25, `31a7941`)**: Re-ran the A8 audit methodology against the post-V2 tree — prior remediations held (0 raw colors/hex/fontSize outside theme, 0 RTL violations, 0 production hardcoded strings in screens). Three live defects found and fixed, all in shared widgets: (1) hardcoded English "Retry" fallback in `themed_banner.dart` leaked into the Arabic locale on every retryable banner despite existing ARB key — now resolves via null-safe `context.l10n.retry`; (2) five icon-only close IconButtons in shared widgets (`themed_banner`, `create_service_dialog`, `deposit_funds_dialog`, `email_change_dialog`, `payout_request_dialog`) had no tooltips/Semantics (P7b sweep was screens/-scoped) — now labeled with localized `tooltipClose`; (3) banner dismiss tap target restored to Material 48dp minimum. Verified: analyze clean, full suite 407/407, goldens byte-identical, format clean.
 
