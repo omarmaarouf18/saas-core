@@ -9,22 +9,32 @@ import 'package:frontend/core/theme.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/models/notification_model.dart';
+import 'package:frontend/models/marketplace_service.dart';
 import 'package:frontend/models/reconciliation_job.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/models/chat_message.dart';
+import 'package:frontend/providers/chat_provider.dart';
 import 'package:frontend/providers/locale_provider.dart';
+import 'package:frontend/providers/map_tracking_provider.dart';
 import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/providers/reconciliation_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
+import 'package:frontend/screens/chat_screen.dart';
 import 'package:frontend/screens/component_library_screen.dart';
+import 'package:frontend/screens/customer_home_screen.dart';
+import 'package:frontend/screens/customer_job_map_screen.dart';
 import 'package:frontend/screens/customer_jobs_screen.dart';
+import 'package:frontend/screens/customer_marketplace_screen.dart';
 import 'package:frontend/screens/forgot_password_screen.dart';
+import 'package:frontend/screens/job_status_screen.dart';
 import 'package:frontend/screens/login_screen.dart';
 import 'package:frontend/screens/my_account_screen.dart';
 import 'package:frontend/screens/notifications_screen.dart';
 import 'package:frontend/screens/otp_screen.dart';
 import 'package:frontend/screens/owner_reconciliation_queue_screen.dart';
+import 'package:frontend/screens/rating_screen.dart';
 import 'package:frontend/screens/settings_screen.dart';
 import 'package:frontend/screens/signup_screen.dart';
 import 'package:frontend/screens/update_required_screen.dart';
@@ -90,14 +100,80 @@ class _MockReconciliationProvider extends ReconciliationProvider {
 
 class _MockMarketplaceProvider extends MarketplaceProvider {
   final List<Job> jobs;
-  _MockMarketplaceProvider(super.apiClient, this.jobs);
+  final List<MarketplaceService> mockServices;
+  _MockMarketplaceProvider(super.apiClient, this.jobs,
+      {this.mockServices = const []});
 
   @override
   List<Job> get customerJobs => jobs;
   @override
+  List<MarketplaceService> get services => mockServices;
+  @override
   String? get error => null;
   @override
   bool get isLoading => false;
+
+  @override
+  Future<List<Job>> fetchCustomerJobs([String? userToken]) async => jobs;
+
+  @override
+  Future<List<MarketplaceService>> searchServices({
+    String? category,
+    double? lat,
+    double? lon,
+    double? radiusKm,
+    String? sortBy,
+    String? query,
+  }) async =>
+      mockServices;
+
+  @override
+  Future<Job?> fetchJobStatus(String jobId, String token) async {
+    return jobs.firstWhere((j) => j.id == jobId, orElse: () => jobs.first);
+  }
+
+  @override
+  Future<Map<String, dynamic>> fetchRatings(String token) async {
+    return {'ratings': []};
+  }
+}
+
+class _MockChatProvider extends ChatProvider {
+  final List<ChatMessage> mockMessages;
+  _MockChatProvider(super.apiClient, {this.mockMessages = const []});
+
+  @override
+  List<ChatMessage> get messages => mockMessages;
+  @override
+  bool get isConnected => true;
+  @override
+  bool get isLoading => false;
+  @override
+  Future<void> fetchHistory(String jobId, String token) async {}
+  @override
+  void connect(String jobId, String token) {}
+  @override
+  void disconnect() {}
+}
+
+class _MockMapTrackingProvider extends MapTrackingProvider {
+  _MockMapTrackingProvider(super.apiClient);
+
+  @override
+  bool get isConnected => true;
+  @override
+  bool get isLoading => false;
+  @override
+  void connectJobTracking({
+    required String jobId,
+    required String token,
+    JobLocation? jobLocation,
+    String? employeeId,
+  }) {}
+  @override
+  void connectFleetTracking(String token) {}
+  @override
+  void disconnect() {}
 }
 
 UserProfile _customer() => UserProfile(
@@ -186,6 +262,68 @@ Widget _authApp({
       ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
       ChangeNotifierProvider<AuthProvider>.value(
         value: _MockAuthProvider(api, mockUser: user ?? _customer()),
+      ),
+    ],
+    child: _localizedApp(
+      brightness: brightness,
+      home: home,
+    ),
+  );
+}
+
+Widget _customerApp({
+  required Widget home,
+  Brightness brightness = Brightness.light,
+  List<Job>? jobs,
+  List<MarketplaceService>? services,
+}) {
+  final api = ApiClient();
+  final sampleJobs = jobs ?? [
+    _job('custjob1234', 'active'),
+    _job('custjob5678', 'completed'),
+  ];
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
+      ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: _MockAuthProvider(api, mockUser: _customer()),
+      ),
+      ChangeNotifierProvider<MarketplaceProvider>.value(
+        value: _MockMarketplaceProvider(api, sampleJobs,
+            mockServices: services ??
+                [
+                  MarketplaceService(
+                    id: 'srv-1',
+                    tenantId: 'tenant-1',
+                    name: 'Express Cargo',
+                    category: 'delivery',
+                    basePrice: 45.0,
+                    tenantBasePrice: 45.0,
+                    tenantPricePerKM: 2.5,
+                    latitude: 30.0444,
+                    longitude: 31.2357,
+                    distanceKM: 3.2,
+                    finalPrice: 53.0,
+                  ),
+                ]),
+      ),
+      ChangeNotifierProvider<NotificationsProvider>.value(
+        value: _MockNotificationsProvider(api, []),
+      ),
+      ChangeNotifierProvider<MapTrackingProvider>.value(
+        value: _MockMapTrackingProvider(api),
+      ),
+      ChangeNotifierProvider<ChatProvider>.value(
+        value: _MockChatProvider(api, mockMessages: [
+          ChatMessage(
+            channel: 'job:custjob1234',
+            senderId: 'driver-1',
+            senderUsername: 'Ahmed Driver',
+            content: 'I am on my way to pick up the package.',
+            type: 'message',
+          ),
+        ]),
       ),
     ],
     child: _localizedApp(
@@ -554,5 +692,105 @@ void main() {
       brightness: Brightness.dark,
     );
     await _pumpGolden(tester, app, _mobile, 'my_account_dark_mobile_360x800');
+  });
+
+  // ── BATCH 2: Customer Screens ──
+  testWidgets('GOLDEN customer home screen — mobile', (tester) async {
+    final app = _customerApp(home: const CustomerHomeScreen());
+    await _pumpGolden(tester, app, _mobile, 'customer_home_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark customer home screen — mobile', (tester) async {
+    final app = _customerApp(
+        home: const CustomerHomeScreen(), brightness: Brightness.dark);
+    await _pumpGolden(
+        tester, app, _mobile, 'customer_home_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN customer marketplace screen — mobile', (tester) async {
+    final app = _customerApp(home: const CustomerMarketplaceScreen());
+    await _pumpGolden(
+        tester, app, _mobile, 'customer_marketplace_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark customer marketplace screen — mobile',
+      (tester) async {
+    final app = _customerApp(
+        home: const CustomerMarketplaceScreen(), brightness: Brightness.dark);
+    await _pumpGolden(
+        tester, app, _mobile, 'customer_marketplace_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN customer job map screen — mobile', (tester) async {
+    final app = _customerApp(
+      home: const CustomerJobMapScreen(
+        jobId: 'custjob1234',
+        token: 'golden-token',
+      ),
+    );
+    await _pumpGolden(
+        tester, app, _mobile, 'customer_job_map_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark customer job map screen — mobile', (tester) async {
+    final app = _customerApp(
+      home: const CustomerJobMapScreen(
+        jobId: 'custjob1234',
+        token: 'golden-token',
+      ),
+      brightness: Brightness.dark,
+    );
+    await _pumpGolden(
+        tester, app, _mobile, 'customer_job_map_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN job status screen — mobile', (tester) async {
+    final app = _customerApp(
+      home: JobStatusScreen(
+        job: _job('custjob1234', 'active'),
+        enablePolling: false,
+      ),
+    );
+    await _pumpGolden(tester, app, _mobile, 'job_status_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark job status screen — mobile', (tester) async {
+    final app = _customerApp(
+      home: JobStatusScreen(
+        job: _job('custjob1234', 'active'),
+        enablePolling: false,
+      ),
+      brightness: Brightness.dark,
+    );
+    await _pumpGolden(tester, app, _mobile, 'job_status_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN rating screen — mobile', (tester) async {
+    final app = _customerApp(
+      home: RatingScreen(job: _job('custjob1234', 'completed')),
+    );
+    await _pumpGolden(tester, app, _mobile, 'rating_screen_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark rating screen — mobile', (tester) async {
+    final app = _customerApp(
+      home: RatingScreen(job: _job('custjob1234', 'completed')),
+      brightness: Brightness.dark,
+    );
+    await _pumpGolden(
+        tester, app, _mobile, 'rating_screen_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN chat screen — mobile', (tester) async {
+    final app = _customerApp(home: const ChatScreen(jobId: 'custjob1234'));
+    await _pumpGolden(tester, app, _mobile, 'chat_screen_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark chat screen — mobile', (tester) async {
+    final app = _customerApp(
+      home: const ChatScreen(jobId: 'custjob1234'),
+      brightness: Brightness.dark,
+    );
+    await _pumpGolden(tester, app, _mobile, 'chat_screen_dark_mobile_360x800');
   });
 }
