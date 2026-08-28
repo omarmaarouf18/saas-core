@@ -58,21 +58,4 @@ class ReconciliationJob {
           : null,
     );
   }
-
-  /// Maps technical failure reasons to human-readable explanations.
-  String get humanReadableFailureReason {
-    switch (escrowFailureReason) {
-      case 'under_distance_mismatch':
-        return 'Distance mismatch — under 70% of booked distance';
-      case 'escrow_amount_unrecorded':
-        return 'Unrecorded escrow balance failure';
-      case 'implausible_speed':
-        return 'Implausible movement speed detected';
-      default:
-        if (escrowFailureReason.isNotEmpty) {
-          return escrowFailureReason.replaceAll('_', ' ');
-        }
-        return 'Escrow reconciliation required for manual review';
-    }
-  }
 }

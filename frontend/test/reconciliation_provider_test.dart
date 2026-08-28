@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/core/error_messages.dart';
+import 'package:frontend/models/reconciliation_job.dart';
 import 'package:frontend/providers/reconciliation_provider.dart';
 
 import 'helpers/mock_http_harness.dart';
@@ -143,5 +144,21 @@ void main() {
     provider.clearError();
     expect(provider.error, isNull);
     expect(notified, 2);
+  });
+
+  test('ReconciliationJob parses technical machine code and owns no display strings', () {
+    final job = ReconciliationJob.fromJson({
+      'id': 'job-rec-1',
+      'user_id': 'user-1',
+      'service_id': 'serv-1',
+      'status': 'reconciliation_required',
+      'escrow_failure_reason': 'under_distance_mismatch',
+      'locked_escrow_amount': 75.0,
+      'reconciliation_note': 'dispute raised by customer',
+    });
+
+    expect(job.escrowFailureReason, 'under_distance_mismatch');
+    expect(job.reconciliationNote, 'dispute raised by customer');
+    expect(job.lockedEscrowAmount, 75.0);
   });
 }

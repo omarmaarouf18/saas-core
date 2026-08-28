@@ -134,9 +134,11 @@ class _OwnerReconciliationQueueScreenState
       builder: (context, provider, child) {
         final query = _searchController.text.trim().toLowerCase();
         final filteredQueue = provider.queue.where((j) {
-          final reason =
-              '${j.humanReadableFailureReason} ${j.escrowFailureReason}'
+          final localizedReason =
+              _localizedFailureReason(l10n, j.escrowFailureReason)
                   .toLowerCase();
+          final rawReason = j.escrowFailureReason.toLowerCase();
+          final reason = '$localizedReason $rawReason';
           final matchesQuery = query.isEmpty ||
               j.id.toLowerCase().contains(query) ||
               j.userId.toLowerCase().contains(query) ||
@@ -146,40 +148,42 @@ class _OwnerReconciliationQueueScreenState
           if (!matchesQuery) return false;
 
           if (_selectedCategory == 'distance') {
-            return reason.contains('distance');
+            return rawReason.contains('distance') ||
+                localizedReason.contains('distance');
           }
           if (_selectedCategory == 'time') {
-            return reason.contains('time') || reason.contains('speed');
+            return rawReason.contains('time') ||
+                rawReason.contains('speed') ||
+                localizedReason.contains('time') ||
+                localizedReason.contains('speed');
           }
           if (_selectedCategory == 'other') {
-            return !reason.contains('distance') &&
-                !reason.contains('time') &&
-                !reason.contains('speed');
+            final isDistance = rawReason.contains('distance') ||
+                localizedReason.contains('distance');
+            final isTime = rawReason.contains('time') ||
+                rawReason.contains('speed') ||
+                localizedReason.contains('time') ||
+                localizedReason.contains('speed');
+            return !isDistance && !isTime;
           }
           return true;
         }).toList();
 
         final distanceCount = provider.queue.where((j) {
-          final reason =
-              '${j.humanReadableFailureReason} ${j.escrowFailureReason}'
-                  .toLowerCase();
-          return reason.contains('distance');
+          final raw = j.escrowFailureReason.toLowerCase();
+          return raw.contains('distance');
         }).length;
 
         final timeCount = provider.queue.where((j) {
-          final reason =
-              '${j.humanReadableFailureReason} ${j.escrowFailureReason}'
-                  .toLowerCase();
-          return reason.contains('time') || reason.contains('speed');
+          final raw = j.escrowFailureReason.toLowerCase();
+          return raw.contains('time') || raw.contains('speed');
         }).length;
 
         final otherCount = provider.queue.where((j) {
-          final reason =
-              '${j.humanReadableFailureReason} ${j.escrowFailureReason}'
-                  .toLowerCase();
-          return !reason.contains('distance') &&
-              !reason.contains('time') &&
-              !reason.contains('speed');
+          final raw = j.escrowFailureReason.toLowerCase();
+          return !raw.contains('distance') &&
+              !raw.contains('time') &&
+              !raw.contains('speed');
         }).length;
 
         return ListScreenTemplate<ReconciliationJob>(
@@ -322,10 +326,13 @@ class _OwnerReconciliationQueueScreenState
     ReconciliationJob job,
     AppLocalizations l10n,
   ) {
-    final isHighRisk =
-        job.humanReadableFailureReason.toLowerCase().contains('damage') ||
-            job.humanReadableFailureReason.toLowerCase().contains('dispute') ||
-            job.escrowFailureReason.toLowerCase().contains('over_distance');
+    final rawReason = job.escrowFailureReason.toLowerCase();
+    final note = job.reconciliationNote.toLowerCase();
+    final isHighRisk = rawReason.contains('damage') ||
+        rawReason.contains('dispute') ||
+        rawReason.contains('over_distance') ||
+        note.contains('damage') ||
+        note.contains('dispute');
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
