@@ -19,9 +19,15 @@ import 'package:frontend/providers/reconciliation_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/screens/component_library_screen.dart';
 import 'package:frontend/screens/customer_jobs_screen.dart';
+import 'package:frontend/screens/forgot_password_screen.dart';
 import 'package:frontend/screens/login_screen.dart';
+import 'package:frontend/screens/my_account_screen.dart';
 import 'package:frontend/screens/notifications_screen.dart';
+import 'package:frontend/screens/otp_screen.dart';
 import 'package:frontend/screens/owner_reconciliation_queue_screen.dart';
+import 'package:frontend/screens/settings_screen.dart';
+import 'package:frontend/screens/signup_screen.dart';
+import 'package:frontend/screens/update_required_screen.dart';
 
 // Golden snapshot regression tests for migrated screens (P6).
 //
@@ -165,6 +171,27 @@ MaterialApp _localizedApp(
     darkTheme: quickDeliveryDarkTheme,
     themeMode: dark ? ThemeMode.dark : ThemeMode.light,
     home: home,
+  );
+}
+
+Widget _authApp({
+  required Widget home,
+  Brightness brightness = Brightness.light,
+  UserProfile? user,
+}) {
+  final api = ApiClient();
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
+      ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: _MockAuthProvider(api, mockUser: user ?? _customer()),
+      ),
+    ],
+    child: _localizedApp(
+      brightness: brightness,
+      home: home,
+    ),
   );
 }
 
@@ -432,5 +459,100 @@ void main() {
     );
     await _pumpGolden(
         tester, app, _mobile, 'reconciliation_queue_dark_mobile_360x800');
+  });
+
+  // ── BATCH 1: Auth & Common / Global Screens ──
+  testWidgets('GOLDEN signup screen — mobile', (tester) async {
+    final app = _authApp(home: const SignupScreen());
+    await _pumpGolden(tester, app, _mobile, 'signup_screen_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark signup screen — mobile', (tester) async {
+    final app =
+        _authApp(home: const SignupScreen(), brightness: Brightness.dark);
+    await _pumpGolden(
+        tester, app, _mobile, 'signup_screen_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN otp screen — mobile', (tester) async {
+    final app = _authApp(
+      home: const OtpScreen(email: 'customer@example.com', devOtp: '123456'),
+    );
+    await _pumpGolden(tester, app, _mobile, 'otp_screen_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark otp screen — mobile', (tester) async {
+    final app = _authApp(
+      home: const OtpScreen(email: 'customer@example.com', devOtp: '123456'),
+      brightness: Brightness.dark,
+    );
+    await _pumpGolden(tester, app, _mobile, 'otp_screen_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN forgot password screen — mobile', (tester) async {
+    final app = _authApp(home: const ForgotPasswordScreen());
+    await _pumpGolden(
+        tester, app, _mobile, 'forgot_password_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark forgot password screen — mobile', (tester) async {
+    final app = _authApp(
+      home: const ForgotPasswordScreen(),
+      brightness: Brightness.dark,
+    );
+    await _pumpGolden(
+        tester, app, _mobile, 'forgot_password_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN update required screen — mobile', (tester) async {
+    final app = _authApp(
+      home: const UpdateRequiredScreen(
+        minimumVersion: '2.0.0',
+        downloadUrl:
+            'https://play.google.com/store/apps/details?id=com.quickdelivery',
+      ),
+    );
+    await _pumpGolden(
+        tester, app, _mobile, 'update_required_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark update required screen — mobile', (tester) async {
+    final app = _authApp(
+      home: const UpdateRequiredScreen(
+        minimumVersion: '2.0.0',
+        downloadUrl:
+            'https://play.google.com/store/apps/details?id=com.quickdelivery',
+      ),
+      brightness: Brightness.dark,
+    );
+    await _pumpGolden(
+        tester, app, _mobile, 'update_required_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN settings screen — mobile', (tester) async {
+    final app = _authApp(home: const SettingsScreen());
+    await _pumpGolden(tester, app, _mobile, 'settings_screen_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark settings screen — mobile', (tester) async {
+    final app = _authApp(
+      home: const SettingsScreen(),
+      brightness: Brightness.dark,
+    );
+    await _pumpGolden(
+        tester, app, _mobile, 'settings_screen_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN my account screen — mobile', (tester) async {
+    final app = _authApp(home: const MyAccountScreen());
+    await _pumpGolden(tester, app, _mobile, 'my_account_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark my account screen — mobile', (tester) async {
+    final app = _authApp(
+      home: const MyAccountScreen(),
+      brightness: Brightness.dark,
+    );
+    await _pumpGolden(tester, app, _mobile, 'my_account_dark_mobile_360x800');
   });
 }
