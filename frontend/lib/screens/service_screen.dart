@@ -10,6 +10,7 @@ import '../widgets/app_shell.dart';
 import '../widgets/create_service_dialog.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 
 class ServiceScreen extends StatefulWidget {
@@ -79,6 +80,16 @@ class _ServiceScreenState extends State<ServiceScreen> {
                     // Header Section
                     _buildHeader(),
                     const SizedBox(height: AppSpacing.lg),
+
+                    // Surface service fetch errors with retry path
+                    if (!owner.isLoading && owner.error != null) ...[
+                      ThemedErrorBanner(
+                        key: const Key('service_screen_error'),
+                        message: owner.error!,
+                        onRetry: _loadServices,
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
 
                     // KYC Verification Guard Banner
                     if (!isKycApproved) ...[

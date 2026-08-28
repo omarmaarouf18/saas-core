@@ -32,11 +32,29 @@ class MockOwnerProvider extends OwnerProvider {
   bool updateSubscriptionCalled = false;
   String? lastRequestedTier;
 
-  MockOwnerProvider(super.apiClient, {String initialTier = 'free'})
-      : _currentTier = initialTier;
+  String? _testError;
+  int fetchDashboardCalls = 0;
+
+  MockOwnerProvider(super.apiClient,
+      {String initialTier = 'free', String? testError})
+      : _currentTier = initialTier,
+        _testError = testError;
 
   @override
   String get subscriptionTier => _currentTier;
+
+  @override
+  String? get error => _testError;
+
+  void setError(String? err) {
+    _testError = err;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> fetchDashboardData(String tenantId) async {
+    fetchDashboardCalls++;
+  }
 
   void setTier(String tier) {
     _currentTier = tier;
@@ -172,5 +190,66 @@ void main() {
 
     expect(owner.updateSubscriptionCalled, isTrue);
     expect(owner.lastRequestedTier, 'paid');
+  });
+
+  testWidgets('SubscriptionScreen error banner renders when ownerProvider.error is set',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final auth = MockAuthProvider(apiClient);
+    final owner = MockOwnerProvider(
+      apiClient,
+      testError: 'Failed to load subscription status',
+    );
+
+    await tester.pumpWidget(createSubscriptionTestWidget(
+      authProvider: auth,
+      ownerProvider: owner,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('subscription_screen_error')), findsOneWidget);
+    expect(find.text('Failed to load subscription status'), findsOneWidget);
+  });
+
+  testWidgets('SubscriptionScreen error banner is absent on successful load (error is null)',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final auth = MockAuthProvider(apiClient);
+    final owner = MockOwnerProvider(apiClient);
+
+    await tester.pumpWidget(createSubscriptionTestWidget(
+      authProvider: auth,
+      ownerProvider: owner,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('subscription_screen_error')), findsNothing);
+  });
+
+  testWidgets('Tapping retry on SubscriptionScreen error banner re-triggers fetch',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final auth = MockAuthProvider(apiClient);
+    final owner = MockOwnerProvider(
+      apiClient,
+      testError: 'Network error',
+    );
+
+    await tester.pumpWidget(createSubscriptionTestWidget(
+      authProvider: auth,
+      ownerProvider: owner,
+    ));
+    await tester.pumpAndSettle();
+
+    final retryButton = find.descendant(
+      of: find.byKey(const Key('subscription_screen_error')),
+      matching: find.byType(TextButton),
+    );
+    expect(retryButton, findsOneWidget);
+
+    await tester.tap(retryButton);
+    await tester.pumpAndSettle();
+
+    expect(owner.fetchDashboardCalls, greaterThanOrEqualTo(1));
   });
 }

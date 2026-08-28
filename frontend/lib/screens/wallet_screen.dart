@@ -15,6 +15,7 @@ import '../widgets/app_shell.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_section_header.dart';
 
 class WalletScreen extends StatefulWidget {
@@ -73,6 +74,24 @@ class _WalletScreenState extends State<WalletScreen> {
                       // Header Row (Stitch Reference)
                       _buildHeader(l10n),
                       const SizedBox(height: AppSpacing.lg),
+
+                      // Surface wallet/dashboard fetch errors with retry path
+                      if (!ownerProvider.isLoading &&
+                          ownerProvider.error != null) ...[
+                        ThemedErrorBanner(
+                          key: const Key('wallet_screen_error'),
+                          message: ownerProvider.error!,
+                          onRetry: () async {
+                            if (auth.token != null) {
+                              await ownerProvider
+                                  .fetchDashboardData(auth.token!);
+                            }
+                            await ownerProvider.fetchPlatformConfig();
+                            await ownerProvider.fetchPayoutRequests();
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                      ],
 
                       // Bento Financial Grid: Available Balance Hero & Escrow Pending
                       _buildHeroBalanceCard(ownerProvider, l10n),

@@ -17,6 +17,7 @@ import '../widgets/secondary_button.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_success_banner.dart';
 import '../widgets/themed_text_field.dart';
 import 'chat_screen.dart';
@@ -331,6 +332,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final marketplace = Provider.of<MarketplaceProvider>(context);
     final step = _getStatusStep(_currentJob.status);
     final isCancelled = _currentJob.status == 'cancelled';
     final isCompleted = _currentJob.status == 'completed';
@@ -371,6 +373,16 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             _buildStatusHeaderBar(
                 isCancelled, isCompleted, isActive, displayId),
             const SizedBox(height: AppSpacing.md),
+
+            // Surface job status refresh errors with retry path
+            if (!_isRefreshing && marketplace.error != null) ...[
+              ThemedErrorBanner(
+                key: const Key('job_status_screen_error'),
+                message: marketplace.error!,
+                onRetry: () => _refreshJobStatus(),
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
 
             // 2. Track Job Hero Banner (Stitch Live Tracking Action)
             _buildTrackJobBanner(context),
