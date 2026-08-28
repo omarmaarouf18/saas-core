@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
 
+enum AppShellChromeStyle {
+  transparent,
+  brandNavy,
+  surfaceElevated,
+}
+
 /// AppShell is the unified composition root for screens across the application.
 /// It standardizes:
 /// - AppBar presentation (height, typography, leading back button, actions, optional subtitle, TabBar)
@@ -88,6 +94,12 @@ class AppShell extends StatelessWidget {
   /// Whether title should be centered in the AppBar. Defaults to false.
   final bool centerTitle;
 
+  /// Explicit styling for the AppBar chrome.
+  /// When null, chrome style is auto-inferred based on navigation hierarchy:
+  /// - [showBackButton] == false (top-level tab root): [AppShellChromeStyle.transparent]
+  /// - [showBackButton] == true (pushed/detail screen): [AppShellChromeStyle.surfaceElevated]
+  final AppShellChromeStyle? chromeStyle;
+
   const AppShell({
     super.key,
     this.title,
@@ -118,6 +130,7 @@ class AppShell extends StatelessWidget {
     this.appBarElevation = 0,
     this.resizeToAvoidBottomInset,
     this.centerTitle = false,
+    this.chromeStyle,
   });
 
   @override
@@ -186,13 +199,69 @@ class AppShell extends StatelessWidget {
       return null;
     }
 
-    final effectiveBg = appBarBackgroundColor ?? AppColors.primary;
-    // Transparent chrome sits over the scaffold, so its foreground must
-    // adapt to the active theme rather than the on-primary pair.
-    final effectiveFg = appBarForegroundColor ??
-        (effectiveBg == Colors.transparent
-            ? theme.colorScheme.onSurface
-            : AppColors.onPrimary);
+    final AppShellChromeStyle effectiveStyle;
+    if (chromeStyle != null) {
+      effectiveStyle = chromeStyle!;
+    } else if (appBarBackgroundColor == Colors.transparent) {
+      effectiveStyle = AppShellChromeStyle.transparent;
+    } else if (appBarBackgroundColor == AppColors.primary) {
+      effectiveStyle = AppShellChromeStyle.brandNavy;
+    } else if (appBarBackgroundColor != null) {
+      effectiveStyle = AppShellChromeStyle.surfaceElevated;
+    } else {
+      effectiveStyle = shouldShowBack
+          ? AppShellChromeStyle.surfaceElevated
+          : AppShellChromeStyle.transparent;
+    }
+
+    final Color effectiveBg;
+    if (appBarBackgroundColor != null) {
+      effectiveBg = appBarBackgroundColor!;
+    } else {
+      switch (effectiveStyle) {
+        case AppShellChromeStyle.transparent:
+          effectiveBg = Colors.transparent;
+          break;
+        case AppShellChromeStyle.brandNavy:
+          effectiveBg = AppColors.primary;
+          break;
+        case AppShellChromeStyle.surfaceElevated:
+          effectiveBg = theme.colorScheme.surface;
+          break;
+      }
+    }
+
+    final Color effectiveFg;
+    if (appBarForegroundColor != null) {
+      effectiveFg = appBarForegroundColor!;
+    } else {
+      switch (effectiveStyle) {
+        case AppShellChromeStyle.transparent:
+          effectiveFg = theme.colorScheme.onSurface;
+          break;
+        case AppShellChromeStyle.brandNavy:
+          effectiveFg = AppColors.onPrimary;
+          break;
+        case AppShellChromeStyle.surfaceElevated:
+          effectiveFg = theme.colorScheme.onSurface;
+          break;
+      }
+    }
+
+    final PreferredSizeWidget? effectiveBottom;
+    if (bottom != null) {
+      effectiveBottom = bottom;
+    } else if (effectiveStyle == AppShellChromeStyle.surfaceElevated) {
+      effectiveBottom = PreferredSize(
+        preferredSize: const Size.fromHeight(1.0),
+        child: Container(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+          height: 1.0,
+        ),
+      );
+    } else {
+      effectiveBottom = null;
+    }
 
     Widget? effectiveTitle = titleWidget;
     if (effectiveTitle == null) {
@@ -249,7 +318,7 @@ class AppShell extends StatelessWidget {
       leading: effectiveLeading,
       automaticallyImplyLeading: leading == null && showBackButton == null,
       actions: actions,
-      bottom: bottom,
+      bottom: effectiveBottom,
       backgroundColor: effectiveBg,
       foregroundColor: effectiveFg,
       elevation: appBarElevation,

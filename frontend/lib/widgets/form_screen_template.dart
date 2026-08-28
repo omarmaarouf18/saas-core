@@ -39,6 +39,7 @@ class FormScreenTemplate extends StatelessWidget {
   final double appBarElevation;
   final bool? resizeToAvoidBottomInset;
   final bool centerTitle;
+  final AppShellChromeStyle? chromeStyle;
 
   // --- Form Layout & Structure ---
   /// GlobalKey for form state validation. If provided, the form fields are wrapped in a [Form].
@@ -206,6 +207,7 @@ class FormScreenTemplate extends StatelessWidget {
     this.isSecondaryOutlined = false,
     this.actionSpacing = AppSpacing.md,
     this.disableOnSubmit = true,
+    this.chromeStyle,
   });
 
   @override
@@ -368,6 +370,7 @@ class FormScreenTemplate extends StatelessWidget {
       appBarElevation: appBarElevation,
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       centerTitle: centerTitle,
+      chromeStyle: chromeStyle,
       body: scrollableBody,
     );
   }

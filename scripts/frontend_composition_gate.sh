@@ -49,6 +49,21 @@ check_pattern "'appBarBackgroundColor' override (Colors.transparent excepted)" \
   'appBarBackgroundColor:(?!.*Colors\.transparent)'
 check_pattern "'appBarForegroundColor' override" 'appBarForegroundColor:'
 
+check_chrome_style_disclosure() {
+  local matches
+  matches=$(grep -rnP 'chromeStyle:\s*AppShellChromeStyle\.' "$SCREENS_DIR" --include='*.dart' 2>/dev/null || true)
+  if [ -n "$matches" ]; then
+    local commit_msg
+    commit_msg=$(git log -1 --pretty=%B 2>/dev/null || true)
+    if ! echo "$commit_msg" | grep -q "SHARED WIDGET CHANGES DISCLOSURE"; then
+      echo "BLOCKED: explicit chromeStyle override found in screens/ without SHARED WIDGET CHANGES DISCLOSURE in commit message:"
+      echo "$matches"
+      VIOLATIONS=$((VIOLATIONS + 1))
+    fi
+  fi
+}
+check_chrome_style_disclosure
+
 if [ "$VIOLATIONS" -gt 0 ]; then
   echo ""
   echo "BLOCKED: $VIOLATIONS composition-layer rule(s) violated in frontend/lib/screens/."

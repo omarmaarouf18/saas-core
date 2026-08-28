@@ -13,11 +13,12 @@ import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_empty_state.dart';
 
 class NotificationsScreen extends StatefulWidget {
-  const NotificationsScreen({super.key, this.clock});
+  const NotificationsScreen({super.key, this.clock, this.showBackButton});
 
   /// Injectable clock for deterministic date-group rendering (tests/goldens).
   /// Defaults to the real system time when null.
   final DateTime Function()? clock;
+  final bool? showBackButton;
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -100,6 +101,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     return ListScreenTemplate<NotificationModel>(
       title: l10n.notificationsTitle,
+      showBackButton: widget.showBackButton,
       actions: [
         IconButton(
           icon: const Icon(Icons.delete_sweep),

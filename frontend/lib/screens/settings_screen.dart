@@ -55,7 +55,7 @@ class SettingsScreen extends StatelessWidget {
       title: l10n.settingsTitle,
       isEmbeddedInTab: isEmbeddedInTab,
       backgroundColor: theme.scaffoldBackgroundColor,
-      showBackButton: false,
+      showBackButton: isEmbeddedInTab ? false : null,
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_outlined),

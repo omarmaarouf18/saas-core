@@ -36,6 +36,7 @@ class ListScreenTemplate<T> extends StatelessWidget {
   final double appBarElevation;
   final bool? resizeToAvoidBottomInset;
   final bool centerTitle;
+  final AppShellChromeStyle? chromeStyle;
 
   // --- Data & State Properties ---
   /// The collection of data items to display.
@@ -164,6 +165,7 @@ class ListScreenTemplate<T> extends StatelessWidget {
     this.emptyActionText,
     this.onEmptyActionPressed,
     this.errorWidget,
+    this.chromeStyle,
   });
 
   @override
@@ -191,6 +193,7 @@ class ListScreenTemplate<T> extends StatelessWidget {
       appBarElevation: appBarElevation,
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       centerTitle: centerTitle,
+      chromeStyle: chromeStyle,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

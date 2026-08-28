@@ -241,7 +241,7 @@ void main() {
         ),
       ],
       child: _localizedApp(
-        home: NotificationsScreen(clock: () => now),
+        home: NotificationsScreen(clock: () => now, showBackButton: true),
       ),
     );
     await _pumpGolden(
@@ -273,7 +273,8 @@ void main() {
           updatedAt: DateTime(2026, 8, 20, 10, 0),
         ),
       ]),
-      child: _localizedApp(home: const OwnerReconciliationQueueScreen()),
+      child: _localizedApp(
+          home: const OwnerReconciliationQueueScreen(showBackButton: true)),
     );
     await _pumpGolden(
         tester, app, _mobile, 'reconciliation_queue_mobile_360x800');
@@ -368,7 +369,7 @@ void main() {
       ],
       child: _localizedApp(
         brightness: Brightness.dark,
-        home: NotificationsScreen(clock: () => now),
+        home: NotificationsScreen(clock: () => now, showBackButton: true),
       ),
     );
     await _pumpGolden(
@@ -426,7 +427,7 @@ void main() {
       ],
       child: _localizedApp(
         brightness: Brightness.dark,
-        home: const OwnerReconciliationQueueScreen(),
+        home: const OwnerReconciliationQueueScreen(showBackButton: true),
       ),
     );
     await _pumpGolden(

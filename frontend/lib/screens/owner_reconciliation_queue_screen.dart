@@ -17,7 +17,8 @@ import '../widgets/themed_success_banner.dart';
 import '../widgets/themed_text_field.dart';
 
 class OwnerReconciliationQueueScreen extends StatefulWidget {
-  const OwnerReconciliationQueueScreen({super.key});
+  final bool? showBackButton;
+  const OwnerReconciliationQueueScreen({super.key, this.showBackButton});
 
   @override
   State<OwnerReconciliationQueueScreen> createState() =>
@@ -182,6 +183,7 @@ class _OwnerReconciliationQueueScreenState
         }).length;
 
         return ListScreenTemplate<ReconciliationJob>(
+          showBackButton: widget.showBackButton,
           titleWidget: Row(
             children: [
               const Icon(Icons.assignment,

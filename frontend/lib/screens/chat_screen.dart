@@ -170,7 +170,10 @@ class _ChatScreenState extends State<ChatScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           ThemedPanel(
-              color: AppColors.onPrimary.withValues(alpha: 0.7),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurfaceVariant
+                  .withValues(alpha: 0.7),
               shape: BoxShape.circle,
               width: 7,
               height: 7),
@@ -178,7 +181,10 @@ class _ChatScreenState extends State<ChatScreen>
           Text(
             l10n.chatStatusDisconnected,
             style: AppTypography.labelSm.copyWith(
-              color: AppColors.onPrimary.withValues(alpha: 0.7),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurfaceVariant
+                  .withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -193,7 +199,7 @@ class _ChatScreenState extends State<ChatScreen>
           Text(
             "${l10n.chatTitle} #$shortJobId",
             style: AppTypography.titleMd.copyWith(
-              color: AppColors.onPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w600,
             ),
           ),
