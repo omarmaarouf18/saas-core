@@ -104,7 +104,7 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                     controller: _nameController,
                     labelText: l10n.serviceNameLabel,
                     validator: (value) => value == null || value.trim().isEmpty
-                        ? "Name is required"
+                        ? l10n.nameRequiredError
                         : null,
                   ),
                   const SizedBox(height: AppSpacing.sm),

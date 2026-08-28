@@ -2342,4 +2342,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serviceFallbackLabel => 'Service';
+
+  @override
+  String get backActionLabel => 'Back';
 }

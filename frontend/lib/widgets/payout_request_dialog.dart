@@ -293,7 +293,9 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
                   children: [
                     Expanded(
                       child: SecondaryButton(
-                        text: _isConfirming ? "Back" : "Cancel",
+                        text: _isConfirming
+                            ? l10n.backActionLabel
+                            : l10n.cancelActionDefault,
                         isOutlined: true,
                         onPressed: _isSubmitting
                             ? null
@@ -314,7 +316,9 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
                         key: _isConfirming
                             ? const Key('payout_confirm_button')
                             : const Key('payout_submit_button'),
-                        text: _isConfirming ? "Confirm Payout" : "Continue",
+                        text: _isConfirming
+                            ? l10n.confirmPayoutBtn
+                            : l10n.continueActionLabel,
                         isLoading: _isSubmitting,
                         onPressed: () async {
                           if (!_isConfirming) {

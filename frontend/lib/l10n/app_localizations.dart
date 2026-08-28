@@ -4334,6 +4334,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Service'**
   String get serviceFallbackLabel;
+
+  /// No description provided for @backActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get backActionLabel;
 }
 
 class _AppLocalizationsDelegate

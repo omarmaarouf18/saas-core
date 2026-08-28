@@ -955,5 +955,6 @@
   "continueActionLabel": "متابعة",
   "kycUploadedStatus": "تم الرفع",
   "defaultErrorTitle": "حدث خطأ",
-  "serviceFallbackLabel": "خدمة"
+  "serviceFallbackLabel": "خدمة",
+  "backActionLabel": "رجوع"
 }

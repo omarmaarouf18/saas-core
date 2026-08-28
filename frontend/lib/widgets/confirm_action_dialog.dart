@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
 import 'primary_button.dart';
 import 'secondary_button.dart';
@@ -6,8 +7,8 @@ import 'secondary_button.dart';
 class ConfirmActionDialog extends StatelessWidget {
   final String title;
   final String message;
-  final String confirmLabel;
-  final String cancelLabel;
+  final String? confirmLabel;
+  final String? cancelLabel;
   final bool isDestructive;
   final IconData? icon;
 
@@ -15,8 +16,8 @@ class ConfirmActionDialog extends StatelessWidget {
     super.key,
     required this.title,
     required this.message,
-    this.confirmLabel = 'Confirm',
-    this.cancelLabel = 'Cancel',
+    this.confirmLabel,
+    this.cancelLabel,
     this.isDestructive = false,
     this.icon,
   });
@@ -25,8 +26,8 @@ class ConfirmActionDialog extends StatelessWidget {
     BuildContext context, {
     required String title,
     required String message,
-    String confirmLabel = 'Confirm',
-    String cancelLabel = 'Cancel',
+    String? confirmLabel,
+    String? cancelLabel,
     bool isDestructive = false,
     IconData? icon,
   }) {
@@ -81,12 +82,12 @@ class ConfirmActionDialog extends StatelessWidget {
       ),
       actions: [
         SecondaryButton(
-          text: cancelLabel,
+          text: cancelLabel ?? context.l10n.cancelActionDefault,
           isFullWidth: false,
           onPressed: () => Navigator.of(context).pop(false),
         ),
         PrimaryButton(
-          text: confirmLabel,
+          text: confirmLabel ?? context.l10n.confirmActionDefault,
           isFullWidth: false,
           isDestructive: isDestructive,
           onPressed: () => Navigator.of(context).pop(true),

@@ -117,7 +117,7 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                         return l10n.positiveNumberRequired;
                       }
                       if (amount > 1000000) {
-                        return "Maximum single deposit is 1,000,000 credits";
+                        return l10n.depositMaxLimitError;
                       }
                       return null;
                     },

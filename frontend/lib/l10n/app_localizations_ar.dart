@@ -2305,4 +2305,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get serviceFallbackLabel => 'خدمة';
+
+  @override
+  String get backActionLabel => 'رجوع';
 }

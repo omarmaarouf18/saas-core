@@ -1158,5 +1158,6 @@
   "continueActionLabel": "Continue",
   "kycUploadedStatus": "Uploaded",
   "defaultErrorTitle": "Error occurred",
-  "serviceFallbackLabel": "Service"
+  "serviceFallbackLabel": "Service",
+  "backActionLabel": "Back"
 }
