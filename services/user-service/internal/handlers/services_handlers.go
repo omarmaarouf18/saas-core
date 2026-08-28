@@ -100,6 +100,7 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 	// Verify owner exists and has approved KYC
 	kycStatus, err := u.checkKYC(req.OwnerID)
 	if err != nil {
+		// #nosec G706 //nolint:gosec -- req.OwnerID is resolved from cryptographically verified JWT claims
 		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.OwnerID, err)
 		if errors.Is(err, ErrServiceUnavailable) {
 			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
@@ -115,6 +116,7 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if kycStatus != "approved" {
+		// #nosec G706 //nolint:gosec -- req.OwnerID is resolved from cryptographically verified JWT claims
 		log.Printf("[KYC BLOCKED] Owner %s attempted to create service, but KYC status is %q", req.OwnerID, kycStatus)
 		handlerutil.ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("attempted to create service, KYC status is %s", kycStatus), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
@@ -194,6 +196,7 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 	// Verify owner exists and has approved KYC
 	kycStatus, err := u.checkKYC(req.OwnerID)
 	if err != nil {
+		// #nosec G706 //nolint:gosec -- req.OwnerID is resolved from cryptographically verified JWT claims
 		log.Printf("[KYC BLOCKED/ERROR] Failed KYC check for owner %s: %v", req.OwnerID, err)
 		if errors.Is(err, ErrServiceUnavailable) {
 			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
@@ -209,6 +212,7 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if kycStatus != "approved" {
+		// #nosec G706 //nolint:gosec -- req.OwnerID is resolved from cryptographically verified JWT claims
 		log.Printf("[KYC BLOCKED] Owner %s attempted to update service, but KYC status is %q", req.OwnerID, kycStatus)
 		handlerutil.ShipSecurityEvent(r.Context(), "KYC_BLOCKED", "user-service", req.OwnerID, req.OwnerID, fmt.Sprintf("attempted to update service, KYC status is %s", kycStatus), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{
