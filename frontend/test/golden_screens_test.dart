@@ -17,6 +17,8 @@ import 'package:frontend/models/chat_message.dart';
 import 'package:frontend/providers/chat_provider.dart';
 import 'package:frontend/providers/locale_provider.dart';
 import 'package:frontend/providers/map_tracking_provider.dart';
+import 'package:frontend/providers/employee_jobs_provider.dart';
+import 'package:frontend/providers/employee_location_provider.dart';
 import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/providers/reconciliation_provider.dart';
@@ -27,8 +29,13 @@ import 'package:frontend/screens/customer_home_screen.dart';
 import 'package:frontend/screens/customer_job_map_screen.dart';
 import 'package:frontend/screens/customer_jobs_screen.dart';
 import 'package:frontend/screens/customer_marketplace_screen.dart';
+import 'package:frontend/screens/employee_history_screen.dart';
+import 'package:frontend/screens/employee_home_screen.dart';
+import 'package:frontend/screens/employee_jobs_screen.dart';
+import 'package:frontend/screens/employee_screen.dart';
 import 'package:frontend/screens/forgot_password_screen.dart';
 import 'package:frontend/screens/job_status_screen.dart';
+import 'package:frontend/screens/kyc_document_upload_screen.dart';
 import 'package:frontend/screens/login_screen.dart';
 import 'package:frontend/screens/my_account_screen.dart';
 import 'package:frontend/screens/notifications_screen.dart';
@@ -249,6 +256,43 @@ UserProfile _owner() => UserProfile(
       kycStatus: 'approved',
     );
 
+UserProfile _employee() => UserProfile(
+      id: 'emp-1',
+      email: 'employee@example.com',
+      username: 'Employee One',
+      role: 'employee',
+      kycStatus: 'approved',
+    );
+
+class _MockEmployeeJobsProvider extends EmployeeJobsProvider {
+  final List<Job> mockJobs;
+  _MockEmployeeJobsProvider(super.apiClient, {this.mockJobs = const []});
+
+  @override
+  List<Job> get jobs => mockJobs;
+  @override
+  bool get isLoading => false;
+  @override
+  String? get error => null;
+  @override
+  Future<void> fetchAssignedJobs(String employeeToken) async {}
+}
+
+class _MockEmployeeLocationProvider extends EmployeeLocationProvider {
+  _MockEmployeeLocationProvider(super.apiClient);
+
+  @override
+  LocationSharingStatus get status => LocationSharingStatus.tracking;
+  @override
+  bool get isTracking => true;
+  @override
+  String? get error => null;
+  @override
+  Future<void> startTracking(String jobId, String userToken) async {}
+  @override
+  Future<void> stopTracking({bool notify = true}) async {}
+}
+
 UserProfile _customer() => UserProfile(
       id: 'cust-1',
       email: 'customer@example.com',
@@ -462,6 +506,50 @@ Widget _ownerApp({
             ),
           ],
         ),
+      ),
+      ChangeNotifierProvider<NotificationsProvider>.value(
+        value: _MockNotificationsProvider(api, []),
+      ),
+      ChangeNotifierProvider<MarketplaceProvider>.value(
+        value: _MockMarketplaceProvider(api, sampleJobs),
+      ),
+      ChangeNotifierProvider<MapTrackingProvider>.value(
+        value: _MockMapTrackingProvider(api),
+      ),
+    ],
+    child: _localizedApp(
+      brightness: brightness,
+      home: home,
+    ),
+  );
+}
+
+Widget _employeeApp({
+  required Widget home,
+  Brightness brightness = Brightness.light,
+  UserProfile? user,
+  List<Job>? jobs,
+}) {
+  final api = ApiClient();
+  final sampleJobs = jobs ?? [
+    _job('empjob1234', 'assigned'),
+    _job('empjob5678', 'completed'),
+  ];
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
+      ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: _MockAuthProvider(api, mockUser: user ?? _employee()),
+      ),
+      ChangeNotifierProvider<EmployeeJobsProvider>.value(
+        value: _MockEmployeeJobsProvider(api, mockJobs: sampleJobs),
+      ),
+      ChangeNotifierProvider<EmployeeLocationProvider>.value(
+        value: _MockEmployeeLocationProvider(api),
+      ),
+      ChangeNotifierProvider<OwnerProvider>.value(
+        value: _MockOwnerProvider(api),
       ),
       ChangeNotifierProvider<NotificationsProvider>.value(
         value: _MockNotificationsProvider(api, []),
@@ -1030,5 +1118,69 @@ void main() {
         home: const OwnerHistoryScreen(), brightness: Brightness.dark);
     await _pumpGolden(
         tester, app, _mobile, 'owner_history_dark_mobile_360x800');
+  });
+
+  // ── BATCH 4: Employee Screens & KYC ──
+  testWidgets('GOLDEN employee home screen — mobile', (tester) async {
+    final app = _employeeApp(home: const EmployeeHomeScreen());
+    await _pumpGolden(tester, app, _mobile, 'employee_home_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark employee home screen — mobile', (tester) async {
+    final app = _employeeApp(
+        home: const EmployeeHomeScreen(), brightness: Brightness.dark);
+    await _pumpGolden(
+        tester, app, _mobile, 'employee_home_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN employee jobs screen — mobile', (tester) async {
+    final app = _employeeApp(home: const EmployeeJobsScreen());
+    await _pumpGolden(tester, app, _mobile, 'employee_jobs_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark employee jobs screen — mobile', (tester) async {
+    final app = _employeeApp(
+        home: const EmployeeJobsScreen(), brightness: Brightness.dark);
+    await _pumpGolden(
+        tester, app, _mobile, 'employee_jobs_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN employee screen — mobile', (tester) async {
+    final app = _employeeApp(home: const EmployeeScreen());
+    await _pumpGolden(tester, app, _mobile, 'employee_screen_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark employee screen — mobile', (tester) async {
+    final app = _employeeApp(
+        home: const EmployeeScreen(), brightness: Brightness.dark);
+    await _pumpGolden(
+        tester, app, _mobile, 'employee_screen_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN employee history screen — mobile', (tester) async {
+    final app = _employeeApp(home: const EmployeeHistoryScreen());
+    await _pumpGolden(
+        tester, app, _mobile, 'employee_history_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark employee history screen — mobile', (tester) async {
+    final app = _employeeApp(
+        home: const EmployeeHistoryScreen(), brightness: Brightness.dark);
+    await _pumpGolden(
+        tester, app, _mobile, 'employee_history_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN kyc document upload screen — mobile', (tester) async {
+    final app = _employeeApp(home: const KycDocumentUploadScreen());
+    await _pumpGolden(
+        tester, app, _mobile, 'kyc_document_upload_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark kyc document upload screen — mobile',
+      (tester) async {
+    final app = _employeeApp(
+        home: const KycDocumentUploadScreen(), brightness: Brightness.dark);
+    await _pumpGolden(
+        tester, app, _mobile, 'kyc_document_upload_dark_mobile_360x800');
   });
 }
