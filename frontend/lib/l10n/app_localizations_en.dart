@@ -2342,4 +2342,83 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serviceFallbackLabel => 'Service';
+
+  @override
+  String get backActionLabel => 'Back';
+
+  @override
+  String depositSuccessMessage(String amount) {
+    return 'Successfully deposited $amount credits.';
+  }
+
+  @override
+  String get reconciliationUnderDistance =>
+      'Distance mismatch — under 70% of booked distance';
+
+  @override
+  String get reconciliationUnrecordedEscrow =>
+      'Unrecorded escrow balance failure';
+
+  @override
+  String get reconciliationImplausibleSpeed =>
+      'Implausible movement speed detected';
+
+  @override
+  String get reconciliationRequiredDefault =>
+      'Escrow reconciliation required for manual review';
+
+  @override
+  String customerWithId(String id) {
+    return 'Customer: $id';
+  }
+
+  @override
+  String employeeRegisteredSuccess(String username, String id) {
+    return 'Successfully created employee account:\nUsername: $username\nID: $id';
+  }
+
+  @override
+  String priceRangeError(String min, String max) {
+    return 'Price must be between \$$min and \$$max';
+  }
+
+  @override
+  String get jobStateChangedError =>
+      'Job state changed — the other party already acted or status changed.';
+
+  @override
+  String fileSizeExceededError(String size) {
+    return 'File size exceeds maximum allowed size of 10MB (${size}MB).';
+  }
+
+  @override
+  String documentOnFile(String filename) {
+    return 'Document on file ($filename)';
+  }
+
+  @override
+  String get notificationsJobsTag => 'JOB ALERT';
+
+  @override
+  String get notificationsAlertsTag => 'ALERT';
+
+  @override
+  String get notificationsSystemTag => 'SYSTEM';
+
+  @override
+  String get notificationsDefaultTag => 'NOTIFICATION';
+
+  @override
+  String get notificationsToday => 'TODAY';
+
+  @override
+  String get notificationsYesterday => 'YESTERDAY';
+
+  @override
+  String get notificationsEarlier => 'EARLIER';
+
+  @override
+  String ticketSubmittedSuccess(String id) {
+    return 'Ticket submitted successfully! (Ticket ID: $id)';
+  }
 }

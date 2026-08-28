@@ -75,7 +75,7 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                         child: Text(
                           l10n.depositFundsTitle,
                           style: AppTypography.titleMd.copyWith(
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -104,9 +104,9 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     labelText: l10n.walletAmountCredits,
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.attach_money,
-                      color: AppColors.outline,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -117,7 +117,7 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                         return l10n.positiveNumberRequired;
                       }
                       if (amount > 1000000) {
-                        return "Maximum single deposit is 1,000,000 credits";
+                        return l10n.depositMaxLimitError;
                       }
                       return null;
                     },
@@ -166,7 +166,8 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                                   Navigator.of(context).pop();
                                   ThemedSnackBar.showSuccess(
                                     context,
-                                    "Successfully deposited ${amount.toStringAsFixed(2)} credits.",
+                                    l10n.depositSuccessMessage(
+                                        amount.toStringAsFixed(2)),
                                   );
                                 }
                               } catch (e) {

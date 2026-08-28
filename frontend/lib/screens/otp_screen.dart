@@ -194,9 +194,19 @@ class _OtpScreenState extends State<OtpScreen> {
         ),
         const SizedBox(height: AppSpacing.xxs),
         Text(
-          "${l10n.otpSubtitle}\n${widget.email}",
+          l10n.otpSubtitle,
           style: AppTypography.bodyMd.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          widget.email,
+          textDirection: TextDirection.ltr,
+          style: AppTypography.bodyMd.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
           ),
           textAlign: TextAlign.center,
         ),
@@ -305,15 +315,15 @@ class _OtpScreenState extends State<OtpScreen> {
       crossAxisAlignment: WrapCrossAlignment.center,
       spacing: AppSpacing.xxs,
       children: [
-        const Icon(
+        Icon(
           Icons.lock_outline,
           size: 14,
-          color: AppColors.outline,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         Text(
           context.l10n.enterpriseTrustNote,
           style: AppTypography.caption.copyWith(
-            color: AppColors.outline,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],

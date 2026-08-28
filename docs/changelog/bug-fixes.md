@@ -2,6 +2,25 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Functional UI/UX Fixes: Dark Mode Contrast, OTP RTL Layout, and KYC Scroll/Performance
+
+- **Implementation Detail**:
+  - **Shared Widgets (`frontend/lib/widgets/`)**:
+    - `status_badge.dart`: Fixed low contrast in dark theme by mapping status strings to theme tokens: `active` to `Theme.of(context).colorScheme.primary` (contrast jumped from 1.04:1 failure to 8.97:1 PASS), `cancelled`/`rejected` to `context.semanticColors.danger` (5.29:1 PASS), and `pending`/`unverified` to `Theme.of(context).colorScheme.outline` (4.33:1 PASS).
+    - `themed_empty_state.dart`: Switched static `AppColors.outline` with alpha to theme-aware `Theme.of(context).colorScheme.outline`.
+    - `themed_loading_indicator.dart`: Switched static `AppColors.primary` valueColor to `Theme.of(context).colorScheme.primary`.
+    - `route_timeline.dart`: Switched pickup dot from static `AppColors.primary` to `Theme.of(context).colorScheme.primary`.
+    - `info_list_tile.dart`: Standardized leading icon color fallback to `Theme.of(context).colorScheme.primary`.
+    - `confirm_action_dialog.dart`: Confirm button foreground now dynamically uses semantic danger or theme primary.
+    - `create_service_dialog.dart`, `deposit_funds_dialog.dart`, `email_change_dialog.dart`, `payout_request_dialog.dart`: Standardized dialog headers to `onSurface`, field prefix icons to `onSurfaceVariant`, and dropdown borders to theme `outlineVariant`/`primary`.
+    - `form_screen_template.dart`: Added optional `onRefresh` parameter that wraps `scrollableBody` in a root `RefreshIndicator`, preventing nested scrollable starvation.
+    - `otp_pin_input.dart`: Wrapped PIN box Row in `Directionality(textDirection: TextDirection.ltr)` and configured `TextField(textDirection: TextDirection.ltr)` so digit boxes always render left-to-right regardless of ambient app locale; updated focused border and digit text styles to theme primary.
+  - **Screens Hardened (`frontend/lib/screens/`)**: Remediated remaining low-contrast dark mode elements in `notifications_screen.dart`, `wallet_screen.dart`, `customer_marketplace_screen.dart`, `employee_jobs_screen.dart`, `job_status_screen.dart`, `rating_screen.dart`, `owner_fleet_map_screen.dart`, `owner_configuration_screen.dart`, `customer_home_screen.dart`, `customer_job_map_screen.dart`, `home_screen.dart`, `employee_screen.dart`, `owner_history_screen.dart`, `service_screen.dart`, `my_account_screen.dart`, `update_required_screen.dart`, `chat_screen.dart`, `owner_reconciliation_queue_screen.dart`.
+  - **OTP Screen RTL & Arabic Localization (`otp_screen.dart`, `app_ar.arb`)**: Isolated user email in a dedicated LTR widget to prevent bidi text displacement; smoothed Arabic label `otpCodeLabel` to "كود التحقق المكون من 6 أرقام"; updated dev OTP label with clean parenthesis notation; added 4 regression tests in `test/otp_rtl_arabic_test.dart`.
+  - **KYC Screen Scroll Freeze & Performance (`kyc_document_upload_screen.dart`)**: Eliminated redundant nested `RefreshIndicator` and `SingleChildScrollView` by passing `onRefresh: _refreshUserData` directly to `FormScreenTemplate`; added `cacheWidth: 144, cacheHeight: 144` to `Image.memory` and `maxWidth: 1920, maxHeight: 1920, imageQuality: 85` to `ImagePicker` calls; added regression tests `(f)` and `(g)` in `test/kyc_document_upload_screen_test.dart`.
+- **Commit SHA**: ``697c489092a8a8d75983dc63105bcf6d943f6a68``
+- **Verification**: Verified via `dart format .`, `flutter analyze` (0 issues), full `flutter test` (100% pass, 418/418 tests passed), and deliberate golden baseline updates in `test/golden_screens_test.dart`. ✅
+
 ## Remediation of Stitch Mockup Freight & Warehousing Content Leak
 
 - **Implementation Detail**:

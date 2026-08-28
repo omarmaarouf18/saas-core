@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
+import '../l10n/l10n.dart';
 import 'app_shell.dart';
 import 'themed_empty_state.dart';
 import 'themed_error_banner.dart';
@@ -36,6 +37,7 @@ class ListScreenTemplate<T> extends StatelessWidget {
   final double appBarElevation;
   final bool? resizeToAvoidBottomInset;
   final bool centerTitle;
+  final AppShellChromeStyle? chromeStyle;
 
   // --- Data & State Properties ---
   /// The collection of data items to display.
@@ -98,10 +100,10 @@ class ListScreenTemplate<T> extends StatelessWidget {
   final IconData emptyIcon;
 
   /// Title displayed in the default empty state.
-  final String emptyTitle;
+  final String? emptyTitle;
 
   /// Description displayed in the default empty state.
-  final String emptyDescription;
+  final String? emptyDescription;
 
   /// Optional button text for action in empty state.
   final String? emptyActionText;
@@ -159,11 +161,12 @@ class ListScreenTemplate<T> extends StatelessWidget {
     this.loadingMessage,
     this.emptyWidget,
     this.emptyIcon = Icons.inbox_outlined,
-    this.emptyTitle = 'No items found',
-    this.emptyDescription = 'There are no items to display at this time.',
+    this.emptyTitle,
+    this.emptyDescription,
     this.emptyActionText,
     this.onEmptyActionPressed,
     this.errorWidget,
+    this.chromeStyle,
   });
 
   @override
@@ -191,6 +194,7 @@ class ListScreenTemplate<T> extends StatelessWidget {
       appBarElevation: appBarElevation,
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       centerTitle: centerTitle,
+      chromeStyle: chromeStyle,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -257,8 +261,8 @@ class ListScreenTemplate<T> extends StatelessWidget {
           ThemedEmptyState(
             key: const ValueKey('list_template_empty'),
             icon: emptyIcon,
-            title: emptyTitle,
-            description: emptyDescription,
+            title: emptyTitle ?? context.l10n.listEmptyTitle,
+            description: emptyDescription ?? context.l10n.listEmptyBody,
             actionText: emptyActionText,
             onActionPressed: onEmptyActionPressed,
           );

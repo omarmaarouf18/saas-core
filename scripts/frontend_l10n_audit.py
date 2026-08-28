@@ -31,6 +31,7 @@ CONTEXTS = [
     r"(?<![A-Za-z0-9_])uppercaseLabel\(\s*(?P<lit>['\"])",
     r"\b(?:_?error)\s*=\s*(?P<lit>['\"])",
     r"\b(?:tooltip|hintText|labelText|helperText|errorText|semanticLabel|title|message|subtitle|label|emptyTitle|emptyMessage|actionLabel|text)\s*:\s*(?P<lit>['\"])",
+    r"(?<![A-Za-z0-9_])(?:return|=>)\s*(?P<lit>['\"])",
 ]
 
 COMPILED = [(re.compile(c), c) for c in CONTEXTS]
@@ -46,6 +47,8 @@ SKIP_PATTERNS = [
     # starts uppercase BUT contains '/' -> caught by next rule):
     r"^[a-z][A-Za-z0-9_.\-/:]*$",
     r"^[A-Z][A-Za-z]*[/][A-Za-z0-9.\-]+$",  # 'QuickDeliveryApp/1.0' style UA strings
+    r"^ApiClientException:",              # exception toString representation
+    r"^Bearer\s",                         # HTTP Authorization header template
 ]
 
 # Lines whose trailing context marks the following literal as a test key.
@@ -77,6 +80,40 @@ def classify(literal: str, preceding_text: str) -> bool:
     return is_human_readable(literal)
 
 
+def is_accepted_exception(rel_path: str, literal: str) -> bool:
+    """Documented accepted exceptions:
+    1. Brand names ('Quick Delivery', 'QD')
+    2. Tracking badge IDs ('#QD-$displayId')
+    3. Component library debug catalog ('component_library_screen.dart')"""
+    if "component_library_screen.dart" in rel_path:
+        return True
+    if literal in ("Quick Delivery", "QD"):
+        return True
+    if literal.startswith("#QD-"):
+        return True
+    return False
+
+
+def audit_source(src: str, rel_path: Path = Path("test.dart")) -> tuple[int, list[tuple[Path, int, str]]]:
+    findings = []
+    total = 0
+    for rx, _ in COMPILED:
+        for m in rx.finditer(src):
+            quote = m.group("lit")
+            rest = src[m.end():]
+            end = rest.find(quote)
+            if end == -1:
+                continue
+            literal = rest[:end]
+            if "\n" in literal:  # broken extraction guard
+                continue
+            total += 1
+            line = src.count("\n", 0, m.start()) + 1
+            if classify(literal, src[max(0, m.start() - 200):m.start()]):
+                findings.append((rel_path, line, literal))
+    return total, findings
+
+
 def main() -> int:
     findings = []
     dart_files = sorted(
@@ -88,20 +125,9 @@ def main() -> int:
     for path in dart_files:
         src = path.read_text(encoding="utf-8")
         rel = path.relative_to(REPO)
-        for rx, _ in COMPILED:
-            for m in rx.finditer(src):
-                quote = m.group("lit")
-                rest = src[m.end():]
-                end = rest.find(quote)
-                if end == -1:
-                    continue
-                literal = rest[:end]
-                if "\n" in literal:  # broken extraction guard
-                    continue
-                total += 1
-                line = src.count("\n", 0, m.start()) + 1
-                if classify(literal, src[max(0, m.start() - 200):m.start()]):
-                    findings.append((rel, line, literal))
+        file_total, file_findings = audit_source(src, rel)
+        total += file_total
+        findings.extend(file_findings)
 
     seen = set()
     uniq = []
@@ -111,12 +137,29 @@ def main() -> int:
             seen.add(k)
             uniq.append(k)
 
-    print("=== A2 Hardcoded-String l10n Audit ===")
+    exceptions = []
+    violations = []
+    for f, ln, lit in sorted(uniq):
+        if is_accepted_exception(f, lit):
+            exceptions.append((f, ln, lit))
+        else:
+            violations.append((f, ln, lit))
+
+    print("=== Extended Hardcoded-String l10n Audit ===")
     print(f"Scanned {len(dart_files)} dart files under frontend/lib (excl. l10n/, theme.dart)")
     print(f"String literals at audited call sites: {total}")
     print(f"Flagged as likely-unlocalized human copy: {len(uniq)}")
-    for f, ln, lit in sorted(uniq):
-        print(f"  {f}:{ln}: {lit!r}")
+    print(f"  - Documented accepted exceptions: {len(exceptions)}")
+    print(f"  - Non-exempt unlocalized violations: {len(violations)}")
+    if violations:
+        print("\nVIOLATIONS FOUND:")
+        for f, ln, lit in violations:
+            print(f"  [VIOLATION] {f}:{ln}: {lit!r}")
+    else:
+        print("\nZero non-exempt unlocalized violations found.")
+
+    if "--strict" in sys.argv and violations:
+        return 1
     return 0
 
 

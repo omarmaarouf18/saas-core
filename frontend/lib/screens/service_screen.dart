@@ -10,6 +10,7 @@ import '../widgets/app_shell.dart';
 import '../widgets/create_service_dialog.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 
 class ServiceScreen extends StatefulWidget {
@@ -79,6 +80,16 @@ class _ServiceScreenState extends State<ServiceScreen> {
                     // Header Section
                     _buildHeader(),
                     const SizedBox(height: AppSpacing.lg),
+
+                    // Surface service fetch errors with retry path
+                    if (!owner.isLoading && owner.error != null) ...[
+                      ThemedErrorBanner(
+                        key: const Key('service_screen_error'),
+                        message: owner.error!,
+                        onRetry: _loadServices,
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
 
                     // KYC Verification Guard Banner
                     if (!isKycApproved) ...[
@@ -159,9 +170,9 @@ class _ServiceScreenState extends State<ServiceScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(
+            Icon(
               Icons.lock_outline,
-              color: AppColors.outline,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               size: 22,
             ),
             const SizedBox(width: AppSpacing.md),
@@ -353,9 +364,9 @@ class _ServiceScreenState extends State<ServiceScreen> {
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.location_on_outlined,
-                  color: AppColors.outline,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   size: 16,
                 ),
                 const SizedBox(width: AppSpacing.xs),
@@ -363,7 +374,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                   context.l10n.serviceLocationLine(
                       lat.toStringAsFixed(4), lon.toStringAsFixed(4)),
                   style: AppTypography.labelMd.copyWith(
-                    color: AppColors.outline,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

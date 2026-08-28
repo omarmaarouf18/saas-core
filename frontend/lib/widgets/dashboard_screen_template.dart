@@ -50,6 +50,9 @@ class DashboardScreenTemplate extends StatelessWidget {
   /// Key applied to the [NavigationBar].
   final Key? navigationBarKey;
 
+  /// Explicit chrome style passed to [AppShell].
+  final AppShellChromeStyle? chromeStyle;
+
   const DashboardScreenTemplate({
     super.key,
     this.title,
@@ -65,6 +68,7 @@ class DashboardScreenTemplate extends StatelessWidget {
     required this.tabs,
     required this.destinations,
     this.navigationBarKey,
+    this.chromeStyle,
   });
 
   /// The canonical Quick Delivery brand logo badge used as dashboard leading chrome.
@@ -102,6 +106,7 @@ class DashboardScreenTemplate extends StatelessWidget {
       appBarBackgroundColor: appBarBackgroundColor ?? Colors.transparent,
       appBarForegroundColor:
           appBarForegroundColor ?? Theme.of(context).colorScheme.onSurface,
+      chromeStyle: chromeStyle,
       body: IndexedStack(
         index: currentIndex,
         children: tabs,

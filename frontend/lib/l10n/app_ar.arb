@@ -120,7 +120,7 @@
   "signupSignIn": "تسجيل الدخول",
   "otpTitle": "تأكيد كود التحقق",
   "otpSubtitle": "ادخل الكود المكون من 6 أرقام المبعوت على إيميلك",
-  "otpCodeLabel": "كود التحقق الـ 6 أرقام",
+  "otpCodeLabel": "كود التحقق المكون من 6 أرقام",
   "otpSubmitButton": "تأكيد الكود",
   "otpResendButton": "إعادة إرسال الكود",
   "forgotPasswordTitle": "إعادة تعيين كلمة السر",
@@ -530,7 +530,7 @@
       }
     }
   },
-  "devOtpAutoFilled": "وضع التجربة: كود التحقق '{otp}' اتضاف تلقائيًا.",
+  "devOtpAutoFilled": "وضع التجربة: كود التحقق ({otp}) اتضاف تلقائيًا.",
   "@devOtpAutoFilled": {
     "placeholders": {
       "otp": {
@@ -955,5 +955,25 @@
   "continueActionLabel": "متابعة",
   "kycUploadedStatus": "تم الرفع",
   "defaultErrorTitle": "حدث خطأ",
-  "serviceFallbackLabel": "خدمة"
+  "serviceFallbackLabel": "خدمة",
+  "backActionLabel": "رجوع",
+  "depositSuccessMessage": "تم إيداع {amount} رصيد بنجاح.",
+  "reconciliationUnderDistance": "فرق في المسافة — أقل من 70% من المسافة المحددة",
+  "reconciliationUnrecordedEscrow": "فشل تسجيل رصيد الضمان",
+  "reconciliationImplausibleSpeed": "تم رصد سرعة انتقال غير منطقية",
+  "reconciliationRequiredDefault": "مطلوب مراجعة تسوية الضمان يدويًا",
+  "customerWithId": "العميل: {id}",
+  "employeeRegisteredSuccess": "تم إنشاء حساب الموظف بنجاح:\nاسم المستخدم: {username}\nالمعرف: {id}",
+  "priceRangeError": "يجب أن يكون السعر بين ${min} و ${max}",
+  "jobStateChangedError": "تغيرت حالة الطلب — قام الطرف الآخر بإجراء أو تغيرت الحالة.",
+  "fileSizeExceededError": "حجم الملف يتجاوز الحد الأقصى المسموح به 10 ميجابايت ({size} ميجابايت).",
+  "documentOnFile": "المستند مسجل ({filename})",
+  "notificationsJobsTag": "تنبيه طلب",
+  "notificationsAlertsTag": "تنبيه",
+  "notificationsSystemTag": "النظام",
+  "notificationsDefaultTag": "إشعار",
+  "notificationsToday": "اليوم",
+  "notificationsYesterday": "أمس",
+  "notificationsEarlier": "سابقًا",
+  "ticketSubmittedSuccess": "تم إرسال التذكرة بنجاح! (رقم التذكرة: {id})"
 }

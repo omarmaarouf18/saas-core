@@ -109,8 +109,7 @@ class _ThemedBannerState extends State<ThemedBanner> {
   String? _defaultTitle() {
     switch (widget.type) {
       case ThemedBannerType.error:
-        return AppLocalizations.of(context)?.defaultErrorTitle ??
-            "Error occurred";
+        return context.l10n.defaultErrorTitle;
       case ThemedBannerType.success:
       case ThemedBannerType.warning:
       case ThemedBannerType.info:

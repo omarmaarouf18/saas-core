@@ -38,7 +38,8 @@ class InfoListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget? leadingWidget = leading;
     if (leadingWidget == null && leadingIcon != null) {
-      final iconColor = leadingIconColor ?? AppColors.primary;
+      final iconColor =
+          leadingIconColor ?? Theme.of(context).colorScheme.primary;
       final bgColor =
           leadingBackgroundColor ?? iconColor.withValues(alpha: 0.1);
       leadingWidget = Container(

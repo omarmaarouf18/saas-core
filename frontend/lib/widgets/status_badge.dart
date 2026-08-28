@@ -36,7 +36,7 @@ class StatusBadge extends StatelessWidget {
       case 'uploaded':
         return context.semanticColors.success;
       case 'active':
-        return AppColors.primary;
+        return Theme.of(context).colorScheme.primary;
       case 'awaiting_price_response':
       case 'awaiting price':
       case 'pending_super_admin_approval':
@@ -48,12 +48,12 @@ class StatusBadge extends StatelessWidget {
       case 'cancelled':
       case 'canceled':
       case 'rejected':
-        return AppColors.error;
+        return context.semanticColors.danger;
       case 'pending':
       case 'unverified':
       case 'none':
       default:
-        return AppColors.outline;
+        return Theme.of(context).colorScheme.outline;
     }
   }
 

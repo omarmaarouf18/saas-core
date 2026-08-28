@@ -431,9 +431,11 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                   title: l10n.customerHomeCatDelivery,
                   description: l10n.customerHomeTileDeliveryDesc,
                   icon: Icons.inventory_2_outlined,
-                  iconBgColor:
-                      AppColors.primaryContainer.withValues(alpha: 0.1),
-                  iconColor: AppColors.primaryContainer,
+                  iconBgColor: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.1),
+                  iconColor: Theme.of(context).colorScheme.primary,
                   onTap: () => widget.onCategorySelected('delivery'),
                 ),
               ),
@@ -479,8 +481,11 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                   title: l10n.customerHomeCatBrowseAll,
                   description: l10n.customerHomeTileBrowseAllDesc,
                   icon: Icons.grid_view_rounded,
-                  iconBgColor: AppColors.primary.withValues(alpha: 0.1),
-                  iconColor: AppColors.primary,
+                  iconBgColor: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.1),
+                  iconColor: Theme.of(context).colorScheme.primary,
                   onTap: () => widget.onCategorySelected('all'),
                 ),
               ),
@@ -699,8 +704,9 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
             padding: AppSpacing.lg,
             child: Row(
               children: [
-                const Icon(Icons.info_outline,
-                    color: AppColors.outline, size: 22),
+                Icon(Icons.info_outline,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    size: 22),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Text(

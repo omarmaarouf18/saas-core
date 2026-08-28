@@ -132,10 +132,10 @@ class _EmailChangeDialogState extends State<EmailChangeDialog> {
                       child: Text(
                         _step == 1
                             ? l10n.changeEmailButton
-                            : "Verify New Email",
+                            : l10n.verifyNewEmailBtn,
                         style: AppTypography.titleMd.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -216,7 +216,7 @@ class _EmailChangeDialogState extends State<EmailChangeDialog> {
                           return l10n.verificationCodeRequired;
                         }
                         if (v.trim().length < 6) {
-                          return "Enter complete 6-digit code";
+                          return l10n.enterCompleteOtpError;
                         }
                         return null;
                       },

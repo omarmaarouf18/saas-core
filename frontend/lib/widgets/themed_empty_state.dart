@@ -30,7 +30,7 @@ class ThemedEmptyState extends StatelessWidget {
             Icon(
               icon,
               size: AppIconSize.xl,
-              color: AppColors.outline.withValues(alpha: 0.5),
+              color: Theme.of(context).colorScheme.outline,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(

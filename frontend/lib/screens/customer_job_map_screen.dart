@@ -273,9 +273,9 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
         borderRadius: AppRadius.md,
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.directions_car_outlined,
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
@@ -347,7 +347,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
               border: Border.all(color: AppColors.outlineVariant),
               child: IconButton(
                 icon: const Icon(Icons.my_location),
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
                 tooltip: context.l10n.tooltipRecenter,
                 onPressed: () => _centerOnTarget(centerPoint),
               )),

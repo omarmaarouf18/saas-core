@@ -38,8 +38,19 @@ class MockMarketplaceProviderForTest extends MarketplaceProvider {
   String? lastCancelledReason;
   bool shouldFailCancel = false;
   String failMessage = 'Access denied';
+  String? testError;
+  int fetchJobStatusCalls = 0;
 
-  MockMarketplaceProviderForTest(super.apiClient);
+  MockMarketplaceProviderForTest(super.apiClient, {this.testError});
+
+  @override
+  String? get error => testError;
+
+  @override
+  Future<Job?> fetchJobStatus(String jobId, String userToken) async {
+    fetchJobStatusCalls++;
+    return null;
+  }
 
   @override
   Future<Map<String, dynamic>> cancelJob({
@@ -424,5 +435,67 @@ void main() {
     expect(mpProvider.cancelJobCalled, isTrue);
     // Dialog remains open showing friendly error message
     expect(find.text(ErrorMessages.forbidden), findsOneWidget);
+  });
+
+  testWidgets(
+      'JobStatusScreen error banner renders when marketplaceProvider.error is set',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mpProvider = MockMarketplaceProviderForTest(
+      apiClient,
+      testError: 'Failed to refresh job status. Network timeout.',
+    );
+
+    await tester.pumpWidget(createCustomerWidget(
+      job: pendingJob,
+      marketplaceProvider: mpProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('job_status_screen_error')), findsOneWidget);
+    expect(find.text('Failed to refresh job status. Network timeout.'),
+        findsOneWidget);
+  });
+
+  testWidgets(
+      'JobStatusScreen error banner is absent on successful load (error is null)',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mpProvider = MockMarketplaceProviderForTest(apiClient);
+
+    await tester.pumpWidget(createCustomerWidget(
+      job: pendingJob,
+      marketplaceProvider: mpProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('job_status_screen_error')), findsNothing);
+  });
+
+  testWidgets(
+      'Tapping retry on JobStatusScreen error banner re-triggers fetchJobStatus',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mpProvider = MockMarketplaceProviderForTest(
+      apiClient,
+      testError: 'Network error',
+    );
+
+    await tester.pumpWidget(createCustomerWidget(
+      job: pendingJob,
+      marketplaceProvider: mpProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    final retryButton = find.descendant(
+      of: find.byKey(const Key('job_status_screen_error')),
+      matching: find.byType(TextButton),
+    );
+    expect(retryButton, findsOneWidget);
+
+    await tester.tap(retryButton);
+    await tester.pumpAndSettle();
+
+    expect(mpProvider.fetchJobStatusCalls, greaterThanOrEqualTo(1));
   });
 }

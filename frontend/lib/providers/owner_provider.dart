@@ -400,7 +400,7 @@ class OwnerProvider extends ChangeNotifier {
   }) async {
     final trimmedReason = reason.trim();
     if (trimmedReason.isEmpty) {
-      const msg = 'Reason is required to cancel a job.';
+      const msg = 'cancel_reason_required';
       _error = msg;
       notifyListeners();
       throw ApiClientException(msg, statusCode: 400);

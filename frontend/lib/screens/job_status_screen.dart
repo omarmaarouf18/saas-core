@@ -17,6 +17,7 @@ import '../widgets/secondary_button.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_success_banner.dart';
 import '../widgets/themed_text_field.dart';
 import 'chat_screen.dart';
@@ -130,8 +131,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     }
     const eps = 1e-9;
     if (proposed < (minPrice - eps) || proposed > (maxPrice + eps)) {
-      setState(() => _proposalError =
-          "Price must be between \$${minPrice.toStringAsFixed(2)} and \$${maxPrice.toStringAsFixed(2)}");
+      setState(() => _proposalError = l10n.priceRangeError(
+          minPrice.toStringAsFixed(2), maxPrice.toStringAsFixed(2)));
       return;
     }
 
@@ -163,8 +164,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       if (mounted) {
         String msg;
         if (e is ApiClientException && e.statusCode == 409) {
-          msg =
-              "Job state changed — the other party already acted or status changed.";
+          msg = l10n.jobStateChangedError;
         } else {
           msg = friendlyErrorMessage(e);
         }
@@ -216,8 +216,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       if (mounted) {
         String msg;
         if (e is ApiClientException && e.statusCode == 409) {
-          msg =
-              "Job state changed — the other party already acted or status changed.";
+          msg = l10n.jobStateChangedError;
         } else {
           msg = friendlyErrorMessage(e);
         }
@@ -333,6 +332,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final marketplace = Provider.of<MarketplaceProvider>(context);
     final step = _getStatusStep(_currentJob.status);
     final isCancelled = _currentJob.status == 'cancelled';
     final isCompleted = _currentJob.status == 'completed';
@@ -373,6 +373,16 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             _buildStatusHeaderBar(
                 isCancelled, isCompleted, isActive, displayId),
             const SizedBox(height: AppSpacing.md),
+
+            // Surface job status refresh errors with retry path
+            if (!_isRefreshing && marketplace.error != null) ...[
+              ThemedErrorBanner(
+                key: const Key('job_status_screen_error'),
+                message: marketplace.error!,
+                onRetry: () => _refreshJobStatus(),
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
 
             // 2. Track Job Hero Banner (Stitch Live Tracking Action)
             _buildTrackJobBanner(context),
@@ -625,12 +635,12 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     required bool isLast,
   }) {
     final Color nodeBg = isDone
-        ? AppColors.primary
+        ? Theme.of(context).colorScheme.primary
         : isActive
             ? AppColors.secondary
             : Theme.of(context).colorScheme.surfaceContainerHigh;
     final Color nodeColor = isDone || isActive
-        ? AppColors.onPrimary
+        ? Theme.of(context).colorScheme.onPrimary
         : Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Row(
@@ -650,7 +660,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 width: 2,
                 height: 28,
                 color: isDone
-                    ? AppColors.primary
+                    ? Theme.of(context).colorScheme.primary
                     : Theme.of(context).colorScheme.surfaceContainerHigh,
               ),
           ],

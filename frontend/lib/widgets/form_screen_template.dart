@@ -39,6 +39,7 @@ class FormScreenTemplate extends StatelessWidget {
   final double appBarElevation;
   final bool? resizeToAvoidBottomInset;
   final bool centerTitle;
+  final AppShellChromeStyle? chromeStyle;
 
   // --- Form Layout & Structure ---
   /// GlobalKey for form state validation. If provided, the form fields are wrapped in a [Form].
@@ -68,6 +69,9 @@ class FormScreenTemplate extends StatelessWidget {
 
   /// Optional scroll controller.
   final ScrollController? scrollController;
+
+  /// Optional pull-to-refresh callback. When supplied, wraps the form scroll view in a [RefreshIndicator].
+  final RefreshCallback? onRefresh;
 
   // --- Card Wrapping Option ---
   /// Whether to wrap the form fields in a [ThemedCard].
@@ -178,6 +182,7 @@ class FormScreenTemplate extends StatelessWidget {
     this.footer,
     this.physics = const AlwaysScrollableScrollPhysics(),
     this.scrollController,
+    this.onRefresh,
     this.cardWrapper = false,
     this.cardPadding,
     this.cardTopAccentColor,
@@ -202,6 +207,7 @@ class FormScreenTemplate extends StatelessWidget {
     this.isSecondaryOutlined = false,
     this.actionSpacing = AppSpacing.md,
     this.disableOnSubmit = true,
+    this.chromeStyle,
   });
 
   @override
@@ -327,6 +333,13 @@ class FormScreenTemplate extends StatelessWidget {
       ),
     );
 
+    if (onRefresh != null) {
+      scrollableBody = RefreshIndicator(
+        onRefresh: onRefresh!,
+        child: scrollableBody,
+      );
+    }
+
     if (disableOnSubmit && busy) {
       scrollableBody = IgnorePointer(
         ignoring: true,
@@ -357,6 +370,7 @@ class FormScreenTemplate extends StatelessWidget {
       appBarElevation: appBarElevation,
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       centerTitle: centerTitle,
+      chromeStyle: chromeStyle,
       body: scrollableBody,
     );
   }

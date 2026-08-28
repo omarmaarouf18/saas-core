@@ -315,7 +315,8 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
         padding: AppSpacing.sm,
         child: Row(
           children: [
-            const Icon(Icons.info_outline, color: AppColors.primary),
+            Icon(Icons.info_outline,
+                color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: AppSpacing.base),
             Expanded(
               child: Text(
@@ -375,7 +376,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                         Text(
                           employee.employeeId,
                           style: AppTypography.titleMd.copyWith(
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

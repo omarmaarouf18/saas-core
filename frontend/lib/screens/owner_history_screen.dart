@@ -237,14 +237,14 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                   actionTitle,
                   style: AppTypography.titleMd.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.admin_panel_settings_outlined,
                 size: 20,
-                color: AppColors.outline,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -253,11 +253,11 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
             Text(
               details,
               style: AppTypography.bodyMd.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
-          const SizedBox(height: AppSpacing.xs),
+          const SizedBox(height: AppSpacing.sm),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -271,7 +271,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
               Text(
                 dateStr,
                 style: AppTypography.labelMd.copyWith(
-                  color: AppColors.outline,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -327,8 +327,8 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                     key: const Key('owner_jobs_search_field'),
                     controller: _jobsSearchController,
                     hintText: l10n.ownerJobsSearchHint,
-                    prefixIcon:
-                        const Icon(Icons.search, color: AppColors.outline),
+                    prefixIcon: Icon(Icons.search,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -439,7 +439,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
             Text(
               l10n.ownerHistoryCancellationReason(job.cancellationReason!),
               style: AppTypography.bodyMd.copyWith(
-                color: AppColors.error,
+                color: Theme.of(context).colorScheme.error,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -593,7 +593,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                 Text(
                   dateStr,
                   style: AppTypography.labelMd.copyWith(
-                    color: AppColors.outline,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

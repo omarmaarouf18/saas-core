@@ -33,3 +33,5 @@ dummy.png
 .last_push_verified
 scratch/
 tools/docgen/docgen
+__pycache__/
+*.py[cod]

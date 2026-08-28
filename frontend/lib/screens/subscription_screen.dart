@@ -10,6 +10,7 @@ import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/themed_card.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_success_banner.dart';
 
 class SubscriptionScreen extends StatefulWidget {
@@ -95,6 +96,23 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
+
+                // Surface subscription / owner fetch errors with retry path
+                if (!ownerProvider.isLoading &&
+                    ownerProvider.error != null) ...[
+                  ThemedErrorBanner(
+                    key: const Key('subscription_screen_error'),
+                    message: ownerProvider.error!,
+                    onRetry: () {
+                      final auth =
+                          Provider.of<AuthProvider>(context, listen: false);
+                      if (auth.token != null) {
+                        ownerProvider.fetchDashboardData(auth.token!);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
 
                 // 2. Current Plan Status Header Card
                 ThemedCard(

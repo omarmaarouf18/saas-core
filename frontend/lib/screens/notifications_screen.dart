@@ -13,11 +13,12 @@ import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_empty_state.dart';
 
 class NotificationsScreen extends StatefulWidget {
-  const NotificationsScreen({super.key, this.clock});
+  const NotificationsScreen({super.key, this.clock, this.showBackButton});
 
   /// Injectable clock for deterministic date-group rendering (tests/goldens).
   /// Defaults to the real system time when null.
   final DateTime Function()? clock;
+  final bool? showBackButton;
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -52,10 +53,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         yesterday.day == dateTime.day;
   }
 
-  String _getSectionTitle(DateTime timestamp) {
-    if (_isToday(timestamp)) return 'TODAY';
-    if (_isYesterday(timestamp)) return 'YESTERDAY';
-    return 'EARLIER';
+  String _getSectionTitle(AppLocalizations l10n, DateTime timestamp) {
+    if (_isToday(timestamp)) return l10n.notificationsToday;
+    if (_isYesterday(timestamp)) return l10n.notificationsYesterday;
+    return l10n.notificationsEarlier;
   }
 
   List<NotificationModel> _filterNotifications(List<NotificationModel> list) {
@@ -100,6 +101,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     return ListScreenTemplate<NotificationModel>(
       title: l10n.notificationsTitle,
+      showBackButton: widget.showBackButton,
       actions: [
         IconButton(
           icon: const Icon(Icons.delete_sweep),
@@ -254,9 +256,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     NotificationsProvider provider,
     String? userToken,
   ) {
-    final currentSection = _getSectionTitle(notif.timestamp);
+    final l10n = context.l10n;
+    final currentSection = _getSectionTitle(l10n, notif.timestamp);
     final showSectionHeader = index == 0 ||
-        _getSectionTitle(list[index - 1].timestamp) != currentSection;
+        _getSectionTitle(l10n, list[index - 1].timestamp) != currentSection;
 
     return Center(
       child: ConstrainedBox(
@@ -298,6 +301,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     required NotificationsProvider provider,
     required String? userToken,
   }) {
+    final l10n = context.l10n;
     final bool isJob = notif.type == 'job_alert' || notif.id.startsWith('job-');
     final bool isAlert = notif.type == 'status_update' ||
         notif.type == 'popup' ||
@@ -330,8 +334,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 : Theme.of(context).colorScheme.primary));
 
     final String tagLabel = isJob
-        ? 'JOB ALERT'
-        : (isAlert ? 'ALERT' : (isSystem ? 'SYSTEM' : 'NOTIFICATION'));
+        ? l10n.notificationsJobsTag
+        : (isAlert
+            ? l10n.notificationsAlertsTag
+            : (isSystem
+                ? l10n.notificationsSystemTag
+                : l10n.notificationsDefaultTag));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -411,7 +419,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             Text(
                               _formatTime(notif.timestamp),
                               style: AppTypography.caption.copyWith(
-                                color: AppColors.outline,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ),
                             const SizedBox(width: AppSpacing.xs),
@@ -421,7 +431,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 size: AppIconSize.sm,
                               ),
                               tooltip: context.l10n.tooltipDismiss,
-                              color: AppColors.outline,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(
                                 minWidth: 24,

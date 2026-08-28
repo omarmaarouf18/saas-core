@@ -1158,5 +1158,87 @@
   "continueActionLabel": "Continue",
   "kycUploadedStatus": "Uploaded",
   "defaultErrorTitle": "Error occurred",
-  "serviceFallbackLabel": "Service"
+  "serviceFallbackLabel": "Service",
+  "backActionLabel": "Back",
+  "depositSuccessMessage": "Successfully deposited {amount} credits.",
+  "@depositSuccessMessage": {
+    "description": "Success message when funds deposit completes",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reconciliationUnderDistance": "Distance mismatch — under 70% of booked distance",
+  "reconciliationUnrecordedEscrow": "Unrecorded escrow balance failure",
+  "reconciliationImplausibleSpeed": "Implausible movement speed detected",
+  "reconciliationRequiredDefault": "Escrow reconciliation required for manual review",
+  "customerWithId": "Customer: {id}",
+  "@customerWithId": {
+    "description": "Customer label with user ID",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "employeeRegisteredSuccess": "Successfully created employee account:\nUsername: {username}\nID: {id}",
+  "@employeeRegisteredSuccess": {
+    "description": "Success snackbar message when an employee is registered",
+    "placeholders": {
+      "username": {
+        "type": "String"
+      },
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "priceRangeError": "Price must be between ${min} and ${max}",
+  "@priceRangeError": {
+    "description": "Error message when counter offer price is out of range",
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "jobStateChangedError": "Job state changed — the other party already acted or status changed.",
+  "fileSizeExceededError": "File size exceeds maximum allowed size of 10MB ({size}MB).",
+  "@fileSizeExceededError": {
+    "description": "Validation error when uploaded file is larger than 10MB",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "documentOnFile": "Document on file ({filename})",
+  "@documentOnFile": {
+    "description": "Indicator that a document is already uploaded and on file",
+    "placeholders": {
+      "filename": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsJobsTag": "JOB ALERT",
+  "notificationsAlertsTag": "ALERT",
+  "notificationsSystemTag": "SYSTEM",
+  "notificationsDefaultTag": "NOTIFICATION",
+  "notificationsToday": "TODAY",
+  "notificationsYesterday": "YESTERDAY",
+  "notificationsEarlier": "EARLIER",
+  "ticketSubmittedSuccess": "Ticket submitted successfully! (Ticket ID: {id})",
+  "@ticketSubmittedSuccess": {
+    "description": "Success notification when a support ticket is created",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  }
 }

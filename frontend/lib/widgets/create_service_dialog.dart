@@ -83,7 +83,7 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                         child: Text(
                           l10n.createNewServiceTitle,
                           style: AppTypography.titleMd.copyWith(
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -104,7 +104,7 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                     controller: _nameController,
                     labelText: l10n.serviceNameLabel,
                     validator: (value) => value == null || value.trim().isEmpty
-                        ? "Name is required"
+                        ? l10n.nameRequiredError
                         : null,
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -127,15 +127,15 @@ class _CreateServiceDialogState extends State<CreateServiceDialog> {
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: AppRadius.defaultBorder,
-                        borderSide: const BorderSide(
-                          color: AppColors.outlineVariant,
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.outlineVariant,
                           width: 1,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: AppRadius.defaultBorder,
-                        borderSide: const BorderSide(
-                          color: AppColors.primary,
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
                           width: 1.5,
                         ),
                       ),
