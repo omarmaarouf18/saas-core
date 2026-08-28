@@ -300,6 +300,23 @@ class _OwnerReconciliationQueueScreenState
     );
   }
 
+  String _localizedFailureReason(
+      AppLocalizations l10n, String escrowFailureReason) {
+    switch (escrowFailureReason) {
+      case 'under_distance_mismatch':
+        return l10n.reconciliationUnderDistance;
+      case 'escrow_amount_unrecorded':
+        return l10n.reconciliationUnrecordedEscrow;
+      case 'implausible_speed':
+        return l10n.reconciliationImplausibleSpeed;
+      default:
+        if (escrowFailureReason.isNotEmpty) {
+          return escrowFailureReason.replaceAll('_', ' ');
+        }
+        return l10n.reconciliationRequiredDefault;
+    }
+  }
+
   Widget _buildReconciliationCard(
     BuildContext context,
     ReconciliationJob job,
@@ -343,7 +360,7 @@ class _OwnerReconciliationQueueScreenState
             const SizedBox(height: AppSpacing.sm),
             _buildDetailRow(
               l10n.reconciliationFailureReason,
-              job.humanReadableFailureReason,
+              _localizedFailureReason(l10n, job.escrowFailureReason),
               isBold: true,
               valueColor: AppColors.error,
             ),
@@ -357,7 +374,8 @@ class _OwnerReconciliationQueueScreenState
             const SizedBox(height: AppSpacing.xs),
             _buildDetailRow(
               l10n.reconciliationLockedEscrow,
-              '${job.lockedEscrowAmount.toStringAsFixed(2)} Credits',
+              l10n.ownerHomeCreditsAmount(
+                  job.lockedEscrowAmount.toStringAsFixed(2)),
               isBold: true,
               valueColor: Theme.of(context).colorScheme.primary,
             ),

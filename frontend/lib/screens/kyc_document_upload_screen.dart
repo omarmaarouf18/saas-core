@@ -184,9 +184,10 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
     // 1. Client-side file size validation: max 10MB (10 * 1024 * 1024 bytes)
     const maxSizeBytes = 10 * 1024 * 1024;
     if (pickedFile.bytes.length > maxSizeBytes) {
+      final l10n = context.l10n;
       setState(() {
-        _slotErrors[slotKey] =
-            "File size exceeds maximum allowed size of 10MB (${(pickedFile.bytes.length / (1024 * 1024)).toStringAsFixed(1)}MB).";
+        _slotErrors[slotKey] = l10n.fileSizeExceededError(
+            (pickedFile.bytes.length / (1024 * 1024)).toStringAsFixed(1));
       });
       return;
     }
@@ -489,7 +490,8 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                                 child: Text(
                                   localPicked != null
                                       ? localPicked.filename
-                                      : "Document on file (${existingPath!.split('/').last})",
+                                      : context.l10n.documentOnFile(
+                                          existingPath!.split('/').last),
                                   style: AppTypography.bodyMd.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color:

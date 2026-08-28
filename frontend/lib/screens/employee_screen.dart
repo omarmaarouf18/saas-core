@@ -518,9 +518,10 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                             _regPasswordController.clear();
                             ThemedSnackBar.showSuccess(
                               context,
-                              "Successfully created employee account:\n"
-                              "Username: ${res['username'] ?? ''}\n"
-                              "ID: ${res['user_id'] ?? ''}",
+                              l10n.employeeRegisteredSuccess(
+                                res['username'] ?? '',
+                                res['user_id'] ?? '',
+                              ),
                               key: const Key('employee_registered_snackbar'),
                             );
                             _refreshEmployees();

@@ -130,8 +130,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     }
     const eps = 1e-9;
     if (proposed < (minPrice - eps) || proposed > (maxPrice + eps)) {
-      setState(() => _proposalError =
-          "Price must be between \$${minPrice.toStringAsFixed(2)} and \$${maxPrice.toStringAsFixed(2)}");
+      setState(() => _proposalError = l10n.priceRangeError(
+          minPrice.toStringAsFixed(2), maxPrice.toStringAsFixed(2)));
       return;
     }
 
@@ -163,8 +163,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       if (mounted) {
         String msg;
         if (e is ApiClientException && e.statusCode == 409) {
-          msg =
-              "Job state changed — the other party already acted or status changed.";
+          msg = l10n.jobStateChangedError;
         } else {
           msg = friendlyErrorMessage(e);
         }
@@ -216,8 +215,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
       if (mounted) {
         String msg;
         if (e is ApiClientException && e.statusCode == 409) {
-          msg =
-              "Job state changed — the other party already acted or status changed.";
+          msg = l10n.jobStateChangedError;
         } else {
           msg = friendlyErrorMessage(e);
         }

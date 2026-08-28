@@ -66,10 +66,11 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> {
         // Show the confirmation BEFORE popping: popping first deactivated this
         // context, so ScaffoldMessenger.of(context) resolved against an
         // unmounted element and the success snackbar never appeared.
+        final l10n = context.l10n;
         ThemedSnackBar.showSuccess(
           context,
           // chat-service serializes ComplaintTicket.ID with JSON tag "ticket_id".
-          "Ticket submitted successfully! (Ticket ID: ${res['ticket_id'] ?? ''})",
+          l10n.ticketSubmittedSuccess(res['ticket_id']?.toString() ?? ''),
         );
         Navigator.of(context).pop(res);
       }

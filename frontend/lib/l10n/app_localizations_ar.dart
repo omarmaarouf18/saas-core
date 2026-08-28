@@ -2308,4 +2308,78 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get backActionLabel => 'رجوع';
+
+  @override
+  String depositSuccessMessage(String amount) {
+    return 'تم إيداع $amount رصيد بنجاح.';
+  }
+
+  @override
+  String get reconciliationUnderDistance =>
+      'فرق في المسافة — أقل من 70% من المسافة المحددة';
+
+  @override
+  String get reconciliationUnrecordedEscrow => 'فشل تسجيل رصيد الضمان';
+
+  @override
+  String get reconciliationImplausibleSpeed => 'تم رصد سرعة انتقال غير منطقية';
+
+  @override
+  String get reconciliationRequiredDefault =>
+      'مطلوب مراجعة تسوية الضمان يدويًا';
+
+  @override
+  String customerWithId(String id) {
+    return 'العميل: $id';
+  }
+
+  @override
+  String employeeRegisteredSuccess(String username, String id) {
+    return 'تم إنشاء حساب الموظف بنجاح:\nاسم المستخدم: $username\nالمعرف: $id';
+  }
+
+  @override
+  String priceRangeError(String min, String max) {
+    return 'يجب أن يكون السعر بين \$$min و \$$max';
+  }
+
+  @override
+  String get jobStateChangedError =>
+      'تغيرت حالة الطلب — قام الطرف الآخر بإجراء أو تغيرت الحالة.';
+
+  @override
+  String fileSizeExceededError(String size) {
+    return 'حجم الملف يتجاوز الحد الأقصى المسموح به 10 ميجابايت ($size ميجابايت).';
+  }
+
+  @override
+  String documentOnFile(String filename) {
+    return 'المستند مسجل ($filename)';
+  }
+
+  @override
+  String get notificationsJobsTag => 'تنبيه طلب';
+
+  @override
+  String get notificationsAlertsTag => 'تنبيه';
+
+  @override
+  String get notificationsSystemTag => 'النظام';
+
+  @override
+  String get notificationsDefaultTag => 'إشعار';
+
+  @override
+  String get notificationsToday => 'اليوم';
+
+  @override
+  String get notificationsYesterday => 'أمس';
+
+  @override
+  String get notificationsEarlier => 'سابقًا';
+
+  @override
+  String ticketSubmittedSuccess(String id) {
+    return 'تم إرسال التذكرة بنجاح! (رقم التذكرة: $id)';
+  }
 }

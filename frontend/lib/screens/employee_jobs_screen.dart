@@ -635,7 +635,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               dropoffAddress: l10n.deliveryDestinationLabel,
               dropoffDetail: l10n.employeeJobsDestinationCoordinates,
               distanceText: job.lockedEscrowAmount != null
-                  ? "${job.lockedEscrowAmount!.toStringAsFixed(0)} Credits"
+                  ? l10n.ownerHomeCreditsAmount(
+                      job.lockedEscrowAmount!.toStringAsFixed(0))
                   : l10n.standardRouteLabel,
               timeText: isActive
                   ? l10n.inProgressLabel

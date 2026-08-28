@@ -181,9 +181,10 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
               pickupAddress: l10n.pickupLocationLabel,
               pickupDetail: l10n.orderDispatchedLabel,
               dropoffAddress: l10n.deliveryDestinationLabel,
-              dropoffDetail: "Customer: ${job.userId}",
+              dropoffDetail: l10n.customerWithId(job.userId),
               distanceText: job.lockedEscrowAmount != null
-                  ? "${job.lockedEscrowAmount!.toStringAsFixed(0)} Credits"
+                  ? l10n.ownerHomeCreditsAmount(
+                      job.lockedEscrowAmount!.toStringAsFixed(0))
                   : l10n.routeLoggedLabel,
               timeText:
                   isCancelled ? l10n.statusCancelled : l10n.statusCompleted,

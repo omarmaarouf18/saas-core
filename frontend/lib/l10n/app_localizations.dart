@@ -4340,6 +4340,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back'**
   String get backActionLabel;
+
+  /// Success message when funds deposit completes
+  ///
+  /// In en, this message translates to:
+  /// **'Successfully deposited {amount} credits.'**
+  String depositSuccessMessage(String amount);
+
+  /// No description provided for @reconciliationUnderDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance mismatch — under 70% of booked distance'**
+  String get reconciliationUnderDistance;
+
+  /// No description provided for @reconciliationUnrecordedEscrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Unrecorded escrow balance failure'**
+  String get reconciliationUnrecordedEscrow;
+
+  /// No description provided for @reconciliationImplausibleSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Implausible movement speed detected'**
+  String get reconciliationImplausibleSpeed;
+
+  /// No description provided for @reconciliationRequiredDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Escrow reconciliation required for manual review'**
+  String get reconciliationRequiredDefault;
+
+  /// Customer label with user ID
+  ///
+  /// In en, this message translates to:
+  /// **'Customer: {id}'**
+  String customerWithId(String id);
+
+  /// Success snackbar message when an employee is registered
+  ///
+  /// In en, this message translates to:
+  /// **'Successfully created employee account:\nUsername: {username}\nID: {id}'**
+  String employeeRegisteredSuccess(String username, String id);
+
+  /// Error message when counter offer price is out of range
+  ///
+  /// In en, this message translates to:
+  /// **'Price must be between \${min} and \${max}'**
+  String priceRangeError(String min, String max);
+
+  /// No description provided for @jobStateChangedError.
+  ///
+  /// In en, this message translates to:
+  /// **'Job state changed — the other party already acted or status changed.'**
+  String get jobStateChangedError;
+
+  /// Validation error when uploaded file is larger than 10MB
+  ///
+  /// In en, this message translates to:
+  /// **'File size exceeds maximum allowed size of 10MB ({size}MB).'**
+  String fileSizeExceededError(String size);
+
+  /// Indicator that a document is already uploaded and on file
+  ///
+  /// In en, this message translates to:
+  /// **'Document on file ({filename})'**
+  String documentOnFile(String filename);
+
+  /// No description provided for @notificationsJobsTag.
+  ///
+  /// In en, this message translates to:
+  /// **'JOB ALERT'**
+  String get notificationsJobsTag;
+
+  /// No description provided for @notificationsAlertsTag.
+  ///
+  /// In en, this message translates to:
+  /// **'ALERT'**
+  String get notificationsAlertsTag;
+
+  /// No description provided for @notificationsSystemTag.
+  ///
+  /// In en, this message translates to:
+  /// **'SYSTEM'**
+  String get notificationsSystemTag;
+
+  /// No description provided for @notificationsDefaultTag.
+  ///
+  /// In en, this message translates to:
+  /// **'NOTIFICATION'**
+  String get notificationsDefaultTag;
+
+  /// No description provided for @notificationsToday.
+  ///
+  /// In en, this message translates to:
+  /// **'TODAY'**
+  String get notificationsToday;
+
+  /// No description provided for @notificationsYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'YESTERDAY'**
+  String get notificationsYesterday;
+
+  /// No description provided for @notificationsEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'EARLIER'**
+  String get notificationsEarlier;
+
+  /// Success notification when a support ticket is created
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket submitted successfully! (Ticket ID: {id})'**
+  String ticketSubmittedSuccess(String id);
 }
 
 class _AppLocalizationsDelegate

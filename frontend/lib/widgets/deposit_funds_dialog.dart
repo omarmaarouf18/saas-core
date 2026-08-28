@@ -166,7 +166,8 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                                   Navigator.of(context).pop();
                                   ThemedSnackBar.showSuccess(
                                     context,
-                                    "Successfully deposited ${amount.toStringAsFixed(2)} credits.",
+                                    l10n.depositSuccessMessage(
+                                        amount.toStringAsFixed(2)),
                                   );
                                 }
                               } catch (e) {

@@ -195,7 +195,7 @@ void main() {
     );
 
     expect(overrides.requests, isEmpty);
-    expect(provider.error, contains('Reason is required'));
+    expect(provider.error, equals('cancel_reason_required'));
   });
 
   test('cancelJob trims the reason, posts it, and flips the local job state',

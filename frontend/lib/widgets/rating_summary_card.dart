@@ -63,8 +63,7 @@ class RatingSummaryCard extends StatelessWidget {
                   Row(children: stars),
                   const SizedBox(height: AppSpacing.xxs),
                   Text(
-                    AppLocalizations.of(context)?.verifiedServiceScoreLabel ??
-                        'Verified Service Score',
+                    context.l10n.verifiedServiceScoreLabel,
                     style: AppTypography.labelMd.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
@@ -81,8 +80,7 @@ class RatingSummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.baseSm),
           Text(
-            AppLocalizations.of(context)?.basedOnRatingsLine("$ratingCount") ??
-                'Based on $ratingCount ratings',
+            context.l10n.basedOnRatingsLine("$ratingCount"),
             style: AppTypography.bodySm.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w400,
