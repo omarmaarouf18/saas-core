@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/core/theme.dart';
 import 'package:frontend/l10n/app_localizations.dart';
@@ -133,17 +134,6 @@ class _MockMarketplaceProvider extends MarketplaceProvider {
   Future<List<Job>> fetchCustomerJobs([String? userToken]) async => jobs;
 
   @override
-  Future<List<MarketplaceService>> searchServices({
-    String? category,
-    double? lat,
-    double? lon,
-    double? radiusKm,
-    String? sortBy,
-    String? query,
-  }) async =>
-      mockServices;
-
-  @override
   Future<Job?> fetchJobStatus(String jobId, String token) async {
     return jobs.firstWhere((j) => j.id == jobId, orElse: () => jobs.first);
   }
@@ -167,7 +157,7 @@ class _MockChatProvider extends ChatProvider {
   @override
   Future<void> fetchHistory(String jobId, String token) async {}
   @override
-  void connect(String jobId, String token) {}
+  void connectAndSubscribe(String jobId, String token) {}
   @override
   void disconnect() {}
 }
@@ -180,14 +170,8 @@ class _MockMapTrackingProvider extends MapTrackingProvider {
   @override
   bool get isLoading => false;
   @override
-  void connectJobTracking({
-    required String jobId,
-    required String token,
-    JobLocation? jobLocation,
-    String? employeeId,
-  }) {}
-  @override
-  void connectFleetTracking(String token) {}
+  void connectAndSubscribe(String channel, String token,
+      {WebSocketChannel? customChannel}) {}
   @override
   void disconnect() {}
 }
@@ -245,7 +229,10 @@ class _MockOwnerProvider extends OwnerProvider {
   @override
   Future<void> fetchOwnerJobs(String token) async {}
   @override
-  Future<void> fetchAuditLogs(String token) async {}
+  Future<void> fetchAuditLog({
+    required String tenantId,
+    required String requesterToken,
+  }) async {}
 }
 
 UserProfile _owner() => UserProfile(
