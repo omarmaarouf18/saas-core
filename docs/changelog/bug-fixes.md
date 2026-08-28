@@ -632,3 +632,14 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Undersized budget**: general gateway bucket raised 100 → 300 req/min per IP against measured ~40/min single-user steady state (headroom for multi-device CGNAT households). SSE bucket unchanged.
 - **Lockable health probes**: Docker HEALTHCHECK probes (::1) shared the loopback bucket with local diagnostics; when it locked, probes returned 429 and the container flapped "unhealthy". Loopback callers are now exempt from gateway rate limiting entirely; fail-closed on Redis outage still applies to all external traffic (fail-closed test updated to a non-loopback address to match the new contract).
 - Follow-up to ``70def3268ee14d087977e72698e7ebd882b1b613`` (SSE bucket isolation).
+
+## Services Directory Owner Identity Resolution from Authorization Header
+
+**Date**: 2026-08-28
+**Category**: Bug Fix / Authentication
+**Related Commit SHA**: ``96f50f95f412ade80d4d2d3346cc75b03ec374fb``
+
+- **Problem**: Owner Configuration save (`POST /users/services` and `PUT /users/services` in `services_handlers.go`) failed with HTTP 401 (`"invalid owner token: ... token contains an invalid number of segments"`) because the handler parsed the JSON body's `owner_id` (raw database ID e.g. `"usr-12345"` sent by `owner_configuration_screen.dart` and `create_service_dialog.dart`) as a JWT rather than extracting the bearer token from the `Authorization: Bearer <jwt>` request header attached automatically by `api_client.dart`.
+- **Fix**: Added `resolveOwnerAuthToken` helper in `services_handlers.go` mirroring `wallet_handlers.go` convention to extract bearer token from `Authorization` header first, with fallback to `owner_token` and `owner_id` body fields. Updated `CreateService` and `UpdateService` to authenticate via the resolved token.
+- **Verification**: Verified via `service_owner_config_repro_test.go` (`TestOwnerConfigurationSave_ReproLiveError` passing with 200 OK for `UpdateService` and 201 Created for `CreateService`), `go build ./...`, `gofmt -l .` clean, full user-service test suite passing, and `flutter analyze` 0 issues.
+
