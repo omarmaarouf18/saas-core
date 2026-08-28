@@ -32,12 +32,21 @@ import 'package:frontend/screens/job_status_screen.dart';
 import 'package:frontend/screens/login_screen.dart';
 import 'package:frontend/screens/my_account_screen.dart';
 import 'package:frontend/screens/notifications_screen.dart';
+import 'package:frontend/models/payout_request.dart';
+import 'package:frontend/providers/owner_provider.dart';
+import 'package:frontend/screens/home_screen.dart';
 import 'package:frontend/screens/otp_screen.dart';
+import 'package:frontend/screens/owner_configuration_screen.dart';
+import 'package:frontend/screens/owner_fleet_map_screen.dart';
+import 'package:frontend/screens/owner_history_screen.dart';
 import 'package:frontend/screens/owner_reconciliation_queue_screen.dart';
 import 'package:frontend/screens/rating_screen.dart';
+import 'package:frontend/screens/service_screen.dart';
 import 'package:frontend/screens/settings_screen.dart';
 import 'package:frontend/screens/signup_screen.dart';
+import 'package:frontend/screens/subscription_screen.dart';
 import 'package:frontend/screens/update_required_screen.dart';
+import 'package:frontend/screens/wallet_screen.dart';
 
 // Golden snapshot regression tests for migrated screens (P6).
 //
@@ -175,6 +184,70 @@ class _MockMapTrackingProvider extends MapTrackingProvider {
   @override
   void disconnect() {}
 }
+
+class _MockOwnerProvider extends OwnerProvider {
+  final List<Job> mockJobs;
+  final List<Map<String, dynamic>> mockServices;
+  final List<Map<String, dynamic>> mockEmployees;
+  final List<PayoutRequest> mockPayouts;
+
+  _MockOwnerProvider(
+    super.apiClient, {
+    this.mockJobs = const [],
+    this.mockServices = const [],
+    this.mockEmployees = const [],
+    this.mockPayouts = const [],
+  });
+
+  @override
+  double get walletBalance => 1500.0;
+  @override
+  double get escrowBalance => 400.0;
+  @override
+  double get withdrawableBalance => 1100.0;
+  @override
+  String get subscriptionTier => 'paid';
+  @override
+  List<dynamic> get ledgerEntries => const [];
+  @override
+  List<Job> get ownerJobs => mockJobs;
+  @override
+  double? get platformFeePercentage => 10.0;
+  @override
+  List<dynamic> get employees => mockEmployees;
+  @override
+  List<PayoutRequest> get payoutRequests => mockPayouts;
+  @override
+  List<Map<String, dynamic>> get services => mockServices;
+  @override
+  bool get isLoading => false;
+  @override
+  String? get error => null;
+
+  @override
+  Future<void> fetchDashboardData(String tenantId) async {}
+  @override
+  Future<void> fetchPlatformConfig() async {}
+  @override
+  Future<List<PayoutRequest>> fetchPayoutRequests() async => mockPayouts;
+  @override
+  Future<void> fetchServices() async {}
+  @override
+  Future<List<dynamic>> fetchEmployees([String? ownerToken]) async =>
+      mockEmployees;
+  @override
+  Future<void> fetchOwnerJobs(String token) async {}
+  @override
+  Future<void> fetchAuditLogs(String token) async {}
+}
+
+UserProfile _owner() => UserProfile(
+      id: 'owner-1',
+      email: 'owner@example.com',
+      username: 'Owner One',
+      role: 'owner',
+      kycStatus: 'approved',
+    );
 
 UserProfile _customer() => UserProfile(
       id: 'cust-1',
@@ -324,6 +397,80 @@ Widget _customerApp({
             type: 'message',
           ),
         ]),
+      ),
+    ],
+    child: _localizedApp(
+      brightness: brightness,
+      home: home,
+    ),
+  );
+}
+
+Widget _ownerApp({
+  required Widget home,
+  Brightness brightness = Brightness.light,
+  List<Job>? jobs,
+  List<Map<String, dynamic>>? services,
+  List<Map<String, dynamic>>? employees,
+}) {
+  final api = ApiClient();
+  final sampleJobs = jobs ?? [
+    _job('ownerjob1234', 'active'),
+    _job('ownerjob5678', 'completed'),
+  ];
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
+      ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: _MockAuthProvider(api, mockUser: _owner()),
+      ),
+      ChangeNotifierProvider<OwnerProvider>.value(
+        value: _MockOwnerProvider(
+          api,
+          mockJobs: sampleJobs,
+          mockServices: services ??
+              [
+                {
+                  'id': 'srv-owner-1',
+                  'tenant_id': 'owner-1',
+                  'name': 'Standard Truck Delivery',
+                  'category': 'delivery',
+                  'base_price': 120.0,
+                  'is_active': true,
+                },
+              ],
+          mockEmployees: employees ??
+              [
+                {
+                  'id': 'emp-1',
+                  'username': 'Tamer Driver',
+                  'email': 'tamer@example.com',
+                  'status': 'active',
+                },
+              ],
+          mockPayouts: [
+            PayoutRequest(
+              id: 'payout-1',
+              tenantId: 'owner-1',
+              amount: 500.0,
+              status: 'paid',
+              payoutMethod: 'instapay',
+              accountDetails: '01012345678',
+              createdAt: DateTime(2026, 8, 20, 10, 0),
+              updatedAt: DateTime(2026, 8, 20, 12, 0),
+            ),
+          ],
+        ),
+      ),
+      ChangeNotifierProvider<NotificationsProvider>.value(
+        value: _MockNotificationsProvider(api, []),
+      ),
+      ChangeNotifierProvider<MarketplaceProvider>.value(
+        value: _MockMarketplaceProvider(api, sampleJobs),
+      ),
+      ChangeNotifierProvider<MapTrackingProvider>.value(
+        value: _MockMapTrackingProvider(api),
       ),
     ],
     child: _localizedApp(
@@ -792,5 +939,96 @@ void main() {
       brightness: Brightness.dark,
     );
     await _pumpGolden(tester, app, _mobile, 'chat_screen_dark_mobile_360x800');
+  });
+
+  // ── BATCH 3: Owner Screens ──
+  testWidgets('GOLDEN owner home screen — mobile', (tester) async {
+    final app = _ownerApp(home: const HomeScreen());
+    await _pumpGolden(tester, app, _mobile, 'owner_home_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark owner home screen — mobile', (tester) async {
+    final app =
+        _ownerApp(home: const HomeScreen(), brightness: Brightness.dark);
+    await _pumpGolden(tester, app, _mobile, 'owner_home_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN wallet screen — mobile', (tester) async {
+    final app = _ownerApp(home: const WalletScreen());
+    await _pumpGolden(tester, app, _mobile, 'wallet_screen_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark wallet screen — mobile', (tester) async {
+    final app =
+        _ownerApp(home: const WalletScreen(), brightness: Brightness.dark);
+    await _pumpGolden(
+        tester, app, _mobile, 'wallet_screen_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN subscription screen — mobile', (tester) async {
+    final app = _ownerApp(home: const SubscriptionScreen());
+    await _pumpGolden(
+        tester, app, _mobile, 'subscription_screen_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark subscription screen — mobile', (tester) async {
+    final app = _ownerApp(
+        home: const SubscriptionScreen(), brightness: Brightness.dark);
+    await _pumpGolden(
+        tester, app, _mobile, 'subscription_screen_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN service screen — mobile', (tester) async {
+    final app = _ownerApp(home: const ServiceScreen());
+    await _pumpGolden(tester, app, _mobile, 'service_screen_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark service screen — mobile', (tester) async {
+    final app =
+        _ownerApp(home: const ServiceScreen(), brightness: Brightness.dark);
+    await _pumpGolden(
+        tester, app, _mobile, 'service_screen_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN owner configuration screen — mobile', (tester) async {
+    final app = _ownerApp(home: const OwnerConfigurationScreen());
+    await _pumpGolden(
+        tester, app, _mobile, 'owner_configuration_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark owner configuration screen — mobile',
+      (tester) async {
+    final app = _ownerApp(
+        home: const OwnerConfigurationScreen(), brightness: Brightness.dark);
+    await _pumpGolden(
+        tester, app, _mobile, 'owner_configuration_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN owner fleet map screen — mobile', (tester) async {
+    final app =
+        _ownerApp(home: const OwnerFleetMapScreen(ownerId: 'owner-1'));
+    await _pumpGolden(
+        tester, app, _mobile, 'owner_fleet_map_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark owner fleet map screen — mobile', (tester) async {
+    final app = _ownerApp(
+        home: const OwnerFleetMapScreen(ownerId: 'owner-1'),
+        brightness: Brightness.dark);
+    await _pumpGolden(
+        tester, app, _mobile, 'owner_fleet_map_dark_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN owner history screen — mobile', (tester) async {
+    final app = _ownerApp(home: const OwnerHistoryScreen());
+    await _pumpGolden(
+        tester, app, _mobile, 'owner_history_mobile_360x800');
+  });
+
+  testWidgets('GOLDEN dark owner history screen — mobile', (tester) async {
+    final app = _ownerApp(
+        home: const OwnerHistoryScreen(), brightness: Brightness.dark);
+    await _pumpGolden(
+        tester, app, _mobile, 'owner_history_dark_mobile_360x800');
   });
 }
