@@ -2,6 +2,17 @@
 
 This file tracks historical entries for the primary category: **Refactoring Changelog**.
 
+## Owner Service Consolidation: ServiceScreen & CreateServiceDialog Removal
+
+- **Implementation Detail**:
+  - **Consolidation**: Consolidated owner service creation and editing into `OwnerConfigurationScreen` as the single source of truth, removing the redundant `ServiceScreen` (`lib/screens/service_screen.dart`, 387 lines) and `CreateServiceDialog` (`lib/widgets/create_service_dialog.dart`, 299 lines).
+  - **Dashboard Entry Points (`home_screen.dart`)**: Removed the obsolete `owner_dashboard_services_card` quick-access card; balanced wide viewport grid layout for 3 cards (`cards[2]` + aligned empty spacer) maintaining 2-column symmetry; updated empty-state "manage services" CTA in the owner jobs section to navigate to `OwnerConfigurationScreen`; removed unused `ServiceScreen` import.
+  - **Dead Code & Asset Removal**: Deleted `service_screen.dart`, `create_service_dialog.dart`, `test/service_screen_test.dart`, `test/create_service_dialog_test.dart`, and golden baselines `service_screen_mobile_360x800.png` and `service_screen_dark_mobile_360x800.png`.
+  - **Test Modernization**: Removed ServiceScreen golden test cases from `test/golden_screens_test.dart`; updated `test/owner_home_screen_test.dart` to assert navigation to `OwnerConfigurationScreen` via `owner_dashboard_config_card`; re-homed create-service error path coverage in `test/a5_error_handling_test.dart` onto `OwnerConfigurationScreen` verifying exception mapping through `friendlyErrorMessage` without raw `Exception:` prefix.
+  - **Localization Cleanup**: Removed 36 orphaned ARB keys (plus 2 metadata entries `@serviceCreateFailed`, `@serviceLocationLine`) across `app_en.arb` and `app_ar.arb` and regenerated localization classes via `flutter gen-l10n`; confirmed shared keys (`manageServicesAction`, `userProfileTitle`, `tooltipClose`, `cancel`) remain intact.
+- **Commit SHA**: ``a486414e4316391bb40201415d20658222a37c48``
+- **Verification**: Verified via `dart format`, `flutter analyze` (0 issues), full `flutter test` (476/476 passed, 100%), `scripts/frontend_composition_gate.sh` (pass), `make docs-check` (pass). ✅
+
 ## KYC/KYE Document Upload Screen Structural & Presentation Refactor (`kyc_document_upload_screen.dart`)
 
 - **Implementation Detail**:
