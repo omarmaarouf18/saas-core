@@ -61,7 +61,7 @@ func TestNotificationHandlersAuth(t *testing.T) {
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	defer rdb.Close()
 
-	n := NewNotification(sseHub, cfg, rdb)
+	n := NewNotification(sseHub, nil, cfg, rdb)
 
 	t.Run("Send auth missing", func(t *testing.T) {
 		reqBody := map[string]any{
@@ -196,7 +196,7 @@ func TestStreamAndVerifyAndResolve(t *testing.T) {
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	defer rdb.Close()
 
-	n := NewNotification(sseHub, cfg, rdb)
+	n := NewNotification(sseHub, nil, cfg, rdb)
 
 	// A. POST on /stream -> 405 Method Not Allowed
 	req := httptest.NewRequest("POST", "/notifications/stream", nil)
@@ -294,7 +294,7 @@ func TestStreamAuthScenarios(t *testing.T) {
 		AllowedOrigin:        "http://localhost:3000",
 		InternalServiceToken: "secret-internal-token",
 	}
-	n := NewNotification(sseHub, cfg, rdb)
+	n := NewNotification(sseHub, nil, cfg, rdb)
 
 	t.Run("Malformed token check", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/notifications/stream?token=malformed-token-xyz", nil)
@@ -383,7 +383,7 @@ func TestStreamTenantScopingAndIsolation(t *testing.T) {
 		AllowedOrigin:        "http://localhost:3000",
 		InternalServiceToken: "secret-internal-token",
 	}
-	n := NewNotification(sseHub, cfg, rdb)
+	n := NewNotification(sseHub, nil, cfg, rdb)
 
 	tokenA, _ := jwtutil.GenerateToken("user-a", "owner", "tenant-a", "a@test.com")
 	tokenB, _ := jwtutil.GenerateToken("user-b", "owner", "tenant-b", "b@test.com")
@@ -479,7 +479,7 @@ func TestSSEHubCleanupAndConcurrencyStress(t *testing.T) {
 		AllowedOrigin:        "http://localhost:3000",
 		InternalServiceToken: "secret-internal-token",
 	}
-	n := NewNotification(sseHub, cfg, rdb)
+	n := NewNotification(sseHub, nil, cfg, rdb)
 
 	const numClients = 50
 	var wg sync.WaitGroup
@@ -561,7 +561,7 @@ func TestStreamAuthUnavailableFailClosed(t *testing.T) {
 		AllowedOrigin:        "http://localhost:3000",
 		InternalServiceToken: "secret-internal-token",
 	}
-	n := NewNotification(sseHub, cfg, rdb)
+	n := NewNotification(sseHub, nil, cfg, rdb)
 
 	token, _ := jwtutil.GenerateToken("user-1", "owner", "tenant-1", "test@example.com")
 	req := httptest.NewRequest("GET", "/notifications/stream?token="+token, nil)
@@ -589,7 +589,7 @@ func TestRegisterRoutes(t *testing.T) {
 		AllowedOrigin:        "http://localhost:3000",
 		InternalServiceToken: "secret-internal-token",
 	}
-	n := NewNotification(sseHub, cfg, nil)
+	n := NewNotification(sseHub, nil, cfg, nil)
 
 	mux := http.NewServeMux()
 	n.RegisterRoutes(mux)
@@ -619,7 +619,7 @@ func TestSend_ExtraCoverage(t *testing.T) {
 		AllowedOrigin:        "http://localhost:3000",
 		InternalServiceToken: "secret-internal-token",
 	}
-	n := NewNotification(sseHub, cfg, nil)
+	n := NewNotification(sseHub, nil, cfg, nil)
 
 	// 1. Non-POST method -> 405 MethodNotAllowed
 	req := httptest.NewRequest("GET", "/notifications/send", nil)
@@ -645,7 +645,7 @@ func TestBroadcastJobAlert_ExtraCoverage(t *testing.T) {
 		AllowedOrigin:        "http://localhost:3000",
 		InternalServiceToken: "secret-internal-token",
 	}
-	n := NewNotification(sseHub, cfg, nil)
+	n := NewNotification(sseHub, nil, cfg, nil)
 
 	// 1. Non-POST method -> 405 MethodNotAllowed
 	req := httptest.NewRequest("GET", "/notifications/broadcast/job-alert", nil)
@@ -720,7 +720,7 @@ func TestStream_RegistrationRateLimiting(t *testing.T) {
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	defer rdb.Close()
 
-	n := NewNotification(sseHub, cfg, rdb)
+	n := NewNotification(sseHub, nil, cfg, rdb)
 	token, _ := jwtutil.GenerateToken("user-rl", "owner", "tenant-rl", "rl@example.com")
 
 	for i := 0; i < 30; i++ {
@@ -760,7 +760,7 @@ func TestStream_ConcurrentStreamCapPerTenant(t *testing.T) {
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	defer rdb.Close()
 
-	n := NewNotification(sseHub, cfg, rdb)
+	n := NewNotification(sseHub, nil, cfg, rdb)
 	token, _ := jwtutil.GenerateToken("user-cap", "owner", "tenant-cap", "cap@example.com")
 
 	cancels := make([]context.CancelFunc, 0, maxConcurrentStreamsPerTenant)

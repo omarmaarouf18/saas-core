@@ -33,7 +33,7 @@ class NotificationModel {
       timestamp: json['timestamp'] != null
           ? DateTime.parse(json['timestamp'] as String)
           : DateTime.now(),
-      isRead: false,
+      isRead: json['is_read'] as bool? ?? false,
     );
   }
 
@@ -46,6 +46,7 @@ class NotificationModel {
       'title': title,
       'body': body,
       'timestamp': timestamp.toIso8601String(),
+      'is_read': isRead,
     };
   }
 }

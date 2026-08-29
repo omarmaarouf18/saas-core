@@ -23,7 +23,6 @@ import '../widgets/skeleton_loader.dart';
 import 'login_screen.dart';
 import 'wallet_screen.dart';
 import 'employee_screen.dart';
-import 'service_screen.dart';
 import 'settings_screen.dart';
 import 'notifications_screen.dart';
 import 'subscription_screen.dart';
@@ -777,21 +776,6 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
         _quickAccessCard(
-          key: const Key('owner_dashboard_services_card'),
-          icon: Icons.storefront,
-          iconBg: AppColors.secondary.withValues(alpha: 0.1),
-          iconColor: AppColors.secondary,
-          title: l10n.ownerHomeServices,
-          subtitle: l10n.ownerHomeServicesSub,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const ServiceScreen(),
-              ),
-            );
-          },
-        ),
-        _quickAccessCard(
           key: const Key('owner_dashboard_fleet_card'),
           icon: Icons.map_outlined,
           iconBg: AppColors.primaryContainer,
@@ -848,7 +832,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(children: [
             Expanded(child: cards[2]),
             const SizedBox(width: AppSpacing.md),
-            Expanded(child: cards[3]),
+            const Expanded(child: SizedBox.shrink()),
           ]),
           _buildReputationSection(auth, l10n),
         ],
@@ -1064,7 +1048,9 @@ class _HomeScreenState extends State<HomeScreen> {
               actionText: l10n.manageServicesAction,
               onActionPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ServiceScreen()),
+                MaterialPageRoute(
+                  builder: (_) => const OwnerConfigurationScreen(),
+                ),
               ),
             ),
           )

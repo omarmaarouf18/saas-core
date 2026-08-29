@@ -61,7 +61,6 @@
   "myAccountSaveButton": "SAVE PROFILE",
   "myAccountSuccessMsg": "Profile updated successfully",
   "ownerConfigTitle": "Owner Configuration",
-  "myServicesTitle": "My Services",
   "ownerConfigHeader": "Business Details",
   "ownerConfigHeaderSub": "Update business parameters and service terms",
   "ownerConfigNameLabel": "Business Name",
@@ -254,16 +253,6 @@
       }
     }
   },
-  "unauthenticatedMsg": "Unauthenticated",
-  "serviceCreatedSuccess": "Service created successfully!",
-  "serviceCreateFailed": "Failed to create service: {error}",
-  "@serviceCreateFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "cancelJobHeader": "Cancel Job #{jobId}",
   "@cancelJobHeader": {
     "placeholders": {
@@ -339,8 +328,6 @@
   "ownerHomeReviewQueueSub": "Review Queue",
   "ownerHomeMyWallet": "My Wallet",
   "ownerHomeWalletSub": "Ledger & balance",
-  "ownerHomeServices": "Services",
-  "ownerHomeServicesSub": "Rates & config",
   "ownerHomeServiceReputation": "Your Service Reputation",
   "ownerHomeOwnerJobs": "Owner Jobs",
   "ownerHomeNoJobsTitle": "No Owner Jobs Found",
@@ -551,18 +538,7 @@
   "ratingFeatureWindow": "24h Window",
   "privateFeedbackLabel": "Private Feedback (Optional)",
   "loadingStatus": "Loading status...",
-  "loadingServices": "Loading services...",
-  "noServicesConfigured": "No Services Configured",
-  "noServicesDescription": "No services configured yet.\nTap the + button to create a service.",
-  "addService": "Add Service",
-  "kycPending": "KYC Pending",
   "kycRejectedDialogTitle": "Verification Rejected",
-  "serviceNameLabel": "Service Name",
-  "categoryLabel": "Category",
-  "basePriceLabel": "Base Price ($)",
-  "ratePerKmLabel": "Rate per KM ($)",
-  "latitudeLabel": "Latitude",
-  "longitudeLabel": "Longitude",
   "statusRequested": "Requested",
   "statusPaid": "Paid",
   "payoutWithdrawButton": "Request Payout",
@@ -868,23 +844,6 @@
   "unbiasedRatingDesc": "Preventing retaliatory or social-pressure ratings.",
   "reliabilityRanksDesc": "Ratings directly impact platform reliability ranks.",
   "windowDeadlineDesc": "Submit within 24 hours to ensure your score counts.",
-  "serviceMgmtHeader": "Service Management",
-  "serviceMgmtSubtitle": "Configure and monitor active logistics services.",
-  "verificationRequiredHeader": "Verification Required",
-  "kycRequiredDesc": "Please complete KYC verification to create new services or modify existing ones.",
-  "baseRateBadge": "BASE RATE",
-  "perKmBadge": "PER KM",
-  "serviceLocationLine": "Location: ({lat}, {lon})",
-  "@serviceLocationLine": {
-    "placeholders": {
-      "lat": {
-        "type": "String"
-      },
-      "lon": {
-        "type": "String"
-      }
-    }
-  },
   "subscriptionManageDesc": "Manage your operational tier. Upgrade to unlock live driver tracking, advanced pricing metrics, and priority enterprise support.",
   "yourCurrentPlanBadge": "YOUR CURRENT PLAN",
   "pendingActivationNote": "Pending activation. Please contact support to complete payment.",
@@ -938,7 +897,6 @@
     }
   },
   "cancelReasonRequiredLong": "Please provide a reason for cancelling this job. A valid cancellation reason is required.",
-  "createNewServiceTitle": "Create New Service",
   "referenceIdLine": "Reference ID: #{ref}",
   "@referenceIdLine": {
     "placeholders": {
@@ -951,13 +909,6 @@
   "depositDialogDesc": "Enter the amount in credits to deposit to your wallet.",
   "amountRequired": "Amount is required",
   "positiveNumberRequired": "Please enter a valid positive number",
-  "basePriceRequired": "Base price is required",
-  "invalidPriceValue": "Invalid price",
-  "rateRequired": "Rate is required",
-  "invalidRateValue": "Invalid rate",
-  "fieldRequiredGeneric": "Required",
-  "latRangeMessage": "Must be between -90 and 90",
-  "lonRangeMessage": "Must be between -180 and 180",
   "otpSentToEmail": "Enter the 6-digit verification code sent to {email}.",
   "@otpSentToEmail": {
     "placeholders": {
@@ -1008,7 +959,6 @@
   "declineProposalBtn": "Decline",
   "replaceDocumentBtn": "Replace Document",
   "uploadDocumentBtn": "Upload Document",
-  "createActionLabel": "Create",
   "backToStatusBtn": "Back to Status",
   "bookNowBtn": "Book",
   "subFreeFeatureMatching": "Basic delivery matching",
@@ -1035,7 +985,6 @@
   "manageServicesAction": "Manage Services",
   "backToHomeBtn": "Back to Home",
   "refreshQueueBtn": "Refresh Queue",
-  "createServiceAction": "Create Service",
   "walletPayoutEmptyHint": "Submitted payout requests will appear here with processing status.",
   "walletLedgerEmptyHint": "Your transaction history will appear here once deposits or charges occur.",
   "refreshWalletBtn": "Refresh Wallet",
@@ -1148,7 +1097,6 @@
   "notificationsAlerts": "Alerts",
   "confirmActionDefault": "Confirm",
   "cancelActionDefault": "Cancel",
-  "nameRequiredError": "Name is required",
   "depositMaxLimitError": "Maximum single deposit is 1,000,000 credits",
   "verifyNewEmailBtn": "Verify New Email",
   "enterCompleteOtpError": "Enter complete 6-digit code",
@@ -1158,7 +1106,6 @@
   "continueActionLabel": "Continue",
   "kycUploadedStatus": "Uploaded",
   "defaultErrorTitle": "Error occurred",
-  "serviceFallbackLabel": "Service",
   "backActionLabel": "Back",
   "depositSuccessMessage": "Successfully deposited {amount} credits.",
   "@depositSuccessMessage": {

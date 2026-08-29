@@ -198,9 +198,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownerConfigTitle => 'Owner Configuration';
 
   @override
-  String get myServicesTitle => 'My Services';
-
-  @override
   String get ownerConfigHeader => 'Business Details';
 
   @override
@@ -648,17 +645,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get unauthenticatedMsg => 'Unauthenticated';
-
-  @override
-  String get serviceCreatedSuccess => 'Service created successfully!';
-
-  @override
-  String serviceCreateFailed(String error) {
-    return 'Failed to create service: $error';
-  }
-
-  @override
   String cancelJobHeader(String jobId) {
     return 'Cancel Job #$jobId';
   }
@@ -771,12 +757,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownerHomeWalletSub => 'Ledger & balance';
-
-  @override
-  String get ownerHomeServices => 'Services';
-
-  @override
-  String get ownerHomeServicesSub => 'Rates & config';
 
   @override
   String get ownerHomeServiceReputation => 'Your Service Reputation';
@@ -1168,41 +1148,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loadingStatus => 'Loading status...';
 
   @override
-  String get loadingServices => 'Loading services...';
-
-  @override
-  String get noServicesConfigured => 'No Services Configured';
-
-  @override
-  String get noServicesDescription =>
-      'No services configured yet.\nTap the + button to create a service.';
-
-  @override
-  String get addService => 'Add Service';
-
-  @override
-  String get kycPending => 'KYC Pending';
-
-  @override
   String get kycRejectedDialogTitle => 'Verification Rejected';
-
-  @override
-  String get serviceNameLabel => 'Service Name';
-
-  @override
-  String get categoryLabel => 'Category';
-
-  @override
-  String get basePriceLabel => 'Base Price (\$)';
-
-  @override
-  String get ratePerKmLabel => 'Rate per KM (\$)';
-
-  @override
-  String get latitudeLabel => 'Latitude';
-
-  @override
-  String get longitudeLabel => 'Longitude';
 
   @override
   String get statusRequested => 'Requested';
@@ -1740,31 +1686,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Submit within 24 hours to ensure your score counts.';
 
   @override
-  String get serviceMgmtHeader => 'Service Management';
-
-  @override
-  String get serviceMgmtSubtitle =>
-      'Configure and monitor active logistics services.';
-
-  @override
-  String get verificationRequiredHeader => 'Verification Required';
-
-  @override
-  String get kycRequiredDesc =>
-      'Please complete KYC verification to create new services or modify existing ones.';
-
-  @override
-  String get baseRateBadge => 'BASE RATE';
-
-  @override
-  String get perKmBadge => 'PER KM';
-
-  @override
-  String serviceLocationLine(String lat, String lon) {
-    return 'Location: ($lat, $lon)';
-  }
-
-  @override
   String get subscriptionManageDesc =>
       'Manage your operational tier. Upgrade to unlock live driver tracking, advanced pricing metrics, and priority enterprise support.';
 
@@ -1834,9 +1755,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Please provide a reason for cancelling this job. A valid cancellation reason is required.';
 
   @override
-  String get createNewServiceTitle => 'Create New Service';
-
-  @override
   String referenceIdLine(String ref) {
     return 'Reference ID: #$ref';
   }
@@ -1853,27 +1771,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get positiveNumberRequired => 'Please enter a valid positive number';
-
-  @override
-  String get basePriceRequired => 'Base price is required';
-
-  @override
-  String get invalidPriceValue => 'Invalid price';
-
-  @override
-  String get rateRequired => 'Rate is required';
-
-  @override
-  String get invalidRateValue => 'Invalid rate';
-
-  @override
-  String get fieldRequiredGeneric => 'Required';
-
-  @override
-  String get latRangeMessage => 'Must be between -90 and 90';
-
-  @override
-  String get lonRangeMessage => 'Must be between -180 and 180';
 
   @override
   String otpSentToEmail(String email) {
@@ -1948,9 +1845,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get uploadDocumentBtn => 'Upload Document';
-
-  @override
-  String get createActionLabel => 'Create';
 
   @override
   String get backToStatusBtn => 'Back to Status';
@@ -2036,9 +1930,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get refreshQueueBtn => 'Refresh Queue';
-
-  @override
-  String get createServiceAction => 'Create Service';
 
   @override
   String get walletPayoutEmptyHint =>
@@ -2310,9 +2201,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cancelActionDefault => 'Cancel';
 
   @override
-  String get nameRequiredError => 'Name is required';
-
-  @override
   String get depositMaxLimitError =>
       'Maximum single deposit is 1,000,000 credits';
 
@@ -2339,9 +2227,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get defaultErrorTitle => 'Error occurred';
-
-  @override
-  String get serviceFallbackLabel => 'Service';
 
   @override
   String get backActionLabel => 'Back';

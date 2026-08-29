@@ -19,7 +19,7 @@ import 'package:frontend/providers/owner_provider.dart';
 import 'package:frontend/screens/customer_marketplace_screen.dart';
 import 'package:frontend/screens/subscription_screen.dart';
 import 'package:frontend/screens/update_required_screen.dart';
-import 'package:frontend/widgets/create_service_dialog.dart';
+import 'package:frontend/screens/owner_configuration_screen.dart';
 
 import 'helpers/mock_http_harness.dart';
 
@@ -74,8 +74,7 @@ void main() {
       );
     });
 
-    test('friendlyErrorMessage maps TimeoutException to connectivity copy',
-        () {
+    test('friendlyErrorMessage maps TimeoutException to connectivity copy', () {
       expect(
         friendlyErrorMessage(TimeoutException('deadline exceeded')),
         ErrorMessages.connectionError,
@@ -87,8 +86,8 @@ void main() {
     test('transport fires onUpdateRequired and throws a 426 exception',
         () async {
       Map<String, dynamic>? received;
-      final overrides = installMockHttp((req) => MockHttpResponse(426,
-          jsonBody: {'minimum_version': '2.0.0'}));
+      final overrides = installMockHttp((req) =>
+          MockHttpResponse(426, jsonBody: {'minimum_version': '2.0.0'}));
       final api = ApiClient(baseUrl: 'https://ci.local/api/v1')
         ..onUpdateRequired = (info) async => received = info;
 
@@ -106,13 +105,15 @@ void main() {
       final navigatorKey = GlobalKey<NavigatorState>();
       final gate = UpdateGate(navigatorKey);
 
-      await tester.pumpWidget(MultiProvider(providers: [
-        ChangeNotifierProvider<LocaleProvider>(
-            create: (_) => LocaleProvider()),
-      ], child: MaterialApp(
-        navigatorKey: navigatorKey,
-        home: const Scaffold(body: Center(child: Text('HOME-MARKER'))),
-      )));
+      await tester.pumpWidget(MultiProvider(
+          providers: [
+            ChangeNotifierProvider<LocaleProvider>(
+                create: (_) => LocaleProvider()),
+          ],
+          child: MaterialApp(
+            navigatorKey: navigatorKey,
+            home: const Scaffold(body: Center(child: Text('HOME-MARKER'))),
+          )));
 
       await gate.handle({
         'minimum_version': '2.0.0',
@@ -130,8 +131,7 @@ void main() {
     });
   });
 
-  group('Marketplace fetch failure no longer masquerades as empty state',
-      () {
+  group('Marketplace fetch failure no longer masquerades as empty state', () {
     testWidgets('backend outage shows retryable banner, not "no services"',
         (tester) async {
       final failingProvider = _FailingMarketplaceProvider(ApiClient());
@@ -168,8 +168,7 @@ void main() {
         providers: [
           ChangeNotifierProvider<AuthProvider>.value(
               value: _StubAuthProvider(ApiClient())),
-          ChangeNotifierProvider<MarketplaceProvider>.value(
-              value: provider),
+          ChangeNotifierProvider<MarketplaceProvider>.value(value: provider),
           ChangeNotifierProvider<NotificationsProvider>(
               create: (_) => NotificationsProvider(ApiClient())),
         ],
@@ -191,8 +190,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('ApiClientException'), findsNothing);
-      expect(find.textContaining('insufficient wallet balance'),
-          findsNothing,
+      expect(find.textContaining('insufficient wallet balance'), findsNothing,
           reason: 'non-auth flows intentionally map by status code; the raw '
               'backend string must not reach the snackbar');
     });
@@ -233,45 +231,58 @@ void main() {
     });
   });
 
-  group('Create-service dialog failure maps through friendly layer', () {
-    testWidgets('duplicate-name style throw loses its raw Exception prefix',
+  group('Owner configuration failure maps through friendly layer', () {
+    testWidgets(
+        'create service exception loses its raw Exception prefix and maps friendly',
         (tester) async {
       final owner = _CreateServiceThrowingOwnerProvider(ApiClient());
-
-      await tester.pumpWidget(MultiProvider(providers: [
-        ChangeNotifierProvider<OwnerProvider>.value(value: owner),
-      ], child: _localize(Scaffold(
-        body: Builder(
-          builder: (ctx) => Center(
-            child: ElevatedButton(
-              onPressed: () =>
-                  CreateServiceDialog.show(ctx, ownerId: 'owner-test-1'),
-              child: const Text('Open Create Service Dialog'),
-            ),
-          ),
+      final auth = _StubAuthProvider(
+        ApiClient(),
+        user: UserProfile(
+          id: 'owner-test-1',
+          email: 'owner@example.com',
+          username: 'test_owner',
+          role: 'owner',
+          kycStatus: 'approved',
         ),
-      ))));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Open Create Service Dialog'));
-      await tester.pumpAndSettle();
+      );
 
-      await tester.enterText(
-          find.byKey(const Key('service_name_field')), 'Fresh Parcel Run');
-      await tester.enterText(
-          find.byKey(const Key('service_base_price_field')), '20.0');
-      await tester.enterText(
-          find.byKey(const Key('service_price_per_km_field')), '5.0');
-      await tester.enterText(
-          find.byKey(const Key('service_latitude_field')), '30.0444');
-      await tester.enterText(
-          find.byKey(const Key('service_longitude_field')), '31.2357');
-
-      final submitBtn = find.byKey(const Key('service_create_button'));
-      await tester.ensureVisible(submitBtn);
-      await tester.tap(submitBtn);
+      await tester.pumpWidget(MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>.value(value: auth),
+          ChangeNotifierProvider<OwnerProvider>.value(value: owner),
+        ],
+        child: _localize(const OwnerConfigurationScreen()),
+      ));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Failed to create service'), findsOneWidget);
+      await tester.enterText(
+          find.byKey(const Key('owner_config_name_field')), 'Fresh Parcel Run');
+      await tester.enterText(
+          find.byKey(const Key('owner_config_base_price_field')), '20.0');
+      await tester.enterText(
+          find.byKey(const Key('owner_config_price_per_km_field')), '5.0');
+      await tester.enterText(
+          find.byKey(const Key('owner_config_radius_field')), '10.0');
+
+      final pickerBtn =
+          find.byKey(const Key('owner_config_location_picker_button'));
+      await tester.ensureVisible(pickerBtn);
+      await tester.tap(pickerBtn);
+      await tester.pumpAndSettle();
+
+      final confirmBtn = find.byKey(const Key('confirm_location_button'));
+      await tester.tap(confirmBtn);
+      await tester.pumpAndSettle();
+
+      final saveBtn = find.byKey(const Key('owner_config_save_button'));
+      await tester.ensureVisible(saveBtn);
+      await tester.tap(saveBtn);
+      await tester.pumpAndSettle();
+
+      expect(
+          find.byKey(const Key('owner_config_error_banner')), findsOneWidget);
+      expect(find.text(ErrorMessages.genericFallback), findsOneWidget);
       expect(find.textContaining('Exception:'), findsNothing);
     });
   });
@@ -311,10 +322,13 @@ MarketplaceService _serviceFixture() => MarketplaceService(
     );
 
 class _StubAuthProvider extends AuthProvider {
-  _StubAuthProvider(super.apiClient, {UserProfile? user});
+  final UserProfile? _customUser;
+  _StubAuthProvider(super.apiClient, {UserProfile? user}) : _customUser = user;
 
   @override
-  UserProfile? get user => UserProfile(
+  UserProfile? get user =>
+      _customUser ??
+      UserProfile(
         id: 'cust-a5',
         email: 'c@x.dev',
         username: 'cust_a5',
@@ -381,6 +395,12 @@ class _SubscriptionThrowingOwnerProvider extends OwnerProvider {
 
 class _CreateServiceThrowingOwnerProvider extends OwnerProvider {
   _CreateServiceThrowingOwnerProvider(super.apiClient);
+
+  @override
+  List<dynamic> get services => const [];
+
+  @override
+  Future<void> fetchServices() async {}
 
   @override
   Future<Map<String, dynamic>> createService({

@@ -55,6 +55,18 @@ class ListScreenTemplate<T> extends StatelessWidget {
   /// Callback for pull-to-refresh gesture.
   final Future<void> Function()? onRefresh;
 
+  /// Callback for pagination when user requests to load more items.
+  final Future<void> Function()? onLoadMore;
+
+  /// Whether more items are available to load.
+  final bool hasMore;
+
+  /// Whether a load-more request is currently in flight.
+  final bool isLoadingMore;
+
+  /// Custom label for the load more button.
+  final String? loadMoreLabel;
+
   // --- Header, Footer & List Layout ---
   /// Optional widget pinned above the list content (e.g., search bar, filters).
   final Widget? header;
@@ -145,6 +157,10 @@ class ListScreenTemplate<T> extends StatelessWidget {
     this.errorMessage,
     this.onRetry,
     this.onRefresh,
+    this.onLoadMore,
+    this.hasMore = false,
+    this.isLoadingMore = false,
+    this.loadMoreLabel,
     // List & Layout
     this.header,
     this.footer,
@@ -287,16 +303,34 @@ class ListScreenTemplate<T> extends StatelessWidget {
           vertical: AppSpacing.md,
         );
 
+    final showLoadMore = hasMore && onLoadMore != null;
+    final totalCount = currentItems.length + (showLoadMore ? 1 : 0);
+
     Widget listView = ListView.separated(
       key: listViewKey ?? const ValueKey('list_template_list'),
       controller: scrollController,
       physics: physics,
       shrinkWrap: shrinkWrap,
       padding: effectivePadding,
-      itemCount: currentItems.length,
+      itemCount: totalCount,
       separatorBuilder:
           separatorBuilder ?? (context, index) => SizedBox(height: itemSpacing),
       itemBuilder: (context, index) {
+        if (index >= currentItems.length) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+              child: isLoadingMore
+                  ? const ThemedLoadingIndicator()
+                  : TextButton.icon(
+                      key: const Key('list_template_load_more_btn'),
+                      onPressed: onLoadMore,
+                      icon: const Icon(Icons.expand_more),
+                      label: Text(loadMoreLabel ?? 'Load more'),
+                    ),
+            ),
+          );
+        }
         if (itemBuilder != null) {
           return itemBuilder!(context, currentItems[index], index);
         }

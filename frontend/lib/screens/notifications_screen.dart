@@ -92,6 +92,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final provider =
+            Provider.of<NotificationsProvider>(context, listen: false);
+        if (provider.notifications.isEmpty) {
+          provider.fetchHistory();
+        }
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final provider = Provider.of<NotificationsProvider>(context);
     final auth = Provider.of<AuthProvider>(context, listen: false);
@@ -102,6 +116,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return ListScreenTemplate<NotificationModel>(
       title: l10n.notificationsTitle,
       showBackButton: widget.showBackButton,
+      onRefresh: () async {
+        await provider.fetchHistory(refresh: true);
+      },
+      hasMore: provider.hasMore,
+      isLoadingMore: provider.isLoadingMore,
+      onLoadMore: () async {
+        await provider.loadMore();
+      },
       actions: [
         IconButton(
           icon: const Icon(Icons.delete_sweep),

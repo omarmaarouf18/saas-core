@@ -195,9 +195,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownerConfigTitle => 'إعدادات الخدمة والمحل';
 
   @override
-  String get myServicesTitle => 'خدماتي';
-
-  @override
   String get ownerConfigHeader => 'بيانات المحل/الخدمة';
 
   @override
@@ -642,17 +639,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get unauthenticatedMsg => 'غير مسجل الدخول';
-
-  @override
-  String get serviceCreatedSuccess => 'تم إنشاء الخدمة بنجاح!';
-
-  @override
-  String serviceCreateFailed(String error) {
-    return 'فشل في إنشاء الخدمة: $error';
-  }
-
-  @override
   String cancelJobHeader(String jobId) {
     return 'إلغاء الطلب رقم #$jobId';
   }
@@ -764,12 +750,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownerHomeWalletSub => 'السجل والرصيد';
-
-  @override
-  String get ownerHomeServices => 'الخدمات';
-
-  @override
-  String get ownerHomeServicesSub => 'الأسعار والإعدادات';
 
   @override
   String get ownerHomeServiceReputation => 'تقييم خدماتك';
@@ -1156,41 +1136,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get loadingStatus => 'جاري تحميل الحالة...';
 
   @override
-  String get loadingServices => 'جاري تحميل الخدمات...';
-
-  @override
-  String get noServicesConfigured => 'لم يتم ضبط أي خدمات';
-
-  @override
-  String get noServicesDescription =>
-      'لم يتم ضبط أي خدمات بعد.\nإضغط على زر + لإنشاء خدمة جديدة.';
-
-  @override
-  String get addService => 'إضافة خدمة';
-
-  @override
-  String get kycPending => 'في انتظار التوثيق';
-
-  @override
   String get kycRejectedDialogTitle => 'تم رفض التحقق';
-
-  @override
-  String get serviceNameLabel => 'اسم الخدمة';
-
-  @override
-  String get categoryLabel => 'الفئة';
-
-  @override
-  String get basePriceLabel => 'السعر الأساسي (\$)';
-
-  @override
-  String get ratePerKmLabel => 'السعر لكل كم (\$)';
-
-  @override
-  String get latitudeLabel => 'خط العرض';
-
-  @override
-  String get longitudeLabel => 'خط الطول';
 
   @override
   String get statusRequested => 'تم الطلب';
@@ -1714,29 +1660,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get windowDeadlineDesc => 'قيّم خلال 24 ساعة عشان صوتك يتحسب.';
 
   @override
-  String get serviceMgmtHeader => 'إدارة الخدمات';
-
-  @override
-  String get serviceMgmtSubtitle => 'ظبّط وتابع خدمات الشحن النشطة.';
-
-  @override
-  String get verificationRequiredHeader => 'لازم توثيق';
-
-  @override
-  String get kycRequiredDesc => 'كمّل توثيق KYC عشان تقدر تضيف أو تعدل خدمات.';
-
-  @override
-  String get baseRateBadge => 'الأجرة الأساسية';
-
-  @override
-  String get perKmBadge => 'لكل كم';
-
-  @override
-  String serviceLocationLine(String lat, String lon) {
-    return 'الموقع: ($lat, $lon)';
-  }
-
-  @override
   String get subscriptionManageDesc =>
       'أدر باقتك. الترقية بتفتح تتبع السايقين المباشر ومؤشرات أسعار متقدمة ودعم أولوية.';
 
@@ -1804,9 +1727,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'اكتب سبب إلغاء الشحنة. لازم سبب إلغاء صحيح.';
 
   @override
-  String get createNewServiceTitle => 'إنشاء خدمة جديدة';
-
-  @override
   String referenceIdLine(String ref) {
     return 'رقم المرجع: #$ref';
   }
@@ -1822,27 +1742,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get positiveNumberRequired => 'اكتب رقم موجب صحيح';
-
-  @override
-  String get basePriceRequired => 'السعر الأساسي مطلوب';
-
-  @override
-  String get invalidPriceValue => 'سعر غير صحيح';
-
-  @override
-  String get rateRequired => 'السعر لكل كم مطلوب';
-
-  @override
-  String get invalidRateValue => 'قيمة غير صحيحة';
-
-  @override
-  String get fieldRequiredGeneric => 'مطلوب';
-
-  @override
-  String get latRangeMessage => 'لازم تكون بين -90 و 90';
-
-  @override
-  String get lonRangeMessage => 'لازم تكون بين -180 و 180';
 
   @override
   String otpSentToEmail(String email) {
@@ -1917,9 +1816,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get uploadDocumentBtn => 'ارفع المستند';
-
-  @override
-  String get createActionLabel => 'إنشاء';
 
   @override
   String get backToStatusBtn => 'رجوع لحالة الشحنة';
@@ -2003,9 +1899,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get refreshQueueBtn => 'تحديث القائمة';
-
-  @override
-  String get createServiceAction => 'إنشاء خدمة';
 
   @override
   String get walletPayoutEmptyHint =>
@@ -2273,9 +2166,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get cancelActionDefault => 'إلغاء';
 
   @override
-  String get nameRequiredError => 'الاسم مطلوب';
-
-  @override
   String get depositMaxLimitError =>
       'أقصى مبلغ للإيداع الواحد هو 1,000,000 credit';
 
@@ -2302,9 +2192,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get defaultErrorTitle => 'حدث خطأ';
-
-  @override
-  String get serviceFallbackLabel => 'خدمة';
 
   @override
   String get backActionLabel => 'رجوع';

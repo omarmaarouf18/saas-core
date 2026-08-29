@@ -16,6 +16,9 @@ func TestLoad(t *testing.T) {
 		os.Unsetenv("PORT")
 		os.Unsetenv("AUTH_SERVICE_URL")
 		os.Unsetenv("ALLOWED_ORIGIN")
+		os.Unsetenv("MONGO_URI")
+		os.Unsetenv("NOTIFICATION_MONGO_DATABASE")
+		os.Unsetenv("MONGO_INITDB_DATABASE")
 	}
 
 	clearEnv()
@@ -72,10 +75,30 @@ func TestLoad(t *testing.T) {
 	if cfg.Port != "3004" {
 		t.Errorf("Expected default Port '3004', got %q", cfg.Port)
 	}
+	if cfg.MongoURI != "mongodb://localhost:27017/notification_db" {
+		t.Errorf("Expected default MongoURI, got %q", cfg.MongoURI)
+	}
+	if cfg.MongoDatabase != "notification_db" {
+		t.Errorf("Expected default MongoDatabase, got %q", cfg.MongoDatabase)
+	}
 	if cfg.AuthServiceURL != "http://localhost:3002" {
 		t.Errorf("Expected default AuthServiceURL, got %q", cfg.AuthServiceURL)
 	}
 	if cfg.AllowedOrigin != "http://localhost:3000" {
 		t.Errorf("Expected default AllowedOrigin, got %q", cfg.AllowedOrigin)
+	}
+
+	// 8. Custom Mongo overrides
+	os.Setenv("MONGO_URI", "mongodb://custom:27017")
+	os.Setenv("NOTIFICATION_MONGO_DATABASE", "custom_notif_db")
+	cfgCustom, err := Load()
+	if err != nil {
+		t.Fatalf("Unexpected error loading custom config: %v", err)
+	}
+	if cfgCustom.MongoURI != "mongodb://custom:27017" {
+		t.Errorf("Expected custom MongoURI, got %q", cfgCustom.MongoURI)
+	}
+	if cfgCustom.MongoDatabase != "custom_notif_db" {
+		t.Errorf("Expected custom MongoDatabase, got %q", cfgCustom.MongoDatabase)
 	}
 }

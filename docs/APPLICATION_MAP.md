@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`0cb1b84`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`9fa5d4d`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -99,11 +99,12 @@ The platform is comprised of **5 microservices** and **1 compile-time shared pac
   * `user-service`: Queries `GET /users/jobs/get?id=<job_id>` to resolve job owner, employee, and customer relationships for channel access control.
 
 ### 4. `notification-service` (Port: `3004`)
-* **Core Responsibility**: Server-Sent Events (SSE) notification hub. Streams real-time popups and tenant-wide job alerts to connected web/mobile clients.
-* **Database & Collections**: None. SSE connections are held in-memory within the active Hub.
+* **Core Responsibility**: Real-time client alerts and durable in-app notifications hub. Streams real-time popups and tenant-wide job alerts to connected web/mobile clients via Server-Sent Events (SSE), persists durable MongoDB-backed notification history with 30-day TTL retention, maintains per-recipient read and dismiss tracking across single-recipient and role-broadcast notifications (isolated per recipient rather than a single shared flag), and exposes 5 authenticated REST endpoints for history, read marking, and deletion (`GET /notifications/history`, `POST /notifications/{id}/read`, `POST /notifications/read-all`, `DELETE /notifications/{id}`, `DELETE /notifications`).
+* **Database & Collections**: MongoDB (`notification_db`):
+  * `notifications`: Stores persisted notification documents with compound indexes on `(tenant_id, user_id, timestamp desc)` and `(tenant_id, roles, timestamp desc)`, a 30-day TTL expiration index on `created_at` (`expireAfterSeconds = 2592000`), and per-recipient tracking arrays (`read_by`, `dismissed_by`). SSE connections are held in-memory within the active Hub.
 * **Security & TLS Policy**: Serves mTLS HTTPS API routes and maintains SSE streams.
 * **Inbound HTTP calls**:
-  * `api-gateway` (public `/notifications/stream` routes).
+  * `api-gateway` (public `/notifications/stream` routes and REST endpoints).
   * `user-service` (invokes `/notifications/broadcast/job-alert` internally).
   * `auth-service` (invokes `/notifications/send` internally for KYC/KYB/KYE review outcome notifications per ADR-0021).
 * **Outbound HTTP calls**:
@@ -196,9 +197,14 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`POST /chat/tickets`** | `chat-service` | User JWT | Submits complaint ticket & assigns agent. | Reads/writes `complaint_tickets` and `support_agents` (atomic). |
 | **`POST /chat/tickets/resolve`** | `chat-service` | Support Agent Token | Resolves ticket & releases agent status. | Updates `complaint_tickets` and `support_agents`. |
 | **`GET /chat/ws`** | `chat-service` | User JWT OR Agent Token | WebSocket connection upgrade path. | Reads `support_agents` (for agent tokens). Downstream: calls `auth-service/auth/user`. |
+| **`DELETE /notifications`** | `notification-service` | User JWT | Clears all notifications for the authenticated user. | Deletes from `notifications` collection. |
 | **`POST /notifications/broadcast/job-alert`** | `notification-service` | `X-Internal-Token` | Broadcasts job alert to employees. | Dispatches message to SSE clients. |
+| **`GET /notifications/history`** | `notification-service` | User JWT | Returns the authenticated user's persisted notifications, paginated. | Reads `notifications` collection. |
+| **`POST /notifications/read-all`** | `notification-service` | User JWT | Marks all notifications as read for the authenticated user. | Updates `notifications` collection. |
 | **`POST /notifications/send`** | `notification-service` | `X-Internal-Token` | Sends a targeted popup alert. | Dispatches message to SSE client. |
 | **`GET /notifications/stream`** | `notification-service` | User JWT | Opens SSE channel for alerts. | Downstream: calls `auth-service/auth/user`. |
+| **`DELETE /notifications/{id}`** | `notification-service` | User JWT | Deletes a single notification for the authenticated user. | Deletes from `notifications` collection. |
+| **`POST /notifications/{id}/read`** | `notification-service` | User JWT | Marks a single notification as read for the authenticated user. | Updates `notifications` collection. |
 | **`POST /users/jobs/cancel`** | `user-service` | Owner or Customer JWT | Cancels an active job and processes escrow refunds. Accepts requester_id (legacy) or requester_token (preferred). | Updates `jobs` collection. Updates `wallets` and `ledger` collections. |
 | **`POST /users/jobs/complete`** | `user-service` | Owner or Employee JWT | Completes active job, processes fees. Accepts requester_id (legacy) or requester_token (preferred) in body or query. | Updates `jobs`, writes `wallets`, writes `ledger`. |
 | **`GET /users/jobs/get`** | `user-service` | `X-Internal-Token` OR Owner, Employee, User, or Customer JWT | Resolves detailed job configuration (single job by ID) or lists jobs. Accepts id (legacy) or user_token (preferred), requester_id (legacy) or requester_token (preferred), and employee_id (legacy) or employee_token (preferred). | Reads `jobs` collection. Enforces IDOR protection: if `employee_id` query param is provided, it must match the employee identity strictly resolved from the JWT token. |

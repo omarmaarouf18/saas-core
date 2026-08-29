@@ -4,14 +4,18 @@ package handlers
 import (
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/project/notification-service/internal/config"
 	"github.com/project/notification-service/internal/hub"
+	"github.com/project/notification-service/internal/store"
 	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/shared/infra/ratelimit"
@@ -27,6 +31,7 @@ const maxConcurrentStreamsPerTenant = 5
 // Notification holds dependencies for notification handlers.
 type Notification struct {
 	hub                  *hub.SSEHub
+	store                store.Store
 	authServiceURL       string
 	allowedOrigin        string
 	limiter              *handlerutil.RateLimiter
@@ -38,7 +43,7 @@ type Notification struct {
 }
 
 // NewNotification creates a new handler group.
-func NewNotification(h *hub.SSEHub, cfg *config.Config, rdb *redis.Client) *Notification {
+func NewNotification(h *hub.SSEHub, st store.Store, cfg *config.Config, rdb *redis.Client) *Notification {
 	allowedOrigin := cfg.AllowedOrigin
 	if allowedOrigin == "" {
 		allowedOrigin = "http://localhost:3000"
@@ -62,6 +67,7 @@ func NewNotification(h *hub.SSEHub, cfg *config.Config, rdb *redis.Client) *Noti
 
 	return &Notification{
 		hub:                  h,
+		store:                st,
 		authServiceURL:       cfg.AuthServiceURL,
 		allowedOrigin:        allowedOrigin,
 		limiter:              handlerutil.NewRateLimiter(rl),
@@ -72,11 +78,35 @@ func NewNotification(h *hub.SSEHub, cfg *config.Config, rdb *redis.Client) *Noti
 	}
 }
 
+// SetStore dynamically sets the persistence store.
+func (n *Notification) SetStore(st store.Store) {
+	n.store = st
+}
+
 // RegisterRoutes mounts notification endpoints.
 func (n *Notification) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/notifications/stream", n.Stream)
 	mux.HandleFunc("/notifications/send", n.Send)
 	mux.HandleFunc("/notifications/broadcast/job-alert", n.BroadcastJobAlert)
+	mux.HandleFunc("/notifications/history", n.History)
+	mux.HandleFunc("/notifications/read-all", n.ReadAll)
+	mux.HandleFunc("/notifications/{id}/read", n.MarkRead)
+	mux.HandleFunc("/notifications/{id}", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodDelete:
+			n.Delete(w, r)
+		default:
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use DELETE"})
+		}
+	})
+	mux.HandleFunc("/notifications", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodDelete:
+			n.DeleteAll(w, r)
+		default:
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use DELETE"})
+		}
+	})
 }
 
 // ---------------------------------------------------------------------------
@@ -158,14 +188,15 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "event: connected\ndata: {\"client_id\":%q,\"role\":%q}\n\n", token, role)
 	flusher.Flush()
 
-	log.Printf("[NOTIF] SSE stream opened: tenant_id=%s role=%s", tenantID, role)
+	cleanTenantID := strings.ReplaceAll(strings.ReplaceAll(tenantID, "\n", ""), "\r", "")
+	log.Printf("[NOTIF] SSE stream opened: tenant_id=%s role=%s", cleanTenantID, role) // #nosec G706 //nolint:gosec -- tenantID is authenticated and CR/LF sanitized
 
 	// Stream loop.
 	ctx := r.Context()
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("[NOTIF] SSE stream closed (client disconnect) tenant_id=%s", tenantID)
+			log.Printf("[NOTIF] SSE stream closed (client disconnect) tenant_id=%s", cleanTenantID) // #nosec G706 //nolint:gosec -- tenantID is authenticated and CR/LF sanitized
 			return
 		case msg, ok := <-client.Send:
 			if !ok {
@@ -180,16 +211,16 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool, error) {
+func (n *Notification) resolveToken(token string) (string, string, hub.Role, bool, error) {
 	if token == "" {
-		return "", "", false, nil
+		return "", "", "", false, nil
 	}
 
 	// 1. Primary trust boundary: Validate JWT token signature and expiry locally
 	claims, err := jwtutil.ValidateToken(token)
 	if err != nil {
 		log.Printf("[NOTIF] JWT validation failed: %v", err)
-		return "", "", false, nil
+		return "", "", "", false, nil
 	}
 
 	// 2. Secondary trust boundary: verify against auth-service using extracted user ID (internal call)
@@ -198,20 +229,20 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool, e
 	req, err := http.NewRequest("GET", authURL, nil)
 	if err != nil {
 		log.Printf("[NOTIF] Error building auth-service request: %v", err)
-		return "", "", false, err
+		return "", "", "", false, err
 	}
 	req.Header.Set("X-Internal-Token", n.internalServiceToken)
 	resp, err := n.resilienceClient.Do(req)
 	if err != nil {
 		log.Printf("[NOTIF] Error calling auth-service: %v", err)
-		return "", "", false, err
+		return "", "", "", false, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		// #nosec G706 -- claims.UserID is validated and sourced from cryptographically signed JWT token
 		log.Printf("[NOTIF] Auth service returned status %d for user ID %s", resp.StatusCode, claims.UserID)
-		return "", "", false, nil
+		return "", "", "", false, nil
 	}
 
 	var user struct {
@@ -223,12 +254,12 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool, e
 
 	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
 		log.Printf("[NOTIF] Failed to decode user from auth-service: %v", err)
-		return "", "", false, err
+		return "", "", "", false, err
 	}
 
 	if !user.IsActive {
 		log.Printf("[NOTIF] User %s is not active", user.ID)
-		return "", "", false, nil
+		return "", "", "", false, nil
 	}
 
 	var r hub.Role
@@ -243,7 +274,36 @@ func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool, e
 		r = hub.RoleClient
 	}
 
-	return user.TenantID, r, true, nil
+	return user.ID, user.TenantID, r, true, nil
+}
+
+func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool, error) {
+	_, tenantID, role, ok, err := n.resolveToken(token)
+	return tenantID, role, ok, err
+}
+
+func (n *Notification) authenticateHeader(r *http.Request) (userID, tenantID string, role hub.Role, status int, errMsg string) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return "", "", "", http.StatusUnauthorized, "authorization header required"
+	}
+	parts := strings.SplitN(authHeader, " ", 2)
+	if len(parts) != 2 || !strings.EqualFold(parts[0], "bearer") {
+		return "", "", "", http.StatusUnauthorized, "invalid authorization format, expected Bearer <token>"
+	}
+	token := strings.TrimSpace(parts[1])
+	if token == "" {
+		return "", "", "", http.StatusUnauthorized, "bearer token cannot be empty"
+	}
+
+	uID, tID, rRole, ok, err := n.resolveToken(token)
+	if err != nil {
+		return "", "", "", http.StatusServiceUnavailable, "authentication service temporarily unavailable"
+	}
+	if !ok {
+		return "", "", "", http.StatusUnauthorized, "invalid or expired token"
+	}
+	return uID, tID, rRole, http.StatusOK, ""
 }
 
 // ---------------------------------------------------------------------------
@@ -314,6 +374,28 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 		notif.Type = "popup"
 	}
 
+	if n.store != nil {
+		roles := make([]string, len(notif.Roles))
+		for i, r := range notif.Roles {
+			roles[i] = string(r)
+		}
+		storeDoc := &store.Notification{
+			ID:        notif.ID,
+			Type:      notif.Type,
+			TenantID:  notif.TenantID,
+			UserID:    notif.UserID,
+			UserIDs:   notif.UserIDs,
+			Global:    notif.Global,
+			Title:     notif.Title,
+			Body:      notif.Body,
+			Roles:     roles,
+			Timestamp: notif.Timestamp,
+		}
+		if err := n.store.InsertNotification(r.Context(), storeDoc); err != nil {
+			log.Printf("[NOTIF-STORE] Failed to persist notification %s: %v", notif.ID, err)
+		}
+	}
+
 	n.hub.Broadcast(notif)
 
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -370,6 +452,26 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 		Timestamp: time.Now().UTC(),
 	}
 
+	if n.store != nil {
+		roles := make([]string, len(notif.Roles))
+		for i, r := range notif.Roles {
+			roles[i] = string(r)
+		}
+		storeDoc := &store.Notification{
+			ID:        notif.ID,
+			Type:      notif.Type,
+			TenantID:  notif.TenantID,
+			UserID:    notif.UserID,
+			Title:     notif.Title,
+			Body:      notif.Body,
+			Roles:     roles,
+			Timestamp: notif.Timestamp,
+		}
+		if err := n.store.InsertNotification(r.Context(), storeDoc); err != nil {
+			log.Printf("[NOTIF-STORE] Failed to persist job alert %s: %v", notif.ID, err)
+		}
+	}
+
 	n.hub.Broadcast(notif)
 
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -378,6 +480,207 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 		"active_clients":  n.hub.ClientCount(),
 		"clients_by_role": n.hub.ClientsByRole(),
 	})
+}
+
+// ---------------------------------------------------------------------------
+// GET /notifications/history?limit=&before=
+// ---------------------------------------------------------------------------
+
+// History returns the authenticated user's persisted notification history.
+func (n *Notification) History(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
+		return
+	}
+
+	userID, tenantID, role, status, errMsg := n.authenticateHeader(r)
+	if status != http.StatusOK {
+		writeJSON(w, status, map[string]string{"error": errMsg})
+		return
+	}
+
+	limit := 30
+	if lStr := r.URL.Query().Get("limit"); lStr != "" {
+		if parsed, err := strconv.Atoi(lStr); err == nil && parsed > 0 {
+			limit = parsed
+			if limit > 100 {
+				limit = 100
+			}
+		}
+	}
+
+	var before *time.Time
+	if bStr := r.URL.Query().Get("before"); bStr != "" {
+		if parsed, err := time.Parse(time.RFC3339Nano, bStr); err == nil {
+			before = &parsed
+		} else if parsed, err := time.Parse(time.RFC3339, bStr); err == nil {
+			before = &parsed
+		}
+	}
+
+	if n.store == nil {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"notifications": []store.Notification{},
+			"has_more":      false,
+		})
+		return
+	}
+
+	roles := []string{string(role)}
+	items, err := n.store.ListForUser(r.Context(), tenantID, userID, roles, limit, before)
+	if err != nil {
+		log.Printf("[NOTIF] Failed to list notifications: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to list notifications"})
+		return
+	}
+
+	hasMore := len(items) == limit
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"notifications": items,
+		"has_more":      hasMore,
+	})
+}
+
+// ---------------------------------------------------------------------------
+// POST /notifications/{id}/read
+// ---------------------------------------------------------------------------
+
+// MarkRead marks a single notification as read for the authenticated user.
+func (n *Notification) MarkRead(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	userID, tenantID, _, status, errMsg := n.authenticateHeader(r)
+	if status != http.StatusOK {
+		writeJSON(w, status, map[string]string{"error": errMsg})
+		return
+	}
+
+	id := r.PathValue("id")
+	if id == "" {
+		trimmed := strings.TrimPrefix(r.URL.Path, "/notifications/")
+		id = strings.TrimSuffix(trimmed, "/read")
+	}
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "notification id required"})
+		return
+	}
+
+	if n.store != nil {
+		err := n.store.MarkRead(r.Context(), tenantID, userID, id)
+		if err != nil {
+			if errors.Is(err, store.ErrNotFound) {
+				writeJSON(w, http.StatusNotFound, map[string]string{"error": "notification not found"})
+				return
+			}
+			log.Printf("[NOTIF] Failed to mark read: %v", err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to mark notification as read"})
+			return
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "notification marked as read"})
+}
+
+// ---------------------------------------------------------------------------
+// POST /notifications/read-all
+// ---------------------------------------------------------------------------
+
+// ReadAll marks all notifications read for the authenticated user.
+func (n *Notification) ReadAll(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	userID, tenantID, _, status, errMsg := n.authenticateHeader(r)
+	if status != http.StatusOK {
+		writeJSON(w, status, map[string]string{"error": errMsg})
+		return
+	}
+
+	if n.store != nil {
+		if err := n.store.MarkAllRead(r.Context(), tenantID, userID); err != nil {
+			log.Printf("[NOTIF] Failed to mark all read: %v", err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to mark all notifications as read"})
+			return
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "all notifications marked as read"})
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /notifications/{id}
+// ---------------------------------------------------------------------------
+
+// Delete removes a single notification for the authenticated user.
+func (n *Notification) Delete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use DELETE"})
+		return
+	}
+
+	userID, tenantID, _, status, errMsg := n.authenticateHeader(r)
+	if status != http.StatusOK {
+		writeJSON(w, status, map[string]string{"error": errMsg})
+		return
+	}
+
+	id := r.PathValue("id")
+	if id == "" {
+		id = strings.TrimPrefix(r.URL.Path, "/notifications/")
+	}
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "notification id required"})
+		return
+	}
+
+	if n.store != nil {
+		err := n.store.Delete(r.Context(), tenantID, userID, id)
+		if err != nil {
+			if errors.Is(err, store.ErrNotFound) {
+				writeJSON(w, http.StatusNotFound, map[string]string{"error": "notification not found"})
+				return
+			}
+			log.Printf("[NOTIF] Failed to delete: %v", err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to delete notification"})
+			return
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "notification deleted"})
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /notifications
+// ---------------------------------------------------------------------------
+
+// DeleteAll clears all notifications for the authenticated user.
+func (n *Notification) DeleteAll(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use DELETE"})
+		return
+	}
+
+	userID, tenantID, _, status, errMsg := n.authenticateHeader(r)
+	if status != http.StatusOK {
+		writeJSON(w, status, map[string]string{"error": errMsg})
+		return
+	}
+
+	if n.store != nil {
+		if err := n.store.DeleteAll(r.Context(), tenantID, userID); err != nil {
+			log.Printf("[NOTIF] Failed to delete all: %v", err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to delete all notifications"})
+			return
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "all notifications deleted"})
 }
 
 func writeBytes(w http.ResponseWriter, data []byte) {

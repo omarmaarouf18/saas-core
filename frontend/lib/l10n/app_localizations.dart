@@ -464,12 +464,6 @@ abstract class AppLocalizations {
   /// **'Owner Configuration'**
   String get ownerConfigTitle;
 
-  /// No description provided for @myServicesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'My Services'**
-  String get myServicesTitle;
-
   /// No description provided for @ownerConfigHeader.
   ///
   /// In en, this message translates to:
@@ -1317,24 +1311,6 @@ abstract class AppLocalizations {
   /// **'Error: {error}'**
   String ratingFailed(String error);
 
-  /// No description provided for @unauthenticatedMsg.
-  ///
-  /// In en, this message translates to:
-  /// **'Unauthenticated'**
-  String get unauthenticatedMsg;
-
-  /// No description provided for @serviceCreatedSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Service created successfully!'**
-  String get serviceCreatedSuccess;
-
-  /// No description provided for @serviceCreateFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to create service: {error}'**
-  String serviceCreateFailed(String error);
-
   /// No description provided for @cancelJobHeader.
   ///
   /// In en, this message translates to:
@@ -1532,18 +1508,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ledger & balance'**
   String get ownerHomeWalletSub;
-
-  /// No description provided for @ownerHomeServices.
-  ///
-  /// In en, this message translates to:
-  /// **'Services'**
-  String get ownerHomeServices;
-
-  /// No description provided for @ownerHomeServicesSub.
-  ///
-  /// In en, this message translates to:
-  /// **'Rates & config'**
-  String get ownerHomeServicesSub;
 
   /// No description provided for @ownerHomeServiceReputation.
   ///
@@ -2247,77 +2211,11 @@ abstract class AppLocalizations {
   /// **'Loading status...'**
   String get loadingStatus;
 
-  /// No description provided for @loadingServices.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading services...'**
-  String get loadingServices;
-
-  /// No description provided for @noServicesConfigured.
-  ///
-  /// In en, this message translates to:
-  /// **'No Services Configured'**
-  String get noServicesConfigured;
-
-  /// No description provided for @noServicesDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'No services configured yet.\nTap the + button to create a service.'**
-  String get noServicesDescription;
-
-  /// No description provided for @addService.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Service'**
-  String get addService;
-
-  /// No description provided for @kycPending.
-  ///
-  /// In en, this message translates to:
-  /// **'KYC Pending'**
-  String get kycPending;
-
   /// No description provided for @kycRejectedDialogTitle.
   ///
   /// In en, this message translates to:
   /// **'Verification Rejected'**
   String get kycRejectedDialogTitle;
-
-  /// No description provided for @serviceNameLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Service Name'**
-  String get serviceNameLabel;
-
-  /// No description provided for @categoryLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Category'**
-  String get categoryLabel;
-
-  /// No description provided for @basePriceLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Base Price (\$)'**
-  String get basePriceLabel;
-
-  /// No description provided for @ratePerKmLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Rate per KM (\$)'**
-  String get ratePerKmLabel;
-
-  /// No description provided for @latitudeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Latitude'**
-  String get latitudeLabel;
-
-  /// No description provided for @longitudeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Longitude'**
-  String get longitudeLabel;
 
   /// No description provided for @statusRequested.
   ///
@@ -3255,48 +3153,6 @@ abstract class AppLocalizations {
   /// **'Submit within 24 hours to ensure your score counts.'**
   String get windowDeadlineDesc;
 
-  /// No description provided for @serviceMgmtHeader.
-  ///
-  /// In en, this message translates to:
-  /// **'Service Management'**
-  String get serviceMgmtHeader;
-
-  /// No description provided for @serviceMgmtSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Configure and monitor active logistics services.'**
-  String get serviceMgmtSubtitle;
-
-  /// No description provided for @verificationRequiredHeader.
-  ///
-  /// In en, this message translates to:
-  /// **'Verification Required'**
-  String get verificationRequiredHeader;
-
-  /// No description provided for @kycRequiredDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Please complete KYC verification to create new services or modify existing ones.'**
-  String get kycRequiredDesc;
-
-  /// No description provided for @baseRateBadge.
-  ///
-  /// In en, this message translates to:
-  /// **'BASE RATE'**
-  String get baseRateBadge;
-
-  /// No description provided for @perKmBadge.
-  ///
-  /// In en, this message translates to:
-  /// **'PER KM'**
-  String get perKmBadge;
-
-  /// No description provided for @serviceLocationLine.
-  ///
-  /// In en, this message translates to:
-  /// **'Location: ({lat}, {lon})'**
-  String serviceLocationLine(String lat, String lon);
-
   /// No description provided for @subscriptionManageDesc.
   ///
   /// In en, this message translates to:
@@ -3405,12 +3261,6 @@ abstract class AppLocalizations {
   /// **'Please provide a reason for cancelling this job. A valid cancellation reason is required.'**
   String get cancelReasonRequiredLong;
 
-  /// No description provided for @createNewServiceTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Create New Service'**
-  String get createNewServiceTitle;
-
   /// No description provided for @referenceIdLine.
   ///
   /// In en, this message translates to:
@@ -3440,48 +3290,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please enter a valid positive number'**
   String get positiveNumberRequired;
-
-  /// No description provided for @basePriceRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Base price is required'**
-  String get basePriceRequired;
-
-  /// No description provided for @invalidPriceValue.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid price'**
-  String get invalidPriceValue;
-
-  /// No description provided for @rateRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Rate is required'**
-  String get rateRequired;
-
-  /// No description provided for @invalidRateValue.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid rate'**
-  String get invalidRateValue;
-
-  /// No description provided for @fieldRequiredGeneric.
-  ///
-  /// In en, this message translates to:
-  /// **'Required'**
-  String get fieldRequiredGeneric;
-
-  /// No description provided for @latRangeMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Must be between -90 and 90'**
-  String get latRangeMessage;
-
-  /// No description provided for @lonRangeMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Must be between -180 and 180'**
-  String get lonRangeMessage;
 
   /// No description provided for @otpSentToEmail.
   ///
@@ -3614,12 +3422,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upload Document'**
   String get uploadDocumentBtn;
-
-  /// No description provided for @createActionLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Create'**
-  String get createActionLabel;
 
   /// No description provided for @backToStatusBtn.
   ///
@@ -3776,12 +3578,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh Queue'**
   String get refreshQueueBtn;
-
-  /// No description provided for @createServiceAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Create Service'**
-  String get createServiceAction;
 
   /// No description provided for @walletPayoutEmptyHint.
   ///
@@ -4269,12 +4065,6 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get cancelActionDefault;
 
-  /// No description provided for @nameRequiredError.
-  ///
-  /// In en, this message translates to:
-  /// **'Name is required'**
-  String get nameRequiredError;
-
   /// No description provided for @depositMaxLimitError.
   ///
   /// In en, this message translates to:
@@ -4328,12 +4118,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error occurred'**
   String get defaultErrorTitle;
-
-  /// No description provided for @serviceFallbackLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Service'**
-  String get serviceFallbackLabel;
 
   /// No description provided for @backActionLabel.
   ///
