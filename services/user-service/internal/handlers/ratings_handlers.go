@@ -19,7 +19,7 @@ import (
 
 func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 	ip := handlerutil.GetIP(r)
-	if limited, remaining := u.limiter.CheckAndRecord("rate_job:" + ip); limited {
+	if limited, remaining := u.rateJobLimiter.CheckAndRecord(ip); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})

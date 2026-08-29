@@ -75,6 +75,13 @@ type UserService struct {
 	chatServiceURL            string
 	notificationServiceURL    string
 	limiter                   *handlerutil.RateLimiter
+	trackLimiter              *handlerutil.RateLimiter
+	proposePriceLimiter       *handlerutil.RateLimiter
+	respondPriceLimiter       *handlerutil.RateLimiter
+	cancelJobLimiter          *handlerutil.RateLimiter
+	rateJobLimiter            *handlerutil.RateLimiter
+	depositLimiter            *handlerutil.RateLimiter
+	ticketLimiter             *handlerutil.RateLimiter
 	ownerJobsLimiter          *handlerutil.RateLimiter
 	customerJobsLimiter       *handlerutil.RateLimiter
 	ledgerLimiter             *handlerutil.RateLimiter
@@ -192,11 +199,26 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 	notificationClient := resilience.NewClient(client, "notification-service", 2, 5*time.Second)
 
 	return &UserService{
-		store:                     s,
-		authServiceURL:            cfg.AuthServiceURL,
-		chatServiceURL:            chatServiceURL,
-		notificationServiceURL:    notificationServiceURL,
-		limiter:                   newHandlerLimiter(5, "user"),
+		store:                  s,
+		authServiceURL:         cfg.AuthServiceURL,
+		chatServiceURL:         chatServiceURL,
+		notificationServiceURL: notificationServiceURL,
+		// Per-action isolated rate limiters (ADR-0016):
+		// - user:track (20/min): Customers and employees tracking or booking jobs; high interactive frequency.
+		// - user:propose_price (20/min): Active price negotiation interactions during quote negotiation.
+		// - user:respond_price (20/min): Acceptance/counter-proposals during price negotiations.
+		// - user:cancel_job (10/min): Sensitive state transition; 10/min prevents abuse while accommodating real retries.
+		// - user:rate_job (10/min): Job completion rating submissions; 10/min prevents rating spam.
+		// - user:deposit (10/min): Financial deposit attempts; 10/min provides strict financial abuse protection.
+		// - user:ticket (10/min): Support/complaint ticket creation budget reservation.
+		limiter:                   newHandlerLimiter(20, "user:track"),
+		trackLimiter:              newHandlerLimiter(20, "user:track"),
+		proposePriceLimiter:       newHandlerLimiter(20, "user:propose_price"),
+		respondPriceLimiter:       newHandlerLimiter(20, "user:respond_price"),
+		cancelJobLimiter:          newHandlerLimiter(10, "user:cancel_job"),
+		rateJobLimiter:            newHandlerLimiter(10, "user:rate_job"),
+		depositLimiter:            newHandlerLimiter(10, "user:deposit"),
+		ticketLimiter:             newHandlerLimiter(10, "user:ticket"),
 		ownerJobsLimiter:          newHandlerLimiter(60, "user:owner_jobs"),
 		customerJobsLimiter:       newHandlerLimiter(60, "user:customer_jobs"),
 		ledgerLimiter:             newHandlerLimiter(60, "user:ledger"),

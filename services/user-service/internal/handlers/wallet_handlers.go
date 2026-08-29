@@ -52,7 +52,7 @@ func (u *UserService) GetWallet(w http.ResponseWriter, r *http.Request) {
 
 func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 	ip := handlerutil.GetIP(r)
-	if limited, remaining := u.limiter.CheckAndRecord(ip); limited {
+	if limited, remaining := u.depositLimiter.CheckAndRecord(ip); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})
@@ -113,7 +113,7 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 	// somehow defeated, this catches repeated abuse against the same wallet.
 	// Mirrors how auth-service locks on both client IP and email independently.
 	tenantKey := "tenant:" + req.TenantID
-	if limited, remaining := u.limiter.CheckAndRecord(tenantKey); limited {
+	if limited, remaining := u.depositLimiter.CheckAndRecord(tenantKey); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many deposit requests for this tenant, locked out for %.0f seconds", remaining.Seconds()),
 		})

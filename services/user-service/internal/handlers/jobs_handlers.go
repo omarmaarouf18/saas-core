@@ -23,7 +23,7 @@ import (
 
 func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	ip := handlerutil.GetIP(r)
-	if limited, remaining := u.limiter.CheckAndRecord(ip); limited {
+	if limited, remaining := u.trackLimiter.CheckAndRecord(ip); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})
@@ -1237,7 +1237,7 @@ func (u *UserService) broadcastJobAlert(job *models.Job, svc *models.Service) {
 
 func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 	ip := handlerutil.GetIP(r)
-	if limited, remaining := u.limiter.CheckAndRecord(ip); limited {
+	if limited, remaining := u.cancelJobLimiter.CheckAndRecord(ip); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})
@@ -1447,7 +1447,7 @@ type proposePriceRequest struct {
 
 func (u *UserService) ProposePrice(w http.ResponseWriter, r *http.Request) {
 	ip := handlerutil.GetIP(r)
-	if limited, remaining := u.limiter.CheckAndRecord(ip); limited {
+	if limited, remaining := u.proposePriceLimiter.CheckAndRecord(ip); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})
@@ -1610,7 +1610,7 @@ type respondPriceRequest struct {
 
 func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 	ip := handlerutil.GetIP(r)
-	if limited, remaining := u.limiter.CheckAndRecord(ip); limited {
+	if limited, remaining := u.respondPriceLimiter.CheckAndRecord(ip); limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})

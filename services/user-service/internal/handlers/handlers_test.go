@@ -3862,8 +3862,8 @@ func TestRateJobAndGetRatings_RateLimiting(t *testing.T) {
 		t.Fatalf("Expected status 429 Too Many Requests for GetRatings rate limit, got %d. Body: %s", rec31.Code, rec31.Body.String())
 	}
 
-	// RateJob test for rate limiting
-	for i := 0; i < 5; i++ {
+	// RateJob test for rate limiting (10 req/min)
+	for i := 0; i < 10; i++ {
 		req := httptest.NewRequest("POST", "/users/jobs/rate", strings.NewReader(`{"job_id":"job-1","stars":5}`))
 		req.RemoteAddr = "192.168.1.200:12345"
 		rec := httptest.NewRecorder()
