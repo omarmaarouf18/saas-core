@@ -20,6 +20,9 @@ import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
 import '../widgets/themed_success_banner.dart';
+import '../widgets/status_badge.dart';
+import '../models/user_profile.dart';
+import 'kyc_document_upload_screen.dart';
 
 typedef ImagePickerCallback = Future<String?> Function(BuildContext context);
 
@@ -83,13 +86,15 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
   Future<void> _loadAndPrepopulate() async {
     final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.user;
+
+    await authProvider.fetchUserProfile();
 
     if (ownerProvider.services.isEmpty) {
       await ownerProvider.fetchServices();
     }
 
     if (mounted) {
+      final user = authProvider.user;
       final services = ownerProvider.services;
       Map<String, dynamic>? match;
       for (final s in services) {
@@ -302,6 +307,8 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
         );
       }
 
+      await authProvider.fetchUserProfile();
+
       if (mounted) {
         ThemedSnackBar.showSuccess(context, l10n.ownerConfigSuccessMsg);
         if (Navigator.canPop(context)) {
@@ -326,6 +333,9 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final auth = Provider.of<AuthProvider>(context);
+    final user = auth.user;
+    final isKycApproved = user?.kycStatus == 'approved';
 
     return FormScreenTemplate(
       title: l10n.ownerConfigTitle,
@@ -351,8 +361,13 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                     const SizedBox(height: AppSpacing.md),
                   ],
 
+                  if (user != null && !isKycApproved) ...[
+                    _buildKycBanner(context, l10n, user),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
+
                   // Section 1: Business Identity Card (Stitch Reference)
-                  _buildBusinessIdentityCard(l10n),
+                  _buildBusinessIdentityCard(l10n, user),
                   const SizedBox(height: AppSpacing.lg),
 
                   // Section 2: Location & Operations Card (Stitch Reference)
@@ -371,7 +386,79 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
     );
   }
 
-  Widget _buildBusinessIdentityCard(AppLocalizations l10n) {
+  Widget _buildKycBanner(
+      BuildContext context, AppLocalizations l10n, UserProfile user) {
+    final isRejected = user.kycStatus == 'rejected';
+    final isPending = user.kycStatus == 'pending_super_admin_approval';
+
+    String subtitle = l10n.settingsKycSubtitleDefault;
+    IconData icon = Icons.verified_user_outlined;
+    Color iconColor = Theme.of(context).colorScheme.onSurfaceVariant;
+
+    if (isRejected) {
+      subtitle = l10n.settingsKycSubtitleRejected;
+      icon = Icons.gavel_outlined;
+      iconColor = context.semanticColors.danger;
+    } else if (isPending) {
+      subtitle = l10n.settingsKycSubtitlePending;
+      icon = Icons.hourglass_empty_rounded;
+      iconColor = context.semanticColors.warning;
+    }
+
+    return InkWell(
+      key: const Key('owner_config_kyc_banner'),
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const KycDocumentUploadScreen(),
+          ),
+        );
+      },
+      child: ThemedPanel(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: AppColors.outlineVariant.withValues(alpha: 0.5),
+        ),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: iconColor,
+              size: 22,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.settingsKycRowTitle,
+                    style: AppTypography.titleMd.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    subtitle,
+                    style: AppTypography.bodyMd.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBusinessIdentityCard(AppLocalizations l10n, UserProfile? user) {
     return ThemedCard(
       borderRadius: AppRadius.md,
       padding: AppSpacing.lg,
@@ -413,6 +500,13 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                   ],
                 ),
               ),
+              if (user != null) ...[
+                const SizedBox(width: AppSpacing.xs),
+                StatusBadge(
+                  key: const Key('owner_config_kyc_status_badge'),
+                  status: user.kycStatus ?? 'unverified',
+                ),
+              ],
             ],
           ),
           const Divider(

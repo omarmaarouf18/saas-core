@@ -7,13 +7,20 @@ import 'package:frontend/core/api_client.dart';
 import 'package:frontend/core/error_messages.dart';
 import 'package:frontend/screens/owner_configuration_screen.dart';
 import 'package:frontend/screens/settings_screen.dart';
+import 'package:frontend/screens/kyc_document_upload_screen.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/owner_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/models/user_profile.dart';
 
 class MockAuthProviderForConfigTest extends AuthProvider {
-  MockAuthProviderForConfigTest(super.apiClient);
+  final String mockKycStatus;
+  int fetchUserProfileCalls = 0;
+
+  MockAuthProviderForConfigTest(
+    super.apiClient, {
+    this.mockKycStatus = 'approved',
+  });
 
   @override
   UserProfile? get user => UserProfile(
@@ -21,14 +28,17 @@ class MockAuthProviderForConfigTest extends AuthProvider {
         email: 'owner@example.com',
         username: 'config_owner',
         role: 'owner',
-        kycStatus: 'approved',
+        kycStatus: mockKycStatus,
       );
 
   @override
   String? get token => 'mock-owner-token';
 
   @override
-  Future<bool> fetchUserProfile() async => true;
+  Future<bool> fetchUserProfile() async {
+    fetchUserProfileCalls++;
+    return true;
+  }
 }
 
 class MockOwnerProviderForConfigTest extends OwnerProvider {
@@ -125,6 +135,8 @@ Widget createOwnerConfigApp({
   List<dynamic> services = const [],
   bool shouldFailUpdate = false,
   Widget? homeScreen,
+  String kycStatus = 'approved',
+  MockAuthProviderForConfigTest? authProvider,
 }) {
   final apiClient = ApiClient();
   final mockOwnerProvider = MockOwnerProviderForConfigTest(
@@ -132,11 +144,12 @@ Widget createOwnerConfigApp({
     mockServices: services,
     shouldFailUpdate: shouldFailUpdate,
   );
+  final effectiveAuth = authProvider ??
+      MockAuthProviderForConfigTest(apiClient, mockKycStatus: kycStatus);
 
   return MultiProvider(
     providers: [
-      ChangeNotifierProvider<AuthProvider>(
-          create: (_) => MockAuthProviderForConfigTest(apiClient)),
+      ChangeNotifierProvider<AuthProvider>.value(value: effectiveAuth),
       ChangeNotifierProvider<OwnerProvider>.value(value: mockOwnerProvider),
       ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
     ],
@@ -381,5 +394,102 @@ void main() {
 
     expect(
         find.text('Owner configuration updated successfully'), findsOneWidget);
+  });
+
+  testWidgets(
+      'KYC verification status badge remains visible on load and after save',
+      (WidgetTester tester) async {
+    final existingService = [
+      {
+        'id': 'svc-999',
+        'tenant_id': 'owner-config-1',
+        'name': 'Quick Cargo Delivery',
+        'category': 'delivery',
+        'address': '456 Express Way',
+        'working_hours': '8:00 AM - 8:00 PM',
+        'coverage_radius_km': 30.0,
+        'tenant_base_price': 15.0,
+        'tenant_price_per_km': 2.5,
+        'latitude': 30.0444,
+        'longitude': 31.2357,
+      }
+    ];
+
+    final mockAuth =
+        MockAuthProviderForConfigTest(ApiClient(), mockKycStatus: 'approved');
+
+    await tester.pumpWidget(createOwnerConfigApp(
+      services: existingService,
+      authProvider: mockAuth,
+    ));
+    await tester.pumpAndSettle();
+
+    // 1. Initial Load: Verification badge must be present and show APPROVED
+    final kycBadgeFinder =
+        find.byKey(const Key('owner_config_kyc_status_badge'));
+    expect(kycBadgeFinder, findsOneWidget);
+    expect(find.text('APPROVED'), findsOneWidget);
+
+    // Banner should NOT be shown when KYC is approved
+    expect(find.byKey(const Key('owner_config_kyc_banner')), findsNothing);
+
+    // Initial load must have fetched user profile
+    expect(mockAuth.fetchUserProfileCalls, greaterThanOrEqualTo(1));
+    final initialFetchCount = mockAuth.fetchUserProfileCalls;
+
+    // 2. Perform Save
+    final saveButton = find.byKey(const Key('owner_config_save_button'));
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
+    await tester.pumpAndSettle();
+
+    // 3. Post-Save: Verification badge must remain visible and show APPROVED
+    expect(kycBadgeFinder, findsOneWidget);
+    expect(find.text('APPROVED'), findsOneWidget);
+
+    // Form save must refresh user profile from authProvider
+    expect(mockAuth.fetchUserProfileCalls, greaterThan(initialFetchCount));
+  });
+
+  testWidgets(
+      'KYC pending status displays warning banner and pending badge, tapping navigates to upload screen',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createOwnerConfigApp(
+      kycStatus: 'pending_super_admin_approval',
+    ));
+    await tester.pumpAndSettle();
+
+    // 1. Verification badge must show PENDING APPROVAL
+    expect(
+        find.byKey(const Key('owner_config_kyc_status_badge')), findsOneWidget);
+    expect(find.text('PENDING APPROVAL'), findsOneWidget);
+
+    // 2. Warning banner must be present
+    final bannerFinder = find.byKey(const Key('owner_config_kyc_banner'));
+    expect(bannerFinder, findsOneWidget);
+    expect(find.text('Identity Verification (KYC)'), findsOneWidget);
+
+    // 3. Tapping banner must navigate to KycDocumentUploadScreen
+    await tester.ensureVisible(bannerFinder);
+    await tester.tap(bannerFinder);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(KycDocumentUploadScreen), findsOneWidget);
+  });
+
+  testWidgets('KYC rejected status displays warning banner and rejected badge',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createOwnerConfigApp(
+      kycStatus: 'rejected',
+    ));
+    await tester.pumpAndSettle();
+
+    // 1. Verification badge must show REJECTED
+    expect(
+        find.byKey(const Key('owner_config_kyc_status_badge')), findsOneWidget);
+    expect(find.text('REJECTED'), findsOneWidget);
+
+    // 2. Warning banner must be present
+    expect(find.byKey(const Key('owner_config_kyc_banner')), findsOneWidget);
   });
 }
