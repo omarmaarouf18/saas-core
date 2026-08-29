@@ -2,6 +2,20 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Notification Mutation Filter Role-Blindness Fix and Graceful 404 Handling
+
+- **Implementation Detail**:
+  - **Notification Service (`services/notification-service/`)**:
+    - `internal/store/mongodb.go`: Updated `userMutationFilter` signature to `(tenantID, userID string, roles []string, notificationID string) bson.M` and added `{"roles": bson.M{"$in": roles}}` to the recipient `$or` clause, aligning mutation permissions with `ListForUser` recipient visibility. Threaded `roles` through `Store` interface, `MongoDB`, and `memoryStore` for `MarkRead`, `MarkAllRead`, `Delete`, and `DeleteAll`.
+    - `internal/handlers/handlers.go`: Extracted authenticated caller's role via `authenticateHeader(r)`, resolved role hierarchy (`resolveUserRoles`), and passed roles into store mutation calls.
+    - `BroadcastJobAlert`: Retained `notif.UserID = req.EmployeeID` for live SSE and FCM push delivery to the assigned employee via `hub.Broadcast(notif)`, but cleared persisted `storeDoc.UserID = ""` so stored document is scoped by `Roles: ["owner", "employee", "client"]`, preventing 404 errors for co-recipients.
+    - Added regression tests in `mongodb_test.go` (`TestMongoDB_BroadcastJobAlert_OwnerAndCustomerMarkReadDelete_Success`, `TestMongoDB_GlobalNotification_RoleScoped_MarkReadDelete_Success`) verifying owners, clients, and cross-tenant users can mark read and dismiss broadcast/global notifications without 404s.
+  - **Frontend (`frontend/lib/providers/notifications_provider.dart`)**:
+    - In `markAsRead(id)` and `dismiss(id)`, gracefully handled `ApiClientException` with status code 404 as already handled/deleted on the server, preventing error banners ("This item isn't available.") and avoiding rollback re-insertion of ghost items.
+    - Added unit tests in `notifications_provider_persistence_test.dart` verifying 404 responses during dismiss and markAsRead do not surface error banners or restore dismissed items.
+- **Commit SHA**: ``f6bf9f7ca3a89305887ebc8cead7216716774459``
+- **Verification**: Verified via `go test ./...` in `services/notification-service` (100% pass, 0 failures), and `flutter test` across all frontend tests (490/490 passed).
+
 ## Isolated Per-Action Rate Limiters Across User Endpoints
 
 - **Implementation Detail**:
