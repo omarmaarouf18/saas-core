@@ -16,6 +16,9 @@ func TestLoad(t *testing.T) {
 		os.Unsetenv("PORT")
 		os.Unsetenv("AUTH_SERVICE_URL")
 		os.Unsetenv("ALLOWED_ORIGIN")
+		os.Unsetenv("MONGO_URI")
+		os.Unsetenv("NOTIFICATION_MONGO_DATABASE")
+		os.Unsetenv("MONGO_INITDB_DATABASE")
 	}
 
 	clearEnv()
