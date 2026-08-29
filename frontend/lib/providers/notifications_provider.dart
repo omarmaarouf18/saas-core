@@ -180,7 +180,8 @@ class NotificationsProvider extends ChangeNotifier {
       }
 
       final fetched = rawList
-          .map((item) => NotificationModel.fromJson(item as Map<String, dynamic>))
+          .map((item) =>
+              NotificationModel.fromJson(item as Map<String, dynamic>))
           .toList();
 
       if (refresh) {
@@ -231,7 +232,8 @@ class NotificationsProvider extends ChangeNotifier {
       }
 
       final fetched = rawList
-          .map((item) => NotificationModel.fromJson(item as Map<String, dynamic>))
+          .map((item) =>
+              NotificationModel.fromJson(item as Map<String, dynamic>))
           .toList();
 
       for (final item in fetched) {
