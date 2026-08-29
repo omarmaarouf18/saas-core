@@ -61,7 +61,6 @@
   "myAccountSaveButton": "حفظ البيانات",
   "myAccountSuccessMsg": "تم تحديث بيانات حسابك بنجاح",
   "ownerConfigTitle": "إعدادات الخدمة والمحل",
-  "myServicesTitle": "خدماتي",
   "ownerConfigHeader": "بيانات المحل/الخدمة",
   "ownerConfigHeaderSub": "تحديث اسم ومواعيد وأسعار الخدمة",
   "ownerConfigNameLabel": "اسم المحل أو الخدمة",
@@ -203,9 +202,6 @@
   "ratingIdentityError": "خطأ: تعذر تحديد هوية الطرف الآخر.",
   "ratingSuccessMsg": "تم تقديم التقييم بنجاح!",
   "ratingFailed": "خطأ: {error}",
-  "unauthenticatedMsg": "غير مسجل الدخول",
-  "serviceCreatedSuccess": "تم إنشاء الخدمة بنجاح!",
-  "serviceCreateFailed": "فشل في إنشاء الخدمة: {error}",
   "cancelJobHeader": "إلغاء الطلب رقم #{jobId}",
   "cancelJobKeep": "الاحتفاظ بالطلب",
   "cancelJobConfirm": "تأكيد الإلغاء",
@@ -239,8 +235,6 @@
   "ownerHomeReviewQueueSub": "قائمة المراجعة",
   "ownerHomeMyWallet": "محفظتي",
   "ownerHomeWalletSub": "السجل والرصيد",
-  "ownerHomeServices": "الخدمات",
-  "ownerHomeServicesSub": "الأسعار والإعدادات",
   "ownerHomeServiceReputation": "تقييم خدماتك",
   "ownerHomeOwnerJobs": "طلبات العمل",
   "ownerHomeNoJobsTitle": "لا توجد طلبات عمل",
@@ -358,18 +352,7 @@
   "ratingFeatureWindow": "مهلة 24 ساعة",
   "privateFeedbackLabel": "ملاحظة خاصة (اختياري)",
   "loadingStatus": "جاري تحميل الحالة...",
-  "loadingServices": "جاري تحميل الخدمات...",
-  "noServicesConfigured": "لم يتم ضبط أي خدمات",
-  "noServicesDescription": "لم يتم ضبط أي خدمات بعد.\nإضغط على زر + لإنشاء خدمة جديدة.",
-  "addService": "إضافة خدمة",
-  "kycPending": "في انتظار التوثيق",
   "kycRejectedDialogTitle": "تم رفض التحقق",
-  "serviceNameLabel": "اسم الخدمة",
-  "categoryLabel": "الفئة",
-  "basePriceLabel": "السعر الأساسي ($)",
-  "ratePerKmLabel": "السعر لكل كم ($)",
-  "latitudeLabel": "خط العرض",
-  "longitudeLabel": "خط الطول",
   "statusRequested": "تم الطلب",
   "statusPaid": "تم الدفع",
   "payoutWithdrawButton": "طلب سحب الأرباح",
@@ -665,23 +648,6 @@
   "unbiasedRatingDesc": "منع تقييمات الانتقام أو ضغط الأصحاب.",
   "reliabilityRanksDesc": "التقييمات بتأثر على ترتيب الموثوقية.",
   "windowDeadlineDesc": "قيّم خلال 24 ساعة عشان صوتك يتحسب.",
-  "serviceMgmtHeader": "إدارة الخدمات",
-  "serviceMgmtSubtitle": "ظبّط وتابع خدمات الشحن النشطة.",
-  "verificationRequiredHeader": "لازم توثيق",
-  "kycRequiredDesc": "كمّل توثيق KYC عشان تقدر تضيف أو تعدل خدمات.",
-  "baseRateBadge": "الأجرة الأساسية",
-  "perKmBadge": "لكل كم",
-  "serviceLocationLine": "الموقع: ({lat}, {lon})",
-  "@serviceLocationLine": {
-    "placeholders": {
-      "lat": {
-        "type": "String"
-      },
-      "lon": {
-        "type": "String"
-      }
-    }
-  },
   "subscriptionManageDesc": "أدر باقتك. الترقية بتفتح تتبع السايقين المباشر ومؤشرات أسعار متقدمة ودعم أولوية.",
   "yourCurrentPlanBadge": "خطتك الحالية",
   "pendingActivationNote": "مستنية التفعيل. كلّم الدعم لإتمام الدفع.",
@@ -735,7 +701,6 @@
     }
   },
   "cancelReasonRequiredLong": "اكتب سبب إلغاء الشحنة. لازم سبب إلغاء صحيح.",
-  "createNewServiceTitle": "إنشاء خدمة جديدة",
   "referenceIdLine": "رقم المرجع: #{ref}",
   "@referenceIdLine": {
     "placeholders": {
@@ -748,13 +713,6 @@
   "depositDialogDesc": "اكتب المبلغ بالكريدت لإيداعه في محفظتك.",
   "amountRequired": "المبلغ مطلوب",
   "positiveNumberRequired": "اكتب رقم موجب صحيح",
-  "basePriceRequired": "السعر الأساسي مطلوب",
-  "invalidPriceValue": "سعر غير صحيح",
-  "rateRequired": "السعر لكل كم مطلوب",
-  "invalidRateValue": "قيمة غير صحيحة",
-  "fieldRequiredGeneric": "مطلوب",
-  "latRangeMessage": "لازم تكون بين -90 و 90",
-  "lonRangeMessage": "لازم تكون بين -180 و 180",
   "otpSentToEmail": "اكتب كود التحقق (6 أرقام) اللي اتبعت على {email}.",
   "@otpSentToEmail": {
     "placeholders": {
@@ -805,7 +763,6 @@
   "declineProposalBtn": "ارفض",
   "replaceDocumentBtn": "استبدل المستند",
   "uploadDocumentBtn": "ارفع المستند",
-  "createActionLabel": "إنشاء",
   "backToStatusBtn": "رجوع لحالة الشحنة",
   "bookNowBtn": "احجز",
   "subFreeFeatureMatching": "مطابقة توصيل أساسية",
@@ -832,7 +789,6 @@
   "manageServicesAction": "إدارة الخدمات",
   "backToHomeBtn": "العودة للرئيسية",
   "refreshQueueBtn": "تحديث القائمة",
-  "createServiceAction": "إنشاء خدمة",
   "walletPayoutEmptyHint": "طلبات سحب الأرباح المرسومة ستظهر هنا مع حالة المعالجة.",
   "walletLedgerEmptyHint": "ستظهر سجل عملياتك هنا بعد أول إيداع أو خصم.",
   "refreshWalletBtn": "تحديث المحفظة",
@@ -945,7 +901,6 @@
   "notificationsAlerts": "تنبيهات",
   "confirmActionDefault": "تأكيد",
   "cancelActionDefault": "إلغاء",
-  "nameRequiredError": "الاسم مطلوب",
   "depositMaxLimitError": "أقصى مبلغ للإيداع الواحد هو 1,000,000 credit",
   "verifyNewEmailBtn": "تأكيد البريد الجديد",
   "enterCompleteOtpError": "أدخل الرمز المكوّن من 6 أرقام بالكامل",
@@ -955,7 +910,6 @@
   "continueActionLabel": "متابعة",
   "kycUploadedStatus": "تم الرفع",
   "defaultErrorTitle": "حدث خطأ",
-  "serviceFallbackLabel": "خدمة",
   "backActionLabel": "رجوع",
   "depositSuccessMessage": "تم إيداع {amount} رصيد بنجاح.",
   "reconciliationUnderDistance": "فرق في المسافة — أقل من 70% من المسافة المحددة",

@@ -9,7 +9,7 @@ import 'package:frontend/screens/employee_screen.dart';
 import 'package:frontend/screens/settings_screen.dart';
 import 'package:frontend/screens/owner_history_screen.dart';
 import 'package:frontend/screens/wallet_screen.dart';
-import 'package:frontend/screens/service_screen.dart';
+import 'package:frontend/screens/owner_configuration_screen.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/owner_provider.dart';
 import 'package:frontend/providers/marketplace_provider.dart';
@@ -249,21 +249,21 @@ void main() {
     expect(find.text('My Wallet'), findsOneWidget);
   });
 
-  testWidgets('Home tab dashboard entry point pushes ServiceScreen',
+  testWidgets('Home tab dashboard entry point pushes OwnerConfigurationScreen',
       (WidgetTester tester) async {
     await tester.pumpWidget(createOwnerHomeScreenApp(initialTabIndex: 0));
     await tester.pumpAndSettle();
 
-    final servicesCard = find.byKey(const Key('owner_dashboard_services_card'));
-    expect(servicesCard, findsOneWidget);
+    final configCard = find.byKey(const Key('owner_dashboard_config_card'));
+    expect(configCard, findsOneWidget);
 
-    await tester.ensureVisible(servicesCard);
+    await tester.ensureVisible(configCard);
     await tester.pumpAndSettle();
 
-    await tester.tap(servicesCard);
+    await tester.tap(configCard);
     await tester.pumpAndSettle();
 
-    expect(find.byType(ServiceScreen), findsOneWidget);
+    expect(find.byType(OwnerConfigurationScreen), findsOneWidget);
   });
 
   testWidgets(

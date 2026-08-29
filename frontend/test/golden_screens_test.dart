@@ -49,7 +49,6 @@ import 'package:frontend/screens/owner_fleet_map_screen.dart';
 import 'package:frontend/screens/owner_history_screen.dart';
 import 'package:frontend/screens/owner_reconciliation_queue_screen.dart';
 import 'package:frontend/screens/rating_screen.dart';
-import 'package:frontend/screens/service_screen.dart';
 import 'package:frontend/screens/settings_screen.dart';
 import 'package:frontend/screens/signup_screen.dart';
 import 'package:frontend/screens/subscription_screen.dart';
@@ -382,10 +381,11 @@ Widget _customerApp({
   List<MarketplaceService>? services,
 }) {
   final api = ApiClient();
-  final sampleJobs = jobs ?? [
-    _job('custjob1234', 'active'),
-    _job('custjob5678', 'completed'),
-  ];
+  final sampleJobs = jobs ??
+      [
+        _job('custjob1234', 'active'),
+        _job('custjob5678', 'completed'),
+      ];
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
@@ -445,10 +445,11 @@ Widget _ownerApp({
   List<Map<String, dynamic>>? employees,
 }) {
   final api = ApiClient();
-  final sampleJobs = jobs ?? [
-    _job('ownerjob1234', 'active'),
-    _job('ownerjob5678', 'completed'),
-  ];
+  final sampleJobs = jobs ??
+      [
+        _job('ownerjob1234', 'active'),
+        _job('ownerjob5678', 'completed'),
+      ];
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
@@ -518,10 +519,11 @@ Widget _employeeApp({
   List<Job>? jobs,
 }) {
   final api = ApiClient();
-  final sampleJobs = jobs ?? [
-    _job('empjob1234', 'assigned'),
-    _job('empjob5678', 'completed'),
-  ];
+  final sampleJobs = jobs ??
+      [
+        _job('empjob1234', 'assigned'),
+        _job('empjob5678', 'completed'),
+      ];
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
@@ -851,8 +853,7 @@ void main() {
 
   testWidgets('GOLDEN forgot password screen — mobile', (tester) async {
     final app = _authApp(home: const ForgotPasswordScreen());
-    await _pumpGolden(
-        tester, app, _mobile, 'forgot_password_mobile_360x800');
+    await _pumpGolden(tester, app, _mobile, 'forgot_password_mobile_360x800');
   });
 
   testWidgets('GOLDEN dark forgot password screen — mobile', (tester) async {
@@ -872,8 +873,7 @@ void main() {
             'https://play.google.com/store/apps/details?id=com.quickdelivery',
       ),
     );
-    await _pumpGolden(
-        tester, app, _mobile, 'update_required_mobile_360x800');
+    await _pumpGolden(tester, app, _mobile, 'update_required_mobile_360x800');
   });
 
   testWidgets('GOLDEN dark update required screen — mobile', (tester) async {
@@ -950,8 +950,7 @@ void main() {
         token: 'golden-token',
       ),
     );
-    await _pumpGolden(
-        tester, app, _mobile, 'customer_job_map_mobile_360x800');
+    await _pumpGolden(tester, app, _mobile, 'customer_job_map_mobile_360x800');
   });
 
   testWidgets('GOLDEN dark customer job map screen — mobile', (tester) async {
@@ -1053,18 +1052,6 @@ void main() {
         tester, app, _mobile, 'subscription_screen_dark_mobile_360x800');
   });
 
-  testWidgets('GOLDEN service screen — mobile', (tester) async {
-    final app = _ownerApp(home: const ServiceScreen());
-    await _pumpGolden(tester, app, _mobile, 'service_screen_mobile_360x800');
-  });
-
-  testWidgets('GOLDEN dark service screen — mobile', (tester) async {
-    final app =
-        _ownerApp(home: const ServiceScreen(), brightness: Brightness.dark);
-    await _pumpGolden(
-        tester, app, _mobile, 'service_screen_dark_mobile_360x800');
-  });
-
   testWidgets('GOLDEN owner configuration screen — mobile', (tester) async {
     final app = _ownerApp(home: const OwnerConfigurationScreen());
     await _pumpGolden(
@@ -1080,10 +1067,8 @@ void main() {
   });
 
   testWidgets('GOLDEN owner fleet map screen — mobile', (tester) async {
-    final app =
-        _ownerApp(home: const OwnerFleetMapScreen(ownerId: 'owner-1'));
-    await _pumpGolden(
-        tester, app, _mobile, 'owner_fleet_map_mobile_360x800');
+    final app = _ownerApp(home: const OwnerFleetMapScreen(ownerId: 'owner-1'));
+    await _pumpGolden(tester, app, _mobile, 'owner_fleet_map_mobile_360x800');
   });
 
   testWidgets('GOLDEN dark owner fleet map screen — mobile', (tester) async {
@@ -1096,8 +1081,7 @@ void main() {
 
   testWidgets('GOLDEN owner history screen — mobile', (tester) async {
     final app = _ownerApp(home: const OwnerHistoryScreen());
-    await _pumpGolden(
-        tester, app, _mobile, 'owner_history_mobile_360x800');
+    await _pumpGolden(tester, app, _mobile, 'owner_history_mobile_360x800');
   });
 
   testWidgets('GOLDEN dark owner history screen — mobile', (tester) async {
@@ -1138,16 +1122,15 @@ void main() {
   });
 
   testWidgets('GOLDEN dark employee screen — mobile', (tester) async {
-    final app = _employeeApp(
-        home: const EmployeeScreen(), brightness: Brightness.dark);
+    final app =
+        _employeeApp(home: const EmployeeScreen(), brightness: Brightness.dark);
     await _pumpGolden(
         tester, app, _mobile, 'employee_screen_dark_mobile_360x800');
   });
 
   testWidgets('GOLDEN employee history screen — mobile', (tester) async {
     final app = _employeeApp(home: const EmployeeHistoryScreen());
-    await _pumpGolden(
-        tester, app, _mobile, 'employee_history_mobile_360x800');
+    await _pumpGolden(tester, app, _mobile, 'employee_history_mobile_360x800');
   });
 
   testWidgets('GOLDEN dark employee history screen — mobile', (tester) async {

@@ -252,7 +252,6 @@
    * `home_screen.dart`
    * `login_screen.dart`
    * `otp_screen.dart`
-   * `service_screen.dart`
    * `signup_screen.dart`
    * `wallet_screen.dart`
    * `customer_marketplace_screen.dart`
@@ -280,7 +279,6 @@
     * `kyc_rejection_dialog_host.dart`
     * `themed_panel.dart`
     * `confirm_action_dialog.dart`
-    * `create_service_dialog.dart`
     * `create_ticket_dialog.dart`
     * `deposit_funds_dialog.dart`
     * `email_change_dialog.dart`

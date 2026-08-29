@@ -537,3 +537,12 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - Regression verified: updated `test/kyc_document_upload_screen_test.dart` with tests `(f)` (single scrollable, 360x800 scroll offset > 0px, all document slots reachable) and `(g)` (`ResizeImage` bounded cache verification).
 * **Verification & Suite Status**: `flutter analyze` 0 issues, full `flutter test` 418/418 tests passed, golden baselines updated intentionally for dark mode contrast improvements in `test/golden_screens_test.dart`.
 
+### Owner Service Consolidation: ServiceScreen & CreateServiceDialog Removal (2026-08-29)
+
+* **Verified Owner Service Consolidation**: Eliminated UX redundancy by removing `ServiceScreen` (`lib/screens/service_screen.dart`) and `CreateServiceDialog` (`lib/widgets/create_service_dialog.dart`), designating `OwnerConfigurationScreen` as the sole source of truth for creating and updating owner services:
+  - **Dashboard Entry Points (`home_screen.dart`)**: Removed redundant `owner_dashboard_services_card` from quick-access cards and adjusted wide-viewport grid to 3 cards with an empty spacer to maintain balanced 2-column alignment; repointed empty-state "manage services" CTA in the owner jobs section to `OwnerConfigurationScreen`; cleaned up unused `ServiceScreen` import.
+  - **Dead Code & Asset Removal**: Deleted `service_screen.dart`, `create_service_dialog.dart`, `test/service_screen_test.dart`, `test/create_service_dialog_test.dart`, and golden baselines `service_screen_mobile_360x800.png` & `service_screen_dark_mobile_360x800.png`.
+  - **Test Suite Updates**: Removed ServiceScreen golden test cases from `test/golden_screens_test.dart`; updated `test/owner_home_screen_test.dart` to assert navigation to `OwnerConfigurationScreen` via `owner_dashboard_config_card`; re-homed create-service failure path coverage in `test/a5_error_handling_test.dart` to `OwnerConfigurationScreen` to verify exception handling through `friendlyErrorMessage` without raw `Exception:` prefix.
+  - **Localization Cleanup**: Removed 36 orphaned ARB keys (plus 2 `@...` metadata entries) across `app_en.arb` and `app_ar.arb` with `flutter gen-l10n` regeneration; confirmed shared keys (`manageServicesAction`, `userProfileTitle`, `tooltipClose`, `cancel`) remain intact.
+  - **Verification**: `flutter analyze` 0 issues, full `flutter test` 476/476 tests passed (100% pass), `scripts/frontend_composition_gate.sh` passed, and `docs-check` passed.
+
