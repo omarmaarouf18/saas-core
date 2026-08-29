@@ -29,7 +29,9 @@ To prevent documentation drift, the repository enforces structural and automated
    * **Dependency Version Constraints**: Any package dependency constraints mentioned in [DESIGN.md](DESIGN.md) (e.g. `flutter_client_sse`) must match `frontend/pubspec.yaml` exactly.
 3. **Manual Content (Enforced via Commit policy)**:
    * **Changelogs, ADRs, & Runbooks**: Additions to `docs/changelog/` (with valid 40-character hex commit SHAs), ADRs under `docs/adr/`, and README guidelines remain manual but must be updated in the same commit.
-4. **Verifying Locally**:
+4. **Standing Reference Integrity & Deletion Tracking**:
+   * Any commit deleting, renaming, or materially altering components, screens, or endpoints must search for and correct all references across `docs/` and `AI_CONTEXT.md` in the same commit. Endpoint HTTP methods and permissions must be verified directly against handler code rather than left as unfilled `<!-- TODO -->` placeholders.
+5. **Verifying Locally**:
    * Run `make docs-check` to execute the complete freshness and drift-catching verification suite locally.
    * Run `make setup` once after cloning to activate the `.githooks/pre-push` hook, which automatically blocks pushes that fail `gofmt`, changelog SHA validation, or `go build/vet/test` for any module. Run `make ci` to execute the same gate manually.
 
@@ -246,6 +248,7 @@ This file is a persistent document tracking the real state of the repository.
 > **Dependency Drift Prevention**: Any change to shared/infra that adds a new external dependency must be followed by `go mod tidy && go build ./...` in every service that imports shared/infra, and a full `docker compose down && build --no-cache && up` verification, before considering the change complete — go.sum drift can pass CI's module resolution while still breaking local/production Docker builds.
 > **Environment Verification Disclosure**: Any report or documentation claiming test suite pass status must explicitly specify whether verification was performed against local execution, GitHub Actions CI execution, or both, to prevent environment divergence.
 > **Backend Contract Verification**: Before building a frontend feature that depends on a specific backend contract (channel name, endpoint, payload shape), verify that contract actually exists in the current code first (grep for it), and if it doesn't, stop and inform the user instead of building against assumed or planned contracts.
+> **Standing Reference Integrity & Endpoint Verification**: Any commit that deletes, renames, or materially alters a file, endpoint, or component must include a repo-wide search for and correction of references to it across `docs/` and `AI_CONTEXT.md` in that same change, not as a separate follow-up (as established in documentation-accuracy remediation). Doc claims regarding HTTP methods and authentication requirements must be verified directly against handler source code rather than left as unfilled `<!-- TODO -->` placeholders.
 
 
 * **Verified Endpoint Map Regeneration & Role Description Alignment (Task 1)**: Regenerated `docs/APPLICATION_MAP.md` via `make docs` and updated `KnownEndpoints` in `shared/infra/docgen/generator.go` to reflect exact role requirements following Gap 1 remediation (`resolveTokenWithRole`). Verified via `make docs-check`.
@@ -560,4 +563,11 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
     - Added tests in `test/notifications_provider_persistence_test.dart` (model parsing, history fetch/dedupe, pagination, optimistic rollbacks, widget pagination) and verified golden baselines pass without regressions.
   - **Documentation & CI Gates**: Added 5 new endpoints to `shared/infra/docgen/generator.go`, regenerated `docs/APPLICATION_MAP.md` via `make docs`, verified with `make docs-check`, and verified full pass across `scripts/frontend_composition_gate.sh`, `go test ./services/notification-service/...`, `flutter analyze`, and `flutter test` (485/485 tests passing).
 
+### Documentation-Accuracy Remediation & Reference Integrity Audit (2026-08-29)
+
+* **Verified Documentation-Accuracy Remediation & Standing Integrity Rule**: Completed a systematic verification pass remediating stale references to deleted components/screens and aligning endpoint documentation with actual Go backend implementations:
+  - **Stale Component & Screen Removal**: Removed stale `CreateServiceDialog` row from `docs/frontend/DESIGN_SYSTEM.md` (§3 shared component catalog) following its removal in `a486414`. Annotated historical changelog entry in `docs/changelog/new-features.md` with a non-destructive note pointing to `OwnerConfigurationScreen`. Updated live role references in `README.md` (Owner Role mapping to `OwnerConfigurationScreen`), screen/widget counts and lists in `docs/frontend/ARCHITECTURE.md` (27 screens, 26 shared widgets), and golden screen counts in `docs/frontend/STATUS.md`.
+  - **Notification Service Application Map & Docgen Alignment**: Updated `docs/APPLICATION_MAP.md` §1 inventory for `notification-service` to document durable MongoDB persistence (`notification_db`, `notifications` collection), compound indexes, 30-day TTL index on `created_at`, per-recipient read/dismiss tracking (`read_by`, `dismissed_by`), and the 5 authenticated REST endpoints. Hardened `shared/infra/docgen/generator.go` (`ParseHandlers` test file exclusion, `Mark` method inference, `authenticateHeader` JWT recognition) and regenerated `docs/APPLICATION_MAP.md` to correct `POST /notifications/{id}/read` (method POST, User JWT auth) eliminating all `<!-- TODO -->` placeholders.
+  - **Standing Reference Integrity Process**: Added permanent standing rules in `AI_CONTEXT.md` (§Documentation System and §Standing Working Rule) requiring all future commits deleting/renaming/modifying files/endpoints/components to include repo-wide reference updates and code-verified auth/method claims in the same commit.
+  - **Verification**: Verified via `make docs`, `make docs-check`, `go test ./...` in `shared/infra`, `go test ./services/notification-service/...`, `flutter analyze`, and `flutter test`.
 

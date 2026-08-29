@@ -31,7 +31,7 @@ This document describes the design patterns, state management models, directory 
     *   `reconciliation_provider.dart`: Owner escrow reconciliation queue fetching and dispute resolution.
     *   `theme_provider.dart`: Theme mode state management (Light / Dark / System) persisted via secure storage.
     *   `locale_provider.dart`: Locale state management (English / Egyptian Colloquial Arabic) with device auto-detection.
-*   **`lib/screens/`**: UI Views and layout definitions (28 active Flutter screens).
+*   **`lib/screens/`**: UI Views and layout definitions (27 active Flutter screens).
     *   *Authentication & Platform (5 screens)*:
         *   `login_screen.dart`: Stitch-styled login with brand logotype, 2-card role selector, and pre-login theme/language toggles.
         *   `signup_screen.dart`: 2-step registration with customer/owner role cards and form validation.
@@ -44,10 +44,9 @@ This document describes the design patterns, state management models, directory 
         *   `customer_marketplace_screen.dart`: Service directory with location map picker dialog, distance filters, and booking modal.
         *   `job_status_screen.dart`: Real-time tracking with live status bar, 4-stage stepper, RouteTimeline, driver profile card, price counter-offer panel, and ticket creation.
         *   `customer_job_map_screen.dart`: Interactive FlutterMap with custom pickup & gold courier markers, floating controls, and bottom details sheet.
-    *   *Tenant Owner Operations (7 screens)*:
+    *   *Tenant Owner Operations (6 screens)*:
         *   `home_screen.dart`: 4-tab shell (Home, Employees, History, Settings) with Bento grid (Jobs, Fleet, Revenue), quick access cards, and order list.
         *   `employee_screen.dart`: Worker roster with `#QD-` IDs, EntityAvatar, StatusBadge, quick actions, and register/freeze forms.
-        *   `service_screen.dart`: KYC-gated service management with 2-column pricing metrics and creation dialog.
         *   `owner_configuration_screen.dart`: 3 Bento profile sections (Business Identity, Location & Operations, Pricing & Rates).
         *   `wallet_screen.dart`: Deep Navy Balance Hero card, withdrawable/escrow metrics, payout request dialog & history, and ledger.
         *   `subscription_screen.dart`: Pricing tier matrix with active plan banner and highlighted recommended card.
@@ -65,11 +64,11 @@ This document describes the design patterns, state management models, directory 
         *   `notifications_screen.dart`: Category filter pills, operational status banner, unread notification cards, and clear actions.
         *   `chat_screen.dart`: Live connection indicator, sender usernames, chat bubbles, and message composer.
         *   `rating_screen.dart`: Driver profile card, 5-star rating selector with gold icons, private feedback field, and blind status visualizer.
-*   **`lib/widgets/`**: Reusable component design system (27 widgets).
+*   **`lib/widgets/`**: Reusable component design system (26 widgets).
     *   *Buttons & Inputs*: `primary_button.dart` (Amber Gold CTA with debounce protection), `secondary_button.dart` (Outlined/neutral action), `themed_text_field.dart`, `otp_pin_input.dart`, `pill_filter_bar.dart`.
     *   *Cards & Containers*: `themed_card.dart` (Tokenized container with `topAccentColor` support), `stat_card.dart`, `rating_summary_card.dart`, `info_list_tile.dart`, `entity_avatar.dart`, `status_badge.dart`, `route_timeline.dart`, `themed_section_header.dart`.
     *   *States & Feedback*: `themed_empty_state.dart`, `themed_loading_indicator.dart`, `themed_error_banner.dart`, `themed_success_banner.dart`, `themed_banner.dart`, `skeleton_loader.dart`.
-    *   *Dialogs & Pickers*: `confirm_action_dialog.dart`, `cancel_job_dialog.dart`, `create_ticket_dialog.dart`, `create_service_dialog.dart`, `deposit_funds_dialog.dart`, `payout_request_dialog.dart`, `email_change_dialog.dart`, `location_picker_map.dart`.
+    *   *Dialogs & Pickers*: `confirm_action_dialog.dart`, `cancel_job_dialog.dart`, `create_ticket_dialog.dart`, `deposit_funds_dialog.dart`, `payout_request_dialog.dart`, `email_change_dialog.dart`, `location_picker_map.dart`.
 
 ## State Management Approach
 The frontend uses the **Provider** pattern for state management:

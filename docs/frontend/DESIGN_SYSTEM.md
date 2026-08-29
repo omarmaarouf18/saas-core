@@ -135,7 +135,6 @@ All shared widgets are located in `frontend/lib/widgets/`. Below is the complete
 | :--- | :--- | :--- | :--- | :--- |
 | `CancelJobDialog` | `cancel_job_dialog.dart` | Job cancellation modal dialog with preset reason radios & custom input | `jobId`, `onCancelled` | `home_screen.dart`, `job_status_screen.dart` |
 | `ConfirmActionDialog` | `confirm_action_dialog.dart` | Reusable modal confirmation for destructive or financial operations | `title`, `message`, `confirmText`, `isDestructive` | `employee_jobs_screen.dart`, `owner_reconciliation_queue_screen.dart`, `notifications_screen.dart` |
-| `CreateServiceDialog` | `create_service_dialog.dart` | Owner service creation modal with category selector and pricing fields | `onServiceCreated` | `service_screen.dart` |
 | `CreateTicketDialog` | `create_ticket_dialog.dart` | Customer/owner complaint ticket submission modal | `referenceId`, `referenceType` | `job_status_screen.dart`, `settings_screen.dart` |
 | `DepositFundsDialog` | `deposit_funds_dialog.dart` | Owner e-wallet deposit modal with amount presets | `onDepositSubmitted` | `wallet_screen.dart` |
 | `EmailChangeDialog` | `email_change_dialog.dart` | Secure 2-step email change modal with OTP verification | `currentEmail`, `onEmailChanged` | `my_account_screen.dart` |

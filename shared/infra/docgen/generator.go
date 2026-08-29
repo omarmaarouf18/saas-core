@@ -436,7 +436,9 @@ type HandlerFuncInfo struct {
 // ParseHandlers parses Go files in the handler directory and extracts functions
 func ParseHandlers(dirPath string) (map[string]HandlerFuncInfo, error) {
 	fset := token.NewFileSet()
-	pkgs, err := parser.ParseDir(fset, dirPath, nil, parser.ParseComments)
+	pkgs, err := parser.ParseDir(fset, dirPath, func(fi os.FileInfo) bool {
+		return !strings.HasSuffix(fi.Name(), "_test.go")
+	}, parser.ParseComments)
 	if err != nil {
 		return nil, err
 	}
@@ -612,7 +614,7 @@ func GenerateEndpointsList(repoRoot string) ([]Endpoint, error) {
 
 				// Infer method from handler function name prefix by default, then override if known
 				method := "GET"
-				if strings.HasPrefix(handlerName, "Create") || strings.HasPrefix(handlerName, "Upload") || strings.HasPrefix(handlerName, "Post") || strings.HasPrefix(handlerName, "Signup") || strings.HasPrefix(handlerName, "Login") || strings.HasPrefix(handlerName, "Verify") || strings.HasPrefix(handlerName, "Refresh") || strings.HasPrefix(handlerName, "Toggle") || strings.HasPrefix(handlerName, "Simulate") || strings.HasPrefix(handlerName, "Rate") || strings.HasPrefix(handlerName, "WalletDeposit") || strings.HasPrefix(handlerName, "Subscription") || strings.HasPrefix(handlerName, "Broadcast") || strings.HasPrefix(handlerName, "Send") || strings.HasPrefix(handlerName, "HandleResolveTicket") {
+				if strings.HasPrefix(handlerName, "Create") || strings.HasPrefix(handlerName, "Upload") || strings.HasPrefix(handlerName, "Post") || strings.HasPrefix(handlerName, "Signup") || strings.HasPrefix(handlerName, "Login") || strings.HasPrefix(handlerName, "Verify") || strings.HasPrefix(handlerName, "Refresh") || strings.HasPrefix(handlerName, "Toggle") || strings.HasPrefix(handlerName, "Simulate") || strings.HasPrefix(handlerName, "Rate") || strings.HasPrefix(handlerName, "WalletDeposit") || strings.HasPrefix(handlerName, "Subscription") || strings.HasPrefix(handlerName, "Broadcast") || strings.HasPrefix(handlerName, "Send") || strings.HasPrefix(handlerName, "HandleResolveTicket") || strings.HasPrefix(handlerName, "Mark") {
 					method = "POST"
 				}
 
@@ -733,6 +735,8 @@ func makeEndpoint(method, path, service, handlerName string, funcMap map[string]
 				}
 				switch funSel.Sel.Name {
 				case "authenticateUser":
+					hasJWT = true
+				case "authenticateHeader":
 					hasJWT = true
 				case "authenticateReviewer":
 					hasReviewerToken = true
