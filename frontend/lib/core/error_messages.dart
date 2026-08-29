@@ -11,6 +11,8 @@ class ErrorMessages {
   static const String notFound = "This item isn't available.";
   static const String conflict =
       "Something changed — please refresh and try again.";
+  static const String noCouriersAvailable =
+      "No couriers are currently available in your area. Please try again shortly.";
   static const String tooManyRequests =
       "That went through already — no need to tap again.";
   static const String serverError =
@@ -40,6 +42,8 @@ String friendlyErrorMessage(Object? error) {
       return ErrorMessages.notFound;
     } else if (status == 409) {
       return ErrorMessages.conflict;
+    } else if (status == 422) {
+      return ErrorMessages.noCouriersAvailable;
     } else if (status == 429) {
       return ErrorMessages.tooManyRequests;
     } else if (status != null && status >= 500 && status <= 599) {

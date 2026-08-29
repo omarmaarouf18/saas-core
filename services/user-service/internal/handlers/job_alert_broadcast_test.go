@@ -138,6 +138,14 @@ func TestJobAlertBroadcast_EndToEnd(t *testing.T) {
 		Longitude:        31.2357,
 	})
 
+	_ = testStore.UpsertEmployeeLocation(context.Background(), &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: empID,
+		Latitude:   30.0444,
+		Longitude:  31.2357,
+		UpdatedAt:  time.Now().UTC(),
+	})
+
 	cfg := &config.Config{
 		AppEnv:                 "test",
 		JWTSecret:              "test-jwt-secret-12345678901234567890123456789012",

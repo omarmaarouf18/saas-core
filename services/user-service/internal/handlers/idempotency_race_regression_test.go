@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -39,9 +40,22 @@ func idemRaceSetup(t *testing.T) (*UserService, *store.MongoDB, *miniredis.Minir
 	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		id := r.URL.Query().Get("id")
+		role := "owner"
+		tenantID := id
+		if strings.Contains(id, "emp") {
+			role = "employee"
+			if strings.Contains(id, "-under-") {
+				parts := strings.Split(id, "-under-")
+				if len(parts) > 1 {
+					tenantID = parts[1]
+				}
+			} else if strings.HasPrefix(id, "emp-") {
+				tenantID = strings.TrimPrefix(id, "emp-")
+			}
+		}
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]any{
-			"id": id, "role": "owner", "kyc_status": "approved", "is_active": true, "tenant_id": id,
+			"id": id, "role": role, "kyc_status": "approved", "is_active": true, "tenant_id": tenantID,
 		})
 	}))
 
@@ -99,6 +113,13 @@ func TestTrackJob_ConcurrentDuplicateIdempotencyKey(t *testing.T) {
 
 	s.CreateService(ctx, &models.Service{ID: serviceID, TenantID: ownerID, TenantBasePrice: 10.0, TenantPricePerKM: 1.0, Latitude: 30.0, Longitude: 30.0})
 	_ = s.Deposit(ctx, ownerID, 500.0)
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: "emp-race-owner-1",
+		Latitude:   30.0,
+		Longitude:  30.0,
+		UpdatedAt:  time.Now().UTC(),
+	})
 
 	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "race-owner@example.com")
 	tokenUser, _ := jwtutil.GenerateToken(userID, "user", ownerID, "race-user@example.com")

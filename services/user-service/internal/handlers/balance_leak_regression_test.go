@@ -112,6 +112,13 @@ func TestRespondPrice_EscrowFailureWarningDoesNotLeakOwnerBalance(t *testing.T) 
 
 	tokenEmp, _ := jwtutil.GenerateToken(empID, "employee", ownerID, "leak-emp@example.com")
 	tokenCust, _ := jwtutil.GenerateToken(custID, "user", ownerID, "leak-cust2@example.com")
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: empID,
+		Latitude:   30.0,
+		Longitude:  30.0,
+		UpdatedAt:  time.Now().UTC(),
+	})
 
 	// Customer books transport job WITH pre-assigned employee -> awaiting_price_response.
 	bookBody, _ := json.Marshal(map[string]any{

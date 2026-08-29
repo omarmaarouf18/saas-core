@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -20,16 +21,17 @@ import (
 
 // MongoDB is a persistent store for services, jobs, wallets, and the transaction ledger.
 type MongoDB struct {
-	client         *mongo.Client
-	db             *mongo.Database
-	services       *mongo.Collection
-	jobs           *mongo.Collection
-	wallets        *mongo.Collection
-	ledger         *mongo.Collection
-	platConfig     *mongo.Collection
-	subscriptions  *mongo.Collection
-	ratings        *mongo.Collection
-	payoutRequests *mongo.Collection
+	client            *mongo.Client
+	db                *mongo.Database
+	services          *mongo.Collection
+	jobs              *mongo.Collection
+	wallets           *mongo.Collection
+	ledger            *mongo.Collection
+	platConfig        *mongo.Collection
+	subscriptions     *mongo.Collection
+	ratings           *mongo.Collection
+	payoutRequests    *mongo.Collection
+	employeeLocations *mongo.Collection
 
 	releaseEscrowBeforePlatformWalletHook func(ctx context.Context) error
 }
@@ -48,16 +50,17 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 
 	db := client.Database(dbName)
 	s := &MongoDB{
-		client:         client,
-		db:             db,
-		services:       db.Collection("services"),
-		jobs:           db.Collection("jobs"),
-		wallets:        db.Collection("wallets"),
-		ledger:         db.Collection("transaction_ledger"),
-		platConfig:     db.Collection("platform_config"),
-		subscriptions:  db.Collection("subscriptions"),
-		ratings:        db.Collection("ratings"),
-		payoutRequests: db.Collection("payout_requests"),
+		client:            client,
+		db:                db,
+		services:          db.Collection("services"),
+		jobs:              db.Collection("jobs"),
+		wallets:           db.Collection("wallets"),
+		ledger:            db.Collection("transaction_ledger"),
+		platConfig:        db.Collection("platform_config"),
+		subscriptions:     db.Collection("subscriptions"),
+		ratings:           db.Collection("ratings"),
+		payoutRequests:    db.Collection("payout_requests"),
+		employeeLocations: db.Collection("employee_locations"),
 	}
 	if err := s.ensureIndexes(ctx); err != nil {
 		return nil, err
@@ -141,24 +144,37 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 	}); err != nil {
 		return fmt.Errorf("payoutRequests composite index: %w", err)
 	}
+	if _, err := s.employeeLocations.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "tenant_id", Value: 1},
+			{Key: "employee_id", Value: 1},
+		},
+		Options: options.Index().SetUnique(true),
+	}); err != nil {
+		return fmt.Errorf("employeeLocations unique index: %w", err)
+	}
+	if _, err := s.employeeLocations.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "updated_at", Value: 1}},
+	}); err != nil {
+		return fmt.Errorf("employeeLocations updated_at index: %w", err)
+	}
 	log.Println("[USER-STORE] All indexes ensured")
 	return nil
 }
 
 func (s *MongoDB) ensureSeedData(ctx context.Context) {
 	count, _ := s.services.CountDocuments(ctx, bson.M{})
-	if count > 0 {
-		return
-	}
-	seeds := seedServices()
-	docs := make([]interface{}, len(seeds))
-	for i := range seeds {
-		docs[i] = seeds[i]
-	}
-	if _, err := s.services.InsertMany(ctx, docs); err != nil {
-		log.Printf("[USER-STORE] Seed insert error: %v", err)
-	} else {
-		log.Printf("[USER-STORE] Seeded %d services", len(seeds))
+	if count == 0 {
+		seeds := seedServices()
+		docs := make([]interface{}, len(seeds))
+		for i := range seeds {
+			docs[i] = seeds[i]
+		}
+		if _, err := s.services.InsertMany(ctx, docs); err != nil {
+			log.Printf("[USER-STORE] Seed insert error: %v", err)
+		} else {
+			log.Printf("[USER-STORE] Seeded %d services", len(seeds))
+		}
 	}
 	// Seed platform config (0% fee — SaaS subscription revenue model per ADR-0017).
 	var cfg models.PlatformConfig
@@ -176,6 +192,33 @@ func (s *MongoDB) ensureSeedData(ctx context.Context) {
 			log.Printf("[ERROR] failed to seed platform wallet: %v", err)
 		}
 		log.Println("[USER-STORE] Platform config seeded (15% fee)")
+	}
+
+	// Seed initial active courier locations for seeded and mock tenants
+	now := time.Now().UTC()
+	seedCouriers := []struct {
+		tenantID   string
+		employeeID string
+		lat, lon   float64
+	}{
+		{"seed", "emp-seed", 30.0444, 31.2357},
+		{"kyc-approved-owner", "active-employee-under-kyc-approved-owner", 30.0444, 31.2357},
+		{"kyc-approved-owner", "active-employee", 30.0444, 31.2357},
+		{"kyc-approved-owner", "emp-1", 30.0444, 31.2357},
+		{"kyc-approved-owner-pricing", "emp-under-kyc-approved-owner-pricing", 30.0, 30.0},
+		{"owner-tenant-100", "emp-under-owner-tenant-100", 30.0444, 31.2357},
+		{"leak-owner", "emp-under-leak-owner", 30.0444, 31.2357},
+		{"rec-owner-1", "emp-under-rec-owner-1", 30.0, 30.0},
+		{"idem-owner-1", "emp-under-idem-owner-1", 30.0, 30.0},
+	}
+	for _, sc := range seedCouriers {
+		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+			TenantID:   sc.tenantID,
+			EmployeeID: sc.employeeID,
+			Latitude:   sc.lat,
+			Longitude:  sc.lon,
+			UpdatedAt:  now,
+		})
 	}
 }
 
@@ -1271,4 +1314,59 @@ func (s *MongoDB) RejectPayoutRequest(ctx context.Context, payoutID, reason stri
 	}
 
 	return nil
+}
+
+// UpsertEmployeeLocation writes or updates the latest reported location for an employee in a tenant.
+func (s *MongoDB) UpsertEmployeeLocation(ctx context.Context, loc *models.EmployeeLocation) error {
+	filter := bson.M{
+		"tenant_id":   loc.TenantID,
+		"employee_id": loc.EmployeeID,
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"latitude":   loc.Latitude,
+			"longitude":  loc.Longitude,
+			"updated_at": loc.UpdatedAt,
+		},
+	}
+	opts := options.UpdateOne().SetUpsert(true)
+	_, err := s.employeeLocations.UpdateOne(ctx, filter, update, opts)
+	return err
+}
+
+// GetEmployeeLocation fetches the most recently reported location for a specific employee.
+func (s *MongoDB) GetEmployeeLocation(ctx context.Context, tenantID, employeeID string) (*models.EmployeeLocation, error) {
+	filter := bson.M{
+		"tenant_id":   tenantID,
+		"employee_id": employeeID,
+	}
+	var loc models.EmployeeLocation
+	err := s.employeeLocations.FindOne(ctx, filter).Decode(&loc)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &loc, nil
+}
+
+// GetFreshEmployeeLocations fetches all employee location records for a tenant updated within maxAge.
+func (s *MongoDB) GetFreshEmployeeLocations(ctx context.Context, tenantID string, maxAge time.Duration) ([]models.EmployeeLocation, error) {
+	threshold := time.Now().UTC().Add(-maxAge)
+	filter := bson.M{
+		"tenant_id":  tenantID,
+		"updated_at": bson.M{"$gte": threshold},
+	}
+	cursor, err := s.employeeLocations.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var locs []models.EmployeeLocation
+	if err := cursor.All(ctx, &locs); err != nil {
+		return nil, err
+	}
+	return locs, nil
 }

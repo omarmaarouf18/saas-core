@@ -276,7 +276,11 @@ class _MockEmployeeLocationProvider extends EmployeeLocationProvider {
   @override
   Future<void> startTracking(String jobId, String userToken) async {}
   @override
+  Future<void> startAvailabilityTracking(String userToken) async {}
+  @override
   Future<void> stopTracking({bool notify = true}) async {}
+  @override
+  Future<void> stopAvailabilityTracking() async {}
 }
 
 UserProfile _customer() => UserProfile(

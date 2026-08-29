@@ -304,3 +304,93 @@ func TestMongoDB_ReleaseEscrowFallbackCompensate(t *testing.T) {
 			revertedWallet.EscrowBalance, revertedWallet.WithdrawableBalance)
 	}
 }
+
+func TestMongoDB_EmployeeLocationOperations(t *testing.T) {
+	s, cleanup := setupTestMongoDB(t)
+	if s == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	tenantID := "tenant-loc-1"
+	emp1 := "emp-1"
+	emp2 := "emp-2"
+
+	// 1. Employee with no location recorded yet returns nil, nil
+	loc, err := s.GetEmployeeLocation(ctx, tenantID, emp1)
+	if err != nil {
+		t.Fatalf("unexpected error querying unrecorded employee location: %v", err)
+	}
+	if loc != nil {
+		t.Fatalf("expected nil location for unrecorded employee, got %+v", loc)
+	}
+
+	// 2. Upsert fresh location for emp1
+	now := time.Now().UTC()
+	err = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   tenantID,
+		EmployeeID: emp1,
+		Latitude:   37.7749,
+		Longitude:  -122.4194,
+		UpdatedAt:  now,
+	})
+	if err != nil {
+		t.Fatalf("UpsertEmployeeLocation failed: %v", err)
+	}
+
+	// 3. Query emp1 location
+	loc, err = s.GetEmployeeLocation(ctx, tenantID, emp1)
+	if err != nil {
+		t.Fatalf("GetEmployeeLocation failed: %v", err)
+	}
+	if loc == nil || loc.EmployeeID != emp1 || loc.Latitude != 37.7749 || loc.Longitude != -122.4194 {
+		t.Fatalf("unexpected location data returned: %+v", loc)
+	}
+
+	// 4. Upsert stale location for emp2 (10 minutes ago)
+	staleTime := now.Add(-10 * time.Minute)
+	err = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   tenantID,
+		EmployeeID: emp2,
+		Latitude:   37.7800,
+		Longitude:  -122.4100,
+		UpdatedAt:  staleTime,
+	})
+	if err != nil {
+		t.Fatalf("UpsertEmployeeLocation failed for emp2: %v", err)
+	}
+
+	// 5. Query fresh locations with 5-minute freshness window
+	freshLocs, err := s.GetFreshEmployeeLocations(ctx, tenantID, 5*time.Minute)
+	if err != nil {
+		t.Fatalf("GetFreshEmployeeLocations failed: %v", err)
+	}
+	if len(freshLocs) != 1 {
+		t.Fatalf("expected exactly 1 fresh location (emp1), got %d: %+v", len(freshLocs), freshLocs)
+	}
+	if freshLocs[0].EmployeeID != emp1 {
+		t.Errorf("expected fresh location for %s, got %s", emp1, freshLocs[0].EmployeeID)
+	}
+
+	// 6. Overwrite emp1 location with newer coordinates
+	updatedNow := now.Add(1 * time.Minute)
+	err = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   tenantID,
+		EmployeeID: emp1,
+		Latitude:   37.7755,
+		Longitude:  -122.4180,
+		UpdatedAt:  updatedNow,
+	})
+	if err != nil {
+		t.Fatalf("UpsertEmployeeLocation update failed: %v", err)
+	}
+
+	loc, err = s.GetEmployeeLocation(ctx, tenantID, emp1)
+	if err != nil {
+		t.Fatalf("GetEmployeeLocation failed: %v", err)
+	}
+	if loc.Latitude != 37.7755 || loc.Longitude != -122.4180 {
+		t.Errorf("expected updated coords (37.7755, -122.4180), got (%f, %f)", loc.Latitude, loc.Longitude)
+	}
+}

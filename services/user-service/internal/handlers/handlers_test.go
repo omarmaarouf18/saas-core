@@ -1814,6 +1814,13 @@ func TestUserServiceHandlers(t *testing.T) {
 
 		// Deposit funds for the track job
 		_ = s.Deposit(ctx, "kyc-approved-owner-zeroval", 500.0)
+		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+			TenantID:   "kyc-approved-owner-zeroval",
+			EmployeeID: "active-employee-under-kyc-approved-owner-zeroval",
+			Latitude:   30.1,
+			Longitude:  30.1,
+			UpdatedAt:  time.Now().UTC(),
+		})
 
 		tokenUser, _ := jwtutil.GenerateToken("customer-123", "user", "kyc-approved-owner-zeroval", "customer@example.com")
 		trackReqBody := map[string]any{
@@ -2906,6 +2913,13 @@ func TestUserServiceHandlers(t *testing.T) {
 			tokenOwner, _ := jwtutil.GenerateToken("kyc-approved-owner-alias", "owner", "kyc-approved-owner-alias", "ownerAlias@example.com")
 			tokenCustomer, _ := jwtutil.GenerateToken("customer-alias", "user", "", "customerAlias@example.com")
 			tokenEmployee, _ := jwtutil.GenerateToken("employee-under-kyc-approved-owner-alias", "employee", "kyc-approved-owner-alias", "employeeAlias@example.com")
+			_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+				TenantID:   "kyc-approved-owner-alias",
+				EmployeeID: "employee-under-kyc-approved-owner-alias",
+				Latitude:   30.0,
+				Longitude:  31.0,
+				UpdatedAt:  time.Now().UTC(),
+			})
 
 			// A. CreateService using owner_token
 			reqBody := map[string]any{
@@ -3559,13 +3573,24 @@ func TestTrackJob_EscrowRollbackFailure_ReconciliationRequired(t *testing.T) {
 	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		id := r.URL.Query().Get("id")
+		role := "owner"
+		tenantID := id
+		if strings.Contains(id, "emp") {
+			role = "employee"
+			if strings.Contains(id, "-under-") {
+				parts := strings.Split(id, "-under-")
+				if len(parts) > 1 {
+					tenantID = parts[1]
+				}
+			}
+		}
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]any{
 			"id":         id,
-			"role":       "owner",
+			"role":       role,
 			"kyc_status": "approved",
 			"is_active":  true,
-			"tenant_id":  id,
+			"tenant_id":  tenantID,
 		})
 	}))
 	defer mockAuthServer.Close()
@@ -3700,13 +3725,24 @@ func TestTrackJob_IdempotencyKey(t *testing.T) {
 	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		id := r.URL.Query().Get("id")
+		role := "owner"
+		tenantID := id
+		if strings.Contains(id, "emp") {
+			role = "employee"
+			if strings.Contains(id, "-under-") {
+				parts := strings.Split(id, "-under-")
+				if len(parts) > 1 {
+					tenantID = parts[1]
+				}
+			}
+		}
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]any{
 			"id":         id,
-			"role":       "owner",
+			"role":       role,
 			"kyc_status": "approved",
 			"is_active":  true,
-			"tenant_id":  id,
+			"tenant_id":  tenantID,
 		})
 	}))
 	defer mockAuthServer.Close()
@@ -4281,13 +4317,24 @@ func TestTrackJob_RedisBackedIdempotency_MultiInstanceAndTTL(t *testing.T) {
 	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		id := r.URL.Query().Get("id")
+		role := "owner"
+		tenantID := id
+		if strings.Contains(id, "emp") {
+			role = "employee"
+			if strings.Contains(id, "-under-") {
+				parts := strings.Split(id, "-under-")
+				if len(parts) > 1 {
+					tenantID = parts[1]
+				}
+			}
+		}
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]any{
 			"id":         id,
-			"role":       "owner",
+			"role":       role,
 			"kyc_status": "approved",
 			"is_active":  true,
-			"tenant_id":  id,
+			"tenant_id":  tenantID,
 		})
 	}))
 	defer mockAuthServer.Close()
@@ -4308,6 +4355,13 @@ func TestTrackJob_RedisBackedIdempotency_MultiInstanceAndTTL(t *testing.T) {
 
 	s.CreateService(ctx, &models.Service{ID: serviceID, TenantID: ownerID, TenantBasePrice: 10.0, TenantPricePerKM: 1.0, Latitude: 30.0, Longitude: 30.0})
 	_ = s.Deposit(ctx, ownerID, 500.0)
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: "emp-under-redis-owner-1",
+		Latitude:   30.0,
+		Longitude:  30.0,
+		UpdatedAt:  time.Now().UTC(),
+	})
 
 	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@example.com")
 	tokenUser, _ := jwtutil.GenerateToken(userID, "user", ownerID, "user@example.com")
@@ -4476,6 +4530,13 @@ func TestNegotiableTransportPricing(t *testing.T) {
 		Longitude:        30.0,
 	}
 	s.CreateService(ctx, svcDelivery)
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: empID,
+		Latitude:   30.0,
+		Longitude:  30.0,
+		UpdatedAt:  time.Now().UTC(),
+	})
 
 	var reqCounter int
 	nextIP := func() string {
@@ -5418,6 +5479,7 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 			Status:             models.JobStatusActive,
 			PaymentMethod:      "cod",
 			Location:           models.Location{Latitude: 30.09, Longitude: 30.0},
+			BookedDistance:     9.99,
 			LockedEscrowAmount: 29.98,
 			Waypoints: []models.Location{
 				{Latitude: 30.05, Longitude: 30.0},
@@ -5459,6 +5521,7 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 			Status:             models.JobStatusActive,
 			PaymentMethod:      "cod",
 			Location:           models.Location{Latitude: 30.0, Longitude: 30.0},
+			BookedDistance:     5.55,
 			LockedEscrowAmount: 21.10,
 			Waypoints: []models.Location{
 				{Latitude: 30.15, Longitude: 30.0},
@@ -5517,6 +5580,7 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 			Status:             models.JobStatusActive,
 			PaymentMethod:      "cod",
 			Location:           models.Location{Latitude: 30.0, Longitude: 30.0},
+			BookedDistance:     99.9,
 			LockedEscrowAmount: 209.80,
 			Waypoints: []models.Location{
 				{Latitude: 30.045, Longitude: 30.0},
@@ -5601,6 +5665,7 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 			Status:             models.JobStatusActive,
 			PaymentMethod:      "wallet",
 			Location:           models.Location{Latitude: 30.0, Longitude: 30.0},
+			BookedDistance:     5.55,
 			LockedEscrowAmount: 21.10,
 			Waypoints: []models.Location{
 				{Latitude: 30.15, Longitude: 30.0},
@@ -6130,13 +6195,24 @@ func TestTrackJob_IdempotencyReplayRequiresAuthentication(t *testing.T) {
 	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		id := r.URL.Query().Get("id")
+		role := "owner"
+		tenantID := id
+		if strings.Contains(id, "emp") {
+			role = "employee"
+			if strings.Contains(id, "-under-") {
+				parts := strings.Split(id, "-under-")
+				if len(parts) > 1 {
+					tenantID = parts[1]
+				}
+			}
+		}
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]any{
 			"id":         id,
-			"role":       "owner",
+			"role":       role,
 			"kyc_status": "approved",
 			"is_active":  true,
-			"tenant_id":  id,
+			"tenant_id":  tenantID,
 		})
 	}))
 	defer mockAuthServer.Close()
@@ -6155,6 +6231,13 @@ func TestTrackJob_IdempotencyReplayRequiresAuthentication(t *testing.T) {
 
 	s.CreateService(ctx, &models.Service{ID: serviceID, TenantID: victimOwnerID, TenantBasePrice: 10.0, TenantPricePerKM: 1.0, Latitude: 30.0, Longitude: 30.0})
 	_ = s.Deposit(ctx, victimOwnerID, 500.0)
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   victimOwnerID,
+		EmployeeID: "emp-under-idem-victim-owner-1",
+		Latitude:   30.0,
+		Longitude:  30.0,
+		UpdatedAt:  time.Now().UTC(),
+	})
 
 	tokenOwner, _ := jwtutil.GenerateToken(victimOwnerID, "owner", victimOwnerID, "victim-owner@example.com")
 	tokenUser, _ := jwtutil.GenerateToken(victimUserID, "user", victimOwnerID, "victim-user@example.com")

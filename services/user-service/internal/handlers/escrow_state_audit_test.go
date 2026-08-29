@@ -112,6 +112,14 @@ func Test1_FullLifecycleStateAudit(t *testing.T) {
 	}
 	s.CreateService(ctx, svc)
 
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: empID,
+		Latitude:   30.0,
+		Longitude:  30.0,
+		UpdatedAt:  time.Now().UTC(),
+	})
+
 	// Deposit initial funds into owner wallet
 	initialDeposit := 500.0
 	if err := s.Deposit(ctx, ownerID, initialDeposit); err != nil {
@@ -368,6 +376,13 @@ func Test3_CrossFeatureInteraction_RespondPrice_And_ADR0007_SpeedCheck(t *testin
 	}
 	s.CreateService(ctx, svc)
 	_ = s.Deposit(ctx, ownerID, 600.0)
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: empID,
+		Latitude:   30.0,
+		Longitude:  30.0,
+		UpdatedAt:  time.Now().UTC(),
+	})
 	_ = s.UpsertSubscription(ctx, &models.Subscription{
 		ID:        "sub-interact-1",
 		TenantID:  ownerID,

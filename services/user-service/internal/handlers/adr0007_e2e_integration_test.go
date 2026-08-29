@@ -150,6 +150,14 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 	}
 	s.CreateService(ctx, svcStdDelivery)
 
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: empID,
+		Latitude:   30.9,
+		Longitude:  30.0,
+		UpdatedAt:  time.Now().UTC(),
+	})
+
 	var reqCounter int
 	nextIP := func() string {
 		reqCounter++
@@ -236,6 +244,13 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 		_ = s.Deposit(ctx, ownerID, 100.0)
 
 		tokenCust2, _ := jwtutil.GenerateToken("cust2-adr0007", "customer", ownerID, "cust2@example.com")
+		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+			TenantID:   ownerID,
+			EmployeeID: empID,
+			Latitude:   30.1,
+			Longitude:  30.0,
+			UpdatedAt:  time.Now().UTC(),
+		})
 		trackReq := map[string]any{
 			"owner_id":       tokenOwner,
 			"service_id":     svcStdDelivery.ID,

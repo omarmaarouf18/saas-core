@@ -98,28 +98,30 @@ type Location struct {
 
 // Job represents a trackable unit of work linking an owner, employee, and service.
 type Job struct {
-	ID                     string     `json:"id"                            bson:"_id"`
-	OwnerID                string     `json:"owner_id"                      bson:"owner_id"`
-	EmployeeID             string     `json:"employee_id,omitempty"         bson:"employee_id,omitempty"`
-	UserID                 string     `json:"user_id"                       bson:"user_id"`
-	ServiceID              string     `json:"service_id"                    bson:"service_id"`
-	Status                 JobStatus  `json:"status"                        bson:"status"`
-	Location               Location   `json:"location"                      bson:"location"`
-	CurrentLocation        *Location  `json:"current_location,omitempty"   bson:"current_location,omitempty"`
-	Waypoints              []Location `json:"waypoints,omitempty"          bson:"waypoints,omitempty"`
-	PaymentMethod          string     `json:"payment_method"                bson:"payment_method"`
-	CancellationReason     string     `json:"cancellation_reason,omitempty" bson:"cancellation_reason,omitempty"`
-	LockedEscrowAmount     float64    `json:"locked_escrow_amount,omitempty" bson:"locked_escrow_amount,omitempty"`
-	ActualCashAmount       *float64   `json:"actual_cash_amount,omitempty"  bson:"actual_cash_amount,omitempty"`
-	ReconciliationNote     string     `json:"reconciliation_note,omitempty" bson:"reconciliation_note,omitempty"`
-	EscrowFailureReason    string     `json:"escrow_failure_reason,omitempty" bson:"escrow_failure_reason,omitempty"`
-	SuggestedPrice         float64    `json:"suggested_price,omitempty"           bson:"suggested_price,omitempty"`
-	ProposedPrice          *float64   `json:"proposed_price,omitempty"            bson:"proposed_price,omitempty"`
-	ProposedBy             string     `json:"proposed_by,omitempty"               bson:"proposed_by,omitempty"`
-	AgreedPrice            *float64   `json:"agreed_price,omitempty"              bson:"agreed_price,omitempty"`
-	PriceProposalExpiresAt *time.Time `json:"price_proposal_expires_at,omitempty" bson:"price_proposal_expires_at,omitempty"`
-	CreatedAt              time.Time  `json:"created_at"                    bson:"created_at"`
-	UpdatedAt              time.Time  `json:"updated_at"                    bson:"updated_at"`
+	ID                       string     `json:"id"                            bson:"_id"`
+	OwnerID                  string     `json:"owner_id"                      bson:"owner_id"`
+	EmployeeID               string     `json:"employee_id,omitempty"         bson:"employee_id,omitempty"`
+	UserID                   string     `json:"user_id"                       bson:"user_id"`
+	ServiceID                string     `json:"service_id"                    bson:"service_id"`
+	Status                   JobStatus  `json:"status"                        bson:"status"`
+	Location                 Location   `json:"location"                      bson:"location"`
+	CurrentLocation          *Location  `json:"current_location,omitempty"   bson:"current_location,omitempty"`
+	Waypoints                []Location `json:"waypoints,omitempty"          bson:"waypoints,omitempty"`
+	PaymentMethod            string     `json:"payment_method"                bson:"payment_method"`
+	CancellationReason       string     `json:"cancellation_reason,omitempty" bson:"cancellation_reason,omitempty"`
+	LockedEscrowAmount       float64    `json:"locked_escrow_amount,omitempty" bson:"locked_escrow_amount,omitempty"`
+	ActualCashAmount         *float64   `json:"actual_cash_amount,omitempty"  bson:"actual_cash_amount,omitempty"`
+	ReconciliationNote       string     `json:"reconciliation_note,omitempty" bson:"reconciliation_note,omitempty"`
+	EscrowFailureReason      string     `json:"escrow_failure_reason,omitempty" bson:"escrow_failure_reason,omitempty"`
+	SuggestedPrice           float64    `json:"suggested_price,omitempty"           bson:"suggested_price,omitempty"`
+	ProposedPrice            *float64   `json:"proposed_price,omitempty"            bson:"proposed_price,omitempty"`
+	ProposedBy               string     `json:"proposed_by,omitempty"               bson:"proposed_by,omitempty"`
+	AgreedPrice              *float64   `json:"agreed_price,omitempty"              bson:"agreed_price,omitempty"`
+	PriceProposalExpiresAt   *time.Time `json:"price_proposal_expires_at,omitempty" bson:"price_proposal_expires_at,omitempty"`
+	BookedDistance           float64    `json:"booked_distance,omitempty"            bson:"booked_distance,omitempty"`
+	AssignedEmployeeLocation *Location  `json:"assigned_employee_location,omitempty" bson:"assigned_employee_location,omitempty"`
+	CreatedAt                time.Time  `json:"created_at"                    bson:"created_at"`
+	UpdatedAt                time.Time  `json:"updated_at"                    bson:"updated_at"`
 }
 
 // OwnerJobResponse provides full tenant job visibility for business owners.
@@ -393,4 +395,21 @@ type Rating struct {
 	Stars     int       `json:"stars"      bson:"stars"`      // 1-5
 	Comment   string    `json:"comment,omitempty" bson:"comment,omitempty"`
 	CreatedAt time.Time `json:"created_at" bson:"created_at"`
+}
+
+// EmployeeLocation represents an employee's last reported location and availability timestamp.
+type EmployeeLocation struct {
+	TenantID   string    `json:"tenant_id"   bson:"tenant_id"`
+	EmployeeID string    `json:"employee_id" bson:"employee_id"`
+	Latitude   float64   `json:"latitude"    bson:"latitude"`
+	Longitude  float64   `json:"longitude"   bson:"longitude"`
+	UpdatedAt  time.Time `json:"updated_at"  bson:"updated_at"`
+}
+
+// EmployeeLocationPingRequest is the expected JSON body for POST /users/employee/location.
+type EmployeeLocationPingRequest struct {
+	RequesterID    string  `json:"requester_id,omitempty"`
+	RequesterToken string  `json:"requester_token,omitempty"`
+	Latitude       float64 `json:"latitude"`
+	Longitude      float64 `json:"longitude"`
 }

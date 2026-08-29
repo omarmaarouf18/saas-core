@@ -40,6 +40,7 @@ class MockGeolocatorPlatformForTracking extends GeolocatorPlatform
 
 class MockApiClientForTracking extends ApiClient {
   int postCallCount = 0;
+  List<String> postEndpoints = [];
   List<Map<String, dynamic>> postPayloads = [];
   bool shouldThrow429 = false;
   bool shouldThrowImplausibleSpeed = false;
@@ -51,6 +52,7 @@ class MockApiClientForTracking extends ApiClient {
       Map<String, String>? headers,
       bool isRetry = false}) async {
     postCallCount++;
+    postEndpoints.add(endpoint);
     postPayloads.add(body);
 
     if (shouldThrow429) {
@@ -288,5 +290,24 @@ void main() {
 
     expect(find.byKey(const Key('location_sharing_indicator')), findsOneWidget);
     expect(find.text('Sharing live location'), findsOneWidget);
+  });
+
+  test(
+      '(f) startAvailabilityTracking sends pings to /users/employee/location without job_id',
+      () async {
+    await locationProvider.startAvailabilityTracking('token-emp-1');
+    expect(locationProvider.isTracking, isTrue);
+    expect(locationProvider.isAvailable, isTrue);
+    expect(locationProvider.activeJobId, isNull);
+
+    mockGeolocator.positionStreamController.add(createPosition(30.01, 31.01));
+    await Future.delayed(const Duration(milliseconds: 50));
+
+    expect(mockApiClient.postCallCount, equals(1));
+    expect(mockApiClient.postEndpoints.first,
+        equals('/users/employee/location'));
+    expect(mockApiClient.postPayloads.first['requester_token'],
+        equals('token-emp-1'));
+    expect(mockApiClient.postPayloads.first.containsKey('job_id'), isFalse);
   });
 }

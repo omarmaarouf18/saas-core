@@ -90,7 +90,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
           await locationProvider.startTracking(
               activeJobs.first.id, auth.token!);
         } else {
-          await locationProvider.stopTracking();
+          await locationProvider.startAvailabilityTracking(auth.token!);
         }
       }
     }

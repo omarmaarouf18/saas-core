@@ -59,6 +59,14 @@ class MockEmployeeLocationProviderForTest extends EmployeeLocationProvider {
 
   @override
   LocationSharingStatus get status => LocationSharingStatus.idle;
+  @override
+  Future<void> startTracking(String jobId, String userToken) async {}
+  @override
+  Future<void> startAvailabilityTracking(String userToken) async {}
+  @override
+  Future<void> stopTracking({bool notify = true}) async {}
+  @override
+  Future<void> stopAvailabilityTracking() async {}
 }
 
 class MockNotificationsProviderForTest extends NotificationsProvider {

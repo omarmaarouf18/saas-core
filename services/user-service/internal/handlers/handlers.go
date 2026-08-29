@@ -283,6 +283,7 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users/jobs/rate", u.RateJob)
 	mux.HandleFunc("/users/ratings", u.GetRatings)
 	mux.HandleFunc("/users/jobs/location/update", u.UpdateJobLocation)
+	mux.HandleFunc("/users/employee/location", u.UpdateEmployeeLocation)
 	mux.HandleFunc("/users/jobs/reconciliation-queue", u.GetReconciliationQueue)
 	mux.HandleFunc("/users/jobs/reconciliation-resolve", u.ResolveReconciliation)
 }

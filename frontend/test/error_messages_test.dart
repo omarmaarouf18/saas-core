@@ -30,6 +30,10 @@ void main() {
           "Something changed — please refresh and try again."
         ),
         (
+          ApiClientException('no_couriers_available', statusCode: 422),
+          "No couriers are currently available in your area. Please try again shortly."
+        ),
+        (
           ApiClientException('rate_limit_exceeded', statusCode: 429),
           "That went through already — no need to tap again."
         ),

@@ -17,6 +17,13 @@ import (
 	"github.com/project/user-service/internal/models"
 )
 
+const EmployeeLocationFreshnessWindow = 5 * time.Minute
+
+var (
+	ErrNoCouriersAvailable         = errors.New("no couriers available")
+	ErrEmployeeLocationUnavailable = errors.New("employee location unavailable")
+)
+
 // ---------------------------------------------------------------------------
 // POST /users/jobs/track — with escrow locking
 // ---------------------------------------------------------------------------
@@ -218,8 +225,49 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Calculate ride cost: base_price + (distance × price_per_km).
-	dist := haversineKm(req.Location.Latitude, req.Location.Longitude, svc.Latitude, svc.Longitude)
+	// 8. Auto-dispatch nearest available courier or verify assigned employee location
+	var empLoc *models.EmployeeLocation
+	if req.EmployeeID == "" {
+		// Auto-dispatch: select nearest active employee with fresh location
+		nearestEmp, err := u.findNearestAvailableEmployee(ctx, resolvedOwnerID, req.Location)
+		if err != nil {
+			if errors.Is(err, ErrNoCouriersAvailable) {
+				writeJSON(w, http.StatusUnprocessableEntity, map[string]string{
+					"error":   "no_couriers_available",
+					"message": "No active couriers are currently available in your area. Please try again shortly.",
+				})
+				return
+			}
+			if errors.Is(err, ErrServiceUnavailable) {
+				writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "auth service unavailable"})
+				return
+			}
+			log.Printf("[USER] Error auto-dispatching courier for owner %s: %v", resolvedOwnerID, err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to dispatch courier"})
+			return
+		}
+		req.EmployeeID = nearestEmp.EmployeeID
+		empLoc = nearestEmp
+	} else {
+		if u.store != nil {
+			empLoc, err = u.store.GetEmployeeLocation(ctx, resolvedOwnerID, req.EmployeeID)
+			if err != nil {
+				log.Printf("[USER] Failed to query employee location for %s: %v", req.EmployeeID, err)
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to query employee location"})
+				return
+			}
+		}
+		if empLoc == nil {
+			writeJSON(w, http.StatusUnprocessableEntity, map[string]string{
+				"error":   "employee_location_unavailable",
+				"message": "The assigned employee has no recent location ping.",
+			})
+			return
+		}
+	}
+
+	// Calculate ride cost: base_price + (distance × price_per_km) from assigned employee's location.
+	dist := haversineKm(req.Location.Latitude, req.Location.Longitude, empLoc.Latitude, empLoc.Longitude)
 	escrowAmount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
 
 	isTransport := svc.Category == "transport"
@@ -253,12 +301,21 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	assignedLoc := models.Location{
+		Latitude:  empLoc.Latitude,
+		Longitude: empLoc.Longitude,
+	}
 	job := &models.Job{
 		ID: generateID(), OwnerID: req.OwnerID, EmployeeID: req.EmployeeID,
-		UserID:    req.UserID,
-		ServiceID: req.ServiceID, Status: initialStatus,
-		Location: req.Location, PaymentMethod: req.PaymentMethod,
-		CreatedAt: now, UpdatedAt: now,
+		UserID:                   req.UserID,
+		ServiceID:                req.ServiceID,
+		Status:                   initialStatus,
+		Location:                 req.Location,
+		PaymentMethod:            req.PaymentMethod,
+		BookedDistance:           dist,
+		AssignedEmployeeLocation: &assignedLoc,
+		CreatedAt:                now,
+		UpdatedAt:                now,
 	}
 
 	if isTransport {
@@ -472,7 +529,10 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "service not found for job"})
 		return
 	}
-	dist := haversineKm(job.Location.Latitude, job.Location.Longitude, svc.Latitude, svc.Longitude)
+	dist := job.BookedDistance
+	if dist == 0 && job.AssignedEmployeeLocation != nil {
+		dist = haversineKm(job.Location.Latitude, job.Location.Longitude, job.AssignedEmployeeLocation.Latitude, job.AssignedEmployeeLocation.Longitude)
+	}
 	amount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
 	if job.AgreedPrice != nil && *job.AgreedPrice > 0 {
 		amount = *job.AgreedPrice
@@ -1109,6 +1169,14 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	_ = u.store.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   job.OwnerID,
+		EmployeeID: job.EmployeeID,
+		Latitude:   req.Latitude,
+		Longitude:  req.Longitude,
+		UpdatedAt:  now,
+	})
+
 	// Commit the real timestamp and release the reservation
 	if u.rdb != nil {
 		bgCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -1168,6 +1236,264 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 	}()
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "location updated"})
+}
+
+// ---------------------------------------------------------------------------
+// POST /users/employee/location — Employee standalone availability location ping
+// ---------------------------------------------------------------------------
+
+func (u *UserService) UpdateEmployeeLocation(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	var req models.EmployeeLocationPingRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+
+	tokenStr := req.RequesterToken
+	if tokenStr == "" {
+		tokenStr = req.RequesterID
+	}
+	if tokenStr == "" {
+		authHeader := r.Header.Get("Authorization")
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			tokenStr = strings.TrimPrefix(authHeader, "Bearer ")
+		}
+	}
+	if tokenStr == "" {
+		tokenStr = r.Header.Get("X-Requester-Token")
+	}
+
+	if tokenStr == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing employee token"})
+		return
+	}
+
+	claims, err := resolveClaims(tokenStr)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid token: " + err.Error()})
+		return
+	}
+
+	if claims.Role != "employee" {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "only employees can report availability location"})
+		return
+	}
+
+	employeeID := claims.UserID
+	tenantID := claims.TenantID
+	if tenantID == "" {
+		tenantID = employeeID
+	}
+
+	if !isValidCoordinate(req.Latitude, req.Longitude) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_coordinates",
+			"message": "Latitude must be between -90 and 90, and Longitude must be between -180 and 180",
+		})
+		return
+	}
+
+	now := time.Now().UTC()
+	nowMs := now.UnixNano() / int64(time.Millisecond)
+
+	clearInFlight := func() {
+		if u.rdb != nil {
+			bgCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			_ = u.rdb.Del(bgCtx, fmt.Sprintf("loc:inflight:emp:%s", employeeID)).Err()
+			cancel()
+		} else {
+			u.locationThrottleMu.Lock()
+			delete(u.locationInFlight, "emp:"+employeeID)
+			u.locationThrottleMu.Unlock()
+		}
+	}
+
+	var lastTime time.Time
+	var exists bool
+
+	if u.rdb != nil {
+		inflightKey := fmt.Sprintf("loc:inflight:emp:%s", employeeID)
+		lastupdateKey := fmt.Sprintf("loc:lastupdate:emp:%s", employeeID)
+
+		evalCtx, cancelEval := context.WithTimeout(r.Context(), 2*time.Second)
+		res, err := u.rdb.Eval(evalCtx, checkLocationThrottleScript, []string{inflightKey, lastupdateKey}, MinLocationUpdateInterval.Milliseconds(), 15, nowMs).Result()
+		cancelEval()
+		if err != nil {
+			log.Printf("[SECURITY CRITICAL] Redis error in UpdateEmployeeLocation throttle check: %v for emp %s", err, employeeID)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error":   "internal_error",
+				"message": "failed to process location update throttle check",
+			})
+			return
+		}
+
+		resSlice, ok := res.([]interface{})
+		if !ok || len(resSlice) < 2 {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error":   "internal_error",
+				"message": "failed to process location update throttle check",
+			})
+			return
+		}
+
+		code := resSlice[0].(int64)
+		lastUpdateMs := resSlice[1].(int64)
+
+		if code == 1 {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error":   "too_many_requests",
+				"message": "Location update is already in progress.",
+			})
+			return
+		}
+		if code == 2 {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error":   "too_many_requests",
+				"message": fmt.Sprintf("Too many location updates. Minimum interval is %.0f seconds.", MinLocationUpdateInterval.Seconds()),
+			})
+			return
+		}
+		if lastUpdateMs > 0 {
+			exists = true
+			lastTime = time.Unix(0, lastUpdateMs*int64(time.Millisecond))
+		}
+	} else {
+		u.locationThrottleMu.Lock()
+		if u.locationInFlight["emp:"+employeeID] {
+			u.locationThrottleMu.Unlock()
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error":   "too_many_requests",
+				"message": "Location update is already in progress.",
+			})
+			return
+		}
+		if lastUpdate, ex := u.locationLastUpdate["emp:"+employeeID]; ex {
+			if now.Sub(lastUpdate) < MinLocationUpdateInterval {
+				u.locationThrottleMu.Unlock()
+				writeJSON(w, http.StatusTooManyRequests, map[string]string{
+					"error":   "too_many_requests",
+					"message": fmt.Sprintf("Too many location updates. Minimum interval is %.0f seconds.", MinLocationUpdateInterval.Seconds()),
+				})
+				return
+			}
+			exists = true
+			lastTime = lastUpdate
+		}
+		u.locationInFlight["emp:"+employeeID] = true
+		u.locationThrottleMu.Unlock()
+	}
+
+	// Speed plausibility check against previous known location
+	prevLoc, err := u.store.GetEmployeeLocation(r.Context(), tenantID, employeeID)
+	if err != nil {
+		clearInFlight()
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to query prior location"})
+		return
+	}
+
+	if prevLoc != nil {
+		dist := haversineKm(req.Latitude, req.Longitude, prevLoc.Latitude, prevLoc.Longitude)
+		checkTime := prevLoc.UpdatedAt
+		if exists && lastTime.After(checkTime) {
+			checkTime = lastTime
+		}
+		timeDiff := now.Sub(checkTime)
+		hours := timeDiff.Hours()
+		if hours > 0 && dist > 0.001 {
+			speed := dist / hours
+			if speed > MaxReasonableSpeedKmh {
+				clearInFlight()
+				log.Printf("[SECURITY WARNING] Implausible employee speed detected for %s: %.2f km/h", employeeID, speed)
+				writeJSON(w, http.StatusBadRequest, map[string]string{
+					"error":   "implausible_speed",
+					"message": "Location update rejected: implausible speed detected.",
+				})
+				return
+			}
+		}
+	}
+
+	locRecord := &models.EmployeeLocation{
+		TenantID:   tenantID,
+		EmployeeID: employeeID,
+		Latitude:   req.Latitude,
+		Longitude:  req.Longitude,
+		UpdatedAt:  now,
+	}
+
+	if err := u.store.UpsertEmployeeLocation(r.Context(), locRecord); err != nil {
+		clearInFlight()
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to persist location: " + err.Error()})
+		return
+	}
+
+	if u.rdb != nil {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		pipe := u.rdb.Pipeline()
+		pipe.Del(bgCtx, fmt.Sprintf("loc:inflight:emp:%s", employeeID))
+		pipe.Set(bgCtx, fmt.Sprintf("loc:lastupdate:emp:%s", employeeID), fmt.Sprintf("%d", nowMs), 300*time.Second)
+		_, _ = pipe.Exec(bgCtx)
+		cancel()
+	} else {
+		u.locationThrottleMu.Lock()
+		u.locationLastUpdate["emp:"+employeeID] = now
+		delete(u.locationInFlight, "emp:"+employeeID)
+		u.locationThrottleMu.Unlock()
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":    "success",
+		"message":   "employee location updated",
+		"latitude":  req.Latitude,
+		"longitude": req.Longitude,
+	})
+}
+
+// findNearestAvailableEmployee selects the nearest active, available employee for a tenant.
+func (u *UserService) findNearestAvailableEmployee(ctx context.Context, tenantID string, customerLoc models.Location) (*models.EmployeeLocation, error) {
+	if u.store == nil {
+		return nil, ErrNoCouriersAvailable
+	}
+	locations, err := u.store.GetFreshEmployeeLocations(ctx, tenantID, EmployeeLocationFreshnessWindow)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query fresh employee locations: %w", err)
+	}
+	if len(locations) == 0 {
+		return nil, ErrNoCouriersAvailable
+	}
+
+	var nearest *models.EmployeeLocation
+	minDist := math.MaxFloat64
+
+	for i := range locations {
+		loc := &locations[i]
+		ok, err := u.verifyEmployeeAssignment(loc.EmployeeID, tenantID)
+		if err != nil {
+			if errors.Is(err, ErrServiceUnavailable) {
+				return nil, ErrServiceUnavailable
+			}
+			continue
+		}
+		if !ok {
+			continue
+		}
+
+		dist := haversineKm(customerLoc.Latitude, customerLoc.Longitude, loc.Latitude, loc.Longitude)
+		if dist < minDist {
+			minDist = dist
+			nearest = loc
+		}
+	}
+
+	if nearest == nil {
+		return nil, ErrNoCouriersAvailable
+	}
+	return nearest, nil
 }
 
 func (u *UserService) broadcastJobAlert(job *models.Job, svc *models.Service) {

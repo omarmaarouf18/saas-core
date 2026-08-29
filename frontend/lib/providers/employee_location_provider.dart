@@ -29,10 +29,13 @@ class EmployeeLocationProvider extends ChangeNotifier {
     GeolocatorPlatform? geolocator,
   }) : _geolocator = geolocator ?? GeolocatorPlatform.instance;
 
+  bool _isAvailable = false;
+
   LocationSharingStatus get status => _status;
   String? get error => _error;
   String? get activeJobId => _activeJobId;
   bool get isTracking => _status == LocationSharingStatus.tracking;
+  bool get isAvailable => _isAvailable;
 
   /// Starts live location tracking for an active job assigned to the current employee.
   Future<void> startTracking(String jobId, String userToken) async {
@@ -43,6 +46,38 @@ class EmployeeLocationProvider extends ChangeNotifier {
     await stopTracking();
 
     _activeJobId = jobId;
+    await _startLocationStream(jobId, userToken);
+  }
+
+  /// Starts availability location pinging to /users/employee/location while the
+  /// employee is online/available without an active job.
+  Future<void> startAvailabilityTracking(String userToken) async {
+    _isAvailable = true;
+
+    // If already tracking an active job, job location updates already refresh location on backend.
+    if (_status == LocationSharingStatus.tracking && _activeJobId != null) {
+      return;
+    }
+
+    if (_status == LocationSharingStatus.tracking && _activeJobId == null) {
+      return;
+    }
+
+    await stopTracking();
+    await _startLocationStream(null, userToken);
+  }
+
+  /// Stops availability tracking when the employee goes offline.
+  Future<void> stopAvailabilityTracking() async {
+    _isAvailable = false;
+    if (_activeJobId == null) {
+      await stopTracking();
+    } else {
+      notifyListeners();
+    }
+  }
+
+  Future<void> _startLocationStream(String? jobId, String userToken) async {
     _status = LocationSharingStatus.requestingPermission;
     _error = null;
     notifyListeners();
@@ -76,7 +111,7 @@ class EmployeeLocationProvider extends ChangeNotifier {
           .getPositionStream(locationSettings: locationSettings)
           .listen(
         (Position position) {
-          _handlePositionUpdate(jobId, userToken, position);
+          _handlePositionUpdate(_activeJobId, userToken, position);
         },
         onError: (dynamic e) {
           debugPrint('Location stream error: $e');
@@ -94,7 +129,7 @@ class EmployeeLocationProvider extends ChangeNotifier {
   }
 
   void _handlePositionUpdate(
-      String jobId, String userToken, Position position) {
+      String? jobId, String userToken, Position position) {
     if (_status != LocationSharingStatus.tracking) return;
 
     final now = DateTime.now();
@@ -109,8 +144,12 @@ class EmployeeLocationProvider extends ChangeNotifier {
     }
 
     _lastSentTime = now;
-    _sendLocationUpdate(
-        jobId, userToken, position.latitude, position.longitude);
+    if (jobId != null) {
+      _sendLocationUpdate(
+          jobId, userToken, position.latitude, position.longitude);
+    } else {
+      _sendAvailabilityPing(userToken, position.latitude, position.longitude);
+    }
   }
 
   Future<void> _sendLocationUpdate(
@@ -141,6 +180,37 @@ class EmployeeLocationProvider extends ChangeNotifier {
         }
       }
       debugPrint('Genuine location update failure: $e');
+      _error = friendlyErrorMessage(e);
+      _status = LocationSharingStatus.error;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _sendAvailabilityPing(
+      String userToken, double lat, double lng) async {
+    try {
+      await apiClient.post(
+        '/users/employee/location',
+        {
+          'requester_token': userToken,
+          'latitude': lat,
+          'longitude': lng,
+        },
+      );
+      if (_error != null) {
+        _error = null;
+        notifyListeners();
+      }
+    } catch (e) {
+      if (e is ApiClientException) {
+        if (e.statusCode == 429 ||
+            (e.statusCode == 400 && e.message.contains('implausible_speed'))) {
+          debugPrint(
+              'Non-fatal availability ping response (${e.statusCode}): ${e.message}');
+          return;
+        }
+      }
+      debugPrint('Genuine availability ping failure: $e');
       _error = friendlyErrorMessage(e);
       _status = LocationSharingStatus.error;
       notifyListeners();

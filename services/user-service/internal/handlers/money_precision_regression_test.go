@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -59,9 +60,17 @@ func setupMoneyPrecisionHarness(t *testing.T) (*UserService, *store.MongoDB, con
 	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		id := r.URL.Query().Get("id")
+		role := "owner"
+		tenantID := id
+		if strings.Contains(id, "emp") {
+			role = "employee"
+			if strings.HasPrefix(id, "emp-") {
+				tenantID = strings.TrimPrefix(id, "emp-")
+			}
+		}
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]any{
-			"id": id, "role": "owner", "kyc_status": "approved", "is_active": true, "tenant_id": id,
+			"id": id, "role": role, "kyc_status": "approved", "is_active": true, "tenant_id": tenantID,
 		})
 	}))
 	t.Cleanup(mockAuthServer.Close)
@@ -96,6 +105,13 @@ func TestTrackJob_ProposedPriceCentRounded(t *testing.T) {
 	s.CreateService(ctx, &models.Service{
 		ID: "svc-money", TenantID: ownerID, Name: "Transport Svc", Category: "transport",
 		TenantBasePrice: 66.66, Latitude: 30.0444, Longitude: 31.2357,
+	})
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: "emp-owner-money-track",
+		Latitude:   30.0444,
+		Longitude:  31.2357,
+		UpdatedAt:  time.Now().UTC(),
 	})
 	ownerToken, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "o@m.test")
 	custToken, _ := jwtutil.GenerateToken(custID, "customer", custID, "c@m.test")

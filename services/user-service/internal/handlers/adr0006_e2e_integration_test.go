@@ -128,6 +128,14 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 	}
 	s.CreateService(ctx, svcTransport)
 
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: empID,
+		Latitude:   30.0,
+		Longitude:  30.0,
+		UpdatedAt:  time.Now().UTC(),
+	})
+
 	// Seed delivery service (Fixed Price = $40.00)
 	svcDelivery := &models.Service{
 		ID:               "svc-e2e-deliv-40",
