@@ -6,6 +6,6 @@ This directory contains categorized, detailed changelogs tracking the history an
 *   [New Features](new-features.md) — 65 entries documenting complaint ticketing, KYB document uploads/reviews, location tracking, version gating, e-wallet payouts, and UI capabilities.
 *   [Infrastructure & Tooling](infrastructure.md) — 54 entries covering shared module extraction, automated test setups, CI matrix configurations, CD pipeline hardening, and CLI helper tools.
 *   [Bug Fixes](bug-fixes.md) — 69 entries detailing non-security fixes, consistency audits, race condition resolutions, and error handling.
-*   [Documentation](documentation.md) — 36 entries for documentation updates, application map sync, and audit reports.
+*   [Documentation](documentation.md) — 39 entries for documentation updates, application map sync, and audit reports.
 *   [Localization Infrastructure](localization-infrastructure.md) — 4 entries covering i18n, Egyptian Arabic localization, and RTL support.
 *   [Refactoring](refactoring.md) — 8 entries documenting handler decompositions and module extractions.

@@ -4,6 +4,18 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## Documentation-Accuracy Remediation & Reference Integrity Audit
+
+- **Implementation Detail**: Completed a comprehensive documentation-accuracy verification and remediation pass:
+  1. Removed stale `CreateServiceDialog` row from `docs/frontend/DESIGN_SYSTEM.md` component reference table.
+  2. Annotated historical present-tense reference to `service_screen.dart` in `docs/changelog/new-features.md` with a non-destructive note pointing to `OwnerConfigurationScreen`.
+  3. Updated `docs/APPLICATION_MAP.md` §1 notification-service description to cover durable MongoDB persistence (`notification_db`, `notifications`), compound indexes, 30-day TTL index, per-recipient read/dismiss tracking (`read_by`, `dismissed_by`), and 5 authenticated REST endpoints.
+  4. Hardened `shared/infra/docgen/generator.go` (`ParseHandlers` test file exclusion, `Mark` prefix method inference, `authenticateHeader` JWT recognition) and regenerated `docs/APPLICATION_MAP.md` to correct `POST /notifications/{id}/read` (method POST, User JWT auth, zero `<!-- TODO -->` placeholders).
+  5. Remediated stale screen/widget counts and references in `README.md` (Owner Role mapping to `OwnerConfigurationScreen`), `docs/frontend/ARCHITECTURE.md` (27 screens, 26 shared widgets), and `docs/frontend/STATUS.md` (28 total / 27 production screens).
+  6. Added permanent standing rules in `AI_CONTEXT.md` (§Documentation System and §Standing Working Rule) establishing mandatory reference updates and handler-verified auth/method claims in the same commit.
+- **Commit SHA**: ``9fa5d4d93979974fb0e1db3206ffd2f2b7dacb88``
+- **Verification**: Verified via `make docs`, `make docs-check`, `make ci` (all 485 frontend tests, backend build/vet/test, govulncheck, gosec passing). ✅
+
 ## API Gateway Version Gating Collection Alignment in Docgen & Application Map
 
 - **Implementation Detail**: Aligned the MongoDB collection target for the mobile version gating admin endpoints (`GET /api/v1/admin/version-config` and `PUT /api/v1/admin/version-config`) in `shared/infra/docgen/generator.go` and `docs/APPLICATION_MAP.md` from `version_config` to `platform_versions` to match `services/api-gateway/internal/version/version.go`, ADR-0018 §2.2, and `docs/DEPLOYMENT.md` §11.3. Updated `api-gateway`'s inventory description in Section 1 to document MongoDB `platform_versions` database persistence and minimum version gating responsibilities.
