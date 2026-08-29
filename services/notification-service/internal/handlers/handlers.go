@@ -188,14 +188,15 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "event: connected\ndata: {\"client_id\":%q,\"role\":%q}\n\n", token, role)
 	flusher.Flush()
 
-	log.Printf("[NOTIF] SSE stream opened: tenant_id=%s role=%s", tenantID, role)
+	cleanTenantID := strings.ReplaceAll(strings.ReplaceAll(tenantID, "\n", ""), "\r", "")
+	log.Printf("[NOTIF] SSE stream opened: tenant_id=%s role=%s", cleanTenantID, role) // #nosec G706 //nolint:gosec -- tenantID is authenticated and CR/LF sanitized
 
 	// Stream loop.
 	ctx := r.Context()
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("[NOTIF] SSE stream closed (client disconnect) tenant_id=%s", tenantID)
+			log.Printf("[NOTIF] SSE stream closed (client disconnect) tenant_id=%s", cleanTenantID) // #nosec G706 //nolint:gosec -- tenantID is authenticated and CR/LF sanitized
 			return
 		case msg, ok := <-client.Send:
 			if !ok {
