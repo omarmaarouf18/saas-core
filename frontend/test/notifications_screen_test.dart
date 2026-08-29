@@ -28,7 +28,10 @@ class MockNotificationsProvider extends NotificationsProvider {
   bool get isConnected => true;
 
   @override
-  void markAsRead(String id) {
+  Future<void> fetchHistory({bool refresh = false, int limit = 30}) async {}
+
+  @override
+  Future<void> markAsRead(String id) async {
     lastMarkedReadId = id;
     final idx = _mockList.indexWhere((n) => n.id == id);
     if (idx != -1) {
@@ -47,14 +50,14 @@ class MockNotificationsProvider extends NotificationsProvider {
   }
 
   @override
-  void dismiss(String id) {
+  Future<void> dismiss(String id) async {
     lastDismissedId = id;
     _mockList.removeWhere((n) => n.id == id);
     notifyListeners();
   }
 
   @override
-  void clearAll() {
+  Future<void> clearAll() async {
     clearAllCalled = true;
     _mockList.clear();
     notifyListeners();

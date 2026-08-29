@@ -239,6 +239,40 @@ class ApiClient {
     }
   }
 
+  Future<dynamic> delete(
+    String path, {
+    Map<String, String>? queryParams,
+    Map<String, String>? headers,
+    bool isRetry = false,
+  }) async {
+    try {
+      var uri = Uri.parse('$baseUrl$path');
+      if (queryParams != null) {
+        uri = uri.replace(queryParameters: queryParams);
+      }
+      final response = await _client
+          .delete(
+            uri,
+            headers: _getHeaders(extraHeaders: headers),
+          )
+          .timeout(requestTimeout);
+      return await _handleResponse(
+        response,
+        onRetry: isRetry
+            ? null
+            : () => delete(path,
+                queryParams: queryParams, headers: headers, isRetry: true),
+        path: path,
+      );
+    } on TimeoutException {
+      rethrow; // friendlyErrorMessage maps this to the connectivity copy.
+    } catch (e) {
+      if (e is ApiClientException) rethrow;
+      throw ApiClientException(
+          "Network error: Please check your internet connection.");
+    }
+  }
+
   Future<Uint8List> getBytes(
     String pathOrUrl, {
     Map<String, String>? queryParams,

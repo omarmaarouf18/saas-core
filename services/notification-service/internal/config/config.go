@@ -7,6 +7,8 @@ import (
 
 type Config struct {
 	Port                  string
+	MongoURI              string
+	MongoDatabase         string
 	JWTSecret             string
 	InternalServiceToken  string
 	AuthServiceURL        string
@@ -56,6 +58,19 @@ func Load() (*Config, error) {
 		port = "3004"
 	}
 
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017/notification_db"
+	}
+
+	dbName := os.Getenv("NOTIFICATION_MONGO_DATABASE")
+	if dbName == "" {
+		dbName = os.Getenv("MONGO_INITDB_DATABASE")
+	}
+	if dbName == "" {
+		dbName = "notification_db"
+	}
+
 	authServiceURL := os.Getenv("AUTH_SERVICE_URL")
 	if authServiceURL == "" {
 		authServiceURL = "http://localhost:3002"
@@ -75,6 +90,8 @@ func Load() (*Config, error) {
 
 	return &Config{
 		Port:                  port,
+		MongoURI:              mongoURI,
+		MongoDatabase:         dbName,
 		JWTSecret:             jwtSecret,
 		InternalServiceToken:  internalServiceToken,
 		AuthServiceURL:        authServiceURL,

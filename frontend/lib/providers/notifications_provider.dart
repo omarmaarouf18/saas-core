@@ -24,6 +24,10 @@ class NotificationsProvider extends ChangeNotifier {
   String? _error;
   StreamSubscription<SSEModel>? _sseSubscription;
 
+  bool _isLoadingHistory = false;
+  bool _isLoadingMore = false;
+  bool _hasMore = false;
+
   /// Broadcast stream of KYC/KYE rejection outcome notifications (ADR-0021).
   /// The app root listens to this to present an immediate in-app dialog with
   /// the rejection reason; the notification also lands in the normal list.
@@ -35,6 +39,9 @@ class NotificationsProvider extends ChangeNotifier {
 
   List<NotificationModel> get notifications => _notifications;
   bool get isConnected => _isConnected;
+  bool get isLoadingHistory => _isLoadingHistory;
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasMore => _hasMore;
 
   /// Visible for tests: proves whether an underlying SSE subscription is
   /// currently held.
@@ -54,6 +61,9 @@ class NotificationsProvider extends ChangeNotifier {
   }) : _sseStreamSource = sseStreamSource ?? SSEClient.subscribeToSSE;
 
   void initSse(String token) {
+    // Cold-start fetch alongside SSE connection
+    fetchHistory();
+
     // Already connected: nothing to do (guards against every MyApp rebuild
     // re-subscribing while healthy).
     if (_isConnected) return;
@@ -148,28 +158,162 @@ class NotificationsProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  void markAsRead(String id) {
-    final idx = _notifications.indexWhere((n) => n.id == id);
-    if (idx != -1) {
-      _notifications[idx].isRead = true;
+  Future<void> fetchHistory({bool refresh = false, int limit = 30}) async {
+    if (_isLoadingHistory) return;
+    _isLoadingHistory = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await apiClient.get(
+        '/notifications/history',
+        queryParams: {'limit': limit.toString()},
+      );
+
+      List<dynamic> rawList = [];
+      if (response is Map && response['notifications'] is List) {
+        rawList = response['notifications'] as List;
+        _hasMore = response['has_more'] as bool? ?? (rawList.length == limit);
+      } else if (response is List) {
+        rawList = response;
+        _hasMore = rawList.length == limit;
+      }
+
+      final fetched = rawList
+          .map((item) => NotificationModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+
+      if (refresh) {
+        _notifications.clear();
+        _notifications.addAll(fetched);
+      } else {
+        for (final item in fetched) {
+          final idx = _notifications.indexWhere((n) => n.id == item.id);
+          if (idx == -1) {
+            _notifications.add(item);
+          } else {
+            _notifications[idx].isRead = item.isRead;
+          }
+        }
+      }
+      _notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    } catch (e) {
+      debugPrint('Error fetching notification history: $e');
+      _error = friendlyErrorMessage(e);
+    } finally {
+      _isLoadingHistory = false;
       notifyListeners();
     }
   }
 
-  void markAllAsRead() {
+  Future<void> loadMore({int limit = 30}) async {
+    if (_isLoadingMore || !_hasMore || _notifications.isEmpty) return;
+    _isLoadingMore = true;
+    notifyListeners();
+
+    try {
+      final oldest = _notifications.last.timestamp.toUtc().toIso8601String();
+      final response = await apiClient.get(
+        '/notifications/history',
+        queryParams: {
+          'limit': limit.toString(),
+          'before': oldest,
+        },
+      );
+
+      List<dynamic> rawList = [];
+      if (response is Map && response['notifications'] is List) {
+        rawList = response['notifications'] as List;
+        _hasMore = response['has_more'] as bool? ?? (rawList.length == limit);
+      } else if (response is List) {
+        rawList = response;
+        _hasMore = rawList.length == limit;
+      }
+
+      final fetched = rawList
+          .map((item) => NotificationModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+
+      for (final item in fetched) {
+        if (!_notifications.any((n) => n.id == item.id)) {
+          _notifications.add(item);
+        }
+      }
+      _notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    } catch (e) {
+      debugPrint('Error loading more notifications: $e');
+      _error = friendlyErrorMessage(e);
+    } finally {
+      _isLoadingMore = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> markAsRead(String id) async {
+    final idx = _notifications.indexWhere((n) => n.id == id);
+    if (idx == -1) return;
+    final prevRead = _notifications[idx].isRead;
+    _notifications[idx].isRead = true;
+    notifyListeners();
+
+    try {
+      await apiClient.post('/notifications/$id/read', {});
+    } catch (e) {
+      final rollIdx = _notifications.indexWhere((n) => n.id == id);
+      if (rollIdx != -1) {
+        _notifications[rollIdx].isRead = prevRead;
+      }
+      _error = friendlyErrorMessage(e);
+      notifyListeners();
+    }
+  }
+
+  Future<void> markAllAsRead() async {
+    final previousStates = {for (final n in _notifications) n.id: n.isRead};
     for (var n in _notifications) {
       n.isRead = true;
     }
     notifyListeners();
+
+    try {
+      await apiClient.post('/notifications/read-all', {});
+    } catch (e) {
+      for (final n in _notifications) {
+        if (previousStates.containsKey(n.id)) {
+          n.isRead = previousStates[n.id]!;
+        }
+      }
+      _error = friendlyErrorMessage(e);
+      notifyListeners();
+    }
   }
 
-  void dismiss(String id) {
-    _notifications.removeWhere((n) => n.id == id);
+  Future<void> dismiss(String id) async {
+    final idx = _notifications.indexWhere((n) => n.id == id);
+    if (idx == -1) return;
+    final removed = _notifications.removeAt(idx);
     notifyListeners();
+
+    try {
+      await apiClient.delete('/notifications/$id');
+    } catch (e) {
+      _notifications.insert(idx.clamp(0, _notifications.length), removed);
+      _error = friendlyErrorMessage(e);
+      notifyListeners();
+    }
   }
 
-  void clearAll() {
+  Future<void> clearAll() async {
+    final backup = List<NotificationModel>.from(_notifications);
     _notifications.clear();
     notifyListeners();
+
+    try {
+      await apiClient.delete('/notifications');
+    } catch (e) {
+      _notifications.addAll(backup);
+      _error = friendlyErrorMessage(e);
+      notifyListeners();
+    }
   }
 }

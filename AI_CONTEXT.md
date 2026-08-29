@@ -90,7 +90,7 @@ The platform uses a microservices architecture coordinated via a reverse-proxy A
 | **api-gateway** | `8080` | Reverse proxy/routing edge for clients. Implements edge rate limiting and path rewriting. | Go Standard Library |
 | **auth-service** | `3002` | Handles tenant registration, password hashing (bcrypt), multi-role login, and encrypted 2FA OTPs. | MongoDB, `golang.org/x/crypto` |
 | **chat-service** | `3001` | Real-time WebSocket hub for messaging, segregated per job. | MongoDB, `github.com/gorilla/websocket` |
-| **notification-service** | `3004` | Real-time client alerts via Server-Sent Events (SSE). | Go Standard Library |
+| **notification-service** | `3004` | Real-time client alerts via Server-Sent Events (SSE) and durable in-app notifications. | MongoDB, Go Standard Library |
 | **user-service** | `3003` | Services directory (using spatial indexes), job tracking, e-wallets, ledger, and subscriptions. | MongoDB (with `2dsphere` index) |
 | **shared/infra** | `N/A` | Compile-time shared library module for cross-cutting infrastructure packages. | `github.com/redis/go-redis/v9`, `github.com/sony/gobreaker/v2`, `github.com/golang-jwt/jwt/v5` |
 
@@ -545,4 +545,18 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - **Test Suite Updates**: Removed ServiceScreen golden test cases from `test/golden_screens_test.dart`; updated `test/owner_home_screen_test.dart` to assert navigation to `OwnerConfigurationScreen` via `owner_dashboard_config_card`; re-homed create-service failure path coverage in `test/a5_error_handling_test.dart` to `OwnerConfigurationScreen` to verify exception handling through `friendlyErrorMessage` without raw `Exception:` prefix.
   - **Localization Cleanup**: Removed 36 orphaned ARB keys (plus 2 `@...` metadata entries) across `app_en.arb` and `app_ar.arb` with `flutter gen-l10n` regeneration; confirmed shared keys (`manageServicesAction`, `userProfileTitle`, `tooltipClose`, `cancel`) remain intact.
   - **Verification**: `flutter analyze` 0 issues, full `flutter test` 476/476 tests passed (100% pass), `scripts/frontend_composition_gate.sh` passed, and `docs-check` passed.
+
+### Durable Notification History & In-App Read State Tracking (2026-08-29)
+
+* **Verified End-to-End Notification Persistence (`notification-service` & Flutter frontend)**: Added durable persistence for in-app notifications across the Go backend and Flutter frontend, resolving the live-only ephemeral broadcast limitation:
+  - **Backend Configuration & Fallbacks (`services/notification-service/internal/config/`)**: Added `MongoURI` and `MongoDatabase` to `Config`. Reads `MONGO_URI` (defaulting to `"mongodb://localhost:27017"`) and `NOTIFICATION_MONGO_DATABASE` falling back to `MONGO_INITDB_DATABASE` and `"notification_db"`. Updated `infrastructure/.env.example`, `infrastructure/docker-compose.yml`, and `infrastructure/deploy/docker-compose.prod.yml`.
+  - **MongoDB Store Package (`services/notification-service/internal/store/`)**: Created `Store` interface and `MongoDB` implementation using `go.mongodb.org/mongo-driver/v2`. Established compound indexes on `(tenant_id, user_id, timestamp desc)` and `(tenant_id, roles, timestamp desc)`. Implemented strictly tenant-and-user-scoped operations: `InsertNotification`, `ListForUser`, `MarkRead`, `MarkAllRead`, `Delete`, and `DeleteAll`. Created test suite `mongodb_test.go` (8 tests) including an explicit cross-tenant/cross-user isolation test `TestMongoDB_CrossTenantCrossUserIsolation`.
+  - **Wired Handlers & Main (`services/notification-service/`)**: Connected `mongoStore` in `cmd/main.go`. Updated send paths (`POST /notifications/send`, `POST /notifications/broadcast/job-alert`) to asynchronously/resiliently persist notifications without disrupting live SSE delivery. Extracted shared JWT & user verification helper `resolveToken` and `authenticateHeader`. Implemented 5 authenticated REST endpoints: `GET /notifications/history`, `POST /notifications/{id}/read`, `POST /notifications/read-all`, `DELETE /notifications/{id}`, and `DELETE /notifications`. Added handler tests in `history_handlers_test.go` (mock-store coverage + live verification sequence).
+  - **Flutter Client Integration (`frontend/`)**:
+    - `ApiClient`: Added HTTP `delete()` method to complete standard REST verb parity.
+    - `NotificationModel`: Updated `NotificationModel.fromJson` to deserialize persisted `is_read` from JSON, and `toJson` to emit `is_read`.
+    - `NotificationsProvider`: Added `fetchHistory` and cursor-based `loadMore` pagination; added cold-start history fetch in `initSse`; implemented optimistic updates with error rollbacks on `markAsRead`, `markAllAsRead`, `dismiss`, and `clearAll`.
+    - `ListScreenTemplate` & `NotificationsScreen`: Extended `ListScreenTemplate` with optional pagination affordances (`onLoadMore`, `hasMore`, `isLoadingMore`, `loadMoreLabel`); wired pull-to-refresh (`onRefresh`) and pagination into `NotificationsScreen`.
+    - Added tests in `test/notifications_provider_persistence_test.dart` (model parsing, history fetch/dedupe, pagination, optimistic rollbacks, widget pagination) and verified golden baselines pass without regressions.
+  - **Documentation & CI Gates**: Added 5 new endpoints to `shared/infra/docgen/generator.go`, regenerated `docs/APPLICATION_MAP.md` via `make docs`, verified with `make docs-check`, and verified full pass across `scripts/frontend_composition_gate.sh`, `go test ./services/notification-service/...`, `flutter analyze`, and `flutter test` (485/485 tests passing).
 

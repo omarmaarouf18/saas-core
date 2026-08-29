@@ -2,10 +2,15 @@
 //
 // Endpoints:
 //
-//	GET  /notifications/stream              — SSE stream (token, tenant_id, role)
-//	POST /notifications/send                — Push notification to connected clients
-//	POST /notifications/broadcast/job-alert — Broadcast job alert to all roles
-//	GET  /health                            — Health check with client stats
+//	GET    /notifications/stream              — SSE stream (token, tenant_id, role)
+//	POST   /notifications/send                — Push notification to connected clients
+//	POST   /notifications/broadcast/job-alert — Broadcast job alert to all roles
+//	GET    /notifications/history             — Query persisted notifications
+//	POST   /notifications/{id}/read           — Mark notification as read
+//	POST   /notifications/read-all            — Mark all notifications as read
+//	DELETE /notifications/{id}                — Dismiss notification
+//	DELETE /notifications                     — Clear all notifications
+//	GET    /health                            — Health check with client stats
 package main
 
 import (
@@ -23,6 +28,7 @@ import (
 	"github.com/project/notification-service/internal/fcm"
 	"github.com/project/notification-service/internal/handlers"
 	"github.com/project/notification-service/internal/hub"
+	"github.com/project/notification-service/internal/store"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/shared/infra/ratelimit"
 	"github.com/project/shared/infra/resilience"
@@ -70,7 +76,19 @@ func main() {
 		sseHub.SetRedisClient(redisClient)
 	}
 
-	notifHandlers := handlers.NewNotification(sseHub, cfg, redisClient)
+	// Connect to MongoDB for notification persistence.
+	mongoStore, err := store.NewMongoDB(context.Background(), cfg.MongoURI, cfg.MongoDatabase)
+	if err != nil {
+		log.Printf("[WARN] MongoDB initialization failed (%v) - running without notification persistence", err)
+	} else {
+		defer func() {
+			closeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			_ = mongoStore.Close(closeCtx)
+		}()
+	}
+
+	notifHandlers := handlers.NewNotification(sseHub, mongoStore, cfg, redisClient)
 
 	mux := http.NewServeMux()
 	notifHandlers.RegisterRoutes(mux)

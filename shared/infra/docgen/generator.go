@@ -252,6 +252,31 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Broadcasts job alert to employees.",
 		Targets:     "Dispatches message to SSE clients.",
 	},
+	"GET /notifications/history": {
+		Permissions: "User JWT",
+		Function:    "Returns the authenticated user's persisted notifications, paginated.",
+		Targets:     "Reads `notifications` collection.",
+	},
+	"POST /notifications/{id}/read": {
+		Permissions: "User JWT",
+		Function:    "Marks a single notification as read for the authenticated user.",
+		Targets:     "Updates `notifications` collection.",
+	},
+	"POST /notifications/read-all": {
+		Permissions: "User JWT",
+		Function:    "Marks all notifications as read for the authenticated user.",
+		Targets:     "Updates `notifications` collection.",
+	},
+	"DELETE /notifications/{id}": {
+		Permissions: "User JWT",
+		Function:    "Deletes a single notification for the authenticated user.",
+		Targets:     "Deletes from `notifications` collection.",
+	},
+	"DELETE /notifications": {
+		Permissions: "User JWT",
+		Function:    "Clears all notifications for the authenticated user.",
+		Targets:     "Deletes from `notifications` collection.",
+	},
 
 	// user-service
 	"GET /health (user-service)": {
