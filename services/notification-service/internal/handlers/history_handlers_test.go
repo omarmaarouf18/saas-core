@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -38,6 +39,15 @@ func (m *memoryStore) InsertNotification(ctx context.Context, notif *store.Notif
 	}
 	if notif.Timestamp.IsZero() {
 		notif.Timestamp = time.Now().UTC()
+	}
+	if notif.CreatedAt.IsZero() {
+		notif.CreatedAt = time.Now().UTC()
+	}
+	if notif.ReadBy == nil {
+		notif.ReadBy = []string{}
+	}
+	if notif.DismissedBy == nil {
+		notif.DismissedBy = []string{}
 	}
 	m.notifications = append(m.notifications, *notif)
 	return nil
@@ -76,11 +86,17 @@ func (m *memoryStore) ListForUser(ctx context.Context, tenantID, userID string, 
 			continue
 		}
 
+		if userID != "" && slices.Contains(n.DismissedBy, userID) {
+			continue
+		}
+
 		if before != nil && !before.IsZero() && !n.Timestamp.Before(*before) {
 			continue
 		}
 
-		matched = append(matched, n)
+		nCopy := n
+		nCopy.IsRead = (userID != "" && slices.Contains(n.ReadBy, userID))
+		matched = append(matched, nCopy)
 	}
 
 	// Sort newest first
@@ -110,7 +126,9 @@ func (m *memoryStore) MarkRead(ctx context.Context, tenantID, userID, notificati
 			if n.UserID != "" && n.UserID != userID {
 				return store.ErrNotFound
 			}
-			m.notifications[i].IsRead = true
+			if !slices.Contains(m.notifications[i].ReadBy, userID) {
+				m.notifications[i].ReadBy = append(m.notifications[i].ReadBy, userID)
+			}
 			return nil
 		}
 	}
@@ -124,11 +142,34 @@ func (m *memoryStore) MarkAllRead(ctx context.Context, tenantID, userID string) 
 	for i, n := range m.notifications {
 		if n.TenantID == tenantID || n.Global {
 			if n.UserID == "" || n.UserID == userID {
-				m.notifications[i].IsRead = true
+				if !slices.Contains(m.notifications[i].DismissedBy, userID) {
+					if !slices.Contains(m.notifications[i].ReadBy, userID) {
+						m.notifications[i].ReadBy = append(m.notifications[i].ReadBy, userID)
+					}
+				}
 			}
 		}
 	}
 	return nil
+}
+
+func isExclusiveMem(n *store.Notification, userID string) bool {
+	if n.Global || len(n.Roles) > 0 {
+		return false
+	}
+	if len(n.UserIDs) > 1 {
+		return false
+	}
+	if len(n.UserIDs) == 1 && n.UserIDs[0] != userID {
+		return false
+	}
+	if n.UserID != "" && n.UserID != userID {
+		return false
+	}
+	if n.UserID == "" && len(n.UserIDs) == 0 {
+		return false
+	}
+	return n.UserID == userID || (len(n.UserIDs) == 1 && n.UserIDs[0] == userID)
 }
 
 func (m *memoryStore) Delete(ctx context.Context, tenantID, userID, notificationID string) error {
@@ -143,7 +184,13 @@ func (m *memoryStore) Delete(ctx context.Context, tenantID, userID, notification
 			if n.UserID != "" && n.UserID != userID {
 				return store.ErrNotFound
 			}
-			m.notifications = append(m.notifications[:i], m.notifications[i+1:]...)
+			if isExclusiveMem(&n, userID) {
+				m.notifications = append(m.notifications[:i], m.notifications[i+1:]...)
+			} else {
+				if !slices.Contains(m.notifications[i].DismissedBy, userID) {
+					m.notifications[i].DismissedBy = append(m.notifications[i].DismissedBy, userID)
+				}
+			}
 			return nil
 		}
 	}
@@ -157,7 +204,12 @@ func (m *memoryStore) DeleteAll(ctx context.Context, tenantID, userID string) er
 	remaining := make([]store.Notification, 0)
 	for _, n := range m.notifications {
 		if (n.TenantID == tenantID || n.Global) && (n.UserID == "" || n.UserID == userID) {
-			continue // deleted
+			if isExclusiveMem(&n, userID) {
+				continue // hard delete
+			}
+			if !slices.Contains(n.DismissedBy, userID) {
+				n.DismissedBy = append(n.DismissedBy, userID)
+			}
 		}
 		remaining = append(remaining, n)
 	}
@@ -183,6 +235,12 @@ func setupHandlerTestContext(t *testing.T) (*Notification, *memoryStore, *http.S
 		} else if id == "user-eve" {
 			tenant = "tenant-alice"
 			role = "client"
+		} else if id == "owner-1" {
+			tenant = "tenant-bc"
+			role = "owner"
+		} else if id == "employee-1" {
+			tenant = "tenant-bc"
+			role = "employee"
 		}
 		json.NewEncoder(w).Encode(map[string]any{
 			"id":        id,
@@ -646,4 +704,94 @@ func TestManualVerificationNarrative(t *testing.T) {
 		t.Fatalf("Expected 0 notifications in history after delete, got %d", len(histResp3.Notifications))
 	}
 	t.Logf("[Step 6 OK] Confirmed GET /notifications/history is empty after delete")
+}
+
+func TestHandler_BroadcastReadDismissIsPerRecipient(t *testing.T) {
+	_, memStore, mux, _, _ := setupHandlerTestContext(t)
+
+	// User 1: owner-1 in tenant-bc
+	tokenOwner, err := jwtutil.GenerateToken("owner-1", "owner", "tenant-bc", "owner1@example.com")
+	if err != nil {
+		t.Fatalf("GenerateToken failed: %v", err)
+	}
+
+	// User 2: employee-1 in tenant-bc
+	tokenEmp, err := jwtutil.GenerateToken("employee-1", "employee", "tenant-bc", "emp1@example.com")
+	if err != nil {
+		t.Fatalf("GenerateToken failed: %v", err)
+	}
+
+	// 1. Insert one broadcast notification with Roles: ["owner", "employee"] and no UserID
+	notifID := "bc-job-alert-42"
+	_ = memStore.InsertNotification(context.Background(), &store.Notification{
+		ID:        notifID,
+		TenantID:  "tenant-bc",
+		Roles:     []string{"owner", "employee"},
+		Title:     "🆕 Broadcast Alert",
+		Body:      "New urgent delivery job ready for pickup",
+		Timestamp: time.Now().UTC(),
+	})
+
+	// 2. Both owner and employee retrieve history via GET /notifications/history -> both unread (is_read: false)
+	getHistory := func(token string) (int, []store.Notification) {
+		req := httptest.NewRequest("GET", "/notifications/history", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		var resp struct {
+			Notifications []store.Notification `json:"notifications"`
+		}
+		_ = json.NewDecoder(rec.Body).Decode(&resp)
+		return rec.Code, resp.Notifications
+	}
+
+	code, ownerItems := getHistory(tokenOwner)
+	if code != http.StatusOK || len(ownerItems) != 1 || ownerItems[0].IsRead {
+		t.Fatalf("owner-1 expected 1 unread notification, got code=%d, len=%d, isRead=%v", code, len(ownerItems), ownerItems[0].IsRead)
+	}
+
+	code, empItems := getHistory(tokenEmp)
+	if code != http.StatusOK || len(empItems) != 1 || empItems[0].IsRead {
+		t.Fatalf("employee-1 expected 1 unread notification, got code=%d, len=%d, isRead=%v", code, len(empItems), empItems[0].IsRead)
+	}
+
+	// 3. owner-1 marks the broadcast notification as read via POST /notifications/{id}/read
+	readReq := httptest.NewRequest("POST", fmt.Sprintf("/notifications/%s/read", notifID), nil)
+	readReq.Header.Set("Authorization", "Bearer "+tokenOwner)
+	readRec := httptest.NewRecorder()
+	mux.ServeHTTP(readRec, readReq)
+	if readRec.Code != http.StatusOK {
+		t.Fatalf("owner-1 POST /notifications/%s/read failed: %d %s", notifID, readRec.Code, readRec.Body.String())
+	}
+
+	// 4. Assert owner-1 sees is_read: true, but employee-1 STILL sees is_read: false
+	code, ownerItemsAfterRead := getHistory(tokenOwner)
+	if code != http.StatusOK || len(ownerItemsAfterRead) != 1 || !ownerItemsAfterRead[0].IsRead {
+		t.Fatalf("owner-1 expected notification to be is_read: true, got %+v", ownerItemsAfterRead)
+	}
+
+	code, empItemsAfterOwnerRead := getHistory(tokenEmp)
+	if code != http.StatusOK || len(empItemsAfterOwnerRead) != 1 || empItemsAfterOwnerRead[0].IsRead {
+		t.Fatalf("employee-1 MUST still see notification as is_read: false, got %+v", empItemsAfterOwnerRead)
+	}
+
+	// 5. employee-1 dismisses/deletes the broadcast notification via DELETE /notifications/{id}
+	delReq := httptest.NewRequest("DELETE", fmt.Sprintf("/notifications/%s", notifID), nil)
+	delReq.Header.Set("Authorization", "Bearer "+tokenEmp)
+	delRec := httptest.NewRecorder()
+	mux.ServeHTTP(delRec, delReq)
+	if delRec.Code != http.StatusOK {
+		t.Fatalf("employee-1 DELETE /notifications/%s failed: %d %s", notifID, delRec.Code, delRec.Body.String())
+	}
+
+	// 6. Assert employee-1 no longer sees it in history, but owner-1 still sees it (and as read)
+	code, empItemsAfterDelete := getHistory(tokenEmp)
+	if code != http.StatusOK || len(empItemsAfterDelete) != 0 {
+		t.Fatalf("employee-1 expected 0 notifications in history after dismiss, got %d", len(empItemsAfterDelete))
+	}
+
+	code, ownerItemsAfterEmpDelete := getHistory(tokenOwner)
+	if code != http.StatusOK || len(ownerItemsAfterEmpDelete) != 1 || !ownerItemsAfterEmpDelete[0].IsRead {
+		t.Fatalf("owner-1 MUST still see 1 read notification after employee-1 dismissed it! Got %+v", ownerItemsAfterEmpDelete)
+	}
 }

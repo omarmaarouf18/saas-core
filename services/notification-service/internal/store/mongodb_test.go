@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func setupTestMongoDB(t *testing.T) (*MongoDB, func()) {
@@ -468,5 +470,190 @@ func TestMongoDB_CrossTenantCrossUserIsolation(t *testing.T) {
 	aliceCheck, err := s.ListForUser(ctx, "tenant-alpha", "user-alice", nil, 10, nil)
 	if err != nil || len(aliceCheck) != 1 || aliceCheck[0].IsRead {
 		t.Fatalf("Alice's notification was modified or deleted! Items: %+v, err: %v", aliceCheck, err)
+	}
+}
+
+func TestMongoDB_TTLIndexAndCreatedAt(t *testing.T) {
+	s, cleanup := setupTestMongoDB(t)
+	if s == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+
+	// 1. Insert a notification without setting CreatedAt
+	notif := &Notification{
+		ID:        "notif-ttl-test",
+		TenantID:  "tenant-ttl",
+		UserID:    "user-ttl",
+		Title:     "TTL Test Notification",
+		Body:      "Should have CreatedAt and TTL index",
+		Timestamp: time.Now().UTC(),
+	}
+
+	beforeInsert := time.Now().UTC().Add(-2 * time.Second)
+	if err := s.InsertNotification(ctx, notif); err != nil {
+		t.Fatalf("InsertNotification failed: %v", err)
+	}
+	afterInsert := time.Now().UTC().Add(2 * time.Second)
+
+	// 2. Confirm CreatedAt is populated and close to "now"
+	if notif.CreatedAt.IsZero() {
+		t.Fatalf("Expected notif.CreatedAt to be populated, got zero time")
+	}
+	if notif.CreatedAt.Before(beforeInsert) || notif.CreatedAt.After(afterInsert) {
+		t.Errorf("Expected CreatedAt to be between %v and %v, got %v", beforeInsert, afterInsert, notif.CreatedAt)
+	}
+
+	// Read directly from collection to verify persisted BSON
+	var persisted bson.M
+	if err := s.notifications.FindOne(ctx, bson.M{"_id": "notif-ttl-test"}).Decode(&persisted); err != nil {
+		t.Fatalf("FindOne failed: %v", err)
+	}
+	rawCreatedAt, ok := persisted["created_at"]
+	if !ok || rawCreatedAt == nil {
+		t.Fatalf("Persisted document missing created_at field in MongoDB: %+v", persisted)
+	}
+
+	// 3. Confirm TTL index exists on created_at with ExpireAfterSeconds == 2592000
+	cursor, err := s.notifications.Indexes().List(ctx)
+	if err != nil {
+		t.Fatalf("List indexes failed: %v", err)
+	}
+	defer cursor.Close(ctx)
+
+	var indexes []bson.M
+	if err := cursor.All(ctx, &indexes); err != nil {
+		t.Fatalf("Decode indexes failed: %v", err)
+	}
+
+	var foundTTLIndex bool
+	for _, idx := range indexes {
+		keyMap := make(map[string]any)
+		switch k := idx["key"].(type) {
+		case bson.M:
+			for k1, v1 := range k {
+				keyMap[k1] = v1
+			}
+		case bson.D:
+			for _, elem := range k {
+				keyMap[elem.Key] = elem.Value
+			}
+		}
+
+		if keyMap != nil {
+			val, hasCreatedAt := keyMap["created_at"]
+			if hasCreatedAt && (val == int32(1) || val == int64(1) || val == 1) {
+				foundTTLIndex = true
+				rawExp, hasExp := idx["expireAfterSeconds"]
+				if !hasExp {
+					t.Fatalf("Index on created_at exists but lacks expireAfterSeconds: %+v", idx)
+				}
+				var expSec int64
+				switch v := rawExp.(type) {
+				case int32:
+					expSec = int64(v)
+				case int64:
+					expSec = v
+				case float64:
+					expSec = int64(v)
+				default:
+					t.Fatalf("Unexpected type for expireAfterSeconds: %T (%v)", rawExp, rawExp)
+				}
+				if expSec != 2592000 {
+					t.Errorf("Expected expireAfterSeconds to be 2592000 (30 days), got %d", expSec)
+				}
+				break
+			}
+		}
+	}
+
+	if !foundTTLIndex {
+		t.Fatalf("TTL index on created_at not found in collection indexes: %+v", indexes)
+	}
+}
+
+func TestMongoDB_BroadcastReadDismissIsPerRecipient(t *testing.T) {
+	s, cleanup := setupTestMongoDB(t)
+	if s == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+
+	// 1. Insert one broadcast notification with Roles: ["owner", "employee"] and no UserID
+	notif := &Notification{
+		ID:        "bc-alert-1",
+		TenantID:  "tenant-broadcast-test",
+		Roles:     []string{"owner", "employee"},
+		Title:     "New Job Available",
+		Body:      "Plumbing job #101 is open for dispatch",
+		Timestamp: time.Now().UTC(),
+	}
+	if err := s.InsertNotification(ctx, notif); err != nil {
+		t.Fatalf("InsertNotification failed: %v", err)
+	}
+
+	// Confirm both owner-1 and employee-1 see it initially as unread
+	ownerInitial, err := s.ListForUser(ctx, "tenant-broadcast-test", "owner-1", []string{"owner"}, 10, nil)
+	if err != nil || len(ownerInitial) != 1 {
+		t.Fatalf("owner-1 should see the broadcast notification initially, got len=%d, err=%v", len(ownerInitial), err)
+	}
+	if ownerInitial[0].IsRead {
+		t.Errorf("owner-1 should see unread notification initially, got IsRead=true")
+	}
+
+	empInitial, err := s.ListForUser(ctx, "tenant-broadcast-test", "employee-1", []string{"employee"}, 10, nil)
+	if err != nil || len(empInitial) != 1 {
+		t.Fatalf("employee-1 should see the broadcast notification initially, got len=%d, err=%v", len(empInitial), err)
+	}
+	if empInitial[0].IsRead {
+		t.Errorf("employee-1 should see unread notification initially, got IsRead=true")
+	}
+
+	// 2. owner-1 calls MarkRead
+	if err := s.MarkRead(ctx, "tenant-broadcast-test", "owner-1", "bc-alert-1"); err != nil {
+		t.Fatalf("owner-1 MarkRead failed: %v", err)
+	}
+
+	// 3. Assert querying as owner-1 shows it read, but querying as employee-1 still shows it unread
+	ownerAfterRead, err := s.ListForUser(ctx, "tenant-broadcast-test", "owner-1", []string{"owner"}, 10, nil)
+	if err != nil || len(ownerAfterRead) != 1 {
+		t.Fatalf("owner-1 should still see 1 notification, got len=%d, err=%v", len(ownerAfterRead), err)
+	}
+	if !ownerAfterRead[0].IsRead {
+		t.Errorf("owner-1 should see notification marked as read (IsRead=true), got false")
+	}
+
+	empAfterOwnerRead, err := s.ListForUser(ctx, "tenant-broadcast-test", "employee-1", []string{"employee"}, 10, nil)
+	if err != nil || len(empAfterOwnerRead) != 1 {
+		t.Fatalf("employee-1 should still see 1 notification, got len=%d, err=%v", len(empAfterOwnerRead), err)
+	}
+	if empAfterOwnerRead[0].IsRead {
+		t.Errorf("employee-1 must still see notification as UNREAD after owner-1 marked read, got IsRead=true")
+	}
+
+	// 4. employee-1 calls Delete on it
+	if err := s.Delete(ctx, "tenant-broadcast-test", "employee-1", "bc-alert-1"); err != nil {
+		t.Fatalf("employee-1 Delete failed: %v", err)
+	}
+
+	// 5. Assert employee-1 no longer sees it in ListForUser, but owner-1 still does
+	empAfterDelete, err := s.ListForUser(ctx, "tenant-broadcast-test", "employee-1", []string{"employee"}, 10, nil)
+	if err != nil {
+		t.Fatalf("employee-1 ListForUser failed: %v", err)
+	}
+	if len(empAfterDelete) != 0 {
+		t.Errorf("employee-1 should no longer see dismissed broadcast notification, got %d items", len(empAfterDelete))
+	}
+
+	ownerAfterEmpDelete, err := s.ListForUser(ctx, "tenant-broadcast-test", "owner-1", []string{"owner"}, 10, nil)
+	if err != nil || len(ownerAfterEmpDelete) != 1 {
+		t.Fatalf("owner-1 MUST still see the notification after employee-1 dismissed it! Got len=%d, err=%v", len(ownerAfterEmpDelete), err)
+	}
+	if !ownerAfterEmpDelete[0].IsRead {
+		t.Errorf("owner-1 should still see notification as read, got IsRead=false")
 	}
 }

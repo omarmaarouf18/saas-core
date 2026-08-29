@@ -390,7 +390,6 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 			Body:      notif.Body,
 			Roles:     roles,
 			Timestamp: notif.Timestamp,
-			IsRead:    false,
 		}
 		if err := n.store.InsertNotification(r.Context(), storeDoc); err != nil {
 			log.Printf("[NOTIF-STORE] Failed to persist notification %s: %v", notif.ID, err)
@@ -467,7 +466,6 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 			Body:      notif.Body,
 			Roles:     roles,
 			Timestamp: notif.Timestamp,
-			IsRead:    false,
 		}
 		if err := n.store.InsertNotification(r.Context(), storeDoc); err != nil {
 			log.Printf("[NOTIF-STORE] Failed to persist job alert %s: %v", notif.ID, err)
