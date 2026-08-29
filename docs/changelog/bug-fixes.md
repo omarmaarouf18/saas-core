@@ -2,6 +2,29 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Synchronous Auto-Dispatch, Real Courier Location Pricing, and Standalone Heartbeat Pings
+
+- **Implementation Detail**:
+  - **User Service (`services/user-service/`)**:
+    - `internal/models/models.go`: Added `EmployeeLocation` model (`TenantID`, `EmployeeID`, `Latitude`, `Longitude`, `UpdatedAt`), `EmployeeLocationPingRequest`, and snapshotted fields on `models.Job`: `BookedDistance float64` and `AssignedEmployeeLocation *Location`.
+    - `internal/store/mongodb.go`: Added `employee_locations` collection with compound unique index on `(tenant_id, employee_id)` and TTL index on `updated_at`. Implemented `UpsertEmployeeLocation`, `GetEmployeeLocation`, and `GetFreshEmployeeLocations` (scoped to tenant within freshness window). Added courier location seeding for test and demo tenants in `ensureSeedData`.
+    - `internal/handlers/handlers.go`: Registered route `POST /users/employee/location` and documented in `docs/APPLICATION_MAP.md`.
+    - `internal/handlers/jobs_handlers.go`:
+      - Implemented `UpdateEmployeeLocation`: enforces authenticated `"employee"` role, validates coordinate bounds, applies 3-second minimum update interval gate (Redis backed), and validates speed plausibility against prior ping (rejects jumps > 150 km/h with 400 `implausible_speed`).
+      - Implemented `findNearestAvailableEmployee`: queries fresh employee locations within a 5-minute window (`EmployeeLocationFreshnessWindow`), verifies employee active status via auth-service (`verifyEmployeeAssignment`), computes Haversine distance from customer pickup coordinates, and synchronously selects the closest courier. Returns `ErrNoCouriersAvailable` (HTTP 422 `no_couriers_available`) if none are available.
+      - Updated `TrackJob`: when `req.EmployeeID == ""`, automatically runs synchronous auto-dispatch (`findNearestAvailableEmployee`). For direct-assign (`req.EmployeeID != ""`), verifies the assigned courier has a recorded location, rejecting with HTTP 422 `employee_location_unavailable` if absent. Replaced buggy business address pricing (`haversineKm(..., svc.Latitude, svc.Longitude)`) with actual assigned courier location. Snapshots `BookedDistance` and `AssignedEmployeeLocation` directly onto the created `Job`.
+      - Updated `CompleteJob`: uses snapshotted `job.BookedDistance` for final reconciliation and escrow payouts, completely removing the business address fallback.
+      - Updated `UpdateJobLocation`: dual-writes active job coordinates to `UpsertEmployeeLocation` to maintain standalone courier freshness during job runs.
+    - Added dedicated test suite `employee_dispatch_pricing_test.go` covering standalone pings, throttle and speed plausibility rejection, fresh vs stale query filtering, nearest-candidate selection, 422 rejection paths, and mathematical proof that ride/delivery pricing derives from courier location rather than business address.
+  - **Frontend (`frontend/`)**:
+    - `lib/core/error_messages.dart`: Added `ErrorMessages.noCouriersAvailable` ("No couriers are currently available in your area. Please try again shortly.") and mapped HTTP 422 in `friendlyErrorMessage`.
+    - `lib/providers/employee_location_provider.dart`: Added `startAvailabilityTracking(userToken)` and `stopAvailabilityTracking()` to ping `/users/employee/location` while online/available with no active job.
+    - `lib/screens/employee_jobs_screen.dart`: Wired `_refreshJobs` to trigger `startAvailabilityTracking` when `activeJobs` is empty.
+    - `lib/core/location_permission.dart`: Added defensive error handling for platform exceptions.
+    - Added unit tests in `employee_location_tracking_test.dart` and `error_messages_test.dart` validating availability pings and 422 mapping.
+- **Commit SHA**: ``1e78904a3c892e35ad3725590f15cb9d268480af``
+- **Verification**: Verified via `go test ./...` in `services/user-service` (100% pass, 0 failures), `go test ./shared/infra/...` (100% pass including `TestChangelogCommitSHAs` and `TestDocgenFreshness`), `flutter analyze` (0 issues), `bash scripts/frontend_composition_gate.sh` (all checks passed), and `flutter test` (491/491 tests passed).
+
 ## Notification Mutation Filter Role-Blindness Fix and Graceful 404 Handling
 
 - **Implementation Detail**:
