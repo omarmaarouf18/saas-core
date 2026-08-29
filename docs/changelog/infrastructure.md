@@ -409,3 +409,14 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Failure #1 (code bug)**: `trigger-reviewer-console-sync.yml` wired `github-token: ${{ secrets.REVIEWER_CONSOLE_PAT }}` but no such secret exists in the repo (`gh secret list` shows only `APP_ID` / `APP_PRIVATE_KEY`); github-script received an empty string and every run failed with `Input required and not supplied: github-token`. Latent since `019ccce...` because the workflow's main-only path filter meant its first-ever execution was the post-release push. Fix: generate a short-lived installation token via `actions/create-github-app-token@v1` scoped to `kyc-reviewer-console` using the existing App secrets, matching the proven pattern in `build-and-publish.yml` and `sync-mobile-frontend.yml`; the dead PAT reference was removed.
 - **Failure #2 (App-side, owner action)**: `Sync Mobile Frontend` generated its App token successfully but the subtree force-push returned `403 ... denied to quick-delivery-automation[bot]` despite succeeding Aug 24 (run `32745471664...`) — App installation/permission reduction on `quick-delivery-mobile`, not a code regression. Restored owner-side in GitHub settings between 10:43Z and 11:05Z the same day; workflow re-dispatched and passed with zero code changes.
 - **Verification (literal)**: manual dispatches on `main` post-merge — Contract Sync run `32961504183` success, which fired the console repo's own `Contract Sync (from saas-core)` via `repository_dispatch` (run `32961516484`, 36s, success — cross-repo chain proven end-to-end); Sync Mobile Frontend run `32961583879` success (20s).
+
+## notification-service Docker Build go.sum Transitive Checksum Fix
+
+**Date**: 2026-08-29
+**Category**: Infrastructure / CI / Docker Build
+**Related Commit SHA**: ``913fa58dc15d41b97b7b0cf411f97ae2e2e01533``
+
+- **Problem**: `Build and Publish Docker Images` workflow failed on `Build & Publish GHCR Images (notification-service)` during standalone Docker image compilation (`go build ./cmd/main.go`) with `missing go.sum entry for module providing package` errors across mongo-driver transitive packages (`github.com/youmark/pkcs8`, `github.com/golang/snappy`, `github.com/klauspost/compress`, `github.com/xdg-go/scram`, `github.com/xdg-go/stringprep`, `golang.org/x/sync`, `golang.org/x/crypto`, `golang.org/x/text`).
+- **Fix**: Executed `go mod tidy` in `services/notification-service` module root to regenerate `services/notification-service/go.sum` with full transitive checksums and promote `go.mongodb.org/mongo-driver/v2 v2.2.1` to direct module requirement in `services/notification-service/go.mod`.
+- **Verification**: Verified via `CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" ./cmd/main.go` compiling cleanly, full test suite `go test -v ./...` in `services/notification-service` passing (100% pass), and `shared/infra` tests passing.
+
