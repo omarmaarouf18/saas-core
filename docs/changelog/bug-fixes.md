@@ -643,3 +643,14 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Fix**: Added `resolveOwnerAuthToken` helper in `services_handlers.go` mirroring `wallet_handlers.go` convention to extract bearer token from `Authorization` header first, with fallback to `owner_token` and `owner_id` body fields. Updated `CreateService` and `UpdateService` to authenticate via the resolved token.
 - **Verification**: Verified via `service_owner_config_repro_test.go` (`TestOwnerConfigurationSave_ReproLiveError` passing with 200 OK for `UpdateService` and 201 Created for `CreateService`), `go build ./...`, `gofmt -l .` clean, full user-service test suite passing, and `flutter analyze` 0 issues.
 
+## Owner Configuration Screen KYC Verification Status Badge & Banner Restoration
+
+**Date**: 2026-08-29
+**Category**: Bug Fix / UI/UX
+**Related Commit SHA**: ``b427579762bcd0213207e1811626801eb8ebcb94``
+
+- **Problem**: Following the consolidation of `ServiceScreen` and `CreateServiceDialog` into `OwnerConfigurationScreen`, the account's KYC verification status badge (`StatusBadge` showing "Approved" / "Verified") was missing from `OwnerConfigurationScreen`. After completing or saving a service configuration flow, owners could not view their account's verification status, and unapproved owners were not surfaced a verification status banner.
+- **Fix**: Added reactive `AuthProvider` user profile reading in `OwnerConfigurationScreen.build`, rendered `StatusBadge` in the Business Identity header reflecting `user.kycStatus` (persisting across form lifecycle and save operations), added interactive `_buildKycBanner` (navigating to `KycDocumentUploadScreen` on tap) for unapproved/pending/rejected states, added unconditional `authProvider.fetchUserProfile()` in `_loadAndPrepopulate()`, added post-save `authProvider.fetchUserProfile()` refresh in `_submitForm()`, and updated golden test baselines.
+- **Verification**: Added comprehensive regression widget tests in `owner_configuration_screen_test.dart` (`KYC verification status badge remains visible on load and after save`, `KYC pending status displays warning banner and pending badge, tapping navigates to upload screen`, and `KYC rejected status displays warning banner and rejected badge`), confirming failure prior to the fix and passing post-fix. Full test suite (488/488 passed), `flutter analyze` 0 issues, golden tests 58/58 passed, and `frontend_composition_gate.sh` 100% clean.
+
+
