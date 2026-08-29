@@ -39,10 +39,10 @@ type Notification struct {
 type Store interface {
 	InsertNotification(ctx context.Context, notif *Notification) error
 	ListForUser(ctx context.Context, tenantID, userID string, roles []string, limit int, before *time.Time) ([]Notification, error)
-	MarkRead(ctx context.Context, tenantID, userID, notificationID string) error
-	MarkAllRead(ctx context.Context, tenantID, userID string) error
-	Delete(ctx context.Context, tenantID, userID, notificationID string) error
-	DeleteAll(ctx context.Context, tenantID, userID string) error
+	MarkRead(ctx context.Context, tenantID, userID string, roles []string, notificationID string) error
+	MarkAllRead(ctx context.Context, tenantID, userID string, roles []string) error
+	Delete(ctx context.Context, tenantID, userID string, roles []string, notificationID string) error
+	DeleteAll(ctx context.Context, tenantID, userID string, roles []string) error
 	Close(ctx context.Context) error
 }
 
@@ -248,27 +248,46 @@ func (s *MongoDB) ListForUser(ctx context.Context, tenantID, userID string, role
 	return finalResults, nil
 }
 
-func userMutationFilter(tenantID, userID, notificationID string) bson.M {
-	baseFilter := bson.M{
+func userMutationFilter(tenantID, userID string, roles []string, notificationID string) bson.M {
+	tenantFilter := bson.M{
+		"$or": []bson.M{
+			{"tenant_id": tenantID},
+			{"global": true},
+		},
+	}
+
+	var recipientOr []bson.M
+	if userID != "" {
+		recipientOr = append(recipientOr, bson.M{"user_id": userID})
+		recipientOr = append(recipientOr, bson.M{"user_ids": userID})
+	}
+
+	if len(roles) > 0 {
+		recipientOr = append(recipientOr, bson.M{"roles": bson.M{"$in": roles}})
+	}
+
+	// Broadcast notification with no role restrictions and no specific user target
+	recipientOr = append(recipientOr, bson.M{
 		"$and": []bson.M{
 			{"$or": []bson.M{
-				{"tenant_id": tenantID},
-				{"global": true},
+				{"user_id": ""},
+				{"user_id": bson.M{"$exists": false}},
 			}},
 			{"$or": []bson.M{
-				{"user_id": userID},
-				{"user_ids": userID},
-				{"$and": []bson.M{
-					{"$or": []bson.M{
-						{"user_id": ""},
-						{"user_id": bson.M{"$exists": false}},
-					}},
-					{"$or": []bson.M{
-						{"user_ids": bson.M{"$size": 0}},
-						{"user_ids": bson.M{"$exists": false}},
-					}},
-				}},
+				{"user_ids": bson.M{"$size": 0}},
+				{"user_ids": bson.M{"$exists": false}},
 			}},
+			{"$or": []bson.M{
+				{"roles": bson.M{"$size": 0}},
+				{"roles": bson.M{"$exists": false}},
+			}},
+		},
+	})
+
+	baseFilter := bson.M{
+		"$and": []bson.M{
+			tenantFilter,
+			{"$or": recipientOr},
 		},
 	}
 
@@ -301,8 +320,8 @@ func isExclusiveRecipient(notif *Notification, userID string) bool {
 // MarkRead marks a single notification as read, scoped strictly to the tenant and user.
 // Uses $addToSet on read_by so that role-broadcast and multi-recipient notifications
 // track read state per-recipient without mutating other recipients' read state.
-func (s *MongoDB) MarkRead(ctx context.Context, tenantID, userID, notificationID string) error {
-	filter := userMutationFilter(tenantID, userID, notificationID)
+func (s *MongoDB) MarkRead(ctx context.Context, tenantID, userID string, roles []string, notificationID string) error {
+	filter := userMutationFilter(tenantID, userID, roles, notificationID)
 	res, err := s.notifications.UpdateOne(ctx, filter, bson.M{"$addToSet": bson.M{"read_by": userID}})
 	if err != nil {
 		return err
@@ -314,8 +333,8 @@ func (s *MongoDB) MarkRead(ctx context.Context, tenantID, userID, notificationID
 }
 
 // MarkAllRead marks all matching notifications as read for the user by adding userID to read_by.
-func (s *MongoDB) MarkAllRead(ctx context.Context, tenantID, userID string) error {
-	filter := userMutationFilter(tenantID, userID, "")
+func (s *MongoDB) MarkAllRead(ctx context.Context, tenantID, userID string, roles []string) error {
+	filter := userMutationFilter(tenantID, userID, roles, "")
 	andClauses := filter["$and"].([]bson.M)
 	andClauses = append(andClauses, bson.M{
 		"read_by":      bson.M{"$ne": userID},
@@ -330,8 +349,8 @@ func (s *MongoDB) MarkAllRead(ctx context.Context, tenantID, userID string) erro
 // owned by this user (single direct recipient), it is hard-deleted from the store.
 // If it is shared/broadcast (targeted to roles, multiple users, or all users),
 // the user is added to dismissed_by so other recipients remain unaffected.
-func (s *MongoDB) Delete(ctx context.Context, tenantID, userID, notificationID string) error {
-	filter := userMutationFilter(tenantID, userID, notificationID)
+func (s *MongoDB) Delete(ctx context.Context, tenantID, userID string, roles []string, notificationID string) error {
+	filter := userMutationFilter(tenantID, userID, roles, notificationID)
 	var notif Notification
 	err := s.notifications.FindOne(ctx, filter).Decode(&notif)
 	if err != nil {
@@ -366,7 +385,7 @@ func (s *MongoDB) Delete(ctx context.Context, tenantID, userID, notificationID s
 // DeleteAll removes or dismisses all matching notifications for the user.
 // Exclusively owned notifications are hard-deleted, while shared/broadcast
 // notifications are soft-dismissed by adding userID to dismissed_by.
-func (s *MongoDB) DeleteAll(ctx context.Context, tenantID, userID string) error {
+func (s *MongoDB) DeleteAll(ctx context.Context, tenantID, userID string, roles []string) error {
 	// 1. Hard-delete exclusively owned notifications
 	exclusiveFilter := bson.M{
 		"$and": []bson.M{
@@ -389,7 +408,7 @@ func (s *MongoDB) DeleteAll(ctx context.Context, tenantID, userID string) error 
 	}
 
 	// 2. Soft-dismiss shared / broadcast notifications for this user
-	sharedFilter := userMutationFilter(tenantID, userID, "")
+	sharedFilter := userMutationFilter(tenantID, userID, roles, "")
 	_, err := s.notifications.UpdateMany(ctx, sharedFilter, bson.M{"$addToSet": bson.M{"dismissed_by": userID}})
 	return err
 }

@@ -461,7 +461,7 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 			ID:        notif.ID,
 			Type:      notif.Type,
 			TenantID:  notif.TenantID,
-			UserID:    notif.UserID,
+			UserID:    "", // Clear persisted UserID so role-broadcast alert is scoped by Roles, not an exclusive single employee
 			Title:     notif.Title,
 			Body:      notif.Body,
 			Roles:     roles,
@@ -542,6 +542,13 @@ func (n *Notification) History(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func resolveUserRoles(role hub.Role) []string {
+	if role == "" {
+		return nil
+	}
+	return []string{string(role)}
+}
+
 // ---------------------------------------------------------------------------
 // POST /notifications/{id}/read
 // ---------------------------------------------------------------------------
@@ -553,7 +560,7 @@ func (n *Notification) MarkRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, tenantID, _, status, errMsg := n.authenticateHeader(r)
+	userID, tenantID, role, status, errMsg := n.authenticateHeader(r)
 	if status != http.StatusOK {
 		writeJSON(w, status, map[string]string{"error": errMsg})
 		return
@@ -570,7 +577,8 @@ func (n *Notification) MarkRead(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if n.store != nil {
-		err := n.store.MarkRead(r.Context(), tenantID, userID, id)
+		roles := resolveUserRoles(role)
+		err := n.store.MarkRead(r.Context(), tenantID, userID, roles, id)
 		if err != nil {
 			if errors.Is(err, store.ErrNotFound) {
 				writeJSON(w, http.StatusNotFound, map[string]string{"error": "notification not found"})
@@ -596,14 +604,15 @@ func (n *Notification) ReadAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, tenantID, _, status, errMsg := n.authenticateHeader(r)
+	userID, tenantID, role, status, errMsg := n.authenticateHeader(r)
 	if status != http.StatusOK {
 		writeJSON(w, status, map[string]string{"error": errMsg})
 		return
 	}
 
 	if n.store != nil {
-		if err := n.store.MarkAllRead(r.Context(), tenantID, userID); err != nil {
+		roles := resolveUserRoles(role)
+		if err := n.store.MarkAllRead(r.Context(), tenantID, userID, roles); err != nil {
 			log.Printf("[NOTIF] Failed to mark all read: %v", err)
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to mark all notifications as read"})
 			return
@@ -624,7 +633,7 @@ func (n *Notification) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, tenantID, _, status, errMsg := n.authenticateHeader(r)
+	userID, tenantID, role, status, errMsg := n.authenticateHeader(r)
 	if status != http.StatusOK {
 		writeJSON(w, status, map[string]string{"error": errMsg})
 		return
@@ -640,7 +649,8 @@ func (n *Notification) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if n.store != nil {
-		err := n.store.Delete(r.Context(), tenantID, userID, id)
+		roles := resolveUserRoles(role)
+		err := n.store.Delete(r.Context(), tenantID, userID, roles, id)
 		if err != nil {
 			if errors.Is(err, store.ErrNotFound) {
 				writeJSON(w, http.StatusNotFound, map[string]string{"error": "notification not found"})
@@ -666,14 +676,15 @@ func (n *Notification) DeleteAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, tenantID, _, status, errMsg := n.authenticateHeader(r)
+	userID, tenantID, role, status, errMsg := n.authenticateHeader(r)
 	if status != http.StatusOK {
 		writeJSON(w, status, map[string]string{"error": errMsg})
 		return
 	}
 
 	if n.store != nil {
-		if err := n.store.DeleteAll(r.Context(), tenantID, userID); err != nil {
+		roles := resolveUserRoles(role)
+		if err := n.store.DeleteAll(r.Context(), tenantID, userID, roles); err != nil {
 			log.Printf("[NOTIF] Failed to delete all: %v", err)
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to delete all notifications"})
 			return

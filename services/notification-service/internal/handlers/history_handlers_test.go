@@ -114,16 +114,31 @@ func (m *memoryStore) ListForUser(ctx context.Context, tenantID, userID string, 
 	return matched, nil
 }
 
-func (m *memoryStore) MarkRead(ctx context.Context, tenantID, userID, notificationID string) error {
+func matchesUser(n *store.Notification, tenantID, userID string, roles []string) bool {
+	if n.TenantID != tenantID && !n.Global {
+		return false
+	}
+	if userID != "" && (n.UserID == userID || slices.Contains(n.UserIDs, userID)) {
+		return true
+	}
+	for _, r := range roles {
+		if slices.Contains(n.Roles, r) {
+			return true
+		}
+	}
+	if n.UserID == "" && len(n.UserIDs) == 0 && len(n.Roles) == 0 {
+		return true
+	}
+	return false
+}
+
+func (m *memoryStore) MarkRead(ctx context.Context, tenantID, userID string, roles []string, notificationID string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	for i, n := range m.notifications {
 		if n.ID == notificationID {
-			if n.TenantID != tenantID && !n.Global {
-				return store.ErrNotFound
-			}
-			if n.UserID != "" && n.UserID != userID {
+			if !matchesUser(&n, tenantID, userID, roles) {
 				return store.ErrNotFound
 			}
 			if !slices.Contains(m.notifications[i].ReadBy, userID) {
@@ -135,17 +150,15 @@ func (m *memoryStore) MarkRead(ctx context.Context, tenantID, userID, notificati
 	return store.ErrNotFound
 }
 
-func (m *memoryStore) MarkAllRead(ctx context.Context, tenantID, userID string) error {
+func (m *memoryStore) MarkAllRead(ctx context.Context, tenantID, userID string, roles []string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	for i, n := range m.notifications {
-		if n.TenantID == tenantID || n.Global {
-			if n.UserID == "" || n.UserID == userID {
-				if !slices.Contains(m.notifications[i].DismissedBy, userID) {
-					if !slices.Contains(m.notifications[i].ReadBy, userID) {
-						m.notifications[i].ReadBy = append(m.notifications[i].ReadBy, userID)
-					}
+		if matchesUser(&n, tenantID, userID, roles) {
+			if !slices.Contains(m.notifications[i].DismissedBy, userID) {
+				if !slices.Contains(m.notifications[i].ReadBy, userID) {
+					m.notifications[i].ReadBy = append(m.notifications[i].ReadBy, userID)
 				}
 			}
 		}
@@ -172,16 +185,13 @@ func isExclusiveMem(n *store.Notification, userID string) bool {
 	return n.UserID == userID || (len(n.UserIDs) == 1 && n.UserIDs[0] == userID)
 }
 
-func (m *memoryStore) Delete(ctx context.Context, tenantID, userID, notificationID string) error {
+func (m *memoryStore) Delete(ctx context.Context, tenantID, userID string, roles []string, notificationID string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	for i, n := range m.notifications {
 		if n.ID == notificationID {
-			if n.TenantID != tenantID && !n.Global {
-				return store.ErrNotFound
-			}
-			if n.UserID != "" && n.UserID != userID {
+			if !matchesUser(&n, tenantID, userID, roles) {
 				return store.ErrNotFound
 			}
 			if isExclusiveMem(&n, userID) {
@@ -197,13 +207,13 @@ func (m *memoryStore) Delete(ctx context.Context, tenantID, userID, notification
 	return store.ErrNotFound
 }
 
-func (m *memoryStore) DeleteAll(ctx context.Context, tenantID, userID string) error {
+func (m *memoryStore) DeleteAll(ctx context.Context, tenantID, userID string, roles []string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	remaining := make([]store.Notification, 0)
 	for _, n := range m.notifications {
-		if (n.TenantID == tenantID || n.Global) && (n.UserID == "" || n.UserID == userID) {
+		if matchesUser(&n, tenantID, userID, roles) {
 			if isExclusiveMem(&n, userID) {
 				continue // hard delete
 			}
@@ -588,7 +598,7 @@ func TestSendAndBroadcastJobAlert_Persistence(t *testing.T) {
 	}
 
 	// Verify job alert was persisted
-	itemsAfter, _ := memStore.ListForUser(context.Background(), "tenant-alice", "user-alice", nil, 10, nil)
+	itemsAfter, _ := memStore.ListForUser(context.Background(), "tenant-alice", "user-alice", []string{"employee"}, 10, nil)
 	if len(itemsAfter) != 2 {
 		t.Fatalf("Expected 2 persisted notifications, got %d", len(itemsAfter))
 	}

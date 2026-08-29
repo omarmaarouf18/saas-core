@@ -226,13 +226,13 @@ func TestMongoDB_MarkRead(t *testing.T) {
 	}
 
 	// Another user attempts to mark it read -> should fail with ErrNotFound
-	err := s.MarkRead(ctx, "tenant-read", "attacker-user", "read-notif-1")
+	err := s.MarkRead(ctx, "tenant-read", "attacker-user", nil, "read-notif-1")
 	if err != ErrNotFound {
 		t.Errorf("Expected ErrNotFound for unauthorized user, got %v", err)
 	}
 
 	// Legitimate user marks it read
-	if err := s.MarkRead(ctx, "tenant-read", "user-owner", "read-notif-1"); err != nil {
+	if err := s.MarkRead(ctx, "tenant-read", "user-owner", nil, "read-notif-1"); err != nil {
 		t.Fatalf("MarkRead failed: %v", err)
 	}
 
@@ -284,7 +284,7 @@ func TestMongoDB_MarkAllRead(t *testing.T) {
 	})
 
 	// user-A marks all as read
-	if err := s.MarkAllRead(ctx, "tenant-all", "user-A"); err != nil {
+	if err := s.MarkAllRead(ctx, "tenant-all", "user-A", nil); err != nil {
 		t.Fatalf("MarkAllRead failed: %v", err)
 	}
 
@@ -323,13 +323,13 @@ func TestMongoDB_Delete(t *testing.T) {
 	_ = s.InsertNotification(ctx, notif)
 
 	// Unauthorized delete attempt
-	err := s.Delete(ctx, "tenant-del", "other-user", "del-notif-1")
+	err := s.Delete(ctx, "tenant-del", "other-user", nil, "del-notif-1")
 	if err != ErrNotFound {
 		t.Errorf("Expected ErrNotFound for unauthorized delete, got %v", err)
 	}
 
 	// Authorized delete
-	if err := s.Delete(ctx, "tenant-del", "user-del", "del-notif-1"); err != nil {
+	if err := s.Delete(ctx, "tenant-del", "user-del", nil, "del-notif-1"); err != nil {
 		t.Fatalf("Delete failed: %v", err)
 	}
 
@@ -367,7 +367,7 @@ func TestMongoDB_DeleteAll(t *testing.T) {
 	})
 
 	// user-clear deletes all
-	if err := s.DeleteAll(ctx, "tenant-clear", "user-clear"); err != nil {
+	if err := s.DeleteAll(ctx, "tenant-clear", "user-clear", nil); err != nil {
 		t.Fatalf("DeleteAll failed: %v", err)
 	}
 
@@ -447,22 +447,22 @@ func TestMongoDB_CrossTenantCrossUserIsolation(t *testing.T) {
 	}
 
 	// 3. Bob tries to mark Alice's notification as read -> MUST return ErrNotFound
-	if err := s.MarkRead(ctx, "tenant-beta", "user-bob", "iso-t1-u1"); err != ErrNotFound {
+	if err := s.MarkRead(ctx, "tenant-beta", "user-bob", nil, "iso-t1-u1"); err != ErrNotFound {
 		t.Errorf("Expected ErrNotFound when Bob attempts to mark Alice's notification as read, got %v", err)
 	}
 
 	// 4. Adam tries to mark Alice's notification as read -> MUST return ErrNotFound
-	if err := s.MarkRead(ctx, "tenant-alpha", "user-adam", "iso-t1-u1"); err != ErrNotFound {
+	if err := s.MarkRead(ctx, "tenant-alpha", "user-adam", nil, "iso-t1-u1"); err != ErrNotFound {
 		t.Errorf("Expected ErrNotFound when Adam attempts to mark Alice's notification as read, got %v", err)
 	}
 
 	// 5. Bob tries to delete Alice's notification -> MUST return ErrNotFound
-	if err := s.Delete(ctx, "tenant-beta", "user-bob", "iso-t1-u1"); err != ErrNotFound {
+	if err := s.Delete(ctx, "tenant-beta", "user-bob", nil, "iso-t1-u1"); err != ErrNotFound {
 		t.Errorf("Expected ErrNotFound when Bob attempts to delete Alice's notification, got %v", err)
 	}
 
 	// 6. Adam tries to delete Alice's notification -> MUST return ErrNotFound
-	if err := s.Delete(ctx, "tenant-alpha", "user-adam", "iso-t1-u1"); err != ErrNotFound {
+	if err := s.Delete(ctx, "tenant-alpha", "user-adam", nil, "iso-t1-u1"); err != ErrNotFound {
 		t.Errorf("Expected ErrNotFound when Adam attempts to delete Alice's notification, got %v", err)
 	}
 
@@ -614,7 +614,7 @@ func TestMongoDB_BroadcastReadDismissIsPerRecipient(t *testing.T) {
 	}
 
 	// 2. owner-1 calls MarkRead
-	if err := s.MarkRead(ctx, "tenant-broadcast-test", "owner-1", "bc-alert-1"); err != nil {
+	if err := s.MarkRead(ctx, "tenant-broadcast-test", "owner-1", []string{"owner"}, "bc-alert-1"); err != nil {
 		t.Fatalf("owner-1 MarkRead failed: %v", err)
 	}
 
@@ -636,7 +636,7 @@ func TestMongoDB_BroadcastReadDismissIsPerRecipient(t *testing.T) {
 	}
 
 	// 4. employee-1 calls Delete on it
-	if err := s.Delete(ctx, "tenant-broadcast-test", "employee-1", "bc-alert-1"); err != nil {
+	if err := s.Delete(ctx, "tenant-broadcast-test", "employee-1", []string{"employee"}, "bc-alert-1"); err != nil {
 		t.Fatalf("employee-1 Delete failed: %v", err)
 	}
 
@@ -655,5 +655,132 @@ func TestMongoDB_BroadcastReadDismissIsPerRecipient(t *testing.T) {
 	}
 	if !ownerAfterEmpDelete[0].IsRead {
 		t.Errorf("owner-1 should still see notification as read, got IsRead=false")
+	}
+}
+
+// TestMongoDB_BroadcastJobAlert_OwnerAndCustomerMarkReadDelete_Success proves that
+// when a broadcast job alert notification is persisted (even if UserID is populated with
+// an assigned employee or empty), owners and clients in the tenant can successfully mark it read
+// and delete it without encountering ErrNotFound (HTTP 404).
+func TestMongoDB_BroadcastJobAlert_OwnerAndCustomerMarkReadDelete_Success(t *testing.T) {
+	s, cleanup := setupTestMongoDB(t)
+	if s == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+
+	alertID := "job-alert-success-1"
+	alert := &Notification{
+		ID:        alertID,
+		TenantID:  "tenant-jobalert",
+		UserID:    "emp-assigned-42",
+		Roles:     []string{"owner", "employee", "client"},
+		Title:     "🆕 New Job Alert",
+		Body:      "New job 101 for service Cleaning",
+		Timestamp: time.Now().UTC(),
+	}
+	if err := s.InsertNotification(ctx, alert); err != nil {
+		t.Fatalf("InsertNotification failed: %v", err)
+	}
+
+	// 1. Owner views notification in ListForUser
+	ownerList, err := s.ListForUser(ctx, "tenant-jobalert", "owner-1", []string{"owner"}, 10, nil)
+	if err != nil || len(ownerList) != 1 {
+		t.Fatalf("Owner should see job alert in ListForUser, got len=%d, err=%v", len(ownerList), err)
+	}
+	if ownerList[0].IsRead {
+		t.Errorf("Owner initially expected is_read: false")
+	}
+
+	// 2. Owner marks it read via MarkRead with role "owner" -> must succeed cleanly
+	if err := s.MarkRead(ctx, "tenant-jobalert", "owner-1", []string{"owner"}, alertID); err != nil {
+		t.Fatalf("Owner MarkRead unexpectedly failed: %v", err)
+	}
+
+	ownerListAfter, err := s.ListForUser(ctx, "tenant-jobalert", "owner-1", []string{"owner"}, 10, nil)
+	if err != nil || len(ownerListAfter) != 1 || !ownerListAfter[0].IsRead {
+		t.Fatalf("Owner expected 1 notification with is_read: true, got %+v, err=%v", ownerListAfter, err)
+	}
+
+	// 3. Client in same tenant sees it as unread
+	clientList, err := s.ListForUser(ctx, "tenant-jobalert", "client-1", []string{"client"}, 10, nil)
+	if err != nil || len(clientList) != 1 || clientList[0].IsRead {
+		t.Fatalf("Client expected 1 unread notification, got %+v, err=%v", clientList, err)
+	}
+
+	// 4. Client deletes/dismisses the notification -> must succeed cleanly
+	if err := s.Delete(ctx, "tenant-jobalert", "client-1", []string{"client"}, alertID); err != nil {
+		t.Fatalf("Client Delete unexpectedly failed: %v", err)
+	}
+
+	clientListAfter, err := s.ListForUser(ctx, "tenant-jobalert", "client-1", []string{"client"}, 10, nil)
+	if err != nil || len(clientListAfter) != 0 {
+		t.Fatalf("Client expected 0 notifications after delete, got %d", len(clientListAfter))
+	}
+
+	// 5. Owner STILL sees the notification as read
+	ownerStillSees, err := s.ListForUser(ctx, "tenant-jobalert", "owner-1", []string{"owner"}, 10, nil)
+	if err != nil || len(ownerStillSees) != 1 || !ownerStillSees[0].IsRead {
+		t.Fatalf("Owner must still see read notification after client dismissed, got %+v", ownerStillSees)
+	}
+}
+
+// TestMongoDB_GlobalNotification_RoleScoped_MarkReadDelete_Success proves that
+// a Global: true notification targeted to roles can be marked read and deleted
+// by users across tenants without failing with ErrNotFound (HTTP 404).
+func TestMongoDB_GlobalNotification_RoleScoped_MarkReadDelete_Success(t *testing.T) {
+	s, cleanup := setupTestMongoDB(t)
+	if s == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+
+	globalNotif := &Notification{
+		ID:        "global-announcement-succ-1",
+		Global:    true,
+		UserID:    "admin-system",
+		Roles:     []string{"owner", "employee", "client"},
+		Title:     "📢 System-wide Maintenance",
+		Body:      "Scheduled maintenance tonight",
+		Timestamp: time.Now().UTC(),
+	}
+	if err := s.InsertNotification(ctx, globalNotif); err != nil {
+		t.Fatalf("InsertNotification failed: %v", err)
+	}
+
+	// 1. User from tenant-A marks it read
+	if err := s.MarkRead(ctx, "tenant-A", "user-A", []string{"owner"}, "global-announcement-succ-1"); err != nil {
+		t.Fatalf("tenant-A user MarkRead failed: %v", err)
+	}
+
+	itemsA, err := s.ListForUser(ctx, "tenant-A", "user-A", []string{"owner"}, 10, nil)
+	if err != nil || len(itemsA) != 1 || !itemsA[0].IsRead {
+		t.Fatalf("tenant-A expected is_read: true, got %+v", itemsA)
+	}
+
+	// 2. User from tenant-B sees it unread
+	itemsB, err := s.ListForUser(ctx, "tenant-B", "user-B", []string{"client"}, 10, nil)
+	if err != nil || len(itemsB) != 1 || itemsB[0].IsRead {
+		t.Fatalf("tenant-B expected is_read: false, got %+v", itemsB)
+	}
+
+	// 3. User from tenant-B dismisses it
+	if err := s.Delete(ctx, "tenant-B", "user-B", []string{"client"}, "global-announcement-succ-1"); err != nil {
+		t.Fatalf("tenant-B user Delete failed: %v", err)
+	}
+
+	itemsBAfter, _ := s.ListForUser(ctx, "tenant-B", "user-B", []string{"client"}, 10, nil)
+	if len(itemsBAfter) != 0 {
+		t.Fatalf("tenant-B expected 0 notifications after delete, got %d", len(itemsBAfter))
+	}
+
+	// 4. User from tenant-A still sees it as read
+	itemsAAfter, _ := s.ListForUser(ctx, "tenant-A", "user-A", []string{"owner"}, 10, nil)
+	if len(itemsAAfter) != 1 || !itemsAAfter[0].IsRead {
+		t.Fatalf("tenant-A expected to still see 1 read notification, got %+v", itemsAAfter)
 	}
 }

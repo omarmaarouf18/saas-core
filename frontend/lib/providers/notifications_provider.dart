@@ -261,6 +261,11 @@ class NotificationsProvider extends ChangeNotifier {
     try {
       await apiClient.post('/notifications/$id/read', {});
     } catch (e) {
+      if (e is ApiClientException && e.statusCode == 404) {
+        // Stale or already marked/removed on server; retain optimistic read state
+        // and do not surface an intrusive error banner.
+        return;
+      }
       final rollIdx = _notifications.indexWhere((n) => n.id == id);
       if (rollIdx != -1) {
         _notifications[rollIdx].isRead = prevRead;
@@ -299,6 +304,11 @@ class NotificationsProvider extends ChangeNotifier {
     try {
       await apiClient.delete('/notifications/$id');
     } catch (e) {
+      if (e is ApiClientException && e.statusCode == 404) {
+        // Stale or already removed on server; keep removed locally
+        // and do not surface an intrusive error banner.
+        return;
+      }
       _notifications.insert(idx.clamp(0, _notifications.length), removed);
       _error = friendlyErrorMessage(e);
       notifyListeners();

@@ -78,7 +78,9 @@ void main() {
   });
 
   group('NotificationsProvider fetchHistory and loadMore', () {
-    test('fetchHistory fetches notifications and dedupes against existing items', () async {
+    test(
+        'fetchHistory fetches notifications and dedupes against existing items',
+        () async {
       final overrides = installMockHttp((req) {
         expect(req.method, 'GET');
         expect(req.uri.path, endsWith('/notifications/history'));
@@ -109,7 +111,8 @@ void main() {
         });
       });
 
-      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')..setToken('tok');
+      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')
+        ..setToken('tok');
       final provider = NotificationsProvider(api);
 
       // Pre-seed an item that matches notif-1
@@ -171,7 +174,8 @@ void main() {
         });
       });
 
-      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')..setToken('tok');
+      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')
+        ..setToken('tok');
       final provider = NotificationsProvider(api);
 
       await provider.fetchHistory();
@@ -187,7 +191,8 @@ void main() {
   });
 
   group('NotificationsProvider mutations & optimistic rollbacks', () {
-    test('markAsRead optimistically updates and rolls back on failure', () async {
+    test('markAsRead optimistically updates and rolls back on failure',
+        () async {
       var failApi = false;
       installMockHttp((req) {
         if (req.method == 'POST' && req.uri.path.endsWith('/read')) {
@@ -199,7 +204,8 @@ void main() {
         return MockHttpResponse(404);
       });
 
-      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')..setToken('tok');
+      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')
+        ..setToken('tok');
       final provider = NotificationsProvider(api);
       provider.notifications.add(NotificationModel(
         id: 'notif-test-1',
@@ -224,7 +230,40 @@ void main() {
       expect(provider.error, isNotNull);
     });
 
-    test('markAllAsRead optimistically updates and rolls back on failure', () async {
+    test(
+        'markAsRead treats 404 as already handled server-side without error banner',
+        () async {
+      installMockHttp((req) {
+        if (req.method == 'POST' && req.uri.path.endsWith('/read')) {
+          return MockHttpResponse(404,
+              jsonBody: {'error': 'notification not found'});
+        }
+        return MockHttpResponse(404);
+      });
+
+      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')
+        ..setToken('tok');
+      final provider = NotificationsProvider(api);
+      provider.notifications.add(
+        NotificationModel(
+          id: 'n-404',
+          type: 'system',
+          tenantId: 't1',
+          title: 'Title',
+          body: 'Body',
+          timestamp: DateTime.now(),
+          isRead: false,
+        ),
+      );
+
+      await provider.markAsRead('n-404');
+      // Should remain optimistically marked read, and no error banner set
+      expect(provider.notifications.first.isRead, isTrue);
+      expect(provider.error, isNull);
+    });
+
+    test('markAllAsRead optimistically updates and rolls back on failure',
+        () async {
       var failApi = false;
       installMockHttp((req) {
         if (req.method == 'POST' && req.uri.path.endsWith('/read-all')) {
@@ -236,7 +275,8 @@ void main() {
         return MockHttpResponse(404);
       });
 
-      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')..setToken('tok');
+      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')
+        ..setToken('tok');
       final provider = NotificationsProvider(api);
       provider.notifications.addAll([
         NotificationModel(
@@ -284,7 +324,8 @@ void main() {
         return MockHttpResponse(404);
       });
 
-      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')..setToken('tok');
+      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')
+        ..setToken('tok');
       final provider = NotificationsProvider(api);
       final notif = NotificationModel(
         id: 'n-del',
@@ -308,6 +349,36 @@ void main() {
       expect(provider.notifications.isEmpty, isTrue);
     });
 
+    test(
+        'dismiss treats 404 as already removed server-side without error banner',
+        () async {
+      installMockHttp((req) {
+        if (req.method == 'DELETE' && req.uri.path.endsWith('/n-stale')) {
+          return MockHttpResponse(404,
+              jsonBody: {'error': 'notification not found'});
+        }
+        return MockHttpResponse(404);
+      });
+
+      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')
+        ..setToken('tok');
+      final provider = NotificationsProvider(api);
+      final notif = NotificationModel(
+        id: 'n-stale',
+        type: 'system',
+        tenantId: 't1',
+        title: 'Title',
+        body: 'Body',
+        timestamp: DateTime.now(),
+      );
+      provider.notifications.add(notif);
+
+      await provider.dismiss('n-stale');
+      // Should remain removed from local list, and error should be null
+      expect(provider.notifications.isEmpty, isTrue);
+      expect(provider.error, isNull);
+    });
+
     test('clearAll clears list and rolls back on failure', () async {
       var failApi = false;
       installMockHttp((req) {
@@ -320,7 +391,8 @@ void main() {
         return MockHttpResponse(404);
       });
 
-      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')..setToken('tok');
+      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')
+        ..setToken('tok');
       final provider = NotificationsProvider(api);
       provider.notifications.addAll([
         NotificationModel(
@@ -347,14 +419,17 @@ void main() {
   });
 
   group('NotificationsScreen pagination widget test', () {
-    testWidgets('renders load more button when hasMore is true and triggers loadMore on tap',
+    testWidgets(
+        'renders load more button when hasMore is true and triggers loadMore on tap',
         (tester) async {
       var loadMoreCalled = false;
       installMockHttp((req) {
-        if (req.method == 'GET' && req.uri.path.endsWith('/notifications/history')) {
+        if (req.method == 'GET' &&
+            req.uri.path.endsWith('/notifications/history')) {
           if (req.uri.queryParameters.containsKey('before')) {
             loadMoreCalled = true;
-            return MockHttpResponse.ok({'notifications': [], 'has_more': false});
+            return MockHttpResponse.ok(
+                {'notifications': [], 'has_more': false});
           }
           return MockHttpResponse.ok({
             'notifications': [
@@ -374,14 +449,16 @@ void main() {
         return MockHttpResponse(404);
       });
 
-      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')..setToken('tok');
+      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')
+        ..setToken('tok');
       final provider = NotificationsProvider(api);
       final auth = _FakeAuthProvider(api);
 
       await tester.pumpWidget(
         MultiProvider(
           providers: [
-            ChangeNotifierProvider<NotificationsProvider>.value(value: provider),
+            ChangeNotifierProvider<NotificationsProvider>.value(
+                value: provider),
             ChangeNotifierProvider<AuthProvider>.value(value: auth),
           ],
           child: const MaterialApp(
@@ -401,7 +478,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Widget Notif 1'), findsOneWidget);
-      expect(find.byKey(const Key('list_template_load_more_btn')), findsOneWidget);
+      expect(
+          find.byKey(const Key('list_template_load_more_btn')), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('list_template_load_more_btn')));
       await tester.pumpAndSettle();
