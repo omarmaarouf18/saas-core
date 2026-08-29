@@ -2,6 +2,22 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Isolated Per-Action Rate Limiters Across User Endpoints
+
+- **Implementation Detail**:
+  - Replaced the monolithic `newHandlerLimiter(5, "user")` in `services/user-service/internal/handlers/handlers.go` with dedicated, isolated per-action rate limiters:
+    - `trackLimiter` (20 req/min, `user:track`): Customers and employees tracking or booking jobs; high interactive frequency.
+    - `proposePriceLimiter` (20 req/min, `user:propose_price`): Active price negotiation interactions during quote negotiation.
+    - `respondPriceLimiter` (20 req/min, `user:respond_price`): Acceptance/counter-proposals during price negotiations.
+    - `cancelJobLimiter` (10 req/min, `user:cancel_job`): Sensitive state transition; 10/min prevents abuse while accommodating real retries.
+    - `rateJobLimiter` (10 req/min, `user:rate_job`): Job completion rating submissions; 10/min prevents rating spam.
+    - `depositLimiter` (10 req/min, `user:deposit`): Financial deposit attempts; 10/min provides strict financial abuse protection.
+    - `ticketLimiter` (10 req/min, `user:ticket`): Support/complaint ticket creation budget reservation.
+  - Updated handlers in `jobs_handlers.go`, `ratings_handlers.go`, and `wallet_handlers.go` to invoke their respective per-action limiter.
+  - Added comprehensive test suite `isolated_rate_limiters_test.go` proving bursts on one action (e.g. `trackJob`) do not starve or throttle independent user actions (e.g. `cancelJob`, `proposePrice`, `respondPrice`, `rateJob`, `walletDeposit`), and verifying Redis key isolation.
+- **Commit SHA**: ``f5d2909da2bef1d2feab2fa72e6c82dc9269f239``
+- **Verification**: Verified via `go test ./...` in `services/user-service` (100% pass, 0 failures), and targeted test suite `go test -v ./internal/handlers/ -run TestIsolatedRateLimiters`.
+
 ## Functional UI/UX Fixes: Dark Mode Contrast, OTP RTL Layout, and KYC Scroll/Performance
 
 - **Implementation Detail**:
