@@ -385,7 +385,7 @@ func TestDispatch_RejectionPaths(t *testing.T) {
 
 	tokenCust, _ := jwtutil.GenerateToken("cust-rejection", "user", ownerID, "cust@test.com")
 
-	t.Run("Auto-dispatch with NO available couriers returns 422 no_couriers_available", func(t *testing.T) {
+	t.Run("Auto-dispatch with NO available couriers returns 201 with unavailable status", func(t *testing.T) {
 		body, _ := json.Marshal(map[string]any{
 			"service_id":     svcID,
 			"user_id":        tokenCust,
@@ -396,13 +396,15 @@ func TestDispatch_RejectionPaths(t *testing.T) {
 		rec := httptest.NewRecorder()
 		u.TrackJob(rec, req)
 
-		if rec.Code != http.StatusUnprocessableEntity {
-			t.Fatalf("Expected 422 for no couriers available, got %d. Body: %s", rec.Code, rec.Body.String())
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("Expected 201 Created for no couriers available, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
-		var resp map[string]string
+		var resp struct {
+			Job models.Job `json:"job"`
+		}
 		_ = json.Unmarshal(rec.Body.Bytes(), &resp)
-		if resp["error"] != "no_couriers_available" {
-			t.Errorf("Expected 'no_couriers_available' error code, got %q", resp["error"])
+		if resp.Job.Status != models.JobStatusUnavailable {
+			t.Errorf("Expected 'unavailable' status, got %q", resp.Job.Status)
 		}
 	})
 
@@ -510,7 +512,24 @@ func TestPricing_EmployeeLocationVsBusinessAddress_EndToEnd(t *testing.T) {
 	}
 
 	jobID := jobData["id"].(string)
-	suggestedPrice := jobData["suggested_price"].(float64)
+	if jobData["status"] != string(models.JobStatusPendingDispatch) {
+		t.Fatalf("Expected initial job status pending_dispatch, got %v", jobData["status"])
+	}
+
+	// 5. Courier accepts the dispatch offer -> Pricing happens at accept-time
+	acceptReq := httptest.NewRequest("POST", fmt.Sprintf("/users/employee/jobs/%s/accept", jobID), nil)
+	acceptReq.Header.Set("Authorization", "Bearer "+tokenEmp)
+	acceptRec := httptest.NewRecorder()
+	u.AcceptJobOffer(acceptRec, acceptReq)
+
+	if acceptRec.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK on AcceptJobOffer, got %d. Body: %s", acceptRec.Code, acceptRec.Body.String())
+	}
+
+	var acceptResp map[string]any
+	_ = json.Unmarshal(acceptRec.Body.Bytes(), &acceptResp)
+	acceptedJobData := acceptResp["job"].(map[string]any)
+	suggestedPrice := acceptedJobData["suggested_price"].(float64)
 
 	// MATHEMATICAL PROOF:
 	t.Logf("Old buggy price (business address distance %.2f km): $%.2f", oldBuggyDistance, oldBuggyPrice)
@@ -524,7 +543,7 @@ func TestPricing_EmployeeLocationVsBusinessAddress_EndToEnd(t *testing.T) {
 		t.Fatalf("CRITICAL BUG: Price matches the old fixed business address ($%.2f) instead of the courier's location!", suggestedPrice)
 	}
 
-	// 5. Verify snapshot on Job in DB
+	// 6. Verify snapshot on Job in DB
 	dbJob := s.GetJob(ctx, jobID)
 	if dbJob == nil {
 		t.Fatalf("Job %s not found in DB", jobID)

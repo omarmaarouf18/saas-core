@@ -119,6 +119,88 @@ class EmployeeJobsProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> acceptJobOffer(String jobId) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final token = apiClient.currentToken ?? '';
+      final res = await apiClient.post('/users/employee/jobs/$jobId/accept', {
+        'job_id': jobId,
+        if (token.isNotEmpty) 'requester_id': token,
+      });
+
+      if (res is Map && res['job'] != null) {
+        final updatedJob = Job.fromJson(res['job'] as Map<String, dynamic>);
+        final index = _jobs.indexWhere((j) => j.id == jobId);
+        if (index != -1) {
+          _jobs[index] = updatedJob;
+        } else {
+          _jobs.insert(0, updatedJob);
+        }
+      } else {
+        final index = _jobs.indexWhere((j) => j.id == jobId);
+        if (index != -1) {
+          final existing = _jobs[index];
+          _jobs[index] = Job(
+            id: existing.id,
+            ownerId: existing.ownerId,
+            employeeId: existing.employeeId,
+            userId: existing.userId,
+            serviceId: existing.serviceId,
+            status: 'active',
+            location: existing.location,
+            currentLocation: existing.currentLocation,
+            paymentMethod: existing.paymentMethod,
+            cancellationReason: existing.cancellationReason,
+            lockedEscrowAmount: existing.lockedEscrowAmount,
+            suggestedPrice: existing.suggestedPrice,
+            proposedPrice: existing.proposedPrice,
+            proposedBy: existing.proposedBy,
+            agreedPrice: existing.agreedPrice,
+            priceProposalExpiresAt: existing.priceProposalExpiresAt,
+            currentOfferedEmployeeId: null,
+            offerExpiresAt: null,
+            offeredEmployeeIds: existing.offeredEmployeeIds,
+            createdAt: existing.createdAt,
+            updatedAt: DateTime.now(),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error accepting job offer: $e');
+      _error = friendlyErrorMessage(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> declineJobOffer(String jobId) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final token = apiClient.currentToken ?? '';
+      await apiClient.post('/users/employee/jobs/$jobId/decline', {
+        'job_id': jobId,
+        if (token.isNotEmpty) 'requester_id': token,
+      });
+
+      _jobs.removeWhere((j) => j.id == jobId);
+    } catch (e) {
+      debugPrint('Error declining job offer: $e');
+      _error = friendlyErrorMessage(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();

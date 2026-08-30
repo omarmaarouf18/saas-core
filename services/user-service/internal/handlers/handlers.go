@@ -92,6 +92,9 @@ type UserService struct {
 	resolveReconLimiter       *handlerutil.RateLimiter
 	payoutLimiter             *handlerutil.RateLimiter
 	subscriptionLimiter       *handlerutil.RateLimiter
+	acceptOfferLimiter        *handlerutil.RateLimiter
+	declineOfferLimiter       *handlerutil.RateLimiter
+	stopCascadeSweeper        chan struct{}
 	internalServiceToken      string
 	locationThrottleMu        sync.Mutex
 	locationLastUpdate        map[string]time.Time
@@ -198,7 +201,7 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 	chatClient := resilience.NewClient(client, "chat-service", 2, 5*time.Second)
 	notificationClient := resilience.NewClient(client, "notification-service", 2, 5*time.Second)
 
-	return &UserService{
+	u := &UserService{
 		store:                  s,
 		authServiceURL:         cfg.AuthServiceURL,
 		chatServiceURL:         chatServiceURL,
@@ -229,6 +232,9 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		resolveReconLimiter:       newHandlerLimiter(30, "user:reconciliation_resolve"),
 		payoutLimiter:             newHandlerLimiter(30, "user:payout"),
 		subscriptionLimiter:       newHandlerLimiter(30, "user:subscription"),
+		acceptOfferLimiter:        newHandlerLimiter(30, "user:accept_offer"),
+		declineOfferLimiter:       newHandlerLimiter(30, "user:decline_offer"),
+		stopCascadeSweeper:        make(chan struct{}),
 		internalServiceToken:      cfg.InternalServiceToken,
 		locationLastUpdate:        make(map[string]time.Time),
 		locationInFlight:          make(map[string]bool),
@@ -240,6 +246,19 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		appEnv:                    cfg.AppEnv,
 		allowTestPaymentBypass:    cfg.AllowTestPaymentBypass,
 		electronicPaymentsEnabled: cfg.ElectronicPaymentsEnabled,
+	}
+	go u.startCascadeSweeper()
+	return u
+}
+
+// Close stops background workers such as the cascade sweeper.
+func (u *UserService) Close() {
+	if u.stopCascadeSweeper != nil {
+		select {
+		case <-u.stopCascadeSweeper:
+		default:
+			close(u.stopCascadeSweeper)
+		}
 	}
 }
 
@@ -273,6 +292,10 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users/jobs/cancel", u.CancelJob)
 	mux.HandleFunc("/users/jobs/propose-price", u.ProposePrice)
 	mux.HandleFunc("/users/jobs/respond-price", u.RespondPrice)
+	mux.HandleFunc("/users/employee/jobs/{id}/accept", u.AcceptJobOffer)
+	mux.HandleFunc("/users/employee/jobs/{id}/decline", u.DeclineJobOffer)
+	mux.HandleFunc("/users/employee/jobs/accept", u.AcceptJobOffer)
+	mux.HandleFunc("/users/employee/jobs/decline", u.DeclineJobOffer)
 	mux.HandleFunc("/users/wallet", u.GetWallet)
 	mux.HandleFunc("/users/wallet/deposit", u.WalletDeposit)
 	mux.HandleFunc("/users/wallet/payout/request", u.RequestPayout)

@@ -320,6 +320,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
   int _getStatusStep(String status) {
     switch (status) {
       case 'pending':
+      case 'pending_dispatch':
         return 0;
       case 'active':
         return 1;
@@ -330,6 +331,59 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     }
   }
 
+  String get _formattedFare {
+    if (_currentJob.status == 'pending_dispatch') {
+      return context.l10n.matchingCourierLabel;
+    }
+    final price = _currentJob.agreedPrice ?? _currentJob.suggestedPrice;
+    if (price == null || price == 0) {
+      return context.l10n.matchingCourierLabel;
+    }
+    return "\$${price.toStringAsFixed(2)}";
+  }
+
+  Widget _buildUnavailableBusyCard(BuildContext context) {
+    final l10n = context.l10n;
+    return ThemedCard(
+      borderRadius: AppRadius.md,
+      padding: AppSpacing.xl,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.access_time_outlined,
+            size: 48,
+            color: context.semanticColors.warning,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            l10n.allCouriersBusyTitle,
+            textAlign: TextAlign.center,
+            style: AppTypography.titleMd.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            l10n.allCouriersBusyDesc,
+            textAlign: TextAlign.center,
+            style: AppTypography.bodyMd.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          PrimaryButton(
+            key: const Key('job_status_retry_button'),
+            text: l10n.retryBookingAction,
+            icon: Icons.refresh,
+            onPressed: () => _refreshJobStatus(),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final marketplace = Provider.of<MarketplaceProvider>(context);
@@ -338,6 +392,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     final isCompleted = _currentJob.status == 'completed';
     final isActive = _currentJob.status == 'active';
     final isPending = _currentJob.status == 'pending';
+    final isPendingDispatch = _currentJob.status == 'pending_dispatch';
+    final isUnavailable = _currentJob.status == 'unavailable';
     final displayId = _currentJob.id.length > 8
         ? AppTypography.uppercaseLabel(_currentJob.id.substring(0, 8))
         : AppTypography.uppercaseLabel(_currentJob.id);
@@ -394,9 +450,12 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               const SizedBox(height: AppSpacing.md),
             ],
 
-            // 4. Fulfillment Progress Stepper Card (Stitch Stepper Card)
-            _buildFulfillmentProgressCard(
-                step, isCompleted, isActive, isCancelled),
+            // 4. Fulfillment Progress Stepper Card or Unavailable Busy Card
+            if (isUnavailable)
+              _buildUnavailableBusyCard(context)
+            else
+              _buildFulfillmentProgressCard(
+                  step, isCompleted, isActive, isCancelled),
             const SizedBox(height: AppSpacing.md),
 
             // 5. Route & Itinerary Card (Stitch Bento Itinerary Card)
@@ -416,7 +475,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             ],
 
             // 8. Contextual Action Buttons
-            ..._buildActionButtons(context, isCompleted, isPending, isActive),
+            ..._buildActionButtons(context, isCompleted, isPending, isActive,
+                isPendingDispatch, isUnavailable),
           ],
         ),
       ),
@@ -827,7 +887,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                       ),
                     ),
                     Text(
-                      "\$${(_currentJob.agreedPrice ?? _currentJob.suggestedPrice ?? 0).toStringAsFixed(2)}",
+                      _formattedFare,
                       style: AppTypography.bodySm.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.onSurface,
@@ -856,7 +916,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                   ),
                   _buildInfoRow(
                     context.l10n.totalFareLabel,
-                    "\$${(_currentJob.agreedPrice ?? _currentJob.suggestedPrice ?? 0).toStringAsFixed(2)}",
+                    _formattedFare,
                   ),
                   if (_currentJob.proposedPrice != null)
                     _buildInfoRow(
@@ -965,8 +1025,19 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     bool isCompleted,
     bool isPending,
     bool isActive,
+    bool isPendingDispatch,
+    bool isUnavailable,
   ) {
     return [
+      if (isUnavailable) ...[
+        PrimaryButton(
+          key: const Key('job_status_unavailable_retry_button'),
+          text: context.l10n.retryBookingAction,
+          icon: Icons.refresh,
+          onPressed: () => _refreshJobStatus(),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+      ],
       if (isCompleted) ...[
         PrimaryButton(
           key: const Key('rate_job_button'),
@@ -983,7 +1054,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         ),
         const SizedBox(height: AppSpacing.sm),
       ],
-      if (isPending) ...[
+      if (isPending || isPendingDispatch) ...[
         SecondaryButton(
           key: const Key('cancel_job_button'),
           text: context.l10n.ownerHomeCancelJob,

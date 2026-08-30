@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
@@ -45,6 +46,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   String? _completingJobId;
   String? _completeError;
   String? _completeErrorJobId;
+  String? _isRespondingOfferId;
+  Timer? _countdownTimer;
 
   List<String> _getSuggestions(AppLocalizations l10n) => [
         l10n.employeeJobsSuggestionArrivedPickup,
@@ -56,6 +59,17 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   @override
   void initState() {
     super.initState();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        final jobsProvider =
+            Provider.of<EmployeeJobsProvider>(context, listen: false);
+        final hasOffers = jobsProvider.jobs
+            .any((j) => j.status.toLowerCase().trim() == 'pending_dispatch');
+        if (hasOffers) {
+          setState(() {});
+        }
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshJobs();
     });
@@ -70,6 +84,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
 
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _actionController.dispose();
     super.dispose();
   }
@@ -567,15 +582,199 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
       );
     }
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: jobs.length,
-      itemBuilder: (context, index) {
-        final job = jobs[index];
-        return _buildJobCard(job);
-      },
+    final incomingOffers = jobs
+        .where((j) => j.status.toLowerCase().trim() == 'pending_dispatch')
+        .toList();
+    final regularJobs = jobs
+        .where((j) => j.status.toLowerCase().trim() != 'pending_dispatch')
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (incomingOffers.isNotEmpty) ...[
+          for (final offer in incomingOffers) _buildIncomingOfferCard(offer),
+        ],
+        if (regularJobs.isNotEmpty)
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: regularJobs.length,
+            itemBuilder: (context, index) {
+              final job = regularJobs[index];
+              return _buildJobCard(job);
+            },
+          ),
+      ],
     );
+  }
+
+  Widget _buildIncomingOfferCard(Job job) {
+    final l10n = AppLocalizations.of(context)!;
+    final now = DateTime.now();
+    final remainingSecs = job.offerExpiresAt != null
+        ? job.offerExpiresAt!.difference(now).inSeconds
+        : 0;
+
+    final isExpired = remainingSecs <= 0;
+    final isProcessing = _isRespondingOfferId == job.id;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: ThemedCard(
+        elevation: AppElevation.shadowLevel2List,
+        borderRadius: AppRadius.lg,
+        padding: AppSpacing.lg,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      ThemedPanel(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.12),
+                        borderRadius: AppRadius.smBorder,
+                        padding: const EdgeInsets.all(AppSpacing.xs),
+                        child: Icon(
+                          Icons.radar_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        child: Text(
+                          l10n.incomingJobOffer,
+                          style: AppTypography.titleMd.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ThemedPanel(
+                  color: isExpired
+                      ? context.semanticColors.danger.withValues(alpha: 0.12)
+                      : context.semanticColors.warning.withValues(alpha: 0.12),
+                  borderRadius: AppRadius.smBorder,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xxs,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.timer_outlined,
+                        size: 14,
+                        color: isExpired
+                            ? context.semanticColors.danger
+                            : context.semanticColors.warning,
+                      ),
+                      const SizedBox(width: AppSpacing.xxs),
+                      Text(
+                        isExpired
+                            ? AppTypography.uppercaseLabel(
+                                l10n.statusUnavailable)
+                            : l10n.offerExpiresIn(remainingSecs),
+                        style: AppTypography.labelSm.copyWith(
+                          color: isExpired
+                              ? context.semanticColors.danger
+                              : context.semanticColors.warning,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const Divider(
+              height: AppSpacing.lg,
+              color: AppColors.outlineVariant,
+            ),
+            RouteTimeline(
+              pickupAddress: l10n.pickupLocationLabel,
+              pickupDetail: l10n.clientAddressConfirmedLabel,
+              dropoffAddress: l10n.deliveryDestinationLabel,
+              dropoffDetail: l10n.employeeJobsDestinationCoordinates,
+              distanceText: l10n.standardRouteLabel,
+              timeText: l10n.matchingCourierLabel,
+              cargoText: AppTypography.uppercaseLabel(job.paymentMethod),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                Expanded(
+                  child: SecondaryButton(
+                    key: Key('decline_offer_btn_${job.id}'),
+                    text: l10n.declineOffer,
+                    icon: Icons.close,
+                    onPressed: isProcessing || isExpired
+                        ? null
+                        : () => _respondToOffer(job, accept: false),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: PrimaryButton(
+                    key: Key('accept_offer_btn_${job.id}'),
+                    text: l10n.acceptOffer,
+                    icon: Icons.check,
+                    isLoading: isProcessing,
+                    onPressed: isProcessing || isExpired
+                        ? null
+                        : () => _respondToOffer(job, accept: true),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _respondToOffer(Job job, {required bool accept}) async {
+    if (_isRespondingOfferId != null) return;
+    setState(() => _isRespondingOfferId = job.id);
+
+    final provider = Provider.of<EmployeeJobsProvider>(context, listen: false);
+    final l10n = AppLocalizations.of(context)!;
+
+    try {
+      if (accept) {
+        await provider.acceptJobOffer(job.id);
+        if (mounted) {
+          ThemedSnackBar.showSuccess(context, l10n.statusActive);
+          await _refreshJobs();
+        }
+      } else {
+        await provider.declineJobOffer(job.id);
+        if (mounted) {
+          ThemedSnackBar.showWarning(context, l10n.declineOffer);
+          await _refreshJobs();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ThemedSnackBar.showError(context, friendlyErrorMessage(e));
+        await _refreshJobs();
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRespondingOfferId = null);
+      }
+    }
   }
 
   Widget _buildJobCard(Job job) {

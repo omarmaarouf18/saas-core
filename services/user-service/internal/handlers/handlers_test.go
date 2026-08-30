@@ -2434,11 +2434,20 @@ func TestUserServiceHandlers(t *testing.T) {
 		_ = s.Deposit(ctx, "kyc-approved-owner-pricing", 100.0)
 
 		tokenApprovedOwnerPricing, _ := jwtutil.GenerateToken("kyc-approved-owner-pricing", "owner", "kyc-approved-owner-pricing", "pricing@example.com")
+		tokenEmpPricing, _ := jwtutil.GenerateToken("emp-under-kyc-approved-owner-pricing", "employee", "kyc-approved-owner-pricing", "emp@pricing.com")
+		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+			EmployeeID: "emp-under-kyc-approved-owner-pricing",
+			TenantID:   "kyc-approved-owner-pricing",
+			Latitude:   30.0,
+			Longitude:  30.0,
+			UpdatedAt:  time.Now().UTC(),
+		})
 
 		// 3. Request coordinates identical or very close to service coordinates
 		reqBody := map[string]any{
 			"owner_id":       tokenApprovedOwnerPricing,
 			"user_id":        tokenClientUser,
+			"employee_id":    tokenEmpPricing,
 			"service_id":     "svc-pricing-coords-1",
 			"payment_method": "wallet",
 			"location": map[string]float64{
@@ -3635,11 +3644,20 @@ func TestTrackJob_EscrowRollbackFailure_ReconciliationRequired(t *testing.T) {
 
 	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@example.com")
 	tokenUser, _ := jwtutil.GenerateToken(userID, "user", ownerID, "user@example.com")
+	tokenEmp, _ := jwtutil.GenerateToken("emp-under-rec-owner-1", "employee", ownerID, "emp@example.com")
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		EmployeeID: "emp-under-rec-owner-1",
+		TenantID:   ownerID,
+		Latitude:   30.0,
+		Longitude:  30.0,
+		UpdatedAt:  time.Now().UTC(),
+	})
 
 	trackReqBody := map[string]any{
 		"owner_id":       tokenOwner,
 		"service_id":     serviceID,
 		"user_id":        tokenUser,
+		"employee_id":    tokenEmp,
 		"payment_method": "wallet",
 		"location": models.Location{
 			Latitude:  30.0,

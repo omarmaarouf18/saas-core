@@ -10,6 +10,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -225,45 +226,105 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 8. Auto-dispatch nearest available courier or verify assigned employee location
-	var empLoc *models.EmployeeLocation
+	// 8. Auto-dispatch sequential cascade or verify assigned employee location
 	if req.EmployeeID == "" {
-		// Auto-dispatch: select nearest active employee with fresh location
-		nearestEmp, err := u.findNearestAvailableEmployee(ctx, resolvedOwnerID, req.Location)
-		if err != nil {
-			if errors.Is(err, ErrNoCouriersAvailable) {
-				writeJSON(w, http.StatusUnprocessableEntity, map[string]string{
-					"error":   "no_couriers_available",
-					"message": "No active couriers are currently available in your area. Please try again shortly.",
-				})
-				return
-			}
+		// Sequential cascade: find the nearest available candidate courier
+		candidate, err := u.findNextAvailableEmployee(ctx, resolvedOwnerID, req.Location, nil)
+		if err != nil && !errors.Is(err, ErrNoCouriersAvailable) {
 			if errors.Is(err, ErrServiceUnavailable) {
 				writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "auth service unavailable"})
 				return
 			}
-			log.Printf("[USER] Error auto-dispatching courier for owner %s: %v", resolvedOwnerID, err)
+			log.Printf("[USER] Error querying couriers for owner %s: %v", resolvedOwnerID, err)
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to dispatch courier"})
 			return
 		}
-		req.EmployeeID = nearestEmp.EmployeeID
-		empLoc = nearestEmp
-	} else {
-		if u.store != nil {
-			empLoc, err = u.store.GetEmployeeLocation(ctx, resolvedOwnerID, req.EmployeeID)
-			if err != nil {
-				log.Printf("[USER] Failed to query employee location for %s: %v", req.EmployeeID, err)
-				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to query employee location"})
-				return
-			}
+
+		now := time.Now().UTC()
+		var initialStatus models.JobStatus
+		var currentOfferedID string
+		var offerExpiresAt *time.Time
+		var offeredIDs []string
+
+		if candidate == nil || errors.Is(err, ErrNoCouriersAvailable) {
+			initialStatus = models.JobStatusUnavailable
+		} else {
+			initialStatus = models.JobStatusPendingDispatch
+			currentOfferedID = candidate.EmployeeID
+			exp := now.Add(60 * time.Second)
+			offerExpiresAt = &exp
+			offeredIDs = []string{candidate.EmployeeID}
 		}
-		if empLoc == nil {
-			writeJSON(w, http.StatusUnprocessableEntity, map[string]string{
-				"error":   "employee_location_unavailable",
-				"message": "The assigned employee has no recent location ping.",
+
+		var proposedPrice *float64
+		var proposedBy string
+		if req.ProposedPrice != nil {
+			pp := roundMoney(*req.ProposedPrice)
+			proposedPrice = &pp
+			proposedBy = "customer"
+		}
+
+		job := &models.Job{
+			ID:                       generateID(),
+			OwnerID:                  req.OwnerID,
+			EmployeeID:               "",
+			UserID:                   req.UserID,
+			ServiceID:                req.ServiceID,
+			Status:                   initialStatus,
+			Location:                 req.Location,
+			PaymentMethod:            req.PaymentMethod,
+			BookedDistance:           0,
+			AssignedEmployeeLocation: nil,
+			ProposedPrice:            proposedPrice,
+			ProposedBy:               proposedBy,
+			CurrentOfferedEmployeeID: currentOfferedID,
+			OfferExpiresAt:           offerExpiresAt,
+			OfferedEmployeeIDs:       offeredIDs,
+			CreatedAt:                now,
+			UpdatedAt:                now,
+		}
+
+		if err := u.store.CreateJob(ctx, job); err != nil {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+			return
+		}
+
+		jobRecorded = true
+		u.saveIdempotencyKey(resolvedUserID, idempotencyKey, job.ID)
+
+		if initialStatus == models.JobStatusPendingDispatch {
+			u.sendJobOfferNotification(job, currentOfferedID)
+			writeJSON(w, http.StatusCreated, map[string]any{
+				"message": "job tracking record created, cascade dispatch in progress",
+				"job":     job,
 			})
 			return
 		}
+
+		// Unavailable status response (exhausted cascade / zero couriers)
+		writeJSON(w, http.StatusCreated, map[string]any{
+			"message": "all couriers are currently busy",
+			"job":     job,
+		})
+		return
+	}
+
+	// Direct assignment path: verify pre-assigned employee location
+	var empLoc *models.EmployeeLocation
+	if u.store != nil {
+		empLoc, err = u.store.GetEmployeeLocation(ctx, resolvedOwnerID, req.EmployeeID)
+		if err != nil {
+			log.Printf("[USER] Failed to query employee location for %s: %v", req.EmployeeID, err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to query employee location"})
+			return
+		}
+	}
+	if empLoc == nil {
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]string{
+			"error":   "employee_location_unavailable",
+			"message": "The assigned employee has no recent location ping.",
+		})
+		return
 	}
 
 	// Calculate ride cost: base_price + (distance × price_per_km) from assigned employee's location.
@@ -706,7 +767,20 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusOK, jobs)
+		filtered := make([]*models.Job, 0, len(jobs))
+		for _, j := range jobs {
+			if j.Status == models.JobStatusPendingDispatch {
+				if u.checkCascadeOfferExpiry(r.Context(), j) {
+					refreshed := u.store.GetJob(r.Context(), j.ID)
+					if refreshed != nil && refreshed.Status == models.JobStatusPendingDispatch && refreshed.CurrentOfferedEmployeeID == resolvedRequester {
+						filtered = append(filtered, refreshed)
+					}
+					continue
+				}
+			}
+			filtered = append(filtered, j)
+		}
+		writeJSON(w, http.StatusOK, filtered)
 		return
 	}
 	ctx := r.Context()
@@ -717,6 +791,9 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u.checkLazyPriceProposalExpiry(ctx, job)
+	if u.checkCascadeOfferExpiry(ctx, job) {
+		job = u.store.GetJob(ctx, id)
+	}
 
 	// 1. Internal trusted token check (empty-secret guard, QA audit Q23)
 	if u.internalServiceToken != "" &&
@@ -1454,8 +1531,303 @@ func (u *UserService) UpdateEmployeeLocation(w http.ResponseWriter, r *http.Requ
 	})
 }
 
-// findNearestAvailableEmployee selects the nearest active, available employee for a tenant.
-func (u *UserService) findNearestAvailableEmployee(ctx context.Context, tenantID string, customerLoc models.Location) (*models.EmployeeLocation, error) {
+type jobOfferActionRequest struct {
+	JobID          string `json:"job_id"`
+	RequesterID    string `json:"requester_id,omitempty"`
+	RequesterToken string `json:"requester_token,omitempty"`
+	EmployeeToken  string `json:"employee_token,omitempty"`
+}
+
+// AcceptJobOffer handles courier acceptance of an active sequential dispatch offer.
+func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") {
+		requesterToken = strings.TrimPrefix(requesterToken, "Bearer ")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("employee_token")
+	}
+
+	var req jobOfferActionRequest
+	if r.Body != nil && r.ContentLength > 0 {
+		_ = json.NewDecoder(r.Body).Decode(&req)
+	}
+	if requesterToken == "" {
+		requesterToken = req.RequesterToken
+	}
+	if requesterToken == "" {
+		requesterToken = req.EmployeeToken
+	}
+	if requesterToken == "" {
+		requesterToken = req.RequesterID
+	}
+	if requesterToken == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "employee token is required"})
+		return
+	}
+
+	callerID, err := resolveTokenWithRole(requesterToken, "employee")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid employee token: " + err.Error()})
+		return
+	}
+
+	jobID := r.PathValue("id")
+	if jobID == "" {
+		p := strings.TrimPrefix(r.URL.Path, "/users/employee/jobs/")
+		if strings.HasSuffix(p, "/accept") {
+			jobID = strings.TrimSuffix(p, "/accept")
+		}
+	}
+	if jobID == "" {
+		jobID = req.JobID
+	}
+	if jobID == "" {
+		jobID = r.URL.Query().Get("id")
+	}
+	if jobID == "" {
+		jobID = r.URL.Query().Get("job_id")
+	}
+	if jobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, jobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	if job.Status != models.JobStatusPendingDispatch {
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":   "job_state_changed",
+			"message": "job is no longer in pending_dispatch",
+		})
+		return
+	}
+
+	if job.CurrentOfferedEmployeeID != callerID {
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error":   "access_denied",
+			"message": "this job offer is not addressed to you",
+		})
+		return
+	}
+
+	now := time.Now().UTC()
+	// Deterministic boundary check: accept after expiry fails and cascades
+	if job.OfferExpiresAt != nil && !now.Before(*job.OfferExpiresAt) {
+		_ = u.advanceCascade(ctx, job)
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":   "offer_expired",
+			"message": "the 60-second offer window has expired",
+		})
+		return
+	}
+
+	empLoc, err := u.store.GetEmployeeLocation(ctx, job.OwnerID, callerID)
+	if err != nil || empLoc == nil || now.Sub(empLoc.UpdatedAt) > EmployeeLocationFreshnessWindow {
+		_ = u.advanceCascade(ctx, job)
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":   "location_stale",
+			"message": "courier location is stale (> 5 minutes without a ping); offer invalidated",
+		})
+		return
+	}
+
+	existingJobs, err := u.store.GetJobsByEmployee(ctx, callerID)
+	if err == nil {
+		for _, ej := range existingJobs {
+			if ej.ID != job.ID && (ej.Status == models.JobStatusActive || ej.Status == models.JobStatusAwaitingPriceResponse) {
+				_ = u.advanceCascade(ctx, job)
+				writeJSON(w, http.StatusConflict, map[string]string{
+					"error":   "courier_busy",
+					"message": "courier already has an active job; offer invalidated",
+				})
+				return
+			}
+		}
+	}
+
+	svc := u.store.GetServiceByID(ctx, job.ServiceID)
+	if svc == nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "service not found"})
+		return
+	}
+
+	dist := haversineKm(job.Location.Latitude, job.Location.Longitude, empLoc.Latitude, empLoc.Longitude)
+	finalPrice := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
+	assignedLoc := models.Location{Latitude: empLoc.Latitude, Longitude: empLoc.Longitude}
+
+	isTransport := svc.Category == "transport"
+	var nextStatus models.JobStatus
+	var suggestedPrice *float64
+	var escrowToLock float64
+
+	if isTransport {
+		nextStatus = models.JobStatusAwaitingPriceResponse
+		sp := finalPrice
+		suggestedPrice = &sp
+	} else {
+		nextStatus = models.JobStatusActive
+		if job.PaymentMethod != "cod" {
+			escrowToLock = finalPrice
+		}
+	}
+
+	if escrowToLock > 0 {
+		if err := u.store.LockEscrow(ctx, job.OwnerID, job.ID, escrowToLock); err != nil {
+			// #nosec G706 //nolint:gosec -- job.ID is system-generated UUID, log injection not possible
+			log.Printf("[USER] Escrow lock failed on accept for job %s: %v", job.ID, err)
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error":   "escrow_lock_failed",
+				"message": "owner has insufficient funds to lock escrow for this booking",
+			})
+			return
+		}
+	}
+
+	if err := u.store.AcceptJobOffer(ctx, job.ID, callerID, nextStatus, dist, &assignedLoc, suggestedPrice, escrowToLock); err != nil {
+		if escrowToLock > 0 {
+			_ = u.performRollbackEscrow(context.Background(), job.OwnerID, escrowToLock)
+		}
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":   "job_state_changed",
+			"message": "offer is no longer valid or already claimed",
+		})
+		return
+	}
+
+	job.Status = nextStatus
+	job.EmployeeID = callerID
+	job.CurrentOfferedEmployeeID = ""
+	job.OfferExpiresAt = nil
+	job.BookedDistance = dist
+	job.AssignedEmployeeLocation = &assignedLoc
+	if suggestedPrice != nil {
+		job.SuggestedPrice = *suggestedPrice
+	}
+	if escrowToLock > 0 {
+		job.LockedEscrowAmount = escrowToLock
+	}
+	job.UpdatedAt = now
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"message": "job offer accepted successfully",
+		"job":     job,
+	})
+}
+
+// DeclineJobOffer handles courier explicit decline of an active sequential dispatch offer.
+func (u *UserService) DeclineJobOffer(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") {
+		requesterToken = strings.TrimPrefix(requesterToken, "Bearer ")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("employee_token")
+	}
+
+	var req jobOfferActionRequest
+	if r.Body != nil && r.ContentLength > 0 {
+		_ = json.NewDecoder(r.Body).Decode(&req)
+	}
+	if requesterToken == "" {
+		requesterToken = req.RequesterToken
+	}
+	if requesterToken == "" {
+		requesterToken = req.EmployeeToken
+	}
+	if requesterToken == "" {
+		requesterToken = req.RequesterID
+	}
+	if requesterToken == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "employee token is required"})
+		return
+	}
+
+	callerID, err := resolveTokenWithRole(requesterToken, "employee")
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid employee token: " + err.Error()})
+		return
+	}
+
+	jobID := r.PathValue("id")
+	if jobID == "" {
+		p := strings.TrimPrefix(r.URL.Path, "/users/employee/jobs/")
+		if strings.HasSuffix(p, "/decline") {
+			jobID = strings.TrimSuffix(p, "/decline")
+		}
+	}
+	if jobID == "" {
+		jobID = req.JobID
+	}
+	if jobID == "" {
+		jobID = r.URL.Query().Get("id")
+	}
+	if jobID == "" {
+		jobID = r.URL.Query().Get("job_id")
+	}
+	if jobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, jobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	if job.Status != models.JobStatusPendingDispatch {
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":   "job_state_changed",
+			"message": "job is no longer in pending_dispatch",
+		})
+		return
+	}
+
+	if job.CurrentOfferedEmployeeID != callerID {
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error":   "access_denied",
+			"message": "this job offer is not addressed to you",
+		})
+		return
+	}
+
+	if err := u.advanceCascade(ctx, job); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to advance cascade: " + err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"message": "job offer declined, cascade advanced",
+		"job_id":  job.ID,
+		"status":  job.Status,
+	})
+}
+
+// findNextAvailableEmployee selects the nearest active, available employee for a tenant excluding already-offered candidates.
+func (u *UserService) findNextAvailableEmployee(ctx context.Context, tenantID string, customerLoc models.Location, excludedIDs []string) (*models.EmployeeLocation, error) {
 	if u.store == nil {
 		return nil, ErrNoCouriersAvailable
 	}
@@ -1467,11 +1839,23 @@ func (u *UserService) findNearestAvailableEmployee(ctx context.Context, tenantID
 		return nil, ErrNoCouriersAvailable
 	}
 
-	var nearest *models.EmployeeLocation
-	minDist := math.MaxFloat64
+	excluded := make(map[string]bool, len(excludedIDs))
+	for _, id := range excludedIDs {
+		excluded[id] = true
+	}
+
+	type candidate struct {
+		loc  models.EmployeeLocation
+		dist float64
+	}
+	var candidates []candidate
 
 	for i := range locations {
-		loc := &locations[i]
+		loc := locations[i]
+		if excluded[loc.EmployeeID] {
+			continue
+		}
+
 		ok, err := u.verifyEmployeeAssignment(loc.EmployeeID, tenantID)
 		if err != nil {
 			if errors.Is(err, ErrServiceUnavailable) {
@@ -1483,17 +1867,192 @@ func (u *UserService) findNearestAvailableEmployee(ctx context.Context, tenantID
 			continue
 		}
 
+		// Check if courier already has an active job (status == active or awaiting_price_response)
+		activeJobs, err := u.store.GetJobsByEmployee(ctx, loc.EmployeeID)
+		if err == nil {
+			busy := false
+			for _, aj := range activeJobs {
+				if aj.Status == models.JobStatusActive || aj.Status == models.JobStatusAwaitingPriceResponse {
+					busy = true
+					break
+				}
+			}
+			if busy {
+				continue
+			}
+		}
+
 		dist := haversineKm(customerLoc.Latitude, customerLoc.Longitude, loc.Latitude, loc.Longitude)
-		if dist < minDist {
-			minDist = dist
-			nearest = loc
+		candidates = append(candidates, candidate{loc: loc, dist: dist})
+	}
+
+	if len(candidates) == 0 {
+		return nil, ErrNoCouriersAvailable
+	}
+
+	sort.Slice(candidates, func(i, j int) bool {
+		return candidates[i].dist < candidates[j].dist
+	})
+
+	return &candidates[0].loc, nil
+}
+
+// findNearestAvailableEmployee delegates to findNextAvailableEmployee with no exclusions.
+func (u *UserService) findNearestAvailableEmployee(ctx context.Context, tenantID string, customerLoc models.Location) (*models.EmployeeLocation, error) {
+	return u.findNextAvailableEmployee(ctx, tenantID, customerLoc, nil)
+}
+
+func (u *UserService) sendJobOfferNotification(job *models.Job, employeeID string) {
+	if job == nil || employeeID == "" {
+		return
+	}
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("[USER] Recovered from panic in sendJobOfferNotification: %v", r)
+			}
+		}()
+
+		payload := map[string]any{
+			"type":      "job_offer",
+			"tenant_id": job.OwnerID,
+			"user_id":   employeeID,
+			"title":     "New Job Offer",
+			"body":      fmt.Sprintf("You have an incoming job offer for job %s. Respond within 60 seconds.", job.ID),
+			"roles":     []string{"employee"},
+		}
+
+		bodyBytes, err := json.Marshal(payload)
+		if err != nil {
+			return
+		}
+
+		notificationURL := u.notificationServiceURL
+		if notificationURL == "" {
+			notificationURL = "http://notification-service:3004"
+		}
+		url := fmt.Sprintf("%s/notifications/send", notificationURL)
+		// #nosec G704 //nolint:gosec -- notificationURL is trusted internal config
+		req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
+		if err != nil {
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Internal-Token", u.internalServiceToken)
+
+		if u.notificationClient != nil {
+			resp, err := u.notificationClient.Do(req)
+			if err == nil && resp != nil {
+				_ = resp.Body.Close()
+			}
+		} else if u.httpClient != nil {
+			resp, err := u.httpClient.Do(req)
+			if err == nil && resp != nil {
+				_ = resp.Body.Close()
+			}
+		}
+	}()
+}
+
+func (u *UserService) advanceCascade(ctx context.Context, job *models.Job) error {
+	if job == nil || job.Status != models.JobStatusPendingDispatch {
+		return nil
+	}
+
+	oldOfferedID := job.CurrentOfferedEmployeeID
+	offeredList := make([]string, len(job.OfferedEmployeeIDs))
+	copy(offeredList, job.OfferedEmployeeIDs)
+
+	found := false
+	for _, id := range offeredList {
+		if id == oldOfferedID {
+			found = true
+			break
+		}
+	}
+	if !found && oldOfferedID != "" {
+		offeredList = append(offeredList, oldOfferedID)
+	}
+
+	nextCandidate, err := u.findNextAvailableEmployee(ctx, job.OwnerID, job.Location, offeredList)
+	if err != nil || nextCandidate == nil {
+		if err := u.store.SetJobUnavailable(ctx, job.ID, oldOfferedID, offeredList); err != nil {
+			return fmt.Errorf("failed to set job unavailable: %w", err)
+		}
+		job.Status = models.JobStatusUnavailable
+		job.CurrentOfferedEmployeeID = ""
+		job.OfferExpiresAt = nil
+		job.OfferedEmployeeIDs = offeredList
+		job.UpdatedAt = time.Now().UTC()
+		return nil
+	}
+
+	newExpiry := time.Now().UTC().Add(60 * time.Second)
+	newOfferedList := append(offeredList, nextCandidate.EmployeeID)
+	if err := u.store.AdvanceJobOffer(ctx, job.ID, oldOfferedID, nextCandidate.EmployeeID, &newExpiry, newOfferedList); err != nil {
+		return fmt.Errorf("failed to advance job offer: %w", err)
+	}
+
+	job.CurrentOfferedEmployeeID = nextCandidate.EmployeeID
+	job.OfferExpiresAt = &newExpiry
+	job.OfferedEmployeeIDs = newOfferedList
+	job.UpdatedAt = time.Now().UTC()
+
+	u.sendJobOfferNotification(job, nextCandidate.EmployeeID)
+	return nil
+}
+
+func (u *UserService) checkCascadeOfferExpiry(ctx context.Context, job *models.Job) bool {
+	if job == nil || job.Status != models.JobStatusPendingDispatch {
+		return false
+	}
+
+	now := time.Now().UTC()
+	if job.OfferExpiresAt != nil && !now.Before(*job.OfferExpiresAt) {
+		_ = u.advanceCascade(ctx, job)
+		return true
+	}
+
+	if job.CurrentOfferedEmployeeID != "" {
+		empLoc, err := u.store.GetEmployeeLocation(ctx, job.OwnerID, job.CurrentOfferedEmployeeID)
+		if err != nil || empLoc == nil || now.Sub(empLoc.UpdatedAt) > EmployeeLocationFreshnessWindow {
+			_ = u.advanceCascade(ctx, job)
+			return true
 		}
 	}
 
-	if nearest == nil {
-		return nil, ErrNoCouriersAvailable
+	return false
+}
+
+func (u *UserService) startCascadeSweeper() {
+	ticker := time.NewTicker(3 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-u.stopCascadeSweeper:
+			return
+		case <-ticker.C:
+			u.sweepExpiredOffers()
+		}
 	}
-	return nearest, nil
+}
+
+func (u *UserService) sweepExpiredOffers() {
+	if u.store == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	expiredJobs, err := u.store.GetExpiredDispatchJobs(ctx, time.Now().UTC())
+	if err != nil {
+		return
+	}
+
+	for _, job := range expiredJobs {
+		_ = u.advanceCascade(ctx, job)
+	}
 }
 
 func (u *UserService) broadcastJobAlert(job *models.Job, svc *models.Service) {

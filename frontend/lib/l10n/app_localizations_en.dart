@@ -997,6 +997,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusPending => 'Pending';
 
   @override
+  String get statusPendingDispatch => 'Finding Courier';
+
+  @override
+  String get statusUnavailable => 'Unavailable';
+
+  @override
+  String get incomingJobOffer => 'Incoming Job Offer';
+
+  @override
+  String get acceptOffer => 'Accept Offer';
+
+  @override
+  String get declineOffer => 'Decline';
+
+  @override
+  String offerExpiresIn(int seconds) {
+    return 'Expires in ${seconds}s';
+  }
+
+  @override
+  String get allCouriersBusyTitle =>
+      'All couriers are currently busy right now';
+
+  @override
+  String get allCouriersBusyDesc =>
+      'All couriers in your area are currently occupied or unavailable. Please try again shortly.';
+
+  @override
+  String get retryBookingAction => 'Try Again';
+
+  @override
   String get statusCancelled => 'Cancelled';
 
   @override

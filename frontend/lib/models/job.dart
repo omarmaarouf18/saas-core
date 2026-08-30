@@ -34,6 +34,9 @@ class Job {
   final String? proposedBy;
   final double? agreedPrice;
   final DateTime? priceProposalExpiresAt;
+  final String? currentOfferedEmployeeId;
+  final DateTime? offerExpiresAt;
+  final List<String>? offeredEmployeeIds;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -54,6 +57,9 @@ class Job {
     this.proposedBy,
     this.agreedPrice,
     this.priceProposalExpiresAt,
+    this.currentOfferedEmployeeId,
+    this.offerExpiresAt,
+    this.offeredEmployeeIds,
     this.createdAt,
     this.updatedAt,
   });
@@ -79,6 +85,13 @@ class Job {
       agreedPrice: (json['agreed_price'] as num?)?.toDouble(),
       priceProposalExpiresAt: json['price_proposal_expires_at'] != null
           ? DateTime.tryParse(json['price_proposal_expires_at'])
+          : null,
+      currentOfferedEmployeeId: json['current_offered_employee_id'],
+      offerExpiresAt: json['offer_expires_at'] != null
+          ? DateTime.tryParse(json['offer_expires_at'])
+          : null,
+      offeredEmployeeIds: json['offered_employee_ids'] != null
+          ? List<String>.from(json['offered_employee_ids'])
           : null,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'])

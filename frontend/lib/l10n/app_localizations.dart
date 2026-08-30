@@ -1917,6 +1917,60 @@ abstract class AppLocalizations {
   /// **'Pending'**
   String get statusPending;
 
+  /// No description provided for @statusPendingDispatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding Courier'**
+  String get statusPendingDispatch;
+
+  /// No description provided for @statusUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get statusUnavailable;
+
+  /// No description provided for @incomingJobOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming Job Offer'**
+  String get incomingJobOffer;
+
+  /// No description provided for @acceptOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept Offer'**
+  String get acceptOffer;
+
+  /// No description provided for @declineOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get declineOffer;
+
+  /// No description provided for @offerExpiresIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires in {seconds}s'**
+  String offerExpiresIn(int seconds);
+
+  /// No description provided for @allCouriersBusyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All couriers are currently busy right now'**
+  String get allCouriersBusyTitle;
+
+  /// No description provided for @allCouriersBusyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'All couriers in your area are currently occupied or unavailable. Please try again shortly.'**
+  String get allCouriersBusyDesc;
+
+  /// No description provided for @retryBookingAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get retryBookingAction;
+
   /// No description provided for @statusCancelled.
   ///
   /// In en, this message translates to:

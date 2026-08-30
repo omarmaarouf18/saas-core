@@ -113,6 +113,16 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 	}); err != nil {
 		return fmt.Errorf("jobs owner_id_status index: %w", err)
 	}
+	if _, err := s.jobs.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "current_offered_employee_id", Value: 1}},
+	}); err != nil {
+		return fmt.Errorf("jobs current_offered_employee_id index: %w", err)
+	}
+	if _, err := s.jobs.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "status", Value: 1}, {Key: "offer_expires_at", Value: 1}},
+	}); err != nil {
+		return fmt.Errorf("jobs status_offer_expires_at index: %w", err)
+	}
 	if _, err := s.wallets.Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.D{{Key: "tenant_id", Value: 1}}, Options: options.Index().SetUnique(true),
 	}); err != nil {
@@ -330,7 +340,16 @@ func (s *MongoDB) GetJob(ctx context.Context, id string) *models.Job {
 
 func (s *MongoDB) GetJobsByEmployee(ctx context.Context, employeeID string) ([]*models.Job, error) {
 	var jobs []*models.Job
-	cursor, err := s.jobs.Find(ctx, bson.M{"employee_id": employeeID})
+	filter := bson.M{
+		"$or": []bson.M{
+			{"employee_id": employeeID},
+			{
+				"current_offered_employee_id": employeeID,
+				"status":                      models.JobStatusPendingDispatch,
+			},
+		},
+	}
+	cursor, err := s.jobs.Find(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("store: get jobs by employee: %w", err)
 	}
@@ -490,6 +509,114 @@ func (s *MongoDB) UpdateJobCancellation(ctx context.Context, id string, status m
 		return fmt.Errorf("job_state_changed: job %q not in status awaiting_price_response", id)
 	}
 	return nil
+}
+
+// AdvanceJobOffer atomically updates the offered employee on a pending_dispatch job using CAS.
+func (s *MongoDB) AdvanceJobOffer(ctx context.Context, jobID, oldOfferedEmpID, newOfferedEmpID string, newExpiry *time.Time, newOfferedIDs []string) error {
+	filter := bson.M{
+		"_id":    jobID,
+		"status": models.JobStatusPendingDispatch,
+	}
+	if oldOfferedEmpID != "" {
+		filter["current_offered_employee_id"] = oldOfferedEmpID
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"current_offered_employee_id": newOfferedEmpID,
+			"offer_expires_at":            newExpiry,
+			"offered_employee_ids":        newOfferedIDs,
+			"updated_at":                  time.Now().UTC(),
+		},
+	}
+	res, err := s.jobs.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("store: advance job offer: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("job_state_changed: job %q not in pending_dispatch with expected offer", jobID)
+	}
+	return nil
+}
+
+// SetJobUnavailable transitions a pending_dispatch job to unavailable when the cascade is exhausted.
+func (s *MongoDB) SetJobUnavailable(ctx context.Context, jobID, oldOfferedEmpID string, offeredIDs []string) error {
+	filter := bson.M{
+		"_id":    jobID,
+		"status": models.JobStatusPendingDispatch,
+	}
+	if oldOfferedEmpID != "" {
+		filter["current_offered_employee_id"] = oldOfferedEmpID
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"status":                      models.JobStatusUnavailable,
+			"current_offered_employee_id": "",
+			"offer_expires_at":            nil,
+			"offered_employee_ids":        offeredIDs,
+			"updated_at":                  time.Now().UTC(),
+		},
+	}
+	res, err := s.jobs.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("store: set job unavailable: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("job_state_changed: job %q not in pending_dispatch", jobID)
+	}
+	return nil
+}
+
+// AcceptJobOffer atomically claims a pending_dispatch offer using CAS.
+func (s *MongoDB) AcceptJobOffer(ctx context.Context, jobID, employeeID string, nextStatus models.JobStatus, bookedDist float64, empLoc *models.Location, suggestedPrice *float64, lockedEscrow float64) error {
+	filter := bson.M{
+		"_id":                         jobID,
+		"status":                      models.JobStatusPendingDispatch,
+		"current_offered_employee_id": employeeID,
+	}
+	setDoc := bson.M{
+		"status":                      nextStatus,
+		"employee_id":                 employeeID,
+		"current_offered_employee_id": "",
+		"offer_expires_at":            nil,
+		"booked_distance":             bookedDist,
+		"assigned_employee_location":  empLoc,
+		"updated_at":                  time.Now().UTC(),
+	}
+	if suggestedPrice != nil {
+		setDoc["suggested_price"] = *suggestedPrice
+	}
+	if lockedEscrow > 0 {
+		setDoc["locked_escrow_amount"] = lockedEscrow
+	}
+	res, err := s.jobs.UpdateOne(ctx, filter, bson.M{"$set": setDoc})
+	if err != nil {
+		return fmt.Errorf("store: accept job offer: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("job_state_changed: offer for job %q is no longer valid for employee %s", jobID, employeeID)
+	}
+	return nil
+}
+
+// GetExpiredDispatchJobs finds all pending_dispatch jobs whose offer has expired.
+func (s *MongoDB) GetExpiredDispatchJobs(ctx context.Context, now time.Time) ([]*models.Job, error) {
+	filter := bson.M{
+		"status": models.JobStatusPendingDispatch,
+		"offer_expires_at": bson.M{
+			"$ne":  nil,
+			"$lte": now,
+		},
+	}
+	cursor, err := s.jobs.Find(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("store: query expired dispatch jobs: %w", err)
+	}
+	defer cursor.Close(ctx)
+	var jobs []*models.Job
+	if err := cursor.All(ctx, &jobs); err != nil {
+		return nil, fmt.Errorf("store: decode expired dispatch jobs: %w", err)
+	}
+	return jobs, nil
 }
 
 func (s *MongoDB) GetServiceByID(ctx context.Context, id string) *models.Service {

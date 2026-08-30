@@ -985,6 +985,36 @@ class AppLocalizationsAr extends AppLocalizations {
   String get statusPending => 'قيد الانتظار';
 
   @override
+  String get statusPendingDispatch => 'جاري البحث عن كابتن';
+
+  @override
+  String get statusUnavailable => 'غير متاح';
+
+  @override
+  String get incomingJobOffer => 'عرض عمل وارد';
+
+  @override
+  String get acceptOffer => 'قبول العرض';
+
+  @override
+  String get declineOffer => 'رفض';
+
+  @override
+  String offerExpiresIn(int seconds) {
+    return 'ينتهي خلال $seconds ثانية';
+  }
+
+  @override
+  String get allCouriersBusyTitle => 'جميع الكباتن مشغولون حالياً';
+
+  @override
+  String get allCouriersBusyDesc =>
+      'جميع الكباتن في منطقتك مشغولون حالياً أو غير متاحين. يرجى المحاولة مرة أخرى قريباً.';
+
+  @override
+  String get retryBookingAction => 'إعادة المحاولة';
+
+  @override
   String get statusCancelled => 'ملغى';
 
   @override

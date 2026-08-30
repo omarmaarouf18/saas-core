@@ -603,3 +603,26 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
     - In `markAsRead(id)` and `dismiss(id)`, gracefully handled `ApiClientException` with status code 404 as already handled/deleted on the server, avoiding intrusive error banners and preventing rollback re-insertion of ghost items.
     - Added unit tests in `notifications_provider_persistence_test.dart` asserting 404 handling.
   - **Verification**: Verified via `go test ./...` in `services/notification-service` (100% pass, 0 failures), and `flutter test` across all frontend tests (490/490 passed). (Commit `f6bf9f7ca3a89305887ebc8cead7216716774459`).
+
+### Sequential Accept/Decline Dispatch Cascade & Courier Pricing at Acceptance
+
+* **Verified Sequential Courier Offer Cascade & Deferred Pricing (`user-service` & Flutter frontend)**: Replaced forced synchronous auto-dispatch with a sequential cascade offering jobs to available proximity-ranked couriers with a 60-second accept/decline window, computing distance and fare pricing strictly upon courier acceptance:
+  - **Sequential Cascade Model**:
+    - When a booking is submitted (`POST /users/jobs/track`) without specifying an employee ID, the job is created with `status = "pending_dispatch"` and offered to the nearest available active courier (`current_offered_employee_id`, `offer_expires_at = now + 60s`).
+    - Distance, suggested price, and escrow locking are completely deferred until acceptance.
+    - If all available couriers decline or the offer cascade is exhausted (or zero couriers are available initially), the job transitions to `status = "unavailable"`, returning HTTP 201 Created with a helpful "All couriers are currently busy" state rather than a dead-end HTTP 422 error.
+    - Courier Busy Guard: couriers with an active job (`status == "active"` or `"awaiting_price_response"`) cannot be offered or accept another job; attempts to accept return 409 `courier_busy` and advance the cascade.
+    - Stale Location Guard: couriers with locations older than 5 minutes cannot accept; attempts return 409 `location_stale` and advance the cascade.
+    - Lazy & Background Sweeper: offers past their 60s timeout automatically advance to the next courier via lazy evaluation on `GET /users/jobs/get` / `GetJobsByEmployee` and a periodic background sweeper.
+  - **Backend Handlers & Endpoints (`services/user-service/`)**:
+    - Added atomic CAS store operations: `AdvanceJobOffer`, `SetJobUnavailable`, `AcceptJobOffer`, and `GetExpiredDispatchJobs`.
+    - Registered endpoints: `POST /users/employee/jobs/{id}/accept`, `POST /users/employee/jobs/{id}/decline`, `POST /users/employee/jobs/accept`, and `POST /users/employee/jobs/decline`.
+    - Added dedicated rate limiters `acceptOfferLimiter` and `declineOfferLimiter` (30/min).
+  - **Flutter Client Integration (`frontend/`)**:
+    - `Job` model: added `currentOfferedEmployeeId`, `offerExpiresAt`, `offeredEmployeeIds`.
+    - `EmployeeJobsProvider`: added `acceptJobOffer` and `declineJobOffer` methods.
+    - `EmployeeJobsScreen`: displays prominent incoming job offer card at the top of the jobs list with a real-time 60-second countdown ticker, debounced Accept and Decline buttons, and auto-refresh on expiration.
+    - `JobStatusScreen`: handles `pending_dispatch` ("Matching courier...") and `unavailable` ("All couriers are currently busy right now" card with retry action), deferring fare display until courier acceptance.
+    - `StatusBadge`: supports `pending_dispatch` and `unavailable` with appropriate icons, colors, and localized Arabic (`ar_EG`) and English labels.
+  - **Verification**: Dedicated repro suite `cascade_dispatch_repro_test.go` (6/6 tests passing), updated end-to-end pricing tests in `employee_dispatch_pricing_test.go`, updated `APPLICATION_MAP.md` via `make docs`, `make docs-check` passed, full `user-service` test suite passed, `flutter analyze` 0 issues, and `flutter test` (491/491 tests passing).
+

@@ -62,6 +62,8 @@ type JobStatus string
 
 const (
 	JobStatusPending                      JobStatus = "pending"
+	JobStatusPendingDispatch              JobStatus = "pending_dispatch"
+	JobStatusUnavailable                  JobStatus = "unavailable"
 	JobStatusAwaitingPriceResponse        JobStatus = "awaiting_price_response"
 	JobStatusActive                       JobStatus = "active"
 	JobStatusCompleted                    JobStatus = "completed"
@@ -72,7 +74,7 @@ const (
 // ValidJobStatus returns true if the given status is a known value.
 func ValidJobStatus(s JobStatus) bool {
 	switch s {
-	case JobStatusPending, JobStatusAwaitingPriceResponse, JobStatusActive, JobStatusCompleted, JobStatusCancelled, JobStatusEscrowReconciliationRequired:
+	case JobStatusPending, JobStatusPendingDispatch, JobStatusUnavailable, JobStatusAwaitingPriceResponse, JobStatusActive, JobStatusCompleted, JobStatusCancelled, JobStatusEscrowReconciliationRequired:
 		return true
 	}
 	return false
@@ -120,32 +122,38 @@ type Job struct {
 	PriceProposalExpiresAt   *time.Time `json:"price_proposal_expires_at,omitempty" bson:"price_proposal_expires_at,omitempty"`
 	BookedDistance           float64    `json:"booked_distance,omitempty"            bson:"booked_distance,omitempty"`
 	AssignedEmployeeLocation *Location  `json:"assigned_employee_location,omitempty" bson:"assigned_employee_location,omitempty"`
+	CurrentOfferedEmployeeID string     `json:"current_offered_employee_id,omitempty" bson:"current_offered_employee_id,omitempty"`
+	OfferExpiresAt           *time.Time `json:"offer_expires_at,omitempty"            bson:"offer_expires_at,omitempty"`
+	OfferedEmployeeIDs       []string   `json:"offered_employee_ids,omitempty"        bson:"offered_employee_ids,omitempty"`
 	CreatedAt                time.Time  `json:"created_at"                    bson:"created_at"`
 	UpdatedAt                time.Time  `json:"updated_at"                    bson:"updated_at"`
 }
 
 // OwnerJobResponse provides full tenant job visibility for business owners.
 type OwnerJobResponse struct {
-	ID                     string     `json:"id"`
-	OwnerID                string     `json:"owner_id"`
-	ServiceID              string     `json:"service_id"`
-	UserID                 string     `json:"user_id"`
-	EmployeeID             string     `json:"employee_id,omitempty"`
-	Status                 JobStatus  `json:"status"`
-	Location               Location   `json:"location"`
-	CurrentLocation        *Location  `json:"current_location,omitempty"`
-	PaymentMethod          string     `json:"payment_method"`
-	LockedEscrowAmount     float64    `json:"locked_escrow_amount,omitempty"`
-	ActualCashAmount       *float64   `json:"actual_cash_amount,omitempty"`
-	ReconciliationNote     string     `json:"reconciliation_note,omitempty"`
-	EscrowFailureReason    string     `json:"escrow_failure_reason,omitempty"`
-	SuggestedPrice         float64    `json:"suggested_price,omitempty"`
-	ProposedPrice          *float64   `json:"proposed_price,omitempty"`
-	ProposedBy             string     `json:"proposed_by,omitempty"`
-	AgreedPrice            *float64   `json:"agreed_price,omitempty"`
-	PriceProposalExpiresAt *time.Time `json:"price_proposal_expires_at,omitempty"`
-	CreatedAt              time.Time  `json:"created_at"`
-	UpdatedAt              time.Time  `json:"updated_at"`
+	ID                       string     `json:"id"`
+	OwnerID                  string     `json:"owner_id"`
+	ServiceID                string     `json:"service_id"`
+	UserID                   string     `json:"user_id"`
+	EmployeeID               string     `json:"employee_id,omitempty"`
+	CurrentOfferedEmployeeID string     `json:"current_offered_employee_id,omitempty"`
+	OfferExpiresAt           *time.Time `json:"offer_expires_at,omitempty"`
+	OfferedEmployeeIDs       []string   `json:"offered_employee_ids,omitempty"`
+	Status                   JobStatus  `json:"status"`
+	Location                 Location   `json:"location"`
+	CurrentLocation          *Location  `json:"current_location,omitempty"`
+	PaymentMethod            string     `json:"payment_method"`
+	LockedEscrowAmount       float64    `json:"locked_escrow_amount,omitempty"`
+	ActualCashAmount         *float64   `json:"actual_cash_amount,omitempty"`
+	ReconciliationNote       string     `json:"reconciliation_note,omitempty"`
+	EscrowFailureReason      string     `json:"escrow_failure_reason,omitempty"`
+	SuggestedPrice           float64    `json:"suggested_price,omitempty"`
+	ProposedPrice            *float64   `json:"proposed_price,omitempty"`
+	ProposedBy               string     `json:"proposed_by,omitempty"`
+	AgreedPrice              *float64   `json:"agreed_price,omitempty"`
+	PriceProposalExpiresAt   *time.Time `json:"price_proposal_expires_at,omitempty"`
+	CreatedAt                time.Time  `json:"created_at"`
+	UpdatedAt                time.Time  `json:"updated_at"`
 }
 
 // NewOwnerJobResponse maps a Job struct to an OwnerJobResponse DTO.
@@ -154,26 +162,29 @@ func NewOwnerJobResponse(j *Job) OwnerJobResponse {
 		return OwnerJobResponse{}
 	}
 	return OwnerJobResponse{
-		ID:                     j.ID,
-		OwnerID:                j.OwnerID,
-		ServiceID:              j.ServiceID,
-		UserID:                 j.UserID,
-		EmployeeID:             j.EmployeeID,
-		Status:                 j.Status,
-		Location:               j.Location,
-		CurrentLocation:        j.CurrentLocation,
-		PaymentMethod:          j.PaymentMethod,
-		LockedEscrowAmount:     j.LockedEscrowAmount,
-		ActualCashAmount:       j.ActualCashAmount,
-		ReconciliationNote:     j.ReconciliationNote,
-		EscrowFailureReason:    j.EscrowFailureReason,
-		SuggestedPrice:         j.SuggestedPrice,
-		ProposedPrice:          j.ProposedPrice,
-		ProposedBy:             j.ProposedBy,
-		AgreedPrice:            j.AgreedPrice,
-		PriceProposalExpiresAt: j.PriceProposalExpiresAt,
-		CreatedAt:              j.CreatedAt,
-		UpdatedAt:              j.UpdatedAt,
+		ID:                       j.ID,
+		OwnerID:                  j.OwnerID,
+		ServiceID:                j.ServiceID,
+		UserID:                   j.UserID,
+		EmployeeID:               j.EmployeeID,
+		CurrentOfferedEmployeeID: j.CurrentOfferedEmployeeID,
+		OfferExpiresAt:           j.OfferExpiresAt,
+		OfferedEmployeeIDs:       j.OfferedEmployeeIDs,
+		Status:                   j.Status,
+		Location:                 j.Location,
+		CurrentLocation:          j.CurrentLocation,
+		PaymentMethod:            j.PaymentMethod,
+		LockedEscrowAmount:       j.LockedEscrowAmount,
+		ActualCashAmount:         j.ActualCashAmount,
+		ReconciliationNote:       j.ReconciliationNote,
+		EscrowFailureReason:      j.EscrowFailureReason,
+		SuggestedPrice:           j.SuggestedPrice,
+		ProposedPrice:            j.ProposedPrice,
+		ProposedBy:               j.ProposedBy,
+		AgreedPrice:              j.AgreedPrice,
+		PriceProposalExpiresAt:   j.PriceProposalExpiresAt,
+		CreatedAt:                j.CreatedAt,
+		UpdatedAt:                j.UpdatedAt,
 	}
 }
 

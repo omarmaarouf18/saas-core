@@ -424,6 +424,26 @@ var KnownEndpoints = map[string]struct {
 		Function:    "RespondPrice accepts or declines a price proposal for a transport job.",
 		Targets:     "Updates jobs agreed_price, status (active or cancelled), and cancellation_reason.",
 	},
+	"POST /users/employee/jobs/{id}/accept": {
+		Permissions: "Employee JWT",
+		Function:    "Accepts an active dispatch offer, calculates final distance pricing from courier location, and activates job.",
+		Targets:     "Updates `jobs` collection, updates `wallets` (for escrow locking), dispatches notification.",
+	},
+	"POST /users/employee/jobs/{id}/decline": {
+		Permissions: "Employee JWT",
+		Function:    "Declines an active dispatch offer and advances the cascade immediately to the next courier.",
+		Targets:     "Updates `jobs` collection, queries `employee_locations`, dispatches next offer notification.",
+	},
+	"POST /users/employee/jobs/accept": {
+		Permissions: "Employee JWT",
+		Function:    "Accepts an active dispatch offer, calculates final distance pricing from courier location, and activates job.",
+		Targets:     "Updates `jobs` collection, updates `wallets` (for escrow locking), dispatches notification.",
+	},
+	"POST /users/employee/jobs/decline": {
+		Permissions: "Employee JWT",
+		Function:    "Declines an active dispatch offer and advances the cascade immediately to the next courier.",
+		Targets:     "Updates `jobs` collection, queries `employee_locations`, dispatches next offer notification.",
+	},
 }
 
 // HandlerFuncInfo parses a file's AST to gather functions and their comments

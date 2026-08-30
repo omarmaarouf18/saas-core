@@ -475,6 +475,22 @@
   "statusActive": "Active",
   "statusAwaitingPrice": "Awaiting Price",
   "statusPending": "Pending",
+  "statusPendingDispatch": "Finding Courier",
+  "statusUnavailable": "Unavailable",
+  "incomingJobOffer": "Incoming Job Offer",
+  "acceptOffer": "Accept Offer",
+  "declineOffer": "Decline",
+  "offerExpiresIn": "Expires in {seconds}s",
+  "@offerExpiresIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "allCouriersBusyTitle": "All couriers are currently busy right now",
+  "allCouriersBusyDesc": "All couriers in your area are currently occupied or unavailable. Please try again shortly.",
+  "retryBookingAction": "Try Again",
   "statusCancelled": "Cancelled",
   "statusPendingApproval": "Pending Approval",
   "statusApproved": "Approved",

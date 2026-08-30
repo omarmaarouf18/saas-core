@@ -36,6 +36,7 @@ class StatusBadge extends StatelessWidget {
       case 'uploaded':
         return context.semanticColors.success;
       case 'active':
+      case 'pending_dispatch':
         return Theme.of(context).colorScheme.primary;
       case 'awaiting_price_response':
       case 'awaiting price':
@@ -44,6 +45,7 @@ class StatusBadge extends StatelessWidget {
       case 'reconciliation_required':
       case 'reconciliation required':
       case 'requested':
+      case 'unavailable':
         return context.semanticColors.warning;
       case 'cancelled':
       case 'canceled':
@@ -89,6 +91,10 @@ class StatusBadge extends StatelessWidget {
       case 'reconciliation_required':
       case 'reconciliation required':
         return Icons.warning_amber_rounded;
+      case 'pending_dispatch':
+        return Icons.radar_outlined;
+      case 'unavailable':
+        return Icons.person_off_outlined;
       default:
         return Icons.info_outline;
     }
@@ -118,6 +124,12 @@ class StatusBadge extends StatelessWidget {
         break;
       case 'pending':
         label = l10n.statusPending;
+        break;
+      case 'pending_dispatch':
+        label = l10n.statusPendingDispatch;
+        break;
+      case 'unavailable':
+        label = l10n.statusUnavailable;
         break;
       case 'requested':
         label = l10n.statusRequested;
