@@ -1,6 +1,6 @@
 # ADR-0021: Standalone KYC/KYB/KYE Reviewer Console
 
-- **Status**: Accepted (authorized by project owner, 2026-08-26)
+- **Status**: Accepted and implemented (authorized by project owner, 2026-08-26; backend commit `ec9dc80`, frontend commit `f5d8de7`, console commit `019ccce`)
 - **Date**: 2026-08-26
 - **Related ADR**: [ADR-0013](0013-support-agent-console-as-separate-client-application.md) (Support Agent Console as a Separate Client Application), [ADR-0010](0010-separate-repos-for-deployment-artifacts.md) (Separate Repos for Deployment Artifacts)
 - **Authorization Note**: This ADR executes the Support Agent Console deferred by ADR-0013 under the explicit written authorization of the project owner issued 2026-08-26. Per ADR-0013's enforcement policy, this authorization covers ONLY a separate standalone application. Nothing in this ADR authorizes reintroducing any reviewer interface into the consumer app binary (`frontend/`); the sole permitted consumer-app touch is notification *consumption* (receiving and displaying review outcome notifications), which is an end-user-facing concern, not a reviewer capability.

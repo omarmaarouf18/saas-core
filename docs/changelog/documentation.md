@@ -4,6 +4,22 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## Documentation Freshness Audit #2 — Full Repository Sweep (Post-Cascade)
+
+- **Implementation Detail**: Completed Audit #2 across all 66 markdown files repository-wide following major architectural milestones (sequential cascade dispatch model, accept-before-pricing flow, standalone KYC reviewer console ADR-0021, and per-action rate-limiting isolation):
+  1. Updated `docs/APPLICATION_MAP.md` §1 connection diagram and service inventory with `kyc-reviewer-console` (`omarmaarouf18/kyc-reviewer-console`, port 8090, `kyc.logiclinkeg.tech`), updated `user-service` handlers (`AcceptJobOffer`, `DeclineJobOffer`, `HeartbeatLocation`), and corrected outbound calls to include `notification-service` (`POST /notifications/send` and `/notifications/broadcast/job-alert`).
+  2. Overhauled `docs/APPLICATION_MAP.md` §3 Actor Flows (Job Lifecycle): replaced superseded forced auto-dispatch with the sequential accept/decline cascade dispatch model (`pending_dispatch`, 60-second offer countdown, accept/decline cascade, `unavailable` state on exhaustion, distance pricing computed from accepting courier coordinates, escrow locked upon acceptance). Corrected historical 15% platform fee claim to 0% fee per ADR-0017 zero-commission model.
+  3. Corrected `docs/BUSINESS_LOGIC_AUDIT.md` §3 tracing of `LockedEscrowAmount` to reflect deferred escrow locking for cascade bookings in `AcceptJobOffer`, and updated stale handler file citations from `handlers.go` to modularized handler files (`jobs_handlers.go`, `services_handlers.go`, `wallet_handlers.go`).
+  4. Corrected broken links: updated `docs/adr/0007-delivery-shipping-gps-reconciliation.md` link from `0002-escrow-wallet-system.md` to `0002-per-job-escrow-integrity.md`, and cleaned dead markdown links pointing to deleted `service_screen.dart` across `docs/changelog/new-features.md` and `docs/frontend/STITCH_VISUAL_AUDIT_V2.md`.
+  5. Annotated `docs/changelog/bug-fixes.md` synchronous auto-dispatch entry with a prominent note clarifying that forced synchronous dispatch and HTTP 422 rejections were superseded by the sequential accept/decline cascade model.
+  6. Updated component and widget counts: corrected reusable widget count from 32 to 33 in `DESIGN.md` and `docs/frontend/DESIGN_SYSTEM.md`, completed the 33-widget table catalog in `DESIGN_SYSTEM.md` (adding `AppShell`, `DashboardScreenTemplate`, `FormScreenTemplate`, `ListScreenTemplate`, `ThemedPanel`, `InfoAlertDialog`, `KycRejectionDialogHost`).
+  7. Updated `docs/frontend/STATUS.md`: removed stale `service_screen` deferral note, updated ARB key count from 687 to 702 en=ar symmetric, and added entry for the Functional UI/UX Fixes pass (commit `697c489`).
+  8. Updated `docs/adr/0021-kyc-kyb-kye-reviewer-console.md` and `docs/adr/README.md` to mark ADR-0021 as "Accepted and implemented", and updated `docs/REPOSITORY_MAP.md` to clarify the existence of `kyc-reviewer-console`.
+  9. Appended Addendum 2 to `docs/adr/0016-tiered-rate-limits-for-ux-over-uniform-security-floor.md` documenting per-action write-rate-limiting isolation (20/min track/propose/respond, 10/min cancel/rate/deposit/ticket, 60/min owner/customer/ledger, 30/min accept/decline/ratings/reconciliation/payout/subscription, edge 300/min with loopback exemption).
+  10. Synchronized changelog index counts in `docs/changelog/README.md` and `AI_CONTEXT.md` (Security: 129, New Features: 70, Infra: 58, Bug Fixes: 85, Docs: 40, Localization: 4, Refactoring: 10 — total 396).
+  11. Implemented `make docs-counts` target and automated documentation drift test in `shared/infra/docgen` to close the recurring drift gap.
+- **Verification**: Verified via `make docs`, `make docs-counts`, `make docs-check`, `make ci`. ✅
+
 ## Documentation-Accuracy Remediation & Reference Integrity Audit
 
 - **Implementation Detail**: Completed a comprehensive documentation-accuracy verification and remediation pass:

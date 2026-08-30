@@ -4,7 +4,7 @@ This document outlines the architectural and user interface design for the Flutt
 
 > [!NOTE]
 > **Planned vs. Current Architecture**: The directory structure and provider file tree detailed in Section 1 (such as `screens/shared/`, `screens/owner/`, `screens/employee/`, `screens/user/`, and `chat_provider.dart` / `sse_provider.dart`) represent the **target/planned modular packaging architecture** for the production launch.
-> The actual production-ready frontend implementation consists of 28 active screens in `frontend/lib/screens/`, 11 providers in `frontend/lib/providers/`, and 32 reusable widgets in `frontend/lib/widgets/` following the complete Stitch Unified UI redesign (Batches 1–5), fully documented in [docs/frontend/STATUS.md](docs/frontend/STATUS.md) and [docs/frontend/ARCHITECTURE.md](docs/frontend/ARCHITECTURE.md). Please consult those documents for the canonical live state.
+> The actual production-ready frontend implementation consists of 28 active screens in `frontend/lib/screens/`, 11 providers in `frontend/lib/providers/`, and 33 reusable widgets in `frontend/lib/widgets/` following the complete Stitch Unified UI redesign (Batches 1–5), fully documented in [docs/frontend/STATUS.md](docs/frontend/STATUS.md) and [docs/frontend/ARCHITECTURE.md](docs/frontend/ARCHITECTURE.md). Please consult those documents for the canonical live state.
 
 ---
 

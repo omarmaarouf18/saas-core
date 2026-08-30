@@ -34,8 +34,8 @@ This document records the full internationalization (i18n) setup and string extr
 | `chat_screen.dart` | Job Chat | 8 | Fully Localized | Connection status indicators & input row |
 | `notifications_screen.dart` | Notifications | 11 | Fully Localized | Filter chips & clear-all confirmation dialog |
 | `kyc_document_upload_screen.dart` | Document Upload | 9 | Fully Localized | Upload slots & rejection reason banner |
-| `kyb_kye_review_screen.dart` | Review Queue | 8 | Fully Localized | Admin approval queue & decision dialogs |
-| `service_screen.dart` | Service Config | 10 | Fully Localized | Service listing & parameters form |
+| `kyb_kye_review_screen.dart` *(removed per ADR-0013/ADR-0021)* | Review Queue | 8 | Fully Localized | Admin approval queue & decision dialogs |
+| `service_screen.dart` *(consolidated in `a486414`)* | Service Config | 10 | Fully Localized | Service listing & parameters form |
 | `wallet_screen.dart` | Wallet | 12 | Fully Localized | Balance cards, deposit dialog & transaction ledger |
 | `owner_reconciliation_queue_screen.dart` | Escrow Queue | 18 | Fully Localized | Reconciliation actions, queue refresh & confirmation modal |
 | `rating_screen.dart` | Service Rating | 7 | Fully Localized | Star rating & review submission |

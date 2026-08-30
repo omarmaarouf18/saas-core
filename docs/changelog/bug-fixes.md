@@ -4,6 +4,9 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ## Synchronous Auto-Dispatch, Real Courier Location Pricing, and Standalone Heartbeat Pings
 
+> [!NOTE]
+> **Superseded Model**: The synchronous forced auto-dispatch and immediate HTTP 422 rejection described in this entry were superseded on 2026-08-30 by the sequential accept/decline cascade dispatch model (accept-before-pricing, 60s offer countdown window, deferred distance pricing/escrow locking upon courier acceptance, and `pending_dispatch`/`unavailable` states; see [New Features Changelog](new-features.md)). The underlying courier location tracking, heartbeat pings, and Haversine proximity calculations introduced here remain foundational and are reused by the cascade.
+
 - **Implementation Detail**:
   - **User Service (`services/user-service/`)**:
     - `internal/models/models.go`: Added `EmployeeLocation` model (`TenantID`, `EmployeeID`, `Latitude`, `Longitude`, `UpdatedAt`), `EmployeeLocationPingRequest`, and snapshotted fields on `models.Job`: `BookedDistance float64` and `AssignedEmployeeLocation *Location`.

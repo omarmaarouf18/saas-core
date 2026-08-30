@@ -93,7 +93,7 @@ The 40 folders in `design/stitch-export/logistics_core_unified/` map to the 28 F
 | 11 | `customer_rating` | Standard | Authoritative | [`rating_screen.dart`](../../frontend/lib/screens/rating_screen.dart) | Shared / Blind Rating | +170 -146 (27.3% del) | Targeted Presentation Refactor | [`ec58038`](https://github.com/omarmaarouf18/saas-core/commit/ec58038) |
 | 12 | `owner_dashboard` | Standard | Authoritative | [`home_screen.dart`](../../frontend/lib/screens/home_screen.dart) | Owner / Dashboard Tab | +1080 -828 (68.3% del) | Ground-Up Rebuild | [`f4dd985`](https://github.com/omarmaarouf18/saas-core/commit/f4dd985) |
 | 13 | `employee_management` | Standard | Authoritative | [`employee_screen.dart`](../../frontend/lib/screens/employee_screen.dart) | Owner / Employees Tab (Worker Mgmt) | +385 -358 (48.4% del) | Major Redesign & Roster Layout | [`6b06162`](https://github.com/omarmaarouf18/saas-core/commit/6b06162) |
-| 14 | `owner_service_management_final_fidelity` | Final Fidelity | **AUTHORITATIVE** | [`service_screen.dart`](../../frontend/lib/screens/service_screen.dart) | Owner / Services Directory | +271 -250 (68.3% del) | Ground-Up Rebuild | [`5e5ab10`](https://github.com/omarmaarouf18/saas-core/commit/5e5ab10) |
+| 14 | `owner_service_management_final_fidelity` | Final Fidelity | **AUTHORITATIVE** | `service_screen.dart` *(consolidated into `owner_configuration_screen.dart` in `a486414`)* | Owner / Services Directory | +271 -250 (68.3% del) | Ground-Up Rebuild | [`5e5ab10`](https://github.com/omarmaarouf18/saas-core/commit/5e5ab10) |
 | - | `owner_service_management` | Iteration 1 | Superseded by final | - | - | - | Superseded | - |
 | 15 | `business_configuration` | Standard | Authoritative | [`owner_configuration_screen.dart`](../../frontend/lib/screens/owner_configuration_screen.dart) | Owner / Business Config | +461 -428 (53.6% del) | Major Redesign & Form Layout | [`133644f`](https://github.com/omarmaarouf18/saas-core/commit/133644f) |
 | 16 | `kyc_verification` | Standard | Authoritative | [`kyc_document_upload_screen.dart`](../../frontend/lib/screens/kyc_document_upload_screen.dart) | Owner & Employee / KYC Upload | +70 -23 (3.6% del) | Incremental Stitch Alignment | [`51506a8`](https://github.com/omarmaarouf18/saas-core/commit/51506a8) |
@@ -215,7 +215,7 @@ The 40 folders in `design/stitch-export/logistics_core_unified/` map to the 28 F
   * **Finding C2.2 (Courier Roster Cards)**: Employee cards with avatar, name, email, vehicle type tag, deliveries count, and freeze/activate status toggle with password confirmation.
   * **Finding C2.3 (Header Action)**: Top Amber Gold "Register Employee" button opening worker registration modal.
 
-#### 13. `owner_service_management_final_fidelity` vs [`service_screen.dart`](../../frontend/lib/screens/service_screen.dart)
+#### 13. `owner_service_management_final_fidelity` vs `service_screen.dart` *(consolidated into `owner_configuration_screen.dart` in `a486414`)*
 * **Ground Truth**: [`design/stitch-export/logistics_core_unified/owner_service_management_final_fidelity/`](../../design/stitch-export/logistics_core_unified/owner_service_management_final_fidelity/)
 * **Findings**:
   * **Finding C3.1 (KYC Status Banner)**: Prominent banner indicating KYC verification requirement before service publishing.

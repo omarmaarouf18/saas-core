@@ -92,10 +92,10 @@ amount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 10
 `CancelJob` omits the `if job.AgreedPrice != nil` check entirely.
 
 ### Tracing Escrow Locking vs Refund Logic
-Tracing `TrackJob` and `RespondPrice` confirms how `LockedEscrowAmount` is established:
-1. For standard non-transport jobs, escrow is locked during `TrackJob` based on the standard formula.
+Tracing `TrackJob`, `AcceptJobOffer`, and `RespondPrice` confirms how `LockedEscrowAmount` is established:
+1. For standard pre-assigned jobs (`req.EmployeeID != ""`), escrow is locked during `TrackJob` based on the standard formula. For cascade dispatch bookings (`req.EmployeeID == ""`), the job enters `pending_dispatch` and escrow locking is completely deferred until a courier accepts in `AcceptJobOffer` (where distance pricing is computed from the accepting courier's location).
 2. For transport jobs (`svc.Category == "transport"`), `TrackJob` skips escrow locking (`if isTransport { return }`). Escrow locking is deferred until price negotiation completes in `RespondPrice`.
-3. When a price proposal is accepted in `RespondPrice` (lines 2744–2784), the active negotiated price (`activePrice`) is used to lock escrow:
+3. When a price proposal is accepted in `RespondPrice` (or when a cascade offer is accepted in `AcceptJobOffer`), the active price is used to lock escrow:
    - `s.LockEscrow(ctx, job.OwnerID, job.ID, activePrice)` locks `activePrice` in the wallet.
    - `s.UpdateJobLockedEscrow(ctx, job.ID, activePrice)` persists `job.LockedEscrowAmount = activePrice`.
    - `s.UpdateJobAgreedPrice(...)` sets `job.AgreedPrice = &activePrice`.
@@ -119,22 +119,21 @@ The following four security and financial integrity mechanisms were re-verified 
 
 2. **Backend-Level KYC Enforcement**:
    * **Citations**:
-     * [`services/auth-service/internal/handlers/auth.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go#L745) (line 745, `ToggleEmployee`: `owner.KYCStatus != models.KYCApproved`)
-     * [`services/auth-service/internal/handlers/auth.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go#L872) (line 872, `SimulateEmployeeAction`: `owner.KYCStatus != models.KYCApproved`)
-     * [`services/user-service/internal/handlers/handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L311) (line 311, `CreateService`)
-     * [`services/user-service/internal/handlers/handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L395) (line 395, `UpdateService`)
-     * [`services/user-service/internal/handlers/handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L630) (line 630, `TrackJob`)
-     * [`services/user-service/internal/handlers/handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L1384) (line 1384, `WalletDeposit`)
+     * [`services/auth-service/internal/handlers/auth.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go) (`ToggleEmployee`: `owner.KYCStatus != models.KYCApproved`)
+     * [`services/auth-service/internal/handlers/auth.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/auth-service/internal/handlers/auth.go) (`SimulateEmployeeAction`: `owner.KYCStatus != models.KYCApproved`)
+     * [`services/user-service/internal/handlers/services_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/services_handlers.go) (`CreateService`, `UpdateService`)
+     * [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (`TrackJob`)
+     * [`services/user-service/internal/handlers/wallet_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/wallet_handlers.go) (`WalletDeposit`)
    * **Mechanism**: KYC gating is enforced server-side in Go backend handlers, rejecting unapproved owner accounts with HTTP 403 Forbidden and logging `KYC_BLOCKED` security audit events. It does not rely solely on frontend UI controls.
 
 3. **Tenant-Scope Authorization Enforcement on `CompleteJob` and `CancelJob`**:
    * **Citations**:
-     * [`services/user-service/internal/handlers/handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L850-L868) (lines 850–868, `CompleteJob`)
-     * [`services/user-service/internal/handlers/handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L2345-L2354) (lines 2345–2354, `CancelJob`)
+     * [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (`CompleteJob`)
+     * [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (`CancelJob`)
    * **Mechanism**: Both handlers resolve the caller's JWT identity and verify that `resolvedRequester` matches either the job's `OwnerID`, `UserID` (customer, where permitted), or assigned `EmployeeID`. Violations trigger a `TENANT_SCOPE_BLOCKED` security event audit log and an HTTP 403 Forbidden response.
 
 4. **IDOR Protection on `GetJob` Employee-Scoped Query Path**:
-   * **Citations**: [`services/user-service/internal/handlers/handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/handlers.go#L1050-L1056) (lines 1050–1056)
+   * **Citations**: [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (`GetJob`)
    * **Mechanism**: When querying employee jobs via `GetJob` / `GET /users/jobs/get`, if a client supplies an explicit `employee_id` query parameter, the handler compares it against `resolvedRequester` (from verified JWT claims). If they mismatch, it logs `[IDOR DETECTED]` and returns HTTP 403 Forbidden.
 
 ---

@@ -122,13 +122,13 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 
 The detailed project history is distributed across categorized changelog files. Please consult the specific category files for complete details (including file/line references, commit SHAs, and verification details):
 
-*   [Security Fixes](docs/changelog/security-fixes.md) — 125 entries detailing vulnerabilities found and fixed (including Owner-Authenticated Employee Provisioning, see [ADR-0001](docs/adr/0001-owner-authenticated-employee-provisioning.md), Employee Assignment Tenant Binding, see [ADR-0003](docs/adr/0003-employee-assignment-tenant-binding-check.md), Customer Booking Employee Pre-Assignment Gating, see [ADR-0004](docs/adr/0004-customer-booking-employee-assignment-order.md), and Document Encryption at Rest).
-*   [New Features](docs/changelog/new-features.md) — 65 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters, username propagation, version gating, zero-commission model, owner payout requests).
-*   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 55 tooling, CI/CD hardening, module refactoring, and onboarding CLI tools (including strict CD preflight validation per ADR-0015).
-*   [Bug Fixes](docs/changelog/bug-fixes.md) — 71 corrections to non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic, frontend consistency audit batches 1–5, SegmentedButton contrast, services directory owner auth header resolution, owner configuration KYC status badge & banner restoration).
-*   [Documentation](docs/changelog/documentation.md) — 35 documentation-only updates (e.g. Business Logic Audit Report, Application Map auto-sync, Frontend Consistency Audit, Four-Repo Deployment Map).
+*   [Security Fixes](docs/changelog/security-fixes.md) — 129 entries detailing vulnerabilities found and fixed (including Owner-Authenticated Employee Provisioning, see [ADR-0001](docs/adr/0001-owner-authenticated-employee-provisioning.md), Employee Assignment Tenant Binding, see [ADR-0003](docs/adr/0003-employee-assignment-tenant-binding-check.md), Customer Booking Employee Pre-Assignment Gating, see [ADR-0004](docs/adr/0004-customer-booking-employee-assignment-order.md), and Document Encryption at Rest).
+*   [New Features](docs/changelog/new-features.md) — 70 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters, username propagation, version gating, zero-commission model, owner payout requests, sequential cascade dispatch).
+*   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 58 tooling, CI/CD hardening, module refactoring, and onboarding CLI tools (including strict CD preflight validation per ADR-0015).
+*   [Bug Fixes](docs/changelog/bug-fixes.md) — 85 corrections to non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic, frontend consistency audit batches 1–5, SegmentedButton contrast, services directory owner auth header resolution, owner configuration KYC status badge & banner restoration).
+*   [Documentation](docs/changelog/documentation.md) — 40 documentation-only updates (e.g. Business Logic Audit Report, Application Map auto-sync, Frontend Consistency Audit, Four-Repo Deployment Map, Documentation Freshness Audits #1 & #2).
 *   [Localization Infrastructure](docs/changelog/localization-infrastructure.md) — 4 entries covering Egyptian Colloquial Arabic (ar_EG) i18n and RTL layout architecture.
-*   [Refactoring](docs/changelog/refactoring.md) — 8 entries documenting handler modularization and architecture alignments.
+*   [Refactoring](docs/changelog/refactoring.md) — 10 entries documenting handler modularization and architecture alignments.
 
 ### 2. Explicitly Deferred by Decision
 

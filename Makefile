@@ -1,4 +1,4 @@
-.PHONY: docs docs-check setup ci ensure-hooks commit push since-last-report report-hash
+.PHONY: docs docs-counts docs-check setup ci ensure-hooks commit push since-last-report report-hash
 
 ensure-hooks:
 	@if [ "$$(git config --get core.hooksPath 2>/dev/null)" != ".githooks" ]; then \
@@ -12,7 +12,11 @@ setup: ensure-hooks
 docs: ensure-hooks
 	go run tools/docgen/main.go
 
+docs-counts: ensure-hooks
+	go run tools/docgen/main.go -counts
+
 docs-check: ensure-hooks
+	go run tools/docgen/main.go -check
 	go test -v -count=1 ./shared/infra/docgen ./shared/infra/handlerutil ./shared/infra/jwtutil ./shared/infra/ratelimit ./shared/infra/resilience ./shared/infra/tlsutil
 
 ci: ensure-hooks

@@ -11,7 +11,7 @@
 The Quick Delivery platform operates across 4 decoupled GitHub repositories and 1 production cloud Virtual Private Server (VPS target `quickdelivery-vm`). Monorepo source code (`omarmaarouf18/saas-core`) is strictly isolated from production deployment manifests, standalone mobile app builds, and static marketing website release metadata.
 
 > [!NOTE]
-> **Planned Future Client App (Not Yet Created)**: Per [ADR-0013](adr/0013-support-agent-console-as-separate-client-application.md), a standalone Support Agent Console repository (`omarmaarouf18/support-agent-console`) is planned for administrative ticket resolution endpoints (`POST /chat/tickets/resolve`). This repository **does not exist yet** and is strictly out of scope for `frontend/` (`quick-delivery-mobile`).
+> **Client Application Repositories & Scoping**: Per [ADR-0013](adr/0013-support-agent-console-as-separate-client-application.md) and [ADR-0021](adr/0021-kyc-kyb-kye-reviewer-console.md), reviewer and administrative capabilities are strictly excluded from `frontend/` (`quick-delivery-mobile`). A standalone KYC/KYB/KYE reviewer console exists at `omarmaarouf18/kyc-reviewer-console` (ADR-0021, port 8090, `kyc.logiclinkeg.tech`), while broader support ticket resolution (`omarmaarouf18/support-agent-console`) remains deferred per ADR-0013.
 
 ```mermaid
 flowchart TD

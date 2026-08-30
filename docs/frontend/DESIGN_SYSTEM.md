@@ -129,17 +129,23 @@ This design system provides the visual architecture and component spec for Quick
 
 ## 3. Shared Component Library Reference
 
-All shared widgets are located in `frontend/lib/widgets/`. Below is the complete catalog of 32 shared widgets (catalog snapshots may lag; `frontend/lib/widgets/` is the source of truth):
+All shared widgets are located in `frontend/lib/widgets/`. Below is the complete catalog of 33 shared widgets (catalog snapshots may lag; `frontend/lib/widgets/` is the source of truth):
 
 | Widget Class Name | File Path | Visual Role & Purpose | Key Constructor Parameters | Primary Screen Usages |
 | :--- | :--- | :--- | :--- | :--- |
+| `AppShell` | `app_shell.dart` | Root screen scaffold wrapper providing unified app bar, drawer, and background | `title`, `body`, `actions`, `bottomNavigationBar`, `floatingActionButton` | Used across all screens |
 | `CancelJobDialog` | `cancel_job_dialog.dart` | Job cancellation modal dialog with preset reason radios & custom input | `jobId`, `onCancelled` | `home_screen.dart`, `job_status_screen.dart` |
 | `ConfirmActionDialog` | `confirm_action_dialog.dart` | Reusable modal confirmation for destructive or financial operations | `title`, `message`, `confirmText`, `isDestructive` | `employee_jobs_screen.dart`, `owner_reconciliation_queue_screen.dart`, `notifications_screen.dart` |
 | `CreateTicketDialog` | `create_ticket_dialog.dart` | Customer/owner complaint ticket submission modal | `referenceId`, `referenceType` | `job_status_screen.dart`, `settings_screen.dart` |
+| `DashboardScreenTemplate` | `dashboard_screen_template.dart` | Template for dashboard screens with stats header, action grid, and activity feed | `title`, `stats`, `actions`, `activity` | `home_screen.dart` |
 | `DepositFundsDialog` | `deposit_funds_dialog.dart` | Owner e-wallet deposit modal with amount presets | `onDepositSubmitted` | `wallet_screen.dart` |
 | `EmailChangeDialog` | `email_change_dialog.dart` | Secure 2-step email change modal with OTP verification | `currentEmail`, `onEmailChanged` | `my_account_screen.dart` |
 | `EntityAvatar` | `entity_avatar.dart` | Circular avatar widget rendering photo or initial initials with border | `imageUrl`, `name`, `radius` | `rating_screen.dart`, `employee_screen.dart`, `job_status_screen.dart` |
+| `FormScreenTemplate` | `form_screen_template.dart` | Template for structured input forms with sticky bottom CTA | `title`, `children`, `onSubmit`, `submitText` | `owner_configuration_screen.dart`, `employee_screen.dart` |
+| `InfoAlertDialog` | `info_alert_dialog.dart` | Informational pop-up dialog with title, message, and single acknowledge action | `title`, `message`, `buttonText` | General notifications & alerts |
 | `InfoListTile` | `info_list_tile.dart` | Key-value information list row with leading icon and optional subtitle | `label`, `value`, `icon`, `trailing` | `wallet_screen.dart`, `owner_history_screen.dart` |
+| `KycRejectionDialogHost` | `kyc_rejection_dialog_host.dart` | Host dialog displaying reviewer rejection reasons and remediation instructions | `reason`, `onResubmit` | `kyc_document_upload_screen.dart` |
+| `ListScreenTemplate` | `list_screen_template.dart` | Standard list screen wrapper with search, filters, and empty/loading states | `title`, `itemCount`, `itemBuilder`, `filterBar` | `customer_jobs_screen.dart`, `owner_history_screen.dart` |
 | `LocationPickerMap` | `location_picker_map.dart` | Interactive OpenStreetMap coordinate picker for pickup/dropoff | `initialLocation`, `onLocationSelected` | `customer_marketplace_screen.dart`, `owner_configuration_screen.dart` |
 | `OtpPinInput` | `otp_pin_input.dart` | 6-digit discrete PIN input boxes with auto-advance and clipboard support | `controller`, `onCompleted` | `otp_screen.dart`, `forgot_password_screen.dart` |
 | `PayoutRequestDialog` | `payout_request_dialog.dart` | Owner payout withdrawal request modal with bank/Instapay methods | `withdrawableBalance`, `onPayoutRequested` | `wallet_screen.dart` |
@@ -156,12 +162,13 @@ All shared widgets are located in `frontend/lib/widgets/`. Below is the complete
 | `ThemedEmptyState` | `themed_empty_state.dart` | Centered graphic placeholder for empty lists with action button | `icon`, `title`, `description`, `action` | Used across 14 screens |
 | `ThemedErrorBanner` | `themed_error_banner.dart` | Dismissible alert card displaying operational errors or warnings | `message`, `onDismiss`, `onRetry` | Used across 18 screens |
 | `ThemedLoadingIndicator` | `themed_loading_indicator.dart` | Brand-tinted progress spinner with optional progress label | `message` | Used across 16 screens |
+| `ThemedPanel` | `themed_panel.dart` | Styled surface panel with rounded corners and themed borders | `child`, `padding`, `backgroundColor` | Used across multi-card dashboards |
 | `ThemedSectionHeader` | `themed_section_header.dart` | Section header row with title and optional trailing action button | `title`, `actionText`, `onActionTap` | Used across 12 screens |
 | `ThemedSuccessBanner` | `themed_success_banner.dart` | Floating toast/banner for positive operation confirmations | `message` | Used across 14 screens |
 | `ThemedTextField` | `themed_text_field.dart` | Input field with floating label, focus indicator & password toggle | `label`, `controller`, `validator`, `prefixIcon` | Used across 20 screens |
 
 > [!RULE]
-> **Component Propose Rule**: If a developer requires a visual pattern not fulfilled by the 32 shared widgets above, they must propose and implement a new shared widget under `frontend/lib/widgets/` rather than adding custom inline container styling inside a screen file.
+> **Component Propose Rule**: If a developer requires a visual pattern not fulfilled by the 33 shared widgets above, they must propose and implement a new shared widget under `frontend/lib/widgets/` rather than adding custom inline container styling inside a screen file.
 
 ---
 

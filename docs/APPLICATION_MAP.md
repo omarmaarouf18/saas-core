@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`3b7c045`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`0daf1e9`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -22,6 +22,7 @@ flowchart TD
         ChatService["chat-service (Port: 3001)"]
         NotifService["notification-service (Port: 3004)"]
         UserService["user-service (Port: 3003)"]
+        ReviewerApp["kyc-reviewer-console (Port: 8090 - ADR-0021)"]
         SharedInfra["shared/infra (Compile-Time Only)"]
     end
 
@@ -40,6 +41,9 @@ flowchart TD
     NotifService -- "GET /auth/user (mTLS)" --> AuthService
     UserService -- "GET /auth/user (mTLS)" --> AuthService
     UserService -- "POST /chat/internal/broadcast-location (mTLS)" --> ChatService
+    UserService -- "POST /notifications/send & broadcast (mTLS)" --> NotifService
+    AuthService -- "POST /notifications/send (mTLS)" --> NotifService
+    ReviewerApp -- "Forwarded mTLS / KYC Reviews" --> AuthService
 
     %% Styling and Legend
     style ClientApp fill:#f9f,stroke:#333,stroke-width:2px
@@ -121,7 +125,7 @@ The platform is comprised of **5 microservices** and **1 compile-time shared pac
 * **Internal Handler Architecture (`internal/handlers/`)**:
   * `handlers.go`: Service receiver struct (`UserService`), constructor (`NewUserService`), route registration (`RegisterRoutes`), and cross-domain shared utility helpers (`resolveClaims`, `resolveTokenWithRole`, `writeJSON`, `generateID`, `haversineKm`, `checkKYC`, `verifyEmployeeAssignment`, `requireTier`).
   * `services_handlers.go`: Service catalogue management and platform configuration (`ListServices`, `CreateService`, `UpdateService`, `GetPlatformConfig`).
-  * `jobs_handlers.go`: Core job lifecycle, escrow locking/settlement, live location updates, and price negotiation (`TrackJob`, `CompleteJob`, `GetJob`, `GetOwnerJobs`, `GetCustomerJobs`, `UpdateJobLocation`, `CancelJob`, `ProposePrice`, `RespondPrice`).
+  * `jobs_handlers.go`: Core job lifecycle, cascade dispatch, offer acceptance/decline, escrow locking/settlement, live location updates, and price negotiation (`TrackJob`, `AcceptJobOffer`, `DeclineJobOffer`, `HeartbeatLocation`, `CompleteJob`, `GetJob`, `GetOwnerJobs`, `GetCustomerJobs`, `UpdateJobLocation`, `CancelJob`, `ProposePrice`, `RespondPrice`).
   * `wallet_handlers.go`: Tenant balance, ledger audit trails, deposit bypass, and payout requests (`GetWallet`, `WalletDeposit`, `GetLedger`, `RequestPayout`, `GetPayoutRequests`).
   * `subscription_handlers.go`: Tenant subscription tier status and upgrade requests (`Subscription`).
   * `ratings_handlers.go`: Blind rating submissions and aggregated score lookups (`RateJob`, `GetRatings`).
@@ -133,6 +137,7 @@ The platform is comprised of **5 microservices** and **1 compile-time shared pac
 * **Outbound HTTP calls**:
   * `auth-service`: Queries `/auth/user?id=<owner_id>` to verify owner KYC status.
   * `chat-service`: Queries `POST /chat/internal/broadcast-location` to publish live driver coordinates.
+  * `notification-service`: Dispatches real-time courier acceptance and cascade exhaustion alerts via `POST /notifications/send`, and broadcasts tenant job notifications via `POST /notifications/broadcast/job-alert`.
 
 ### 6. `shared/infra` (Compile-time dependency)
 * **Core Responsibility**: Consolidates common code dependencies (saving duplicate lines in monorepo).
@@ -271,17 +276,23 @@ Below are the step-by-step transaction lifecycles for each user role on the plat
 ### 2. Job Lifecycle Flow (Owner & Employee & Customer)
 1. **Job Booking**: Tenant Owner (legacy tracking) OR Customer (marketplace booking) calls `POST /users/jobs/track` with JWT.
    * *Owner Resolution*: If booked by a customer without an owner token, the backend securely loads the service record from the database by its `service_id` and resolves the owner ID server-side (`svc.TenantID`) to prevent owner-ID spoofing. If an owner token is explicitly provided (owner/employee-initiated tracking), the backend validates the token and cross-checks that the owner matches the service's tenant, rejecting mismatches with a `403 Forbidden` error.
-   * *Employee Pre-Assignment*: If an `employee_id` is supplied to pre-assign an employee, the backend validates that the employee is active, holds the employee role, and belongs to the resolved owner's tenant (whether the owner is resolved from the owner token or server-side from the service record for customer-initiated bookings).
+   * *Employee Pre-Assignment*: If an `employee_id` is supplied to pre-assign an employee, the backend validates that the employee is active, holds the employee role, and belongs to the resolved owner's tenant. Distance pricing is calculated, escrow is locked, and status is set to `"active"`.
+   * *Cascade Initialization*: When booked without a pre-assigned employee, the job is initialized with status `"pending_dispatch"`. Distance computation, fare pricing, and escrow locking are deferred until courier acceptance. The backend ranks fresh available tenant couriers by Haversine proximity and offers the job to the nearest courier (`current_offered_employee_id`, `offer_expires_at = now + 60s`).
    * *Validation*: Checks that the resolved Owner KYC status is `"approved"`.
    * *Constraint*: The endpoint rejects any payment method other than `"cod"` (Cash on Delivery) in non-local environments.
-   * *Alerting*: It broadcasts a job alert to nearby employees (logged in stdout / stubbed).
-2. **Job Assignment**: Job is assigned to an active employee.
+   * *Alerting*: It broadcasts a job alert to tenant employees via `POST /notifications/broadcast/job-alert`.
+2. **Sequential Accept/Decline Cascade & Deferred Pricing**:
+   * *Offer Window*: The offered courier has a 60-second countdown to accept (`POST /users/employee/jobs/{id}/accept`) or decline (`POST /users/employee/jobs/{id}/decline`).
+   * *Cascade Progression*: If the courier declines or the 60-second timer expires, the cascade automatically advances the offer to the next-nearest available courier.
+   * *Exhaustion Fallback*: If all couriers decline or none are available, the job transitions to `"unavailable"`. The customer is notified asynchronously via `POST /notifications/send` and sees a busy state with a "Retry Booking" CTA on their status screen.
+   * *Acceptance-Before-Pricing*: When a courier accepts, the backend verifies they are not already busy (rejecting with 409 `courier_busy` if on an active job) and their GPS location is fresh (rejecting with 409 `location_stale` if >5m). Final distance pricing is calculated using the accepting courier's actual coordinates, escrow is locked in the wallet, and the job transitions to `"active"` (or `"awaiting_price_response"` for negotiable transport services). An asynchronous notification (`POST /notifications/send`) is sent to the customer with the confirmed fare.
+   * *Pre-Dispatch Cancellation*: Customers can cancel during `"pending_dispatch"` without escrow penalty, immediately clearing the offer and halting the cascade.
 3. **Location Updates (Driver tracking)**: While driving, the Employee client triggers `POST /users/jobs/location/update` with their Employee JWT.
-   * *Validation*: `user-service` verifies the Owner's subscription tier is active and enforces a **3-second throttling minimum** between requests.
+   * *Validation*: `user-service` verifies the Owner's subscription tier is active and enforces a **2-second throttling minimum** between requests.
    * *Action*: Coordinates are saved to MongoDB and broadcasted via `POST /chat/internal/broadcast-location` (mTLS) to the `chat-service` WebSocket hub.
 4. **Job Completion**: The Owner or Employee triggers `POST /users/jobs/complete` confirming cash collection.
-   * *Deduction*: The system computes the platform fee (e.g. 15%) from the final price and deducts it from the Owner's e-wallet (allowing a negative balance). Writes `ledger` and `wallets` documents.
-5. **Rating**: Owner or Employee triggers `POST /users/jobs/rate` within 2FA session. Checks that job status is `"completed"` and limits users to **one rating per job** (enforced by a compound unique index in MongoDB).
+   * *Zero Commission (ADR-0017)*: Platform fee is 0% (zero-commission subscription-only revenue model). Settles escrow/COD and records journal entries to `ledger` and `wallets`.
+5. **Rating**: Customer triggers `POST /users/jobs/rate`. Checks that job status is `"completed"` and limits users to **one rating per job** (enforced by a compound unique index in MongoDB).
 
 ### 3. Customer Service Flow (User & Support Agent)
 1. **Ticket Creation**: User triggers `POST /chat/tickets` with JWT.

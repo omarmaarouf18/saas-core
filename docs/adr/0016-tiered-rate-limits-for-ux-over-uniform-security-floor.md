@@ -106,3 +106,32 @@ During a systematic audit of rate-limiting telemetry in `user-service`, two crit
 4. **Automated Test Coverage**:
    Added `TestGetLedger_IPRateLimitCheck`, `TestGetLedger_TenantRateLimitCheck`, and `TestReadRateLimiters_Independence` in `services/user-service/internal/handlers/read_rate_limiters_test.go`, explicitly verifying that IP-based rate limiting (keyed by IP) and tenant-based rate limiting (keyed by tenant ID) trigger independently without interfering with each other or unrelated endpoints.
 
+---
+
+## Addendum 2: Full Write-Action Limiter Isolation & Cascade Dispatch Headroom (2026-08-30)
+
+### Motivation & Scope
+While Addendum 1 decoupled read endpoints, write actions in `user-service` initially remained on a shared limiter (`newHandlerLimiter(5, "user")`). As the product added transport price negotiations and sequential cascade dispatch, sharing a single 5-req/min write bucket created artificial collisions (e.g. submitting a price proposal drained the budget needed to respond or track a job). Furthermore, API Gateway edge rate limiting (300 req/min) required isolation for long-lived Server-Sent Events (SSE) and container healthcheck loopback exemptions.
+
+### Architectural Alignment
+1. **Per-Action Write Limiters (`services/user-service/internal/handlers/handlers.go`)**:
+   - `trackLimiter` (`user:track`, 20 req/min): Booking creation and active job tracking.
+   - `proposePriceLimiter` (`user:propose_price`, 20 req/min): Counter-offer proposals during active negotiation.
+   - `respondPriceLimiter` (`user:respond_price`, 20 req/min): Acceptance or rejection of transport price proposals.
+   - `cancelJobLimiter` (`user:cancel_job`, 10 req/min): Job cancellations (accommodates retries while preventing state churn).
+   - `rateJobLimiter` (`user:rate_job`, 10 req/min): Completion rating submissions.
+   - `depositLimiter` (`user:deposit`, 10 req/min): E-wallet deposit operations.
+   - `ticketLimiter` (`user:ticket`, 10 req/min): Support/complaint ticket creation.
+   - `completeJobLimiter` (`user:complete_job`, 30 req/min): Order delivery completion confirmations.
+   - `resolveReconLimiter` (`user:reconciliation_resolve`, 30 req/min): Dispute resolution by tenant owners.
+   - `payoutLimiter` (`user:payout`, 30 req/min): Driver/owner withdrawal requests.
+   - `subscriptionLimiter` (`user:subscription`, 30 req/min): Subscription status and tier upgrades.
+   - `acceptOfferLimiter` (`user:accept_offer`, 30 req/min): Sequential courier offer acceptance.
+   - `declineOfferLimiter` (`user:decline_offer`, 30 req/min): Sequential courier offer decline.
+
+2. **Edge Gateway Isolation (`services/api-gateway/`)**:
+   - **Baseline Edge Limit**: 300 req/min across standard client routes.
+   - **SSE Stream Bucket**: Dedicated isolated Redis bucket (`gateway-sse`, 100 req/min) for `/api/v1/notifications/stream` so reconnection churn cannot starve general REST API traffic.
+   - **Loopback Healthcheck Exemption**: Container healthcheck probes (`127.0.0.1`, `::1`) are completely exempt from rate limiting to prevent false-positive flapping of Docker container health status.
+
+
