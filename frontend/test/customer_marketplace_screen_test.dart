@@ -112,9 +112,9 @@ void main() {
     expect(find.widgetWithText(TextField, "Longitude"), findsNothing);
 
     // 2. Verify Map Picker button exists
-await tester.tap(find.byKey(const Key('marketplace_filters_button')));
+    await tester.tap(find.byKey(const Key('marketplace_filters_button')));
     await tester.pumpAndSettle();
-        final mapBtn = find.byKey(const Key('choose_location_map_button'));
+    final mapBtn = find.byKey(const Key('choose_location_map_button'));
     expect(mapBtn, findsOneWidget);
     expect(find.text("Choose Location on Map"), findsOneWidget);
 
@@ -156,9 +156,9 @@ await tester.tap(find.byKey(const Key('marketplace_filters_button')));
     ));
     await tester.pumpAndSettle();
 
-await tester.tap(find.byKey(const Key('marketplace_filters_button')));
+    await tester.tap(find.byKey(const Key('marketplace_filters_button')));
     await tester.pumpAndSettle();
-        final mapBtn = find.byKey(const Key('choose_location_map_button'));
+    final mapBtn = find.byKey(const Key('choose_location_map_button'));
     expect(mapBtn, findsOneWidget);
     await tester.tap(mapBtn);
     await tester.pumpAndSettle();
@@ -193,9 +193,9 @@ await tester.tap(find.byKey(const Key('marketplace_filters_button')));
     expect(mockMarketplaceProvider.lastFetchNearBy, isFalse);
 
     // 2. Verify nearby filter switch exists
-await tester.tap(find.byKey(const Key('marketplace_filters_button')));
+    await tester.tap(find.byKey(const Key('marketplace_filters_button')));
     await tester.pumpAndSettle();
-        final switchFinder = find.byKey(const Key('nearby_filter_switch'));
+    final switchFinder = find.byKey(const Key('nearby_filter_switch'));
     expect(switchFinder, findsOneWidget);
 
     // 3. Toggle switch ON
@@ -258,6 +258,10 @@ await tester.tap(find.byKey(const Key('marketplace_filters_button')));
             matching: find.text("Express Delivery")),
         findsOneWidget);
     expect(find.byType(ThemedWarningBanner), findsOneWidget);
+    expect(
+        find.text(
+            "Estimated based on store address. Final fare is calculated from the assigned courier's location once accepted."),
+        findsOneWidget);
     expect(
         find.text(
             "Note: Escrow payments and wallet deductions are currently deferred for this beta launch."),

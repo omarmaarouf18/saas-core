@@ -302,6 +302,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Unavailable status response (exhausted cascade / zero couriers)
+		u.broadcastJobUnavailable(job)
 		writeJSON(w, http.StatusCreated, map[string]any{
 			"message": "all couriers are currently busy",
 			"job":     job,
@@ -1722,6 +1723,8 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 	}
 	job.UpdatedAt = now
 
+	u.broadcastCourierAccepted(job, finalPrice, nextStatus == models.JobStatusAwaitingPriceResponse)
+
 	writeJSON(w, http.StatusOK, map[string]any{
 		"message": "job offer accepted successfully",
 		"job":     job,
@@ -1954,6 +1957,116 @@ func (u *UserService) sendJobOfferNotification(job *models.Job, employeeID strin
 	}()
 }
 
+func (u *UserService) broadcastCourierAccepted(job *models.Job, finalPrice float64, isNegotiable bool) {
+	if job == nil || job.UserID == "" {
+		return
+	}
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("[USER] Recovered from panic in broadcastCourierAccepted: %v", r)
+			}
+		}()
+
+		title := "Courier Assigned"
+		body := fmt.Sprintf("Your courier has accepted! Final fare: $%.2f", finalPrice)
+		if isNegotiable {
+			body = fmt.Sprintf("Your courier has accepted! Suggested fare: $%.2f. Counter-offer review is now open.", finalPrice)
+		}
+
+		payload := map[string]any{
+			"type":      "job_accepted",
+			"tenant_id": job.OwnerID,
+			"user_id":   job.UserID,
+			"title":     title,
+			"body":      body,
+			"roles":     []string{"client", "user"},
+		}
+
+		bodyBytes, err := json.Marshal(payload)
+		if err != nil {
+			return
+		}
+
+		notificationURL := u.notificationServiceURL
+		if notificationURL == "" {
+			notificationURL = "http://notification-service:3004"
+		}
+		url := fmt.Sprintf("%s/notifications/send", notificationURL)
+		// #nosec G704 //nolint:gosec -- notificationURL is trusted internal config
+		req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
+		if err != nil {
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Internal-Token", u.internalServiceToken)
+
+		if u.notificationClient != nil {
+			resp, err := u.notificationClient.Do(req)
+			if err == nil && resp != nil {
+				_ = resp.Body.Close()
+			}
+		} else if u.httpClient != nil {
+			resp, err := u.httpClient.Do(req)
+			if err == nil && resp != nil {
+				_ = resp.Body.Close()
+			}
+		}
+	}()
+}
+
+func (u *UserService) broadcastJobUnavailable(job *models.Job) {
+	if job == nil || job.UserID == "" {
+		return
+	}
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("[USER] Recovered from panic in broadcastJobUnavailable: %v", r)
+			}
+		}()
+
+		payload := map[string]any{
+			"type":      "job_unavailable",
+			"tenant_id": job.OwnerID,
+			"user_id":   job.UserID,
+			"title":     "All Couriers Busy",
+			"body":      "All couriers in your area are currently busy. You can retry your booking anytime.",
+			"roles":     []string{"client", "user"},
+		}
+
+		bodyBytes, err := json.Marshal(payload)
+		if err != nil {
+			return
+		}
+
+		notificationURL := u.notificationServiceURL
+		if notificationURL == "" {
+			notificationURL = "http://notification-service:3004"
+		}
+		url := fmt.Sprintf("%s/notifications/send", notificationURL)
+		// #nosec G704 //nolint:gosec -- notificationURL is trusted internal config
+		req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
+		if err != nil {
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Internal-Token", u.internalServiceToken)
+
+		if u.notificationClient != nil {
+			resp, err := u.notificationClient.Do(req)
+			if err == nil && resp != nil {
+				_ = resp.Body.Close()
+			}
+		} else if u.httpClient != nil {
+			resp, err := u.httpClient.Do(req)
+			if err == nil && resp != nil {
+				_ = resp.Body.Close()
+			}
+		}
+	}()
+}
+
 func (u *UserService) advanceCascade(ctx context.Context, job *models.Job) error {
 	if job == nil || job.Status != models.JobStatusPendingDispatch {
 		return nil
@@ -1984,6 +2097,7 @@ func (u *UserService) advanceCascade(ctx context.Context, job *models.Job) error
 		job.OfferExpiresAt = nil
 		job.OfferedEmployeeIDs = offeredList
 		job.UpdatedAt = time.Now().UTC()
+		u.broadcastJobUnavailable(job)
 		return nil
 	}
 
@@ -2225,12 +2339,12 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-	case models.JobStatusPending:
-		// Both owner and customer can cancel pending jobs.
+	case models.JobStatusPending, models.JobStatusPendingDispatch:
+		// Both owner and customer can cancel pending or pending_dispatch jobs.
 	}
 
-	// Refund escrow if not COD (since escrow was locked during TrackJob)
-	if job.PaymentMethod != "cod" {
+	// Refund escrow if not COD and not pending_dispatch (escrow is not locked for pending_dispatch jobs until courier acceptance)
+	if job.Status != models.JobStatusPendingDispatch && job.PaymentMethod != "cod" {
 		svc := u.store.GetServiceByID(ctx, job.ServiceID)
 		if svc == nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "service not found for job"})
@@ -2266,8 +2380,9 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if job.PaymentMethod == "cod" {
-		// COD jobs hold no escrow; the narrowed non-money cancel applies directly.
+	if job.PaymentMethod == "cod" || job.Status == models.JobStatusPendingDispatch {
+		// COD jobs hold no escrow, and pending_dispatch jobs have not locked escrow yet;
+		// the non-money cancel applies directly.
 		if err := u.store.CancelJob(ctx, job.ID, req.Reason); err != nil {
 			if strings.Contains(err.Error(), "not in a cancellable state") {
 				writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})

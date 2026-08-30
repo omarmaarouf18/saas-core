@@ -283,4 +283,62 @@ void main() {
     // Verify my_orders_button is removed from top app bar when embedded in tab
     expect(find.byKey(const Key('my_orders_button')), findsNothing);
   });
+
+  testWidgets(
+      'Renders pending_dispatch job with Matching Courier indicator and no active progress bar',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockMarketplace = MockMarketplaceProviderForTest(apiClient);
+    final pendingDispatchJob = Job(
+      id: 'job-pending-disp-1',
+      ownerId: 'owner-1',
+      userId: 'cust-1',
+      serviceId: 'service-delivery-1',
+      status: 'pending_dispatch',
+      location: JobLocation(latitude: 30.0444, longitude: 31.2357),
+      paymentMethod: 'cod',
+    );
+    mockMarketplace.mockCustomerJobs = [pendingDispatchJob];
+
+    await tester.pumpWidget(createWidgetUnderTest(
+      marketplaceProvider: mockMarketplace,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(Key('customer_job_card_${pendingDispatchJob.id}')),
+        findsOneWidget);
+    expect(find.text("Matching courier..."), findsOneWidget);
+    expect(find.text("FINDING COURIER"), findsOneWidget);
+  });
+
+  testWidgets(
+      'Renders unavailable job with Unavailable badge and busy description',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockMarketplace = MockMarketplaceProviderForTest(apiClient);
+    final unavailableJob = Job(
+      id: 'job-unavailable-1',
+      ownerId: 'owner-1',
+      userId: 'cust-1',
+      serviceId: 'service-delivery-1',
+      status: 'unavailable',
+      location: JobLocation(latitude: 30.0444, longitude: 31.2357),
+      paymentMethod: 'cod',
+    );
+    mockMarketplace.mockCustomerJobs = [unavailableJob];
+
+    await tester.pumpWidget(createWidgetUnderTest(
+      marketplaceProvider: mockMarketplace,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(Key('customer_job_card_${unavailableJob.id}')),
+        findsOneWidget);
+    expect(find.text("Unavailable"), findsOneWidget);
+    expect(find.text("UNAVAILABLE"), findsOneWidget);
+    expect(
+        find.text(
+            "All couriers in your area are currently occupied or unavailable. Please try again shortly."),
+        findsOneWidget);
+  });
 }

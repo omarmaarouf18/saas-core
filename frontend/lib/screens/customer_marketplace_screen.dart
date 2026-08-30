@@ -756,6 +756,14 @@ class _BookingDialogState extends State<_BookingDialog> {
                   ),
                 ],
               ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                l10n.estimatedPriceCourierNotice,
+                style: AppTypography.caption.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
               const SizedBox(height: AppSpacing.lg),
               ThemedSectionHeader(
                 title: l10n.paymentMethodLabel,

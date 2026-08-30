@@ -938,5 +938,8 @@
   "notificationsToday": "اليوم",
   "notificationsYesterday": "أمس",
   "notificationsEarlier": "سابقًا",
-  "ticketSubmittedSuccess": "تم إرسال التذكرة بنجاح! (رقم التذكرة: {id})"
+  "ticketSubmittedSuccess": "تم إرسال التذكرة بنجاح! (رقم التذكرة: {id})",
+  "estimatedPriceCourierNotice": "تقديري بناءً على عنوان المتجر. يتم احتساب السعر النهائي من موقع المندوب بعد قبوله الطلب.",
+  "retryBookingSuccess": "تم إنشاء طلب جديد، جاري البحث عن مندوب...",
+  "matchingCourierSubtitle": "جاري البحث عن أقرب مندوب متاح..."
 }

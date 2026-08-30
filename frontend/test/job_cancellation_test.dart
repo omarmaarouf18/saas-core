@@ -68,6 +68,37 @@ class MockMarketplaceProviderForTest extends MarketplaceProvider {
 
     return {'message': 'job cancelled successfully', 'status': 'cancelled'};
   }
+
+  bool bookJobCalled = false;
+  Map<String, dynamic>? lastBookJobParams;
+
+  @override
+  Future<Job?> bookJob({
+    required String serviceId,
+    required String userId,
+    required double latitude,
+    required double longitude,
+    required String paymentMethod,
+    String? employeeId,
+  }) async {
+    bookJobCalled = true;
+    lastBookJobParams = {
+      'serviceId': serviceId,
+      'userId': userId,
+      'latitude': latitude,
+      'longitude': longitude,
+      'paymentMethod': paymentMethod,
+    };
+    return Job(
+      id: 'job-fresh-new-1',
+      ownerId: 'owner-1',
+      userId: userId,
+      serviceId: serviceId,
+      status: 'pending_dispatch',
+      location: JobLocation(latitude: latitude, longitude: longitude),
+      paymentMethod: paymentMethod,
+    );
+  }
 }
 
 class MockOwnerProviderForTest extends OwnerProvider {
@@ -497,5 +528,86 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(mpProvider.fetchJobStatusCalls, greaterThanOrEqualTo(1));
+  });
+
+  testWidgets(
+      'Customer CAN cancel a job while in pending_dispatch state without escrow refund claim',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mpProvider = MockMarketplaceProviderForTest(apiClient);
+    final pendingDispatchJob = Job(
+      id: 'job-disp-999',
+      ownerId: 'owner-1',
+      userId: 'cust-1',
+      serviceId: 'service-1',
+      status: 'pending_dispatch',
+      location: JobLocation(latitude: 30.0, longitude: 31.0),
+      paymentMethod: 'wallet',
+    );
+
+    await tester.pumpWidget(createCustomerWidget(
+      job: pendingDispatchJob,
+      marketplaceProvider: mpProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    final cancelButton = find.byKey(const Key('cancel_job_button'));
+    expect(cancelButton, findsOneWidget);
+    await tester.ensureVisible(cancelButton);
+    await tester.tap(cancelButton);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+        find.byKey(const Key('cancel_reason_input')), 'No longer needed');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('confirm_cancel_button')));
+    await tester.pumpAndSettle();
+
+    expect(mpProvider.cancelJobCalled, isTrue);
+    expect(mpProvider.lastCancelledJobId, 'job-disp-999');
+    expect(mpProvider.lastCancelledReason, 'No longer needed');
+    expect(find.text('Job cancelled successfully.'), findsOneWidget);
+    expect(find.text('Job cancelled successfully. Escrow refunded to wallet.'),
+        findsNothing);
+  });
+
+  testWidgets(
+      'JobStatusScreen for unavailable job renders Unavailable in fare section and retrying triggers a fresh bookJob',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mpProvider = MockMarketplaceProviderForTest(apiClient);
+    final unavailableJob = Job(
+      id: 'job-unavail-888',
+      ownerId: 'owner-1',
+      userId: 'cust-1',
+      serviceId: 'service-1',
+      status: 'unavailable',
+      location: JobLocation(latitude: 30.0, longitude: 31.0),
+      paymentMethod: 'wallet',
+    );
+
+    await tester.pumpWidget(createCustomerWidget(
+      job: unavailableJob,
+      marketplaceProvider: mpProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    // Verify unavailable fare display
+    expect(find.text('Unavailable'), findsWidgets);
+
+    // Verify busy card exists with retry button
+    final retryBtn = find.byKey(const Key('job_status_retry_button'));
+    expect(retryBtn, findsOneWidget);
+
+    // Tap Retry
+    await tester.tap(retryBtn);
+    await tester.pumpAndSettle();
+
+    expect(mpProvider.bookJobCalled, isTrue);
+    expect(mpProvider.lastBookJobParams?['serviceId'], 'service-1');
+    expect(mpProvider.lastBookJobParams?['paymentMethod'], 'wallet');
+    expect(
+        find.text('New booking created, matching courier...'), findsOneWidget);
   });
 }

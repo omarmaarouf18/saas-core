@@ -4292,6 +4292,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ticket submitted successfully! (Ticket ID: {id})'**
   String ticketSubmittedSuccess(String id);
+
+  /// No description provided for @estimatedPriceCourierNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated based on store address. Final fare is calculated from the assigned courier\'s location once accepted.'**
+  String get estimatedPriceCourierNotice;
+
+  /// No description provided for @retryBookingSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'New booking created, matching courier...'**
+  String get retryBookingSuccess;
+
+  /// No description provided for @matchingCourierSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding nearest available courier...'**
+  String get matchingCourierSubtitle;
 }
 
 class _AppLocalizationsDelegate

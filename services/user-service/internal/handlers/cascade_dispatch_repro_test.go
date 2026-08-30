@@ -565,3 +565,129 @@ func TestCascade_Race3_StaleCourierLocation_AutoDeclines(t *testing.T) {
 		t.Errorf("Expected job offer to cascade to empFresh, got %q", updated.CurrentOfferedEmployeeID)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// 7. Cancellation during pending_dispatch halts cascade cleanly
+// ---------------------------------------------------------------------------
+
+func TestCascade_CustomerCancelsDuringPendingDispatch_HaltsCascade(t *testing.T) {
+	u, s, _, cleanup := setupDispatchTestHarness(t)
+	if u == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	ownerID := "tenant-cancel-cascade"
+	emp1 := "emp1-under-tenant-cancel-cascade"
+	emp2 := "emp2-under-tenant-cancel-cascade"
+	svcID := "svc-cancel-cascade"
+	custID := "cust-canceller"
+
+	s.CreateService(ctx, &models.Service{
+		ID:               svcID,
+		TenantID:         ownerID,
+		Name:             "Delivery Service",
+		Category:         "delivery",
+		TenantBasePrice:  25.0,
+		TenantPricePerKM: 2.0,
+		Latitude:         30.0000,
+		Longitude:        31.0000,
+	})
+
+	now := time.Now().UTC()
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: emp1,
+		Latitude:   30.0100,
+		Longitude:  31.0000,
+		UpdatedAt:  now,
+	})
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: emp2,
+		Latitude:   30.0200,
+		Longitude:  31.0000,
+		UpdatedAt:  now,
+	})
+
+	tokenCust, _ := jwtutil.GenerateToken(custID, "user", ownerID, "cust@test.com")
+	tokenEmp1, _ := jwtutil.GenerateToken(emp1, "employee", ownerID, "emp1@test.com")
+
+	// 1. Customer books a job (triggers pending_dispatch cascade)
+	trackBody := map[string]any{
+		"user_id":        tokenCust,
+		"service_id":     svcID,
+		"payment_method": "wallet",
+		"location": models.Location{
+			Latitude:  30.0000,
+			Longitude: 31.0000,
+		},
+	}
+	b, _ := json.Marshal(trackBody)
+	req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(b))
+	req.Header.Set("Authorization", "Bearer "+tokenCust)
+	rec := httptest.NewRecorder()
+	u.TrackJob(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("TrackJob failed: %d, body: %s", rec.Code, rec.Body.String())
+	}
+	var trackResp map[string]any
+	_ = json.Unmarshal(rec.Body.Bytes(), &trackResp)
+	jobMap := trackResp["job"].(map[string]any)
+	jobID := jobMap["id"].(string)
+
+	// Verify job created in pending_dispatch and offered to emp1
+	job := s.GetJob(ctx, jobID)
+	if job.Status != models.JobStatusPendingDispatch || job.CurrentOfferedEmployeeID != emp1 {
+		t.Fatalf("Expected job in pending_dispatch with offer to emp1, got status=%s, offered=%s", job.Status, job.CurrentOfferedEmployeeID)
+	}
+
+	// 2. Customer cancels the job while it is still in pending_dispatch
+	cancelBody := map[string]any{
+		"job_id":       jobID,
+		"requester_id": tokenCust,
+		"reason":       "Customer changed their mind",
+	}
+	cb, _ := json.Marshal(cancelBody)
+	cancelReq := httptest.NewRequest("POST", "/users/jobs/cancel", bytes.NewReader(cb))
+	cancelReq.Header.Set("Authorization", "Bearer "+tokenCust)
+	cancelRec := httptest.NewRecorder()
+	u.CancelJob(cancelRec, cancelReq)
+
+	if cancelRec.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for cancelling pending_dispatch job, got %d. Body: %s", cancelRec.Code, cancelRec.Body.String())
+	}
+
+	// Verify job is cancelled and current offer is cleared
+	cancelledJob := s.GetJob(ctx, jobID)
+	if cancelledJob.Status != models.JobStatusCancelled {
+		t.Errorf("Expected job status to be cancelled, got %q", cancelledJob.Status)
+	}
+	if cancelledJob.CurrentOfferedEmployeeID != "" {
+		t.Errorf("Expected current_offered_employee_id to be cleared, got %q", cancelledJob.CurrentOfferedEmployeeID)
+	}
+	if cancelledJob.CancellationReason != "Customer changed their mind" {
+		t.Errorf("Expected cancellation reason 'Customer changed their mind', got %q", cancelledJob.CancellationReason)
+	}
+
+	// 3. Courier emp1 tries to accept the now-cancelled job -> Must be rejected with 409 Conflict!
+	acceptReq := httptest.NewRequest("POST", "/users/employee/jobs/"+jobID+"/accept", nil)
+	acceptReq.Header.Set("Authorization", "Bearer "+tokenEmp1)
+	acceptRec := httptest.NewRecorder()
+	u.AcceptJobOffer(acceptRec, acceptReq)
+
+	if acceptRec.Code != http.StatusConflict {
+		t.Fatalf("Expected 409 Conflict when accepting cancelled job, got %d. Body: %s", acceptRec.Code, acceptRec.Body.String())
+	}
+
+	// 4. Verify cascade did NOT advance to emp2 (cascade halted)
+	afterAttempt := s.GetJob(ctx, jobID)
+	if afterAttempt.Status != models.JobStatusCancelled {
+		t.Errorf("Job status should remain cancelled, got %q", afterAttempt.Status)
+	}
+	if afterAttempt.CurrentOfferedEmployeeID != "" {
+		t.Errorf("Job should not have been offered to anyone else, got offered: %q", afterAttempt.CurrentOfferedEmployeeID)
+	}
+}

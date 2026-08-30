@@ -1203,5 +1203,8 @@
         "type": "String"
       }
     }
-  }
+  },
+  "estimatedPriceCourierNotice": "Estimated based on store address. Final fare is calculated from the assigned courier's location once accepted.",
+  "retryBookingSuccess": "New booking created, matching courier...",
+  "matchingCourierSubtitle": "Finding nearest available courier..."
 }

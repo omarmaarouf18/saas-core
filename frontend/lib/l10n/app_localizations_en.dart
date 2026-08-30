@@ -2337,4 +2337,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String ticketSubmittedSuccess(String id) {
     return 'Ticket submitted successfully! (Ticket ID: $id)';
   }
+
+  @override
+  String get estimatedPriceCourierNotice =>
+      'Estimated based on store address. Final fare is calculated from the assigned courier\'s location once accepted.';
+
+  @override
+  String get retryBookingSuccess => 'New booking created, matching courier...';
+
+  @override
+  String get matchingCourierSubtitle => 'Finding nearest available courier...';
 }

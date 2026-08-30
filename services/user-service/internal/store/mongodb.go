@@ -1151,13 +1151,16 @@ func (s *MongoDB) CancelJob(ctx context.Context, id string, reason string) error
 			"status": bson.M{"$in": []models.JobStatus{
 				models.JobStatusActive,
 				models.JobStatusPending,
+				models.JobStatusPendingDispatch,
 				models.JobStatusAwaitingPriceResponse,
 			}},
 		},
 		bson.M{"$set": bson.M{
-			"status":              models.JobStatusCancelled,
-			"cancellation_reason": reason,
-			"updated_at":          time.Now().UTC(),
+			"status":                      models.JobStatusCancelled,
+			"current_offered_employee_id": "",
+			"offer_expires_at":            nil,
+			"cancellation_reason":         reason,
+			"updated_at":                  time.Now().UTC(),
 		}})
 	if err != nil {
 		return fmt.Errorf("store: cancel job: %w", err)

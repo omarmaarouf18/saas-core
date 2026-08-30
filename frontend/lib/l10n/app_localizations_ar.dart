@@ -2299,4 +2299,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String ticketSubmittedSuccess(String id) {
     return 'تم إرسال التذكرة بنجاح! (رقم التذكرة: $id)';
   }
+
+  @override
+  String get estimatedPriceCourierNotice =>
+      'تقديري بناءً على عنوان المتجر. يتم احتساب السعر النهائي من موقع المندوب بعد قبوله الطلب.';
+
+  @override
+  String get retryBookingSuccess => 'تم إنشاء طلب جديد، جاري البحث عن مندوب...';
+
+  @override
+  String get matchingCourierSubtitle => 'جاري البحث عن أقرب مندوب متاح...';
 }

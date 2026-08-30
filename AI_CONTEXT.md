@@ -626,3 +626,15 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
     - `StatusBadge`: supports `pending_dispatch` and `unavailable` with appropriate icons, colors, and localized Arabic (`ar_EG`) and English labels.
   - **Verification**: Dedicated repro suite `cascade_dispatch_repro_test.go` (6/6 tests passing), updated end-to-end pricing tests in `employee_dispatch_pricing_test.go`, updated `APPLICATION_MAP.md` via `make docs`, `make docs-check` passed, full `user-service` test suite passed, `flutter analyze` 0 issues, and `flutter test` (491/491 tests passing).
 
+### Accept-Before-Pricing Flow: Frontend & Boundary Audit Fixes
+
+* **Full Sweep & Boundary Alignments (`user-service` & Flutter frontend)**:
+  - **Booking Dialog Disclaimer (`customer_marketplace_screen.dart`)**: Added explicit localized notice (`estimatedPriceCourierNotice`) clarifying that the booking estimate is based on the merchant address and the final fare is computed from the assigned courier's proximity once accepted.
+  - **Cancellation during `pending_dispatch` (`mongodb.go` & `jobs_handlers.go`)**: Allowed customer and owner cancellation of jobs while in `pending_dispatch` state, clearing `current_offered_employee_id` and `offer_expires_at` to cleanly halt the cascade without triggering unrecorded-escrow errors or claiming false escrow refunds (escrow is deferred until courier acceptance). Added regression test `TestCascade_CustomerCancelsDuringPendingDispatch_HaltsCascade`.
+  - **Unavailable Job Retry Action (`job_status_screen.dart`)**: Replaced no-op polling refresh with `_retryBooking()`, which submits a brand-new booking (`bookJob`) with fresh cascade dispatch state and loading/error guards.
+  - **Fare State Accuracy (`job_status_screen.dart`)**: In `_formattedFare`, `unavailable` jobs now explicitly return "Unavailable" (`l10n.statusUnavailable`) rather than falling through to "Matching courier...".
+  - **Customer Order History Accuracy (`customer_jobs_screen.dart`)**: Excluded `unavailable` and `pending_dispatch` from active in-transit delivery progress bars; grouped `unavailable` under unfulfilled/cancelled filter; displayed "Matching courier..." for pending pricing.
+  - **Courier Acceptance & Unavailable Notifications (`jobs_handlers.go`)**: Dispatches asynchronous customer notifications via `POST /notifications/send` upon courier acceptance (`broadcastCourierAccepted` with final locked fare) and upon cascade exhaustion (`broadcastJobUnavailable`).
+  - **Verification**: Dedicated repro test `TestCascade_CustomerCancelsDuringPendingDispatch_HaltsCascade` passing in `cascade_dispatch_repro_test.go` (7/7 tests pass), `gosec` clean (0 issues), frontend composition gate clean, widget tests passing in `customer_jobs_screen_test.dart`, `job_cancellation_test.dart`, and `customer_marketplace_screen_test.dart`, and full Flutter test suite (495/495 tests pass).
+
+

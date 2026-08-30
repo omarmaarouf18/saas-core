@@ -57,12 +57,18 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
     if (_selectedFilter == 'in_transit') {
       jobs = jobs.where((j) {
         final s = j.status.toLowerCase();
-        return s == 'active' || s == 'pending' || s == 'assigned';
+        return s == 'active' ||
+            s == 'pending' ||
+            s == 'pending_dispatch' ||
+            s == 'assigned';
       }).toList();
     } else if (_selectedFilter == 'completed') {
       jobs = jobs.where((j) => j.status.toLowerCase() == 'completed').toList();
     } else if (_selectedFilter == 'cancelled') {
-      jobs = jobs.where((j) => j.status.toLowerCase() == 'cancelled').toList();
+      jobs = jobs.where((j) {
+        final s = j.status.toLowerCase();
+        return s == 'cancelled' || s == 'unavailable';
+      }).toList();
     }
 
     if (_searchQuery.trim().isNotEmpty) {
@@ -86,14 +92,18 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
 
     final inTransitCount = marketplace.customerJobs.where((j) {
       final s = j.status.toLowerCase();
-      return s == 'active' || s == 'pending' || s == 'assigned';
+      return s == 'active' ||
+          s == 'pending' ||
+          s == 'pending_dispatch' ||
+          s == 'assigned';
     }).length;
     final completedCount = marketplace.customerJobs
         .where((j) => j.status.toLowerCase() == 'completed')
         .length;
-    final cancelledCount = marketplace.customerJobs
-        .where((j) => j.status.toLowerCase() == 'cancelled')
-        .length;
+    final cancelledCount = marketplace.customerJobs.where((j) {
+      final s = j.status.toLowerCase();
+      return s == 'cancelled' || s == 'unavailable';
+    }).length;
 
     return ListScreenTemplate<Job>(
       title: l10n.customerJobsTitle,
@@ -248,7 +258,10 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
     final displayId = job.id.length > 8 ? job.id.substring(0, 8) : job.id;
     final isCompleted = job.status.toLowerCase() == 'completed';
     final isCancelled = job.status.toLowerCase() == 'cancelled';
-    final isInTransit = !isCompleted && !isCancelled;
+    final isUnavailable = job.status.toLowerCase() == 'unavailable';
+    final isPendingDispatch = job.status.toLowerCase() == 'pending_dispatch';
+    final isInTransit =
+        !isCompleted && !isCancelled && !isUnavailable && !isPendingDispatch;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -301,7 +314,25 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
-                if (displayPrice != null) ...[
+                if (isPendingDispatch) ...[
+                  const Spacer(),
+                  Text(
+                    l10n.matchingCourierLabel,
+                    style: AppTypography.bodySm.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ] else if (isUnavailable) ...[
+                  const Spacer(),
+                  Text(
+                    l10n.statusUnavailable,
+                    style: AppTypography.bodySm.copyWith(
+                      color: context.semanticColors.warning,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ] else if (displayPrice != null) ...[
                   const Spacer(),
                   Text(
                     "\$${displayPrice.toStringAsFixed(2)}",
@@ -313,6 +344,16 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                 ],
               ],
             ),
+
+            if (isUnavailable) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                l10n.allCouriersBusyDesc,
+                style: AppTypography.caption.copyWith(
+                  color: context.semanticColors.warning,
+                ),
+              ),
+            ],
 
             // Progress bar (In Transit / Active)
             if (isInTransit) _buildJobProgress(job),

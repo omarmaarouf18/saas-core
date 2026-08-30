@@ -43,6 +43,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
   Timer? _pollingTimer;
   Timer? _countdownTimer;
   bool _isRefreshing = false;
+  bool _isRetrying = false;
   // Declutter V2: collapsed-by-default fare details and negotiation panel.
   bool _fareDetailsExpanded = false;
   bool _negotiationExpanded = false;
@@ -317,6 +318,55 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     }
   }
 
+  Future<void> _retryBooking() async {
+    if (_isRetrying) return;
+    setState(() {
+      _isRetrying = true;
+    });
+
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final provider = Provider.of<MarketplaceProvider>(context, listen: false);
+
+    if (auth.token == null) {
+      setState(() => _isRetrying = false);
+      return;
+    }
+
+    try {
+      final newJob = await provider.bookJob(
+        serviceId: _currentJob.serviceId,
+        userId: auth.token!,
+        latitude: _currentJob.location.latitude,
+        longitude: _currentJob.location.longitude,
+        paymentMethod: _currentJob.paymentMethod,
+      );
+
+      if (!mounted) return;
+      if (newJob != null) {
+        ThemedSnackBar.showSuccess(
+          context,
+          context.l10n.retryBookingSuccess,
+        );
+        setState(() {
+          _currentJob = newJob;
+          _isRetrying = false;
+          _resolvedUsername = null;
+          _lastResolvedEmployeeId = null;
+        });
+        _resolveEmployeeUsername();
+      } else {
+        setState(() => _isRetrying = false);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isRetrying = false);
+      ThemedSnackBar.showError(
+        context,
+        friendlyErrorMessage(e),
+      );
+    }
+  }
+
   int _getStatusStep(String status) {
     switch (status) {
       case 'pending':
@@ -334,6 +384,9 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
   String get _formattedFare {
     if (_currentJob.status == 'pending_dispatch') {
       return context.l10n.matchingCourierLabel;
+    }
+    if (_currentJob.status == 'unavailable') {
+      return context.l10n.statusUnavailable;
     }
     final price = _currentJob.agreedPrice ?? _currentJob.suggestedPrice;
     if (price == null || price == 0) {
@@ -377,7 +430,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             key: const Key('job_status_retry_button'),
             text: l10n.retryBookingAction,
             icon: Icons.refresh,
-            onPressed: () => _refreshJobStatus(),
+            isLoading: _isRetrying,
+            onPressed: _isRetrying ? null : () => _retryBooking(),
           ),
         ],
       ),
@@ -1034,7 +1088,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           key: const Key('job_status_unavailable_retry_button'),
           text: context.l10n.retryBookingAction,
           icon: Icons.refresh,
-          onPressed: () => _refreshJobStatus(),
+          isLoading: _isRetrying,
+          onPressed: _isRetrying ? null : () => _retryBooking(),
         ),
         const SizedBox(height: AppSpacing.sm),
       ],
@@ -1076,7 +1131,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 if (mounted) {
                   final cancelL10n = this.context.l10n;
                   final isNonCod =
-                      _currentJob.paymentMethod.toLowerCase() != 'cod';
+                      _currentJob.paymentMethod.toLowerCase() != 'cod' &&
+                          _currentJob.status != 'pending_dispatch';
                   final msg = isNonCod
                       ? cancelL10n.ownerHomeJobCancelledEscrowRefunded
                       : cancelL10n.ownerHomeJobCancelled;
