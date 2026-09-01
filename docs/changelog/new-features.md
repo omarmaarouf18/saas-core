@@ -16,6 +16,7 @@ This file tracks historical entries for the primary category: **New Features Cha
   - **Reviewer Console (`kyc-reviewer-console`)**:
     - `internal/proxy/proxy.go` & `cmd/server/main.go`: Added proxy handlers and route wiring for `/api/accounts`, `/api/accounts/suspend`, `/api/accounts/reactivate`.
     - `web/index.html`, `web/app.js`, `web/style.css`: Added tabbed navigation for Pending Queue vs Accounts Directory, accounts search and filter toolbar, pagination controls, status badges, and modal dialogs for suspend (with required reason) and reactivate.
+- **Commit SHA**: ``619dde1b774f0a7a118baf5693e080f9c5d70eb7``
 - **Verification**: Verified via `go test ./...` in `services/auth-service` (100% pass), `go test ./...` in `kyc-reviewer-console` (100% pass), `make docs-check` (pass), and `flutter test` (496/496 pass).
 
 ## Stitch Unified UI Implementation — Batch E (Employee Experience & Final Verification)
