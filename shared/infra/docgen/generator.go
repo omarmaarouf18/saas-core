@@ -178,6 +178,11 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Reactivates a suspended user account with optional reason and dispatches notification (ADR-0022).",
 		Targets:     "Updates `users` collection. Writes `audit_log`.",
 	},
+	"GET /auth/reviewer/verify": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Verifies reviewer credentials and returns reviewer identity for inter-service ops authentication (ADR-0023).",
+		Targets:     "Reads `reviewers` collection.",
+	},
 	"GET /auth/user": {
 		Permissions: "`X-Internal-Token` OR User JWT",
 		Function:    "Resolves user profile (including username) and role details. Accepts id (legacy) or user_token (preferred).",
@@ -438,6 +443,26 @@ var KnownEndpoints = map[string]struct {
 		Permissions: "Owner JWT",
 		Function:    "Resolves job in escrow_reconciliation_required status ('release_to_employee' or 'refund_to_customer').",
 		Targets:     "Updates `jobs` status and reconciliation fields, writes `wallets` and `ledger`, ships security audit event.",
+	},
+	"GET /users/admin/reconciliation/queue": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Lists all jobs in escrow_reconciliation_required status globally across all tenants for ops console oversight (ADR-0023).",
+		Targets:     "Reads `jobs` collection. Paginated.",
+	},
+	"GET /admin/reconciliation/queue": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Lists all jobs in escrow_reconciliation_required status globally across all tenants for ops console oversight (ADR-0023).",
+		Targets:     "Reads `jobs` collection. Paginated.",
+	},
+	"POST /users/admin/reconciliation/resolve": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Resolves disputed job in escrow_reconciliation_required status globally via ops reviewer override with mandatory reason (ADR-0023).",
+		Targets:     "CAS status transition on `jobs`, financial settlement/refund, ships security audit event and dispatches notifications.",
+	},
+	"POST /admin/reconciliation/resolve": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Resolves disputed job in escrow_reconciliation_required status globally via ops reviewer override with mandatory reason (ADR-0023).",
+		Targets:     "CAS status transition on `jobs`, financial settlement/refund, ships security audit event and dispatches notifications.",
 	},
 	"POST /users/jobs/propose-price": {
 		Permissions: "Customer or Employee JWT",

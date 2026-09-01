@@ -424,3 +424,39 @@ type EmployeeLocationPingRequest struct {
 	Latitude       float64 `json:"latitude"`
 	Longitude      float64 `json:"longitude"`
 }
+
+// AdminReconciliationJobItem represents a disputed delivery/job in the ops reconciliation queue (ADR-0023).
+type AdminReconciliationJobItem struct {
+	ID                   string    `json:"id"`
+	TenantID             string    `json:"tenant_id"`
+	OwnerID              string    `json:"owner_id"`
+	EmployeeID           string    `json:"employee_id,omitempty"`
+	CustomerID           string    `json:"customer_id"`
+	ServiceID            string    `json:"service_id"`
+	BookedDistance       float64   `json:"booked_distance"`
+	ActualDistance       float64   `json:"actual_distance"`
+	WaypointsCount       int       `json:"waypoints_count"`
+	LockedEscrowAmount   float64   `json:"locked_escrow_amount"`
+	ActualAmount         float64   `json:"actual_amount"`
+	PaymentMethod        string    `json:"payment_method"`
+	Status               JobStatus `json:"status"`
+	ReconciliationNote   string    `json:"reconciliation_note"`
+	ReconciliationReason string    `json:"reconciliation_reason"`
+	CreatedAt            time.Time `json:"created_at"`
+	UpdatedAt            time.Time `json:"updated_at"`
+}
+
+// AdminReconciliationQueueResponse is the payload returned by GET /admin/reconciliation/queue.
+type AdminReconciliationQueueResponse struct {
+	Disputes []AdminReconciliationJobItem `json:"disputes"`
+	Total    int                          `json:"total"`
+	Page     int                          `json:"page"`
+	Limit    int                          `json:"limit"`
+}
+
+// AdminResolveReconciliationRequest is the payload for POST /admin/reconciliation/resolve.
+type AdminResolveReconciliationRequest struct {
+	JobID    string `json:"job_id"`
+	Decision string `json:"decision"` // "release_to_employee" or "refund_to_customer"
+	Reason   string `json:"reason"`   // Mandatory reason (1-1000 characters)
+}

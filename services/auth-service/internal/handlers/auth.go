@@ -130,6 +130,7 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/accounts/suspend", a.SuspendAccount)
 	mux.HandleFunc("/auth/accounts/{id}/reactivate", a.ReactivateAccount)
 	mux.HandleFunc("/auth/accounts/reactivate", a.ReactivateAccount)
+	mux.HandleFunc("/auth/reviewer/verify", a.VerifyReviewer)
 	mux.HandleFunc("/auth/device-token", a.DeviceToken)
 	mux.HandleFunc("/auth/email-change/request", a.RequestEmailChange)
 	mux.HandleFunc("/auth/email-change/confirm", a.ConfirmEmailChange)
@@ -2264,6 +2265,26 @@ func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 	}
 
 	return rev, nil
+}
+
+// VerifyReviewer verifies a reviewer's token and returns reviewer identity.
+// GET /auth/reviewer/verify
+func (a *Auth) VerifyReviewer(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
+		return
+	}
+
+	reviewer, err := a.authenticateReviewer(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"id":   reviewer.ID,
+		"name": reviewer.Name,
+	})
 }
 
 // POST /auth/logout

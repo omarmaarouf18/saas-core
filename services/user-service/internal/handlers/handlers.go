@@ -309,6 +309,10 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users/employee/location", u.UpdateEmployeeLocation)
 	mux.HandleFunc("/users/jobs/reconciliation-queue", u.GetReconciliationQueue)
 	mux.HandleFunc("/users/jobs/reconciliation-resolve", u.ResolveReconciliation)
+	mux.HandleFunc("/users/admin/reconciliation/queue", u.AdminGetReconciliationQueue)
+	mux.HandleFunc("/admin/reconciliation/queue", u.AdminGetReconciliationQueue)
+	mux.HandleFunc("/users/admin/reconciliation/resolve", u.AdminResolveReconciliation)
+	mux.HandleFunc("/admin/reconciliation/resolve", u.AdminResolveReconciliation)
 }
 
 // ---------------------------------------------------------------------------

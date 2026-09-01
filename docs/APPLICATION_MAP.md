@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`7f2ec35`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`6103ba1`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -197,6 +197,7 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`POST /auth/refresh`** | `auth-service` | Public (via Gateway) | Refreshes active JWT sessions. | None. |
 | **`POST /auth/resend-otp`** | `auth-service` | Public | ResendOTP handles resending a fresh OTP for unconfirmed accounts. | Reads `users` collection by email, updates `otp_code` and `otp_expires_at` fields. |
 | **`POST /auth/reset-password`** | `auth-service` | Public | Verifies OTP code and updates user password. | Reads `users` collection by email, updates `password` hash and clears OTP fields. |
+| **`GET /auth/reviewer/verify`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Verifies reviewer credentials and returns reviewer identity for inter-service ops authentication (ADR-0023). | Reads `reviewers` collection. |
 | **`POST /auth/signup`** | `auth-service` | Public (via Gateway) | Registers a new tenant or user. | Writes `users` collection. Logs OTP code. |
 | **`GET /auth/user`** | `auth-service` | `X-Internal-Token` OR User JWT | Resolves user profile (including username) and role details. Accepts id (legacy) or user_token (preferred). | Reads `users` collection. |
 | **`PATCH /auth/user`** | `auth-service` | Authenticated User JWT | Self-service profile update (username, phone, frequent_addresses) with IDOR protection. | Updates `users` collection. |
@@ -215,6 +216,10 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`GET /notifications/stream`** | `notification-service` | User JWT | Opens SSE channel for alerts. | Downstream: calls `auth-service/auth/user`. |
 | **`DELETE /notifications/{id}`** | `notification-service` | User JWT | Deletes a single notification for the authenticated user. | Deletes from `notifications` collection. |
 | **`POST /notifications/{id}/read`** | `notification-service` | User JWT | Marks a single notification as read for the authenticated user. | Updates `notifications` collection. |
+| **`GET /admin/reconciliation/queue`** | `user-service` | Reviewer Token & `X-Internal-Token` | Lists all jobs in escrow_reconciliation_required status globally across all tenants for ops console oversight (ADR-0023). | Reads `jobs` collection. Paginated. |
+| **`POST /admin/reconciliation/resolve`** | `user-service` | Reviewer Token & `X-Internal-Token` | Resolves disputed job in escrow_reconciliation_required status globally via ops reviewer override with mandatory reason (ADR-0023). | CAS status transition on `jobs`, financial settlement/refund, ships security audit event and dispatches notifications. |
+| **`GET /users/admin/reconciliation/queue`** | `user-service` | Reviewer Token & `X-Internal-Token` | Lists all jobs in escrow_reconciliation_required status globally across all tenants for ops console oversight (ADR-0023). | Reads `jobs` collection. Paginated. |
+| **`POST /users/admin/reconciliation/resolve`** | `user-service` | Reviewer Token & `X-Internal-Token` | Resolves disputed job in escrow_reconciliation_required status globally via ops reviewer override with mandatory reason (ADR-0023). | CAS status transition on `jobs`, financial settlement/refund, ships security audit event and dispatches notifications. |
 | **`POST /users/employee/jobs/accept`** | `user-service` | Employee JWT | Accepts an active dispatch offer, calculates final distance pricing from courier location, and activates job. | Updates `jobs` collection, updates `wallets` (for escrow locking), dispatches notification. |
 | **`POST /users/employee/jobs/decline`** | `user-service` | Employee JWT | Declines an active dispatch offer and advances the cascade immediately to the next courier. | Updates `jobs` collection, queries `employee_locations`, dispatches next offer notification. |
 | **`POST /users/employee/jobs/{id}/accept`** | `user-service` | Employee JWT | Accepts an active dispatch offer, calculates final distance pricing from courier location, and activates job. | Updates `jobs` collection, updates `wallets` (for escrow locking), dispatches notification. |

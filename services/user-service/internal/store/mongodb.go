@@ -1500,3 +1500,160 @@ func (s *MongoDB) GetFreshEmployeeLocations(ctx context.Context, tenantID string
 	}
 	return locs, nil
 }
+
+// GetGlobalReconciliationQueue returns all jobs in status escrow_reconciliation_required across all tenants (ADR-0023).
+func (s *MongoDB) GetGlobalReconciliationQueue(ctx context.Context, page, limit int64) ([]*models.Job, int64, error) {
+	filter := bson.M{
+		"status": models.JobStatusEscrowReconciliationRequired,
+	}
+
+	total, err := s.jobs.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("store: count global reconciliation queue: %w", err)
+	}
+
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	if page < 1 {
+		page = 1
+	}
+	skip := (page - 1) * limit
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "updated_at", Value: -1}, {Key: "created_at", Value: -1}}).
+		SetSkip(skip).
+		SetLimit(limit)
+
+	cursor, err := s.jobs.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, fmt.Errorf("store: find global reconciliation queue: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var jobs []*models.Job
+	if err := cursor.All(ctx, &jobs); err != nil {
+		return nil, 0, fmt.Errorf("store: decode global reconciliation queue: %w", err)
+	}
+	if jobs == nil {
+		jobs = make([]*models.Job, 0)
+	}
+	return jobs, total, nil
+}
+
+// AdminResolveReconciliation applies a CAS-guarded resolution on a disputed job in status escrow_reconciliation_required (ADR-0023).
+func (s *MongoDB) AdminResolveReconciliation(ctx context.Context, jobID, decision, reason, reviewerID string) (*models.Job, error) {
+	job := s.GetJob(ctx, jobID)
+	if job == nil {
+		return nil, fmt.Errorf("job %s not found", jobID)
+	}
+
+	if job.Status != models.JobStatusEscrowReconciliationRequired {
+		return nil, fmt.Errorf("job %s is no longer pending reconciliation or was concurrently modified", jobID)
+	}
+
+	amount := job.LockedEscrowAmount
+
+	switch decision {
+	case "release_to_employee":
+		note := fmt.Sprintf("admin_reconciliation_resolved: release_to_employee by reviewer %s - reason: %s", reviewerID, reason)
+
+		if job.PaymentMethod == "cod" {
+			// CAS transition for COD job
+			res := s.jobs.FindOneAndUpdate(ctx,
+				bson.M{"_id": jobID, "status": models.JobStatusEscrowReconciliationRequired},
+				bson.M{"$set": bson.M{
+					"status":              models.JobStatusCompleted,
+					"reconciliation_note": note,
+					"updated_at":          time.Now().UTC(),
+				}},
+				options.FindOneAndUpdate().SetReturnDocument(options.After),
+			)
+			if res.Err() != nil {
+				if res.Err() == mongo.ErrNoDocuments {
+					return nil, fmt.Errorf("job %s is no longer pending reconciliation or was concurrently modified", jobID)
+				}
+				return nil, fmt.Errorf("failed to update job status for reconciliation release: %w", res.Err())
+			}
+			var updatedJob models.Job
+			if err := res.Decode(&updatedJob); err != nil {
+				return nil, fmt.Errorf("failed to decode updated job: %w", err)
+			}
+			return &updatedJob, nil
+		}
+
+		if amount > 0 {
+			// ReleaseEscrowWithSplit executes the atomic CAS on job status (EscrowReconciliationRequired -> Completed)
+			// and releases 100% escrow to the tenant wallet.
+			if err := s.ReleaseEscrowWithSplit(ctx, job.OwnerID, job.ID, amount); err != nil {
+				if strings.Contains(err.Error(), "not active") || strings.Contains(err.Error(), "insufficient") {
+					return nil, fmt.Errorf("job %s is no longer pending reconciliation or was concurrently modified", jobID)
+				}
+				return nil, fmt.Errorf("escrow release failed: %w", err)
+			}
+		}
+
+		// Update note with reviewer details
+		if err := s.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCompleted, note, "", amount); err != nil {
+			log.Printf("[ERROR] failed to update reconciliation note for job %s: %v", job.ID, err)
+		}
+
+		updatedJob := s.GetJob(ctx, job.ID)
+		if updatedJob == nil {
+			return nil, fmt.Errorf("job %s not found after resolution", jobID)
+		}
+		return updatedJob, nil
+
+	case "refund_to_customer":
+		note := fmt.Sprintf("admin_reconciliation_resolved: refund_to_customer by reviewer %s - reason: %s", reviewerID, reason)
+
+		if job.PaymentMethod == "cod" {
+			// CAS transition for COD job refund/cancellation
+			res := s.jobs.FindOneAndUpdate(ctx,
+				bson.M{"_id": jobID, "status": models.JobStatusEscrowReconciliationRequired},
+				bson.M{"$set": bson.M{
+					"status":              models.JobStatusCancelled,
+					"reconciliation_note": note,
+					"updated_at":          time.Now().UTC(),
+				}},
+				options.FindOneAndUpdate().SetReturnDocument(options.After),
+			)
+			if res.Err() != nil {
+				if res.Err() == mongo.ErrNoDocuments {
+					return nil, fmt.Errorf("job %s is no longer pending reconciliation or was concurrently modified", jobID)
+				}
+				return nil, fmt.Errorf("failed to update job status for reconciliation refund: %w", res.Err())
+			}
+			var updatedJob models.Job
+			if err := res.Decode(&updatedJob); err != nil {
+				return nil, fmt.Errorf("failed to decode updated job: %w", err)
+			}
+			return &updatedJob, nil
+		}
+
+		if amount > 0 {
+			// RefundEscrow executes the atomic CAS on job status (EscrowReconciliationRequired -> Cancelled)
+			// and restores escrow to the tenant wallet.
+			if err := s.RefundEscrow(ctx, job.OwnerID, job.ID, amount); err != nil {
+				if strings.Contains(err.Error(), "not active") || strings.Contains(err.Error(), "insufficient") {
+					return nil, fmt.Errorf("job %s is no longer pending reconciliation or was concurrently modified", jobID)
+				}
+				return nil, fmt.Errorf("escrow refund failed: %w", err)
+			}
+		}
+
+		// Update note with reviewer details
+		if err := s.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCancelled, note, "", 0); err != nil {
+			log.Printf("[ERROR] failed to update reconciliation note for job %s: %v", job.ID, err)
+		}
+
+		updatedJob := s.GetJob(ctx, job.ID)
+		if updatedJob == nil {
+			return nil, fmt.Errorf("job %s not found after resolution", jobID)
+		}
+		return updatedJob, nil
+
+	default:
+		return nil, fmt.Errorf("invalid decision: %s", decision)
+	}
+}
