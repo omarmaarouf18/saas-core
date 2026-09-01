@@ -519,6 +519,11 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Revokes tenant subscription to PlanCancelled with mandatory reason (ADR-0023).",
 		Targets:     "CAS status transition on `subscriptions` collection, ships security audit event.",
 	},
+	"POST /users/employee/location": {
+		Permissions: "Employee JWT",
+		Function:    "Updates employee standalone availability GPS coordinates and heartbeat for proximity-based cascade dispatch.",
+		Targets:     "Updates `employee_locations` collection and Redis geo cache.",
+	},
 
 	"POST /users/jobs/propose-price": {
 		Permissions: "Customer or Employee JWT",

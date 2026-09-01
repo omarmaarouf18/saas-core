@@ -49,9 +49,11 @@ When adding a new ADR, use the following template:
 *   [ADR-0018: Client Application Semantic Versioning & Version-Gating Middleware](0018-client-app-semantic-versioning-and-enforcement-gate.md)
 *   [ADR-0019: Independent ("Solo") Driver Accounts](0019-independent-solo-driver-accounts.md) — Proposed
 *   [ADR-0020: Female-Only Ride Preference Flag](0020-female-only-ride-preference.md) — Proposed
-*   [ADR-0021: Standalone KYC/KYB/KYE Reviewer Console](0021-kyc-kyb-kye-reviewer-console.md) — Accepted and implemented
+*   [ADR-0021: Standalone KYC/KYB/KYE Reviewer Console](0021-kyc-kyb-kye-reviewer-console.md) — Accepted
 *   [ADR-0022: Reviewer Account Directory, Search, and Account Suspension / Reactivation](0022-account-suspension-and-reviewer-directory.md) — Accepted
-*   [ADR-0023: Modular Operations Console Expansion](0023-modular-ops-console-expansion.md) — Proposed
+*   [ADR-0023: Modular Operations Console Expansion](0023-modular-ops-console-expansion.md) — Accepted
+
+
 
 
 

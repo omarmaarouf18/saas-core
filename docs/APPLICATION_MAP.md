@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`91f60fa`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`f39150a`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -22,7 +22,7 @@ flowchart TD
         ChatService["chat-service (Port: 3001)"]
         NotifService["notification-service (Port: 3004)"]
         UserService["user-service (Port: 3003)"]
-        ReviewerApp["kyc-reviewer-console (Port: 8090 - ADR-0021)"]
+        ReviewerApp["kyc-reviewer-console (Port: 8090 - ADR-0021 / ADR-0022 / ADR-0023)"]
         SharedInfra["shared/infra (Compile-Time Only)"]
     end
 
@@ -43,7 +43,9 @@ flowchart TD
     UserService -- "POST /chat/internal/broadcast-location (mTLS)" --> ChatService
     UserService -- "POST /notifications/send & broadcast (mTLS)" --> NotifService
     AuthService -- "POST /notifications/send (mTLS)" --> NotifService
-    ReviewerApp -- "Forwarded mTLS / KYC Reviews" --> AuthService
+    ReviewerApp -- "Forwarded mTLS / KYC Reviews & Accounts" --> AuthService
+    ReviewerApp -- "Forwarded mTLS / Disputes & Subscriptions" --> UserService
+    ReviewerApp -- "Forwarded mTLS / Support Tickets" --> ChatService
 
     %% Styling and Legend
     style ClientApp fill:#f9f,stroke:#333,stroke-width:2px
@@ -78,28 +80,33 @@ The platform is comprised of **5 microservices** and **1 compile-time shared pac
 ### 2. `auth-service` (Port: `3002`)
 * **Core Responsibility**: Manages user profiles, credentials, 2FA OTP codes, employee activations, session verification, and audit logs.
 * **Database & Collections**: MongoDB (`auth_db`):
-  * `users`: Stores emails, role types, hashed passwords (bcrypt), KYC states, and OTP secrets.
-  * `audit_logs`: Records simulated employee actions and administrative tasks.
+  * `users`: Stores emails, role types, hashed passwords (bcrypt), KYC states, suspension states, and OTP secrets.
+  * `audit_logs`: Records simulated employee actions, reviewer suspensions/reactivations, and administrative tasks.
 * **Security & TLS Policy**: Internal mTLS-only server.
 * **Inbound HTTP calls**:
   * `api-gateway` (public routes).
+  * `kyc-reviewer-console` (calls `/auth/kyb-kye/*`, `/auth/accounts*`, `/auth/reviewer/verify`, `/auth/documents/view`).
   * `chat-service` (calls `/auth/user` to authenticate WebSockets).
   * `notification-service` (calls `/auth/user` to authenticate SSE streams).
   * `user-service` (calls `/auth/user` to verify KYC status).
-* **Outbound HTTP calls**: `notification-service` (invokes `/notifications/send` internally to dispatch KYC/KYB/KYE review outcome notifications per ADR-0021).
+* **Outbound HTTP calls**: `notification-service` (invokes `/notifications/send` internally to dispatch KYC/KYB/KYE review and account suspension/reactivation notifications per ADR-0021/ADR-0022).
 
 ### 3. `chat-service` (Port: `3001`)
-* **Core Responsibility**: Real-time communication server. Hosts WebSockets for active chat channels (segregated per job/ticket), manages location broadcasts, and coordinates support agent ticket assignments.
+* **Core Responsibility**: Real-time communication server. Hosts WebSockets for active chat channels (segregated per job/ticket), manages location broadcasts, and coordinates support agent ticket assignments and ops ticket resolution.
 * **Database & Collections**: MongoDB (`chat_db`):
   * `chat_messages`: Stores message history for channels.
-  * `complaint_tickets`: Stores complaint ticket states and assigned agents.
+  * `complaint_tickets`: Stores complaint ticket states, resolution notes, and assigned agents.
   * `support_agents`: Stores onboarded support agents and active session tokens.
+* **Internal Handler Architecture (`internal/handlers/`)**:
+  * `chat.go`: Service routes registration, WebSocket upgrade, channel authorization, and consumer ticket submission.
+  * `admin_tickets.go`: Reviewer ticket oversight and CAS ticket resolution (`AdminListTickets`, `AdminResolveTicket` per ADR-0023 Module B).
 * **Security & TLS Policy**: Serves mTLS HTTPS API routes and upgrades client WebSocket connections.
 * **Inbound HTTP calls**:
   * `api-gateway` (public routes).
+  * `kyc-reviewer-console` (calls `/admin/tickets` and `/admin/tickets/resolve`).
   * `user-service` (calls `/chat/internal/broadcast-location`).
 * **Outbound HTTP calls**:
-  * `auth-service`: Queries `/auth/user?id=<user_id>` to authenticate WebSocket connections.
+  * `auth-service`: Queries `/auth/user?id=<user_id>` to authenticate WebSocket connections, and `/auth/reviewer/verify` to verify reviewer tokens.
   * `user-service`: Queries `GET /users/jobs/get?id=<job_id>` to resolve job owner, employee, and customer relationships for channel access control.
 
 ### 4. `notification-service` (Port: `3004`)
@@ -128,14 +135,16 @@ The platform is comprised of **5 microservices** and **1 compile-time shared pac
   * `jobs_handlers.go`: Core job lifecycle, cascade dispatch, offer acceptance/decline, escrow locking/settlement, live location updates, and price negotiation (`TrackJob`, `AcceptJobOffer`, `DeclineJobOffer`, `HeartbeatLocation`, `CompleteJob`, `GetJob`, `GetOwnerJobs`, `GetCustomerJobs`, `UpdateJobLocation`, `CancelJob`, `ProposePrice`, `RespondPrice`).
   * `wallet_handlers.go`: Tenant balance, ledger audit trails, deposit bypass, and payout requests (`GetWallet`, `WalletDeposit`, `GetLedger`, `RequestPayout`, `GetPayoutRequests`).
   * `subscription_handlers.go`: Tenant subscription tier status and upgrade requests (`Subscription`).
+  * `admin_subscription_handlers.go`: Reviewer subscription oversight, manual activation, and revocation (`AdminListSubscriptions`, `AdminActivateSubscription`, `AdminRevokeSubscription` per ADR-0023 Module A).
   * `ratings_handlers.go`: Blind rating submissions and aggregated score lookups (`RateJob`, `GetRatings`).
-  * `reconciliation_handlers.go`: Disputed escrow reconciliation queue and resolution (`GetReconciliationQueue`, `ResolveReconciliation`).
+  * `reconciliation_handlers.go`: Disputed escrow reconciliation queue and resolution (`GetReconciliationQueue`, `ResolveReconciliation`, `AdminListReconciliationQueue`, `AdminResolveReconciliation` per ADR-0023 Module 1.1).
 * **Security & TLS Policy**: Internal mTLS-only server.
 * **Inbound HTTP calls**:
   * `api-gateway` (public routes).
+  * `kyc-reviewer-console` (calls `/admin/reconciliation/*` and `/admin/subscriptions*`).
   * `chat-service` (queries `/users/jobs/get?id=<job_id>`).
 * **Outbound HTTP calls**:
-  * `auth-service`: Queries `/auth/user?id=<owner_id>` to verify owner KYC status.
+  * `auth-service`: Queries `/auth/user?id=<owner_id>` to verify owner KYC status, and `/auth/reviewer/verify` to verify reviewer tokens.
   * `chat-service`: Queries `POST /chat/internal/broadcast-location` to publish live driver coordinates.
   * `notification-service`: Dispatches real-time courier acceptance and cascade exhaustion alerts via `POST /notifications/send`, and broadcasts tenant job notifications via `POST /notifications/broadcast/job-alert`.
 
@@ -235,7 +244,7 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`POST /users/employee/jobs/decline`** | `user-service` | Employee JWT | Declines an active dispatch offer and advances the cascade immediately to the next courier. | Updates `jobs` collection, queries `employee_locations`, dispatches next offer notification. |
 | **`POST /users/employee/jobs/{id}/accept`** | `user-service` | Employee JWT | Accepts an active dispatch offer, calculates final distance pricing from courier location, and activates job. | Updates `jobs` collection, updates `wallets` (for escrow locking), dispatches notification. |
 | **`POST /users/employee/jobs/{id}/decline`** | `user-service` | Employee JWT | Declines an active dispatch offer and advances the cascade immediately to the next courier. | Updates `jobs` collection, queries `employee_locations`, dispatches next offer notification. |
-| **`POST /users/employee/location`** | `user-service` | Public | <!-- TODO: verify manually --> | <!-- TODO: verify manually --> |
+| **`POST /users/employee/location`** | `user-service` | Employee JWT | Updates employee standalone availability GPS coordinates and heartbeat for proximity-based cascade dispatch. | Updates `employee_locations` collection and Redis geo cache. |
 | **`POST /users/jobs/cancel`** | `user-service` | Owner or Customer JWT | Cancels an active job and processes escrow refunds. Accepts requester_id (legacy) or requester_token (preferred). | Updates `jobs` collection. Updates `wallets` and `ledger` collections. |
 | **`POST /users/jobs/complete`** | `user-service` | Owner or Employee JWT | Completes active job, processes fees. Accepts requester_id (legacy) or requester_token (preferred) in body or query. | Updates `jobs`, writes `wallets`, writes `ledger`. |
 | **`GET /users/jobs/get`** | `user-service` | `X-Internal-Token` OR Owner, Employee, User, or Customer JWT | Resolves detailed job configuration (single job by ID) or lists jobs. Accepts id (legacy) or user_token (preferred), requester_id (legacy) or requester_token (preferred), and employee_id (legacy) or employee_token (preferred). | Reads `jobs` collection. Enforces IDOR protection: if `employee_id` query param is provided, it must match the employee identity strictly resolved from the JWT token. |

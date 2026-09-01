@@ -11,7 +11,7 @@
 The Quick Delivery platform operates across 4 decoupled GitHub repositories and 1 production cloud Virtual Private Server (VPS target `quickdelivery-vm`). Monorepo source code (`omarmaarouf18/saas-core`) is strictly isolated from production deployment manifests, standalone mobile app builds, and static marketing website release metadata.
 
 > [!NOTE]
-> **Client Application Repositories & Scoping**: Per [ADR-0013](adr/0013-support-agent-console-as-separate-client-application.md) and [ADR-0021](adr/0021-kyc-kyb-kye-reviewer-console.md), reviewer and administrative capabilities are strictly excluded from `frontend/` (`quick-delivery-mobile`). A standalone KYC/KYB/KYE reviewer console exists at `omarmaarouf18/kyc-reviewer-console` (ADR-0021, port 8090, `kyc.logiclinkeg.tech`), while broader support ticket resolution (`omarmaarouf18/support-agent-console`) remains deferred per ADR-0013.
+> **Client Application Repositories & Scoping**: Per [ADR-0013](adr/0013-support-agent-console-as-separate-client-application.md), [ADR-0021](adr/0021-kyc-kyb-kye-reviewer-console.md), [ADR-0022](adr/0022-account-suspension-and-reviewer-directory.md), and [ADR-0023](adr/0023-modular-ops-console-expansion.md), reviewer and administrative capabilities are strictly excluded from `frontend/` (`quick-delivery-mobile`). A standalone Reviewer & Operations Console exists at `omarmaarouf18/kyc-reviewer-console` (port 8090, `kyc.logiclinkeg.tech`), housing KYC/KYB/KYE review, Accounts Directory & suspensions, Disputes & Reconciliation, Subscriptions, and Support Tickets (superseding a hypothetical separate support-agent-console repo).
 
 ```mermaid
 flowchart TD
