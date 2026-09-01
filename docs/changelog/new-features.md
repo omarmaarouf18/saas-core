@@ -20,7 +20,7 @@ This file tracks historical entries for the primary category: **New Features Cha
     - `internal/proxy/proxy.go` & `cmd/server/main.go`: Added proxy forwarding and validation for `/api/subscriptions`, `/api/subscriptions/activate`, `/api/subscriptions/revoke`, `/api/tickets`, `/api/tickets/resolve`.
     - `web/index.html`, `web/app.js`, `web/style.css`: Added "Subscriptions" and "Support Tickets" tabs, tables, toolbars, pagination controls, and action modals for tier activation, revocation (mandatory reason), and ticket resolution (mandatory notes).
     - `internal/proxy/proxy_test.go`: Added proxy unit test cases for token forwarding and validation across both modules.
-- **Commit SHA**: ``91f60faf5c1076f20a8e5702a84a4d62ee4e13b7``
+- **Commit SHA**: ``395dafa0c23d69686b058be83eee6f771b49f82a``
 - **Verification**: Verified via `go test ./...` in `services/user-service` and `services/chat-service` (100% pass), `go test ./...` in `kyc-reviewer-console` (100% pass), `gosec` (0 issues), and `make docs-check` (pass).
 
 ## Reviewer Account Directory, Search, and Account Suspension / Reactivation (ADR-0022)
