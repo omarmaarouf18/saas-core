@@ -27,7 +27,11 @@ func idemRaceSetup(t *testing.T) (*UserService, *store.MongoDB, *miniredis.Minir
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin", dbName)
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
+	}
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
 	if err != nil {
 		cancel()
 		t.Skipf("Skipping: MongoDB not available (%v)", err)

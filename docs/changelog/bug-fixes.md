@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+---
+
+## Environment-Driven MONGO_URI Fallback in Integration Tests
+
+- **Implementation Detail**: Resolved CI test failures across `user-service` and `chat-service` caused by hardcoded MongoDB credentials (`mongodb://root:devpassword123@...`) in newly added and legacy test files (`admin_reconciliation_test.go`, `admin_subscription_test.go`, `admin_tickets_test.go`, `balance_leak_regression_test.go`, `idempotency_race_regression_test.go`, `employee_dispatch_pricing_test.go`). Updated all test harnesses to read `os.Getenv("MONGO_URI")` first matching CI service credentials, falling back to local defaults only when `MONGO_URI` is unset. Added missing `"os"` package imports and verified repository-wide with 0 unhandled hardcoded test credentials remaining.
+- **Verification**: Verified via `go test ./...` across all 5 Go services, `make docs-counts`, `make docs-check`, `make ci`. ✅
+
 ## Zero-Commission Platform Fee Remnants Cleanup (ADR-0017 Parity)
 
 - **Implementation Detail**:

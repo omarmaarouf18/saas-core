@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -22,7 +23,10 @@ import (
 func setupAdminSubscriptionTestEnvironment(t *testing.T) (*UserService, *store.MongoDB, string, *httptest.Server) {
 	t.Helper()
 
-	mongoURI := "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
+	}
 	dbName := fmt.Sprintf("saas_sub_test_%d", time.Now().UnixNano())
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

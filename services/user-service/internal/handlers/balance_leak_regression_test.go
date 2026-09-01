@@ -62,7 +62,11 @@ func TestRespondPrice_EscrowFailureWarningDoesNotLeakOwnerBalance(t *testing.T) 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	s, err := store.NewMongoDB(ctx, "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin",
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
+	}
+	s, err := store.NewMongoDB(ctx, mongoURI,
 		fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano()))
 	if err != nil {
 		t.Skipf("Skipping: MongoDB not available (%v)", err)
