@@ -3,8 +3,6 @@ package handlers
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -17,6 +15,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/project/auth-service/internal/models"
+	"github.com/project/shared/infra/jwtutil"
 )
 
 func TestLogin_SuspendedAccountBlocked(t *testing.T) {
@@ -241,12 +240,14 @@ func TestVerifyEmployeeAssignment_SuspendedChecks(t *testing.T) {
 	_ = s.CreateUser(ctx, empActiveUnderSusp)
 
 	// Test 1: Suspended employee call
+	tok1, _ := jwtutil.GenerateToken(empSuspended.ID, string(empSuspended.Role), empSuspended.OwnerID, empSuspended.Email)
 	body1, _ := json.Marshal(map[string]string{
 		"email":  empSuspended.Email,
 		"action": "delivery_action",
 	})
 	req1 := httptest.NewRequest(http.MethodPost, "/auth/employee/action", bytes.NewReader(body1))
 	req1.Header.Set("Content-Type", "application/json")
+	req1.Header.Set("Authorization", "Bearer "+tok1)
 	w1 := httptest.NewRecorder()
 	auth.SimulateEmployeeAction(w1, req1)
 
@@ -255,12 +256,14 @@ func TestVerifyEmployeeAssignment_SuspendedChecks(t *testing.T) {
 	}
 
 	// Test 2: Active employee under suspended owner call
+	tok2, _ := jwtutil.GenerateToken(empActiveUnderSusp.ID, string(empActiveUnderSusp.Role), empActiveUnderSusp.OwnerID, empActiveUnderSusp.Email)
 	body2, _ := json.Marshal(map[string]string{
 		"email":  empActiveUnderSusp.Email,
 		"action": "delivery_action",
 	})
 	req2 := httptest.NewRequest(http.MethodPost, "/auth/employee/action", bytes.NewReader(body2))
 	req2.Header.Set("Content-Type", "application/json")
+	req2.Header.Set("Authorization", "Bearer "+tok2)
 	w2 := httptest.NewRecorder()
 	auth.SimulateEmployeeAction(w2, req2)
 
@@ -280,11 +283,9 @@ func TestGetAccounts_SecurityAndFilters(t *testing.T) {
 
 	// Seed reviewer
 	rawTok := "reviewer-token-abc"
-	digest := sha256.Sum256([]byte(rawTok))
-	hexDigest := hex.EncodeToString(digest[:])
 	_ = s.AddReviewer(ctx, &models.Reviewer{
 		ID:    "reviewer-1",
-		Token: hexDigest,
+		Token: rawTok,
 		Name:  "Lead Reviewer",
 	})
 
@@ -464,11 +465,9 @@ func TestSuspendAndReactivateLifecycle(t *testing.T) {
 
 	// Seed reviewer
 	rawTok := "reviewer-token-abc"
-	digest := sha256.Sum256([]byte(rawTok))
-	hexDigest := hex.EncodeToString(digest[:])
 	_ = s.AddReviewer(ctx, &models.Reviewer{
 		ID:    "reviewer-1",
-		Token: hexDigest,
+		Token: rawTok,
 		Name:  "Lead Reviewer",
 	})
 
