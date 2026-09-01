@@ -115,6 +115,10 @@ func (c *Chat) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/chat/internal/broadcast-location", c.BroadcastLocation)
 	mux.HandleFunc("/chat/tickets", c.HandleCreateTicket)
 	mux.HandleFunc("/chat/tickets/resolve", c.HandleResolveTicket)
+	mux.HandleFunc("/chat/admin/tickets", c.AdminListTickets)
+	mux.HandleFunc("/admin/tickets", c.AdminListTickets)
+	mux.HandleFunc("/chat/admin/tickets/resolve", c.AdminResolveTicket)
+	mux.HandleFunc("/admin/tickets/resolve", c.AdminResolveTicket)
 }
 
 type cachedToken struct {

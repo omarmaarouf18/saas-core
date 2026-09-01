@@ -255,6 +255,26 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Resolves ticket & releases agent status.",
 		Targets:     "Updates `complaint_tickets` and `support_agents`.",
 	},
+	"GET /chat/admin/tickets": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Lists all support tickets globally for ops console oversight (ADR-0023).",
+		Targets:     "Reads `complaint_tickets` collection. Paginated.",
+	},
+	"GET /admin/tickets": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Lists all support tickets globally for ops console oversight (ADR-0023).",
+		Targets:     "Reads `complaint_tickets` collection. Paginated.",
+	},
+	"POST /chat/admin/tickets/resolve": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Resolves support ticket globally with mandatory resolution note (ADR-0023).",
+		Targets:     "CAS updates `complaint_tickets` and releases assigned agent.",
+	},
+	"POST /admin/tickets/resolve": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Resolves support ticket globally with mandatory resolution note (ADR-0023).",
+		Targets:     "CAS updates `complaint_tickets` and releases assigned agent.",
+	},
 
 	// notification-service
 	"GET /health (notification-service)": {
@@ -464,6 +484,42 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Resolves disputed job in escrow_reconciliation_required status globally via ops reviewer override with mandatory reason (ADR-0023).",
 		Targets:     "CAS status transition on `jobs`, financial settlement/refund, ships security audit event and dispatches notifications.",
 	},
+	"GET /users/admin/subscriptions": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Lists subscriptions globally with optional status/search filters and pagination for ops console oversight (ADR-0023).",
+		Targets:     "Reads `subscriptions` collection. Paginated.",
+	},
+	"GET /admin/subscriptions": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Lists subscriptions globally with optional status/search filters and pagination for ops console oversight (ADR-0023).",
+		Targets:     "Reads `subscriptions` collection. Paginated.",
+	},
+	"GET /admin/subscriptions/queue": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Lists subscriptions globally with optional status/search filters and pagination for ops console oversight (ADR-0023).",
+		Targets:     "Reads `subscriptions` collection. Paginated.",
+	},
+	"POST /users/admin/subscriptions/activate": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Activates tenant subscription to PlanPaid with configurable duration (ADR-0023).",
+		Targets:     "CAS status transition on `subscriptions` collection, ships security audit event.",
+	},
+	"POST /admin/subscriptions/activate": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Activates tenant subscription to PlanPaid with configurable duration (ADR-0023).",
+		Targets:     "CAS status transition on `subscriptions` collection, ships security audit event.",
+	},
+	"POST /users/admin/subscriptions/revoke": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Revokes tenant subscription to PlanCancelled with mandatory reason (ADR-0023).",
+		Targets:     "CAS status transition on `subscriptions` collection, ships security audit event.",
+	},
+	"POST /admin/subscriptions/revoke": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Revokes tenant subscription to PlanCancelled with mandatory reason (ADR-0023).",
+		Targets:     "CAS status transition on `subscriptions` collection, ships security audit event.",
+	},
+
 	"POST /users/jobs/propose-price": {
 		Permissions: "Customer or Employee JWT",
 		Function:    "ProposePrice proposes a custom price for a negotiable transport job.",

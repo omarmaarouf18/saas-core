@@ -313,6 +313,13 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/reconciliation/queue", u.AdminGetReconciliationQueue)
 	mux.HandleFunc("/users/admin/reconciliation/resolve", u.AdminResolveReconciliation)
 	mux.HandleFunc("/admin/reconciliation/resolve", u.AdminResolveReconciliation)
+	mux.HandleFunc("/users/admin/subscriptions", u.AdminListSubscriptions)
+	mux.HandleFunc("/admin/subscriptions", u.AdminListSubscriptions)
+	mux.HandleFunc("/admin/subscriptions/queue", u.AdminListSubscriptions)
+	mux.HandleFunc("/users/admin/subscriptions/activate", u.AdminActivateSubscription)
+	mux.HandleFunc("/admin/subscriptions/activate", u.AdminActivateSubscription)
+	mux.HandleFunc("/users/admin/subscriptions/revoke", u.AdminRevokeSubscription)
+	mux.HandleFunc("/admin/subscriptions/revoke", u.AdminRevokeSubscription)
 }
 
 // ---------------------------------------------------------------------------

@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -27,12 +28,17 @@ type SupportAgent struct {
 }
 
 type ComplaintTicket struct {
-	ID              string    `bson:"_id" json:"ticket_id"`
-	CustomerID      string    `bson:"customer_id" json:"customer_id"`
-	AssignedAgentID string    `bson:"assigned_agent_id" json:"assigned_agent_id"`
-	ContextID       string    `bson:"context_id" json:"context_id"`
-	Status          string    `bson:"status" json:"status"` // "pending", "assigned", "resolved"
-	CreatedAt       time.Time `bson:"created_at" json:"created_at"`
+	ID              string     `bson:"_id" json:"ticket_id"`
+	CustomerID      string     `bson:"customer_id" json:"customer_id"`
+	AssignedAgentID string     `bson:"assigned_agent_id,omitempty" json:"assigned_agent_id,omitempty"`
+	ContextID       string     `bson:"context_id,omitempty" json:"context_id,omitempty"`
+	Subject         string     `bson:"subject,omitempty" json:"subject,omitempty"`
+	Status          string     `bson:"status" json:"status"` // "pending", "assigned", "resolved"
+	ResolutionNote  string     `bson:"resolution_note,omitempty" json:"resolution_note,omitempty"`
+	ResolvedBy      string     `bson:"resolved_by,omitempty" json:"resolved_by,omitempty"`
+	ResolvedAt      *time.Time `bson:"resolved_at,omitempty" json:"resolved_at,omitempty"`
+	CreatedAt       time.Time  `bson:"created_at" json:"created_at"`
+	UpdatedAt       time.Time  `bson:"updated_at,omitempty" json:"updated_at,omitempty"`
 }
 
 type MongoDB struct {
@@ -319,4 +325,105 @@ func (s *MongoDB) ResolveTicket(ctx context.Context, ticketID string) error {
 	}
 
 	return nil
+}
+
+// ListTickets returns paginated complaint tickets, optionally filtered by status and search (ADR-0023).
+func (s *MongoDB) ListTickets(ctx context.Context, status, search string, page, limit int64) ([]ComplaintTicket, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	skip := (page - 1) * limit
+
+	filter := bson.M{}
+	if status != "" {
+		filter["status"] = status
+	}
+	if search != "" {
+		escaped := regexp.QuoteMeta(search)
+		filter["$or"] = []bson.M{
+			{"_id": bson.M{"$regex": escaped, "$options": "i"}},
+			{"customer_id": bson.M{"$regex": escaped, "$options": "i"}},
+			{"context_id": bson.M{"$regex": escaped, "$options": "i"}},
+			{"subject": bson.M{"$regex": escaped, "$options": "i"}},
+			{"assigned_agent_id": bson.M{"$regex": escaped, "$options": "i"}},
+		}
+	}
+
+	total, err := s.tickets.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count tickets: %w", err)
+	}
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "created_at", Value: -1}}).
+		SetSkip(skip).
+		SetLimit(limit)
+
+	cursor, err := s.tickets.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to find tickets: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var tickets []ComplaintTicket
+	if err := cursor.All(ctx, &tickets); err != nil {
+		return nil, 0, fmt.Errorf("failed to decode tickets: %w", err)
+	}
+	if tickets == nil {
+		tickets = []ComplaintTicket{}
+	}
+	return tickets, total, nil
+}
+
+// AdminResolveTicket atomically marks a ticket as resolved with mandatory notes and releases agent (ADR-0023).
+func (s *MongoDB) AdminResolveTicket(ctx context.Context, ticketID, resolutionNote, reviewerID string) (*ComplaintTicket, error) {
+	now := time.Now().UTC()
+
+	// CAS: only tickets not already resolved can be resolved
+	filter := bson.M{
+		"_id":    ticketID,
+		"status": bson.M{"$ne": "resolved"},
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"status":          "resolved",
+			"resolution_note": resolutionNote,
+			"resolved_by":     reviewerID,
+			"resolved_at":     now,
+			"updated_at":      now,
+		},
+	}
+
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	res := s.tickets.FindOneAndUpdate(ctx, filter, update, opts)
+	if res.Err() != nil {
+		if res.Err() == mongo.ErrNoDocuments {
+			var existing ComplaintTicket
+			if err := s.tickets.FindOne(ctx, bson.M{"_id": ticketID}).Decode(&existing); err == nil {
+				if existing.Status == "resolved" {
+					return nil, fmt.Errorf("ticket %s is already resolved", ticketID)
+				}
+			}
+			return nil, fmt.Errorf("ticket %s not found or was concurrently modified", ticketID)
+		}
+		return nil, fmt.Errorf("failed to resolve ticket: %w", res.Err())
+	}
+
+	var updated ComplaintTicket
+	if err := res.Decode(&updated); err != nil {
+		return nil, fmt.Errorf("failed to decode resolved ticket: %w", err)
+	}
+
+	// Release assigned support agent if one was assigned
+	if updated.AssignedAgentID != "" {
+		_, _ = s.agents.UpdateOne(ctx,
+			bson.M{"_id": updated.AssignedAgentID, "current_ticket_id": ticketID},
+			bson.M{"$set": bson.M{"status": "available", "current_ticket_id": ""}},
+		)
+	}
+
+	return &updated, nil
 }

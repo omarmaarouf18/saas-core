@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`6103ba1`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`91f60fa`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -203,6 +203,10 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`PATCH /auth/user`** | `auth-service` | Authenticated User JWT | Self-service profile update (username, phone, frequent_addresses) with IDOR protection. | Updates `users` collection. |
 | **`GET /auth/user/public-profile`** | `auth-service` | User JWT | Returns only non-sensitive, public profile fields (ID and username). Accepts id (legacy) or user_token (preferred), and requester_id (legacy) or requester_token (preferred). | Reads `users` collection. |
 | **`POST /auth/verify-otp`** | `auth-service` | Public (via Gateway) | Validates 2FA OTP, issues JWT. | Reads/writes `users` collection. Writes `audit_logs`. |
+| **`GET /admin/tickets`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Lists all support tickets globally for ops console oversight (ADR-0023). | Reads `complaint_tickets` collection. Paginated. |
+| **`POST /admin/tickets/resolve`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Resolves support ticket globally with mandatory resolution note (ADR-0023). | CAS updates `complaint_tickets` and releases assigned agent. |
+| **`GET /chat/admin/tickets`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Lists all support tickets globally for ops console oversight (ADR-0023). | Reads `complaint_tickets` collection. Paginated. |
+| **`POST /chat/admin/tickets/resolve`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Resolves support ticket globally with mandatory resolution note (ADR-0023). | CAS updates `complaint_tickets` and releases assigned agent. |
 | **`GET /chat/history`** | `chat-service` | Channel Member JWT | Retrieves channel chat history (containing sender_username point-in-time snapshot). | Reads `chat_messages` collection. Downstream: calls `user-service/users/jobs/get`. |
 | **`POST /chat/internal/broadcast-location`** | `chat-service` | `X-Internal-Token` | Broadcasts driver location event. | None. |
 | **`POST /chat/tickets`** | `chat-service` | User JWT | Submits complaint ticket & assigns agent. | Reads/writes `complaint_tickets` and `support_agents` (atomic). |
@@ -218,8 +222,15 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`POST /notifications/{id}/read`** | `notification-service` | User JWT | Marks a single notification as read for the authenticated user. | Updates `notifications` collection. |
 | **`GET /admin/reconciliation/queue`** | `user-service` | Reviewer Token & `X-Internal-Token` | Lists all jobs in escrow_reconciliation_required status globally across all tenants for ops console oversight (ADR-0023). | Reads `jobs` collection. Paginated. |
 | **`POST /admin/reconciliation/resolve`** | `user-service` | Reviewer Token & `X-Internal-Token` | Resolves disputed job in escrow_reconciliation_required status globally via ops reviewer override with mandatory reason (ADR-0023). | CAS status transition on `jobs`, financial settlement/refund, ships security audit event and dispatches notifications. |
+| **`GET /admin/subscriptions`** | `user-service` | Reviewer Token & `X-Internal-Token` | Lists subscriptions globally with optional status/search filters and pagination for ops console oversight (ADR-0023). | Reads `subscriptions` collection. Paginated. |
+| **`POST /admin/subscriptions/activate`** | `user-service` | Reviewer Token & `X-Internal-Token` | Activates tenant subscription to PlanPaid with configurable duration (ADR-0023). | CAS status transition on `subscriptions` collection, ships security audit event. |
+| **`GET /admin/subscriptions/queue`** | `user-service` | Reviewer Token & `X-Internal-Token` | Lists subscriptions globally with optional status/search filters and pagination for ops console oversight (ADR-0023). | Reads `subscriptions` collection. Paginated. |
+| **`POST /admin/subscriptions/revoke`** | `user-service` | Reviewer Token & `X-Internal-Token` | Revokes tenant subscription to PlanCancelled with mandatory reason (ADR-0023). | CAS status transition on `subscriptions` collection, ships security audit event. |
 | **`GET /users/admin/reconciliation/queue`** | `user-service` | Reviewer Token & `X-Internal-Token` | Lists all jobs in escrow_reconciliation_required status globally across all tenants for ops console oversight (ADR-0023). | Reads `jobs` collection. Paginated. |
 | **`POST /users/admin/reconciliation/resolve`** | `user-service` | Reviewer Token & `X-Internal-Token` | Resolves disputed job in escrow_reconciliation_required status globally via ops reviewer override with mandatory reason (ADR-0023). | CAS status transition on `jobs`, financial settlement/refund, ships security audit event and dispatches notifications. |
+| **`GET /users/admin/subscriptions`** | `user-service` | Reviewer Token & `X-Internal-Token` | Lists subscriptions globally with optional status/search filters and pagination for ops console oversight (ADR-0023). | Reads `subscriptions` collection. Paginated. |
+| **`POST /users/admin/subscriptions/activate`** | `user-service` | Reviewer Token & `X-Internal-Token` | Activates tenant subscription to PlanPaid with configurable duration (ADR-0023). | CAS status transition on `subscriptions` collection, ships security audit event. |
+| **`POST /users/admin/subscriptions/revoke`** | `user-service` | Reviewer Token & `X-Internal-Token` | Revokes tenant subscription to PlanCancelled with mandatory reason (ADR-0023). | CAS status transition on `subscriptions` collection, ships security audit event. |
 | **`POST /users/employee/jobs/accept`** | `user-service` | Employee JWT | Accepts an active dispatch offer, calculates final distance pricing from courier location, and activates job. | Updates `jobs` collection, updates `wallets` (for escrow locking), dispatches notification. |
 | **`POST /users/employee/jobs/decline`** | `user-service` | Employee JWT | Declines an active dispatch offer and advances the cascade immediately to the next courier. | Updates `jobs` collection, queries `employee_locations`, dispatches next offer notification. |
 | **`POST /users/employee/jobs/{id}/accept`** | `user-service` | Employee JWT | Accepts an active dispatch offer, calculates final distance pricing from courier location, and activates job. | Updates `jobs` collection, updates `wallets` (for escrow locking), dispatches notification. |

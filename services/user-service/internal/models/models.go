@@ -388,14 +388,19 @@ const (
 	PlanFree           PlanTier = "free"
 	PlanPaid           PlanTier = "paid"
 	PlanPendingPayment PlanTier = "pending_payment"
+	PlanCancelled      PlanTier = "cancelled"
 )
 
 type Subscription struct {
-	ID        string    `json:"id"         bson:"_id"`
-	TenantID  string    `json:"tenant_id"  bson:"tenant_id"`
-	Tier      PlanTier  `json:"tier"       bson:"tier"`
-	StartedAt time.Time `json:"started_at" bson:"started_at"`
-	ExpiresAt time.Time `json:"expires_at,omitempty" bson:"expires_at,omitempty"` // zero = no expiry (free tier)
+	ID          string    `json:"id"                     bson:"_id"`
+	TenantID    string    `json:"tenant_id"              bson:"tenant_id"`
+	Tier        PlanTier  `json:"tier"                   bson:"tier"`
+	StartedAt   time.Time `json:"started_at"             bson:"started_at"`
+	ExpiresAt   time.Time `json:"expires_at,omitempty"   bson:"expires_at,omitempty"`   // zero = no expiry (free tier)
+	Reason      string    `json:"reason,omitempty"       bson:"reason,omitempty"`       // revocation or activation note
+	ActivatedBy string    `json:"activated_by,omitempty" bson:"activated_by,omitempty"` // reviewer ID
+	RevokedBy   string    `json:"revoked_by,omitempty"   bson:"revoked_by,omitempty"`   // reviewer ID
+	UpdatedAt   time.Time `json:"updated_at,omitempty"   bson:"updated_at,omitempty"`
 }
 
 type Rating struct {
@@ -459,4 +464,26 @@ type AdminResolveReconciliationRequest struct {
 	JobID    string `json:"job_id"`
 	Decision string `json:"decision"` // "release_to_employee" or "refund_to_customer"
 	Reason   string `json:"reason"`   // Mandatory reason (1-1000 characters)
+}
+
+// AdminSubscriptionListResponse is the payload returned by GET /admin/subscriptions.
+type AdminSubscriptionListResponse struct {
+	Subscriptions []Subscription `json:"subscriptions"`
+	Total         int            `json:"total"`
+	Page          int            `json:"page"`
+	Limit         int            `json:"limit"`
+}
+
+// AdminActivateSubscriptionRequest is the payload for POST /admin/subscriptions/activate.
+type AdminActivateSubscriptionRequest struct {
+	TenantID       string `json:"tenant_id"`
+	SubscriptionID string `json:"subscription_id,omitempty"`
+	DurationDays   int    `json:"duration_days,omitempty"` // Defaults to 30 days if <= 0
+}
+
+// AdminRevokeSubscriptionRequest is the payload for POST /admin/subscriptions/revoke.
+type AdminRevokeSubscriptionRequest struct {
+	TenantID       string `json:"tenant_id"`
+	SubscriptionID string `json:"subscription_id,omitempty"`
+	Reason         string `json:"reason"` // Mandatory reason (1-1000 characters)
 }

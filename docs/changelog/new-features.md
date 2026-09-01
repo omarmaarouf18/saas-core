@@ -2,7 +2,29 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Ops Console Expansion: Subscriptions & Support Tickets (ADR-0023 Modules A & B)
+
+- **Implementation Detail**:
+  - **Ops Console Scope Closure (ADR-0023)**: Closed console scope to exactly 5 tabs: (1) Pending Submissions (KYC), (2) Accounts Directory (ADR-0022), (3) Disputes & Escrow Reconciliation (Module 1.1), (4) Subscriptions (Module A), and (5) Support Tickets (Module B). Explicitly documented dropped catalog items (Payouts, Ledger, Audit Viewer, Global Search, Gateway Health) with rationale in ADR-0023.
+  - **User Service (`services/user-service/`)**:
+    - `internal/models/models.go`: Added `PlanCancelled PlanTier = "cancelled"`, extended `Subscription` struct with `Reason`, `ActivatedBy`, `RevokedBy`, and `UpdatedAt`. Added DTOs (`AdminSubscriptionListResponse`, `AdminActivateSubscriptionRequest`, `AdminRevokeSubscriptionRequest`).
+    - `internal/store/mongodb.go`: Added `ListSubscriptions` (paginated, with status and search filters), `AdminActivateSubscription` (atomic CAS activation to `PlanPaid`), and `AdminRevokeSubscription` (atomic CAS revocation to `PlanCancelled` with mandatory reason).
+    - `internal/handlers/admin_subscription_handlers.go`: Implemented `AdminListSubscriptions`, `AdminActivateSubscription`, and `AdminRevokeSubscription` with reviewer auth (`authenticateReviewer`), mandatory reason validation (1-1000 chars), and audit event shipping (`ADMIN_SUBSCRIPTION_ACTIVATED` / `ADMIN_SUBSCRIPTION_REVOKED`).
+    - `internal/handlers/admin_subscription_test.go`: Comprehensive test suite testing reviewer auth, listing, activation, revocation, and repro-first CAS concurrency race.
+  - **Chat Service (`services/chat-service/`)**:
+    - `internal/store/mongodb.go`: Extended `ComplaintTicket` with `Subject`, `ResolutionNote`, `ResolvedBy`, `ResolvedAt`, and `UpdatedAt`. Added `ListTickets` (paginated, with status and search filters) and `AdminResolveTicket` (atomic CAS resolution releasing assigned agents).
+    - `internal/handlers/admin_tickets.go`: Implemented `AdminListTickets` and `AdminResolveTicket` with reviewer auth (`authenticateReviewer`), mandatory resolution notes (1-1000 chars), and security event shipping (`ADMIN_TICKET_RESOLVED`).
+    - `internal/handlers/admin_tickets_test.go`: Comprehensive test suite testing reviewer auth, listing, note validation, resolution, and repro-first CAS concurrency race.
+  - **Reviewer Console (`kyc-reviewer-console`)**:
+    - `internal/config/config.go`: Added `ChatServiceURL` configuration.
+    - `internal/proxy/proxy.go` & `cmd/server/main.go`: Added proxy forwarding and validation for `/api/subscriptions`, `/api/subscriptions/activate`, `/api/subscriptions/revoke`, `/api/tickets`, `/api/tickets/resolve`.
+    - `web/index.html`, `web/app.js`, `web/style.css`: Added "Subscriptions" and "Support Tickets" tabs, tables, toolbars, pagination controls, and action modals for tier activation, revocation (mandatory reason), and ticket resolution (mandatory notes).
+    - `internal/proxy/proxy_test.go`: Added proxy unit test cases for token forwarding and validation across both modules.
+- **Commit SHA**: ``91f60faf5c1076f20a8e5702a84a4d62ee4e13b7``
+- **Verification**: Verified via `go test ./...` in `services/user-service` and `services/chat-service` (100% pass), `go test ./...` in `kyc-reviewer-console` (100% pass), `gosec` (0 issues), and `make docs-check` (pass).
+
 ## Reviewer Account Directory, Search, and Account Suspension / Reactivation (ADR-0022)
+
 
 - **Implementation Detail**:
   - **Auth Service (`services/auth-service/`)**:

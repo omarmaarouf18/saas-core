@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"regexp"
 	"strings"
 	"time"
 
@@ -1088,6 +1089,170 @@ func (s *MongoDB) UpsertSubscription(ctx context.Context, sub *models.Subscripti
 	opts := options.Replace().SetUpsert(true)
 	_, err = s.subscriptions.ReplaceOne(ctx, bson.M{"tenant_id": sub.TenantID}, sub, opts)
 	return err
+}
+
+// ListSubscriptions returns paginated subscriptions, optionally filtered by status or search (ADR-0023).
+func (s *MongoDB) ListSubscriptions(ctx context.Context, status string, search string, page, limit int64) ([]models.Subscription, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	skip := (page - 1) * limit
+
+	filter := bson.M{}
+	if status != "" {
+		filter["tier"] = status
+	}
+	if search != "" {
+		escapedSearch := regexp.QuoteMeta(search)
+		filter["$or"] = []bson.M{
+			{"tenant_id": bson.M{"$regex": escapedSearch, "$options": "i"}},
+			{"_id": bson.M{"$regex": escapedSearch, "$options": "i"}},
+			{"reason": bson.M{"$regex": escapedSearch, "$options": "i"}},
+		}
+	}
+
+	total, err := s.subscriptions.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count subscriptions: %w", err)
+	}
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "started_at", Value: -1}}).
+		SetSkip(skip).
+		SetLimit(limit)
+
+	cursor, err := s.subscriptions.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to query subscriptions: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var subs []models.Subscription
+	if err := cursor.All(ctx, &subs); err != nil {
+		return nil, 0, fmt.Errorf("failed to decode subscriptions: %w", err)
+	}
+	if subs == nil {
+		subs = []models.Subscription{}
+	}
+	return subs, total, nil
+}
+
+// AdminActivateSubscription atomically activates a subscription to PlanPaid with durationDays expiry (ADR-0023).
+func (s *MongoDB) AdminActivateSubscription(ctx context.Context, tenantID, subscriptionID string, durationDays int, reviewerID string) (*models.Subscription, error) {
+	if durationDays <= 0 {
+		durationDays = 30
+	}
+	now := time.Now().UTC()
+	expiresAt := now.AddDate(0, 0, durationDays)
+
+	filter := bson.M{}
+	checkFilter := bson.M{}
+	if tenantID != "" {
+		filter["tenant_id"] = tenantID
+		checkFilter["tenant_id"] = tenantID
+	} else if subscriptionID != "" {
+		filter["_id"] = subscriptionID
+		checkFilter["_id"] = subscriptionID
+	} else {
+		return nil, fmt.Errorf("tenant_id or subscription_id is required")
+	}
+
+	// CAS: only activate if tier is pending_payment, free, or cancelled (not already paid)
+	filter["tier"] = bson.M{"$ne": models.PlanPaid}
+
+	update := bson.M{
+		"$set": bson.M{
+			"tier":         models.PlanPaid,
+			"started_at":   now,
+			"expires_at":   expiresAt,
+			"activated_by": reviewerID,
+			"updated_at":   now,
+		},
+	}
+
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	res := s.subscriptions.FindOneAndUpdate(ctx, filter, update, opts)
+	if res.Err() != nil {
+		if res.Err() == mongo.ErrNoDocuments {
+			var existing models.Subscription
+			if err := s.subscriptions.FindOne(ctx, checkFilter).Decode(&existing); err == nil {
+				if existing.Tier == models.PlanPaid {
+					return nil, fmt.Errorf("subscription for tenant %s is already active (PlanPaid)", existing.TenantID)
+				}
+			}
+			// If subscription doesn't exist yet and tenantID was provided, insert fresh active subscription
+			if tenantID != "" {
+				newSub := models.Subscription{
+					ID:          newRecordID("sub", ""),
+					TenantID:    tenantID,
+					Tier:        models.PlanPaid,
+					StartedAt:   now,
+					ExpiresAt:   expiresAt,
+					ActivatedBy: reviewerID,
+					UpdatedAt:   now,
+				}
+				if _, insErr := s.subscriptions.InsertOne(ctx, newSub); insErr == nil {
+					return &newSub, nil
+				} else if mongo.IsDuplicateKeyError(insErr) {
+					return nil, fmt.Errorf("subscription for tenant %s is already active or concurrently modified", tenantID)
+				}
+			}
+			return nil, fmt.Errorf("subscription not found or was concurrently modified")
+		}
+		if mongo.IsDuplicateKeyError(res.Err()) {
+			return nil, fmt.Errorf("subscription for tenant %s is already active or concurrently modified", tenantID)
+		}
+		return nil, fmt.Errorf("failed to activate subscription: %w", res.Err())
+	}
+
+	var updated models.Subscription
+	if err := res.Decode(&updated); err != nil {
+		return nil, fmt.Errorf("failed to decode activated subscription: %w", err)
+	}
+	return &updated, nil
+}
+
+// AdminRevokeSubscription atomically revokes an active subscription with mandatory reason (ADR-0023).
+func (s *MongoDB) AdminRevokeSubscription(ctx context.Context, tenantID, subscriptionID, reason, reviewerID string) (*models.Subscription, error) {
+	now := time.Now().UTC()
+	filter := bson.M{}
+	if tenantID != "" {
+		filter["tenant_id"] = tenantID
+	} else if subscriptionID != "" {
+		filter["_id"] = subscriptionID
+	} else {
+		return nil, fmt.Errorf("tenant_id or subscription_id is required")
+	}
+
+	// CAS: only revoke if tier is currently paid or pending_payment
+	filter["tier"] = bson.M{"$in": []models.PlanTier{models.PlanPaid, models.PlanPendingPayment}}
+
+	update := bson.M{
+		"$set": bson.M{
+			"tier":       models.PlanCancelled,
+			"reason":     reason,
+			"revoked_by": reviewerID,
+			"updated_at": now,
+		},
+	}
+
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	res := s.subscriptions.FindOneAndUpdate(ctx, filter, update, opts)
+	if res.Err() != nil {
+		if res.Err() == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("subscription not found, not active, or was concurrently modified")
+		}
+		return nil, fmt.Errorf("failed to revoke subscription: %w", res.Err())
+	}
+
+	var updated models.Subscription
+	if err := res.Decode(&updated); err != nil {
+		return nil, fmt.Errorf("failed to decode revoked subscription: %w", err)
+	}
+	return &updated, nil
 }
 
 // CreateRating stores a new rating in MongoDB.
