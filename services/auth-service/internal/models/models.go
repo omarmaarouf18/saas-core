@@ -60,9 +60,9 @@ type User struct {
 	FrequentAddresses []string      `json:"frequent_addresses,omitempty" bson:"frequent_addresses,omitempty"`
 	Password          string        `json:"-"                         bson:"password"`
 	Role              Role          `json:"role"                      bson:"role"`
-	TenantID          string        `json:"tenant_id,omitempty"       bson:"tenant_id,omitempty"`  // the tenant this user belongs to
-	OwnerID           string        `json:"owner_id,omitempty"        bson:"owner_id,omitempty"`   // KYE: tenant binding (employees only)
-	IsActive          bool          `json:"is_active"                 bson:"is_active"`            // KYE: owner can freeze employee accounts / backward compat
+	TenantID          string        `json:"tenant_id,omitempty"       bson:"tenant_id,omitempty"`      // the tenant this user belongs to
+	OwnerID           string        `json:"owner_id,omitempty"        bson:"owner_id,omitempty"`       // KYE: tenant binding (employees only)
+	IsActive          bool          `json:"is_active"                 bson:"is_active"`                // KYE: owner can freeze employee accounts / backward compat
 	AccountStatus     AccountStatus `json:"account_status"            bson:"account_status,omitempty"` // active / suspended standing (ADR-0022)
 	SuspensionReason  string        `json:"suspension_reason,omitempty" bson:"suspension_reason,omitempty"`
 	SuspendedAt       *time.Time    `json:"suspended_at,omitempty"    bson:"suspended_at,omitempty"`
