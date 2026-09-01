@@ -153,6 +153,31 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Validates signed URL token and streams/serves the uploaded document file.",
 		Targets:     "Streams file content.",
 	},
+	"GET /auth/accounts": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Searches and lists registered accounts with pagination, role and status filters (ADR-0022).",
+		Targets:     "Reads `users` collection.",
+	},
+	"POST /auth/accounts/suspend": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Suspends a user account with mandatory reason, revoking active JWT sessions and dispatching notification (ADR-0022).",
+		Targets:     "Updates `users` collection. Writes `audit_log`. Invalidates Redis JWT tokens.",
+	},
+	"POST /auth/accounts/{id}/suspend": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Suspends a user account with mandatory reason, revoking active JWT sessions and dispatching notification (ADR-0022).",
+		Targets:     "Updates `users` collection. Writes `audit_log`. Invalidates Redis JWT tokens.",
+	},
+	"POST /auth/accounts/reactivate": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Reactivates a suspended user account with optional reason and dispatches notification (ADR-0022).",
+		Targets:     "Updates `users` collection. Writes `audit_log`.",
+	},
+	"POST /auth/accounts/{id}/reactivate": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Reactivates a suspended user account with optional reason and dispatches notification (ADR-0022).",
+		Targets:     "Updates `users` collection. Writes `audit_log`.",
+	},
 	"GET /auth/user": {
 		Permissions: "`X-Internal-Token` OR User JWT",
 		Function:    "Resolves user profile (including username) and role details. Accepts id (legacy) or user_token (preferred).",

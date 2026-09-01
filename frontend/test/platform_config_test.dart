@@ -143,4 +143,25 @@ void main() {
     // No error banner should be present
     expect(ownerProvider.error, isNull);
   });
+
+  testWidgets(
+      '(d) Zero-commission fee percentage (0.0%) renders accurately as "Platform fee: 0%" in WalletScreen',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    apiClient.mockConfigResponse = {
+      'id': 'config-global-1',
+      'platform_fee_percentage': 0.0,
+      'platform_wallet_id': 'platform-central',
+    };
+
+    await tester.pumpWidget(buildWalletScreenWidget());
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key('platform_fee_percentage_text')), findsOneWidget);
+    expect(find.text('Platform fee: 0%'), findsOneWidget);
+  });
 }

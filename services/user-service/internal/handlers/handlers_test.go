@@ -1670,7 +1670,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 
 		wallet, _ := s.GetOrCreateWallet(ctx, "kyc-approved-owner-integrity")
-		// Payout for Job B was 50.0. platform fee = 15% of 50.0 = 7.5. net = 42.5.
+		// Payout for Job B was 50.0. platform fee = 0% (0.0). net = 50.0.
 		// Wallet escrow should go from 150.0 to 100.0 (still locking job A's 100.0 escrow).
 		if wallet.EscrowBalance != 100.0 {
 			t.Errorf("Expected wallet escrow balance to be exactly 100.0, got %.2f", wallet.EscrowBalance)

@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"time"
 
@@ -129,6 +130,127 @@ func (s *MongoDB) GetPendingKYBKYE(ctx context.Context) ([]*models.User, error) 
 		return nil, err
 	}
 	return results, nil
+}
+
+// ListAccounts returns a paginated list of users matching search, role, and status filters, along with total count.
+func (s *MongoDB) ListAccounts(ctx context.Context, search, role, status string, page, limit int) ([]*models.User, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 20
+	} else if limit > 100 {
+		limit = 100
+	}
+
+	var andClauses []bson.M
+	if role != "" {
+		andClauses = append(andClauses, bson.M{"role": models.Role(role)})
+	}
+	if status == "suspended" {
+		andClauses = append(andClauses, bson.M{"$or": []bson.M{
+			{"account_status": models.AccountStatusSuspended},
+			{"is_active": false},
+		}})
+	} else if status == "active" {
+		andClauses = append(andClauses, bson.M{
+			"account_status": bson.M{"$ne": models.AccountStatusSuspended},
+			"is_active":      bson.M{"$ne": false},
+		})
+	}
+	if strings.TrimSpace(search) != "" {
+		trimmed := strings.TrimSpace(search)
+		escaped := regexp.QuoteMeta(trimmed)
+		andClauses = append(andClauses, bson.M{"$or": []bson.M{
+			{"username": bson.M{"$regex": escaped, "$options": "i"}},
+			{"email": bson.M{"$regex": escaped, "$options": "i"}},
+			{"_id": trimmed},
+		}})
+	}
+
+	filter := bson.M{}
+	if len(andClauses) == 1 {
+		filter = andClauses[0]
+	} else if len(andClauses) > 1 {
+		filter = bson.M{"$and": andClauses}
+	}
+
+	total, err := s.users.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	findOpts := options.Find().
+		SetSort(bson.D{{Key: "created_at", Value: -1}}).
+		SetSkip(int64((page - 1) * limit)).
+		SetLimit(int64(limit))
+
+	cursor, err := s.users.Find(ctx, filter, findOpts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []*models.User
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, 0, err
+	}
+	if results == nil {
+		results = []*models.User{}
+	}
+	return results, int(total), nil
+}
+
+// SuspendUser performs an atomic CAS update transitioning an account to suspended status.
+// Returns (true, nil) if successfully suspended, (false, nil) if already suspended / matched 0, or (false, err) on error.
+func (s *MongoDB) SuspendUser(ctx context.Context, userID, reason, reviewerID string) (bool, error) {
+	now := time.Now().UTC()
+	filter := bson.M{
+		"_id": userID,
+		"$or": []bson.M{
+			{"account_status": bson.M{"$ne": models.AccountStatusSuspended}},
+			{"is_active": true},
+		},
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"account_status":    models.AccountStatusSuspended,
+			"is_active":         false,
+			"suspension_reason": reason,
+			"suspended_at":      now,
+		},
+	}
+	res, err := s.users.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return false, err
+	}
+	return res.MatchedCount > 0, nil
+}
+
+// ReactivateUser performs an atomic CAS update transitioning an account from suspended to active status.
+// Returns (true, nil) if successfully reactivated, (false, nil) if already active / matched 0, or (false, err) on error.
+func (s *MongoDB) ReactivateUser(ctx context.Context, userID, reason, reviewerID string) (bool, error) {
+	now := time.Now().UTC()
+	filter := bson.M{
+		"_id": userID,
+		"$or": []bson.M{
+			{"account_status": models.AccountStatusSuspended},
+			{"is_active": false},
+		},
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"account_status":    models.AccountStatusActive,
+			"is_active":         true,
+			"suspension_reason": "",
+			"reactivated_at":    now,
+		},
+	}
+	res, err := s.users.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return false, err
+	}
+	return res.MatchedCount > 0, nil
 }
 
 // ensureIndexes creates unique and query-optimized indexes on all collections.

@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -124,6 +125,11 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/kyb-kye/pending", a.GetPendingKYBKYESubmissions)
 	mux.HandleFunc("/auth/kyb-kye/review", a.ReviewKYBKYESubmissions)
 	mux.HandleFunc("/auth/documents/view", a.ViewDocument)
+	mux.HandleFunc("/auth/accounts", a.GetAccounts)
+	mux.HandleFunc("/auth/accounts/{id}/suspend", a.SuspendAccount)
+	mux.HandleFunc("/auth/accounts/suspend", a.SuspendAccount)
+	mux.HandleFunc("/auth/accounts/{id}/reactivate", a.ReactivateAccount)
+	mux.HandleFunc("/auth/accounts/reactivate", a.ReactivateAccount)
 	mux.HandleFunc("/auth/device-token", a.DeviceToken)
 	mux.HandleFunc("/auth/email-change/request", a.RequestEmailChange)
 	mux.HandleFunc("/auth/email-change/confirm", a.ConfirmEmailChange)
@@ -463,11 +469,17 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	a.limiter.Reset(clientIP)
 	a.limiter.Reset(req.Email)
 
-	// KYE Freeze Account check for Employees
-	if user.Role == models.RoleEmployee && !user.IsActive {
-		writeJSON(w, http.StatusForbidden, map[string]string{
-			"error": "employee account is frozen/inactive. please contact your tenant owner.",
-		})
+	// Account Suspension & Freeze check (ADR-0022)
+	if user.EffectiveAccountStatus() == models.AccountStatusSuspended || !user.IsActive {
+		if user.Role == models.RoleEmployee {
+			writeJSON(w, http.StatusForbidden, map[string]string{
+				"error": "employee account is frozen/inactive. please contact your tenant owner.",
+			})
+		} else {
+			writeJSON(w, http.StatusForbidden, map[string]string{
+				"error": "account is suspended",
+			})
+		}
 		return
 	}
 
@@ -585,6 +597,13 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 
 	// 1. Check if user already exists in DB (2FA login verification flow)
 	if user := a.store.GetByEmail(ctx, req.Email); user != nil {
+		if user.EffectiveAccountStatus() == models.AccountStatusSuspended || !user.IsActive {
+			writeJSON(w, http.StatusForbidden, map[string]string{
+				"error": "account is suspended",
+			})
+			return
+		}
+
 		if err := a.store.VerifyOTP(ctx, req.Email, req.OTP); err != nil {
 			a.limiter.RecordFailure(clientIP)
 			a.limiter.RecordFailure(req.Email)
@@ -878,16 +897,16 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify employee is active
-	if !emp.IsActive {
+	if !emp.IsActive || emp.EffectiveAccountStatus() == models.AccountStatusSuspended {
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: employee account is frozen",
 		})
 		return
 	}
 
-	// Verify employee's owner has approved KYC
+	// Verify employee's owner has approved KYC and is active
 	owner := a.store.GetByID(ctx, emp.OwnerID)
-	if owner == nil || owner.KYCStatus != models.KYCApproved {
+	if owner == nil || owner.KYCStatus != models.KYCApproved || owner.EffectiveAccountStatus() == models.AccountStatusSuspended || !owner.IsActive {
 		ownerStatus := "none"
 		if owner != nil {
 			ownerStatus = string(owner.KYCStatus)
@@ -1895,6 +1914,311 @@ func (a *Auth) ViewDocument(w http.ResponseWriter, r *http.Request) {
 		// #nosec G706 //nolint:gosec -- key is validated and extracted from cryptographically signed JWT token, log injection is not possible
 		log.Printf("[VIEW] failed to stream document %s: %v", key, err)
 	}
+}
+
+// GET /auth/accounts
+func (a *Auth) GetAccounts(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
+		return
+	}
+
+	reviewer, err := a.authenticateReviewer(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	search := r.URL.Query().Get("search")
+	role := r.URL.Query().Get("role")
+	status := r.URL.Query().Get("status")
+
+	page := 1
+	if pStr := r.URL.Query().Get("page"); pStr != "" {
+		if p, err := strconv.Atoi(pStr); err == nil && p > 0 {
+			page = p
+		}
+	}
+	limit := 20
+	if lStr := r.URL.Query().Get("limit"); lStr != "" {
+		if l, err := strconv.Atoi(lStr); err == nil && l > 0 {
+			limit = l
+			if limit > 100 {
+				limit = 100
+			}
+		}
+	}
+
+	ctx := r.Context()
+	users, total, err := a.store.ListAccounts(ctx, search, role, status, page, limit)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	items := make([]models.AccountDirectoryItem, 0, len(users))
+	for _, u := range users {
+		items = append(items, models.AccountDirectoryItem{
+			ID:               u.ID,
+			Email:            u.Email,
+			Username:         u.Username,
+			Role:             u.Role,
+			KYCStatus:        u.KYCStatus,
+			KYEStatus:        u.KYEStatus,
+			AccountStatus:    u.EffectiveAccountStatus(),
+			IsActive:         u.IsActive,
+			SuspensionReason: u.SuspensionReason,
+			SuspendedAt:      u.SuspendedAt,
+			ReactivatedAt:    u.ReactivatedAt,
+			CreatedAt:        u.CreatedAt,
+		})
+	}
+
+	handlerutil.ShipSecurityEvent(ctx, "ACCOUNTS_LISTED", "auth-service", reviewer.ID, "", fmt.Sprintf("listed accounts search=%q role=%q status=%q page=%d limit=%d total=%d", search, role, status, page, limit, total), handlerutil.GetClientIP(r))
+
+	writeJSON(w, http.StatusOK, models.AccountDirectoryResponse{
+		Accounts: items,
+		Total:    total,
+		Page:     page,
+		Limit:    limit,
+	})
+}
+
+// POST /auth/accounts/suspend or POST /auth/accounts/{id}/suspend
+func (a *Auth) SuspendAccount(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	reviewer, err := a.authenticateReviewer(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	// Extract target user ID from PathValue, URL path prefix, or JSON body
+	targetUserID := r.PathValue("id")
+	if targetUserID == "" && strings.HasPrefix(r.URL.Path, "/auth/accounts/") {
+		trimmed := strings.TrimPrefix(r.URL.Path, "/auth/accounts/")
+		if idx := strings.Index(trimmed, "/suspend"); idx > 0 {
+			targetUserID = trimmed[:idx]
+		}
+	}
+
+	var req models.SuspendAccountRequest
+	if r.Body != nil {
+		_ = json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req)
+	}
+	if targetUserID == "" {
+		targetUserID = req.UserID
+	}
+
+	if targetUserID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "user_id is required"})
+		return
+	}
+
+	reason := strings.TrimSpace(req.Reason)
+	if reason == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason is required for suspension"})
+		return
+	}
+	if len(reason) > 1000 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason exceeds maximum length of 1000 characters"})
+		return
+	}
+
+	ctx := r.Context()
+	targetUser := a.store.GetByID(ctx, targetUserID)
+	if targetUser == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "user not found"})
+		return
+	}
+
+	// Atomic CAS update: only suspend if not already suspended
+	suspended, err := a.store.SuspendUser(ctx, targetUserID, reason, reviewer.ID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	if !suspended {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "account is already suspended"})
+		return
+	}
+
+	// Invalidate active JWT tokens in Redis across all services
+	_ = jwtutil.RevokeAllUserTokens(targetUserID)
+
+	// Append audit log
+	a.store.AppendAudit(ctx, models.AuditEntry{
+		EmployeeID: reviewer.ID,
+		TenantID:   targetUser.ID,
+		Action:     "ACCOUNT_SUSPENDED",
+		Timestamp:  time.Now().UTC(),
+		ClientIP:   handlerutil.GetClientIP(r),
+	})
+
+	handlerutil.ShipSecurityEvent(ctx, "ACCOUNT_SUSPENDED", "auth-service", reviewer.ID, targetUserID, fmt.Sprintf("reason: %s", reason), handlerutil.GetClientIP(r))
+
+	// Dispatch notification fire-and-forget
+	a.dispatchAccountStatusNotification(targetUser, models.AccountStatusSuspended, reason)
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":         "suspended",
+		"user_id":        targetUserID,
+		"account_status": models.AccountStatusSuspended,
+	})
+}
+
+// POST /auth/accounts/reactivate or POST /auth/accounts/{id}/reactivate
+func (a *Auth) ReactivateAccount(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	reviewer, err := a.authenticateReviewer(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	// Extract target user ID from PathValue, URL path prefix, or JSON body
+	targetUserID := r.PathValue("id")
+	if targetUserID == "" && strings.HasPrefix(r.URL.Path, "/auth/accounts/") {
+		trimmed := strings.TrimPrefix(r.URL.Path, "/auth/accounts/")
+		if idx := strings.Index(trimmed, "/reactivate"); idx > 0 {
+			targetUserID = trimmed[:idx]
+		}
+	}
+
+	var req models.ReactivateAccountRequest
+	if r.Body != nil {
+		_ = json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req)
+	}
+	if targetUserID == "" {
+		targetUserID = req.UserID
+	}
+
+	if targetUserID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "user_id is required"})
+		return
+	}
+
+	reason := strings.TrimSpace(req.Reason)
+	if len(reason) > 1000 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason exceeds maximum length of 1000 characters"})
+		return
+	}
+
+	ctx := r.Context()
+	targetUser := a.store.GetByID(ctx, targetUserID)
+	if targetUser == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "user not found"})
+		return
+	}
+
+	// Atomic CAS update: only reactivate if currently suspended
+	reactivated, err := a.store.ReactivateUser(ctx, targetUserID, reason, reviewer.ID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	if !reactivated {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "account is already active"})
+		return
+	}
+
+	// Append audit log
+	a.store.AppendAudit(ctx, models.AuditEntry{
+		EmployeeID: reviewer.ID,
+		TenantID:   targetUser.ID,
+		Action:     "ACCOUNT_REACTIVATED",
+		Timestamp:  time.Now().UTC(),
+		ClientIP:   handlerutil.GetClientIP(r),
+	})
+
+	handlerutil.ShipSecurityEvent(ctx, "ACCOUNT_REACTIVATED", "auth-service", reviewer.ID, targetUserID, fmt.Sprintf("reason: %s", reason), handlerutil.GetClientIP(r))
+
+	// Dispatch notification fire-and-forget
+	a.dispatchAccountStatusNotification(targetUser, models.AccountStatusActive, reason)
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":         "reactivated",
+		"user_id":        targetUserID,
+		"account_status": models.AccountStatusActive,
+	})
+}
+
+// dispatchAccountStatusNotification informs the affected user of account suspension or reactivation
+// via notification-service's internal send endpoint (POST /notifications/send).
+func (a *Auth) dispatchAccountStatusNotification(targetUser *models.User, newStatus models.AccountStatus, reason string) {
+	if a.notificationURL == "" || a.notificationClient == nil {
+		log.Printf("[ACCOUNT-NOTIFY] notification-service not configured; skipping account status notification for user %s", targetUser.ID)
+		return
+	}
+
+	var notifType, title, body string
+	switch newStatus {
+	case models.AccountStatusSuspended:
+		notifType = "account_suspended"
+		title = "Account suspended"
+		body = fmt.Sprintf("Your account has been suspended. Reason: %s", reason)
+	case models.AccountStatusActive:
+		notifType = "account_reactivated"
+		title = "Account reactivated"
+		body = "Your account has been reactivated and access has been restored."
+	default:
+		return
+	}
+
+	payload := map[string]any{
+		"type":      notifType,
+		"tenant_id": targetUser.TenantID,
+		"user_id":   targetUser.ID,
+		"title":     title,
+		"body":      body,
+	}
+	bodyBytes, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("[ACCOUNT-NOTIFY] Failed to marshal account status notification for user %s: %v", targetUser.ID, err)
+		return
+	}
+
+	go func() {
+		defer func() {
+			if rec := recover(); rec != nil {
+				log.Printf("[ACCOUNT-NOTIFY] Recovered from panic dispatching account status notification for user %s: %v", targetUser.ID, rec)
+			}
+		}()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		sendURL := strings.TrimSuffix(a.notificationURL, "/") + "/notifications/send"
+		// #nosec G704 //nolint:gosec -- sendURL is constructed from internal service config (NOTIFICATION_SERVICE_URL)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, sendURL, bytes.NewReader(bodyBytes))
+		if err != nil {
+			log.Printf("[ACCOUNT-NOTIFY] Failed to build account status notification request for user %s: %v", targetUser.ID, err)
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Internal-Token", a.internalServiceToken)
+
+		resp, err := a.notificationClient.Do(req)
+		if err != nil {
+			log.Printf("[ACCOUNT-NOTIFY] FAILED to dispatch %s notification for user %s: %v", notifType, targetUser.ID, err)
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			// #nosec G706 //nolint:gosec -- status code only; no user-controlled data interpolated
+			log.Printf("[ACCOUNT-NOTIFY] notification-service returned status %d for %s notification targeting user %s", resp.StatusCode, notifType, targetUser.ID)
+			return
+		}
+	}()
 }
 
 // authenticateReviewer verifies the reviewer's credentials.

@@ -50,6 +50,7 @@ When adding a new ADR, use the following template:
 *   [ADR-0019: Independent ("Solo") Driver Accounts](0019-independent-solo-driver-accounts.md) — Proposed
 *   [ADR-0020: Female-Only Ride Preference Flag](0020-female-only-ride-preference.md) — Proposed
 *   [ADR-0021: Standalone KYC/KYB/KYE Reviewer Console](0021-kyc-kyb-kye-reviewer-console.md) — Accepted and implemented
+*   [ADR-0022: Reviewer Account Directory, Search, and Account Suspension / Reactivation](0022-account-suspension-and-reviewer-directory.md) — Accepted
 
 
 

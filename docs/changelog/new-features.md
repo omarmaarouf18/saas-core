@@ -2,6 +2,22 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Reviewer Account Directory, Search, and Account Suspension / Reactivation (ADR-0022)
+
+- **Implementation Detail**:
+  - **Auth Service (`services/auth-service/`)**:
+    - `internal/models/models.go`: Added `AccountStatus` (`AccountStatusActive = "active"`, `AccountStatusSuspended = "suspended"`), `SuspensionReason`, `SuspendedAt`, and `ReactivatedAt` fields to `models.User` alongside `EffectiveAccountStatus()` helper. Added request/response DTOs (`AccountDirectoryItem`, `AccountDirectoryResponse`, `SuspendAccountRequest`, `ReactivateAccountRequest`).
+    - `internal/store/mongodb.go`: Implemented `ListAccounts` with pagination, role/status filters, and case-insensitive regex search across `username`, `email`, and `_id`. Implemented atomic CAS methods `SuspendUser` and `ReactivateUser`.
+    - `internal/handlers/auth.go`:
+      - Enforced account suspension checks in `Login` (403 `account is suspended`), `VerifyOTP` 2FA verification (403 `account is suspended`), and `VerifyEmployeeAssignment`.
+      - Registered reviewer endpoints: `GET /auth/accounts`, `POST /auth/accounts/suspend`, `POST /auth/accounts/{id}/suspend`, `POST /auth/accounts/reactivate`, `POST /auth/accounts/{id}/reactivate`.
+      - Added mandatory suspension reason validation (1-1000 chars), audit log append (`ACCOUNT_SUSPENDED` / `ACCOUNT_REACTIVATED`), security event shipping, active JWT session invalidation (`jwtutil.RevokeAllUserTokens`), and fire-and-forget user notifications via notification-service `POST /notifications/send`.
+    - `internal/handlers/account_suspension_test.go`: Added comprehensive integration tests covering login lockout, 2FA lockout, employee assignment blocking, accounts listing & search, mandatory reason validation, CAS concurrency, audit logging, and notification dispatch.
+  - **Reviewer Console (`kyc-reviewer-console`)**:
+    - `internal/proxy/proxy.go` & `cmd/server/main.go`: Added proxy handlers and route wiring for `/api/accounts`, `/api/accounts/suspend`, `/api/accounts/reactivate`.
+    - `web/index.html`, `web/app.js`, `web/style.css`: Added tabbed navigation for Pending Queue vs Accounts Directory, accounts search and filter toolbar, pagination controls, status badges, and modal dialogs for suspend (with required reason) and reactivate.
+- **Verification**: Verified via `go test ./...` in `services/auth-service` (100% pass), `go test ./...` in `kyc-reviewer-console` (100% pass), `make docs-check` (pass), and `flutter test` (496/496 pass).
+
 ## Stitch Unified UI Implementation — Batch E (Employee Experience & Final Verification)
 
 - **Implementation Detail**:

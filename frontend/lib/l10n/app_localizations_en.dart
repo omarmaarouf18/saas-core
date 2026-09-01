@@ -907,7 +907,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String employeeJobsConfirmCodMessage(String amount, String jobId) {
-    return 'Confirm you have physically collected the cash payment of \$$amount (COD) from the customer.\n\nThis will deduct the platform fee from the owner\'s wallet and mark Job #$jobId as completed.';
+    return 'Confirm you have physically collected the cash payment of \$$amount (COD) from the customer.\n\nThis will mark Job #$jobId as completed.';
   }
 
   @override

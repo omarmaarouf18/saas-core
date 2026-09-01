@@ -43,6 +43,14 @@ type PendingSignup struct {
 	CreatedAt    time.Time `json:"created_at"          bson:"created_at"`
 }
 
+// AccountStatus represents the operational active/suspended standing of an account.
+type AccountStatus string
+
+const (
+	AccountStatusActive    AccountStatus = "active"
+	AccountStatusSuspended AccountStatus = "suspended"
+)
+
 // User represents a registered user in the platform.
 type User struct {
 	ID                string        `json:"id"                        bson:"_id"`
@@ -54,7 +62,11 @@ type User struct {
 	Role              Role          `json:"role"                      bson:"role"`
 	TenantID          string        `json:"tenant_id,omitempty"       bson:"tenant_id,omitempty"`  // the tenant this user belongs to
 	OwnerID           string        `json:"owner_id,omitempty"        bson:"owner_id,omitempty"`   // KYE: tenant binding (employees only)
-	IsActive          bool          `json:"is_active"                 bson:"is_active"`            // KYE: owner can freeze employee accounts
+	IsActive          bool          `json:"is_active"                 bson:"is_active"`            // KYE: owner can freeze employee accounts / backward compat
+	AccountStatus     AccountStatus `json:"account_status"            bson:"account_status,omitempty"` // active / suspended standing (ADR-0022)
+	SuspensionReason  string        `json:"suspension_reason,omitempty" bson:"suspension_reason,omitempty"`
+	SuspendedAt       *time.Time    `json:"suspended_at,omitempty"    bson:"suspended_at,omitempty"`
+	ReactivatedAt     *time.Time    `json:"reactivated_at,omitempty"  bson:"reactivated_at,omitempty"`
 	KYCStatus         KYCStatus     `json:"kyc_status,omitempty"      bson:"kyc_status,omitempty"` // KYB status for owners
 	KYEStatus         KYCStatus     `json:"kye_status,omitempty"      bson:"kye_status,omitempty"` // KYE status for employees
 	IDFrontDoc        string        `json:"id_front_doc,omitempty"       bson:"id_front_doc,omitempty"`
@@ -69,6 +81,17 @@ type User struct {
 	OTPVerified       bool          `json:"otp_verified"              bson:"otp_verified"`
 	CreatedAt         time.Time     `json:"created_at"                bson:"created_at"`
 	DeviceTokens      []DeviceToken `json:"device_tokens,omitempty"  bson:"device_tokens,omitempty"`
+}
+
+// EffectiveAccountStatus returns the resolved operational standing of the user.
+func (u *User) EffectiveAccountStatus() AccountStatus {
+	if u == nil {
+		return AccountStatusActive
+	}
+	if u.AccountStatus == AccountStatusSuspended || !u.IsActive {
+		return AccountStatusSuspended
+	}
+	return AccountStatusActive
 }
 
 // DeviceToken represents a registered push notification token for a client device.
@@ -177,4 +200,40 @@ type UpdateProfileRequest struct {
 	Username          *string   `json:"username,omitempty"`
 	Phone             *string   `json:"phone,omitempty"`
 	FrequentAddresses *[]string `json:"frequent_addresses,omitempty"`
+}
+
+// AccountDirectoryItem represents a single account row in the reviewer directory.
+type AccountDirectoryItem struct {
+	ID               string        `json:"id"`
+	Email            string        `json:"email"`
+	Username         string        `json:"username"`
+	Role             Role          `json:"role"`
+	KYCStatus        KYCStatus     `json:"kyc_status,omitempty"`
+	KYEStatus        KYCStatus     `json:"kye_status,omitempty"`
+	AccountStatus    AccountStatus `json:"account_status"`
+	IsActive         bool          `json:"is_active"`
+	SuspensionReason string        `json:"suspension_reason,omitempty"`
+	SuspendedAt      *time.Time    `json:"suspended_at,omitempty"`
+	ReactivatedAt    *time.Time    `json:"reactivated_at,omitempty"`
+	CreatedAt        time.Time     `json:"created_at"`
+}
+
+// AccountDirectoryResponse is the paginated response for GET /auth/accounts.
+type AccountDirectoryResponse struct {
+	Accounts []AccountDirectoryItem `json:"accounts"`
+	Total    int                    `json:"total"`
+	Page     int                    `json:"page"`
+	Limit    int                    `json:"limit"`
+}
+
+// SuspendAccountRequest is the expected JSON body for POST /auth/accounts/suspend.
+type SuspendAccountRequest struct {
+	UserID string `json:"user_id,omitempty"`
+	Reason string `json:"reason"`
+}
+
+// ReactivateAccountRequest is the expected JSON body for POST /auth/accounts/reactivate.
+type ReactivateAccountRequest struct {
+	UserID string `json:"user_id,omitempty"`
+	Reason string `json:"reason,omitempty"`
 }

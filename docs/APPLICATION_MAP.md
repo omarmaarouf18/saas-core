@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`0daf1e9`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`7f2ec35`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -174,6 +174,11 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`PUT /api/v1/admin/version-config`** | `api-gateway` | `X-Internal-Token` | Updates mobile client minimum and latest version enforcement configuration. | Updates `platform_versions` collection. |
 | **`GET /health`** | `api-gateway` | Public | Public gateway health status. | None. |
 | **`GET /health/internal`** | `api-gateway` | `X-Internal-Token` | Returns circuit breaker metrics. | Reads breaker memory. |
+| **`GET /auth/accounts`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Searches and lists registered accounts with pagination, role and status filters (ADR-0022). | Reads `users` collection. |
+| **`POST /auth/accounts/reactivate`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Reactivates a suspended user account with optional reason and dispatches notification (ADR-0022). | Updates `users` collection. Writes `audit_log`. |
+| **`POST /auth/accounts/suspend`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Suspends a user account with mandatory reason, revoking active JWT sessions and dispatching notification (ADR-0022). | Updates `users` collection. Writes `audit_log`. Invalidates Redis JWT tokens. |
+| **`POST /auth/accounts/{id}/reactivate`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Reactivates a suspended user account with optional reason and dispatches notification (ADR-0022). | Updates `users` collection. Writes `audit_log`. |
+| **`POST /auth/accounts/{id}/suspend`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Suspends a user account with mandatory reason, revoking active JWT sessions and dispatching notification (ADR-0022). | Updates `users` collection. Writes `audit_log`. Invalidates Redis JWT tokens. |
 | **`GET /auth/audit-log`** | `auth-service` | Tenant Owner JWT | Fetches tenant security audit logs. Accepts requester_id (legacy) or requester_token (preferred). | Reads `audit_logs` collection. |
 | **`DELETE /auth/device-token`** | `auth-service` | Authenticated User JWT | Unregisters client push notification device token. | Updates `users` collection (`device_tokens`). |
 | **`GET /auth/documents/view`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Validates signed URL token and streams/serves the uploaded document file. | Streams file content. |

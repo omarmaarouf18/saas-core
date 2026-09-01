@@ -2,6 +2,17 @@
 
 This file tracks historical entries for the primary category: **Bug Fixes Changelog**.
 
+## Zero-Commission Platform Fee Remnants Cleanup (ADR-0017 Parity)
+
+- **Implementation Detail**:
+  - **Backend (`services/user-service/`)**:
+    - `internal/store/mongodb.go`: Corrected stale seed log at line 204 from `Platform config seeded (15% fee)` to `Platform config seeded (0% fee)` to align log outputs with ADR-0017 zero-commission model.
+    - `internal/handlers/handlers_test.go`: Corrected test comment at line 1673 from `15% of 50.0 = 7.5` to `0% (0.0). net = 50.0`.
+  - **Frontend (`frontend/`)**:
+    - `lib/l10n/app_en.arb` & `app_ar.arb`: Removed outdated text stating that platform fee is deducted on job completion from `employeeJobsConfirmCodMessage` ("This will mark Job #{jobId} as completed." / "سيتم تحديد الطلب #{jobId} كمكتمل.").
+    - `test/platform_config_test.dart`: Added explicit test case asserting that `WalletScreen` displays `Platform fee: 0%` when `platform_fee_percentage` is 0.0.
+- **Verification**: Verified via `go test ./...` in `services/user-service` (100% pass), `flutter analyze` (0 issues), and `flutter test` (496/496 pass).
+
 ## Synchronous Auto-Dispatch, Real Courier Location Pricing, and Standalone Heartbeat Pings
 
 > [!NOTE]

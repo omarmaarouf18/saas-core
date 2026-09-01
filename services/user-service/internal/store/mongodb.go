@@ -201,7 +201,7 @@ func (s *MongoDB) ensureSeedData(ctx context.Context) {
 		}); err != nil {
 			log.Printf("[ERROR] failed to seed platform wallet: %v", err)
 		}
-		log.Println("[USER-STORE] Platform config seeded (15% fee)")
+		log.Println("[USER-STORE] Platform config seeded (0% fee)")
 	}
 
 	// Seed initial active courier locations for seeded and mock tenants

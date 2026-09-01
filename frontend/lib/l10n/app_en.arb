@@ -424,7 +424,7 @@
   "employeeJobsGpsLive": "GPS Live",
   "employeeJobsGpsOff": "GPS Off",
   "employeeJobsConfirmCodTitle": "Confirm Cash Collection & Complete",
-  "employeeJobsConfirmCodMessage": "Confirm you have physically collected the cash payment of ${amount} (COD) from the customer.\n\nThis will deduct the platform fee from the owner's wallet and mark Job #{jobId} as completed.",
+  "employeeJobsConfirmCodMessage": "Confirm you have physically collected the cash payment of ${amount} (COD) from the customer.\n\nThis will mark Job #{jobId} as completed.",
   "@employeeJobsConfirmCodMessage": {
     "placeholders": {
       "amount": {

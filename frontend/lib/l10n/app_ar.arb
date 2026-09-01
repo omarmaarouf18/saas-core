@@ -276,7 +276,7 @@
   "employeeJobsGpsLive": "الموقع مباشر",
   "employeeJobsGpsOff": "الموقع متوقف",
   "employeeJobsConfirmCodTitle": "تأكيد تحصيل المبلغ نقداً والإكمال",
-  "employeeJobsConfirmCodMessage": "تأكيد استلامك المبلغ النقدي قدره ${amount} من العميل.\n\nسيتم خصم عمولة المنصة من محفظة صاحب العمل وتحديد الطلب #{jobId} كمكتمل.",
+  "employeeJobsConfirmCodMessage": "تأكيد استلامك المبلغ النقدي قدره ${amount} من العميل.\n\nسيتم تحديد الطلب #{jobId} كمكتمل.",
   "employeeJobsConfirmNonCodMessage": "هل أنت متاكد من تأكيد إكمال الطلب رقم #{jobId}؟",
   "employeeJobsConfirmCodButton": "تأكيد استلام النقد وإكمال الطلب",
   "employeeJobsConfirmNonCodButton": "إكمال الطلب",

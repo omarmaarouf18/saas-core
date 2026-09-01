@@ -898,7 +898,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String employeeJobsConfirmCodMessage(String amount, String jobId) {
-    return 'تأكيد استلامك المبلغ النقدي قدره \$$amount من العميل.\n\nسيتم خصم عمولة المنصة من محفظة صاحب العمل وتحديد الطلب #$jobId كمكتمل.';
+    return 'تأكيد استلامك المبلغ النقدي قدره \$$amount من العميل.\n\nسيتم تحديد الطلب #$jobId كمكتمل.';
   }
 
   @override
