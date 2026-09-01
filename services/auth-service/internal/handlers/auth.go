@@ -2182,6 +2182,7 @@ func (a *Auth) dispatchAccountStatusNotification(targetUser *models.User, newSta
 	}
 	bodyBytes, err := json.Marshal(payload)
 	if err != nil {
+		// #nosec G706 //nolint:gosec -- log format string does not interpolate unsanitized user inputs
 		log.Printf("[ACCOUNT-NOTIFY] Failed to marshal account status notification for user %s: %v", targetUser.ID, err)
 		return
 	}
@@ -2189,6 +2190,7 @@ func (a *Auth) dispatchAccountStatusNotification(targetUser *models.User, newSta
 	go func() {
 		defer func() {
 			if rec := recover(); rec != nil {
+				// #nosec G706 //nolint:gosec -- log format string does not interpolate unsanitized user inputs
 				log.Printf("[ACCOUNT-NOTIFY] Recovered from panic dispatching account status notification for user %s: %v", targetUser.ID, rec)
 			}
 		}()
@@ -2200,6 +2202,7 @@ func (a *Auth) dispatchAccountStatusNotification(targetUser *models.User, newSta
 		// #nosec G704 //nolint:gosec -- sendURL is constructed from internal service config (NOTIFICATION_SERVICE_URL)
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, sendURL, bytes.NewReader(bodyBytes))
 		if err != nil {
+			// #nosec G706 //nolint:gosec -- log format string does not interpolate unsanitized user inputs
 			log.Printf("[ACCOUNT-NOTIFY] Failed to build account status notification request for user %s: %v", targetUser.ID, err)
 			return
 		}
@@ -2208,6 +2211,7 @@ func (a *Auth) dispatchAccountStatusNotification(targetUser *models.User, newSta
 
 		resp, err := a.notificationClient.Do(req)
 		if err != nil {
+			// #nosec G706 //nolint:gosec -- log format string does not interpolate unsanitized user inputs
 			log.Printf("[ACCOUNT-NOTIFY] FAILED to dispatch %s notification for user %s: %v", notifType, targetUser.ID, err)
 			return
 		}
