@@ -19,6 +19,7 @@ func TestLoad(t *testing.T) {
 		os.Unsetenv("MONGO_INITDB_DATABASE")
 		os.Unsetenv("AUTH_SERVICE_URL")
 		os.Unsetenv("USER_SERVICE_URL")
+		os.Unsetenv("NOTIFICATION_SERVICE_URL")
 		os.Unsetenv("ALLOWED_ORIGIN")
 	}
 
@@ -88,7 +89,20 @@ func TestLoad(t *testing.T) {
 	if cfg.UserServiceURL != "http://localhost:3003" {
 		t.Errorf("Expected default UserServiceURL, got %q", cfg.UserServiceURL)
 	}
+	if cfg.NotificationServiceURL != "http://localhost:3004" {
+		t.Errorf("Expected default NotificationServiceURL, got %q", cfg.NotificationServiceURL)
+	}
 	if cfg.AllowedOrigin != "http://localhost:3000" {
 		t.Errorf("Expected default AllowedOrigin, got %q", cfg.AllowedOrigin)
+	}
+
+	// 8. Explicit NOTIFICATION_SERVICE_URL
+	os.Setenv("NOTIFICATION_SERVICE_URL", "https://notification-service:3004")
+	cfg, err = Load()
+	if err != nil {
+		t.Fatalf("Unexpected error loading explicit config: %v", err)
+	}
+	if cfg.NotificationServiceURL != "https://notification-service:3004" {
+		t.Errorf("Expected explicit NotificationServiceURL 'https://notification-service:3004', got %q", cfg.NotificationServiceURL)
 	}
 }

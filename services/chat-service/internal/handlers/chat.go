@@ -55,10 +55,12 @@ type Chat struct {
 	wsLimiter            *handlerutil.RateLimiter
 	wsMessageLimiter     *handlerutil.RateLimiter
 	wsSubscribeLimiter   *handlerutil.RateLimiter
-	internalServiceToken string
-	allowedOrigin        string
-	authClient           *resilience.ResilienceClient
-	userClient           *resilience.ResilienceClient
+	internalServiceToken   string
+	allowedOrigin          string
+	authClient             *resilience.ResilienceClient
+	userClient             *resilience.ResilienceClient
+	notificationClient     *resilience.ResilienceClient
+	notificationServiceURL string
 }
 
 // NewChat creates a new Chat handler group.
@@ -87,21 +89,24 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Cli
 
 	authClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
 	userClient := resilience.NewClient(client, "user-service", 2, 5*time.Second)
+	notificationClient := resilience.NewClient(client, "notification-service", 2, 5*time.Second)
 
 	return &Chat{
-		hub:                  hub,
-		store:                s,
-		authServiceURL:       cfg.AuthServiceURL,
-		userServiceURL:       cfg.UserServiceURL,
-		tokenCache:           make(map[string]cachedToken),
-		limiter:              handlerutil.NewRateLimiter(rl),
-		wsLimiter:            handlerutil.NewRateLimiter(wsRl),
-		wsMessageLimiter:     handlerutil.NewRateLimiter(wsMsgRl),
-		wsSubscribeLimiter:   handlerutil.NewRateLimiter(wsSubRl),
-		internalServiceToken: cfg.InternalServiceToken,
-		allowedOrigin:        allowedOrigin,
-		authClient:           authClient,
-		userClient:           userClient,
+		hub:                    hub,
+		store:                  s,
+		authServiceURL:         cfg.AuthServiceURL,
+		userServiceURL:         cfg.UserServiceURL,
+		notificationServiceURL: cfg.NotificationServiceURL,
+		tokenCache:             make(map[string]cachedToken),
+		limiter:                handlerutil.NewRateLimiter(rl),
+		wsLimiter:              handlerutil.NewRateLimiter(wsRl),
+		wsMessageLimiter:       handlerutil.NewRateLimiter(wsMsgRl),
+		wsSubscribeLimiter:     handlerutil.NewRateLimiter(wsSubRl),
+		internalServiceToken:   cfg.InternalServiceToken,
+		allowedOrigin:          allowedOrigin,
+		authClient:             authClient,
+		userClient:             userClient,
+		notificationClient:     notificationClient,
 	}
 }
 

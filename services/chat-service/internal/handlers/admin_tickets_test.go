@@ -38,7 +38,7 @@ func setupAdminTicketsTestEnvironment(t *testing.T) (*Chat, *store.MongoDB, stri
 
 	validReviewerToken := "valid-reviewer-tickets-token"
 
-	// Mock Auth Service for reviewer verification
+	// Mock Auth & Notification Service
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		internalTok := r.Header.Get("X-Internal-Token")
 		if internalTok != "test-internal-token" {
@@ -59,6 +59,12 @@ func setupAdminTicketsTestEnvironment(t *testing.T) (*Chat, *store.MongoDB, stri
 			return
 		}
 
+		if r.URL.Path == "/notifications/send" {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"status":"success","message":"notification sent"}`))
+			return
+		}
+
 		w.WriteHeader(http.StatusNotFound)
 	}))
 
@@ -74,8 +80,9 @@ func setupAdminTicketsTestEnvironment(t *testing.T) (*Chat, *store.MongoDB, stri
 	})
 
 	cfg := &config.Config{
-		InternalServiceToken: "test-internal-token",
-		AuthServiceURL:       mockServer.URL,
+		InternalServiceToken:   "test-internal-token",
+		AuthServiceURL:         mockServer.URL,
+		NotificationServiceURL: mockServer.URL,
 	}
 
 	hub := chat.NewHub()
@@ -347,3 +354,224 @@ func TestAdminTickets_CASConcurrencyRace(t *testing.T) {
 		t.Fatalf("CAS concurrency race failed: expected exactly 1 200 OK and 1 409 Conflict, got %+v", results)
 	}
 }
+
+func TestAdminResolveTicket_NotificationAndChatMessageDelivery(t *testing.T) {
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
+	}
+	dbName := fmt.Sprintf("saas_chat_test_delivery_%d", time.Now().UnixNano())
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	mongoStore, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Fatalf("failed to connect to mongodb for test: %v", err)
+	}
+
+	validReviewerToken := "valid-reviewer-delivery-token"
+	var mu sync.Mutex
+	var capturedNotifications []map[string]any
+	notificationStatusCode := http.StatusOK
+
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		internalTok := r.Header.Get("X-Internal-Token")
+		if internalTok != "test-internal-token" {
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"error":"invalid internal token"}`))
+			return
+		}
+
+		if r.URL.Path == "/auth/reviewer/verify" {
+			revTok := r.Header.Get("X-Reviewer-Token")
+			if revTok == validReviewerToken {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{"id":"reviewer-ticket-admin","name":"Support Ops Admin"}`))
+				return
+			}
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte(`{"error":"invalid reviewer token"}`))
+			return
+		}
+
+		if r.URL.Path == "/notifications/send" {
+			mu.Lock()
+			defer mu.Unlock()
+			if notificationStatusCode != http.StatusOK {
+				w.WriteHeader(notificationStatusCode)
+				_, _ = w.Write([]byte(`{"error":"notification service temporary outage"}`))
+				return
+			}
+			var payload map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&payload)
+			capturedNotifications = append(capturedNotifications, payload)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"status":"success","message":"notification sent"}`))
+			return
+		}
+
+		w.WriteHeader(http.StatusNotFound)
+	}))
+
+	t.Cleanup(func() {
+		mockServer.Close()
+		dropCtx, dropCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer dropCancel()
+		client, err := mongo.Connect(dropCtx, options.Client().ApplyURI(mongoURI))
+		if err == nil {
+			_ = client.Database(dbName).Drop(dropCtx)
+			_ = client.Disconnect(dropCtx)
+		}
+	})
+
+	cfg := &config.Config{
+		InternalServiceToken:   "test-internal-token",
+		AuthServiceURL:         mockServer.URL,
+		NotificationServiceURL: mockServer.URL,
+	}
+
+	hub := chat.NewHub()
+	go hub.Run()
+
+	c := NewChat(hub, mongoStore, cfg, nil)
+
+	t.Run("HappyPath_NotifiesCustomerAndPersistsChatMessage", func(t *testing.T) {
+		mu.Lock()
+		capturedNotifications = nil
+		notificationStatusCode = http.StatusOK
+		mu.Unlock()
+
+		ticket, err := mongoStore.CreateTicketAndAssign(ctx, "cust-delivery-123", "job-ctx-456")
+		if err != nil {
+			t.Fatalf("failed to create ticket: %v", err)
+		}
+
+		resolutionNote := "Your refund has been credited to your wallet balance."
+		body, _ := json.Marshal(AdminResolveTicketRequest{
+			TicketID:       ticket.ID,
+			ResolutionNote: resolutionNote,
+		})
+		req := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/resolve", bytes.NewReader(body))
+		req.Header.Set("X-Internal-Token", "test-internal-token")
+		req.Header.Set("X-Reviewer-Token", validReviewerToken)
+		rec := httptest.NewRecorder()
+		c.AdminResolveTicket(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK, got %d: %s", rec.Code, rec.Body.String())
+		}
+
+		var resp map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("failed to parse response JSON: %v", err)
+		}
+
+		if resp["customer_notified"] != true {
+			t.Errorf("expected customer_notified == true, got %v", resp["customer_notified"])
+		}
+
+		// 1. Verify notification was dispatched to notification-service
+		mu.Lock()
+		if len(capturedNotifications) != 1 {
+			t.Fatalf("expected exactly 1 notification dispatched, got %d", len(capturedNotifications))
+		}
+		notif := capturedNotifications[0]
+		mu.Unlock()
+
+		if notif["type"] != "ticket_resolved" {
+			t.Errorf("expected type ticket_resolved, got %v", notif["type"])
+		}
+		if notif["user_id"] != "cust-delivery-123" {
+			t.Errorf("expected user_id cust-delivery-123, got %v", notif["user_id"])
+		}
+		if notif["title"] != "Support Ticket Resolved" {
+			t.Errorf("expected title 'Support Ticket Resolved', got %v", notif["title"])
+		}
+		if !strings.Contains(fmt.Sprint(notif["body"]), resolutionNote) {
+			t.Errorf("expected body to contain resolution note, got %v", notif["body"])
+		}
+
+		// 2. Verify chat message was persisted in the ticket channel
+		channel := "ticket:" + ticket.ID
+		msgs, err := mongoStore.GetHistory(ctx, channel, 10)
+		if err != nil {
+			t.Fatalf("failed to get chat history for %s: %v", channel, err)
+		}
+		if len(msgs) != 1 {
+			t.Fatalf("expected 1 chat message in channel %s, got %d", channel, len(msgs))
+		}
+		msg := msgs[0]
+		if msg.SenderID != "system:support" {
+			t.Errorf("expected sender_id 'system:support', got %q", msg.SenderID)
+		}
+		if msg.SenderUsername != "Support Team" {
+			t.Errorf("expected sender_username 'Support Team', got %q", msg.SenderUsername)
+		}
+		if msg.Type != "ticket_resolution" {
+			t.Errorf("expected type 'ticket_resolution', got %q", msg.Type)
+		}
+		if !strings.Contains(msg.Content, resolutionNote) {
+			t.Errorf("expected message content to contain %q, got %q", resolutionNote, msg.Content)
+		}
+	})
+
+	t.Run("NotificationServiceOutage_GracefullyFailsNotificationWithoutFailingResolution", func(t *testing.T) {
+		mu.Lock()
+		capturedNotifications = nil
+		notificationStatusCode = http.StatusInternalServerError
+		mu.Unlock()
+
+		ticket, err := mongoStore.CreateTicketAndAssign(ctx, "cust-delivery-fail", "job-ctx-789")
+		if err != nil {
+			t.Fatalf("failed to create ticket: %v", err)
+		}
+
+		resolutionNote := "Compensation coupon issued for delivery delay."
+		body, _ := json.Marshal(AdminResolveTicketRequest{
+			TicketID:       ticket.ID,
+			ResolutionNote: resolutionNote,
+		})
+		req := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/resolve", bytes.NewReader(body))
+		req.Header.Set("X-Internal-Token", "test-internal-token")
+		req.Header.Set("X-Reviewer-Token", validReviewerToken)
+		rec := httptest.NewRecorder()
+		c.AdminResolveTicket(rec, req)
+
+		// Resolution must still succeed 200 OK
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK despite notification outage, got %d: %s", rec.Code, rec.Body.String())
+		}
+
+		var resp map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("failed to parse response JSON: %v", err)
+		}
+
+		if resp["customer_notified"] != false {
+			t.Errorf("expected customer_notified == false during outage, got %v", resp["customer_notified"])
+		}
+		if resp["notify_error"] == nil || !strings.Contains(fmt.Sprint(resp["notify_error"]), "500") {
+			t.Errorf("expected notify_error mentioning 500, got %v", resp["notify_error"])
+		}
+
+		// Ticket status in Mongo must still be resolved
+		resolved, err := mongoStore.GetTicket(ctx, ticket.ID)
+		if err != nil {
+			t.Fatalf("failed to get ticket: %v", err)
+		}
+		if resolved.Status != "resolved" {
+			t.Errorf("expected ticket status resolved, got %s", resolved.Status)
+		}
+
+		// Chat message must still be persisted
+		channel := "ticket:" + ticket.ID
+		msgs, err := mongoStore.GetHistory(ctx, channel, 10)
+		if err != nil {
+			t.Fatalf("failed to get chat history for %s: %v", channel, err)
+		}
+		if len(msgs) != 1 {
+			t.Fatalf("expected 1 chat message in channel %s, got %d", channel, len(msgs))
+		}
+	})
+}
+

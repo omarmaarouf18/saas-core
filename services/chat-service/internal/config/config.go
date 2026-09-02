@@ -11,9 +11,10 @@ type Config struct {
 	MongoDatabase        string
 	JWTSecret            string
 	InternalServiceToken string
-	AuthServiceURL       string
-	UserServiceURL       string
-	AllowedOrigin        string
+	AuthServiceURL         string
+	UserServiceURL         string
+	NotificationServiceURL string
+	AllowedOrigin          string
 	CloudWatchLogGroup   string
 	TLSCertPath          string
 	TLSKeyPath           string
@@ -77,24 +78,30 @@ func Load() (*Config, error) {
 		userServiceURL = "http://localhost:3003"
 	}
 
+	notificationServiceURL := os.Getenv("NOTIFICATION_SERVICE_URL")
+	if notificationServiceURL == "" {
+		notificationServiceURL = "http://localhost:3004"
+	}
+
 	allowedOrigin := os.Getenv("ALLOWED_ORIGIN")
 	if allowedOrigin == "" {
 		allowedOrigin = "http://localhost:3000"
 	}
 
 	return &Config{
-		Port:                 port,
-		MongoURI:             mongoURI,
-		MongoDatabase:        dbName,
-		JWTSecret:            jwtSecret,
-		InternalServiceToken: internalServiceToken,
-		AuthServiceURL:       authServiceURL,
-		UserServiceURL:       userServiceURL,
-		AllowedOrigin:        allowedOrigin,
-		CloudWatchLogGroup:   os.Getenv("CLOUDWATCH_LOG_GROUP"),
-		TLSCertPath:          tlsCertPath,
-		TLSKeyPath:           tlsKeyPath,
-		TLSCAPath:            tlsCAPath,
-		RedisURI:             redisURI,
+		Port:                   port,
+		MongoURI:               mongoURI,
+		MongoDatabase:          dbName,
+		JWTSecret:              jwtSecret,
+		InternalServiceToken:   internalServiceToken,
+		AuthServiceURL:         authServiceURL,
+		UserServiceURL:         userServiceURL,
+		NotificationServiceURL: notificationServiceURL,
+		AllowedOrigin:          allowedOrigin,
+		CloudWatchLogGroup:     os.Getenv("CLOUDWATCH_LOG_GROUP"),
+		TLSCertPath:            tlsCertPath,
+		TLSKeyPath:             tlsKeyPath,
+		TLSCAPath:              tlsCAPath,
+		RedisURI:               redisURI,
 	}, nil
 }

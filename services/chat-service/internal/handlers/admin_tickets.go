@@ -1,12 +1,17 @@
 package handlers
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/project/chat-service/internal/chat"
 	"github.com/project/chat-service/internal/store"
 	"github.com/project/shared/infra/handlerutil"
 )
@@ -124,7 +129,66 @@ func (c *Chat) AdminListTickets(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// AdminResolveTicket marks a ticket as resolved with mandatory notes (ADR-0023).
+// dispatchTicketResolvedNotification posts an internal customer notification to notification-service.
+func (c *Chat) dispatchTicketResolvedNotification(ctx context.Context, ticket *store.ComplaintTicket, resolutionNote string) (bool, string) {
+	if ticket == nil || ticket.CustomerID == "" {
+		return false, "missing customer ID"
+	}
+
+	notificationURL := c.notificationServiceURL
+	if notificationURL == "" {
+		notificationURL = "http://notification-service:3004"
+	}
+	sendURL := strings.TrimSuffix(notificationURL, "/") + "/notifications/send"
+
+	payload := map[string]any{
+		"type":    "ticket_resolved",
+		"global":  true,
+		"user_id": ticket.CustomerID,
+		"title":   "Support Ticket Resolved",
+		"body":    fmt.Sprintf("Your ticket (%s) has been resolved: %s", ticket.ID, resolutionNote),
+	}
+
+	bodyBytes, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("[ADMIN-TICKET-NOTIFY] Failed to marshal notification payload for ticket %s: %v", ticket.ID, err)
+		return false, err.Error()
+	}
+
+	reqCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// #nosec G704 // internal service URL
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodPost, sendURL, bytes.NewReader(bodyBytes))
+	if err != nil {
+		log.Printf("[ADMIN-TICKET-NOTIFY] Failed to build notification request for ticket %s: %v", ticket.ID, err)
+		return false, err.Error()
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Internal-Token", c.internalServiceToken)
+
+	var resp *http.Response
+	if c.notificationClient != nil {
+		resp, err = c.notificationClient.Do(req)
+	} else {
+		resp, err = http.DefaultClient.Do(req)
+	}
+	if err != nil {
+		log.Printf("[ADMIN-TICKET-NOTIFY] Failed to dispatch notification for ticket %s to user %s: %v", ticket.ID, ticket.CustomerID, err)
+		return false, err.Error()
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("[ADMIN-TICKET-NOTIFY] notification-service returned status %d for ticket %s", resp.StatusCode, ticket.ID)
+		return false, fmt.Sprintf("notification-service returned status %d", resp.StatusCode)
+	}
+
+	return true, ""
+}
+
+// AdminResolveTicket marks a ticket as resolved with mandatory notes (ADR-0023),
+// persists a system resolution chat message to the ticket channel, and dispatches a customer notification.
 // POST /chat/admin/tickets/resolve & POST /admin/tickets/resolve
 func (c *Chat) AdminResolveTicket(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -171,10 +235,37 @@ func (c *Chat) AdminResolveTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handlerutil.ShipSecurityEvent(ctx, "ADMIN_TICKET_RESOLVED", "chat-service", reviewer.ID, ticket.CustomerID, fmt.Sprintf("resolved ticket %s (customer=%s, note=%s)", ticket.ID, ticket.CustomerID, note), handlerutil.GetClientIP(r))
+	// 1. Persist system chat message into the ticket channel
+	chatMsg := &chat.Message{
+		Channel:        "ticket:" + ticket.ID,
+		SenderID:       "system:support",
+		SenderUsername: "Support Team",
+		Content:        fmt.Sprintf("Ticket resolved: %s", note),
+		Type:           "ticket_resolution",
+	}
+	if err := c.store.PersistMessage(ctx, chatMsg); err != nil {
+		log.Printf("[ADMIN-TICKET] Failed to persist resolution chat message for ticket %s: %v", ticket.ID, err)
+	} else if c.hub != nil {
+		select {
+		case c.hub.Broadcast <- chatMsg:
+		default:
+		}
+	}
 
-	writeJSON(w, http.StatusOK, map[string]any{
-		"message": "ticket resolved successfully",
-		"ticket":  ticket,
-	})
+	// 2. Dispatch customer notification via notification-service
+	notified, notifyErr := c.dispatchTicketResolvedNotification(ctx, ticket, note)
+
+	handlerutil.ShipSecurityEvent(ctx, "ADMIN_TICKET_RESOLVED", "chat-service", reviewer.ID, ticket.CustomerID, fmt.Sprintf("resolved ticket %s (customer=%s, note=%s, notified=%t)", ticket.ID, ticket.CustomerID, note, notified), handlerutil.GetClientIP(r))
+
+	respData := map[string]any{
+		"message":           "ticket resolved successfully",
+		"ticket":            ticket,
+		"customer_notified": notified,
+	}
+	if !notified && notifyErr != "" {
+		respData["notify_error"] = notifyErr
+	}
+
+	writeJSON(w, http.StatusOK, respData)
 }
+
