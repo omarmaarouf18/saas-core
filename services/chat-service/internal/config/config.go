@@ -6,20 +6,20 @@ import (
 )
 
 type Config struct {
-	Port                 string
-	MongoURI             string
-	MongoDatabase        string
-	JWTSecret            string
-	InternalServiceToken string
+	Port                   string
+	MongoURI               string
+	MongoDatabase          string
+	JWTSecret              string
+	InternalServiceToken   string
 	AuthServiceURL         string
 	UserServiceURL         string
 	NotificationServiceURL string
 	AllowedOrigin          string
-	CloudWatchLogGroup   string
-	TLSCertPath          string
-	TLSKeyPath           string
-	TLSCAPath            string
-	RedisURI             string
+	CloudWatchLogGroup     string
+	TLSCertPath            string
+	TLSKeyPath             string
+	TLSCAPath              string
+	RedisURI               string
 }
 
 func Load() (*Config, error) {

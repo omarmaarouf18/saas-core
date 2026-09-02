@@ -574,4 +574,3 @@ func TestAdminResolveTicket_NotificationAndChatMessageDelivery(t *testing.T) {
 		}
 	})
 }
-

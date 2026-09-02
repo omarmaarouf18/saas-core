@@ -45,16 +45,16 @@ type wsMessage struct {
 
 // Chat holds dependencies for the WebSocket handlers.
 type Chat struct {
-	hub                  *chat.Hub
-	store                *store.MongoDB
-	authServiceURL       string
-	userServiceURL       string
-	tokenCache           map[string]cachedToken
-	tokenCacheMu         sync.Mutex
-	limiter              *handlerutil.RateLimiter
-	wsLimiter            *handlerutil.RateLimiter
-	wsMessageLimiter     *handlerutil.RateLimiter
-	wsSubscribeLimiter   *handlerutil.RateLimiter
+	hub                    *chat.Hub
+	store                  *store.MongoDB
+	authServiceURL         string
+	userServiceURL         string
+	tokenCache             map[string]cachedToken
+	tokenCacheMu           sync.Mutex
+	limiter                *handlerutil.RateLimiter
+	wsLimiter              *handlerutil.RateLimiter
+	wsMessageLimiter       *handlerutil.RateLimiter
+	wsSubscribeLimiter     *handlerutil.RateLimiter
 	internalServiceToken   string
 	allowedOrigin          string
 	authClient             *resilience.ResilienceClient
