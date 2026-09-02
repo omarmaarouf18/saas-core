@@ -732,7 +732,7 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 **Date**: 2026-09-02
 **Category**: Bug Fix / Reviewer Console & Operations
-**Related Commit SHA**: ``9e12e7456bb6d485a8d76dbe17c792babf8e2169``
+**Related Commit SHA**: ``0a61a0d54e648ec73c4160ec799b7fca30b7aa61``
 
 - **CSS Hidden-Specificity Bug**: `web/style.css` defined `#login-view { display: grid; ... }` with ID-selector specificity, overriding the User Agent stylesheet default `[hidden] { display: none; }` behavior. Setting `hidden` in `app.js` on successful sign-in left `#login-view` computed as `display: grid`, rendering the login card over the authenticated dashboard. Added global `[hidden] { display: none !important; }` in `web/style.css` in `kyc-reviewer-console` (commit `a1c12c7...`).
 - **chat-service Port Misconfiguration**: `kyc-reviewer-console` defaulted `ChatServiceURL` to `https://chat-service:3005`, but `chat-service` listens on port `3001`. This caused `GET /api/tickets` to fail with HTTP 502 (`dial tcp 172.20.0.8:3005: connect: connection refused`). Corrected fallback default to `https://chat-service:3001` in console config and proxy constructors, and explicitly added `USER_SERVICE_URL: https://user-service:${USER_SERVICE_PORT}` and `CHAT_SERVICE_URL: https://chat-service:${CHAT_SERVICE_PORT}` to `infrastructure/deploy/docker-compose.prod.yml`.
