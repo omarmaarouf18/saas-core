@@ -857,7 +857,7 @@ This section consolidates the resolution status for all 10 findings from the ext
      - Fixed plain `!=` comparison on `internalToken` in `services/chat-service/internal/handlers/admin_tickets.go:29` to `c.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(internalToken), []byte(c.internalServiceToken)) != 1`.
      - Added empty-secret guard to `X-Gateway-Secret` comparison in `services/auth-service/internal/handlers/auth.go:1342` (`getClientIP`).
      - Confirmed all other internal tokens and credentials across `auth-service`, `user-service`, `chat-service`, `notification-service`, `api-gateway`, and `shared/infra` use constant-time comparisons.
-- **Commit SHA**: ``031a3febb8580dac903e7ffd4f40a3689fff11bc``
+- **Commit SHA**: ``11a97ecffbc998112decbba53b8bbf2062915142``
 - **Verification**:
   - `shared/infra/ratelimit/ratelimit_test.go`: `TestReviewerRateLimiter_LockoutAfter3Failures`, `TestReviewerRateLimiter_FastForwardClearsLockoutAndResetsCounter`, `TestReviewerRateLimiter_ResetOnSuccessClearsFailures` (100% pass).
   - `services/auth-service/internal/handlers/reviewer_ratelimit_test.go`: `TestReviewerLogin_RateLimiting_3Attempts5MinLockout` verifies 3 failed attempts return 401, 4th attempt returns 429 even with valid token, miniredis fast-forward past 300s clears lockout and permits 200 OK, and successful login before 3 failures resets counter.
