@@ -867,31 +867,31 @@ This section consolidates the resolution status for all 10 findings from the ext
 ## Offered Courier Job Details Access During Dispatch Cascade (QA Audit #2 F-01)
 
 - **Implementation Detail**: In `services/user-service/internal/handlers/jobs_handlers.go:GetJob`, the authorization check previously treated unassigned jobs (`job.EmployeeID == ""`) as denying employee read access, which broke the cascade UX by returning 403 when the offered courier attempted to inspect job pickup/dropoff details before accepting. Updated the authorization check to permit access if `claims.Role == "employee" && job.Status == models.JobStatusPendingDispatch && job.CurrentOfferedEmployeeID == claims.UserID`. This is implemented with the identical root authorization rule as Part B's early chat access (`services/chat-service/internal/handlers/chat.go`), ensuring unified authorization semantics across job-read and chat-read pathways.
-- **Commit SHA**: ``28d412942483ee83c5f17cc3999a61e48a0bf82e``
+- **Commit SHA**: ``c2911322da031261e8bad8c9a05388e6443e1481``
 - **Verification**: New repro test `TestCascade_OfferedCourierCanViewJobDetails_F01` in `cascade_dispatch_repro_test.go`. Pre-fix literal failure: `F-01 Repro: offered courier received 403 Forbidden on GetJob, expected 200 OK`. Post-fix passes; non-offered couriers remain rejected with 403 Forbidden. ✅
 
 ## Courier Double-Accept Race Prevention via Atomic CAS Lock (QA Audit #2 F-02)
 
 - **Implementation Detail**: In `services/user-service/internal/handlers/jobs_handlers.go:AcceptJobOffer`, two concurrent accept requests from the same courier on two distinct offered jobs could both succeed because `empLoc.ActiveJobID` was only checked via a stale snapshot in memory. Added `ActiveJobID` field to `models.EmployeeLocation` and implemented atomic CAS operations `TryAcquireCourierLock` and `ReleaseCourierLock` in `services/user-service/internal/store/mongodb.go`. `TryAcquireCourierLock` conditionally sets `active_job_id = jobID` if `active_job_id` is empty (or matches a self-healing completed/cancelled job). In `AcceptJobOffer`, lock acquisition is executed before transitioning the job to active. If lock acquisition fails, the handler immediately aborts and returns HTTP 409 Conflict with `{"error": "courier_busy"}`. Lock releases are wired into `AcceptJobOffer` error handling (if subsequent steps fail), `CompleteJob` (both standard and COD paths), `CancelJob`, and `AdminResolveReconciliation`.
-- **Commit SHA**: ``28d412942483ee83c5f17cc3999a61e48a0bf82e``
+- **Commit SHA**: ``c2911322da031261e8bad8c9a05388e6443e1481``
 - **Verification**: New concurrency repro test `TestCascade_CourierDoubleAcceptRace_F02` in `cascade_dispatch_repro_test.go`: two concurrent goroutines call `AcceptJobOffer` for the same courier on two different jobs. Pre-fix literal failure: both returned 200 OK (`job1=200, job2=200`). Post-fix: exactly one returns 200 OK and the other returns 409 Conflict (`job1=200, job2=409`). ✅
 
 ## Real-Time Force Disconnect of WebSocket and SSE Connections Upon Account Suspension (QA Audit #2 F-03)
 
 - **Implementation Detail**: Suspended users' active WebSocket and SSE connections previously persisted indefinitely because token validation occurred only during connection establishment. In `shared/infra/jwtutil/jwt.go`, updated `RevokeAllUserTokens` to publish an `ACCOUNT_SUSPENDED` event to the Redis pub/sub channel `account:events` and exported `IsUserRevoked(userID)`. In `services/chat-service/internal/chat/hub.go`, subscribed to `account:events` via Redis pub/sub; upon receiving `ACCOUNT_SUSPENDED`, `hub.DisconnectUser` immediately closes the user's WebSocket connection and clears their active client state. Additionally, `chat.go:writePump` performs a heartbeat check against `jwtutil.IsUserRevoked`. In `services/notification-service/internal/hub/hub.go`, added `UserID` tracking to `SSEClient`, subscribed to `account:events`, and implemented `DisconnectUser` to close the SSE connection channel. In `notification-service/internal/handlers/handlers.go:HandleStream`, added a 15-second heartbeat ticker verifying `jwtutil.IsUserRevoked`.
-- **Commit SHA**: ``28d412942483ee83c5f17cc3999a61e48a0bf82e``
+- **Commit SHA**: ``c2911322da031261e8bad8c9a05388e6443e1481``
 - **Verification**: New unit tests `TestHub_AccountSuspended_ForceClosesConnection_F03` in `chat-service` and `TestSSEHub_AccountSuspended_ForceClosesConnection_F03` in `notification-service` verify that publishing an `ACCOUNT_SUSPENDED` message to Redis immediately terminates active WebSocket and SSE client connections and closes their channels. ✅
 
 ## Cascaded Token Revocation & Location Update Guard for Suspended Tenant Employees (QA Audit #2 F-04)
 
 - **Implementation Detail**: Suspending a tenant/owner previously left employee JWTs valid and allowed couriers to continue updating locations and accepting jobs. In `services/auth-service/internal/handlers/auth.go:SuspendAccount`, added cascaded token revocation across all employees belonging to the suspended owner (`store.GetEmployeesByOwner` matching both `owner_id` and `tenant_id`), invoking `jwtutil.RevokeAllUserTokens(emp.ID)`. In `auth-service/internal/handlers/auth.go:GetUser`, included `account_status` in the serialized user response. In `services/user-service/internal/handlers/handlers.go:verifyEmployeeAssignment`, added verification of the owner's `account_status` via `auth-service`, rejecting employees whose owner is suspended or inactive. In `services/user-service/internal/handlers/jobs_handlers.go:UpdateEmployeeLocation`, wired the `verifyEmployeeAssignment` check so suspended tenant employees cannot publish location updates.
-- **Commit SHA**: ``28d412942483ee83c5f17cc3999a61e48a0bf82e``
+- **Commit SHA**: ``c2911322da031261e8bad8c9a05388e6443e1481``
 - **Verification**: New regression test `TestAccountSuspension_OwnerSuspensionRevokesEmployeeTokens_F04` in `auth-service/internal/handlers/account_suspension_test.go` verifies owner suspension invalidates employee tokens. Added F-04 subtest in `services/user-service/internal/handlers/employee_dispatch_pricing_test.go:TestUpdateEmployeeLocation_Endpoint` verifying location updates from suspended tenant employees are rejected with 403 Forbidden. ✅
 
 ## Escrow Lock Failure Cascading Job Cancellation & Courier Lock Release (QA Audit #2 F-05)
 
 - **Implementation Detail**: In `services/user-service/internal/handlers/jobs_handlers.go:AcceptJobOffer`, if the owner lacked sufficient balance to lock escrow, the handler returned 500/error but left the job stranded in `pending_dispatch` with the courier offer still active. Implemented `CancelJobOnEscrowFailure` in `services/user-service/internal/store/mongodb.go`, which atomically transitions the job to `status: "cancelled"` with `cancellation_reason: "owner_escrow_lock_failed"`, clears `current_offered_employee_id` and `offer_expires_at`, and releases the courier's lock via `ReleaseCourierLock`. In `AcceptJobOffer`, on `LockEscrow` failure, `CancelJobOnEscrowFailure` is called, and `notifyCustomerEscrowLockFailed` notifies the customer via `notification-service`.
-- **Commit SHA**: ``28d412942483ee83c5f17cc3999a61e48a0bf82e``
+- **Commit SHA**: ``c2911322da031261e8bad8c9a05388e6443e1481``
 - **Verification**: New regression test `TestCascade_EscrowLockFailureCancelsJob_F05` in `cascade_dispatch_repro_test.go` simulates escrow lock failure. Pre-fix: job remained stranded in `pending_dispatch`. Post-fix: job is atomically cancelled with reason `owner_escrow_lock_failed`, offered courier cleared, courier active job lock released, and cascade halted. ✅
 
 ## Request Body Size Limits on New Admin & Dispatch Handlers (QA Audit #2 F-06)
@@ -899,12 +899,12 @@ This section consolidates the resolution status for all 10 findings from the ext
 - **Implementation Detail**: Endpoints added during recent dispatch and admin features parsed JSON bodies directly from `r.Body` without bounding input payload sizes, exposing services to memory exhaustion (OOM) from oversized payloads. Wrapped `io.LimitReader(r.Body, 1<<20)` (1 MB cap) across:
   - `user-service`: `AcceptJobOffer`, `DeclineJobOffer`, `UpdateEmployeeLocation`, `AdminResolveReconciliation`, `AdminActivateSubscription`, `AdminRevokeSubscription`.
   - `chat-service`: `AdminResolveTicket`.
-- **Commit SHA**: ``28d412942483ee83c5f17cc3999a61e48a0bf82e``
+- **Commit SHA**: ``c2911322da031261e8bad8c9a05388e6443e1481``
 - **Verification**: New regression tests `TestAdminSubscription_OversizedBodyRejected_F06` in `admin_subscription_test.go` and `TestCascade_OfferActions_OversizedBodyRejected_F06` in `cascade_dispatch_repro_test.go` confirm oversized payloads (> 1 MB) are bounded and rejected with 400 Bad Request. ✅
 
 ## Admin Subscription Activation Blocked for Suspended Tenants (QA Audit #2 F-07)
 
 - **Implementation Detail**: In `services/user-service/internal/handlers/admin_subscription_handlers.go:AdminActivateSubscription`, an ops reviewer could activate a paid subscription plan for a tenant whose account was suspended. Added tenant account status verification via `auth-service` (`GET /auth/user?id=<tenantID>`). If the tenant user document has `account_status == "suspended"` or `!is_active`, the handler rejects activation with HTTP 403 Forbidden (`{"error": "tenant_suspended", "message": "cannot activate subscription for a suspended tenant"}`).
-- **Commit SHA**: ``28d412942483ee83c5f17cc3999a61e48a0bf82e``
+- **Commit SHA**: ``c2911322da031261e8bad8c9a05388e6443e1481``
 - **Verification**: New repro test `TestAdminActivateSubscription_SuspendedTenantRejected_F07` in `admin_subscription_test.go`. Pre-fix literal failure: `F-07 Repro failure: expected 403 Forbidden for suspended tenant activation, got 200`. Post-fix: rejected with HTTP 403 Forbidden and `{"error":"tenant_suspended"}`. ✅
 

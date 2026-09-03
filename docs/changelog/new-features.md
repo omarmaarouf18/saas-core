@@ -615,7 +615,7 @@ This file tracks historical entries for the primary category: **New Features Cha
   3. **Customer UI**: In `frontend/lib/screens/job_status_screen.dart`, when a job is in `pending_dispatch` with an offered courier, renders an early offered courier status card ("Courier found, reviewing your request...") with a direct chat icon button navigating to `ChatScreen(jobId: job.id)`.
   4. **Courier UI**: In `frontend/lib/screens/employee_jobs_screen.dart`, added a "Chat with Customer" button on the incoming offer card alongside Accept and Decline actions.
   5. **Localization**: Added `courierFoundReviewing`, `earlyChatAvailableHint`, and `chatWithCustomer` strings in English (`app_en.arb`) and Arabic (`app_ar.arb`).
-- **Commit SHA**: ``28d412942483ee83c5f17cc3999a61e48a0bf82e``
+- **Commit SHA**: ``c2911322da031261e8bad8c9a05388e6443e1481``
 - **Verification**:
   - Backend: 5 test cases in `services/chat-service/internal/handlers/chat_test.go` verifying offered courier can read/send messages during offer, unoffered couriers cannot, and authorization revokes/shifts upon decline, expiry, and cascade advance.
   - Frontend: Widget tests in `frontend/test/early_customer_courier_chat_test.dart` (3/3 passing) verifying offered courier card and chat entry points on both customer and courier screens.
