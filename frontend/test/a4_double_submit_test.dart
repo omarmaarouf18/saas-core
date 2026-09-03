@@ -46,11 +46,13 @@ class _GatedAsyncHandler {
   }
 }
 
-Widget _wrap(Widget child) => MaterialApp(home: Scaffold(body: Center(child: child)));
+Widget _wrap(Widget child) =>
+    MaterialApp(home: Scaffold(body: Center(child: child)));
 
 void main() {
   group('PrimaryButton in-flight double-submit lock', () {
-    testWidgets('blocks second tap beyond debounce window while async handler is pending',
+    testWidgets(
+        'blocks second tap beyond debounce window while async handler is pending',
         (tester) async {
       final handler = _GatedAsyncHandler();
       DateTime fakeNow = DateTime(2026, 1, 1, 12, 0, 0);
@@ -166,8 +168,8 @@ void main() {
       // Past the debounce window a real retry is allowed again — verified
       // with genuine wall-clock time (runAsync escapes fake-async so the
       // banner's real DateTime.now() guard sees an expired window).
-      await tester.runAsync(
-          () => Future.delayed(const Duration(milliseconds: 650)));
+      await tester
+          .runAsync(() => Future.delayed(const Duration(milliseconds: 650)));
       await tester.tap(find.text('Retry'));
       await tester.pump();
       expect(retries, 2);
@@ -200,11 +202,11 @@ void main() {
     final gate = Completer<void>();
     int resolveCalls = 0;
     final apiClient = ApiClient();
-    final provider = _GatedReconciliationProvider(apiClient, [testJob],
-        onResolve: () async {
-          resolveCalls++;
-          await gate.future;
-        });
+    final provider =
+        _GatedReconciliationProvider(apiClient, [testJob], onResolve: () async {
+      resolveCalls++;
+      await gate.future;
+    });
 
     await tester.pumpWidget(_buildReconciliationApp(provider));
     await tester.pumpAndSettle();
@@ -227,8 +229,8 @@ void main() {
     // the money-moving POST is STILL pending. This is exactly the window a
     // slow backend leaves open for the "nothing happened, tap again" harm.
     // runAsync escapes fake-async so DateTime.now()-based guards truly age.
-    await tester.runAsync(
-        () => Future.delayed(const Duration(milliseconds: 700)));
+    await tester
+        .runAsync(() => Future.delayed(const Duration(milliseconds: 700)));
 
     // Re-entry attempt: past every debounce window, the money-moving POST
     // still pending. The action buttons must be hard-disabled (isLoading
@@ -258,7 +260,9 @@ void main() {
     expect(resolveCalls, 1,
         reason: 'exactly-once end state after the gated call settles');
     expect(
-        tester.widget<PrimaryButton>(find.byType(PrimaryButton).first).isLoading,
+        tester
+            .widget<PrimaryButton>(find.byType(PrimaryButton).first)
+            .isLoading,
         isFalse,
         reason: 'in-flight state must clear once the call settles');
   });
@@ -267,11 +271,10 @@ void main() {
       (tester) async {
     final gate = Completer<void>();
     final sent = <String>[];
-    final chatProvider = _GatedChatProvider(ApiClient(),
-        onSend: (text) async {
-          sent.add(text);
-          await gate.future;
-        });
+    final chatProvider = _GatedChatProvider(ApiClient(), onSend: (text) async {
+      sent.add(text);
+      await gate.future;
+    });
 
     await tester.pumpWidget(_buildChatApp(chatProvider));
     await tester.pumpAndSettle();
@@ -299,8 +302,7 @@ void main() {
       (tester) async {
     final gate = Completer<void>();
     int logoutCalls = 0;
-    final authProvider =
-        _GatedAuthProvider(ApiClient(), onLogout: () async {
+    final authProvider = _GatedAuthProvider(ApiClient(), onLogout: () async {
       logoutCalls++;
       await gate.future;
     });
@@ -318,8 +320,8 @@ void main() {
 
     // Past any 600ms window while logout is still in flight (runAsync lets
     // real wall-clock time pass inside the fake-async test zone).
-    await tester.runAsync(
-        () => Future.delayed(const Duration(milliseconds: 700)));
+    await tester
+        .runAsync(() => Future.delayed(const Duration(milliseconds: 700)));
     await tester.tap(find.byKey(const Key('settings_logout_button')),
         warnIfMissed: false);
     await tester.pump();

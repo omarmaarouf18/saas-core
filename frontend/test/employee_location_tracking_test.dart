@@ -304,8 +304,8 @@ void main() {
     await Future.delayed(const Duration(milliseconds: 50));
 
     expect(mockApiClient.postCallCount, equals(1));
-    expect(mockApiClient.postEndpoints.first,
-        equals('/users/employee/location'));
+    expect(
+        mockApiClient.postEndpoints.first, equals('/users/employee/location'));
     expect(mockApiClient.postPayloads.first['requester_token'],
         equals('token-emp-1'));
     expect(mockApiClient.postPayloads.first.containsKey('job_id'), isFalse);

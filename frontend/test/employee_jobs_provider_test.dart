@@ -43,10 +43,12 @@ void main() {
 
   test('fetchAssignedJobs parses the {"jobs": [...]} wrapper variant',
       () async {
-    final (provider, _) = _makeProvider(
-        (req) => MockHttpResponse(200, jsonBody: {'jobs': [
-              {'id': 'job-w'}
-            ]}));
+    final (provider, _) =
+        _makeProvider((req) => MockHttpResponse(200, jsonBody: {
+              'jobs': [
+                {'id': 'job-w'}
+              ]
+            }));
 
     await provider.fetchAssignedJobs('t');
 
@@ -54,8 +56,8 @@ void main() {
   });
 
   test('fetchAssignedJobs falls back to a single-job map payload', () async {
-    final (provider, _) = _makeProvider(
-        (req) => MockHttpResponse(200, jsonBody: {'id': 'solo'}));
+    final (provider, _) =
+        _makeProvider((req) => MockHttpResponse(200, jsonBody: {'id': 'solo'}));
 
     await provider.fetchAssignedJobs('t');
 
@@ -74,7 +76,8 @@ void main() {
         friendlyErrorMessage(ApiClientException('x', statusCode: 429)));
   });
 
-  test('completeJob posts cash_collected=true for COD jobs and completes locally',
+  test(
+      'completeJob posts cash_collected=true for COD jobs and completes locally',
       () async {
     var seenGet = false;
     final (provider, overrides) = _makeProvider((req) {
@@ -107,8 +110,9 @@ void main() {
       () async {
     final (provider, overrides) = _makeProvider((req) {
       if (req.uri.path.endsWith('/users/jobs/get')) {
-        return MockHttpResponse(200,
-            jsonBody: [{'id': 'j', 'status': 'active'}]);
+        return MockHttpResponse(200, jsonBody: [
+          {'id': 'j', 'status': 'active'}
+        ]);
       }
       return MockHttpResponse.ok();
     }, token: 'tk');
@@ -124,8 +128,9 @@ void main() {
   test('completeJob omits requester_id when no token is set', () async {
     final (provider, overrides) = _makeProvider((req) {
       if (req.uri.path.endsWith('/users/jobs/get')) {
-        return MockHttpResponse(200,
-            jsonBody: [{'id': 'j', 'status': 'active'}]);
+        return MockHttpResponse(200, jsonBody: [
+          {'id': 'j', 'status': 'active'}
+        ]);
       }
       return MockHttpResponse.ok();
     });
@@ -153,8 +158,9 @@ void main() {
       () async {
     final (provider, _) = _makeProvider((req) {
       if (req.uri.path.endsWith('/users/jobs/get')) {
-        return MockHttpResponse(200,
-            jsonBody: [{'id': 'job-1', 'status': 'active'}]);
+        return MockHttpResponse(200, jsonBody: [
+          {'id': 'job-1', 'status': 'active'}
+        ]);
       }
       return MockHttpResponse(500, jsonBody: {'error': 'db down'});
     });

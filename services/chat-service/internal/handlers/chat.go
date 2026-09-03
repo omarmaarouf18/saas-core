@@ -257,14 +257,17 @@ func (c *Chat) canAccessChannel(userID, channel string) (bool, error) {
 	}
 
 	var job struct {
-		OwnerID    string `json:"owner_id"`
-		EmployeeID string `json:"employee_id"`
-		UserID     string `json:"user_id"`
+		OwnerID                  string `json:"owner_id"`
+		EmployeeID               string `json:"employee_id"`
+		UserID                   string `json:"user_id"`
+		Status                   string `json:"status"`
+		CurrentOfferedEmployeeID string `json:"current_offered_employee_id"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&job); err != nil {
 		return false, err
 	}
-	return userID == job.OwnerID || userID == job.UserID || (job.EmployeeID != "" && userID == job.EmployeeID), nil
+	isOfferedCourier := job.Status == "pending_dispatch" && job.CurrentOfferedEmployeeID != "" && userID == job.CurrentOfferedEmployeeID
+	return userID == job.OwnerID || userID == job.UserID || (job.EmployeeID != "" && userID == job.EmployeeID) || isOfferedCourier, nil
 }
 
 // HandleWebSocket upgrades the HTTP connection to a WebSocket protocol.
@@ -652,6 +655,12 @@ func (c *Chat) writePump(conn *websocket.Conn, client *chat.Client) {
 			}
 
 		case <-ticker.C:
+			// Defense-in-depth: check if user token has been revoked / suspended (F-03)
+			if jwtutil.IsUserRevoked(client.ID) {
+				log.Printf("[WS] Terminating connection on heartbeat: user %s is revoked", client.ID)
+				_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "account suspended"))
+				return
+			}
 			_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return

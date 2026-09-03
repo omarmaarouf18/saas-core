@@ -62,13 +62,20 @@ func setupDispatchTestHarness(t *testing.T) (*UserService, *store.MongoDB, *redi
 			role = "user"
 		}
 
+		accountStatus := "active"
+		if strings.Contains(id, "suspended") {
+			accountStatus = "suspended"
+			isActive = false
+		}
+
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]any{
-			"id":         id,
-			"role":       role,
-			"kyc_status": "approved",
-			"is_active":  isActive,
-			"tenant_id":  tenantID,
+			"id":             id,
+			"role":           role,
+			"kyc_status":     "approved",
+			"is_active":      isActive,
+			"account_status": accountStatus,
+			"tenant_id":      tenantID,
 		})
 	}))
 
@@ -131,6 +138,25 @@ func TestUpdateEmployeeLocation_Endpoint(t *testing.T) {
 		u.UpdateEmployeeLocation(recOwner, reqOwner)
 		if recOwner.Code != http.StatusForbidden {
 			t.Errorf("Expected 403 for owner role pinging employee location, got %d", recOwner.Code)
+		}
+	})
+
+	t.Run("F-04: Location ping rejected with 403 when owner is suspended", func(t *testing.T) {
+		suspendedOwnerID := "tenant-suspended-owner"
+		empOfSuspendedID := "emp-under-tenant-suspended-owner"
+		tokenEmpSuspended, _ := jwtutil.GenerateToken(empOfSuspendedID, "employee", suspendedOwnerID, "emp-susp@test.com")
+
+		body, _ := json.Marshal(models.EmployeeLocationPingRequest{
+			RequesterToken: tokenEmpSuspended,
+			Latitude:       30.05,
+			Longitude:      31.20,
+		})
+		req := httptest.NewRequest("POST", "/users/employee/location", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		u.UpdateEmployeeLocation(rec, req)
+
+		if rec.Code != http.StatusForbidden {
+			t.Fatalf("F-04 Repro failure: expected 403 Forbidden for employee under suspended owner, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 	})
 

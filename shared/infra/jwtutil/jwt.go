@@ -283,7 +283,25 @@ func RevokeAllUserTokens(userID string) error {
 		log.Printf("[SECURITY CRITICAL] Redis error storing user token invalidation timestamp (FAIL CLOSED): %v. User ID: %s", err, userID)
 		return fmt.Errorf("jwtutil: revoke all user tokens failed: %w", err)
 	}
+
+	// Publish account revocation / suspension event to account:events channel (F-03)
+	eventPayload := fmt.Sprintf(`{"action":"ACCOUNT_SUSPENDED","user_id":%q}`, userID)
+	if pubErr := redisClient.Publish(ctx, "account:events", eventPayload).Err(); pubErr != nil {
+		log.Printf("[SECURITY WARNING] Redis pubsub error publishing revocation event for %s: %v", userID, pubErr)
+	}
+
 	return nil
+}
+
+// IsUserRevoked checks if a user's tokens have been invalidated in Redis (F-03).
+func IsUserRevoked(userID string) bool {
+	if redisClient == nil || userID == "" {
+		return false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	val, err := redisClient.Get(ctx, "jwt:invalidated_before:"+userID).Result()
+	return err == nil && val != ""
 }
 
 // RevokeToken denylists a token's jti in Redis.

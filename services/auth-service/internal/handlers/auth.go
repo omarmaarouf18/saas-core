@@ -997,6 +997,7 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 		"tenant_id":          user.TenantID,
 		"kyc_status":         user.KYCStatus,
 		"is_active":          user.IsActive,
+		"account_status":     user.AccountStatus,
 	}
 	if user.Role == models.RoleEmployee {
 		resp["kye_status"] = user.KYEStatus
@@ -2052,6 +2053,16 @@ func (a *Auth) SuspendAccount(w http.ResponseWriter, r *http.Request) {
 
 	// Invalidate active JWT tokens in Redis across all services
 	_ = jwtutil.RevokeAllUserTokens(targetUserID)
+
+	// F-04: If suspending an owner, cascade token revocation and connection termination to all tenant employees
+	if targetUser.Role == "owner" {
+		employees := a.store.GetEmployeesByOwner(ctx, targetUserID)
+		for _, emp := range employees {
+			if emp != nil && emp.ID != "" {
+				_ = jwtutil.RevokeAllUserTokens(emp.ID)
+			}
+		}
+	}
 
 	// Append audit log
 	a.store.AppendAudit(ctx, models.AuditEntry{

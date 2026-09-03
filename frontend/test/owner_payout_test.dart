@@ -345,7 +345,8 @@ void main() {
     expect(find.text('تم الطلب'), findsOneWidget);
   });
 
-  testWidgets('WalletScreen error banner renders when ownerProvider.error is set',
+  testWidgets(
+      'WalletScreen error banner renders when ownerProvider.error is set',
       (WidgetTester tester) async {
     final fakeApi = FakeApiClientForPayout();
     final ownerProvider = MockOwnerProviderWithCustomError(
@@ -363,7 +364,8 @@ void main() {
     expect(find.text('Failed to load wallet ledger'), findsOneWidget);
   });
 
-  testWidgets('WalletScreen error banner is absent on successful load (error is null)',
+  testWidgets(
+      'WalletScreen error banner is absent on successful load (error is null)',
       (WidgetTester tester) async {
     final fakeApi = FakeApiClientForPayout();
     final ownerProvider = OwnerProvider(fakeApi);

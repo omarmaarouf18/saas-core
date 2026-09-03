@@ -192,7 +192,8 @@ void main() {
     expect(owner.lastRequestedTier, 'paid');
   });
 
-  testWidgets('SubscriptionScreen error banner renders when ownerProvider.error is set',
+  testWidgets(
+      'SubscriptionScreen error banner renders when ownerProvider.error is set',
       (WidgetTester tester) async {
     final apiClient = ApiClient();
     final auth = MockAuthProvider(apiClient);
@@ -211,7 +212,8 @@ void main() {
     expect(find.text('Failed to load subscription status'), findsOneWidget);
   });
 
-  testWidgets('SubscriptionScreen error banner is absent on successful load (error is null)',
+  testWidgets(
+      'SubscriptionScreen error banner is absent on successful load (error is null)',
       (WidgetTester tester) async {
     final apiClient = ApiClient();
     final auth = MockAuthProvider(apiClient);
@@ -226,7 +228,8 @@ void main() {
     expect(find.byKey(const Key('subscription_screen_error')), findsNothing);
   });
 
-  testWidgets('Tapping retry on SubscriptionScreen error banner re-triggers fetch',
+  testWidgets(
+      'Tapping retry on SubscriptionScreen error banner re-triggers fetch',
       (WidgetTester tester) async {
     final apiClient = ApiClient();
     final auth = MockAuthProvider(apiClient);

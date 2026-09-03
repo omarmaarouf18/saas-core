@@ -347,3 +347,54 @@ func TestSSEHub_FCMFailureDoesNotFailSSEBroadcast(t *testing.T) {
 		t.Errorf("SSE broadcast failed due to FCM error")
 	}
 }
+
+func TestSSEHub_AccountSuspended_ForceClosesConnection_F03(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	h := NewSSEHub()
+	defer h.Close()
+
+	h.SetRedisClient(rdb)
+
+	client := &SSEClient{
+		ID:       "token-123",
+		UserID:   "suspended-user-456",
+		TenantID: "tenant-A",
+		Role:     RoleOwner,
+		Send:     make(chan []byte, 10),
+	}
+
+	h.Register(client)
+
+	if h.ClientCount() != 1 {
+		t.Fatalf("expected 1 client registered, got %d", h.ClientCount())
+	}
+
+	// Publish ACCOUNT_SUSPENDED event via Redis
+	pubPayload := `{"action":"ACCOUNT_SUSPENDED","user_id":"suspended-user-456"}`
+	if err := rdb.Publish(context.Background(), "account:events", pubPayload).Err(); err != nil {
+		t.Fatalf("failed to publish suspension event: %v", err)
+	}
+
+	// Verify client Send channel is closed
+	select {
+	case _, ok := <-client.Send:
+		if ok {
+			t.Errorf("expected client.Send channel to be closed on suspension, but received value")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("timed out waiting for client.Send channel to be closed after ACCOUNT_SUSPENDED event")
+	}
+
+	// Verify client count dropped to 0
+	if h.ClientCount() != 0 {
+		t.Errorf("expected 0 clients in hub after suspension disconnect, got %d", h.ClientCount())
+	}
+}

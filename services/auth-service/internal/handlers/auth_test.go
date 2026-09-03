@@ -222,6 +222,7 @@ func setupTestAuth(t *testing.T) (*Auth, *store.MongoDB, func()) {
 		t.Fatalf("failed to start miniredis: %v", err)
 	}
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	jwtutil.SetRedisClient(rdb)
 
 	cfg := &config.Config{
 		AppEnv:                "local",
@@ -241,6 +242,7 @@ func setupTestAuth(t *testing.T) (*Auth, *store.MongoDB, func()) {
 			_ = s.DropDatabase(context.Background())
 			s.Close(context.Background())
 		}
+		jwtutil.SetRedisClient(nil)
 		mr.Close()
 		rdb.Close()
 	}

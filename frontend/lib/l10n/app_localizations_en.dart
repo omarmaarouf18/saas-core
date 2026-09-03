@@ -1012,6 +1012,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get declineOffer => 'Decline';
 
   @override
+  String get chatWithCustomer => 'Chat with Customer';
+
+  @override
+  String get courierFoundReviewing =>
+      'Courier found, reviewing your request...';
+
+  @override
+  String get earlyChatAvailableHint =>
+      'You can chat with the courier while they review your order.';
+
+  @override
   String offerExpiresIn(int seconds) {
     return 'Expires in ${seconds}s';
   }

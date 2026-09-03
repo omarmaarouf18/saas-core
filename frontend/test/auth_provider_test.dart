@@ -62,8 +62,7 @@ void main() {
     expect(auth.isAuthenticated, isTrue);
     expect(auth.token, 'jwt-s');
     expect(auth.user!.username, 'seeded-server');
-    expect(
-        o.requests.single.uri.queryParameters['user_token'], 'jwt-s');
+    expect(o.requests.single.uri.queryParameters['user_token'], 'jwt-s');
   });
 
   test('no stored session stays unauthenticated without requests', () async {
@@ -74,10 +73,9 @@ void main() {
     expect(auth.user, isNull);
   });
 
-  test('login with direct token stores the session and persists it',
-      () async {
-    final (auth, api) =
-        makeAuth(handler: (req) => MockHttpResponse(200, jsonBody: {
+  test('login with direct token stores the session and persists it', () async {
+    final (auth, api) = makeAuth(
+        handler: (req) => MockHttpResponse(200, jsonBody: {
               'token': 'jwt-123',
               'user_id': 'u1',
               'username': 'omar',
@@ -100,7 +98,9 @@ void main() {
   });
 
   test('2FA login returns dev_otp and does NOT authenticate', () async {
-    final (auth, _) = makeAuth(handler: (req) => MockHttpResponse(200, jsonBody: {'dev_otp': '424242'}));
+    final (auth, _) = makeAuth(
+        handler: (req) =>
+            MockHttpResponse(200, jsonBody: {'dev_otp': '424242'}));
     await pump();
 
     final otp = await auth.login('e@x.dev', 'pw');
@@ -112,8 +112,9 @@ void main() {
 
   test('failed login preserves the backend message and clears loading',
       () async {
-    final (auth, _) = makeAuth(handler: (req) =>
-        MockHttpResponse(401, jsonBody: {'error': 'invalid credentials'}));
+    final (auth, _) = makeAuth(
+        handler: (req) =>
+            MockHttpResponse(401, jsonBody: {'error': 'invalid credentials'}));
     await pump();
 
     final otp = await auth.login('e@x.dev', 'wrong');
@@ -192,8 +193,7 @@ void main() {
     expect(await auth.resetPassword('e@x.dev', '321321', 'brandNew9'), isTrue);
   });
 
-  test('resetPassword failure returns false with the backend reason',
-      () async {
+  test('resetPassword failure returns false with the backend reason', () async {
     final (auth, _) = makeAuth(
         handler: (req) =>
             MockHttpResponse(401, jsonBody: {'error': 'invalid OTP'}));
@@ -237,8 +237,8 @@ void main() {
   test('forceLogout clears locally without any backend call', () async {
     final (auth, api) =
         makeAuth(handler: (req) => MockHttpResponse.ok(), seededSession: {
-          ...seededSession,
-        });
+      ...seededSession,
+    });
     await pump();
     expect(auth.isAuthenticated, isTrue);
 
@@ -250,29 +250,34 @@ void main() {
 
   test('updateOwnProfile applies the returned user envelope', () async {
     var call = 0;
-    final (auth, _) = makeAuth(handler: (req) {
-      call++;
-      if (call == 1) {
-        return MockHttpResponse(200,
-            jsonBody: {'id': 'u-s', 'email': 's@x.dev', 'role': 'customer'});
-      }
-      expect(req.method, 'PATCH');
-      expect(jsonDecode(req.body!), {
-        'username': 'renamed',
-        'phone': '+201000000000',
-        'frequent_addresses': ['Home', 'Work'],
-      });
-      return MockHttpResponse(200, jsonBody: {
-        'user': {
-          'id': 'u-s',
-          'email': 's@x.dev',
-          'username': 'renamed',
-          'phone': '+201000000000',
-          'role': 'customer',
-          'frequent_addresses': ['Home', 'Work'],
+    final (auth, _) = makeAuth(
+        handler: (req) {
+          call++;
+          if (call == 1) {
+            return MockHttpResponse(200, jsonBody: {
+              'id': 'u-s',
+              'email': 's@x.dev',
+              'role': 'customer'
+            });
+          }
+          expect(req.method, 'PATCH');
+          expect(jsonDecode(req.body!), {
+            'username': 'renamed',
+            'phone': '+201000000000',
+            'frequent_addresses': ['Home', 'Work'],
+          });
+          return MockHttpResponse(200, jsonBody: {
+            'user': {
+              'id': 'u-s',
+              'email': 's@x.dev',
+              'username': 'renamed',
+              'phone': '+201000000000',
+              'role': 'customer',
+              'frequent_addresses': ['Home', 'Work'],
+            },
+          });
         },
-      });
-    }, seededSession: {...seededSession});
+        seededSession: {...seededSession});
     await pump(); // auto-login consumes call 1
 
     final ok = await auth.updateOwnProfile(
@@ -299,7 +304,8 @@ void main() {
   });
 
   test('uploadDocument rejects customer-role accounts', () async {
-    final (auth, api) = makeAuth(handler: (req) => MockHttpResponse.ok(),
+    final (auth, api) = makeAuth(
+        handler: (req) => MockHttpResponse.ok(),
         seededSession: {...seededSession});
     await pump();
 

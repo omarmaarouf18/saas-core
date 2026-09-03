@@ -75,6 +75,42 @@ func TestCanAccessChannel(t *testing.T) {
 			return
 		}
 
+		if jobID == "job-pending-dispatch" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{
+				"owner_id":                    "job-owner-id",
+				"employee_id":                 "",
+				"user_id":                     "job-user-id",
+				"status":                      "pending_dispatch",
+				"current_offered_employee_id": "offered-courier-id",
+			})
+			return
+		}
+
+		if jobID == "job-offer-expired" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{
+				"owner_id":                    "job-owner-id",
+				"employee_id":                 "",
+				"user_id":                     "job-user-id",
+				"status":                      "unavailable",
+				"current_offered_employee_id": "",
+			})
+			return
+		}
+
+		if jobID == "job-offer-advanced" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{
+				"owner_id":                    "job-owner-id",
+				"employee_id":                 "",
+				"user_id":                     "job-user-id",
+				"status":                      "pending_dispatch",
+				"current_offered_employee_id": "next-courier-id",
+			})
+			return
+		}
+
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(map[string]string{"error": "job not found"})
 	}))
@@ -151,6 +187,36 @@ func TestCanAccessChannel(t *testing.T) {
 			name:       "User/Client Authorized",
 			userID:     "job-user-id",
 			channel:    "job:valid-job-123",
+			expectAuth: true,
+		},
+		{
+			name:       "Offered Courier Authorized During Pending Dispatch (F-01 / Part B)",
+			userID:     "offered-courier-id",
+			channel:    "job:job-pending-dispatch",
+			expectAuth: true,
+		},
+		{
+			name:       "Unoffered Courier Denied During Pending Dispatch (F-01 / Part B)",
+			userID:     "unoffered-courier-id",
+			channel:    "job:job-pending-dispatch",
+			expectAuth: false,
+		},
+		{
+			name:       "Previous Courier Denied After Offer Expiry (Part B)",
+			userID:     "offered-courier-id",
+			channel:    "job:job-offer-expired",
+			expectAuth: false,
+		},
+		{
+			name:       "Previous Courier Denied After Cascade Advance (Part B)",
+			userID:     "offered-courier-id",
+			channel:    "job:job-offer-advanced",
+			expectAuth: false,
+		},
+		{
+			name:       "New Courier Authorized After Cascade Advance (Part B)",
+			userID:     "next-courier-id",
+			channel:    "job:job-offer-advanced",
 			expectAuth: true,
 		},
 		{

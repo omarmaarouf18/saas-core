@@ -480,6 +480,9 @@
   "incomingJobOffer": "Incoming Job Offer",
   "acceptOffer": "Accept Offer",
   "declineOffer": "Decline",
+  "chatWithCustomer": "Chat with Customer",
+  "courierFoundReviewing": "Courier found, reviewing your request...",
+  "earlyChatAvailableHint": "You can chat with the courier while they review your order.",
   "offerExpiresIn": "Expires in {seconds}s",
   "@offerExpiresIn": {
     "placeholders": {

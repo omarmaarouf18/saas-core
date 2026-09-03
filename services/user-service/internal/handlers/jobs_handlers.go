@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"math"
 	"net/http"
@@ -679,6 +680,10 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if job.EmployeeID != "" {
+			_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, job.EmployeeID, job.ID)
+		}
+
 		log.Printf("[USER] COD Job %s completed: actual_cash_collected=%.2f logged (0%% platform commission)", job.ID, cashAmount)
 		writeJSON(w, http.StatusOK, map[string]any{
 			"message":              "COD job completed and collection recorded (0% platform commission)",
@@ -709,6 +714,10 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 	if err := u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusCompleted); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to complete job: " + err.Error()})
 		return
+	}
+
+	if job.EmployeeID != "" {
+		_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, job.EmployeeID, job.ID)
 	}
 
 	// The response must reflect the ACTUAL fund movement. ReleaseEscrowWithSplit
@@ -818,7 +827,10 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if resolvedRequester != job.OwnerID && resolvedRequester != job.UserID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
+	isOfferedCourier := job.Status == models.JobStatusPendingDispatch && job.CurrentOfferedEmployeeID != "" && resolvedRequester == job.CurrentOfferedEmployeeID
+	isAuthorized := resolvedRequester == job.OwnerID || resolvedRequester == job.UserID || (job.EmployeeID != "" && resolvedRequester == job.EmployeeID) || isOfferedCourier
+
+	if !isAuthorized {
 		// #nosec G706 //nolint:gosec -- IDs are from verified JWT tokens and database, log injection not possible
 		log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to access job %s owned by owner %s, employee %s, user %s", resolvedRequester, job.ID, job.OwnerID, job.EmployeeID, job.UserID)
 		handlerutil.ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to access job %s", job.ID), handlerutil.GetClientIP(r))
@@ -1327,7 +1339,7 @@ func (u *UserService) UpdateEmployeeLocation(w http.ResponseWriter, r *http.Requ
 	}
 
 	var req models.EmployeeLocationPingRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
 	}
@@ -1366,6 +1378,24 @@ func (u *UserService) UpdateEmployeeLocation(w http.ResponseWriter, r *http.Requ
 	tenantID := claims.TenantID
 	if tenantID == "" {
 		tenantID = employeeID
+	}
+
+	// F-04: Verify employee assignment and ensure the tenant owner is active and not suspended
+	validAssignment, err := u.verifyEmployeeAssignment(employeeID, tenantID)
+	if err != nil {
+		if errors.Is(err, ErrServiceUnavailable) {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
+				"error":   "service_unavailable",
+				"message": "Authentication service is temporarily unavailable. Please try again later.",
+			})
+			return
+		}
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "employee verification failed: " + err.Error()})
+		return
+	}
+	if !validAssignment {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "employee is not assigned to an active tenant or tenant is suspended"})
+		return
 	}
 
 	if !isValidCoordinate(req.Latitude, req.Longitude) {
@@ -1558,8 +1588,8 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req jobOfferActionRequest
-	if r.Body != nil && r.ContentLength > 0 {
-		_ = json.NewDecoder(r.Body).Decode(&req)
+	if r.Body != nil {
+		_ = json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req)
 	}
 	if requesterToken == "" {
 		requesterToken = req.RequesterToken
@@ -1660,8 +1690,24 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// F-02: Atomically acquire courier-busy lock to prevent concurrent double-accepts
+	acquired, err := u.store.TryAcquireCourierLock(ctx, job.OwnerID, callerID, job.ID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to acquire courier lock: " + err.Error()})
+		return
+	}
+	if !acquired {
+		_ = u.advanceCascade(ctx, job)
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":   "courier_busy",
+			"message": "courier already has an active job; offer invalidated",
+		})
+		return
+	}
+
 	svc := u.store.GetServiceByID(ctx, job.ServiceID)
 	if svc == nil {
+		_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, callerID, job.ID)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "service not found"})
 		return
 	}
@@ -1690,6 +1736,15 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 		if err := u.store.LockEscrow(ctx, job.OwnerID, job.ID, escrowToLock); err != nil {
 			// #nosec G706 //nolint:gosec -- job.ID is system-generated UUID, log injection not possible
 			log.Printf("[USER] Escrow lock failed on accept for job %s: %v", job.ID, err)
+			_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, callerID, job.ID)
+			// F-05: Atomically cancel job and notify customer to stop cascade
+			_ = u.store.CancelJobOnEscrowFailure(ctx, job.ID, "owner_escrow_lock_failed")
+			job.Status = models.JobStatusCancelled
+			job.CancellationReason = "owner_escrow_lock_failed"
+			job.CurrentOfferedEmployeeID = ""
+			job.OfferExpiresAt = nil
+			u.notifyCustomerEscrowLockFailed(job)
+
 			writeJSON(w, http.StatusBadRequest, map[string]string{
 				"error":   "escrow_lock_failed",
 				"message": "owner has insufficient funds to lock escrow for this booking",
@@ -1698,7 +1753,12 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if u.acceptJobOfferBeforeCommitHook != nil {
+		u.acceptJobOfferBeforeCommitHook(ctx, job.ID)
+	}
+
 	if err := u.store.AcceptJobOffer(ctx, job.ID, callerID, nextStatus, dist, &assignedLoc, suggestedPrice, escrowToLock); err != nil {
+		_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, callerID, job.ID)
 		if escrowToLock > 0 {
 			_ = u.performRollbackEscrow(context.Background(), job.OwnerID, escrowToLock)
 		}
@@ -1750,8 +1810,8 @@ func (u *UserService) DeclineJobOffer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req jobOfferActionRequest
-	if r.Body != nil && r.ContentLength > 0 {
-		_ = json.NewDecoder(r.Body).Decode(&req)
+	if r.Body != nil {
+		_ = json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req)
 	}
 	if requesterToken == "" {
 		requesterToken = req.RequesterToken
@@ -2032,6 +2092,58 @@ func (u *UserService) broadcastJobUnavailable(job *models.Job) {
 			"user_id":   job.UserID,
 			"title":     "All Couriers Busy",
 			"body":      "All couriers in your area are currently busy. You can retry your booking anytime.",
+			"roles":     []string{"client", "user"},
+		}
+
+		bodyBytes, err := json.Marshal(payload)
+		if err != nil {
+			return
+		}
+
+		notificationURL := u.notificationServiceURL
+		if notificationURL == "" {
+			notificationURL = "http://notification-service:3004"
+		}
+		url := fmt.Sprintf("%s/notifications/send", notificationURL)
+		// #nosec G704 //nolint:gosec -- notificationURL is trusted internal config
+		req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
+		if err != nil {
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Internal-Token", u.internalServiceToken)
+
+		if u.notificationClient != nil {
+			resp, err := u.notificationClient.Do(req)
+			if err == nil && resp != nil {
+				_ = resp.Body.Close()
+			}
+		} else if u.httpClient != nil {
+			resp, err := u.httpClient.Do(req)
+			if err == nil && resp != nil {
+				_ = resp.Body.Close()
+			}
+		}
+	}()
+}
+
+func (u *UserService) notifyCustomerEscrowLockFailed(job *models.Job) {
+	if job == nil || job.UserID == "" {
+		return
+	}
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("[USER] Recovered from panic in notifyCustomerEscrowLockFailed: %v", r)
+			}
+		}()
+
+		payload := map[string]any{
+			"type":      "job_cancelled",
+			"tenant_id": job.OwnerID,
+			"user_id":   job.UserID,
+			"title":     "Booking Cancelled",
+			"body":      "Your booking was cancelled because the service owner could not lock escrow funds.",
 			"roles":     []string{"client", "user"},
 		}
 
@@ -2399,6 +2511,13 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to record cancellation reason: " + err.Error()})
 			return
 		}
+	}
+
+	if job.EmployeeID != "" {
+		_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, job.EmployeeID, job.ID)
+	}
+	if job.CurrentOfferedEmployeeID != "" {
+		_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, job.CurrentOfferedEmployeeID, job.ID)
 	}
 
 	// Audit-log job cancellation

@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -74,7 +75,7 @@ func (u *UserService) AdminActivateSubscription(w http.ResponseWriter, r *http.R
 	}
 
 	var req models.AdminActivateSubscriptionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
 	}
@@ -87,6 +88,44 @@ func (u *UserService) AdminActivateSubscription(w http.ResponseWriter, r *http.R
 	}
 
 	ctx := r.Context()
+
+	// F-07: Verify tenant account status via auth-service; reject if suspended
+	targetTenantID := tenantID
+	if targetTenantID == "" && subID != "" {
+		existingSub := u.store.GetSubscriptionByID(ctx, subID)
+		if existingSub != nil {
+			targetTenantID = existingSub.TenantID
+		}
+	}
+
+	if targetTenantID != "" {
+		authURL := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, targetTenantID)
+		// #nosec G704 //nolint:gosec -- authServiceURL is trusted internal config
+		authReq, err := http.NewRequestWithContext(ctx, "GET", authURL, nil)
+		if err == nil {
+			authReq.Header.Set("X-Internal-Token", u.internalServiceToken)
+			authResp, err := u.authClient.Do(authReq)
+			if err == nil {
+				defer authResp.Body.Close()
+				if authResp.StatusCode == http.StatusOK {
+					var tenantUser struct {
+						IsActive      bool   `json:"is_active"`
+						AccountStatus string `json:"account_status"`
+					}
+					if err := json.NewDecoder(authResp.Body).Decode(&tenantUser); err == nil {
+						if !tenantUser.IsActive || tenantUser.AccountStatus == "suspended" {
+							writeJSON(w, http.StatusForbidden, map[string]string{
+								"error":   "tenant_suspended",
+								"message": "cannot activate subscription for a suspended tenant",
+							})
+							return
+						}
+					}
+				}
+			}
+		}
+	}
+
 	sub, err := u.store.AdminActivateSubscription(ctx, tenantID, subID, req.DurationDays, reviewer.ID)
 	if err != nil {
 		if strings.Contains(err.Error(), "already active") || strings.Contains(err.Error(), "concurrently modified") {
@@ -124,7 +163,7 @@ func (u *UserService) AdminRevokeSubscription(w http.ResponseWriter, r *http.Req
 	}
 
 	var req models.AdminRevokeSubscriptionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
 	}

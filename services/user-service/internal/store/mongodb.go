@@ -599,6 +599,32 @@ func (s *MongoDB) AcceptJobOffer(ctx context.Context, jobID, employeeID string, 
 	return nil
 }
 
+// CancelJobOnEscrowFailure atomically transitions a job from pending_dispatch to cancelled
+// when escrow locking fails (e.g. owner insolvent) so the cascade is stopped immediately (F-05).
+func (s *MongoDB) CancelJobOnEscrowFailure(ctx context.Context, jobID, reason string) error {
+	filter := bson.M{
+		"_id":    jobID,
+		"status": models.JobStatusPendingDispatch,
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"status":                      models.JobStatusCancelled,
+			"cancellation_reason":         reason,
+			"current_offered_employee_id": "",
+			"offer_expires_at":            nil,
+			"updated_at":                  time.Now().UTC(),
+		},
+	}
+	res, err := s.jobs.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("store: cancel job on escrow failure: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("job %s not in pending_dispatch", jobID)
+	}
+	return nil
+}
+
 // GetExpiredDispatchJobs finds all pending_dispatch jobs whose offer has expired.
 func (s *MongoDB) GetExpiredDispatchJobs(ctx context.Context, now time.Time) ([]*models.Job, error) {
 	filter := bson.M{
@@ -1068,6 +1094,16 @@ func haversineKm(lat1, lon1, lat2, lon2 float64) float64 {
 func (s *MongoDB) GetSubscription(ctx context.Context, tenantID string) *models.Subscription {
 	var sub models.Subscription
 	err := s.subscriptions.FindOne(ctx, bson.M{"tenant_id": tenantID}).Decode(&sub)
+	if err != nil {
+		return nil
+	}
+	return &sub
+}
+
+// GetSubscriptionByID returns the subscription by its document ID.
+func (s *MongoDB) GetSubscriptionByID(ctx context.Context, id string) *models.Subscription {
+	var sub models.Subscription
+	err := s.subscriptions.FindOne(ctx, bson.M{"_id": id}).Decode(&sub)
 	if err != nil {
 		return nil
 	}
@@ -1664,6 +1700,66 @@ func (s *MongoDB) GetFreshEmployeeLocations(ctx context.Context, tenantID string
 		return nil, err
 	}
 	return locs, nil
+}
+
+// TryAcquireCourierLock attempts to atomically lock a courier to a specific job.
+// It succeeds only if active_job_id is unset, empty, or already matches the given jobID.
+// If an active_job_id is held by an old job that is already completed or cancelled, it self-heals.
+func (s *MongoDB) TryAcquireCourierLock(ctx context.Context, tenantID, employeeID, jobID string) (bool, error) {
+	filter := bson.M{
+		"tenant_id":   tenantID,
+		"employee_id": employeeID,
+		"$or": []bson.M{
+			{"active_job_id": bson.M{"$exists": false}},
+			{"active_job_id": ""},
+			{"active_job_id": nil},
+			{"active_job_id": jobID},
+		},
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"active_job_id": jobID,
+		},
+	}
+	res, err := s.employeeLocations.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return false, fmt.Errorf("store: acquire courier lock: %w", err)
+	}
+	if res.MatchedCount > 0 {
+		return true, nil
+	}
+
+	// Self-healing: check if the holding job has already terminated (completed/cancelled)
+	empLoc, err := s.GetEmployeeLocation(ctx, tenantID, employeeID)
+	if err == nil && empLoc != nil && empLoc.ActiveJobID != "" && empLoc.ActiveJobID != jobID {
+		oldJob := s.GetJob(ctx, empLoc.ActiveJobID)
+		if oldJob == nil || oldJob.Status == models.JobStatusCompleted || oldJob.Status == models.JobStatusCancelled || oldJob.Status == models.JobStatusUnavailable {
+			// Clear stale lock and retry once
+			_ = s.ReleaseCourierLock(ctx, tenantID, employeeID, empLoc.ActiveJobID)
+			resRetry, errRetry := s.employeeLocations.UpdateOne(ctx, filter, update)
+			if errRetry == nil && resRetry.MatchedCount > 0 {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
+}
+
+// ReleaseCourierLock clears active_job_id if it currently matches jobID.
+func (s *MongoDB) ReleaseCourierLock(ctx context.Context, tenantID, employeeID, jobID string) error {
+	filter := bson.M{
+		"tenant_id":     tenantID,
+		"employee_id":   employeeID,
+		"active_job_id": jobID,
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"active_job_id": "",
+		},
+	}
+	_, err := s.employeeLocations.UpdateOne(ctx, filter, update)
+	return err
 }
 
 // GetGlobalReconciliationQueue returns all jobs in status escrow_reconciliation_required across all tenants (ADR-0023).

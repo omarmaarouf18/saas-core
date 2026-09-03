@@ -1000,6 +1000,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get declineOffer => 'رفض';
 
   @override
+  String get chatWithCustomer => 'محادثة العميل';
+
+  @override
+  String get courierFoundReviewing =>
+      'تم العثور على مندوب، جاري مراجعة طلبك...';
+
+  @override
+  String get earlyChatAvailableHint =>
+      'يمكنك التحدث مع المندوب أثناء مراجعته لطلبك.';
+
+  @override
   String offerExpiresIn(int seconds) {
     return 'ينتهي خلال $seconds ثانية';
   }

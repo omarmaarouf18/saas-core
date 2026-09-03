@@ -516,9 +516,14 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             _buildItineraryCard(),
             const SizedBox(height: AppSpacing.md),
 
-            // 6. Assigned Courier Driver Card (if assigned)
+            // 6. Assigned Courier Driver Card (if assigned) or Early Offered Courier Card (during pending_dispatch)
             if (_currentJob.employeeId != null) ...[
               _buildAssignedCourierCard(context),
+              const SizedBox(height: AppSpacing.md),
+            ] else if (isPendingDispatch &&
+                _currentJob.currentOfferedEmployeeId != null &&
+                _currentJob.currentOfferedEmployeeId!.isNotEmpty) ...[
+              _buildOfferedCourierCard(context),
               const SizedBox(height: AppSpacing.md),
             ],
 
@@ -1033,6 +1038,73 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           IconButton(
             tooltip: context.l10n.tooltipOpenChat,
             key: const Key('open_chat_button'),
+            icon: Icon(
+              Icons.chat_outlined,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ChatScreen(jobId: _currentJob.id),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOfferedCourierCard(BuildContext context) {
+    final l10n = context.l10n;
+    return ThemedCard(
+      key: const Key('offered_courier_card'),
+      borderRadius: AppRadius.md,
+      padding: AppSpacing.md,
+      color: Theme.of(context)
+          .colorScheme
+          .primaryContainer
+          .withValues(alpha: 0.25),
+      borderSide: BorderSide(
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+        width: 1,
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundColor:
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+            child: Icon(
+              Icons.directions_bike_outlined,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.courierFoundReviewing,
+                  style: AppTypography.bodyMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  l10n.earlyChatAvailableHint,
+                  style: AppTypography.caption.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: context.l10n.tooltipOpenChat,
+            key: const Key('early_chat_button'),
             icon: Icon(
               Icons.chat_outlined,
               color: Theme.of(context).colorScheme.primary,

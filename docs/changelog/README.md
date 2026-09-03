@@ -2,8 +2,8 @@
 
 This directory contains categorized, detailed changelogs tracking the history and development of the Quick Delivery platform:
 
-*   [Security Fixes](security-fixes.md) — 130 entries detailing vulnerabilities, mTLS configuration, timing attacks, access controls (IDOR), rate limiters, and audit logging.
-*   [New Features](new-features.md) — 73 entries documenting complaint ticketing, KYB document uploads/reviews, location tracking, version gating, e-wallet payouts, UI capabilities, sequential cascade dispatch, and reviewer account directory/suspension.
+*   [Security Fixes](security-fixes.md) — 137 entries detailing vulnerabilities, mTLS configuration, timing attacks, access controls (IDOR), rate limiters, and audit logging.
+*   [New Features](new-features.md) — 74 entries documenting complaint ticketing, KYB document uploads/reviews, location tracking, version gating, e-wallet payouts, UI capabilities, sequential cascade dispatch, and reviewer account directory/suspension.
 *   [Infrastructure & Tooling](infrastructure.md) — 58 entries covering shared module extraction, automated test setups, CI matrix configurations, CD pipeline hardening, and CLI helper tools.
 *   [Bug Fixes](bug-fixes.md) — 88 entries detailing non-security fixes, consistency audits, race condition resolutions, error handling, and zero-commission cleanup.
 *   [Documentation](documentation.md) — 42 entries for documentation updates, application map sync, and audit reports.

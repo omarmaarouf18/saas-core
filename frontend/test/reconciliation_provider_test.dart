@@ -68,8 +68,7 @@ void main() {
 
     expect(
       provider.error,
-      friendlyErrorMessage(
-          ApiClientException('x', statusCode: 500)),
+      friendlyErrorMessage(ApiClientException('x', statusCode: 500)),
     );
     expect(provider.error, isNot(contains('mongo')));
     expect(provider.isLoading, isFalse);
@@ -79,8 +78,10 @@ void main() {
       () async {
     final overrides = installMockHttp((req) {
       if (req.uri.path.endsWith('/reconciliation-queue')) {
-        return MockHttpResponse(200,
-            jsonBody: [{'id': 'job-1'}, {'id': 'job-2'}]);
+        return MockHttpResponse(200, jsonBody: [
+          {'id': 'job-1'},
+          {'id': 'job-2'}
+        ]);
       }
       return MockHttpResponse(200, jsonBody: {'ok': true});
     });
@@ -126,8 +127,7 @@ void main() {
     expect(provider.queue.length, 1);
     expect(
       provider.error,
-      friendlyErrorMessage(
-          ApiClientException('x', statusCode: 409)),
+      friendlyErrorMessage(ApiClientException('x', statusCode: 409)),
     );
   });
 
@@ -146,7 +146,9 @@ void main() {
     expect(notified, 2);
   });
 
-  test('ReconciliationJob parses technical machine code and owns no display strings', () {
+  test(
+      'ReconciliationJob parses technical machine code and owns no display strings',
+      () {
     final job = ReconciliationJob.fromJson({
       'id': 'job-rec-1',
       'user_id': 'user-1',

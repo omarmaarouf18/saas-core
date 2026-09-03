@@ -42,6 +42,7 @@ type Notification struct {
 // SSEClient represents a single SSE connection.
 type SSEClient struct {
 	ID       string
+	UserID   string
 	TenantID string
 	Role     Role
 	Send     chan []byte
@@ -81,10 +82,24 @@ func (h *SSEHub) SetRedisClient(rdb *redis.Client) {
 	h.rdb = rdb
 	ctx, cancel := context.WithCancel(context.Background())
 	h.cancel = cancel
-	h.pubsub = rdb.PSubscribe(ctx, "notify:*")
+	h.pubsub = rdb.PSubscribe(ctx, "notify:*", "account:events")
 
 	go h.redisSubscriberLoop(ctx, h.pubsub)
 	log.Printf("[SSE-HUB] Connected to Redis Pub/Sub for cross-replica notification fan-out")
+}
+
+// DisconnectUser closes and removes all active SSE connections belonging to userID (F-03).
+func (h *SSEHub) DisconnectUser(userID string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	for client := range h.clients {
+		if client.UserID == userID || client.ID == userID {
+			delete(h.clients, client)
+			close(client.Send)
+			log.Printf("[SSE-HUB] Force disconnected suspended user: %s", userID)
+		}
+	}
 }
 
 // Close gracefully stops the Redis Pub/Sub subscriber loop and closes all connected SSE client channels.
@@ -118,6 +133,18 @@ func (h *SSEHub) redisSubscriberLoop(ctx context.Context, pubsub *redis.PubSub) 
 		case msg, ok := <-ch:
 			if !ok {
 				return
+			}
+			if msg.Channel == "account:events" {
+				var event struct {
+					Action string `json:"action"`
+					UserID string `json:"user_id"`
+				}
+				if err := json.Unmarshal([]byte(msg.Payload), &event); err == nil {
+					if event.Action == "ACCOUNT_SUSPENDED" && event.UserID != "" {
+						h.DisconnectUser(event.UserID)
+					}
+				}
+				continue
 			}
 			var n Notification
 			if err := json.Unmarshal([]byte(msg.Payload), &n); err != nil {

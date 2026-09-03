@@ -664,3 +664,141 @@ func TestSuspendAndReactivateLifecycle(t *testing.T) {
 		t.Errorf("expected ACCOUNT_REACTIVATED audit entry to be recorded")
 	}
 }
+
+func TestAccountSuspension_OwnerSuspensionRevokesEmployeeTokens_F04(t *testing.T) {
+	auth, s, cleanup := setupTestAuth(t)
+	if auth == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+
+	// Seed reviewer
+	rawTok := "reviewer-token-f04"
+	_ = s.AddReviewer(ctx, &models.Reviewer{
+		ID:    "reviewer-f04",
+		Token: rawTok,
+		Name:  "Lead Reviewer",
+	})
+
+	setHeaders := func(req *http.Request) {
+		req.Header.Set("X-Internal-Token", auth.internalServiceToken)
+		req.Header.Set("X-Reviewer-Token", rawTok)
+	}
+
+	hash, _ := bcrypt.GenerateFromPassword([]byte("Password123!"), bcrypt.MinCost)
+
+	// 1. Create owner and 2 employees under that owner
+	owner := &models.User{
+		ID:            "owner-f04-target",
+		Email:         "owner-f04@test.com",
+		Username:      "owner_f04",
+		Password:      string(hash),
+		Role:          models.RoleOwner,
+		IsActive:      true,
+		AccountStatus: models.AccountStatusActive,
+		KYCStatus:     models.KYCApproved,
+		CreatedAt:     time.Now().UTC(),
+	}
+	_ = s.CreateUser(ctx, owner)
+
+	emp1 := &models.User{
+		ID:            "emp1-f04-target",
+		Email:         "emp1-f04@test.com",
+		Username:      "emp1_f04",
+		Password:      string(hash),
+		Role:          models.RoleEmployee,
+		TenantID:      owner.ID,
+		IsActive:      true,
+		AccountStatus: models.AccountStatusActive,
+		KYCStatus:     models.KYCApproved,
+		CreatedAt:     time.Now().UTC(),
+	}
+	_ = s.CreateUser(ctx, emp1)
+
+	emp2 := &models.User{
+		ID:            "emp2-f04-target",
+		Email:         "emp2-f04@test.com",
+		Username:      "emp2_f04",
+		Password:      string(hash),
+		Role:          models.RoleEmployee,
+		TenantID:      owner.ID,
+		IsActive:      true,
+		AccountStatus: models.AccountStatusActive,
+		KYCStatus:     models.KYCApproved,
+		CreatedAt:     time.Now().UTC(),
+	}
+	_ = s.CreateUser(ctx, emp2)
+
+	// Another tenant employee (should NOT be revoked)
+	otherOwner := &models.User{
+		ID:            "other-owner-f04",
+		Email:         "other-owner-f04@test.com",
+		Username:      "other_owner_f04",
+		Password:      string(hash),
+		Role:          models.RoleOwner,
+		IsActive:      true,
+		AccountStatus: models.AccountStatusActive,
+		KYCStatus:     models.KYCApproved,
+		CreatedAt:     time.Now().UTC(),
+	}
+	_ = s.CreateUser(ctx, otherOwner)
+
+	otherEmp := &models.User{
+		ID:            "other-emp-f04",
+		Email:         "other-emp-f04@test.com",
+		Username:      "other_emp_f04",
+		Password:      string(hash),
+		Role:          models.RoleEmployee,
+		TenantID:      otherOwner.ID,
+		IsActive:      true,
+		AccountStatus: models.AccountStatusActive,
+		KYCStatus:     models.KYCApproved,
+		CreatedAt:     time.Now().UTC(),
+	}
+	_ = s.CreateUser(ctx, otherEmp)
+
+	// Check initially not revoked
+	if jwtutil.IsUserRevoked(emp1.ID) {
+		t.Fatalf("emp1 should not be revoked initially")
+	}
+	if jwtutil.IsUserRevoked(emp2.ID) {
+		t.Fatalf("emp2 should not be revoked initially")
+	}
+
+	mux := http.NewServeMux()
+	auth.RegisterRoutes(mux)
+
+	// 2. Suspend the owner
+	body, _ := json.Marshal(models.SuspendAccountRequest{
+		UserID: owner.ID,
+		Reason: "Tenant breach of terms",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/auth/accounts/suspend", bytes.NewReader(body))
+	setHeaders(req)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for owner suspension, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	// 3. Verify owner is revoked
+	if !jwtutil.IsUserRevoked(owner.ID) {
+		t.Errorf("expected owner %s to be revoked in Redis", owner.ID)
+	}
+
+	// 4. Verify both employees are revoked
+	if !jwtutil.IsUserRevoked(emp1.ID) {
+		t.Errorf("expected employee 1 (%s) to be revoked in Redis after owner suspension", emp1.ID)
+	}
+	if !jwtutil.IsUserRevoked(emp2.ID) {
+		t.Errorf("expected employee 2 (%s) to be revoked in Redis after owner suspension", emp2.ID)
+	}
+
+	// 5. Verify other tenant's employee is NOT revoked
+	if jwtutil.IsUserRevoked(otherEmp.ID) {
+		t.Errorf("unrelated employee (%s) was unexpectedly revoked", otherEmp.ID)
+	}
+}

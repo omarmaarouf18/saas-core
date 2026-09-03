@@ -721,8 +721,11 @@ func (s *MongoDB) StartOTPCleanup(ctx context.Context, interval time.Duration) {
 // GetEmployeesByOwner returns all employees bound to the given owner ID.
 func (s *MongoDB) GetEmployeesByOwner(ctx context.Context, ownerID string) []*models.User {
 	cursor, err := s.users.Find(ctx, bson.M{
-		"role":     models.RoleEmployee,
-		"owner_id": ownerID,
+		"role": models.RoleEmployee,
+		"$or": []bson.M{
+			{"owner_id": ownerID},
+			{"tenant_id": ownerID},
+		},
 	})
 	if err != nil {
 		log.Printf("[AUTH-STORE] GetEmployeesByOwner error: %v", err)

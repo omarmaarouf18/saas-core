@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -392,7 +393,7 @@ func (u *UserService) AdminResolveReconciliation(w http.ResponseWriter, r *http.
 	}
 
 	var req models.AdminResolveReconciliationRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
 	}
@@ -426,6 +427,10 @@ func (u *UserService) AdminResolveReconciliation(w http.ResponseWriter, r *http.
 		}
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
+	}
+
+	if updatedJob.EmployeeID != "" {
+		_ = u.store.ReleaseCourierLock(ctx, updatedJob.OwnerID, updatedJob.EmployeeID, updatedJob.ID)
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_ESCROW_RECONCILIATION_RESOLVED", "user-service", reviewer.ID, updatedJob.OwnerID, fmt.Sprintf("resolved dispute for job %s: decision=%s, reason=%s", updatedJob.ID, req.Decision, reason), handlerutil.GetClientIP(r))
