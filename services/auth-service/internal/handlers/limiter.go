@@ -9,9 +9,10 @@ import (
 )
 
 type RateLimiter struct {
-	ipLimiter      *ratelimit.AuthRateLimiter
-	emailLimiter   *ratelimit.AuthRateLimiter
-	generalLimiter *ratelimit.RateLimiter
+	ipLimiter       *ratelimit.AuthRateLimiter
+	emailLimiter    *ratelimit.AuthRateLimiter
+	generalLimiter  *ratelimit.RateLimiter
+	reviewerLimiter *ratelimit.ReviewerRateLimiter
 }
 
 func NewRateLimiter(client *redis.Client) *RateLimiter {
@@ -20,9 +21,10 @@ func NewRateLimiter(client *redis.Client) *RateLimiter {
 		gen = ratelimit.NewRateLimiter(client, 30, 1*time.Minute, "auth:employees")
 	}
 	return &RateLimiter{
-		ipLimiter:      ratelimit.NewAuthRateLimiter(client, "auth:ip"),
-		emailLimiter:   ratelimit.NewAuthRateLimiter(client, "auth:email"),
-		generalLimiter: gen,
+		ipLimiter:       ratelimit.NewAuthRateLimiter(client, "auth:ip"),
+		emailLimiter:    ratelimit.NewAuthRateLimiter(client, "auth:email"),
+		generalLimiter:  gen,
+		reviewerLimiter: ratelimit.NewReviewerRateLimiter(client, "auth:reviewer"),
 	}
 }
 
@@ -65,4 +67,28 @@ func (rl *RateLimiter) Reset(key string) {
 		return
 	}
 	rl.getLimiter(key).Reset(key)
+}
+
+// IsReviewerLocked checks if a reviewer key (IP or token hash) is locked out.
+func (rl *RateLimiter) IsReviewerLocked(key string) (bool, time.Duration) {
+	if key == "" || rl == nil || rl.reviewerLimiter == nil {
+		return false, 0
+	}
+	return rl.reviewerLimiter.IsLocked(key)
+}
+
+// RecordReviewerFailure records a reviewer auth failure and returns the lockout duration if locked.
+func (rl *RateLimiter) RecordReviewerFailure(key string) time.Duration {
+	if key == "" || rl == nil || rl.reviewerLimiter == nil {
+		return 0
+	}
+	return rl.reviewerLimiter.RecordFailure(key)
+}
+
+// ResetReviewer clears reviewer failure history and lockout for a key upon successful auth.
+func (rl *RateLimiter) ResetReviewer(key string) {
+	if key == "" || rl == nil || rl.reviewerLimiter == nil {
+		return
+	}
+	rl.reviewerLimiter.Reset(key)
 }

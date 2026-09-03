@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
@@ -1338,8 +1339,9 @@ func generate6DigitOTP() string {
 func (a *Auth) getClientIP(r *http.Request) string {
 	var ip string
 	// Constant-time comparison: the gateway secret gates XFF trust for
-	// security-relevant audit attribution.
-	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Gateway-Secret")), []byte(a.gatewaySecret)) == 1 {
+	// security-relevant audit attribution. Empty-secret precondition prevents
+	// matching unconfigured secrets.
+	if a.gatewaySecret != "" && subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Gateway-Secret")), []byte(a.gatewaySecret)) == 1 {
 		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 			parts := strings.Split(xff, ",")
 			ip = strings.TrimSpace(parts[0])
@@ -1575,7 +1577,7 @@ func (a *Auth) GetPendingKYBKYESubmissions(w http.ResponseWriter, r *http.Reques
 
 	reviewer, err := a.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		writeReviewerAuthError(w, err)
 		return
 	}
 
@@ -1669,7 +1671,7 @@ func (a *Auth) ReviewKYBKYESubmissions(w http.ResponseWriter, r *http.Request) {
 
 	reviewer, err := a.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		writeReviewerAuthError(w, err)
 		return
 	}
 
@@ -1874,7 +1876,7 @@ func (a *Auth) ViewDocument(w http.ResponseWriter, r *http.Request) {
 
 	reviewer, err := a.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		writeReviewerAuthError(w, err)
 		return
 	}
 
@@ -1926,7 +1928,7 @@ func (a *Auth) GetAccounts(w http.ResponseWriter, r *http.Request) {
 
 	reviewer, err := a.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		writeReviewerAuthError(w, err)
 		return
 	}
 
@@ -1994,7 +1996,7 @@ func (a *Auth) SuspendAccount(w http.ResponseWriter, r *http.Request) {
 
 	reviewer, err := a.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		writeReviewerAuthError(w, err)
 		return
 	}
 
@@ -2226,9 +2228,35 @@ func (a *Auth) dispatchAccountStatusNotification(targetUser *models.User, newSta
 	}()
 }
 
+func hashToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
+}
+
+// ReviewerRateLimitError indicates that the reviewer login attempt was rejected due to rate limiting.
+type ReviewerRateLimitError struct {
+	Remaining time.Duration
+}
+
+func (e *ReviewerRateLimitError) Error() string {
+	return fmt.Sprintf("too many failed reviewer login attempts. Please try again in %.0f seconds.", e.Remaining.Seconds())
+}
+
+func writeReviewerAuthError(w http.ResponseWriter, err error) {
+	var rle *ReviewerRateLimitError
+	if errors.As(err, &rle) {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": rle.Error(),
+		})
+		return
+	}
+	writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+}
+
 // authenticateReviewer verifies the reviewer's credentials.
-// It checks both the X-Internal-Token and the X-Reviewer-Token headers / query params.
+// It checks both the X-Internal-Token and the X-Reviewer-Token headers.
 // Defaulting to requiring both as the safer option (internal network context + reviewer token).
+// Enforces 3 failed attempts -> 5-minute lockout rate limiting keyed by IP and hashed token.
 func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 	// FLAGGED: Operationally, KYB/KYE reviews could be performed by internal staff via an internal network
 	// or remote staff over HTTPS. As it is unclear whether remote access is required without the internal token,
@@ -2244,15 +2272,41 @@ func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 		return nil, errors.New("unauthorized internal token")
 	}
 
+	clientIP := a.getClientIP(r)
+
+	// Check if client IP is currently locked out
+	if locked, remaining := a.limiter.IsReviewerLocked(clientIP); locked {
+		return nil, &ReviewerRateLimitError{Remaining: remaining}
+	}
+
 	// 2. Verify X-Reviewer-Token header
 	reviewerToken := r.Header.Get("X-Reviewer-Token")
 	if reviewerToken == "" {
+		lockoutIP := a.limiter.RecordReviewerFailure(clientIP)
+		if lockoutIP > 0 {
+			return nil, &ReviewerRateLimitError{Remaining: lockoutIP}
+		}
 		return nil, errors.New("missing reviewer token")
+	}
+
+	tokenHash := hashToken(reviewerToken)
+	// Check if attempted token hash is currently locked out
+	if locked, remaining := a.limiter.IsReviewerLocked(tokenHash); locked {
+		return nil, &ReviewerRateLimitError{Remaining: remaining}
 	}
 
 	ctx := r.Context()
 	rev, err := a.store.GetReviewerByToken(ctx, reviewerToken)
 	if err != nil {
+		lockoutIP := a.limiter.RecordReviewerFailure(clientIP)
+		lockoutTok := a.limiter.RecordReviewerFailure(tokenHash)
+		remaining := lockoutIP
+		if lockoutTok > remaining {
+			remaining = lockoutTok
+		}
+		if remaining > 0 {
+			return nil, &ReviewerRateLimitError{Remaining: remaining}
+		}
 		return nil, errors.New("invalid reviewer token")
 	}
 
@@ -2261,8 +2315,21 @@ func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 	// at-rest hashing migration, so the presented RAW token must be hashed
 	// before comparison; legacy plaintext rows compare directly.
 	if !store.MatchesStoredReviewerCredential(rev.Token, reviewerToken) {
+		lockoutIP := a.limiter.RecordReviewerFailure(clientIP)
+		lockoutTok := a.limiter.RecordReviewerFailure(tokenHash)
+		remaining := lockoutIP
+		if lockoutTok > remaining {
+			remaining = lockoutTok
+		}
+		if remaining > 0 {
+			return nil, &ReviewerRateLimitError{Remaining: remaining}
+		}
 		return nil, errors.New("invalid reviewer token")
 	}
+
+	// Reset failure counter on successful authentication
+	a.limiter.ResetReviewer(clientIP)
+	a.limiter.ResetReviewer(tokenHash)
 
 	return rev, nil
 }
@@ -2277,7 +2344,7 @@ func (a *Auth) VerifyReviewer(w http.ResponseWriter, r *http.Request) {
 
 	reviewer, err := a.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		writeReviewerAuthError(w, err)
 		return
 	}
 

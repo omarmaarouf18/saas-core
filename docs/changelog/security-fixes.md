@@ -848,3 +848,19 @@ This section consolidates the resolution status for all 10 findings from the ext
   against a digest-at-rest row through `GetPendingKYBKYESubmissions`; (2) legacy plaintext rows keep
   authenticating via the fallback path. Verified locally against live Mongo
   (`MONGO_URI=... go test -run TestAuthenticateReviewer -v`: both PASS); full auth-service suite green.
+
+## Console Security Hardening: Reviewer Login Rate Limiting & Constant-Time Token Comparison Sweep
+
+- **Implementation Detail**:
+  1. **Reviewer Login Rate Limiting (auth-service & shared/infra)**: Implemented `ReviewerRateLimiter` in `shared/infra/ratelimit/ratelimit.go` enforcing a 3 failed attempts threshold within a sliding window, triggering a 5-minute (300s) lockout on both client IP (`clientIP`) and attempted reviewer token SHA-256 hash (`hex.EncodeToString(sha256.Sum256([]byte(token)))`). Atomic Lua script resets the attempt counter upon lockout engage to prevent escalating-lockout spirals. Integrated into `services/auth-service/internal/handlers/limiter.go` and `authenticateReviewer` in `services/auth-service/internal/handlers/auth.go`. When locked out, all reviewer-gated endpoints (`VerifyReviewer`, `GetPendingKYBKYESubmissions`, `ReviewKYBKYESubmissions`, `ViewDocument`, `GetAccounts`, `SuspendAccount`, `ReactivateAccount`) return HTTP 429 Too Many Requests (`{"error": "too many failed reviewer login attempts. Please try again in %.0f seconds."}`). Successful authentication resets the failure counter for both IP and token hash.
+  2. **Constant-Time Token Comparison Sweep**: Full sweep across both `saas-core` and `kyc-reviewer-console` for plain `!=` and `==` secret comparisons:
+     - Fixed plain `!=` comparison on `internalToken` in `services/chat-service/internal/handlers/admin_tickets.go:29` to `c.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(internalToken), []byte(c.internalServiceToken)) != 1`.
+     - Added empty-secret guard to `X-Gateway-Secret` comparison in `services/auth-service/internal/handlers/auth.go:1342` (`getClientIP`).
+     - Confirmed all other internal tokens and credentials across `auth-service`, `user-service`, `chat-service`, `notification-service`, `api-gateway`, and `shared/infra` use constant-time comparisons.
+- **Commit SHA**: ``031a3febb8580dac903e7ffd4f40a3689fff11bc``
+- **Verification**:
+  - `shared/infra/ratelimit/ratelimit_test.go`: `TestReviewerRateLimiter_LockoutAfter3Failures`, `TestReviewerRateLimiter_FastForwardClearsLockoutAndResetsCounter`, `TestReviewerRateLimiter_ResetOnSuccessClearsFailures` (100% pass).
+  - `services/auth-service/internal/handlers/reviewer_ratelimit_test.go`: `TestReviewerLogin_RateLimiting_3Attempts5MinLockout` verifies 3 failed attempts return 401, 4th attempt returns 429 even with valid token, miniredis fast-forward past 300s clears lockout and permits 200 OK, and successful login before 3 failures resets counter.
+  - Full `gosec` security scanner on all 6 modules in `saas-core` and `kyc-reviewer-console` (0 issues).
+  - Full test suites across all services passing.
+

@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -26,7 +27,7 @@ type ReviewerClaims struct {
 // and a reviewer token verified by auth-service (ADR-0021/ADR-0023).
 func (c *Chat) authenticateReviewer(r *http.Request) (*ReviewerClaims, error) {
 	internalToken := r.Header.Get("X-Internal-Token")
-	if internalToken == "" || internalToken != c.internalServiceToken {
+	if c.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(internalToken), []byte(c.internalServiceToken)) != 1 {
 		return nil, fmt.Errorf("missing or invalid X-Internal-Token")
 	}
 

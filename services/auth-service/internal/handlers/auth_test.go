@@ -1755,6 +1755,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 	t.Run("AuthenticateReviewer_Gaps", func(t *testing.T) {
 		t.Run("MissingInternalToken", func(t *testing.T) {
 			req := httptest.NewRequest("GET", "/some-url", nil)
+			a.limiter.ResetReviewer(a.getClientIP(req))
 			_, err := a.authenticateReviewer(req)
 			if err == nil || err.Error() != "unauthorized internal token" {
 				t.Errorf("expected 'unauthorized internal token' error, got: %v", err)
@@ -1764,6 +1765,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 		t.Run("MissingReviewerToken", func(t *testing.T) {
 			req := httptest.NewRequest("GET", "/some-url", nil)
 			req.Header.Set("X-Internal-Token", a.internalServiceToken)
+			a.limiter.ResetReviewer(a.getClientIP(req))
 			_, err := a.authenticateReviewer(req)
 			if err == nil || err.Error() != "missing reviewer token" {
 				t.Errorf("expected 'missing reviewer token' error, got: %v", err)
@@ -1774,6 +1776,8 @@ func TestAuth_ExtraGaps(t *testing.T) {
 			req := httptest.NewRequest("GET", "/some-url", nil)
 			req.Header.Set("X-Internal-Token", a.internalServiceToken)
 			req.Header.Set("X-Reviewer-Token", "invalid-token-123")
+			a.limiter.ResetReviewer(a.getClientIP(req))
+			a.limiter.ResetReviewer(hashToken("invalid-token-123"))
 			_, err := a.authenticateReviewer(req)
 			if err == nil || err.Error() != "invalid reviewer token" {
 				t.Errorf("expected 'invalid reviewer token' error, got: %v", err)
@@ -1782,6 +1786,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 
 		t.Run("QueryParamInternalTokenRejected", func(t *testing.T) {
 			req := httptest.NewRequest("GET", "/some-url?internal_token="+a.internalServiceToken+"&reviewer_token=some-token", nil)
+			a.limiter.ResetReviewer(a.getClientIP(req))
 			_, err := a.authenticateReviewer(req)
 			if err == nil || err.Error() != "unauthorized internal token" {
 				t.Errorf("expected query param internal_token to be rejected, got: %v", err)
@@ -1791,6 +1796,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 		t.Run("QueryParamReviewerTokenRejected", func(t *testing.T) {
 			req := httptest.NewRequest("GET", "/some-url?reviewer_token=some-token", nil)
 			req.Header.Set("X-Internal-Token", a.internalServiceToken)
+			a.limiter.ResetReviewer(a.getClientIP(req))
 			_, err := a.authenticateReviewer(req)
 			if err == nil || err.Error() != "missing reviewer token" {
 				t.Errorf("expected query param reviewer_token to be rejected, got: %v", err)
