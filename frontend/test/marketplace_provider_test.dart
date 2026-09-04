@@ -101,8 +101,10 @@ void main() {
       () async {
     // Real TrackJob contract: escrow-lock failure still returns 201 with BOTH
     // the generic warning (no balance disclosure) and the unfunded job.
-    final (provider, _) = _makeProvider((req) => MockHttpResponse(201,
-        jsonBody: {
+    final (
+      provider,
+      _
+    ) = _makeProvider((req) => MockHttpResponse(201, jsonBody: {
           'message': 'job created but escrow lock failed — deposit funds first',
           'warning':
               'escrow lock failed — owner must deposit funds before this booking can be funded',
@@ -162,8 +164,8 @@ void main() {
 
   test('rateJob posts blind-rating payload and returns the response map',
       () async {
-    final (provider, overrides) = _makeProvider((req) =>
-        MockHttpResponse(200, jsonBody: {'other_party_rated': true}));
+    final (provider, overrides) = _makeProvider(
+        (req) => MockHttpResponse(200, jsonBody: {'other_party_rated': true}));
 
     final res = await provider.rateJob(
       jobId: 'j',
@@ -230,8 +232,8 @@ void main() {
 
   test('proposePrice delegates to propose-price with the negotiated amount',
       () async {
-    final (provider, overrides) =
-        _makeProvider((req) => _jobEnvelope('jt', status: 'awaiting_price_response'));
+    final (provider, overrides) = _makeProvider(
+        (req) => _jobEnvelope('jt', status: 'awaiting_price_response'));
 
     final job = await provider.proposePrice(
         jobId: 'jt', proposedPrice: 88.8, userToken: 'tok');
@@ -270,8 +272,10 @@ void main() {
       call++;
       if (call == 1) {
         expect(req.uri.queryParameters.containsKey('requester_token'), isFalse);
-        return MockHttpResponse(200,
-            jsonBody: [{'id': 'o1'}, {'id': 'o2'}]);
+        return MockHttpResponse(200, jsonBody: [
+          {'id': 'o1'},
+          {'id': 'o2'}
+        ]);
       }
       expect(req.uri.queryParameters['requester_token'], 'tk');
       return MockHttpResponse(200, jsonBody: []);

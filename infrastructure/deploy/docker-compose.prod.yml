@@ -115,6 +115,7 @@ services:
       REDIS_URI: ${REDIS_URI}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
       USER_SERVICE_URL: ${USER_SERVICE_URL}
+      NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL}
       APP_ENV: ${APP_ENV}
       LOG_LEVEL: ${LOG_LEVEL}
       JWT_SECRET: ${JWT_SECRET}
@@ -261,6 +262,8 @@ services:
     environment:
       PORT: 8090
       AUTH_SERVICE_URL: https://auth-service:${AUTH_SERVICE_PORT}
+      USER_SERVICE_URL: https://user-service:${USER_SERVICE_PORT}
+      CHAT_SERVICE_URL: https://chat-service:${CHAT_SERVICE_PORT}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
       APP_ENV: ${APP_ENV}
       TLS_CERT_PATH: /app/certs/reviewer-console.crt

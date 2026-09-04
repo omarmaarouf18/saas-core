@@ -89,10 +89,38 @@ func (h *Hub) SetRedisClient(rdb *redis.Client) {
 	h.rdb = rdb
 	ctx, cancel := context.WithCancel(context.Background())
 	h.subCancel = cancel
-	h.pubsub = rdb.Subscribe(ctx)
+	h.pubsub = rdb.Subscribe(ctx, "account:events")
 
 	go h.redisSubscriberLoop(ctx, h.pubsub)
 	log.Printf("[HUB] Connected to Redis Pub/Sub for cross-replica chat fan-out (Instance ID: %s)", h.instanceID)
+}
+
+// DisconnectUser closes and removes all active WebSocket connections belonging to userID (F-03).
+func (h *Hub) DisconnectUser(userID string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	for client := range h.clients {
+		if client.ID == userID {
+			close(client.Send)
+			delete(h.clients, client)
+			for ch := range client.Channels {
+				if members, exists := h.channels[ch]; exists {
+					delete(members, client)
+					if len(members) == 0 {
+						delete(h.channels, ch)
+					}
+				}
+				if count, exists := h.activeSubs[ch]; exists {
+					h.activeSubs[ch] = count - 1
+					if h.activeSubs[ch] <= 0 {
+						delete(h.activeSubs, ch)
+					}
+				}
+			}
+			log.Printf("[HUB] Force disconnected suspended user: %s", userID)
+		}
+	}
 }
 
 // Close gracefully stops the Redis Pub/Sub subscriber loop and closes all active WebSocket client connections.
@@ -129,6 +157,20 @@ func (h *Hub) redisSubscriberLoop(ctx context.Context, pubsub *redis.PubSub) {
 			if !ok {
 				return
 			}
+
+			if msg.Channel == "account:events" {
+				var event struct {
+					Action string `json:"action"`
+					UserID string `json:"user_id"`
+				}
+				if err := json.Unmarshal([]byte(msg.Payload), &event); err == nil {
+					if event.Action == "ACCOUNT_SUSPENDED" && event.UserID != "" {
+						h.DisconnectUser(event.UserID)
+					}
+				}
+				continue
+			}
+
 			var payload hubPubSubPayload
 			if err := json.Unmarshal([]byte(msg.Payload), &payload); err != nil {
 				log.Printf("[HUB] Failed to unmarshal Redis PubSub payload: %v", err)

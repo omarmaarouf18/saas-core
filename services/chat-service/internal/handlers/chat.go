@@ -45,20 +45,22 @@ type wsMessage struct {
 
 // Chat holds dependencies for the WebSocket handlers.
 type Chat struct {
-	hub                  *chat.Hub
-	store                *store.MongoDB
-	authServiceURL       string
-	userServiceURL       string
-	tokenCache           map[string]cachedToken
-	tokenCacheMu         sync.Mutex
-	limiter              *handlerutil.RateLimiter
-	wsLimiter            *handlerutil.RateLimiter
-	wsMessageLimiter     *handlerutil.RateLimiter
-	wsSubscribeLimiter   *handlerutil.RateLimiter
-	internalServiceToken string
-	allowedOrigin        string
-	authClient           *resilience.ResilienceClient
-	userClient           *resilience.ResilienceClient
+	hub                    *chat.Hub
+	store                  *store.MongoDB
+	authServiceURL         string
+	userServiceURL         string
+	tokenCache             map[string]cachedToken
+	tokenCacheMu           sync.Mutex
+	limiter                *handlerutil.RateLimiter
+	wsLimiter              *handlerutil.RateLimiter
+	wsMessageLimiter       *handlerutil.RateLimiter
+	wsSubscribeLimiter     *handlerutil.RateLimiter
+	internalServiceToken   string
+	allowedOrigin          string
+	authClient             *resilience.ResilienceClient
+	userClient             *resilience.ResilienceClient
+	notificationClient     *resilience.ResilienceClient
+	notificationServiceURL string
 }
 
 // NewChat creates a new Chat handler group.
@@ -87,21 +89,24 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Cli
 
 	authClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
 	userClient := resilience.NewClient(client, "user-service", 2, 5*time.Second)
+	notificationClient := resilience.NewClient(client, "notification-service", 2, 5*time.Second)
 
 	return &Chat{
-		hub:                  hub,
-		store:                s,
-		authServiceURL:       cfg.AuthServiceURL,
-		userServiceURL:       cfg.UserServiceURL,
-		tokenCache:           make(map[string]cachedToken),
-		limiter:              handlerutil.NewRateLimiter(rl),
-		wsLimiter:            handlerutil.NewRateLimiter(wsRl),
-		wsMessageLimiter:     handlerutil.NewRateLimiter(wsMsgRl),
-		wsSubscribeLimiter:   handlerutil.NewRateLimiter(wsSubRl),
-		internalServiceToken: cfg.InternalServiceToken,
-		allowedOrigin:        allowedOrigin,
-		authClient:           authClient,
-		userClient:           userClient,
+		hub:                    hub,
+		store:                  s,
+		authServiceURL:         cfg.AuthServiceURL,
+		userServiceURL:         cfg.UserServiceURL,
+		notificationServiceURL: cfg.NotificationServiceURL,
+		tokenCache:             make(map[string]cachedToken),
+		limiter:                handlerutil.NewRateLimiter(rl),
+		wsLimiter:              handlerutil.NewRateLimiter(wsRl),
+		wsMessageLimiter:       handlerutil.NewRateLimiter(wsMsgRl),
+		wsSubscribeLimiter:     handlerutil.NewRateLimiter(wsSubRl),
+		internalServiceToken:   cfg.InternalServiceToken,
+		allowedOrigin:          allowedOrigin,
+		authClient:             authClient,
+		userClient:             userClient,
+		notificationClient:     notificationClient,
 	}
 }
 
@@ -252,14 +257,17 @@ func (c *Chat) canAccessChannel(userID, channel string) (bool, error) {
 	}
 
 	var job struct {
-		OwnerID    string `json:"owner_id"`
-		EmployeeID string `json:"employee_id"`
-		UserID     string `json:"user_id"`
+		OwnerID                  string `json:"owner_id"`
+		EmployeeID               string `json:"employee_id"`
+		UserID                   string `json:"user_id"`
+		Status                   string `json:"status"`
+		CurrentOfferedEmployeeID string `json:"current_offered_employee_id"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&job); err != nil {
 		return false, err
 	}
-	return userID == job.OwnerID || userID == job.UserID || (job.EmployeeID != "" && userID == job.EmployeeID), nil
+	isOfferedCourier := job.Status == "pending_dispatch" && job.CurrentOfferedEmployeeID != "" && userID == job.CurrentOfferedEmployeeID
+	return userID == job.OwnerID || userID == job.UserID || (job.EmployeeID != "" && userID == job.EmployeeID) || isOfferedCourier, nil
 }
 
 // HandleWebSocket upgrades the HTTP connection to a WebSocket protocol.
@@ -647,6 +655,12 @@ func (c *Chat) writePump(conn *websocket.Conn, client *chat.Client) {
 			}
 
 		case <-ticker.C:
+			// Defense-in-depth: check if user token has been revoked / suspended (F-03)
+			if jwtutil.IsUserRevoked(client.ID) {
+				log.Printf("[WS] Terminating connection on heartbeat: user %s is revoked", client.ID)
+				_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "account suspended"))
+				return
+			}
 			_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return

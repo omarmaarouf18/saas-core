@@ -279,8 +279,8 @@ class _FakeRequest implements HttpClientRequest {
     );
     client.overrides.requests.add(recorded);
     final mock = await client.overrides.handler(recorded);
-    final response = _FakeResponse(statusCodeValue: mock.statusCode,
-        bytes: utf8.encode(mock.rawBody));
+    final response = _FakeResponse(
+        statusCodeValue: mock.statusCode, bytes: utf8.encode(mock.rawBody));
     _doneCompleter.complete(response);
     return response;
   }
@@ -304,9 +304,7 @@ class _FakeResponse extends Stream<List<int>> implements HttpClientResponse {
 
   @override
   StreamSubscription<List<int>> listen(void Function(List<int> element)? onData,
-      {Function? onError,
-      void Function()? onDone,
-      bool? cancelOnError}) {
+      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
     return Stream<List<int>>.fromIterable([bytes]).listen(onData,
         onError: onError, onDone: onDone, cancelOnError: cancelOnError);
   }

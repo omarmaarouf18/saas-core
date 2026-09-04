@@ -415,11 +415,12 @@ type Rating struct {
 
 // EmployeeLocation represents an employee's last reported location and availability timestamp.
 type EmployeeLocation struct {
-	TenantID   string    `json:"tenant_id"   bson:"tenant_id"`
-	EmployeeID string    `json:"employee_id" bson:"employee_id"`
-	Latitude   float64   `json:"latitude"    bson:"latitude"`
-	Longitude  float64   `json:"longitude"   bson:"longitude"`
-	UpdatedAt  time.Time `json:"updated_at"  bson:"updated_at"`
+	TenantID    string    `json:"tenant_id"     bson:"tenant_id"`
+	EmployeeID  string    `json:"employee_id"   bson:"employee_id"`
+	Latitude    float64   `json:"latitude"      bson:"latitude"`
+	Longitude   float64   `json:"longitude"     bson:"longitude"`
+	UpdatedAt   time.Time `json:"updated_at"    bson:"updated_at"`
+	ActiveJobID string    `json:"active_job_id,omitempty" bson:"active_job_id,omitempty"`
 }
 
 // EmployeeLocationPingRequest is the expected JSON body for POST /users/employee/location.

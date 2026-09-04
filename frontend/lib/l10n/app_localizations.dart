@@ -1947,6 +1947,24 @@ abstract class AppLocalizations {
   /// **'Decline'**
   String get declineOffer;
 
+  /// No description provided for @chatWithCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat with Customer'**
+  String get chatWithCustomer;
+
+  /// No description provided for @courierFoundReviewing.
+  ///
+  /// In en, this message translates to:
+  /// **'Courier found, reviewing your request...'**
+  String get courierFoundReviewing;
+
+  /// No description provided for @earlyChatAvailableHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can chat with the courier while they review your order.'**
+  String get earlyChatAvailableHint;
+
   /// No description provided for @offerExpiresIn.
   ///
   /// In en, this message translates to:

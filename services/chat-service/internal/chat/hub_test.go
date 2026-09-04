@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"testing"
@@ -167,4 +168,56 @@ func TestHub_MultiInstanceRedisPubSubDelivery(t *testing.T) {
 	hub1.Unregister <- c1OnHub1
 	hub2.Unregister <- c2OnHub2
 	hub2.Unregister <- c3OnHub2
+}
+
+func TestHub_AccountSuspended_ForceClosesConnection_F03(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	h := NewHub()
+	go h.Run()
+	defer h.Close()
+
+	h.SetRedisClient(rdb)
+
+	client := &Client{
+		ID:       "suspended-user-123",
+		Channels: make(map[string]bool),
+		Send:     make(chan []byte, 10),
+	}
+
+	h.Register <- client
+
+	// Give register a brief moment to process
+	time.Sleep(50 * time.Millisecond)
+	if h.ClientCount() != 1 {
+		t.Fatalf("expected 1 client registered, got %d", h.ClientCount())
+	}
+
+	// Publish ACCOUNT_SUSPENDED event via Redis
+	pubPayload := `{"action":"ACCOUNT_SUSPENDED","user_id":"suspended-user-123"}`
+	if err := rdb.Publish(context.Background(), "account:events", pubPayload).Err(); err != nil {
+		t.Fatalf("failed to publish suspension event: %v", err)
+	}
+
+	// Verify client Send channel is closed
+	select {
+	case _, ok := <-client.Send:
+		if ok {
+			t.Errorf("expected client.Send channel to be closed on suspension, but received value")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("timed out waiting for client.Send channel to be closed after ACCOUNT_SUSPENDED event")
+	}
+
+	// Verify client count dropped to 0
+	if h.ClientCount() != 0 {
+		t.Errorf("expected 0 clients in hub after suspension disconnect, got %d", h.ClientCount())
+	}
 }

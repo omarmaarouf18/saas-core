@@ -387,6 +387,10 @@ kyc.logiclinkeg.tech {
 >
 > All console API routes require a valid `X-Reviewer-Token` enforced by auth-service upstream; the login page itself carries no privilege.
 
+> [!NOTE]
+> **Inter-Service Listening Ports & Proxy Topology**:
+> Downstream internal services listen on specific ports defined by their respective `*_SERVICE_PORT` environment variables (`auth-service: 3002`, `user-service: 3003`, `chat-service: 3001`, `notification-service: 3004`). When configuring proxies or inter-service clients (such as `kyc-reviewer-console`), verify the target service's actual listening port (`3001` for `chat-service`) rather than assuming unverified port assignments.
+
 DNS: create an additional `A` record for the chosen subdomain (e.g., `kyc`) pointing at the same VM public IP, using the same registrar guidance as Step 8.2 (delegated-nameserver warning applies).
 
 > [!WARNING]

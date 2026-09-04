@@ -32,8 +32,7 @@ void main() {
         return MockHttpResponse(401, jsonBody: {'error': 'expired'});
       }
       expect(req.header('Authorization'), 'Bearer jwt-new');
-      return MockHttpResponse(200,
-          jsonBody: {'withdrawable_balance': 55.0});
+      return MockHttpResponse(200, jsonBody: {'withdrawable_balance': 55.0});
     });
     String? refreshedWith;
     final api = ApiClient(baseUrl: 'https://ci.local/api/v1', appVersion: 't')
@@ -94,8 +93,7 @@ void main() {
     expect(refreshes, 1, reason: 'single-flight must collapse concurrent 401s');
   });
 
-  test('failed refresh fires onAuthFailed once and surfaces the 401',
-      () async {
+  test('failed refresh fires onAuthFailed once and surfaces the 401', () async {
     var authFailures = 0;
     installMockHttp((req) {
       if (req.uri.path.endsWith('/auth/refresh')) {
@@ -121,8 +119,8 @@ void main() {
         (req) => MockHttpResponse(401, jsonBody: {'error': 'unauthorized'}));
     final api = ApiClient(baseUrl: 'https://ci.local/api/v1', appVersion: 't');
 
-    await expectLater(api.get('/users/wallet'),
-        throwsA(isA<ApiClientException>()));
+    await expectLater(
+        api.get('/users/wallet'), throwsA(isA<ApiClientException>()));
 
     expect(overrides.requests.where((r) => r.uri.path.endsWith('/refresh')),
         isEmpty);
@@ -144,13 +142,14 @@ void main() {
 
   test('HTTP 426 invokes onUpdateRequired with the info payload', () async {
     Map<String, dynamic>? receivedInfo;
-    installMockHttp((req) => MockHttpResponse(426,
-        jsonBody: {
+    installMockHttp((req) => MockHttpResponse(426, jsonBody: {
           'message': 'upgrade required',
           'latest_version': '9.9.9',
         }));
     final api = ApiClient(baseUrl: 'https://ci.local/api/v1', appVersion: '1')
-      ..onUpdateRequired = (info) async { receivedInfo = info; };
+      ..onUpdateRequired = (info) async {
+        receivedInfo = info;
+      };
 
     await expectLater(
       api.get('/users/services'),
@@ -163,14 +162,12 @@ void main() {
 
   test('transport-level failures wrap into the generic network message',
       () async {
-    installMockHttp((req) =>
-        throw StateError('socket exploded mid-request'));
+    installMockHttp((req) => throw StateError('socket exploded mid-request'));
     final api = ApiClient(baseUrl: 'https://ci.local/api/v1', appVersion: 't');
 
     await expectLater(
       api.get('/anything'),
-      throwsA(isA<ApiClientException>().having(
-          (e) => e.message, 'message',
+      throwsA(isA<ApiClientException>().having((e) => e.message, 'message',
           contains('Network error: Please check your internet connection.'))),
     );
   });

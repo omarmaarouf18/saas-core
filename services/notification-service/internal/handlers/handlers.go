@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
@@ -132,7 +133,7 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tenantID, role, ok, err := n.verifyAndResolve(token)
+	userID, tenantID, role, ok, err := n.resolveToken(token)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusServiceUnavailable)
@@ -173,8 +174,17 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Ensure the SSE handler's Redis subscription is fully established
+	// before the connection is considered ready (closing the Q18 startup-window race).
+	waitCtx, waitCancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer waitCancel()
+	if err := n.hub.WaitForReady(waitCtx); err != nil {
+		log.Printf("[NOTIF] Subscription readiness wait warning: %v — proceeding in degraded mode", err)
+	}
+
 	client := &hub.SSEClient{
 		ID:       token,
+		UserID:   userID,
 		TenantID: tenantID,
 		Role:     role,
 		Send:     make(chan []byte, 64),
@@ -192,12 +202,21 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[NOTIF] SSE stream opened: tenant_id=%s role=%s", cleanTenantID, role) // #nosec G706 //nolint:gosec -- tenantID is authenticated and CR/LF sanitized
 
 	// Stream loop.
+	heartbeatTicker := time.NewTicker(15 * time.Second)
+	defer heartbeatTicker.Stop()
+
 	ctx := r.Context()
 	for {
 		select {
 		case <-ctx.Done():
 			log.Printf("[NOTIF] SSE stream closed (client disconnect) tenant_id=%s", cleanTenantID) // #nosec G706 //nolint:gosec -- tenantID is authenticated and CR/LF sanitized
 			return
+		case <-heartbeatTicker.C:
+			// Defense-in-depth: check if user token has been revoked / suspended (F-03)
+			if jwtutil.IsUserRevoked(userID) {
+				log.Printf("[NOTIF] SSE stream terminated on heartbeat: user %s is revoked", userID)
+				return
+			}
 		case msg, ok := <-client.Send:
 			if !ok {
 				return

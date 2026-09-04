@@ -728,4 +728,35 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 - **Fix**: Added reactive `AuthProvider` user profile reading in `OwnerConfigurationScreen.build`, rendered `StatusBadge` in the Business Identity header reflecting `user.kycStatus` (persisting across form lifecycle and save operations), added interactive `_buildKycBanner` (navigating to `KycDocumentUploadScreen` on tap) for unapproved/pending/rejected states, added unconditional `authProvider.fetchUserProfile()` in `_loadAndPrepopulate()`, added post-save `authProvider.fetchUserProfile()` refresh in `_submitForm()`, and updated golden test baselines.
 - **Verification**: Added comprehensive regression widget tests in `owner_configuration_screen_test.dart` (`KYC verification status badge remains visible on load and after save`, `KYC pending status displays warning banner and pending badge, tapping navigates to upload screen`, and `KYC rejected status displays warning banner and rejected badge`), confirming failure prior to the fix and passing post-fix. Full test suite (488/488 passed), `flutter analyze` 0 issues, golden tests 58/58 passed, and `frontend_composition_gate.sh` 100% clean.
 
+## Reviewer Console CSS Specificity & chat-service Upstream Port Corrections
+
+**Date**: 2026-09-02
+**Category**: Bug Fix / Reviewer Console & Operations
+**Related Commit SHA**: ``0a61a0d54e648ec73c4160ec799b7fca30b7aa61``
+
+- **CSS Hidden-Specificity Bug**: `web/style.css` defined `#login-view { display: grid; ... }` with ID-selector specificity, overriding the User Agent stylesheet default `[hidden] { display: none; }` behavior. Setting `hidden` in `app.js` on successful sign-in left `#login-view` computed as `display: grid`, rendering the login card over the authenticated dashboard. Added global `[hidden] { display: none !important; }` in `web/style.css` in `kyc-reviewer-console` (commit `a1c12c7...`).
+- **chat-service Port Misconfiguration**: `kyc-reviewer-console` defaulted `ChatServiceURL` to `https://chat-service:3005`, but `chat-service` listens on port `3001`. This caused `GET /api/tickets` to fail with HTTP 502 (`dial tcp 172.20.0.8:3005: connect: connection refused`). Corrected fallback default to `https://chat-service:3001` in console config and proxy constructors, and explicitly added `USER_SERVICE_URL: https://user-service:${USER_SERVICE_PORT}` and `CHAT_SERVICE_URL: https://chat-service:${CHAT_SERVICE_PORT}` to `infrastructure/deploy/docker-compose.prod.yml`.
+- **Dynamic Badge Counters & Session Resume**: Added `refreshBadgeCounts()` in `web/app.js` to query `/api/queue`, `/api/reconciliation/queue`, `/api/subscriptions`, and `/api/tickets` in parallel upon login and tab switches, populating live badge counts immediately; added session bootstrap on page reload.
+- **Static Asset Cache Note**: Product owner reported the fix not visually appearing post-deploy; likely browser cache on unversioned static assets (`web/style.css`, `web/app.js` served via plain `http.FileServer` with no `Cache-Control` headers or cache-busting query params) — hard-refresh/incognito verification requested, root cause not yet confirmed.
+- **Verification**: Go unit tests in console passing; headless Chromium CDP automation verified post-login `#login-view: none` / `#app-view: block` computed styles (0 overlap); live production curl against all 5 endpoints (`/api/queue`, `/api/accounts`, `/api/reconciliation/queue`, `/api/subscriptions`, `/api/tickets`) returning 200 OK on `quickdelivery-vm`.
+
+## SSE Notification Delivery Across Replicas & Local-First Fan-Out (QA Audit Q18)
+
+**Date**: 2026-09-04
+**Category**: Bug Fix / Reliability & Architecture
+**Related Commit SHA**: `8667def9c34c96b8c1ebd5abebeee3756f0e71da`
+
+- **Problem / Gap**: Documented architectural finding Q18 from the original backend QA audit (and referenced in ADR-0005): When Redis was configured, `notification-service`'s `Broadcast()` relied solely on Redis Pub/Sub loopback (`PSubscribe("notify:*")`) for local client delivery — `publish success ≠ local delivery`. If the publishing replica experienced a transient network hiccup, subscriber connection drop, or startup-window race before Redis subscription was established, `rdb.Publish()` returned a nil error, but connected local clients never received notifications.
+- **Root Cause**: `Broadcast(n)` executed `deliverLocal(n)` only when `rdb == nil`. With Redis active, local delivery required a full Redis round-trip back to the origin instance's own subscriber loop. In a single-replica or multi-replica setup, any subscriber hiccup, lag, or startup race dropped notifications locally without surfacing any error.
+- **Fix**:
+  1. **Local-First Delivery**: `Broadcast()` now dispatches immediately to connected local clients in-process (`deliverLocal(n)`) on the origin replica before publishing to Redis, guaranteeing local delivery regardless of Redis network state or subscriber health.
+  2. **Origin-ID Deduplication**: Outbound Redis Pub/Sub messages are wrapped in a `hubPubSubPayload` envelope containing `OriginInstanceID` (matching `chat-service`'s proven design). When the message loops back over Redis Pub/Sub to the origin replica, the subscriber loop identifies the matching instance ID and drops the echo, preventing duplicate notifications. A fallback preserves compatibility with un-enveloped raw payloads.
+  3. **Subscription Readiness Gating**: The SSE stream handler (`GET /notifications/stream`) awaits `hub.WaitForReady(waitCtx)` (which synchronizes on `pubsub.Receive()`) before registering the client and sending `event: connected`, closing the startup-window subscription race.
+- **Verification**:
+  - `q18_test.go`: Comprehensive unit tests verifying (a) local-first delivery succeeds immediately even when the subscriber connection is abruptly closed, (b) cross-instance Redis delivery and origin deduplication (clientA receives 1 message, clientB receives 1 message, no echo duplicates), and (c) subscription readiness gating closes the startup-window race.
+  - `notification_docker_integration_test.go`: Updated multi-instance integration test against real Docker Redis (`localhost:6380`, `devpassword123`) verifying local-first resilience under subscriber connection interruption.
+  - `live_smoke_test.go`: End-to-end HTTP SSE smoke test opening a real stream to `/notifications/stream`, receiving `event: connected`, receiving a live notification dispatched via `POST /notifications/send` (KYC review outcome), and receiving cross-instance broadcast via Redis Pub/Sub.
+  - All unit, integration, and smoke tests passing across `services/notification-service/...` (100% green).
+
+
 

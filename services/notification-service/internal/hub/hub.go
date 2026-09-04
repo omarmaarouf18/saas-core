@@ -42,6 +42,7 @@ type Notification struct {
 // SSEClient represents a single SSE connection.
 type SSEClient struct {
 	ID       string
+	UserID   string
 	TenantID string
 	Role     Role
 	Send     chan []byte
@@ -53,21 +54,69 @@ type DeviceTokenFetcher interface {
 	UnregisterStaleToken(ctx context.Context, userID, token string) error
 }
 
+type hubPubSubPayload struct {
+	OriginInstanceID string        `json:"origin_instance_id"`
+	Notification     *Notification `json:"notification"`
+}
+
 // SSEHub manages SSE client pools organized by role and tenant.
 type SSEHub struct {
 	mu                 sync.RWMutex
 	clients            map[*SSEClient]bool
+	instanceID         string // unique instance ID to prevent duplicate self-delivery from Redis
 	rdb                *redis.Client
 	pubsub             *redis.PubSub
 	cancel             context.CancelFunc
 	stopOnce           sync.Once
+	readyCh            chan struct{}
+	readyOnce          sync.Once
+	readyErr           error
 	fcmDispatcher      fcm.Dispatcher
 	deviceTokenFetcher DeviceTokenFetcher
 }
 
 // NewSSEHub creates a new hub.
 func NewSSEHub() *SSEHub {
-	return &SSEHub{clients: make(map[*SSEClient]bool)}
+	bytes := make([]byte, 16)
+	if _, err := rand.Read(bytes); err != nil {
+		bytes = []byte(fmt.Sprintf("%d", time.Now().UnixNano()))
+	}
+	instID := hex.EncodeToString(bytes)
+
+	return &SSEHub{
+		clients:    make(map[*SSEClient]bool),
+		instanceID: instID,
+		readyCh:    make(chan struct{}),
+	}
+}
+
+// markReady marks the Redis subscription as active (closing readyCh).
+func (h *SSEHub) markReady() {
+	h.readyOnce.Do(func() {
+		close(h.readyCh)
+	})
+}
+
+// WaitForReady waits until the Redis Pub/Sub subscription is confirmed active
+// or returns immediately if Redis is not configured.
+func (h *SSEHub) WaitForReady(ctx context.Context) error {
+	h.mu.RLock()
+	rdb := h.rdb
+	readyCh := h.readyCh
+	h.mu.RUnlock()
+
+	if rdb == nil {
+		return nil
+	}
+
+	select {
+	case <-readyCh:
+		h.mu.RLock()
+		defer h.mu.RUnlock()
+		return h.readyErr
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // SetRedisClient configures Redis Pub/Sub cross-instance fan-out.
@@ -76,20 +125,56 @@ func (h *SSEHub) SetRedisClient(rdb *redis.Client) {
 		return
 	}
 	h.mu.Lock()
-	defer h.mu.Unlock()
+	if h.cancel != nil {
+		h.cancel()
+	}
+	if h.pubsub != nil {
+		_ = h.pubsub.Close()
+	}
 
 	h.rdb = rdb
 	ctx, cancel := context.WithCancel(context.Background())
 	h.cancel = cancel
-	h.pubsub = rdb.PSubscribe(ctx, "notify:*")
+	h.pubsub = rdb.PSubscribe(ctx, "notify:*", "account:events")
+	pubsub := h.pubsub
+	instID := h.instanceID
+	h.mu.Unlock()
 
-	go h.redisSubscriberLoop(ctx, h.pubsub)
-	log.Printf("[SSE-HUB] Connected to Redis Pub/Sub for cross-replica notification fan-out")
+	// Confirm subscription is active with Redis before marking ready or starting consumer loop
+	subCtx, subCancel := context.WithTimeout(ctx, 3*time.Second)
+	_, err := pubsub.Receive(subCtx)
+	subCancel()
+	if err != nil {
+		log.Printf("[REDIS-PUBSUB-WARNING] Failed to confirm Redis subscription: %v — proceeding in degraded local mode", err)
+		h.mu.Lock()
+		h.readyErr = err
+		h.mu.Unlock()
+	} else {
+		log.Printf("[SSE-HUB] Connected to Redis Pub/Sub for cross-replica notification fan-out (Instance ID: %s)", instID)
+	}
+	h.markReady()
+
+	go h.redisSubscriberLoop(ctx, pubsub)
+}
+
+// DisconnectUser closes and removes all active SSE connections belonging to userID (F-03).
+func (h *SSEHub) DisconnectUser(userID string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	for client := range h.clients {
+		if client.UserID == userID || client.ID == userID {
+			delete(h.clients, client)
+			close(client.Send)
+			log.Printf("[SSE-HUB] Force disconnected suspended user: %s", userID)
+		}
+	}
 }
 
 // Close gracefully stops the Redis Pub/Sub subscriber loop and closes all connected SSE client channels.
 func (h *SSEHub) Close() {
 	h.stopOnce.Do(func() {
+		h.markReady()
 		h.mu.Lock()
 		cancel := h.cancel
 		pubsub := h.pubsub
@@ -119,6 +204,32 @@ func (h *SSEHub) redisSubscriberLoop(ctx context.Context, pubsub *redis.PubSub) 
 			if !ok {
 				return
 			}
+			if msg.Channel == "account:events" {
+				var event struct {
+					Action string `json:"action"`
+					UserID string `json:"user_id"`
+				}
+				if err := json.Unmarshal([]byte(msg.Payload), &event); err == nil {
+					if event.Action == "ACCOUNT_SUSPENDED" && event.UserID != "" {
+						h.DisconnectUser(event.UserID)
+					}
+				}
+				continue
+			}
+
+			// De-duplication: check for envelope with OriginInstanceID
+			var payload hubPubSubPayload
+			if err := json.Unmarshal([]byte(msg.Payload), &payload); err == nil && payload.Notification != nil {
+				// De-duplication: if notification originated on this instance, skip local delivery
+				// because it was already delivered locally in-process on origin broadcast.
+				if payload.OriginInstanceID == h.instanceID {
+					continue
+				}
+				h.deliverLocal(*payload.Notification)
+				continue
+			}
+
+			// Fallback: un-enveloped raw Notification payloads (legacy / direct Redis publishers)
 			var n Notification
 			if err := json.Unmarshal([]byte(msg.Payload), &n); err != nil {
 				log.Printf("[SSE-HUB] Failed to unmarshal Redis notification payload: %v", err)
@@ -169,14 +280,13 @@ func (h *SSEHub) Broadcast(n Notification) {
 		}
 	}
 
-	data, err := json.Marshal(n)
-	if err != nil {
-		log.Printf("[SSE-HUB] Failed to marshal notification: %v", err)
-		return
-	}
+	// 1. Immediate local delivery on publishing instance (in-process)
+	h.deliverLocal(n)
 
+	// 2. Publish to Redis for remote replica fan-out tagged with origin instance ID for dedup
 	h.mu.RLock()
 	rdb := h.rdb
+	instID := h.instanceID
 	h.mu.RUnlock()
 
 	if rdb != nil {
@@ -185,15 +295,22 @@ func (h *SSEHub) Broadcast(n Notification) {
 			channel = fmt.Sprintf("notify:tenant:%s", n.TenantID)
 		}
 
+		payload := hubPubSubPayload{
+			OriginInstanceID: instID,
+			Notification:     &n,
+		}
+		data, err := json.Marshal(payload)
+		if err != nil {
+			log.Printf("[SSE-HUB] Failed to marshal PubSub notification payload: %v", err)
+			return
+		}
+
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
 		if err := rdb.Publish(ctx, channel, data).Err(); err != nil {
-			log.Printf("[REDIS-PUBSUB-WARNING] Failed to publish notification to Redis channel %s: %v — falling back to local delivery", channel, err)
-			h.deliverLocal(n)
+			log.Printf("[REDIS-PUBSUB-WARNING] Failed to publish notification to Redis channel %s: %v", channel, err)
 		}
-	} else {
-		h.deliverLocal(n)
 	}
 
 	// Parallel non-blocking FCM push delivery

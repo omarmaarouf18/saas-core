@@ -712,6 +712,21 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               cargoText: AppTypography.uppercaseLabel(job.paymentMethod),
             ),
             const SizedBox(height: AppSpacing.md),
+            SecondaryButton(
+              key: Key('chat_customer_btn_${job.id}'),
+              text: l10n.chatWithCustomer,
+              icon: Icons.chat_outlined,
+              onPressed: isExpired
+                  ? null
+                  : () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => ChatScreen(jobId: job.id),
+                        ),
+                      );
+                    },
+            ),
+            const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
                 Expanded(

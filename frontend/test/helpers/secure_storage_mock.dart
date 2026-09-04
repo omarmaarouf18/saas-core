@@ -20,7 +20,8 @@ class SecureStorageMock {
           return store[args['key'] as String?];
         case 'write':
           final args = Map<String, Object?>.from(call.arguments as Map);
-          store[(args['key'] ?? '') as String] = (args['value'] as String?) ?? '';
+          store[(args['key'] ?? '') as String] =
+              (args['value'] as String?) ?? '';
           return null;
         case 'delete':
           final args = Map<String, Object?>.from(call.arguments as Map);

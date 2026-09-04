@@ -95,8 +95,10 @@ func TestJobAlertBroadcast_EndToEnd(t *testing.T) {
 			}
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(map[string]any{
-				"role":       "owner",
-				"kyc_status": "approved",
+				"role":           "owner",
+				"kyc_status":     "approved",
+				"is_active":      true,
+				"account_status": "active",
 			})
 			return
 		}

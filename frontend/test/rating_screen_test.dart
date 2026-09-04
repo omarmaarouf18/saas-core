@@ -230,7 +230,9 @@ void main() {
     await tapSubmit(tester);
 
     // A5 contract: status-mapped friendly copy, not the raw exception dump.
-    expect(find.text('Error: Something went wrong on our end. Please try again shortly.'),
+    expect(
+        find.text(
+            'Error: Something went wrong on our end. Please try again shortly.'),
         findsOneWidget);
     expect(find.textContaining('(status: 500)'), findsNothing);
     expect(find.textContaining('db down'), findsNothing);

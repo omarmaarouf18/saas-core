@@ -115,6 +115,8 @@ type UserService struct {
 	updateJobAgreedPriceBeforeWriteHook func(ctx context.Context)
 	// Test hook to simulate generic requireTier error for deterministic testing
 	requireTierHook func(ctx context.Context, tenantID string, min models.PlanTier) error
+	// Test hook to pause before AcceptJobOffer commit for race condition testing
+	acceptJobOfferBeforeCommitHook func(ctx context.Context, jobID string)
 }
 
 func (u *UserService) clearLocationThrottleState(jobID string) {
@@ -559,6 +561,7 @@ func (u *UserService) checkKYC(ownerID string) (string, error) {
 
 func (u *UserService) verifyEmployeeAssignment(employeeID, ownerID string) (bool, error) {
 	url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, employeeID)
+	// #nosec G704 //nolint:gosec -- authServiceURL is trusted internal config
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return false, err
@@ -578,15 +581,47 @@ func (u *UserService) verifyEmployeeAssignment(employeeID, ownerID string) (bool
 	}
 
 	var user struct {
-		Role     string `json:"role"`
-		TenantID string `json:"tenant_id"`
-		IsActive bool   `json:"is_active"`
+		Role          string `json:"role"`
+		TenantID      string `json:"tenant_id"`
+		IsActive      bool   `json:"is_active"`
+		AccountStatus string `json:"account_status"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
 		return false, err
 	}
 
-	if user.Role != "employee" || user.TenantID != ownerID || !user.IsActive {
+	if user.Role != "employee" || user.TenantID != ownerID || !user.IsActive || user.AccountStatus == "suspended" {
+		return false, nil
+	}
+
+	// F-04: Check that the tenant owner is also active and not suspended
+	ownerURL := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, ownerID)
+	// #nosec G704 //nolint:gosec -- authServiceURL is trusted internal config
+	ownerReq, err := http.NewRequest("GET", ownerURL, nil)
+	if err != nil {
+		return false, err
+	}
+	ownerReq.Header.Set("X-Internal-Token", u.internalServiceToken)
+	ownerResp, err := u.authClient.Do(ownerReq)
+	if err != nil {
+		return false, ErrServiceUnavailable
+	}
+	defer ownerResp.Body.Close()
+
+	if ownerResp.StatusCode != http.StatusOK {
+		return false, nil
+	}
+
+	var owner struct {
+		Role          string `json:"role"`
+		IsActive      bool   `json:"is_active"`
+		AccountStatus string `json:"account_status"`
+	}
+	if err := json.NewDecoder(ownerResp.Body).Decode(&owner); err != nil {
+		return false, err
+	}
+
+	if !owner.IsActive || owner.AccountStatus == "suspended" {
 		return false, nil
 	}
 

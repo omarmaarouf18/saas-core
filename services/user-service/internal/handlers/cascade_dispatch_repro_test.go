@@ -8,6 +8,8 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -690,4 +692,380 @@ func TestCascade_CustomerCancelsDuringPendingDispatch_HaltsCascade(t *testing.T)
 	if afterAttempt.CurrentOfferedEmployeeID != "" {
 		t.Errorf("Job should not have been offered to anyone else, got offered: %q", afterAttempt.CurrentOfferedEmployeeID)
 	}
+}
+
+// ---------------------------------------------------------------------------
+// 7. F-01 Repro: Offered Courier Can View Job Details During Pending Dispatch
+// ---------------------------------------------------------------------------
+
+func TestCascade_OfferedCourierCanViewJobDetails_F01(t *testing.T) {
+	u, s, _, cleanup := setupDispatchTestHarness(t)
+	if u == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	ownerID := "tenant-f01-view"
+	custID := "cust-f01-view"
+	empOffered := "emp-under-tenant-f01-view-1"
+	empOther := "emp-under-tenant-f01-view-2"
+	svcID := "svc-f01-view"
+
+	s.CreateService(ctx, &models.Service{
+		ID:               svcID,
+		TenantID:         ownerID,
+		Name:             "Delivery F01",
+		Category:         "delivery",
+		TenantBasePrice:  20.0,
+		TenantPricePerKM: 2.0,
+		Latitude:         30.0444,
+		Longitude:        31.2357,
+	})
+
+	now := time.Now().UTC()
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: empOffered,
+		Latitude:   30.0444,
+		Longitude:  31.2357,
+		UpdatedAt:  now,
+	})
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: empOther,
+		Latitude:   30.0450,
+		Longitude:  31.2360,
+		UpdatedAt:  now,
+	})
+
+	expiry := now.Add(60 * time.Second)
+	job := &models.Job{
+		ID:                       "job-f01-test",
+		OwnerID:                  ownerID,
+		UserID:                   custID,
+		ServiceID:                svcID,
+		Status:                   models.JobStatusPendingDispatch,
+		CurrentOfferedEmployeeID: empOffered,
+		OfferExpiresAt:           &expiry,
+		OfferedEmployeeIDs:       []string{empOffered},
+		PaymentMethod:            "wallet",
+		Location:                 models.Location{Latitude: 30.0444, Longitude: 31.2357},
+		CreatedAt:                now,
+		UpdatedAt:                now,
+	}
+	if err := s.CreateJob(ctx, job); err != nil {
+		t.Fatalf("Failed to create job: %v", err)
+	}
+
+	tokenOffered, _ := jwtutil.GenerateToken(empOffered, "employee", ownerID, "emp1@test.com")
+	tokenOther, _ := jwtutil.GenerateToken(empOther, "employee", ownerID, "emp2@test.com")
+
+	// 1. Offered courier should be able to view job details (200 OK)
+	req := httptest.NewRequest("GET", "/users/jobs/get?id=job-f01-test&requester_id="+tokenOffered, nil)
+	rec := httptest.NewRecorder()
+	u.GetJob(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("F-01 Repro failure: expected 200 OK for offered courier viewing job details, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	var respJob models.Job
+	if err := json.NewDecoder(rec.Body).Decode(&respJob); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+	if respJob.ID != "job-f01-test" {
+		t.Errorf("Expected job ID job-f01-test, got %q", respJob.ID)
+	}
+
+	// 2. Unoffered courier must still be rejected with 403 Forbidden
+	reqOther := httptest.NewRequest("GET", "/users/jobs/get?id=job-f01-test&requester_id="+tokenOther, nil)
+	recOther := httptest.NewRecorder()
+	u.GetJob(recOther, reqOther)
+
+	if recOther.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden for unoffered courier, got %d. Body: %s", recOther.Code, recOther.Body.String())
+	}
+}
+
+// ---------------------------------------------------------------------------
+// 8. F-02 Repro: Courier Double-Accept Race Condition
+// ---------------------------------------------------------------------------
+
+func TestCascade_CourierDoubleAcceptRace_F02(t *testing.T) {
+	u, s, _, cleanup := setupDispatchTestHarness(t)
+	if u == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	ownerID := "tenant-f02-race"
+	empID := "emp-under-tenant-f02-race"
+	svcID := "svc-f02-race"
+
+	s.CreateService(ctx, &models.Service{
+		ID:               svcID,
+		TenantID:         ownerID,
+		Name:             "Delivery F02",
+		Category:         "delivery",
+		TenantBasePrice:  20.0,
+		TenantPricePerKM: 2.0,
+		Latitude:         30.0444,
+		Longitude:        31.2357,
+	})
+
+	now := time.Now().UTC()
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: empID,
+		Latitude:   30.0444,
+		Longitude:  31.2357,
+		UpdatedAt:  now,
+	})
+
+	expiry := now.Add(60 * time.Second)
+	job1 := &models.Job{
+		ID:                       "job-f02-race-1",
+		OwnerID:                  ownerID,
+		UserID:                   "cust-f02-1",
+		ServiceID:                svcID,
+		Status:                   models.JobStatusPendingDispatch,
+		CurrentOfferedEmployeeID: empID,
+		OfferExpiresAt:           &expiry,
+		OfferedEmployeeIDs:       []string{empID},
+		PaymentMethod:            "cod",
+		Location:                 models.Location{Latitude: 30.0444, Longitude: 31.2357},
+		CreatedAt:                now,
+		UpdatedAt:                now,
+	}
+	job2 := &models.Job{
+		ID:                       "job-f02-race-2",
+		OwnerID:                  ownerID,
+		UserID:                   "cust-f02-2",
+		ServiceID:                svcID,
+		Status:                   models.JobStatusPendingDispatch,
+		CurrentOfferedEmployeeID: empID,
+		OfferExpiresAt:           &expiry,
+		OfferedEmployeeIDs:       []string{empID},
+		PaymentMethod:            "cod",
+		Location:                 models.Location{Latitude: 30.0444, Longitude: 31.2357},
+		CreatedAt:                now,
+		UpdatedAt:                now,
+	}
+	if err := s.CreateJob(ctx, job1); err != nil {
+		t.Fatalf("Failed to create job1: %v", err)
+	}
+	if err := s.CreateJob(ctx, job2); err != nil {
+		t.Fatalf("Failed to create job2: %v", err)
+	}
+
+	tokenEmp, _ := jwtutil.GenerateToken(empID, "employee", ownerID, "emp@test.com")
+
+	// Set up concurrency synchronization using hook
+	inHookCh := make(chan struct{})
+	releaseHookCh := make(chan struct{})
+	u.acceptJobOfferBeforeCommitHook = func(hookCtx context.Context, jobID string) {
+		if jobID == "job-f02-race-1" {
+			close(inHookCh)
+			<-releaseHookCh
+		}
+	}
+
+	var code1, code2 int
+	var body1, body2 string
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Goroutine 1: accepts job1, pauses in hook after checking existingJobs
+	go func() {
+		defer wg.Done()
+		req1 := httptest.NewRequest("POST", "/users/employee/jobs/accept?job_id=job-f02-race-1", nil)
+		req1.SetPathValue("id", "job-f02-race-1")
+		req1.Header.Set("Authorization", "Bearer "+tokenEmp)
+		rec1 := httptest.NewRecorder()
+		u.AcceptJobOffer(rec1, req1)
+		code1 = rec1.Code
+		body1 = rec1.Body.String()
+	}()
+
+	// Wait until Goroutine 1 has passed existingJobs check and is inside hook
+	<-inHookCh
+
+	// Goroutine 2: accepts job2 while Goroutine 1 is paused
+	go func() {
+		defer wg.Done()
+		req2 := httptest.NewRequest("POST", "/users/employee/jobs/accept?job_id=job-f02-race-2", nil)
+		req2.SetPathValue("id", "job-f02-race-2")
+		req2.Header.Set("Authorization", "Bearer "+tokenEmp)
+		rec2 := httptest.NewRecorder()
+		u.AcceptJobOffer(rec2, req2)
+		code2 = rec2.Code
+		body2 = rec2.Body.String()
+
+		// Release Goroutine 1 once Goroutine 2 has completed
+		close(releaseHookCh)
+	}()
+
+	wg.Wait()
+
+	t.Logf("Accept results: job1=%d, job2=%d", code1, code2)
+
+	// In pre-fix code, BOTH succeed with 200 OK -> double accept race!
+	// In post-fix code, exactly ONE succeeds (200 OK), and the other gets 409 Conflict (courier_busy)
+	successCount := 0
+	conflictCount := 0
+	for _, code := range []int{code1, code2} {
+		if code == http.StatusOK {
+			successCount++
+		} else if code == http.StatusConflict {
+			conflictCount++
+		}
+	}
+
+	if successCount == 2 {
+		t.Fatalf("F-02 Repro confirmed: BOTH concurrent accepts succeeded (200 OK). Courier accepted two jobs simultaneously! job1: %d (%s), job2: %d (%s)", code1, body1, code2, body2)
+	}
+
+	if successCount != 1 || conflictCount != 1 {
+		t.Fatalf("Expected exactly 1 success (200) and 1 conflict (409), got codes %d and %d. Bodies: %s, %s", code1, code2, body1, body2)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// 9. F-05: Escrow Lock Failure Cancels Job and Stops Cascade
+// ---------------------------------------------------------------------------
+
+func TestCascade_EscrowLockFailureCancelsJob_F05(t *testing.T) {
+	u, s, _, cleanup := setupDispatchTestHarness(t)
+	if u == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	ownerID := "tenant-f05-escrow"
+	custID := "cust-f05-escrow"
+	emp1 := "emp-under-tenant-f05-escrow-1"
+	emp2 := "emp-under-tenant-f05-escrow-2"
+	svcID := "svc-f05-escrow"
+
+	s.CreateService(ctx, &models.Service{
+		ID:               svcID,
+		TenantID:         ownerID,
+		Name:             "Delivery F05",
+		Category:         "delivery",
+		TenantBasePrice:  30.0,
+		TenantPricePerKM: 2.0,
+		Latitude:         30.0444,
+		Longitude:        31.2357,
+	})
+
+	now := time.Now().UTC()
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: emp1,
+		Latitude:   30.0444,
+		Longitude:  31.2357,
+		UpdatedAt:  now,
+	})
+	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		TenantID:   ownerID,
+		EmployeeID: emp2,
+		Latitude:   30.0450,
+		Longitude:  31.2360,
+		UpdatedAt:  now,
+	})
+
+	// Ensure wallet has 0 withdrawable balance
+	_, _ = s.GetOrCreateWallet(ctx, ownerID)
+
+	expiry := now.Add(60 * time.Second)
+	job := &models.Job{
+		ID:                       "job-f05-escrow-test",
+		OwnerID:                  ownerID,
+		UserID:                   custID,
+		ServiceID:                svcID,
+		Status:                   models.JobStatusPendingDispatch,
+		CurrentOfferedEmployeeID: emp1,
+		OfferExpiresAt:           &expiry,
+		OfferedEmployeeIDs:       []string{emp1},
+		PaymentMethod:            "wallet", // requires escrow locking
+		Location:                 models.Location{Latitude: 30.0444, Longitude: 31.2357},
+		CreatedAt:                now,
+		UpdatedAt:                now,
+	}
+	if err := s.CreateJob(ctx, job); err != nil {
+		t.Fatalf("Failed to create job: %v", err)
+	}
+
+	tokenEmp1, _ := jwtutil.GenerateToken(emp1, "employee", ownerID, "emp1@test.com")
+
+	// Emp1 tries to accept the job offer -> escrow lock must fail because owner has 0 funds
+	req := httptest.NewRequest("POST", "/users/employee/jobs/accept?job_id=job-f05-escrow-test", nil)
+	req.SetPathValue("id", "job-f05-escrow-test")
+	req.Header.Set("Authorization", "Bearer "+tokenEmp1)
+	rec := httptest.NewRecorder()
+	u.AcceptJobOffer(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("Expected 400 Bad Request for escrow lock failure, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// Verify job is immediately cancelled with cancellation_reason = "owner_escrow_lock_failed"
+	updatedJob := s.GetJob(ctx, "job-f05-escrow-test")
+	if updatedJob == nil {
+		t.Fatalf("Job not found after accept attempt")
+	}
+	if updatedJob.Status != models.JobStatusCancelled {
+		t.Errorf("Expected job status cancelled, got %q", updatedJob.Status)
+	}
+	if updatedJob.CancellationReason != "owner_escrow_lock_failed" {
+		t.Errorf("Expected cancellation_reason 'owner_escrow_lock_failed', got %q", updatedJob.CancellationReason)
+	}
+	if updatedJob.CurrentOfferedEmployeeID != "" {
+		t.Errorf("Expected current_offered_employee_id to be cleared, got %q", updatedJob.CurrentOfferedEmployeeID)
+	}
+
+	// Verify courier lock was released
+	empLoc, _ := s.GetEmployeeLocation(ctx, ownerID, emp1)
+	if empLoc != nil && empLoc.ActiveJobID != "" {
+		t.Errorf("Expected emp1 active_job_id to be released, got %q", empLoc.ActiveJobID)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// 10. F-06: Missing Body Size Limits on Offer Actions
+// ---------------------------------------------------------------------------
+
+func TestCascade_OfferActions_OversizedBodyRejected_F06(t *testing.T) {
+	u, _, _, cleanup := setupDispatchTestHarness(t)
+	if u == nil {
+		return
+	}
+	defer cleanup()
+
+	oversizedBody := strings.Repeat(" ", 2*1024*1024)
+
+	t.Run("AcceptJobOffer with oversized body is handled with LimitReader", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/users/employee/jobs/accept?job_id=non-existent", strings.NewReader(oversizedBody))
+		req.SetPathValue("id", "non-existent")
+		rec := httptest.NewRecorder()
+		u.AcceptJobOffer(rec, req)
+
+		if rec.Code != http.StatusUnauthorized {
+			t.Errorf("expected 401 Unauthorized for missing token after reading limited body, got %d", rec.Code)
+		}
+	})
+
+	t.Run("DeclineJobOffer with oversized body is handled with LimitReader", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/users/employee/jobs/decline?job_id=non-existent", strings.NewReader(oversizedBody))
+		req.SetPathValue("id", "non-existent")
+		rec := httptest.NewRecorder()
+		u.DeclineJobOffer(rec, req)
+
+		if rec.Code != http.StatusUnauthorized {
+			t.Errorf("expected 401 Unauthorized for missing token after reading limited body, got %d", rec.Code)
+		}
+	})
 }
