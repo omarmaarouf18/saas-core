@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
@@ -171,6 +172,14 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		http.Error(w, `{"error":"streaming not supported"}`, http.StatusInternalServerError)
 		return
+	}
+
+	// Ensure the SSE handler's Redis subscription is fully established
+	// before the connection is considered ready (closing the Q18 startup-window race).
+	waitCtx, waitCancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer waitCancel()
+	if err := n.hub.WaitForReady(waitCtx); err != nil {
+		log.Printf("[NOTIF] Subscription readiness wait warning: %v — proceeding in degraded mode", err)
 	}
 
 	client := &hub.SSEClient{

@@ -9,17 +9,21 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func TestRealDockerRedis_MultiInstanceSSEHubAndKnownLimitation(t *testing.T) {
+func TestRealDockerRedis_MultiInstanceSSEHubAndQ18Resolution(t *testing.T) {
 	redisAddr := os.Getenv("REDIS_ADDR")
 	if redisAddr == "" {
 		redisAddr = "localhost:6380"
+	}
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+	if redisPassword == "" {
+		redisPassword = "devpassword123"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	rdb1 := redis.NewClient(&redis.Options{Addr: redisAddr})
-	rdb2 := redis.NewClient(&redis.Options{Addr: redisAddr})
+	rdb1 := redis.NewClient(&redis.Options{Addr: redisAddr, Password: redisPassword})
+	rdb2 := redis.NewClient(&redis.Options{Addr: redisAddr, Password: redisPassword})
 	defer rdb1.Close()
 	defer rdb2.Close()
 
@@ -53,8 +57,6 @@ func TestRealDockerRedis_MultiInstanceSSEHubAndKnownLimitation(t *testing.T) {
 	}
 	sseHub2.Register(sseClient2)
 
-	time.Sleep(200 * time.Millisecond)
-
 	notification := Notification{
 		Type:     "job_alert",
 		TenantID: "tenant-docker-cross",
@@ -78,10 +80,14 @@ func TestRealDockerRedis_MultiInstanceSSEHubAndKnownLimitation(t *testing.T) {
 		t.Fatalf("Instance 2 SSE client did not receive notification via Docker Redis!")
 	}
 
-	// 2. Known Limitation Test: Subscriber Loop Interruption on Publishing Instance
-	t.Run("Known Limitation: Self-delivery fails if publishing instance subscriber loop closes", func(t *testing.T) {
-		// Close sseHub1's subscriber loop while rdb1 remains active
-		sseHub1.Close()
+	// 2. Q18 Resolution Verification: Local-First Delivery With Subscriber Loop Interruption
+	t.Run("Q18 Resolution: Local delivery succeeds immediately even if subscriber loop closes", func(t *testing.T) {
+		// Close sseHub1's subscriber loop connection to simulate a network glitch / subscriber hiccup
+		sseHub1.mu.Lock()
+		if sseHub1.pubsub != nil {
+			_ = sseHub1.pubsub.Close()
+		}
+		sseHub1.mu.Unlock()
 
 		notif2 := Notification{
 			Type:     "status_update",
@@ -91,20 +97,20 @@ func TestRealDockerRedis_MultiInstanceSSEHubAndKnownLimitation(t *testing.T) {
 		}
 		sseHub1.Broadcast(notif2)
 
-		// Remote client on Instance 2 STILL receives it because rdb1.Publish succeeded on Redis
-		select {
-		case data := <-sseClient2.Send:
-			t.Logf("[OBSERVED] Instance 2 (remote) RECEIVED notification because rdb1.Publish succeeded on Redis: payload=%s", string(data[:len(data)-1]))
-		case <-time.After(1 * time.Second):
-			t.Fatalf("Instance 2 should have received published notification")
-		}
-
-		// Local client on Instance 1 MISSED it because sseHub1 relies on its own subscriber loop
+		// Local client on Instance 1 receives notification immediately via local-first in-process delivery
 		select {
 		case data := <-sseClient1.Send:
-			t.Fatalf("Unexpected local delivery: %s", string(data))
+			t.Logf("[OBSERVED & RESOLVED] Instance 1 local client received notification via local-first path: payload=%s", string(data[:len(data)-1]))
 		case <-time.After(1 * time.Second):
-			t.Logf("[OBSERVED & PROVED] Instance 1 local client MISSED notification because sseHub1 relies on its own Redis Pub/Sub subscriber loop for local delivery!")
+			t.Fatalf("Instance 1 local client should have received notification via local-first path")
+		}
+
+		// Remote client on Instance 2 still receives it via Redis Pub/Sub
+		select {
+		case data := <-sseClient2.Send:
+			t.Logf("[OBSERVED] Instance 2 (remote) RECEIVED notification via Redis: payload=%s", string(data[:len(data)-1]))
+		case <-time.After(1 * time.Second):
+			t.Fatalf("Instance 2 should have received published notification")
 		}
 	})
 }
