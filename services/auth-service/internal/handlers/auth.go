@@ -2094,7 +2094,7 @@ func (a *Auth) ReactivateAccount(w http.ResponseWriter, r *http.Request) {
 
 	reviewer, err := a.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		writeReviewerAuthError(w, err)
 		return
 	}
 
