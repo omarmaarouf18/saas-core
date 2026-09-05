@@ -34,9 +34,11 @@ class StatusBadge extends StatelessWidget {
       case 'approved':
       case 'paid':
       case 'uploaded':
+      case 'resolved':
         return context.semanticColors.success;
       case 'active':
       case 'pending_dispatch':
+      case 'assigned':
         return Theme.of(context).colorScheme.primary;
       case 'awaiting_price_response':
       case 'awaiting price':
@@ -63,11 +65,14 @@ class StatusBadge extends StatelessWidget {
     switch (status.toLowerCase().trim()) {
       case 'completed':
       case 'uploaded':
+      case 'resolved':
         return Icons.check_circle_outline;
       case 'paid':
         return Icons.payments_outlined;
       case 'active':
         return Icons.local_shipping_outlined;
+      case 'assigned':
+        return Icons.support_agent_outlined;
       case 'awaiting_price_response':
       case 'awaiting price':
         return Icons.request_quote_outlined;
@@ -109,6 +114,9 @@ class StatusBadge extends StatelessWidget {
       case 'completed':
         label = l10n.statusCompleted;
         break;
+      case 'resolved':
+        label = l10n.statusResolved;
+        break;
       case 'uploaded':
         label = l10n.kycUploadedStatus;
         break;
@@ -117,6 +125,9 @@ class StatusBadge extends StatelessWidget {
         break;
       case 'active':
         label = l10n.statusActive;
+        break;
+      case 'assigned':
+        label = l10n.statusAssigned;
         break;
       case 'awaiting_price_response':
       case 'awaiting price':

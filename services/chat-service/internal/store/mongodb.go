@@ -378,6 +378,47 @@ func (s *MongoDB) ListTickets(ctx context.Context, status, search string, page, 
 	return tickets, total, nil
 }
 
+// ListCustomerTickets returns paginated complaint tickets belonging to a specific customer, sorted newest first.
+func (s *MongoDB) ListCustomerTickets(ctx context.Context, customerID string, page, limit int64) ([]ComplaintTicket, int64, error) {
+	if customerID == "" {
+		return []ComplaintTicket{}, 0, nil
+	}
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	skip := (page - 1) * limit
+
+	filter := bson.M{"customer_id": customerID}
+
+	total, err := s.tickets.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count customer tickets: %w", err)
+	}
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "created_at", Value: -1}}).
+		SetSkip(skip).
+		SetLimit(limit)
+
+	cursor, err := s.tickets.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to find customer tickets: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var tickets []ComplaintTicket
+	if err := cursor.All(ctx, &tickets); err != nil {
+		return nil, 0, fmt.Errorf("failed to decode customer tickets: %w", err)
+	}
+	if tickets == nil {
+		tickets = []ComplaintTicket{}
+	}
+	return tickets, total, nil
+}
+
 // AdminResolveTicket atomically marks a ticket as resolved with mandatory notes and releases agent (ADR-0023).
 func (s *MongoDB) AdminResolveTicket(ctx context.Context, ticketID, resolutionNote, reviewerID string) (*ComplaintTicket, error) {
 	now := time.Now().UTC()

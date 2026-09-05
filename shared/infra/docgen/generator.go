@@ -560,6 +560,16 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Declines an active dispatch offer and advances the cascade immediately to the next courier.",
 		Targets:     "Updates `jobs` collection, queries `employee_locations`, dispatches next offer notification.",
 	},
+	"GET /chat/tickets/mine": {
+		Permissions: "User JWT",
+		Function:    "Lists support tickets submitted by the authenticated customer, sorted newest first.",
+		Targets:     "Queries `complaint_tickets` collection by `customer_id`. Paginated.",
+	},
+	"GET /tickets/mine": {
+		Permissions: "User JWT",
+		Function:    "Lists support tickets submitted by the authenticated customer, sorted newest first.",
+		Targets:     "Queries `complaint_tickets` collection by `customer_id`. Paginated.",
+	},
 }
 
 // HandlerFuncInfo parses a file's AST to gather functions and their comments

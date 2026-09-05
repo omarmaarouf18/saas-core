@@ -2,6 +2,30 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Customer Support Ticket History & Real-Time Chat (GAP-01 & GAP-02)
+
+- **Implementation Detail**:
+  - **Chat Service (`services/chat-service/`)**:
+    - `internal/store/mongodb.go`: Added `ListCustomerTickets(ctx context.Context, customerID string, page, limit int64)` querying `complaint_tickets` by authenticated `customer_id`, sorted by `created_at: -1`, with pagination clamping (default 20, max 100).
+    - `internal/handlers/chat.go`: Implemented `GetCustomerTickets` handler registered under `GET /chat/tickets/mine` and `GET /tickets/mine` with user JWT authentication, caller customer isolation, and per-user/per-IP rate limiting.
+    - `internal/handlers/chat_test.go`: Added `TestGetCustomerTickets_IsolationAndPagination` testing IDOR customer isolation (customer Alice cannot access customer Bob's tickets), pagination clamping, 401 unauthenticated rejection, and 405 method validation.
+  - **Shared Docgen & Application Map**:
+    - Registered `GET /chat/tickets/mine` and `GET /tickets/mine` in `shared/infra/docgen/generator.go` and regenerated `docs/APPLICATION_MAP.md` via `make docs`.
+  - **Flutter Mobile App (`frontend/`)**:
+    - `lib/models/support_ticket.dart`: Created `SupportTicket` model with JSON serialization, status helpers (`isResolved`, `isOpen`, `isInProgress`), and formatted timestamp display.
+    - `lib/core/api_client.dart`: Added `getCustomerTickets({int page = 1, int limit = 20})` querying `/chat/tickets/mine`.
+    - `lib/providers/chat_provider.dart`: Generalized channel architecture to support arbitrary channels (`ticket:<ticketID>` alongside `job:<jobID>`); implemented `fetchCustomerTickets` with pagination and refresh state.
+    - `lib/widgets/status_badge.dart`: Extended `StatusBadge` to support `resolved` (semantic green) and `assigned` (brand primary blue) badge styles.
+    - `lib/screens/customer_tickets_screen.dart`: Implemented customer tickets list screen with `ListScreenTemplate`, `PillFilterBar` (All, Open, Resolved), ticket cards with status badges and resolution note previews, empty state with new ticket action, and FAB opening `CreateTicketDialog`.
+    - `lib/screens/settings_screen.dart`: Added "Support Tickets" row in Settings screen navigating to `CustomerTicketsScreen`.
+    - `lib/screens/ticket_chat_screen.dart`: Implemented dedicated ticket conversation screen connecting to `ticket:<id>` WebSocket channel and REST history, showing ticket metadata, message bubbles, prominent resolution banner with resolution note, input bar disabled on resolved tickets, and real-time transition on incoming `ticket_resolution` messages.
+    - `lib/screens/notifications_screen.dart`: Wired `ticket_resolved` notification routing to automatically navigate to `TicketChatScreen` or `CustomerTicketsScreen`.
+    - `lib/l10n/`: Added localized strings in English (`app_en.arb`) and Egyptian Colloquial Arabic (`app_ar.arb`). Ran `flutter gen-l10n`.
+  - **Testing**:
+    - Created `frontend/test/customer_tickets_test.dart` with 11 comprehensive unit and widget tests covering ticket listing, filter pills, empty state, FAB creation, channel subscription, message sending, resolved banner display, disabled input bar, dynamic real-time resolution transition, Settings screen row navigation, and notification routing.
+- **Commit SHA**: ``8326ae12efc2fc2776a8fd3deea5a0f704640570``
+- **Verification**: Verified via `go test ./...` in `services/chat-service` (100% pass), `make docs-check` (100% pass), `flutter analyze` (0 issues), `flutter test` (514/514 pass, 0 failures), and `TestDartFilesMentionedInStatus` (pass).
+
 ## Ops Console Expansion: Subscriptions & Support Tickets (ADR-0023 Modules A & B)
 
 - **Implementation Detail**:

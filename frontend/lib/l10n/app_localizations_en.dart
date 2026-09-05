@@ -2358,4 +2358,83 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get matchingCourierSubtitle => 'Finding nearest available courier...';
+
+  @override
+  String get supportTicketsTitle => 'Support Tickets';
+
+  @override
+  String get supportTicketsSubtitle => 'Track and review your inquiries';
+
+  @override
+  String get settingsSupportTickets => 'Support Tickets';
+
+  @override
+  String get settingsSupportTicketsSub =>
+      'View past inquiries and resolution status';
+
+  @override
+  String get createTicketFab => 'New Ticket';
+
+  @override
+  String get emptyTicketsTitle => 'No support tickets yet';
+
+  @override
+  String get emptyTicketsDesc =>
+      'Need help? Open a new complaint or inquiry ticket.';
+
+  @override
+  String get openNewTicketBtn => 'Open New Ticket';
+
+  @override
+  String get ticketFilterAll => 'All';
+
+  @override
+  String get ticketFilterOpen => 'Open';
+
+  @override
+  String get ticketFilterResolved => 'Resolved';
+
+  @override
+  String get statusResolved => 'Resolved';
+
+  @override
+  String get statusAssigned => 'Assigned';
+
+  @override
+  String ticketChatTitle(String id) {
+    return 'Ticket #$id';
+  }
+
+  @override
+  String get ticketChatSubtitle => 'Customer Support';
+
+  @override
+  String get ticketResolvedBannerTitle => 'Ticket Resolved';
+
+  @override
+  String get ticketResolvedBannerMsg =>
+      'This ticket has been marked as resolved by customer support.';
+
+  @override
+  String get ticketResolutionNote => 'Resolution Note';
+
+  @override
+  String get ticketInputClosed =>
+      'This ticket is resolved and closed for new messages.';
+
+  @override
+  String ticketAssignedAgent(String agent) {
+    return 'Assigned Agent: $agent';
+  }
+
+  @override
+  String get ticketPendingAgent => 'Waiting for agent assignment...';
+
+  @override
+  String ticketContextJob(String id) {
+    return 'Related to Job #$id';
+  }
+
+  @override
+  String get viewTicketAction => 'View Ticket';
 }

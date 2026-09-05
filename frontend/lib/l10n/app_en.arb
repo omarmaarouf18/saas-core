@@ -1209,5 +1209,49 @@
   },
   "estimatedPriceCourierNotice": "Estimated based on store address. Final fare is calculated from the assigned courier's location once accepted.",
   "retryBookingSuccess": "New booking created, matching courier...",
-  "matchingCourierSubtitle": "Finding nearest available courier..."
+  "matchingCourierSubtitle": "Finding nearest available courier...",
+  "supportTicketsTitle": "Support Tickets",
+  "supportTicketsSubtitle": "Track and review your inquiries",
+  "settingsSupportTickets": "Support Tickets",
+  "settingsSupportTicketsSub": "View past inquiries and resolution status",
+  "createTicketFab": "New Ticket",
+  "emptyTicketsTitle": "No support tickets yet",
+  "emptyTicketsDesc": "Need help? Open a new complaint or inquiry ticket.",
+  "openNewTicketBtn": "Open New Ticket",
+  "ticketFilterAll": "All",
+  "ticketFilterOpen": "Open",
+  "ticketFilterResolved": "Resolved",
+  "statusResolved": "Resolved",
+  "statusAssigned": "Assigned",
+  "ticketChatTitle": "Ticket #{id}",
+  "@ticketChatTitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "ticketChatSubtitle": "Customer Support",
+  "ticketResolvedBannerTitle": "Ticket Resolved",
+  "ticketResolvedBannerMsg": "This ticket has been marked as resolved by customer support.",
+  "ticketResolutionNote": "Resolution Note",
+  "ticketInputClosed": "This ticket is resolved and closed for new messages.",
+  "ticketAssignedAgent": "Assigned Agent: {agent}",
+  "@ticketAssignedAgent": {
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "ticketPendingAgent": "Waiting for agent assignment...",
+  "ticketContextJob": "Related to Job #{id}",
+  "@ticketContextJob": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "viewTicketAction": "View Ticket"
 }

@@ -507,4 +507,17 @@ class ApiClient {
       'action': 'unregister',
     });
   }
+
+  Future<dynamic> getCustomerTickets({
+    int page = 1,
+    int limit = 20,
+  }) async {
+    return get(
+      '/chat/tickets/mine',
+      queryParams: {
+        'page': page.toString(),
+        'limit': limit.toString(),
+      },
+    );
+  }
 }
