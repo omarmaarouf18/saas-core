@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`ae70887`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`b065e3e`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -219,8 +219,10 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`GET /chat/history`** | `chat-service` | Channel Member JWT | Retrieves channel chat history (containing sender_username point-in-time snapshot). | Reads `chat_messages` collection. Downstream: calls `user-service/users/jobs/get`. |
 | **`POST /chat/internal/broadcast-location`** | `chat-service` | `X-Internal-Token` | Broadcasts driver location event. | None. |
 | **`POST /chat/tickets`** | `chat-service` | User JWT | Submits complaint ticket & assigns agent. | Reads/writes `complaint_tickets` and `support_agents` (atomic). |
+| **`GET /chat/tickets/mine`** | `chat-service` | User JWT | Lists support tickets submitted by the authenticated customer, sorted newest first. | Queries `complaint_tickets` collection by `customer_id`. Paginated. |
 | **`POST /chat/tickets/resolve`** | `chat-service` | Support Agent Token | Resolves ticket & releases agent status. | Updates `complaint_tickets` and `support_agents`. |
 | **`GET /chat/ws`** | `chat-service` | User JWT OR Agent Token | WebSocket connection upgrade path. | Reads `support_agents` (for agent tokens). Downstream: calls `auth-service/auth/user`. |
+| **`GET /tickets/mine`** | `chat-service` | User JWT | Lists support tickets submitted by the authenticated customer, sorted newest first. | Queries `complaint_tickets` collection by `customer_id`. Paginated. |
 | **`DELETE /notifications`** | `notification-service` | User JWT | Clears all notifications for the authenticated user. | Deletes from `notifications` collection. |
 | **`POST /notifications/broadcast/job-alert`** | `notification-service` | `X-Internal-Token` | Broadcasts job alert to employees. | Dispatches message to SSE clients. |
 | **`GET /notifications/history`** | `notification-service` | User JWT | Returns the authenticated user's persisted notifications, paginated. | Reads `notifications` collection. |

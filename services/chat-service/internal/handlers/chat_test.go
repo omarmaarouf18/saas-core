@@ -1772,3 +1772,154 @@ func TestIsOriginAllowed(t *testing.T) {
 		}
 	}
 }
+
+func TestGetCustomerTickets_IsolationAndPagination(t *testing.T) {
+	c, mongoStore, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+
+	// Create tickets for Alice (customer-alice)
+	t1, err := mongoStore.CreateTicketAndAssign(ctx, "customer-alice", "job-alice-1")
+	if err != nil {
+		t.Fatalf("failed to create ticket: %v", err)
+	}
+	t2, err := mongoStore.CreateTicketAndAssign(ctx, "customer-alice", "job-alice-2")
+	if err != nil {
+		t.Fatalf("failed to create ticket: %v", err)
+	}
+	t3, err := mongoStore.CreateTicketAndAssign(ctx, "customer-alice", "job-alice-3")
+	if err != nil {
+		t.Fatalf("failed to create ticket: %v", err)
+	}
+
+	// Create tickets for Bob (customer-bob)
+	tb1, err := mongoStore.CreateTicketAndAssign(ctx, "customer-bob", "job-bob-1")
+	if err != nil {
+		t.Fatalf("failed to create ticket: %v", err)
+	}
+	tb2, err := mongoStore.CreateTicketAndAssign(ctx, "customer-bob", "job-bob-2")
+	if err != nil {
+		t.Fatalf("failed to create ticket: %v", err)
+	}
+
+	tokenAlice, _ := jwtutil.GenerateToken("customer-alice", "user", "tenant-1", "alice@example.com")
+	tokenBob, _ := jwtutil.GenerateToken("customer-bob", "user", "tenant-1", "bob@example.com")
+
+	// 1. Wrong method -> 405 Method Not Allowed
+	reqPost := httptest.NewRequest("POST", "/chat/tickets/mine", nil)
+	reqPost.Header.Set("Authorization", "Bearer "+tokenAlice)
+	recPost := httptest.NewRecorder()
+	c.GetCustomerTickets(recPost, reqPost)
+	if recPost.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Expected 405 for POST, got %d", recPost.Code)
+	}
+
+	// 2. Unauthenticated -> 401 Unauthorized
+	reqUnauth := httptest.NewRequest("GET", "/chat/tickets/mine", nil)
+	recUnauth := httptest.NewRecorder()
+	c.GetCustomerTickets(recUnauth, reqUnauth)
+	if recUnauth.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 for unauthenticated, got %d", recUnauth.Code)
+	}
+
+	// 3. Customer Isolation: Alice only sees Alice's tickets, not Bob's
+	reqAlice := httptest.NewRequest("GET", "/chat/tickets/mine", nil)
+	reqAlice.Header.Set("Authorization", "Bearer "+tokenAlice)
+	recAlice := httptest.NewRecorder()
+	c.GetCustomerTickets(recAlice, reqAlice)
+	if recAlice.Code != http.StatusOK {
+		t.Fatalf("Expected 200 for Alice, got %d: %s", recAlice.Code, recAlice.Body.String())
+	}
+	var respAlice CustomerListTicketsResponse
+	if err := json.NewDecoder(recAlice.Body).Decode(&respAlice); err != nil {
+		t.Fatalf("failed to decode Alice response: %v", err)
+	}
+	if respAlice.Total != 3 {
+		t.Errorf("Expected Total=3 for Alice, got %d", respAlice.Total)
+	}
+	if len(respAlice.Tickets) != 3 {
+		t.Errorf("Expected 3 tickets for Alice, got %d", len(respAlice.Tickets))
+	}
+	for _, tkt := range respAlice.Tickets {
+		if tkt.CustomerID != "customer-alice" {
+			t.Errorf("Data leak! Found ticket with CustomerID=%s in Alice's list (ticket ID: %s)", tkt.CustomerID, tkt.ID)
+		}
+		if tkt.ID == tb1.ID || tkt.ID == tb2.ID {
+			t.Errorf("Data leak! Bob's ticket %s visible in Alice's list", tkt.ID)
+		}
+	}
+
+	// 4. Customer Isolation: Bob only sees Bob's tickets, via query param token
+	reqBob := httptest.NewRequest("GET", "/chat/tickets/mine?token="+tokenBob, nil)
+	recBob := httptest.NewRecorder()
+	c.GetCustomerTickets(recBob, reqBob)
+	if recBob.Code != http.StatusOK {
+		t.Fatalf("Expected 200 for Bob, got %d: %s", recBob.Code, recBob.Body.String())
+	}
+	var respBob CustomerListTicketsResponse
+	if err := json.NewDecoder(recBob.Body).Decode(&respBob); err != nil {
+		t.Fatalf("failed to decode Bob response: %v", err)
+	}
+	if respBob.Total != 2 {
+		t.Errorf("Expected Total=2 for Bob, got %d", respBob.Total)
+	}
+	if len(respBob.Tickets) != 2 {
+		t.Errorf("Expected 2 tickets for Bob, got %d", len(respBob.Tickets))
+	}
+	for _, tkt := range respBob.Tickets {
+		if tkt.CustomerID != "customer-bob" {
+			t.Errorf("Data leak! Found ticket with CustomerID=%s in Bob's list", tkt.CustomerID)
+		}
+		if tkt.ID == t1.ID || tkt.ID == t2.ID || tkt.ID == t3.ID {
+			t.Errorf("Data leak! Alice's ticket %s visible in Bob's list", tkt.ID)
+		}
+	}
+
+	// 5. Pagination: Alice page=1&limit=2 -> 2 tickets, page=2&limit=2 -> 1 ticket
+	reqP1 := httptest.NewRequest("GET", "/chat/tickets/mine?page=1&limit=2", nil)
+	reqP1.Header.Set("Authorization", "Bearer "+tokenAlice)
+	recP1 := httptest.NewRecorder()
+	c.GetCustomerTickets(recP1, reqP1)
+	var respP1 CustomerListTicketsResponse
+	_ = json.NewDecoder(recP1.Body).Decode(&respP1)
+	if len(respP1.Tickets) != 2 || respP1.Total != 3 || respP1.Page != 1 || respP1.Limit != 2 {
+		t.Errorf("Page 1 unexpected: len=%d, total=%d, page=%d, limit=%d", len(respP1.Tickets), respP1.Total, respP1.Page, respP1.Limit)
+	}
+
+	reqP2 := httptest.NewRequest("GET", "/chat/tickets/mine?page=2&limit=2", nil)
+	reqP2.Header.Set("Authorization", "Bearer "+tokenAlice)
+	recP2 := httptest.NewRecorder()
+	c.GetCustomerTickets(recP2, reqP2)
+	var respP2 CustomerListTicketsResponse
+	_ = json.NewDecoder(recP2.Body).Decode(&respP2)
+	if len(respP2.Tickets) != 1 || respP2.Total != 3 || respP2.Page != 2 || respP2.Limit != 2 {
+		t.Errorf("Page 2 unexpected: len=%d, total=%d, page=%d, limit=%d", len(respP2.Tickets), respP2.Total, respP2.Page, respP2.Limit)
+	}
+
+	// 6. Pagination Clamping: page=-5, limit=500 -> page=1, limit=20
+	reqClamp := httptest.NewRequest("GET", "/chat/tickets/mine?page=-5&limit=500", nil)
+	reqClamp.Header.Set("Authorization", "Bearer "+tokenAlice)
+	recClamp := httptest.NewRecorder()
+	c.GetCustomerTickets(recClamp, reqClamp)
+	var respClamp CustomerListTicketsResponse
+	_ = json.NewDecoder(recClamp.Body).Decode(&respClamp)
+	if respClamp.Page != 1 || respClamp.Limit != 20 {
+		t.Errorf("Expected clamped page=1, limit=20, got page=%d, limit=%d", respClamp.Page, respClamp.Limit)
+	}
+
+	// 7. Empty customer tickets: Charlie has 0 tickets
+	tokenCharlie, _ := jwtutil.GenerateToken("customer-charlie", "user", "tenant-1", "charlie@example.com")
+	reqCharlie := httptest.NewRequest("GET", "/chat/tickets/mine", nil)
+	reqCharlie.Header.Set("Authorization", "Bearer "+tokenCharlie)
+	recCharlie := httptest.NewRecorder()
+	c.GetCustomerTickets(recCharlie, reqCharlie)
+	var respCharlie CustomerListTicketsResponse
+	_ = json.NewDecoder(recCharlie.Body).Decode(&respCharlie)
+	if respCharlie.Total != 0 || len(respCharlie.Tickets) != 0 || respCharlie.Tickets == nil {
+		t.Errorf("Expected empty slice for Charlie, got total=%d, len=%d, tickets=%v", respCharlie.Total, len(respCharlie.Tickets), respCharlie.Tickets)
+	}
+}

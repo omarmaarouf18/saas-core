@@ -84,6 +84,7 @@ The table below catalogs every registered HTTP endpoint across all 5 backend mic
 | `chat-service` | `GET /chat/history` | `c.GetHistory` | Mobile App | `lib/providers/chat_provider.dart:52` | N/A |
 | `chat-service` | `POST /chat/internal/broadcast-location` | `c.BroadcastLocation` | Internal | None (Called by `user-service`) | N/A |
 | `chat-service` | `POST /chat/tickets` | `c.HandleCreateTicket` | Mobile App | `lib/providers/chat_provider.dart:222` | N/A |
+| `chat-service` | `GET /chat/tickets/mine`<br>`GET /tickets/mine` | `c.GetCustomerTickets` | Mobile App | `lib/core/api_client.dart:457`<br>`lib/providers/chat_provider.dart:253` | N/A |
 | `chat-service` | `POST /chat/tickets/resolve` | `c.HandleResolveTicket` | Legacy Agent | None (Orphan agent-token endpoint) | None |
 | `chat-service` | `GET /admin/tickets`<br>`GET /chat/admin/tickets` | `c.AdminListTickets` | Ops Console | None (Excluded per ADR-0023) | `internal/proxy/proxy.go:442` |
 | `chat-service` | `POST /admin/tickets/resolve`<br>`POST /chat/admin/tickets/resolve` | `c.AdminResolveTicket` | Ops Console | None (Excluded per ADR-0023) | `internal/proxy/proxy.go:486` |
@@ -113,43 +114,41 @@ pie title Breakdown of Backend Gaps by UI Surface Impact
 
 ### GAP-01: Support Ticket Chat Thread (`ticket:<ticketID>` Channel)
 
-* **Severity / Priority**: **High (P1)**
-* **Impact Classification**: **Needs Net-New Screen**
+* **Severity / Priority**: **High (P1)** — **[RESOLVED & VERIFIED]**
+* **Impact Classification**: **Needs Net-New Screen** (Resolved: `TicketChatScreen` implemented)
 * **Related ADR**: [ADR-0013](../adr/0013-support-agent-console-as-separate-client-application.md), [ADR-0023](../adr/0023-modular-ops-console-expansion.md)
 
-#### Detailed Finding
+#### Detailed Finding & Implementation
 - **Backend Capability**:
   - `services/chat-service/internal/handlers/chat.go:183`: `canAccessChannel` explicitly authorizes channel `ticket:<ticketID>` for `ticket.CustomerID` and `ticket.AssignedAgentID`.
   - `services/chat-service/internal/store/mongodb.go:141`: `PersistMessage` records chat messages under arbitrary channels, including `ticket:<ticketID>`.
   - `services/chat-service/internal/handlers/admin_tickets.go:138`: `AdminResolveTicket` automatically inserts a system resolution chat message (`sender_id: "system:support"`, `type: "ticket_resolution"`) into `ticket:<ticketID>` and broadcasts it to active subscribers.
   - `services/chat-service/internal/handlers/chat.go:210`: `GET /chat/history?channel=ticket:<ticketID>` returns full historical messages for the ticket thread.
-- **Frontend State**:
-  - `ChatProvider` (`frontend/lib/providers/chat_provider.dart:54, 110, 197`) hardcodes `job:$_currentJobId` for message history, subscription, and message sending.
-  - `ChatScreen` (`frontend/lib/screens/chat_screen.dart`) is tightly bound to `Job` objects, rendering courier delivery metadata (pickup/destination, courier status badge).
-  - There is **no screen or widget** in the mobile app where a customer can enter a support ticket conversation, exchange messages with the assigned agent, or view resolution notes inline.
-- **Suggested UI & Fix**:
-  - Extend `ChatProvider` to support generic channel routing (`channel: String`, supporting both `job:<id>` and `ticket:<id>`).
-  - Implement a dedicated `TicketChatScreen` (or generalize `ChatScreen`) displaying ticket metadata (`context_id`, status, agent name) and message stream.
+- **Frontend Implementation**:
+  - Generalized `ChatProvider` (`frontend/lib/providers/chat_provider.dart`) to support generic channels (`_currentChannel`, `fetchChannelHistory`, `connectAndSubscribeChannel`, and `sendMessage` using `_currentChannel`).
+  - Built `TicketChatScreen` (`frontend/lib/screens/ticket_chat_screen.dart`): lightweight conversation screen scoped to `ticket:<id>`, showing ticket metadata header, live messages, resolution banner with resolution note, input bar disabled on resolved tickets, and real-time transition on `ticket_resolution` incoming message.
+  - Verified via dedicated widget tests in `frontend/test/customer_tickets_test.dart`.
 
 ---
 
 ### GAP-02: Customer Support Ticket History & Status List
 
-* **Severity / Priority**: **High (P1)**
-* **Impact Classification**: **Needs Net-New Screen** + **Backend Query Extension**
+* **Severity / Priority**: **High (P1)** — **[RESOLVED & VERIFIED]**
+* **Impact Classification**: **Needs Net-New Screen** + **Backend Query Extension** (Resolved: `GET /chat/tickets/mine` & `CustomerTicketsScreen`)
 * **Related ADR**: [ADR-0013](../adr/0013-support-agent-console-as-separate-client-application.md)
 
-#### Detailed Finding
-- **Backend Capability & Gap**:
-  - Customers can create complaint tickets via `POST /chat/tickets` (`services/chat-service/internal/handlers/chat.go:297`).
-  - Tickets are stored in `complaint_tickets` collection with `status` (`open`, `in_progress`, `resolved`), `context_id`, `resolution_note`, and `resolved_at`.
-  - **Backend Gap**: While reviewers can list all tickets via `GET /admin/tickets`, `chat-service` currently exposes **no customer-scoped endpoint** (e.g. `GET /chat/tickets/mine` or `GET /chat/tickets`) to return tickets belonging to the authenticated `customer_id`.
-- **Frontend State**:
-  - `CreateTicketDialog` (`frontend/lib/widgets/create_ticket_dialog.dart`) submits the ticket and displays a transient success toast containing the ticket ID.
-  - After dismissing the toast, the customer has **no way to view their past or active tickets**, check ticket resolution status, or review past resolution notes.
-- **Suggested UI & Fix**:
-  - Add `GET /chat/tickets/mine` in `chat-service` returning `[]ComplaintTicket` filtered by authenticated `customer_id`.
-  - Build `CustomerTicketsScreen` (listing tickets with `StatusBadge` and created dates) accessible from `SettingsScreen` or `JobStatusScreen`.
+#### Detailed Finding & Implementation
+- **Backend Capability & Implementation**:
+  - Added `ListCustomerTickets` in `services/chat-service/internal/store/mongodb.go` returning tickets matching authenticated `customer_id`, sorted by `created_at: -1`, with pagination clamping.
+  - Implemented `GetCustomerTickets` handler in `services/chat-service/internal/handlers/chat.go` registered under `GET /chat/tickets/mine` and `GET /tickets/mine` protected by user JWT authentication and rate limiting.
+  - Verified via `TestGetCustomerTickets_IsolationAndPagination` in `services/chat-service/internal/handlers/chat_test.go` proving customer isolation (IDOR protection) and pagination clamping.
+- **Frontend Implementation**:
+  - Added `SupportTicket` model (`frontend/lib/models/support_ticket.dart`).
+  - Added `getCustomerTickets` to `ApiClient` (`frontend/lib/core/api_client.dart`) and `fetchCustomerTickets` in `ChatProvider`.
+  - Built `CustomerTicketsScreen` (`frontend/lib/screens/customer_tickets_screen.dart`) with filter pills (All, Open, Resolved), status badges, resolution note preview, empty state, pull-to-refresh, and FAB opening `CreateTicketDialog`.
+  - Added "Support Tickets" entry point in `SettingsScreen` (`frontend/lib/screens/settings_screen.dart`).
+  - Wired `ticket_resolved` notification routing in `NotificationsScreen` (`frontend/lib/screens/notifications_screen.dart`) to navigate directly to ticket view.
+  - Verified via unit and widget tests in `frontend/test/customer_tickets_test.dart`.
 
 ---
 

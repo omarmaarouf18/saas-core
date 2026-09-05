@@ -222,6 +222,7 @@
    * `employee_marker.dart`
    * `reconciliation_job.dart`
    * `payout_request.dart`
+   * `support_ticket.dart`
  * **Theme**:
    * `theme.dart`
  * **L10n** (`frontend/lib/l10n/`):
@@ -272,6 +273,8 @@
    * `employee_home_screen.dart`
    * `employee_history_screen.dart`
    * `update_required_screen.dart`
+   * `customer_tickets_screen.dart`
+   * `ticket_chat_screen.dart`
  * **Widgets**:
     * `app_shell.dart`
     * `cancel_job_dialog.dart`

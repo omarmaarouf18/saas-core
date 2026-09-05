@@ -3,6 +3,7 @@ import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../models/notification_model.dart';
+import '../models/support_ticket.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/confirm_action_dialog.dart';
@@ -11,6 +12,8 @@ import '../widgets/pill_filter_bar.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_empty_state.dart';
+import 'customer_tickets_screen.dart';
+import 'ticket_chat_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key, this.clock, this.showBackButton});
@@ -81,14 +84,42 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return list;
   }
 
-  void _handleCardTap(String notifId, NotificationsProvider provider) {
+  void _handleCardTap(NotificationModel notif, NotificationsProvider provider) {
     final now = DateTime.now();
     if (_lastCardTapTime != null &&
         now.difference(_lastCardTapTime!) < AppMotion.debounceGuard) {
       return;
     }
     _lastCardTapTime = now;
-    provider.markAsRead(notifId);
+    provider.markAsRead(notif.id);
+
+    if (notif.type == 'ticket_resolved') {
+      final parenMatch = RegExp(r'\(([^)]+)\)').firstMatch(notif.body);
+      final rawMatch = RegExp(r'\b(tkt-[a-zA-Z0-9_-]+|ticket-[a-zA-Z0-9_-]+)\b',
+              caseSensitive: false)
+          .firstMatch(notif.body);
+      final ticketId = parenMatch?.group(1) ?? rawMatch?.group(1);
+      if (ticketId != null && ticketId.isNotEmpty) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => TicketChatScreen(
+              ticket: SupportTicket(
+                id: ticketId,
+                customerId: notif.userId ?? '',
+                status: 'resolved',
+                createdAt: notif.timestamp,
+              ),
+            ),
+          ),
+        );
+      } else {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const CustomerTicketsScreen(),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -324,6 +355,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     required String? userToken,
   }) {
     final l10n = context.l10n;
+    final bool isTicket = notif.type == 'ticket_resolved';
     final bool isJob = notif.type == 'job_alert' || notif.id.startsWith('job-');
     final bool isAlert = notif.type == 'status_update' ||
         notif.type == 'popup' ||
@@ -331,37 +363,45 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         notif.type == 'kyc_rejected';
     final bool isSystem = notif.type == 'system';
 
-    final IconData typeIcon = isJob
-        ? Icons.local_shipping_outlined
-        : (isAlert
-            ? Icons.warning_amber_rounded
-            : (isSystem
-                ? Icons.system_update_alt_rounded
-                : Icons.notifications_outlined));
+    final IconData typeIcon = isTicket
+        ? Icons.support_agent_outlined
+        : (isJob
+            ? Icons.local_shipping_outlined
+            : (isAlert
+                ? Icons.warning_amber_rounded
+                : (isSystem
+                    ? Icons.system_update_alt_rounded
+                    : Icons.notifications_outlined)));
 
-    final Color iconBgColor = isJob
-        ? AppColors.primaryContainer
-        : (isAlert
-            ? Theme.of(context).colorScheme.errorContainer
-            : (isSystem
-                ? Theme.of(context).colorScheme.surfaceContainerHigh
-                : Theme.of(context).colorScheme.surfaceContainerHigh));
+    final Color iconBgColor = isTicket
+        ? context.semanticColors.success.withValues(alpha: 0.15)
+        : (isJob
+            ? AppColors.primaryContainer
+            : (isAlert
+                ? Theme.of(context).colorScheme.errorContainer
+                : (isSystem
+                    ? Theme.of(context).colorScheme.surfaceContainerHigh
+                    : Theme.of(context).colorScheme.surfaceContainerHigh)));
 
-    final Color iconColor = isJob
-        ? AppColors.secondary
-        : (isAlert
-            ? AppColors.error
-            : (isSystem
-                ? Theme.of(context).colorScheme.onSurfaceVariant
-                : Theme.of(context).colorScheme.primary));
+    final Color iconColor = isTicket
+        ? context.semanticColors.success
+        : (isJob
+            ? AppColors.secondary
+            : (isAlert
+                ? AppColors.error
+                : (isSystem
+                    ? Theme.of(context).colorScheme.onSurfaceVariant
+                    : Theme.of(context).colorScheme.primary)));
 
-    final String tagLabel = isJob
-        ? l10n.notificationsJobsTag
-        : (isAlert
-            ? l10n.notificationsAlertsTag
-            : (isSystem
-                ? l10n.notificationsSystemTag
-                : l10n.notificationsDefaultTag));
+    final String tagLabel = isTicket
+        ? l10n.supportTicketsTitle
+        : (isJob
+            ? l10n.notificationsJobsTag
+            : (isAlert
+                ? l10n.notificationsAlertsTag
+                : (isSystem
+                    ? l10n.notificationsSystemTag
+                    : l10n.notificationsDefaultTag)));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -373,7 +413,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         borderRadius: AppRadius.lg,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          onTap: () => _handleCardTap(notif.id, provider),
+          onTap: () => _handleCardTap(notif, provider),
           child: IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -488,6 +528,42 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             height: 1.4,
                           ),
                         ),
+
+                        if (isTicket)
+                          Padding(
+                            padding: const EdgeInsets.only(top: AppSpacing.xs),
+                            child: InkWell(
+                              key: Key('view_ticket_action_${notif.id}'),
+                              onTap: () => _handleCardTap(notif, provider),
+                              borderRadius: BorderRadius.circular(AppRadius.xs),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.xxs,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.confirmation_number_outlined,
+                                      size: AppIconSize.xs,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: AppSpacing.xs),
+                                    Text(
+                                      l10n.viewTicketAction,
+                                      style: AppTypography.labelMd.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),

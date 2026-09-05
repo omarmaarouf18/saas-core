@@ -13,6 +13,7 @@ import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
+import 'customer_tickets_screen.dart';
 import 'kyc_document_upload_screen.dart';
 import 'my_account_screen.dart';
 import 'notifications_screen.dart';
@@ -400,34 +401,73 @@ class SettingsScreen extends StatelessWidget {
             padding: 0,
             child: Material(
               color: Colors.transparent,
-              child: ListTile(
-                key: const Key('customer_service_setting_row'),
-                leading: Icon(
-                  Icons.support_agent_outlined,
-                  color: theme.colorScheme.primary,
-                ),
-                title: Text(
-                  l10n.settingsCustomerService,
-                  style: AppTypography.bodyLg.copyWith(
-                    fontWeight: FontWeight.w600,
+              child: Column(
+                children: [
+                  ListTile(
+                    key: const Key('support_tickets_setting_row'),
+                    leading: Icon(
+                      Icons.confirmation_number_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                    title: Text(
+                      l10n.settingsSupportTickets,
+                      style: AppTypography.bodyLg.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      l10n.settingsSupportTicketsSub,
+                      style: AppTypography.bodySm.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    trailing: Icon(
+                      Icons.chevron_right,
+                      color: theme.colorScheme.outline,
+                    ),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const CustomerTicketsScreen(),
+                        ),
+                      );
+                    },
                   ),
-                ),
-                subtitle: Text(
-                  l10n.settingsCustomerServiceSub,
-                  style: AppTypography.bodySm.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  Divider(
+                    height: 1,
+                    color:
+                        theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
                   ),
-                ),
-                trailing: Icon(
-                  Icons.chevron_right,
-                  color: theme.colorScheme.outline,
-                ),
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => const CreateTicketDialog(),
-                  );
-                },
+                  ListTile(
+                    key: const Key('customer_service_setting_row'),
+                    leading: Icon(
+                      Icons.support_agent_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                    title: Text(
+                      l10n.settingsCustomerService,
+                      style: AppTypography.bodyLg.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      l10n.settingsCustomerServiceSub,
+                      style: AppTypography.bodySm.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    trailing: Icon(
+                      Icons.chevron_right,
+                      color: theme.colorScheme.outline,
+                    ),
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const CreateTicketDialog(),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ),

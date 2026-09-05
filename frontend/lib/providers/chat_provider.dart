@@ -6,6 +6,7 @@ import '../core/api_client.dart';
 import '../core/constants.dart';
 import '../core/error_messages.dart';
 import '../models/chat_message.dart';
+import '../models/support_ticket.dart';
 
 class ChatProvider extends ChangeNotifier {
   final ApiClient apiClient;
@@ -20,11 +21,18 @@ class ChatProvider extends ChangeNotifier {
   String? _error;
   String? _subscriptionError;
 
-  // Reconnection state
+  // Channel & Reconnection state
   Timer? _reconnectTimer;
   int _reconnectDelaySeconds = 2;
+  String? _currentChannel;
   String? _currentJobId;
   String? _currentToken;
+
+  // Customer tickets state
+  List<SupportTicket> _customerTickets = [];
+  bool _isLoadingTickets = false;
+  String? _ticketsError;
+  int _ticketsTotal = 0;
 
   // A6: guards notifyListeners() after disposal — the screen-level teardown
   // mixin defers disconnect() to the end of the frame, which can land AFTER
@@ -38,10 +46,21 @@ class ChatProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get subscriptionError => _subscriptionError;
+  String? get currentChannel => _currentChannel;
+  String? get currentJobId => _currentJobId;
+
+  List<SupportTicket> get customerTickets => _customerTickets;
+  bool get isLoadingTickets => _isLoadingTickets;
+  String? get ticketsError => _ticketsError;
+  int get ticketsTotal => _ticketsTotal;
 
   ChatProvider(this.apiClient);
 
-  Future<void> fetchHistory(String jobId, String token) async {
+  Future<void> fetchHistory(String jobId, String token) {
+    return fetchChannelHistory('job:$jobId', token);
+  }
+
+  Future<void> fetchChannelHistory(String channel, String token) async {
     _error = null;
     _subscriptionError = null;
     _messages = [];
@@ -51,7 +70,7 @@ class ChatProvider extends ChangeNotifier {
       final res = await apiClient.get(
         '/chat/history',
         queryParams: {
-          'channel': 'job:$jobId',
+          'channel': channel,
           'token': token,
         },
       );
@@ -74,7 +93,16 @@ class ChatProvider extends ChangeNotifier {
   }
 
   void connectAndSubscribe(String jobId, String token) {
-    _currentJobId = jobId;
+    connectAndSubscribeChannel('job:$jobId', token);
+  }
+
+  void connectAndSubscribeChannel(String channel, String token) {
+    _currentChannel = channel;
+    if (channel.startsWith('job:')) {
+      _currentJobId = channel.substring('job:'.length);
+    } else {
+      _currentJobId = null;
+    }
     _currentToken = token;
     _reconnectTimer?.cancel();
 
@@ -82,7 +110,7 @@ class ChatProvider extends ChangeNotifier {
   }
 
   void _connect() {
-    if (_currentToken == null || _currentJobId == null) return;
+    if (_currentToken == null || _currentChannel == null) return;
 
     _isConnecting = true;
     _isConnected = false;
@@ -107,7 +135,7 @@ class ChatProvider extends ChangeNotifier {
       );
 
       // Immediately send subscribe action on connection
-      _subscribe('job:$_currentJobId');
+      _subscribe(_currentChannel!);
 
       _webSocketSubscription = _webSocketChannel!.stream.listen(
         (data) {
@@ -188,13 +216,13 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<void> sendMessage(String content) async {
-    if (_webSocketChannel == null || !_isConnected || _currentJobId == null) {
+    if (_webSocketChannel == null || !_isConnected || _currentChannel == null) {
       throw Exception("WebSocket is not connected");
     }
 
     _webSocketChannel!.sink.add(jsonEncode({
       'action': 'message',
-      'channel': 'job:$_currentJobId',
+      'channel': _currentChannel,
       'content': content,
     }));
   }
@@ -207,6 +235,44 @@ class ChatProvider extends ChangeNotifier {
       }
       _connect();
     });
+  }
+
+  Future<List<SupportTicket>> fetchCustomerTickets({
+    bool refresh = false,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    if (refresh) {
+      _customerTickets = [];
+    }
+    _isLoadingTickets = true;
+    _ticketsError = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.getCustomerTickets(page: page, limit: limit);
+      if (res is Map<String, dynamic>) {
+        final rawList = res['tickets'] as List? ?? [];
+        final tickets = rawList
+            .map((t) => SupportTicket.fromJson(t as Map<String, dynamic>))
+            .toList();
+        _ticketsTotal = res['total'] as int? ?? tickets.length;
+        if (refresh || page == 1) {
+          _customerTickets = tickets;
+        } else {
+          _customerTickets.addAll(tickets);
+        }
+        return tickets;
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching customer tickets: $e');
+      _ticketsError = friendlyErrorMessage(e);
+      return [];
+    } finally {
+      _isLoadingTickets = false;
+      notifyListeners();
+    }
   }
 
   Future<Map<String, dynamic>> createTicket({
@@ -253,6 +319,7 @@ class ChatProvider extends ChangeNotifier {
     _webSocketChannel = null;
     _isConnected = false;
     _isConnecting = false;
+    _currentChannel = null;
     _currentJobId = null;
     _currentToken = null;
     _messages = [];

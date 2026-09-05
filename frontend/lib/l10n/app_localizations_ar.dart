@@ -2320,4 +2320,81 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get matchingCourierSubtitle => 'جاري البحث عن أقرب مندوب متاح...';
+
+  @override
+  String get supportTicketsTitle => 'تذاكر الدعم';
+
+  @override
+  String get supportTicketsSubtitle => 'متابعة ومراجعة استفساراتك';
+
+  @override
+  String get settingsSupportTickets => 'تذاكر الدعم';
+
+  @override
+  String get settingsSupportTicketsSub => 'عرض التذاكر السابقة وحالة حلها';
+
+  @override
+  String get createTicketFab => 'تذكرة جديدة';
+
+  @override
+  String get emptyTicketsTitle => 'لا توجد تذاكر دعم حتى الآن';
+
+  @override
+  String get emptyTicketsDesc =>
+      'محتاج مساعدة؟ افتح تذكرة شكوى أو استفسار جديدة.';
+
+  @override
+  String get openNewTicketBtn => 'فتح تذكرة جديدة';
+
+  @override
+  String get ticketFilterAll => 'الكل';
+
+  @override
+  String get ticketFilterOpen => 'مفتوحة';
+
+  @override
+  String get ticketFilterResolved => 'تم الحل';
+
+  @override
+  String get statusResolved => 'تم الحل';
+
+  @override
+  String get statusAssigned => 'قيد المتابعة';
+
+  @override
+  String ticketChatTitle(String id) {
+    return 'تذكرة #$id';
+  }
+
+  @override
+  String get ticketChatSubtitle => 'خدمة العملاء';
+
+  @override
+  String get ticketResolvedBannerTitle => 'تم حل التذكرة';
+
+  @override
+  String get ticketResolvedBannerMsg =>
+      'تم حل هذه التذكرة وإغلاقها بواسطة فريق الدعم.';
+
+  @override
+  String get ticketResolutionNote => 'ملاحظة الحل';
+
+  @override
+  String get ticketInputClosed => 'تم حل هذه التذكرة ومغلقة للرسائل الجديدة.';
+
+  @override
+  String ticketAssignedAgent(String agent) {
+    return 'المسؤول: $agent';
+  }
+
+  @override
+  String get ticketPendingAgent => 'في انتظار تعيين موظف الدعم...';
+
+  @override
+  String ticketContextJob(String id) {
+    return 'مرتبط بالطلب #$id';
+  }
+
+  @override
+  String get viewTicketAction => 'عرض التذكرة';
 }

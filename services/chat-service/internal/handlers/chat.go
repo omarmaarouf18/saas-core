@@ -119,6 +119,8 @@ func (c *Chat) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/chat/history", c.GetHistory)
 	mux.HandleFunc("/chat/internal/broadcast-location", c.BroadcastLocation)
 	mux.HandleFunc("/chat/tickets", c.HandleCreateTicket)
+	mux.HandleFunc("/chat/tickets/mine", c.GetCustomerTickets)
+	mux.HandleFunc("/tickets/mine", c.GetCustomerTickets)
 	mux.HandleFunc("/chat/tickets/resolve", c.HandleResolveTicket)
 	mux.HandleFunc("/chat/admin/tickets", c.AdminListTickets)
 	mux.HandleFunc("/admin/tickets", c.AdminListTickets)
@@ -771,6 +773,78 @@ func (c *Chat) HandleCreateTicket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, ticket)
+}
+
+// CustomerListTicketsResponse is the JSON payload for GET /chat/tickets/mine.
+type CustomerListTicketsResponse struct {
+	Tickets []store.ComplaintTicket `json:"tickets"`
+	Total   int                     `json:"total"`
+	Page    int                     `json:"page"`
+	Limit   int                     `json:"limit"`
+}
+
+// GetCustomerTickets lists support tickets submitted by the authenticated customer.
+// GET /chat/tickets/mine & GET /tickets/mine
+func (c *Chat) GetCustomerTickets(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed, use GET"})
+		return
+	}
+
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		authHeader := r.Header.Get("Authorization")
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			token = strings.TrimPrefix(authHeader, "Bearer ")
+		}
+	}
+	if token == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing token"})
+		return
+	}
+
+	claims, err := jwtutil.ValidateToken(token)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid or expired token: " + err.Error()})
+		return
+	}
+
+	// Rate limiting check
+	if limited, remaining := c.limiter.CheckAndRecord("tickets_mine:" + claims.UserID); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
+	page := int64(1)
+	if pStr := r.URL.Query().Get("page"); pStr != "" {
+		if p, err := strconv.ParseInt(pStr, 10, 64); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	limit := int64(20)
+	if lStr := r.URL.Query().Get("limit"); lStr != "" {
+		if l, err := strconv.ParseInt(lStr, 10, 64); err == nil && l > 0 && l <= 100 {
+			limit = l
+		}
+	}
+
+	tickets, total, err := c.store.ListCustomerTickets(r.Context(), claims.UserID, page, limit)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to list customer tickets: " + err.Error()})
+		return
+	}
+
+	handlerutil.ShipSecurityEvent(r.Context(), "CUSTOMER_TICKETS_LISTED", "chat-service", claims.UserID, "", fmt.Sprintf("listed %d tickets (total=%d, page=%d)", len(tickets), total, page), handlerutil.GetClientIP(r))
+
+	writeJSON(w, http.StatusOK, CustomerListTicketsResponse{
+		Tickets: tickets,
+		Total:   int(total),
+		Page:    int(page),
+		Limit:   int(limit),
+	})
 }
 
 func (c *Chat) HandleResolveTicket(w http.ResponseWriter, r *http.Request) {

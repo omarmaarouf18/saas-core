@@ -4328,6 +4328,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Finding nearest available courier...'**
   String get matchingCourierSubtitle;
+
+  /// No description provided for @supportTicketsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Support Tickets'**
+  String get supportTicketsTitle;
+
+  /// No description provided for @supportTicketsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track and review your inquiries'**
+  String get supportTicketsSubtitle;
+
+  /// No description provided for @settingsSupportTickets.
+  ///
+  /// In en, this message translates to:
+  /// **'Support Tickets'**
+  String get settingsSupportTickets;
+
+  /// No description provided for @settingsSupportTicketsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'View past inquiries and resolution status'**
+  String get settingsSupportTicketsSub;
+
+  /// No description provided for @createTicketFab.
+  ///
+  /// In en, this message translates to:
+  /// **'New Ticket'**
+  String get createTicketFab;
+
+  /// No description provided for @emptyTicketsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No support tickets yet'**
+  String get emptyTicketsTitle;
+
+  /// No description provided for @emptyTicketsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Need help? Open a new complaint or inquiry ticket.'**
+  String get emptyTicketsDesc;
+
+  /// No description provided for @openNewTicketBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Open New Ticket'**
+  String get openNewTicketBtn;
+
+  /// No description provided for @ticketFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get ticketFilterAll;
+
+  /// No description provided for @ticketFilterOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get ticketFilterOpen;
+
+  /// No description provided for @ticketFilterResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get ticketFilterResolved;
+
+  /// No description provided for @statusResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get statusResolved;
+
+  /// No description provided for @statusAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get statusAssigned;
+
+  /// No description provided for @ticketChatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket #{id}'**
+  String ticketChatTitle(String id);
+
+  /// No description provided for @ticketChatSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Support'**
+  String get ticketChatSubtitle;
+
+  /// No description provided for @ticketResolvedBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket Resolved'**
+  String get ticketResolvedBannerTitle;
+
+  /// No description provided for @ticketResolvedBannerMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'This ticket has been marked as resolved by customer support.'**
+  String get ticketResolvedBannerMsg;
+
+  /// No description provided for @ticketResolutionNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolution Note'**
+  String get ticketResolutionNote;
+
+  /// No description provided for @ticketInputClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'This ticket is resolved and closed for new messages.'**
+  String get ticketInputClosed;
+
+  /// No description provided for @ticketAssignedAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned Agent: {agent}'**
+  String ticketAssignedAgent(String agent);
+
+  /// No description provided for @ticketPendingAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for agent assignment...'**
+  String get ticketPendingAgent;
+
+  /// No description provided for @ticketContextJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Related to Job #{id}'**
+  String ticketContextJob(String id);
+
+  /// No description provided for @viewTicketAction.
+  ///
+  /// In en, this message translates to:
+  /// **'View Ticket'**
+  String get viewTicketAction;
 }
 
 class _AppLocalizationsDelegate
