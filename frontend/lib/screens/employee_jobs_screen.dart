@@ -229,6 +229,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 ? auth.user!.username
                 : (auth.user?.email ?? '')),
             const SizedBox(height: AppSpacing.lg),
+            _buildLocationPermissionBanner(),
             ThemedSectionHeader(title: l10n.employeeJobsSectionAssigned),
             const SizedBox(height: AppSpacing.sm),
             AnimatedSwitcher(
@@ -454,6 +455,68 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                   ),
               ],
             ));
+      },
+    );
+  }
+
+  Widget _buildLocationPermissionBanner() {
+    final l10n = AppLocalizations.of(context)!;
+    return Consumer<EmployeeLocationProvider>(
+      builder: (context, locationProvider, child) {
+        if (locationProvider.status != LocationSharingStatus.permissionDenied &&
+            locationProvider.status != LocationSharingStatus.serviceDisabled) {
+          return const SizedBox.shrink();
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+          child: ThemedPanel(
+            color: context.semanticColors.warning.withValues(alpha: 0.1),
+            borderRadius: AppRadius.defaultBorder,
+            border: Border.all(color: context.semanticColors.warning),
+            key: const Key('location_permission_denied_banner'),
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.location_off_outlined,
+                        color: context.semanticColors.warning, size: 20),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Text(
+                        l10n.employeeJobsLocationPermissionTitle,
+                        style: AppTypography.bodyMd.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: context.semanticColors.warning,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  l10n.employeeJobsLocationPermissionDesc,
+                  style: AppTypography.bodyMd.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                SecondaryButton(
+                  key: const Key('open_app_settings_button'),
+                  text: l10n.employeeJobsOpenAppSettings,
+                  icon: Icons.settings_outlined,
+                  isOutlined: true,
+                  onPressed: () {
+                    Geolocator.openAppSettings();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
       },
     );
   }
@@ -937,61 +1000,6 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             if (isActive) ...[
               Consumer<EmployeeLocationProvider>(
                 builder: (context, locationProvider, child) {
-                  if (locationProvider.status ==
-                          LocationSharingStatus.permissionDenied ||
-                      locationProvider.status ==
-                          LocationSharingStatus.serviceDisabled) {
-                    return ThemedPanel(
-                        color: context.semanticColors.warning
-                            .withValues(alpha: 0.1),
-                        borderRadius: AppRadius.defaultBorder,
-                        border:
-                            Border.all(color: context.semanticColors.warning),
-                        key: const Key('location_permission_denied_banner'),
-                        margin: const EdgeInsets.only(top: AppSpacing.sm),
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.location_off_outlined,
-                                    color: context.semanticColors.warning,
-                                    size: 20),
-                                const SizedBox(width: AppSpacing.xs),
-                                Expanded(
-                                  child: Text(
-                                    l10n.employeeJobsLocationPermissionTitle,
-                                    style: AppTypography.bodyMd.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: context.semanticColors.warning,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: AppSpacing.xs),
-                            Text(
-                              l10n.employeeJobsLocationPermissionDesc,
-                              style: AppTypography.bodyMd.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            SecondaryButton(
-                              key: const Key('open_app_settings_button'),
-                              text: l10n.employeeJobsOpenAppSettings,
-                              icon: Icons.settings_outlined,
-                              isOutlined: true,
-                              onPressed: () {
-                                Geolocator.openAppSettings();
-                              },
-                            ),
-                          ],
-                        ));
-                  }
-
                   if (locationProvider.status ==
                       LocationSharingStatus.tracking) {
                     return ThemedPanel(

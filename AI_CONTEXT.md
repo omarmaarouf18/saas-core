@@ -673,6 +673,18 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
     5. **P3 (Model / Screen Addition)**: User profile account standing (`account_status`, `suspension_reason`) deserialization in `UserProfile` model and `MyAccountScreen`.
   - **Reverse-Direction Audit**: Confirmed 0 broken contracts (all frontend provider calls match backend handler routes and parameter schemas).
 
+### Employee Availability Reporting, Dispatch Discovery & Owner Fleet Map Fix (2026-09-05)
+
+* **Employee Availability Pipeline & Owner Fleet Map Hydration**: Fixed root causes preventing available couriers from being discovered by the dispatch cascade or rendered on the owner fleet map:
+  - **Stationary Courier Discovery**: `EmployeeLocationProvider._startLocationStream` now calls `_geolocator.getCurrentPosition()` immediately upon starting tracking so stationary couriers publish coordinates without requiring >= 10m movement.
+  - **Periodic Availability Heartbeat**: Added 60-second periodic heartbeat in `EmployeeLocationProvider` to maintain `updated_at` freshness within the 5-minute window (`EmployeeLocationFreshnessWindow`) in MongoDB.
+  - **Screen-Level Permission Warning**: Moved `_buildLocationPermissionBanner` in `EmployeeJobsScreen` outside of active job cards to the screen root, so idle couriers (0 active jobs) are alerted if location permissions are denied or location services are disabled (`Key('location_permission_denied_banner')`).
+  - **Real-Time Fleet Broadcast**: `UpdateEmployeeLocation` (`POST /users/employee/location`) in `user-service` now asynchronously broadcasts to `chat-service` on channel `"fleet:" + tenantID` via `/chat/internal/broadcast-location`.
+  - **Dual-Source Fleet Hydration**: `MapTrackingProvider.hydrateOwnerFleet` now queries both `GET /users/employees/available` and `GET /users/jobs/owner`, placing available idle drivers with `jobId: null`.
+  - **Visual Distinction & Filtering**: `OwnerFleetMapScreen` now supports interactive filter pills ('All Fleet', 'On Route', 'Idle'), distinct vibrant green pin styling for idle drivers (`context.semanticColors.success`), and "Idle" status indicators in the driver card.
+  - **Verification**: Verified via `services/user-service/internal/handlers/employee_dispatch_pricing_test.go` (`TestUpdateEmployeeLocation_BroadcastsToFleetChannel`), `frontend/test/employee_location_tracking_test.dart` (8/8 pass), `frontend/test/map_tracking_test.dart` (8/8 pass), and full frontend/backend test suites.
+
+
 
 
 

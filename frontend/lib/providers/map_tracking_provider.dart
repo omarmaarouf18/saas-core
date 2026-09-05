@@ -59,6 +59,46 @@ class MapTrackingProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // 1. Fetch available/idle employees reporting fresh locations
+      try {
+        final availableRes = await apiClient.get(
+          '/users/employees/available',
+          queryParams: {'owner_token': ownerToken},
+        );
+        if (availableRes is Map<String, dynamic> &&
+            availableRes['employees'] is List) {
+          final now = DateTime.now();
+          for (final item in availableRes['employees']) {
+            if (item is Map<String, dynamic>) {
+              final empId = item['employee_id']?.toString();
+              final lat = (item['latitude'] as num?)?.toDouble();
+              final lon = (item['longitude'] as num?)?.toDouble();
+              final updatedAtStr = item['updated_at']?.toString();
+              final updatedAt = updatedAtStr != null
+                  ? DateTime.tryParse(updatedAtStr) ?? now
+                  : now;
+
+              if (empId != null &&
+                  empId.isNotEmpty &&
+                  lat != null &&
+                  lon != null) {
+                _employeeMarkers[empId] = EmployeeMarkerData(
+                  employeeId: empId,
+                  jobId: null,
+                  latitude: lat,
+                  longitude: lon,
+                  updatedAt: updatedAt,
+                );
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint(
+            'Error fetching available employees during fleet hydration: $e');
+      }
+
+      // 2. Overlay active/recent jobs from owner jobs list
       final res = await apiClient.get(
         '/users/jobs/owner',
         queryParams: {'owner_token': ownerToken},
@@ -273,9 +313,19 @@ class MapTrackingProvider extends ChangeNotifier {
 
         if (empId != null && empId.isNotEmpty && lat != null && lon != null) {
           final existing = _employeeMarkers[empId];
+          final incomingJobId = map['job_id']?.toString();
+          final String? resolvedJobId;
+          if (map.containsKey('job_id')) {
+            resolvedJobId = (incomingJobId != null && incomingJobId.isNotEmpty)
+                ? incomingJobId
+                : null;
+          } else {
+            resolvedJobId = existing?.jobId;
+          }
+
           _employeeMarkers[empId] = EmployeeMarkerData(
             employeeId: empId,
-            jobId: map['job_id']?.toString() ?? existing?.jobId,
+            jobId: resolvedJobId,
             latitude: lat,
             longitude: lon,
             updatedAt: DateTime.now(),

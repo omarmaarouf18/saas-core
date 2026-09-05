@@ -1554,6 +1554,39 @@ func (u *UserService) UpdateEmployeeLocation(w http.ResponseWriter, r *http.Requ
 		u.locationThrottleMu.Unlock()
 	}
 
+	// Call chat-service to broadcast to fleet channel so owners see available employees in real-time
+	go func() {
+		channel := "fleet:" + tenantID
+		broadcastURL := fmt.Sprintf("%s/chat/internal/broadcast-location", u.chatServiceURL)
+		payload := map[string]any{
+			"channel":     channel,
+			"latitude":    req.Latitude,
+			"longitude":   req.Longitude,
+			"employee_id": employeeID,
+		}
+		bodyBytes, err := json.Marshal(payload)
+		if err != nil {
+			log.Printf("[USER] Employee location broadcast error (marshal) for channel %s: %v", channel, err)
+			return
+		}
+
+		// #nosec G704 //nolint:gosec -- broadcastURL is constructed from internal service config
+		broadcastReq, err := http.NewRequest("POST", broadcastURL, bytes.NewReader(bodyBytes))
+		if err != nil {
+			log.Printf("[USER] Employee location broadcast error (request build) for channel %s: %v", channel, err)
+			return
+		}
+		broadcastReq.Header.Set("Content-Type", "application/json")
+		broadcastReq.Header.Set("X-Internal-Token", u.internalServiceToken)
+
+		resp, err := u.chatClient.Do(broadcastReq)
+		if err != nil {
+			log.Printf("[USER] Employee location broadcast error (call chat-service) for channel %s: %v", channel, err)
+			return
+		}
+		_ = resp.Body.Close()
+	}()
+
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status":    "success",
 		"message":   "employee location updated",

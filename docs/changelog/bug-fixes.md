@@ -758,5 +758,30 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
   - `live_smoke_test.go`: End-to-end HTTP SSE smoke test opening a real stream to `/notifications/stream`, receiving `event: connected`, receiving a live notification dispatched via `POST /notifications/send` (KYC review outcome), and receiving cross-instance broadcast via Redis Pub/Sub.
   - All unit, integration, and smoke tests passing across `services/notification-service/...` (100% green).
 
+## Employee Availability Reporting Pipeline, Dispatch Discovery, and Owner Fleet Map Hydration
+
+- **Implementation Detail**:
+  - **Employee Location Tracking (`frontend/lib/providers/employee_location_provider.dart`)**:
+    - Stationary courier discovery fix: `_startLocationStream` now immediately calls `_geolocator.getCurrentPosition()` upon going online / starting availability tracking so stationary couriers immediately transmit their coordinates without having to move >= 10 meters first.
+    - Freshness window heartbeat: Added periodic 60-second timer (`_availabilityHeartbeatTimer`) that transmits heartbeat pings to `POST /users/employee/location`, keeping employee locations fresh within the backend's 5-minute freshness window (`EmployeeLocationFreshnessWindow`).
+    - Stricter throttle interval gating: Tracked `_lastSentTime` in `_sendAvailabilityPing` to strictly enforce the 3.5s minimum interval gate on availability pings.
+  - **Idle Courier Permission Alert (`frontend/lib/screens/employee_jobs_screen.dart`)**:
+    - Extracted the location permission and service disabled warning banner (`_buildLocationPermissionBanner()`) from inside active job cards to the screen root, ensuring couriers with 0 assigned jobs (idle/available) immediately see permission warnings (`Key('location_permission_denied_banner')`) and can navigate to app settings.
+  - **Real-Time Fleet Broadcast (`services/user-service/internal/handlers/jobs_handlers.go`)**:
+    - In `UpdateEmployeeLocation`, added asynchronous broadcast to `chat-service` on channel `"fleet:" + tenantID` via `/chat/internal/broadcast-location`, ensuring owners connected to the fleet WebSocket stream receive live location updates for idle/available couriers.
+  - **Owner Fleet Map Hydration & Dual-Source Markers (`frontend/lib/providers/map_tracking_provider.dart`)**:
+    - Updated `hydrateOwnerFleet` to fetch both available idle couriers (`GET /users/employees/available`) and active job couriers (`GET /users/jobs/owner`), populating markers for idle drivers with `jobId: null`.
+    - Handled WebSocket incoming location updates with empty/null `job_id` appropriately.
+  - **Owner Fleet Map Visualization & Filtering (`frontend/lib/screens/owner_fleet_map_screen.dart`)**:
+    - Wired interactive filter pills ('All Fleet', 'On Route', 'Idle') using mutable `_selectedFilter` state.
+    - Rendered distinct visual markers: idle/available couriers render vibrant green pins and success badges (`context.semanticColors.success`), while on-route couriers render primary/secondary badges.
+    - Updated driver selection card to display an "Idle" status indicator when `employee.jobId == null`.
+- **Verification**:
+  - `frontend/test/employee_location_tracking_test.dart`: Added test `(g)` for stationary courier initial ping and test `(h)` for idle permission banner visibility (8/8 pass).
+  - `frontend/test/map_tracking_test.dart`: Added tests `(d)` for idle marker styling / filter switching and `(e)` for dual-source fleet hydration (8/8 pass).
+  - `services/user-service/internal/handlers/employee_dispatch_pricing_test.go`: Added `TestUpdateEmployeeLocation_BroadcastsToFleetChannel` verifying real-time WebSocket fleet broadcast (passes 100%).
+  - Golden screen tests in `frontend/test/golden_screens_test.dart` (58/58 pass).
+  - Full Flutter test suite (503/503 pass) and full Go backend suite passing.
+
 
 

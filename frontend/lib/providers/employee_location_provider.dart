@@ -23,6 +23,8 @@ class EmployeeLocationProvider extends ChangeNotifier {
   String? _activeJobId;
   DateTime? _lastSentTime;
   StreamSubscription<Position>? _positionSubscription;
+  Position? _lastKnownPosition;
+  Timer? _availabilityHeartbeatTimer;
 
   EmployeeLocationProvider(
     this.apiClient, {
@@ -36,6 +38,7 @@ class EmployeeLocationProvider extends ChangeNotifier {
   String? get activeJobId => _activeJobId;
   bool get isTracking => _status == LocationSharingStatus.tracking;
   bool get isAvailable => _isAvailable;
+  Position? get lastKnownPosition => _lastKnownPosition;
 
   /// Starts live location tracking for an active job assigned to the current employee.
   Future<void> startTracking(String jobId, String userToken) async {
@@ -100,6 +103,22 @@ class EmployeeLocationProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
+    // Immediately fetch initial position so stationary couriers report right away
+    try {
+      final initialPosition = await _geolocator.getCurrentPosition(
+        locationSettings:
+            const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+      _lastKnownPosition = initialPosition;
+      _handlePositionUpdate(_activeJobId, userToken, initialPosition);
+    } catch (e) {
+      debugPrint('Could not obtain initial position: $e');
+    }
+
+    if (_isAvailable && _activeJobId == null) {
+      _startAvailabilityHeartbeat(userToken);
+    }
+
     // Distance filter set to 10m to avoid flooding location updates when stationary.
     const locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
@@ -132,6 +151,8 @@ class EmployeeLocationProvider extends ChangeNotifier {
       String? jobId, String userToken, Position position) {
     if (_status != LocationSharingStatus.tracking) return;
 
+    _lastKnownPosition = position;
+
     final now = DateTime.now();
     if (_lastSentTime != null) {
       final elapsedMs = now.difference(_lastSentTime!).inMilliseconds;
@@ -150,6 +171,34 @@ class EmployeeLocationProvider extends ChangeNotifier {
     } else {
       _sendAvailabilityPing(userToken, position.latitude, position.longitude);
     }
+  }
+
+  void _startAvailabilityHeartbeat(String userToken) {
+    _availabilityHeartbeatTimer?.cancel();
+    _availabilityHeartbeatTimer =
+        Timer.periodic(const Duration(seconds: 60), (_) async {
+      if (_status != LocationSharingStatus.tracking ||
+          !_isAvailable ||
+          _activeJobId != null) {
+        return;
+      }
+      Position? pos = _lastKnownPosition;
+      try {
+        pos = await _geolocator.getCurrentPosition(
+          locationSettings:
+              const LocationSettings(accuracy: LocationAccuracy.high),
+        );
+        _lastKnownPosition = pos;
+      } catch (e) {
+        debugPrint('Availability heartbeat getCurrentPosition error: $e');
+      }
+      if (pos != null &&
+          _status == LocationSharingStatus.tracking &&
+          _isAvailable &&
+          _activeJobId == null) {
+        _sendAvailabilityPing(userToken, pos.latitude, pos.longitude);
+      }
+    });
   }
 
   Future<void> _sendLocationUpdate(
@@ -188,6 +237,7 @@ class EmployeeLocationProvider extends ChangeNotifier {
 
   Future<void> _sendAvailabilityPing(
       String userToken, double lat, double lng) async {
+    _lastSentTime = DateTime.now();
     try {
       await apiClient.post(
         '/users/employee/location',
@@ -219,6 +269,9 @@ class EmployeeLocationProvider extends ChangeNotifier {
 
   /// Cancels position stream subscription and resets tracking status to idle.
   Future<void> stopTracking({bool notify = true}) async {
+    _availabilityHeartbeatTimer?.cancel();
+    _availabilityHeartbeatTimer = null;
+    _lastKnownPosition = null;
     await _positionSubscription?.cancel();
     _positionSubscription = null;
     _activeJobId = null;
