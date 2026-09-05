@@ -908,3 +908,9 @@ This section consolidates the resolution status for all 10 findings from the ext
 - **Commit SHA**: ``c2911322da031261e8bad8c9a05388e6443e1481``
 - **Verification**: New repro test `TestAdminActivateSubscription_SuspendedTenantRejected_F07` in `admin_subscription_test.go`. Pre-fix literal failure: `F-07 Repro failure: expected 403 Forbidden for suspended tenant activation, got 200`. Post-fix: rejected with HTTP 403 Forbidden and `{"error":"tenant_suspended"}`. ✅
 
+## Reviewer Lockout HTTP 429 Error Parity on ReactivateAccount
+
+- **Implementation Detail**: In `services/auth-service/internal/handlers/auth.go:ReactivateAccount`, when `a.authenticateReviewer(r)` failed due to reviewer rate limit lockout (`ReviewerRateLimitError`), the handler previously returned `writeJSON(w, http.StatusUnauthorized, ...)` instead of `writeReviewerAuthError(w, err)` which was used by the other 6 reviewer handlers. This caused lockout rejections to return HTTP 401 instead of HTTP 429 Too Many Requests. Replaced raw 401 error response with `writeReviewerAuthError(w, err)`, aligning all 7 reviewer endpoints to return HTTP 429 with retry duration on lockout.
+- **Commit SHA**: ``42f63cf413837f6300e17165617d787e5b0be4b4``
+- **Verification**: Updated `services/auth-service/internal/handlers/reviewer_ratelimit_test.go:TestReviewerLogin_RateLimiting_3Attempts5MinLockout` to explicitly assert HTTP 429 Too Many Requests on `ReactivateAccount` (and `SuspendAccount`) during rate limit lockout. Suite passes (100%). ✅
+

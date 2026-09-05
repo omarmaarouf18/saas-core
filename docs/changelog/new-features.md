@@ -621,6 +621,12 @@ This file tracks historical entries for the primary category: **New Features Cha
   - Frontend: Widget tests in `frontend/test/early_customer_courier_chat_test.dart` (3/3 passing) verifying offered courier card and chat entry points on both customer and courier screens.
   - Full `flutter analyze` clean (0 issues) and `flutter test` passing. ✅
 
+## Employee Availability Listing Endpoint (GET /users/employees/available)
+
+- **Implementation Detail**: Added `GET /users/employees/available` endpoint in `user-service` (`services/user-service/internal/handlers/jobs_handlers.go`), wrapping `store.GetFreshEmployeeLocations` with `EmployeeLocationFreshnessWindow` (5 minutes). Supports: (1) Tenant owners querying available employees under their tenant (IDOR-protected against querying other tenants); (2) Customers querying available couriers for a specific tenant by passing `tenant_id` query parameter; (3) Employees querying availability within their own tenant; (4) Internal services via `X-Internal-Token` with `tenant_id` parameter. Protected with isolated sliding window rate limiting (60 req/min). Returns JSON with `count`, `tenant_id`, and `employees` slice. Registered routes in `handlers.go` and documented in `shared/infra/docgen/generator.go` and `docs/APPLICATION_MAP.md`.
+- **Commit SHA**: ``91f983b24a0b197b4c9c982c6114e816bfc4c7cc``
+- **Verification**: New test suite `services/user-service/internal/handlers/available_employees_test.go:TestGetAvailableEmployees` covering method gating (405 on POST), authentication (401 on missing token), owner tenant filtering, owner IDOR blocking (403), customer queries with/without `tenant_id` (200 / 400), internal service token queries with/without `tenant_id` (200 / 400), and freshness threshold filtering. Suite passes 8/8 tests. ✅
+
 
 
 
