@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`8667def`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`ae70887`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -245,6 +245,7 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`POST /users/employee/jobs/{id}/accept`** | `user-service` | Employee JWT | Accepts an active dispatch offer, calculates final distance pricing from courier location, and activates job. | Updates `jobs` collection, updates `wallets` (for escrow locking), dispatches notification. |
 | **`POST /users/employee/jobs/{id}/decline`** | `user-service` | Employee JWT | Declines an active dispatch offer and advances the cascade immediately to the next courier. | Updates `jobs` collection, queries `employee_locations`, dispatches next offer notification. |
 | **`POST /users/employee/location`** | `user-service` | Employee JWT | Updates employee standalone availability GPS coordinates and heartbeat for proximity-based cascade dispatch. | Updates `employee_locations` collection and Redis geo cache. |
+| **`GET /users/employees/available`** | `user-service` | Owner, Customer, or Employee JWT / Internal Service Token | GetAvailableEmployees returns active, available employee location records for a tenant updated within the freshness window. | Queries `employee_locations` collection by `tenant_id` and freshness threshold. |
 | **`POST /users/jobs/cancel`** | `user-service` | Owner or Customer JWT | Cancels an active job and processes escrow refunds. Accepts requester_id (legacy) or requester_token (preferred). | Updates `jobs` collection. Updates `wallets` and `ledger` collections. |
 | **`POST /users/jobs/complete`** | `user-service` | Owner or Employee JWT | Completes active job, processes fees. Accepts requester_id (legacy) or requester_token (preferred) in body or query. | Updates `jobs`, writes `wallets`, writes `ledger`. |
 | **`GET /users/jobs/get`** | `user-service` | `X-Internal-Token` OR Owner, Employee, User, or Customer JWT | Resolves detailed job configuration (single job by ID) or lists jobs. Accepts id (legacy) or user_token (preferred), requester_id (legacy) or requester_token (preferred), and employee_id (legacy) or employee_token (preferred). | Reads `jobs` collection. Enforces IDOR protection: if `employee_id` query param is provided, it must match the employee identity strictly resolved from the JWT token. |

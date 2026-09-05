@@ -1554,11 +1554,163 @@ func (u *UserService) UpdateEmployeeLocation(w http.ResponseWriter, r *http.Requ
 		u.locationThrottleMu.Unlock()
 	}
 
+	// Call chat-service to broadcast to fleet channel so owners see available employees in real-time
+	go func() {
+		channel := "fleet:" + tenantID
+		broadcastURL := fmt.Sprintf("%s/chat/internal/broadcast-location", u.chatServiceURL)
+		payload := map[string]any{
+			"channel":     channel,
+			"latitude":    req.Latitude,
+			"longitude":   req.Longitude,
+			"employee_id": employeeID,
+		}
+		bodyBytes, err := json.Marshal(payload)
+		if err != nil {
+			log.Printf("[USER] Employee location broadcast error (marshal) for channel %s: %v", channel, err)
+			return
+		}
+
+		// #nosec G704 //nolint:gosec -- broadcastURL is constructed from internal service config
+		broadcastReq, err := http.NewRequest("POST", broadcastURL, bytes.NewReader(bodyBytes))
+		if err != nil {
+			log.Printf("[USER] Employee location broadcast error (request build) for channel %s: %v", channel, err)
+			return
+		}
+		broadcastReq.Header.Set("Content-Type", "application/json")
+		broadcastReq.Header.Set("X-Internal-Token", u.internalServiceToken)
+
+		resp, err := u.chatClient.Do(broadcastReq)
+		if err != nil {
+			log.Printf("[USER] Employee location broadcast error (call chat-service) for channel %s: %v", channel, err)
+			return
+		}
+		_ = resp.Body.Close()
+	}()
+
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status":    "success",
 		"message":   "employee location updated",
 		"latitude":  req.Latitude,
 		"longitude": req.Longitude,
+	})
+}
+
+// GetAvailableEmployees returns active, available employees reporting within EmployeeLocationFreshnessWindow.
+// GET /users/employees/available
+func (u *UserService) GetAvailableEmployees(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
+		return
+	}
+
+	clientIP := handlerutil.GetClientIP(r)
+	if u.availableEmployeesLimiter != nil {
+		if limited, remaining := u.availableEmployeesLimiter.CheckAndRecord(clientIP); limited {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error": fmt.Sprintf("too many requests. Please try again in %.0f seconds.", remaining.Seconds()),
+			})
+			return
+		}
+	}
+
+	isInternal := u.internalServiceToken != "" &&
+		subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
+
+	var targetTenantID string
+
+	if isInternal {
+		targetTenantID = r.URL.Query().Get("tenant_id")
+		if targetTenantID == "" {
+			targetTenantID = r.URL.Query().Get("owner_id")
+		}
+		if targetTenantID == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id is required"})
+			return
+		}
+	} else {
+		tokenStr := ""
+		authHeader := r.Header.Get("Authorization")
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			tokenStr = strings.TrimPrefix(authHeader, "Bearer ")
+		} else if strings.HasPrefix(authHeader, "bearer ") {
+			tokenStr = strings.TrimPrefix(authHeader, "bearer ")
+		}
+		if tokenStr == "" {
+			tokenStr = r.URL.Query().Get("owner_token")
+		}
+		if tokenStr == "" {
+			tokenStr = r.URL.Query().Get("requester_token")
+		}
+		if tokenStr == "" {
+			tokenStr = r.URL.Query().Get("token")
+		}
+		if tokenStr == "" {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "authorization token required"})
+			return
+		}
+
+		claims, err := resolveClaims(tokenStr)
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid token: " + err.Error()})
+			return
+		}
+
+		switch claims.Role {
+		case "owner":
+			ownerTenantID := claims.TenantID
+			if ownerTenantID == "" {
+				ownerTenantID = claims.UserID
+			}
+			clientTenantID := r.URL.Query().Get("tenant_id")
+			if clientTenantID == "" {
+				clientTenantID = r.URL.Query().Get("owner_id")
+			}
+			if clientTenantID != "" && clientTenantID != ownerTenantID {
+				// #nosec G706 //nolint:gosec -- IDs are sanitized from claims/query, log injection not possible
+				log.Printf("[IDOR DETECTED] Owner %s attempted to view available employees for tenant %s", ownerTenantID, strings.ReplaceAll(strings.ReplaceAll(clientTenantID, "\n", " "), "\r", " "))
+				writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to view employees for this tenant"})
+				return
+			}
+			targetTenantID = ownerTenantID
+
+		case "employee":
+			empTenantID := claims.TenantID
+			if empTenantID == "" {
+				empTenantID = claims.UserID
+			}
+			targetTenantID = empTenantID
+
+		case "user", "customer":
+			clientTenantID := r.URL.Query().Get("tenant_id")
+			if clientTenantID == "" {
+				clientTenantID = r.URL.Query().Get("owner_id")
+			}
+			if clientTenantID == "" {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id is required"})
+				return
+			}
+			targetTenantID = clientTenantID
+
+		default:
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: invalid role"})
+			return
+		}
+	}
+
+	ctx := r.Context()
+	locations, err := u.store.GetFreshEmployeeLocations(ctx, targetTenantID, EmployeeLocationFreshnessWindow)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to query employee locations: " + err.Error()})
+		return
+	}
+	if locations == nil {
+		locations = []models.EmployeeLocation{}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"count":     len(locations),
+		"tenant_id": targetTenantID,
+		"employees": locations,
 	})
 }
 

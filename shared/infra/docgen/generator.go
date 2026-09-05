@@ -524,6 +524,11 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Updates employee standalone availability GPS coordinates and heartbeat for proximity-based cascade dispatch.",
 		Targets:     "Updates `employee_locations` collection and Redis geo cache.",
 	},
+	"GET /users/employees/available": {
+		Permissions: "Owner, Customer, or Employee JWT / Internal Service Token",
+		Function:    "GetAvailableEmployees returns active, available employee location records for a tenant updated within the freshness window.",
+		Targets:     "Queries `employee_locations` collection by `tenant_id` and freshness threshold.",
+	},
 
 	"POST /users/jobs/propose-price": {
 		Permissions: "Customer or Employee JWT",

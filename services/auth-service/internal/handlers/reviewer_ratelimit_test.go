@@ -129,7 +129,7 @@ func TestReviewerLogin_RateLimiting_3Attempts5MinLockout(t *testing.T) {
 			t.Errorf("attempt 4 (valid token during lockout): expected 429, got %d (body: %s)", rec4.Code, rec4.Body.String())
 		}
 
-		// Verify other reviewer endpoints (e.g. GET /auth/kyb-kye/pending) also return 429
+		// Verify other reviewer endpoints (e.g. GET /auth/kyb-kye/pending, SuspendAccount, ReactivateAccount) also return 429
 		reqQueue := httptest.NewRequest(http.MethodGet, "/auth/kyb-kye/pending", nil)
 		reqQueue.RemoteAddr = clientIP
 		reqQueue.Header.Set("X-Internal-Token", a.internalServiceToken)
@@ -138,6 +138,26 @@ func TestReviewerLogin_RateLimiting_3Attempts5MinLockout(t *testing.T) {
 		a.GetPendingKYBKYESubmissions(recQueue, reqQueue)
 		if recQueue.Code != http.StatusTooManyRequests {
 			t.Errorf("queue during lockout: expected 429, got %d (body: %s)", recQueue.Code, recQueue.Body.String())
+		}
+
+		reqSuspend := httptest.NewRequest(http.MethodPost, "/auth/accounts/suspend", nil)
+		reqSuspend.RemoteAddr = clientIP
+		reqSuspend.Header.Set("X-Internal-Token", a.internalServiceToken)
+		reqSuspend.Header.Set("X-Reviewer-Token", validToken)
+		recSuspend := httptest.NewRecorder()
+		a.SuspendAccount(recSuspend, reqSuspend)
+		if recSuspend.Code != http.StatusTooManyRequests {
+			t.Errorf("suspend during lockout: expected 429, got %d (body: %s)", recSuspend.Code, recSuspend.Body.String())
+		}
+
+		reqReactivate := httptest.NewRequest(http.MethodPost, "/auth/accounts/reactivate", nil)
+		reqReactivate.RemoteAddr = clientIP
+		reqReactivate.Header.Set("X-Internal-Token", a.internalServiceToken)
+		reqReactivate.Header.Set("X-Reviewer-Token", validToken)
+		recReactivate := httptest.NewRecorder()
+		a.ReactivateAccount(recReactivate, reqReactivate)
+		if recReactivate.Code != http.StatusTooManyRequests {
+			t.Errorf("reactivate during lockout: expected 429, got %d (body: %s)", recReactivate.Code, recReactivate.Body.String())
 		}
 
 		// Fast-forward miniredis clock past 5 minutes (301 seconds)

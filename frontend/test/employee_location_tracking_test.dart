@@ -22,6 +22,8 @@ class MockGeolocatorPlatformForTracking extends GeolocatorPlatform
   LocationPermission initialPermission = LocationPermission.whileInUse;
   final StreamController<Position> positionStreamController =
       StreamController<Position>.broadcast();
+  bool shouldThrowCurrentPosition = true;
+  Position? currentPosition;
 
   @override
   Future<bool> isLocationServiceEnabled() async => isServiceEnabled;
@@ -31,6 +33,16 @@ class MockGeolocatorPlatformForTracking extends GeolocatorPlatform
 
   @override
   Future<LocationPermission> requestPermission() async => initialPermission;
+
+  @override
+  Future<Position> getCurrentPosition(
+      {LocationSettings? locationSettings}) async {
+    if (shouldThrowCurrentPosition) {
+      throw UnimplementedError(
+          'getCurrentPosition() has not been implemented.');
+    }
+    return currentPosition ?? createPosition(30.01, 31.01);
+  }
 
   @override
   Stream<Position> getPositionStream({LocationSettings? locationSettings}) {
@@ -309,5 +321,90 @@ void main() {
     expect(mockApiClient.postPayloads.first['requester_token'],
         equals('token-emp-1'));
     expect(mockApiClient.postPayloads.first.containsKey('job_id'), isFalse);
+  });
+
+  test(
+      '(g) stationary employee immediately sends availability ping upon starting tracking without stream movement',
+      () async {
+    mockGeolocator.shouldThrowCurrentPosition = false;
+    mockGeolocator.currentPosition = createPosition(30.0444, 31.2357);
+
+    // Courier goes online/available while stationary (no events on positionStreamController)
+    await locationProvider.startAvailabilityTracking('token-stationary-1');
+
+    expect(locationProvider.isTracking, isTrue);
+    expect(locationProvider.isAvailable, isTrue);
+    expect(locationProvider.lastKnownPosition, isNotNull);
+    expect(locationProvider.lastKnownPosition!.latitude, equals(30.0444));
+    expect(locationProvider.lastKnownPosition!.longitude, equals(31.2357));
+
+    // A ping should have been sent immediately via getCurrentPosition!
+    expect(mockApiClient.postCallCount, equals(1));
+    expect(
+        mockApiClient.postEndpoints.first, equals('/users/employee/location'));
+    expect(mockApiClient.postPayloads.first['requester_token'],
+        equals('token-stationary-1'));
+    expect(mockApiClient.postPayloads.first['latitude'], equals(30.0444));
+    expect(mockApiClient.postPayloads.first['longitude'], equals(31.2357));
+  });
+
+  testWidgets(
+      '(h) EmployeeJobsScreen shows permission-denied banner when idle with zero assigned jobs',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final authProvider = MockAuthProviderForTest(
+      apiClient,
+      mockUser: UserProfile(
+        id: 'emp-idle-1',
+        email: 'idle@example.com',
+        username: 'IdleDriver',
+        role: 'employee',
+      ),
+    );
+    // Zero jobs: idle / available state
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      mockJobs: [],
+    );
+
+    mockGeolocator.initialPermission = LocationPermission.denied;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+            ChangeNotifierProvider<EmployeeJobsProvider>.value(
+                value: jobsProvider),
+            ChangeNotifierProvider<EmployeeLocationProvider>.value(
+                value: locationProvider),
+            ChangeNotifierProvider<NotificationsProvider>(
+                create: (_) => NotificationsProvider(apiClient)),
+          ],
+          child: const EmployeeJobsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Trigger availability tracking with denied permission
+    await locationProvider.startAvailabilityTracking('test-token');
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('location_permission_denied_banner')),
+        findsOneWidget);
+    expect(find.byKey(const Key('open_app_settings_button')), findsOneWidget);
+    expect(
+        find.text(
+            'Location sharing is required to share your live delivery progress with the customer.'),
+        findsOneWidget);
   });
 }

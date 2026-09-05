@@ -621,3 +621,64 @@ func TestPricing_EmployeeLocationVsBusinessAddress_EndToEnd(t *testing.T) {
 		t.Errorf("Final complete job total_amount $%.2f does not match expected $%.2f", totalAmount, expectedCorrectPrice)
 	}
 }
+
+func TestUpdateEmployeeLocation_BroadcastsToFleetChannel(t *testing.T) {
+	broadcastReceived := make(chan map[string]any, 1)
+	mockChatServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/chat/internal/broadcast-location" {
+			token := r.Header.Get("X-Internal-Token")
+			var body map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			body["_token"] = token
+			broadcastReceived <- body
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer mockChatServer.Close()
+
+	u, _, _, cleanup := setupDispatchTestHarness(t)
+	if u == nil {
+		return
+	}
+	defer cleanup()
+
+	u.chatServiceURL = mockChatServer.URL
+
+	ownerID := "tenant-test-owner"
+	empID := "emp-under-tenant-test-owner"
+	tokenEmp, _ := jwtutil.GenerateToken(empID, "employee", ownerID, "emp@test.com")
+
+	body, _ := json.Marshal(models.EmployeeLocationPingRequest{
+		RequesterToken: tokenEmp,
+		Latitude:       30.0444,
+		Longitude:      31.2357,
+	})
+	req := httptest.NewRequest("POST", "/users/employee/location", bytes.NewReader(body))
+	rec := httptest.NewRecorder()
+
+	u.UpdateEmployeeLocation(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK from UpdateEmployeeLocation, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	select {
+	case payload := <-broadcastReceived:
+		if payload["channel"] != "fleet:"+ownerID {
+			t.Errorf("Expected broadcast channel fleet:%s, got %v", ownerID, payload["channel"])
+		}
+		if payload["employee_id"] != empID {
+			t.Errorf("Expected broadcast employee_id %s, got %v", empID, payload["employee_id"])
+		}
+		if payload["latitude"] != 30.0444 || payload["longitude"] != 31.2357 {
+			t.Errorf("Expected coords 30.0444, 31.2357, got %v, %v", payload["latitude"], payload["longitude"])
+		}
+		if payload["_token"] != u.internalServiceToken {
+			t.Errorf("Expected X-Internal-Token %s, got %v", u.internalServiceToken, payload["_token"])
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatalf("Timed out waiting for location broadcast to chat-service")
+	}
+}

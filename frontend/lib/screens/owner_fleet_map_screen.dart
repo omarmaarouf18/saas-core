@@ -32,6 +32,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
     with ProviderConnectionCleanup<OwnerFleetMapScreen> {
   final MapController _mapController = MapController();
   EmployeeMarkerData? _selectedEmployee;
+  String _selectedFilter = 'all'; // 'all', 'on_route', 'idle'
 
   @override
   void initState() {
@@ -93,10 +94,29 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
           }
 
           final markers = provider.markersList;
+          final displayedMarkers = markers.where((m) {
+            if (_selectedFilter == 'on_route') {
+              return m.jobId != null && m.jobId!.isNotEmpty;
+            }
+            if (_selectedFilter == 'idle') {
+              return m.jobId == null || m.jobId!.isEmpty;
+            }
+            return true;
+          }).toList();
+
           LatLng centerPoint =
               const LatLng(30.0444, 31.2357); // Default Cairo / center
 
-          if (markers.isNotEmpty) {
+          if (displayedMarkers.isNotEmpty) {
+            double avgLat = 0;
+            double avgLon = 0;
+            for (final m in displayedMarkers) {
+              avgLat += m.latitude;
+              avgLon += m.longitude;
+            }
+            centerPoint = LatLng(avgLat / displayedMarkers.length,
+                avgLon / displayedMarkers.length);
+          } else if (markers.isNotEmpty) {
             double avgLat = 0;
             double avgLon = 0;
             for (final m in markers) {
@@ -110,7 +130,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
           return Stack(
             children: [
               // OpenStreetMap Layer
-              _buildMapCanvas(centerPoint, markers),
+              _buildMapCanvas(centerPoint, displayedMarkers),
 
               // Floating Fleet Filter Pills (Stitch Reference)
               _buildFleetFilterPillRow(markers.length),
@@ -151,6 +171,13 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
         ),
         MarkerLayer(
           markers: markers.map((m) {
+            final isOnJob = m.jobId != null && m.jobId!.isNotEmpty;
+            final badgeColor =
+                isOnJob ? AppColors.primary : context.semanticColors.success;
+            final borderColor = isOnJob ? AppColors.secondary : Colors.white;
+            final pinColor =
+                isOnJob ? AppColors.secondary : context.semanticColors.success;
+
             return Marker(
               width: 100.0,
               height: 64.0,
@@ -165,9 +192,9 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     ThemedPanel(
-                        color: AppColors.primary,
+                        color: badgeColor,
                         borderRadius: BorderRadius.circular(AppRadius.radiusSm),
-                        border: Border.all(color: AppColors.secondary),
+                        border: Border.all(color: borderColor),
                         boxShadow: AppElevation.shadowLevel1List,
                         padding: const EdgeInsetsDirectional.symmetric(
                           horizontal: AppSpacing.xs,
@@ -183,9 +210,9 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                           ),
                           overflow: TextOverflow.ellipsis,
                         )),
-                    const Icon(
+                    Icon(
                       Icons.location_on,
-                      color: AppColors.secondary,
+                      color: pinColor,
                       size: AppIconSize.md,
                     ),
                   ],
@@ -208,97 +235,132 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            ThemedPanel(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppRadius.full),
-                boxShadow: AppElevation.shadowLevel1List,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.xs,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      l10n.fleetFilterAllFleet,
-                      style: AppTypography.labelMd.copyWith(
-                        color: AppColors.onPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    ThemedPanel(
-                        color: AppColors.onPrimary.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(AppRadius.full),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+            GestureDetector(
+              onTap: () => setState(() => _selectedFilter = 'all'),
+              child: ThemedPanel(
+                  color: _selectedFilter == 'all'
+                      ? AppColors.primary
+                      : Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  border: _selectedFilter == 'all'
+                      ? null
+                      : Border.all(color: AppColors.outlineVariant),
+                  boxShadow: AppElevation.shadowLevel1List,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xs,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        l10n.fleetFilterAllFleet,
+                        style: AppTypography.labelMd.copyWith(
+                          color: _selectedFilter == 'all'
+                              ? AppColors.onPrimary
+                              : Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
                         ),
-                        child: Text(
-                          "$markersCount",
-                          style: AppTypography.labelSm.copyWith(
-                            color: AppColors.onPrimary,
-                            fontWeight: FontWeight.bold,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      ThemedPanel(
+                          color: _selectedFilter == 'all'
+                              ? AppColors.onPrimary.withValues(alpha: 0.2)
+                              : Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(AppRadius.full),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
                           ),
-                        )),
-                  ],
-                )),
+                          child: Text(
+                            "$markersCount",
+                            style: AppTypography.labelSm.copyWith(
+                              color: _selectedFilter == 'all'
+                                  ? AppColors.onPrimary
+                                  : Theme.of(context).colorScheme.onSurface,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )),
+                    ],
+                  )),
+            ),
             const SizedBox(width: AppSpacing.xs),
-            ThemedPanel(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(AppRadius.full),
-                border: Border.all(color: AppColors.outlineVariant),
-                boxShadow: AppElevation.shadowLevel1List,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.xs,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ThemedPanel(
-                        color: context.semanticColors.success,
-                        shape: BoxShape.circle,
-                        width: 8,
-                        height: 8),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      l10n.fleetFilterOnRoute,
-                      style: AppTypography.labelMd.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontWeight: FontWeight.w600,
+            GestureDetector(
+              onTap: () => setState(() => _selectedFilter = 'on_route'),
+              child: ThemedPanel(
+                  color: _selectedFilter == 'on_route'
+                      ? AppColors.primary
+                      : Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  border: _selectedFilter == 'on_route'
+                      ? null
+                      : Border.all(color: AppColors.outlineVariant),
+                  boxShadow: AppElevation.shadowLevel1List,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xs,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ThemedPanel(
+                          color: context.semanticColors.success,
+                          shape: BoxShape.circle,
+                          width: 8,
+                          height: 8),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        l10n.fleetFilterOnRoute,
+                        style: AppTypography.labelMd.copyWith(
+                          color: _selectedFilter == 'on_route'
+                              ? AppColors.onPrimary
+                              : Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
-                )),
+                    ],
+                  )),
+            ),
             const SizedBox(width: AppSpacing.xs),
-            ThemedPanel(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(AppRadius.full),
-                border: Border.all(color: AppColors.outlineVariant),
-                boxShadow: AppElevation.shadowLevel1List,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.xs,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const ThemedPanel(
-                        color: AppColors.secondary,
-                        shape: BoxShape.circle,
-                        width: 8,
-                        height: 8),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      l10n.fleetFilterIdle,
-                      style: AppTypography.labelMd.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontWeight: FontWeight.w600,
+            GestureDetector(
+              onTap: () => setState(() => _selectedFilter = 'idle'),
+              child: ThemedPanel(
+                  color: _selectedFilter == 'idle'
+                      ? AppColors.primary
+                      : Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  border: _selectedFilter == 'idle'
+                      ? null
+                      : Border.all(color: AppColors.outlineVariant),
+                  boxShadow: AppElevation.shadowLevel1List,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xs,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const ThemedPanel(
+                          color: AppColors.secondary,
+                          shape: BoxShape.circle,
+                          width: 8,
+                          height: 8),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        l10n.fleetFilterIdle,
+                        style: AppTypography.labelMd.copyWith(
+                          color: _selectedFilter == 'idle'
+                              ? AppColors.onPrimary
+                              : Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
-                )),
+                    ],
+                  )),
+            ),
           ],
         ),
       ),
@@ -334,13 +396,15 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
   }
 
   Widget _buildSelectedDriverCard(EmployeeMarkerData employee) {
+    final isOnJob = employee.jobId != null && employee.jobId!.isNotEmpty;
     return Positioned(
       bottom: AppSpacing.xl + 64,
       left: AppSpacing.md,
       right: AppSpacing.md,
       child: ThemedCard(
         borderRadius: AppRadius.lg,
-        topAccentColor: AppColors.primary,
+        topAccentColor:
+            isOnJob ? AppColors.primary : context.semanticColors.success,
         topAccentHeight: 3,
         padding: AppSpacing.md,
         child: Column(
@@ -353,7 +417,10 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                 Row(
                   children: [
                     ThemedPanel(
-                        color: AppColors.primaryContainer,
+                        color: isOnJob
+                            ? AppColors.primaryContainer
+                            : context.semanticColors.success
+                                .withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                         width: 36,
                         height: 36,
@@ -364,7 +431,9 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                                     employee.employeeId.substring(0, 2))
                                 : 'DR',
                             style: AppTypography.labelMd.copyWith(
-                              color: AppColors.secondary,
+                              color: isOnJob
+                                  ? AppColors.secondary
+                                  : context.semanticColors.success,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -380,7 +449,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        if (employee.jobId != null)
+                        if (isOnJob)
                           Text(
                             context.l10n.assignedJobLine(employee.jobId!),
                             style: AppTypography.caption.copyWith(
@@ -388,6 +457,26 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                                   .colorScheme
                                   .onSurfaceVariant,
                             ),
+                          )
+                        else
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ThemedPanel(
+                                color: context.semanticColors.success,
+                                shape: BoxShape.circle,
+                                width: 8,
+                                height: 8,
+                              ),
+                              const SizedBox(width: AppSpacing.xxs),
+                              Text(
+                                context.l10n.fleetFilterIdle,
+                                style: AppTypography.caption.copyWith(
+                                  color: context.semanticColors.success,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                       ],
                     ),
