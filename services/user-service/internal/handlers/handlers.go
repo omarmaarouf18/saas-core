@@ -94,6 +94,7 @@ type UserService struct {
 	subscriptionLimiter       *handlerutil.RateLimiter
 	acceptOfferLimiter        *handlerutil.RateLimiter
 	declineOfferLimiter       *handlerutil.RateLimiter
+	availableEmployeesLimiter *handlerutil.RateLimiter
 	stopCascadeSweeper        chan struct{}
 	internalServiceToken      string
 	locationThrottleMu        sync.Mutex
@@ -236,6 +237,7 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		subscriptionLimiter:       newHandlerLimiter(30, "user:subscription"),
 		acceptOfferLimiter:        newHandlerLimiter(30, "user:accept_offer"),
 		declineOfferLimiter:       newHandlerLimiter(30, "user:decline_offer"),
+		availableEmployeesLimiter: newHandlerLimiter(60, "user:available_employees"),
 		stopCascadeSweeper:        make(chan struct{}),
 		internalServiceToken:      cfg.InternalServiceToken,
 		locationLastUpdate:        make(map[string]time.Time),
@@ -309,6 +311,7 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users/ratings", u.GetRatings)
 	mux.HandleFunc("/users/jobs/location/update", u.UpdateJobLocation)
 	mux.HandleFunc("/users/employee/location", u.UpdateEmployeeLocation)
+	mux.HandleFunc("/users/employees/available", u.GetAvailableEmployees)
 	mux.HandleFunc("/users/jobs/reconciliation-queue", u.GetReconciliationQueue)
 	mux.HandleFunc("/users/jobs/reconciliation-resolve", u.ResolveReconciliation)
 	mux.HandleFunc("/users/admin/reconciliation/queue", u.AdminGetReconciliationQueue)
