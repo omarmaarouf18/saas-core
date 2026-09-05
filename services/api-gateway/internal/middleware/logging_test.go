@@ -38,3 +38,20 @@ func TestLogging_TRAFFICSanitizesNewlinesInPath(t *testing.T) {
 		t.Fatalf("expected a TRAFFIC line in output, got %q", out)
 	}
 }
+
+func TestLogging_StatusRecorderImplementsFlusher(t *testing.T) {
+	handler := Logging("http://localhost:3000")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			t.Fatalf("ResponseWriter wrapped by Logging middleware does not implement http.Flusher")
+		}
+		flusher.Flush()
+	}))
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/notifications/stream", nil)
+	handler.ServeHTTP(rec, req)
+	if !rec.Flushed {
+		t.Errorf("expected underlying recorder to be flushed")
+	}
+}

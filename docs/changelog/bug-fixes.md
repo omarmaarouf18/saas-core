@@ -784,5 +784,17 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
   - Golden screen tests in `frontend/test/golden_screens_test.dart` (58/58 pass).
   - Full Flutter test suite (503/503 pass) and full Go backend suite passing.
 
+## API Gateway SSE Streaming Flusher & ReverseProxy Unbuffered Delivery Fix
+
+- **Implementation Detail**:
+  - **`http.Flusher` Implementation on `statusRecorder` (`services/api-gateway/internal/middleware/logging.go`)**: The `Logging` middleware wrapped all incoming requests' `http.ResponseWriter` with `statusRecorder` struct, which only implemented `WriteHeader` and `Hijack`. Because `statusRecorder` embedded `http.ResponseWriter` (an interface lacking `Flush()`), type assertion `rw.(http.Flusher)` evaluated to `false`. When reverse-proxying streaming responses (e.g. SSE `/api/v1/notifications/stream`), Go's `httputil.ReverseProxy` could not flush data to the client, buffering all stream bytes until EOF (which never occurs on open SSE connections) and causing clients to time out with 0 bytes received. Implemented `Flush()` on `statusRecorder` to delegate to `sr.ResponseWriter.(http.Flusher)`.
+  - **Immediate Flush on `ReverseProxy` (`services/api-gateway/internal/proxy/proxy.go`)**: Set `FlushInterval: -1` on `httputil.ReverseProxy`, ensuring that streaming writes are immediately flushed to the downstream client as soon as they are received from the upstream service.
+  - **Test Suite Cleanup (`services/api-gateway/internal/proxy/proxy_test.go`)**: Corrected `TestLoggingExcludesSensitiveData` cleanup to restore prior `log.Writer()` instead of setting `log.SetOutput(nil)` which caused nil pointer dereferences on subsequent `log.Printf` calls.
+- **Verification**:
+  - Unit tests in `services/api-gateway/internal/middleware/logging_test.go`: Added `TestLogging_StatusRecorderImplementsFlusher` proving `statusRecorder` implements `http.Flusher` and flushes underlying response writers (passes 100%).
+  - Integration tests in `services/api-gateway/internal/proxy/proxy_test.go`: Added `TestProxyStreamingResponse_WithLoggingMiddleware_FlushesImmediately` proving that when wrapped with `middleware.Logging`, streaming events are immediately flushed to the client while the upstream stream is held open (passes 100%).
+  - Live Production Verification: Connected a real SSE client to `https://api.logiclinkeg.tech/api/v1/notifications/stream?token=<user_jwt>`, immediately received `event: connected`, triggered a live notification via `POST /notifications/send`, and captured literal delivery of `event: notification` in real time.
+
+
 
 

@@ -684,6 +684,15 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - **Visual Distinction & Filtering**: `OwnerFleetMapScreen` now supports interactive filter pills ('All Fleet', 'On Route', 'Idle'), distinct vibrant green pin styling for idle drivers (`context.semanticColors.success`), and "Idle" status indicators in the driver card.
   - **Verification**: Verified via `services/user-service/internal/handlers/employee_dispatch_pricing_test.go` (`TestUpdateEmployeeLocation_BroadcastsToFleetChannel`), `frontend/test/employee_location_tracking_test.dart` (8/8 pass), `frontend/test/map_tracking_test.dart` (8/8 pass), and full frontend/backend test suites. (Commit `4b39eef...`).
 
+### API Gateway SSE Streaming Flusher & ReverseProxy Unbuffered Delivery Fix (2026-09-05)
+
+* **API Gateway SSE Flusher & Unbuffered Streaming**: Diagnosed and resolved live production defect where clients connecting to `GET /api/v1/notifications/stream` received zero bytes and timed out despite `notification-service` successfully registering connections:
+  - **`http.Flusher` Interface Implementation**: `middleware.Logging` wrapped incoming response writers in `statusRecorder`, which lacked `Flush()`. Because `statusRecorder` embedded `http.ResponseWriter` (an interface without `Flush()`), type assertion `w.(http.Flusher)` evaluated to `false` inside Go's `httputil.ReverseProxy`, causing the reverse proxy to buffer all response chunks until stream close (which never happens on open SSE streams). Implemented `Flush()` on `statusRecorder` to delegate to `sr.ResponseWriter.(http.Flusher)`.
+  - **ReverseProxy `FlushInterval: -1`**: Explicitly set `FlushInterval: -1` on `httputil.ReverseProxy` in `services/api-gateway/internal/proxy/proxy.go`, enforcing immediate unbuffered flush on every write for real-time SSE streaming.
+  - **Logging Test Cleanup**: Fixed `proxy_test.go:TestLoggingExcludesSensitiveData` to restore prior `log.Writer()` instead of passing `nil` to `log.SetOutput`, preventing nil pointer dereferences.
+  - **Verification**: Unit tests in `logging_test.go:TestLogging_StatusRecorderImplementsFlusher` and `proxy_test.go:TestProxyStreamingResponse_WithLoggingMiddleware_FlushesImmediately` (both pass 100%). Hot-reloaded binary on live production VM and verified via `curl -N https://api.logiclinkeg.tech/api/v1/notifications/stream?token=<jwt>`: captured immediate `event: connected` handshake followed by real-time `event: notification` payload upon dispatch.
+
+
 
 
 

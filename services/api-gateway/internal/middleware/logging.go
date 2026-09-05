@@ -29,6 +29,12 @@ func (sr *statusRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return nil, nil, fmt.Errorf("http.ResponseWriter does not support hijacking")
 }
 
+func (sr *statusRecorder) Flush() {
+	if flusher, ok := sr.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
 // Logging is a global middleware that logs every request with:
 //   - HTTP method
 //   - Request path

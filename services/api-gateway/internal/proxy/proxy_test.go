@@ -350,9 +350,10 @@ func TestLimiterHardenAndFailClosed(t *testing.T) {
 }
 
 func TestLoggingExcludesSensitiveData(t *testing.T) {
+	oldOut := log.Writer()
 	var logBuf strings.Builder
 	log.SetOutput(&logBuf)
-	defer log.SetOutput(nil)
+	defer log.SetOutput(oldOut)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
@@ -488,5 +489,75 @@ func TestProxyStreamingResponseWithResilientTransport(t *testing.T) {
 		if !strings.Contains(string(body), want) {
 			t.Errorf("proxied stream missing %q; got body=%q", want, string(body))
 		}
+	}
+}
+
+func TestProxyStreamingResponse_WithLoggingMiddleware_FlushesImmediately(t *testing.T) {
+	gatewaySecret := "sse-gateway-secret"
+	firstEventSent := make(chan struct{})
+	clientReadDone := make(chan struct{})
+
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		fl, ok := w.(http.Flusher)
+		if !ok {
+			t.Errorf("backend response writer does not implement Flusher")
+			return
+		}
+		// Send initial event
+		fmt.Fprintf(w, "event: connected\ndata: {\"status\":\"ok\"}\n\n")
+		fl.Flush()
+		close(firstEventSent)
+
+		// Hold stream open until client confirms reading first chunk
+		select {
+		case <-clientReadDone:
+		case <-time.After(3 * time.Second):
+		case <-r.Context().Done():
+		}
+	}))
+	defer backend.Close()
+
+	route := config.ServiceRoute{
+		Prefix:      "/api/v1/notifications/",
+		Target:      backend.URL,
+		StripPrefix: "/api/v1",
+	}
+
+	resilientTransport := resilience.NewRoundTripper(http.DefaultTransport, "test-sse-logging-route", 2, 500*time.Millisecond)
+	proxyHandler, err := New(route, gatewaySecret, []string{"127.0.0.1", "::1"}, resilientTransport)
+	if err != nil {
+		t.Fatalf("failed to create proxy: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle(route.Prefix, proxyHandler)
+	loggedHandler := middleware.Logging("http://localhost:3000")(mux)
+
+	srv := httptest.NewServer(loggedHandler)
+	defer srv.Close()
+
+	client := &http.Client{Timeout: 2 * time.Second}
+	resp, err := client.Get(srv.URL + "/api/v1/notifications/stream")
+	if err != nil {
+		t.Fatalf("GET through gateway failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d", resp.StatusCode)
+	}
+
+	// Read first line while backend is still holding stream open
+	buf := make([]byte, 17)
+	n, err := io.ReadFull(resp.Body, buf)
+	if err != nil {
+		t.Fatalf("reading first chunk failed while stream is open: %v", err)
+	}
+	close(clientReadDone)
+
+	got := string(buf[:n])
+	if got != "event: connected\n" {
+		t.Errorf("expected immediate 'event: connected\\n', got %q", got)
 	}
 }

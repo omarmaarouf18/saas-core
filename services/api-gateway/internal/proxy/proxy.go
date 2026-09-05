@@ -23,7 +23,8 @@ func New(route config.ServiceRoute, gatewaySecret string, trustedProxies []strin
 	}
 
 	proxy := &httputil.ReverseProxy{
-		Transport: transport,
+		Transport:     transport,
+		FlushInterval: -1,
 		Director: func(req *http.Request) {
 			req.Header.Del("X-Internal-Token")
 			req.URL.Scheme = target.Scheme
