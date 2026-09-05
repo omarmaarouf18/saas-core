@@ -682,7 +682,7 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - **Real-Time Fleet Broadcast**: `UpdateEmployeeLocation` (`POST /users/employee/location`) in `user-service` now asynchronously broadcasts to `chat-service` on channel `"fleet:" + tenantID` via `/chat/internal/broadcast-location`.
   - **Dual-Source Fleet Hydration**: `MapTrackingProvider.hydrateOwnerFleet` now queries both `GET /users/employees/available` and `GET /users/jobs/owner`, placing available idle drivers with `jobId: null`.
   - **Visual Distinction & Filtering**: `OwnerFleetMapScreen` now supports interactive filter pills ('All Fleet', 'On Route', 'Idle'), distinct vibrant green pin styling for idle drivers (`context.semanticColors.success`), and "Idle" status indicators in the driver card.
-  - **Verification**: Verified via `services/user-service/internal/handlers/employee_dispatch_pricing_test.go` (`TestUpdateEmployeeLocation_BroadcastsToFleetChannel`), `frontend/test/employee_location_tracking_test.dart` (8/8 pass), `frontend/test/map_tracking_test.dart` (8/8 pass), and full frontend/backend test suites.
+  - **Verification**: Verified via `services/user-service/internal/handlers/employee_dispatch_pricing_test.go` (`TestUpdateEmployeeLocation_BroadcastsToFleetChannel`), `frontend/test/employee_location_tracking_test.dart` (8/8 pass), `frontend/test/map_tracking_test.dart` (8/8 pass), and full frontend/backend test suites. (Commit `4b39eef...`).
 
 
 

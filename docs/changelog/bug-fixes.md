@@ -776,6 +776,7 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
     - Wired interactive filter pills ('All Fleet', 'On Route', 'Idle') using mutable `_selectedFilter` state.
     - Rendered distinct visual markers: idle/available couriers render vibrant green pins and success badges (`context.semanticColors.success`), while on-route couriers render primary/secondary badges.
     - Updated driver selection card to display an "Idle" status indicator when `employee.jobId == null`.
+- **Commit SHA**: ``4b39eefcb10f92fa9af31b30cea80987abd97467``
 - **Verification**:
   - `frontend/test/employee_location_tracking_test.dart`: Added test `(g)` for stationary courier initial ping and test `(h)` for idle permission banner visibility (8/8 pass).
   - `frontend/test/map_tracking_test.dart`: Added tests `(d)` for idle marker styling / filter switching and `(e)` for dual-source fleet hydration (8/8 pass).
