@@ -23,6 +23,7 @@ This file tracks historical entries for the primary category: **New Features Cha
     - `lib/l10n/`: Added localized strings in English (`app_en.arb`) and Egyptian Colloquial Arabic (`app_ar.arb`). Ran `flutter gen-l10n`.
   - **Testing**:
     - Created `frontend/test/customer_tickets_test.dart` with 11 comprehensive unit and widget tests covering ticket listing, filter pills, empty state, FAB creation, channel subscription, message sending, resolved banner display, disabled input bar, dynamic real-time resolution transition, Settings screen row navigation, and notification routing.
+- **Commit SHA**: ``8326ae12efc2fc2776a8fd3deea5a0f704640570``
 - **Verification**: Verified via `go test ./...` in `services/chat-service` (100% pass), `make docs-check` (100% pass), `flutter analyze` (0 issues), `flutter test` (514/514 pass, 0 failures), and `TestDartFilesMentionedInStatus` (pass).
 
 ## Ops Console Expansion: Subscriptions & Support Tickets (ADR-0023 Modules A & B)
