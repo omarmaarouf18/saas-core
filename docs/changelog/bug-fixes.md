@@ -801,6 +801,7 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 **Date**: 2026-09-09
 **Category**: Bug Fix / Dispatch Architecture & Real-Time Tracking
 **Target Branch**: `logic-exploitation`
+- **Commit SHA**: ``99e4bc5a8ddbd1b46ac91dcc2e193650747a9410``
 
 - **Problem / Gap**: An adversarial QA audit of the order, dispatch cascade, and tracking flow identified seven interconnected defects spanning `notification-service`, `user-service`, and the Flutter frontend:
   1. **N-01 (CRITICAL)**: SSE hub `hub.go:deliverLocal()` ignored `notification.UserID`, delivering private job offers targeted at a specific courier to all connected employees within the tenant.
