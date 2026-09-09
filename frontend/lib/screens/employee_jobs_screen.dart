@@ -76,13 +76,6 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   }
 
   @override
-  void deactivate() {
-    Provider.of<EmployeeLocationProvider>(context, listen: false)
-        .stopTracking(notify: false);
-    super.deactivate();
-  }
-
-  @override
   void dispose() {
     _countdownTimer?.cancel();
     _actionController.dispose();

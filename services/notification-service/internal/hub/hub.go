@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"slices"
 	"sync"
 	"time"
 
@@ -409,6 +410,14 @@ func (h *SSEHub) deliverLocal(n Notification) {
 		}
 		// Role filtering: if roles specified, only send to matching roles.
 		if len(n.Roles) > 0 && !containsRole(n.Roles, client.Role) {
+			continue
+		}
+		// User targeting (N-01): when a notification has a targeted recipient set (UserID or UserIDs),
+		// only deliver to that specific connected user.
+		if n.UserID != "" && client.UserID != n.UserID {
+			continue
+		}
+		if len(n.UserIDs) > 0 && !slices.Contains(n.UserIDs, client.UserID) {
 			continue
 		}
 		select {

@@ -72,11 +72,13 @@ func (m *memoryStore) ListForUser(ctx context.Context, tenantID, userID string, 
 			}
 		}
 		isRole := false
-		for _, r := range roles {
-			for _, nr := range n.Roles {
-				if nr == r {
-					isRole = true
-					break
+		if n.UserID == "" && len(n.UserIDs) == 0 {
+			for _, r := range roles {
+				for _, nr := range n.Roles {
+					if nr == r {
+						isRole = true
+						break
+					}
 				}
 			}
 		}
@@ -121,9 +123,11 @@ func matchesUser(n *store.Notification, tenantID, userID string, roles []string)
 	if userID != "" && (n.UserID == userID || slices.Contains(n.UserIDs, userID)) {
 		return true
 	}
-	for _, r := range roles {
-		if slices.Contains(n.Roles, r) {
-			return true
+	if n.UserID == "" && len(n.UserIDs) == 0 {
+		for _, r := range roles {
+			if slices.Contains(n.Roles, r) {
+				return true
+			}
 		}
 	}
 	if n.UserID == "" && len(n.UserIDs) == 0 && len(n.Roles) == 0 {

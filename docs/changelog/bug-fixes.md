@@ -796,6 +796,41 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
   - Integration tests in `services/api-gateway/internal/proxy/proxy_test.go`: Added `TestProxyStreamingResponse_WithLoggingMiddleware_FlushesImmediately` proving that when wrapped with `middleware.Logging`, streaming events are immediately flushed to the client while the upstream stream is held open (passes 100%).
   - Live Production Verification: Connected a real SSE client to `https://api.logiclinkeg.tech/api/v1/notifications/stream?token=<user_jwt>`, immediately received `event: connected`, triggered a live notification via `POST /notifications/send`, and captured literal delivery of `event: notification` in real time.
 
+## Dispatch Cascade Notification Isolation & Tracking Lifecycle Full Remediation
+
+**Date**: 2026-09-09
+**Category**: Bug Fix / Dispatch Architecture & Real-Time Tracking
+**Target Branch**: `logic-exploitation`
+
+- **Problem / Gap**: An adversarial QA audit of the order, dispatch cascade, and tracking flow identified seven interconnected defects spanning `notification-service`, `user-service`, and the Flutter frontend:
+  1. **N-01 (CRITICAL)**: SSE hub `hub.go:deliverLocal()` ignored `notification.UserID`, delivering private job offers targeted at a specific courier to all connected employees within the tenant.
+  2. **N-02 (HIGH)**: `notification-service` history query `mongodb.go:ListForUser` contained role-matching clauses that leaked other couriers' private job offers to any employee querying their notification feed.
+  3. **B-01 (HIGH)**: `user-service` candidate selection in `jobs_handlers.go:findNextAvailableEmployee()` only excluded `JobStatusActive` and `JobStatusAwaitingPriceResponse`, allowing couriers with active pending dispatch offers to be offered concurrent jobs and starving downstream available couriers.
+  4. **B-02 (HIGH)**: Couriers with jobs locked in `JobStatusEscrowReconciliationRequired` or holding active job locks (`loc.ActiveJobID`) were still considered available in candidate ranking and could accept new jobs.
+  5. **A-01 (MEDIUM)**: Candidate ranking sort was non-deterministic for equidistant couriers, causing candidate ordering to vary non-deterministically across repeated executions.
+  6. **F-01 (HIGH)**: Flutter `EmployeeJobsScreen` killed live courier tracking on route whenever the courier navigated away to another tab or screen (e.g. Chat or Notifications) via `deactivate()`.
+  7. **F-02 (MEDIUM)**: Periodic availability heartbeats with null or empty `job_id` sent to `MapTrackingProvider` clobbered existing active job markers on the owner's live fleet map, switching active couriers to "Idle".
+
+- **Implementation Details**:
+  - **Backend - Notification Service (`services/notification-service/`)**:
+    - `internal/hub/hub.go`: In `deliverLocal(n)`, added client-level user targeting guards. If `n.UserID != ""` and `client.UserID != n.UserID`, skip delivery; if `len(n.UserIDs) > 0` and the client's `UserID` is not in the set, skip delivery. Broad tenant/role broadcasts continue delivering to matching roles only when `UserID` is empty and `UserIDs` is empty.
+    - `internal/store/mongodb.go`: In `ListForUser` and `userMutationFilter`, scoped the `roles: {"$in": roles}` filter with `user_id: {"$in": [nil, ""]}` and `user_ids: {"$in": [nil, []]}`, ensuring private targeted notifications are never exposed to other role members via notification history or mutation endpoints.
+  - **Backend - User Service (`services/user-service/`)**:
+    - `internal/handlers/jobs_handlers.go`:
+      - In `findNextAvailableEmployee`, checked `loc.ActiveJobID` against active non-terminal jobs and added busy exclusions for `JobStatusEscrowReconciliationRequired` (B-02) and active unexpired `JobStatusPendingDispatch` offers held by the courier (`aj.CurrentOfferedEmployeeID == loc.EmployeeID && aj.OfferExpiresAt.After(now)`) (B-01).
+      - In `AcceptJobOffer`, added `ej.Status == models.JobStatusEscrowReconciliationRequired` to the busy courier check.
+      - In `findNextAvailableEmployee`, implemented deterministic tie-breaking for equidistant couriers using `loc.EmployeeID` ascending as secondary sort key: `math.Abs(candidates[i].dist - candidates[j].dist) > 1e-6` checks distance, falling back to `candidates[i].loc.EmployeeID < candidates[j].loc.EmployeeID` (A-01).
+  - **Frontend (`frontend/`)**:
+    - `lib/screens/employee_jobs_screen.dart`: Removed `deactivate()` hook which called `stopTracking(notify: false)`, ensuring live GPS tracking continues uninterrupted when couriers navigate between tabs or push other screens (F-01).
+    - `lib/providers/map_tracking_provider.dart`: In `_handleLocationUpdate`, preserved existing marker `jobId` when receiving heartbeat pings with null or empty `job_id`, resetting `jobId` to null only on explicit terminal events (`job_completed` / status completed) (F-02).
+- **Verification**:
+  - `services/notification-service/internal/handlers/dispatch_notification_isolation_test.go`: Added repro tests for N-01 and N-02 (`TestRepro_N01_SSEHubIgnoresUserID_BroadcastsPrivateOfferToAllEmployees`, `TestRepro_N02_NotificationHistoryQueryLeaksOtherCouriersOffers`) passing 100%.
+  - `services/notification-service/internal/store/mongodb_test.go`: Added `TestRepro_N02_MongoDB_ListForUser_Scoping` passing 100%.
+  - `services/user-service/internal/handlers/dispatch_cascade_isolation_repro_test.go`: Added dedicated repro tests for B-01 (`TestRepro_B01_CourierWithPendingOfferNotReoffered`), B-02 (`TestRepro_B02_CourierInReconciliationExcludedFromOffers`), and A-01 (`TestRepro_A01_EquidistantCouriersDeterministicTieBreaking`) passing 100%.
+  - `frontend/test/dispatch_tracking_lifecycle_repro_test.dart`: Added widget tests for F-01 (live tracking survives navigation to chat screen) and unit tests for F-02 (heartbeat pings preserve active job marker on owner map) passing 100%.
+  - All unit, integration, and repro suites passing: Go services (100% pass), `flutter analyze` (0 issues), and `flutter test` (516/516 pass).
+
+
 
 
 

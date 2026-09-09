@@ -675,7 +675,7 @@ func TestMongoDB_BroadcastJobAlert_OwnerAndCustomerMarkReadDelete_Success(t *tes
 	alert := &Notification{
 		ID:        alertID,
 		TenantID:  "tenant-jobalert",
-		UserID:    "emp-assigned-42",
+		UserID:    "", // Broadcast alert saved with empty UserID matching handlers.go:483
 		Roles:     []string{"owner", "employee", "client"},
 		Title:     "🆕 New Job Alert",
 		Body:      "New job 101 for service Cleaning",
@@ -742,7 +742,7 @@ func TestMongoDB_GlobalNotification_RoleScoped_MarkReadDelete_Success(t *testing
 	globalNotif := &Notification{
 		ID:        "global-announcement-succ-1",
 		Global:    true,
-		UserID:    "admin-system",
+		UserID:    "",
 		Roles:     []string{"owner", "employee", "client"},
 		Title:     "📢 System-wide Maintenance",
 		Body:      "Scheduled maintenance tonight",
@@ -782,5 +782,72 @@ func TestMongoDB_GlobalNotification_RoleScoped_MarkReadDelete_Success(t *testing
 	itemsAAfter, _ := s.ListForUser(ctx, "tenant-A", "user-A", []string{"owner"}, 10, nil)
 	if len(itemsAAfter) != 1 || !itemsAAfter[0].IsRead {
 		t.Fatalf("tenant-A expected to still see 1 read notification, got %+v", itemsAAfter)
+	}
+}
+
+// TestRepro_N02_MongoDB_ListForUser_Scoping tests that courier B cannot view courier A's private job offer in history.
+func TestRepro_N02_MongoDB_ListForUser_Scoping(t *testing.T) {
+	s, cleanup := setupTestMongoDB(t)
+	if s == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	tenantID := "tenant-n02-mongo"
+	empA := "courier-A"
+	empB := "courier-B"
+
+	// 1. Insert private job offer targeted at courier A
+	notifA := &Notification{
+		ID:        "job-offer-empA",
+		Type:      "job_offer",
+		TenantID:  tenantID,
+		UserID:    empA,
+		Roles:     []string{"employee"},
+		Title:     "New Job Offer",
+		Body:      "You have an incoming job offer for job job-101. Respond within 60 seconds.",
+		Timestamp: time.Now().UTC(),
+	}
+	if err := s.InsertNotification(ctx, notifA); err != nil {
+		t.Fatalf("InsertNotification failed: %v", err)
+	}
+
+	// 2. Insert role-wide broadcast alert (no user_id)
+	broadcastNotif := &Notification{
+		ID:        "broadcast-alert-all",
+		Type:      "job_alert",
+		TenantID:  tenantID,
+		Roles:     []string{"employee"},
+		Title:     "Fleet Broadcast",
+		Body:      "General announcement to all employees",
+		Timestamp: time.Now().UTC(),
+	}
+	if err := s.InsertNotification(ctx, broadcastNotif); err != nil {
+		t.Fatalf("InsertNotification failed: %v", err)
+	}
+
+	// 3. Courier B queries notification history with role ["employee"]
+	itemsB, err := s.ListForUser(ctx, tenantID, empB, []string{"employee"}, 10, nil)
+	if err != nil {
+		t.Fatalf("ListForUser for Courier B failed: %v", err)
+	}
+
+	// Courier B should see the general broadcast, but MUST NOT see Courier A's private job offer
+	if len(itemsB) != 1 {
+		t.Fatalf("Expected Courier B to see exactly 1 notification (the broadcast), got %d: %+v", len(itemsB), itemsB)
+	}
+	if itemsB[0].ID != "broadcast-alert-all" {
+		t.Fatalf("Expected Courier B to only see broadcast-alert-all, got %s", itemsB[0].ID)
+	}
+
+	// 4. Courier A queries notification history
+	itemsA, err := s.ListForUser(ctx, tenantID, empA, []string{"employee"}, 10, nil)
+	if err != nil {
+		t.Fatalf("ListForUser for Courier A failed: %v", err)
+	}
+	// Courier A should see BOTH the private job offer and the general broadcast
+	if len(itemsA) != 2 {
+		t.Fatalf("Expected Courier A to see 2 notifications (private + broadcast), got %d: %+v", len(itemsA), itemsA)
 	}
 }

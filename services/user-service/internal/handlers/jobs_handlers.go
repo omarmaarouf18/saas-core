@@ -1831,7 +1831,7 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 	existingJobs, err := u.store.GetJobsByEmployee(ctx, callerID)
 	if err == nil {
 		for _, ej := range existingJobs {
-			if ej.ID != job.ID && (ej.Status == models.JobStatusActive || ej.Status == models.JobStatusAwaitingPriceResponse) {
+			if ej.ID != job.ID && (ej.Status == models.JobStatusActive || ej.Status == models.JobStatusAwaitingPriceResponse || ej.Status == models.JobStatusEscrowReconciliationRequired) {
 				_ = u.advanceCascade(ctx, job)
 				writeJSON(w, http.StatusConflict, map[string]string{
 					"error":   "courier_busy",
@@ -2082,14 +2082,36 @@ func (u *UserService) findNextAvailableEmployee(ctx context.Context, tenantID st
 			continue
 		}
 
-		// Check if courier already has an active job (status == active or awaiting_price_response)
+		// Check if courier holds an ActiveJobID lock from an active/reconciliation job (B-02)
+		if loc.ActiveJobID != "" {
+			holdingJob := u.store.GetJob(ctx, loc.ActiveJobID)
+			if holdingJob != nil && holdingJob.Status != models.JobStatusCompleted && holdingJob.Status != models.JobStatusCancelled && holdingJob.Status != models.JobStatusUnavailable {
+				continue
+			}
+		}
+
+		// Check if courier already has an active job, pending offer (B-01), or reconciliation lock (B-02)
 		activeJobs, err := u.store.GetJobsByEmployee(ctx, loc.EmployeeID)
 		if err == nil {
 			busy := false
+			now := time.Now().UTC()
 			for _, aj := range activeJobs {
+				// Accepted active jobs or negotiation holds
 				if aj.Status == models.JobStatusActive || aj.Status == models.JobStatusAwaitingPriceResponse {
 					busy = true
 					break
+				}
+				// Jobs locked in escrow reconciliation (B-02)
+				if aj.Status == models.JobStatusEscrowReconciliationRequired {
+					busy = true
+					break
+				}
+				// Active unexpired pending offer on another job (B-01)
+				if aj.Status == models.JobStatusPendingDispatch && aj.CurrentOfferedEmployeeID == loc.EmployeeID {
+					if aj.OfferExpiresAt == nil || aj.OfferExpiresAt.After(now) {
+						busy = true
+						break
+					}
 				}
 			}
 			if busy {
@@ -2105,8 +2127,12 @@ func (u *UserService) findNextAvailableEmployee(ctx context.Context, tenantID st
 		return nil, ErrNoCouriersAvailable
 	}
 
+	// Deterministic sorting (A-01): sort primarily by distance, breaking ties deterministically by EmployeeID
 	sort.Slice(candidates, func(i, j int) bool {
-		return candidates[i].dist < candidates[j].dist
+		if math.Abs(candidates[i].dist-candidates[j].dist) > 1e-6 {
+			return candidates[i].dist < candidates[j].dist
+		}
+		return candidates[i].loc.EmployeeID < candidates[j].loc.EmployeeID
 	})
 
 	return &candidates[0].loc, nil

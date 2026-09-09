@@ -315,11 +315,14 @@ class MapTrackingProvider extends ChangeNotifier {
           final existing = _employeeMarkers[empId];
           final incomingJobId = map['job_id']?.toString();
           final String? resolvedJobId;
-          if (map.containsKey('job_id')) {
-            resolvedJobId = (incomingJobId != null && incomingJobId.isNotEmpty)
-                ? incomingJobId
-                : null;
+          if (incomingJobId != null && incomingJobId.isNotEmpty) {
+            resolvedJobId = incomingJobId;
+          } else if (map['type'] == 'job_completed' ||
+              map['status'] == 'completed') {
+            resolvedJobId = null;
           } else {
+            // Heartbeat or location update without job context:
+            // Preserve existing active-job association so busy couriers are not marked Idle (F-02).
             resolvedJobId = existing?.jobId;
           }
 
@@ -366,6 +369,9 @@ class MapTrackingProvider extends ChangeNotifier {
     _teardownConnection();
     notifyListeners();
   }
+
+  @visibleForTesting
+  void handleIncomingDataForTest(dynamic data) => _handleIncomingData(data);
 
   /// Releases the socket, subscription, and reconnect timer without
   /// notifying listeners (used both by [disconnect] and [dispose]).

@@ -171,7 +171,19 @@ func (s *MongoDB) ListForUser(ctx context.Context, tenantID, userID string, role
 	}
 
 	if len(roles) > 0 {
-		orClauses = append(orClauses, bson.M{"roles": bson.M{"$in": roles}})
+		orClauses = append(orClauses, bson.M{
+			"roles": bson.M{"$in": roles},
+			"$or": []bson.M{
+				{"user_id": ""},
+				{"user_id": bson.M{"$exists": false}},
+			},
+			"$and": []bson.M{
+				{"$or": []bson.M{
+					{"user_ids": bson.M{"$size": 0}},
+					{"user_ids": bson.M{"$exists": false}},
+				}},
+			},
+		})
 	}
 
 	// Broadcast notification with no role restrictions and no specific user target
@@ -263,7 +275,19 @@ func userMutationFilter(tenantID, userID string, roles []string, notificationID 
 	}
 
 	if len(roles) > 0 {
-		recipientOr = append(recipientOr, bson.M{"roles": bson.M{"$in": roles}})
+		recipientOr = append(recipientOr, bson.M{
+			"roles": bson.M{"$in": roles},
+			"$or": []bson.M{
+				{"user_id": ""},
+				{"user_id": bson.M{"$exists": false}},
+			},
+			"$and": []bson.M{
+				{"$or": []bson.M{
+					{"user_ids": bson.M{"$size": 0}},
+					{"user_ids": bson.M{"$exists": false}},
+				}},
+			},
+		})
 	}
 
 	// Broadcast notification with no role restrictions and no specific user target
