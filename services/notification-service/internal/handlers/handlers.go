@@ -183,7 +183,7 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := &hub.SSEClient{
-		ID:       token,
+		ID:       userID,
 		UserID:   userID,
 		TenantID: tenantID,
 		Role:     role,
@@ -194,8 +194,8 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 	defer n.hub.Unregister(client)
 
 	// Send initial connection event.
-	// #nosec G705 -- token and role are checked/resolved server-side and do not contain HTML/XSS payloads
-	fmt.Fprintf(w, "event: connected\ndata: {\"client_id\":%q,\"role\":%q}\n\n", token, role)
+	// #nosec G705 -- userID and role are checked/resolved server-side and do not contain HTML/XSS payloads
+	fmt.Fprintf(w, "event: connected\ndata: {\"client_id\":%q,\"role\":%q}\n\n", userID, role)
 	flusher.Flush()
 
 	cleanTenantID := strings.ReplaceAll(strings.ReplaceAll(tenantID, "\n", ""), "\r", "")

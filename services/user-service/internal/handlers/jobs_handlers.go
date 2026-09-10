@@ -533,32 +533,31 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
-	job := u.store.GetJob(ctx, req.JobID)
-	if job == nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
-		return
-	}
-
-	// Authorization check
+	// Authorization check (performed before DB lookup to prevent probing and unauthenticated DB load)
 	resolvedRequester := "internal_service"
 	// Empty-secret guard (QA audit Q23): an unconfigured token must never
 	// authenticate internal callers even if config.Load() is bypassed.
 	isInternal := u.internalServiceToken != "" &&
 		subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
 	if !isInternal {
-		if req.RequesterToken != "" {
-			req.RequesterID = req.RequesterToken
+		requesterToken := r.Header.Get("Authorization")
+		if strings.HasPrefix(requesterToken, "Bearer ") || strings.HasPrefix(requesterToken, "bearer ") {
+			requesterToken = strings.TrimSpace(requesterToken[7:])
 		}
-		requesterToken := r.URL.Query().Get("requester_token")
+		if requesterToken == "" {
+			requesterToken = r.URL.Query().Get("requester_token")
+		}
 		if requesterToken == "" {
 			requesterToken = r.URL.Query().Get("requester_id")
+		}
+		if requesterToken == "" {
+			requesterToken = req.RequesterToken
 		}
 		if requesterToken == "" {
 			requesterToken = req.RequesterID
 		}
 		if requesterToken == "" {
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester_id parameter is required"})
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "requester_id parameter or Authorization header is required"})
 			return
 		}
 		var err error
@@ -573,7 +572,16 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+	}
 
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	if !isInternal {
 		if resolvedRequester != job.OwnerID && (job.EmployeeID == "" || resolvedRequester != job.EmployeeID) {
 			// #nosec G706 //nolint:gosec -- IDs are from verified JWT tokens and database, log injection not possible
 			log.Printf("[TENANT SCOPE BLOCKED] User %s attempted to complete job %s owned by owner %s and employee %s", resolvedRequester, job.ID, job.OwnerID, job.EmployeeID)
@@ -803,6 +811,38 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, filtered)
 		return
 	}
+	// 1. Internal trusted token check (empty-secret guard, QA audit Q23)
+	isInternal := u.internalServiceToken != "" &&
+		subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
+
+	var resolvedRequester string
+	if !isInternal {
+		// External client check: require requester authorization BEFORE querying DB
+		requesterToken := r.Header.Get("Authorization")
+		if strings.HasPrefix(requesterToken, "Bearer ") || strings.HasPrefix(requesterToken, "bearer ") {
+			requesterToken = strings.TrimSpace(requesterToken[7:])
+		}
+		if requesterToken == "" {
+			requesterToken = r.URL.Query().Get("requester_token")
+		}
+		if requesterToken == "" {
+			requesterToken = r.URL.Query().Get("requester_id")
+		}
+		if requesterToken == "" {
+			requesterToken = r.URL.Query().Get("user_token")
+		}
+		if requesterToken == "" {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "requester_id parameter or Authorization header is required"})
+			return
+		}
+		var err error
+		resolvedRequester, err = resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+			return
+		}
+	}
+
 	ctx := r.Context()
 	job := u.store.GetJob(ctx, id)
 	if job == nil {
@@ -815,25 +855,8 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		job = u.store.GetJob(ctx, id)
 	}
 
-	// 1. Internal trusted token check (empty-secret guard, QA audit Q23)
-	if u.internalServiceToken != "" &&
-		subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1 {
+	if isInternal {
 		writeJSON(w, http.StatusOK, job)
-		return
-	}
-
-	// 2. External client check: require requester_id query param
-	requesterToken := r.URL.Query().Get("requester_token")
-	if requesterToken == "" {
-		requesterToken = r.URL.Query().Get("requester_id")
-	}
-	if requesterToken == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester_id parameter is required"})
-		return
-	}
-	resolvedRequester, err := resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 		return
 	}
 
@@ -2578,39 +2601,56 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
-	job := u.store.GetJob(ctx, req.JobID)
-	if job == nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
-		return
-	}
-
-	// Resolve requester
+	// Resolve requester and authenticate BEFORE DB lookup
 	var requesterToken string
 	// Empty-secret guard (QA audit Q23 follow-up): an unconfigured token must
 	// never authenticate internal callers even if config.Load() is bypassed.
-	// (Missed by the 804c390 batch despite being listed in its commit message.)
 	isInternal := u.internalServiceToken != "" &&
 		subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
 	if isInternal {
 		// For internal calls, use the requester_id passed in JSON
 		requesterToken = req.RequesterID
 	} else {
-		// For external/client calls, resolve from token or query param
-		requesterToken = r.URL.Query().Get("requester_id")
+		// For external/client calls, resolve from header, query param, or body
+		requesterToken = r.Header.Get("Authorization")
+		if strings.HasPrefix(requesterToken, "Bearer ") || strings.HasPrefix(requesterToken, "bearer ") {
+			requesterToken = strings.TrimSpace(requesterToken[7:])
+		}
+		if requesterToken == "" {
+			requesterToken = r.URL.Query().Get("requester_token")
+		}
+		if requesterToken == "" {
+			requesterToken = r.URL.Query().Get("requester_id")
+		}
+		if requesterToken == "" {
+			requesterToken = req.RequesterToken
+		}
 		if requesterToken == "" {
 			requesterToken = req.RequesterID
 		}
 	}
 
 	if requesterToken == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester_id parameter is required"})
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "requester_id parameter or Authorization header is required"})
 		return
 	}
 
-	resolvedRequester, err := resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+	var resolvedRequester string
+	if !isInternal {
+		var err error
+		resolvedRequester, err = resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+			return
+		}
+	} else {
+		resolvedRequester = requesterToken
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
 		return
 	}
 
@@ -2781,13 +2821,6 @@ func (u *UserService) ProposePrice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
-	job := u.store.GetJob(ctx, req.JobID)
-	if job == nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
-		return
-	}
-
 	requesterToken := r.Header.Get("Authorization")
 	if strings.HasPrefix(requesterToken, "Bearer ") {
 		requesterToken = strings.TrimPrefix(requesterToken, "Bearer ")
@@ -2809,9 +2842,17 @@ func (u *UserService) ProposePrice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resolvedRequester, err := resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
+	// Dynamic in-job price negotiation is strictly between customer and employee (Part B #5).
+	resolvedRequester, err := resolveTokenWithRole(requesterToken, "employee", "user", "customer")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
 		return
 	}
 
@@ -2953,16 +2994,9 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
-	job := u.store.GetJob(ctx, req.JobID)
-	if job == nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
-		return
-	}
-
 	requesterToken := r.Header.Get("Authorization")
-	if strings.HasPrefix(requesterToken, "Bearer ") {
-		requesterToken = strings.TrimPrefix(requesterToken, "Bearer ")
+	if strings.HasPrefix(requesterToken, "Bearer ") || strings.HasPrefix(requesterToken, "bearer ") {
+		requesterToken = strings.TrimSpace(requesterToken[7:])
 	}
 	if requesterToken == "" {
 		requesterToken = r.URL.Query().Get("requester_token")
@@ -2977,13 +3011,21 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 		requesterToken = req.RequesterID
 	}
 	if requesterToken == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "requester token is required"})
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "requester token is required"})
 		return
 	}
 
-	resolvedRequester, err := resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
+	// Dynamic in-job price negotiation is strictly between customer and employee (Part B #5).
+	resolvedRequester, err := resolveTokenWithRole(requesterToken, "employee", "user", "customer")
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
 		return
 	}
 

@@ -941,4 +941,30 @@ This section consolidates the resolution status for all 10 findings from the ext
 - **Commit SHA**: ``8580a6f1a1ec3c5165052b59302360a3f9c1fe91``
 - **Verification**: New test case in `services/user-service/internal/handlers/list_services_test.go` confirms query parameter `limit=2` properly bounds returned services. ✅
 
+## Pending Signup OTP Atomic Consume via FindOneAndDelete (QA Audit Q8)
+
+- **Implementation Detail**: In `services/auth-service/internal/store/mongodb.go:GetAndConsumePendingSignup`, replaced non-atomic sequential `FindOne` followed by `DeleteOne` with an atomic `s.pendingSignups.FindOneAndDelete(ctx, bson.M{"email": email, "otp_code": pending.OTPCode})`. This prevents concurrent OTP consumption races where multiple simultaneous calls with the same OTP could pass verification.
+- **Verification**: New repro test `TestRepro_Q8_ConcurrentConsumePendingSignup` in `services/auth-service/internal/handlers/auth_identity_repro_test.go` confirms that among concurrent workers submitting the same valid OTP, exactly one caller succeeds and other callers receive an error indicating the OTP has already been consumed. ✅
+
+## Public Profile Target Parameter Handling & Alias Resolution (QA Audit Q25)
+
+- **Implementation Detail**: In `services/auth-service/internal/handlers/auth.go:GetPublicProfile`, updated parameter handling so that the target user can be specified via `id`, `user_id`, or `user_token`. If `user_token` or a JWT is provided, claims are validated to extract `claims.UserID`. Requester authentication accepts `Authorization: Bearer <token>`, `requester_token`, or `requester_id`. Also added `user_id` query parameter alias support in `GetUser`.
+- **Verification**: New repro test `TestRepro_Q25_GetPublicProfile_AliasAndHeaderHandling` in `services/auth-service/internal/handlers/auth_identity_repro_test.go` verifies requester authentication via `Authorization` header, target lookup via `user_id`, and JWT token target alias resolution. ✅
+
+## Pre-DB Caller Authentication on Mutation & Inspection Endpoints (QA Audit Q26)
+
+- **Implementation Detail**: In `services/user-service/internal/handlers/jobs_handlers.go`, moved caller authentication and token validation before `store.GetJob` in `ProposePrice`, `RespondPrice`, `CompleteJob`, `CancelJob`, and `GetJob`. Previously, querying MongoDB prior to token authentication leaked job ID existence (returning 404 vs 401/400) and allowed unauthenticated callers to impose database load.
+- **Verification**: New repro test `TestRepro_Q26_AuthBeforeDBLookup` in `services/user-service/internal/handlers/auth_identity_repro_test.go` verifies that requests with invalid/missing credentials are fast-rejected with HTTP 401 Unauthorized before any DB lookup occurs. ✅
+
+## SSE Stream Bearer Token Omission in Connected Handshake (QA Audit Q27)
+
+- **Implementation Detail**: In `services/notification-service/internal/handlers/handlers.go:Stream`, changed the initial SSE `event: connected` payload from echoing the raw secret bearer token in `data: {"client_id":"<token>"}` to emitting `data: {"client_id": userID}`. Also set `hub.SSEClient.ID` to `userID` instead of raw bearer token.
+- **Verification**: New repro test `TestRepro_Q27_SSEConnectedEchoesUserIDNotRawToken` in `services/notification-service/internal/handlers/q27_repro_test.go` verifies that the initial SSE connection handshake emits `userID` and contains no bearer token ciphertext. ✅
+
+## Tenant Owner Exclusion from Dynamic In-Job Price Negotiation (Part B #5)
+
+- **Implementation Detail**: Dynamic price negotiation during transport jobs is strictly scoped between the customer and the assigned employee courier. In `services/user-service/internal/handlers/jobs_handlers.go`, removed `"owner"` from `resolveTokenWithRole(requesterToken, "employee", "user", "customer")` in both `ProposePrice` and `RespondPrice`. Requests signed by tenant owners are now rejected fast with HTTP 401 Unauthorized.
+- **Verification**: New repro test `TestRepro_PartB_OwnerPriceNegotiationScope` in `services/user-service/internal/handlers/auth_identity_repro_test.go` verifies that owner tokens attempting to propose or respond to prices are rejected fast with HTTP 401 Unauthorized instead of passing role validation and hitting 403 Forbidden. ✅
+
+
 

@@ -595,12 +595,20 @@ func (s *MongoDB) GetAndConsumePendingSignup(ctx context.Context, email, otp str
 		return nil, fmt.Errorf("invalid OTP")
 	}
 
-	_, err = s.pendingSignups.DeleteOne(ctx, bson.M{"email": email})
-	if err != nil {
-		log.Printf("[AUTH-STORE] Failed to delete consumed pending signup for %s: %v", email, err)
+	// Atomic deletion with CAS on exact OTPCode ciphertext to prevent race conditions
+	var consumed models.PendingSignup
+	res := s.pendingSignups.FindOneAndDelete(ctx, bson.M{
+		"email":    email,
+		"otp_code": pending.OTPCode,
+	})
+	if err := res.Decode(&consumed); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, fmt.Errorf("OTP has already been consumed")
+		}
+		return nil, fmt.Errorf("failed to consume pending signup: %w", err)
 	}
 
-	return &pending, nil
+	return &consumed, nil
 }
 
 // ---------------------------------------------------------------------------

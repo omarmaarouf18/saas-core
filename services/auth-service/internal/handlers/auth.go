@@ -978,6 +978,9 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	id := r.URL.Query().Get("user_token")
 	if id == "" {
+		id = r.URL.Query().Get("user_id")
+	}
+	if id == "" {
 		id = r.URL.Query().Get("id")
 	}
 	if id == "" {
@@ -2743,30 +2746,44 @@ func (a *Auth) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := r.URL.Query().Get("user_token")
-	if id == "" {
-		id = r.URL.Query().Get("id")
+	targetID := r.URL.Query().Get("id")
+	if targetID == "" {
+		targetID = r.URL.Query().Get("user_id")
 	}
-	if id == "" {
+	if targetID == "" {
+		targetID = r.URL.Query().Get("user_token")
+	}
+	if targetID == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "id parameter is required",
 		})
 		return
 	}
 
-	requesterID := r.URL.Query().Get("requester_token")
-	if requesterID == "" {
-		requesterID = r.URL.Query().Get("requester_id")
+	// If targetID is a JWT token alias, resolve to UserID
+	if claims, err := jwtutil.ValidateToken(targetID); err == nil && claims.UserID != "" {
+		targetID = claims.UserID
 	}
-	if requesterID == "" {
+
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") || strings.HasPrefix(requesterToken, "bearer ") {
+		requesterToken = strings.TrimSpace(requesterToken[7:])
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_id")
+	}
+	if requesterToken == "" {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
-			"error": "requester_id parameter is required",
+			"error": "requester_id parameter or Authorization header is required",
 		})
 		return
 	}
 
 	// Validate requester token signature
-	_, err := jwtutil.ValidateToken(requesterID)
+	_, err := jwtutil.ValidateToken(requesterToken)
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
 			"error": "invalid requester token: " + err.Error(),
@@ -2775,7 +2792,7 @@ func (a *Auth) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	user := a.store.GetByID(ctx, id)
+	user := a.store.GetByID(ctx, targetID)
 	if user == nil {
 		writeJSON(w, http.StatusNotFound, map[string]string{
 			"error": "user not found",
