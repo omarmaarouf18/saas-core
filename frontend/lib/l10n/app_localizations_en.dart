@@ -195,6 +195,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myAccountSuccessMsg => 'Profile updated successfully';
 
   @override
+  String get accountStatusSuspendedTitle => 'Account Suspended';
+
+  @override
+  String get accountStatusSuspendedDefaultReason =>
+      'Your account has been suspended by an administrator. Please contact support for more information.';
+
+  @override
+  String get accountStatusActiveBadge => 'Active';
+
+  @override
+  String get accountStatusSuspendedBadge => 'Suspended';
+
+  @override
   String get ownerConfigTitle => 'Owner Configuration';
 
   @override

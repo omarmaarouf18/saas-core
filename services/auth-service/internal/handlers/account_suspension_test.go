@@ -583,6 +583,25 @@ func TestSuspendAndReactivateLifecycle(t *testing.T) {
 		}
 	}
 
+	// Verify GET /auth/user returns account_status and suspension_reason (GAP-05)
+	reqGetUser := httptest.NewRequest(http.MethodGet, "/auth/user?id="+user.ID, nil)
+	reqGetUser.Header.Set("X-Internal-Token", "test-internal-token")
+	wGetUser := httptest.NewRecorder()
+	mux.ServeHTTP(wGetUser, reqGetUser)
+	if wGetUser.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK from GET /auth/user, got %d: %s", wGetUser.Code, wGetUser.Body.String())
+	}
+	var getUserResp map[string]any
+	if err := json.Unmarshal(wGetUser.Body.Bytes(), &getUserResp); err != nil {
+		t.Fatalf("failed to decode GET /auth/user response: %v", err)
+	}
+	if getUserResp["account_status"] != "suspended" {
+		t.Errorf("expected account_status='suspended', got %v", getUserResp["account_status"])
+	}
+	if getUserResp["suspension_reason"] != "Fraudulent chargeback activity detected" {
+		t.Errorf("expected suspension_reason='Fraudulent chargeback activity detected', got %v", getUserResp["suspension_reason"])
+	}
+
 	// --- 3. Duplicate Suspension (CAS conflict) ---
 	reqDup := httptest.NewRequest(http.MethodPost, "/auth/accounts/suspend", bytes.NewReader(bodyValidSuspend))
 	setHeaders(reqDup)

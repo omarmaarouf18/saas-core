@@ -192,6 +192,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get myAccountSuccessMsg => 'تم تحديث بيانات حسابك بنجاح';
 
   @override
+  String get accountStatusSuspendedTitle => 'الحساب معلق';
+
+  @override
+  String get accountStatusSuspendedDefaultReason =>
+      'تم تعليق حسابك من قبل الإدارة. يرجى التواصل مع الدعم الفني لمزيد من المعلومات.';
+
+  @override
+  String get accountStatusActiveBadge => 'نشط';
+
+  @override
+  String get accountStatusSuspendedBadge => 'معلق';
+
+  @override
   String get ownerConfigTitle => 'إعدادات الخدمة والمحل';
 
   @override

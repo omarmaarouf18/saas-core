@@ -458,6 +458,30 @@ abstract class AppLocalizations {
   /// **'Profile updated successfully'**
   String get myAccountSuccessMsg;
 
+  /// No description provided for @accountStatusSuspendedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Suspended'**
+  String get accountStatusSuspendedTitle;
+
+  /// No description provided for @accountStatusSuspendedDefaultReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account has been suspended by an administrator. Please contact support for more information.'**
+  String get accountStatusSuspendedDefaultReason;
+
+  /// No description provided for @accountStatusActiveBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get accountStatusActiveBadge;
+
+  /// No description provided for @accountStatusSuspendedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspended'**
+  String get accountStatusSuspendedBadge;
+
   /// No description provided for @ownerConfigTitle.
   ///
   /// In en, this message translates to:

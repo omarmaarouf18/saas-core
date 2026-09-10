@@ -1050,13 +1050,16 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 		"tenant_id":          user.TenantID,
 		"kyc_status":         user.KYCStatus,
 		"is_active":          user.IsActive,
-		"account_status":     user.AccountStatus,
+		"account_status":     user.EffectiveAccountStatus(),
 	}
 	if user.Role == models.RoleEmployee {
 		resp["kye_status"] = user.KYEStatus
 	}
 	if user.RejectionReason != "" {
 		resp["rejection_reason"] = user.RejectionReason
+	}
+	if user.SuspensionReason != "" {
+		resp["suspension_reason"] = user.SuspensionReason
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
