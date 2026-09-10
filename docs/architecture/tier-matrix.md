@@ -22,10 +22,6 @@ The following matrix documents every owner-facing endpoint, its operational role
 | `/users/wallet/deposit` | `POST` | Owner deposits funds into e-wallet | Free | **Paid** (`models.PlanPaid`) | `402 upgrade_required` | `paid_tier_gating_matrix_test.go` |
 | `/users/wallet/payout/request` | `POST` | Owner requests payout withdrawal from withdrawable balance | Free | **Paid** (`models.PlanPaid`) | `402 upgrade_required` | `paid_tier_gating_matrix_test.go` |
 | `/users/jobs/reconciliation-resolve` | `POST` | Owner manually resolves escrow reconciliation dispute | Free | **Paid** (`models.PlanPaid`) | `402 upgrade_required` | `paid_tier_gating_matrix_test.go` |
-| `/users/jobs/track` | `POST` | Owner creates or dispatches job using owner token | Free | **Paid** (`models.PlanPaid`) | `402 upgrade_required` | `paid_tier_gating_matrix_test.go` |
-| `/users/jobs/complete` | `POST` | Owner directly marks active job completed | Free | **Paid** (`models.PlanPaid`) | `402 upgrade_required` | `paid_tier_gating_matrix_test.go` |
-| `/users/jobs/cancel` | `POST` | Owner directly cancels job | Free | **Paid** (`models.PlanPaid`) | `402 upgrade_required` | `paid_tier_gating_matrix_test.go` |
-| `/users/jobs/rate` | `POST` | Owner submits rating for employee | Free | **Paid** (`models.PlanPaid`) | `402 upgrade_required` | `paid_tier_gating_matrix_test.go` |
 | `/users/jobs/location/update` | `POST` | Courier/Owner updates live driver GPS coordinates | Paid | **Paid** (`models.PlanPaid`) | `402 upgrade_required` | `handlers_test.go` |
 | `/auth/employee/toggle` | `POST` | Owner activates or freezes employee account | Free | **Paid** (`models.PlanPaid`) | `402 upgrade_required` | `auth_paid_tier_gating_test.go` |
 
