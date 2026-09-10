@@ -967,5 +967,11 @@
   "ticketAssignedAgent": "المسؤول: {agent}",
   "ticketPendingAgent": "في انتظار تعيين موظف الدعم...",
   "ticketContextJob": "مرتبط بالطلب #{id}",
-  "viewTicketAction": "عرض التذكرة"
+  "viewTicketAction": "عرض التذكرة",
+  "courierAvailabilityTitle": "حالة التوفر",
+  "courierStatusOnline": "متصل",
+  "courierStatusOffline": "غير متصل",
+  "courierStatusActiveJobLock": "الحالة مقفلة أثناء توصيل طلب نشط",
+  "courierStatusAcceptingDispatch": "جاهز لاستلام طلبات توصيل جديدة",
+  "courierStatusNotAcceptingDispatch": "غير متاح لاستلام طلبات توصيل جديدة"
 }

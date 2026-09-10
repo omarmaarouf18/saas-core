@@ -4466,6 +4466,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View Ticket'**
   String get viewTicketAction;
+
+  /// No description provided for @courierAvailabilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Courier Availability'**
+  String get courierAvailabilityTitle;
+
+  /// No description provided for @courierStatusOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get courierStatusOnline;
+
+  /// No description provided for @courierStatusOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get courierStatusOffline;
+
+  /// No description provided for @courierStatusActiveJobLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Availability locked during active job'**
+  String get courierStatusActiveJobLock;
+
+  /// No description provided for @courierStatusAcceptingDispatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepting new delivery requests'**
+  String get courierStatusAcceptingDispatch;
+
+  /// No description provided for @courierStatusNotAcceptingDispatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Not accepting new delivery requests'**
+  String get courierStatusNotAcceptingDispatch;
 }
 
 class _AppLocalizationsDelegate

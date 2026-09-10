@@ -2437,4 +2437,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewTicketAction => 'View Ticket';
+
+  @override
+  String get courierAvailabilityTitle => 'Courier Availability';
+
+  @override
+  String get courierStatusOnline => 'Online';
+
+  @override
+  String get courierStatusOffline => 'Offline';
+
+  @override
+  String get courierStatusActiveJobLock =>
+      'Availability locked during active job';
+
+  @override
+  String get courierStatusAcceptingDispatch =>
+      'Accepting new delivery requests';
+
+  @override
+  String get courierStatusNotAcceptingDispatch =>
+      'Not accepting new delivery requests';
 }

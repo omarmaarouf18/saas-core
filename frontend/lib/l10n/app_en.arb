@@ -1253,5 +1253,11 @@
       }
     }
   },
-  "viewTicketAction": "View Ticket"
+  "viewTicketAction": "View Ticket",
+  "courierAvailabilityTitle": "Courier Availability",
+  "courierStatusOnline": "Online",
+  "courierStatusOffline": "Offline",
+  "courierStatusActiveJobLock": "Availability locked during active job",
+  "courierStatusAcceptingDispatch": "Accepting new delivery requests",
+  "courierStatusNotAcceptingDispatch": "Not accepting new delivery requests"
 }

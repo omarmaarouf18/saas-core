@@ -2397,4 +2397,23 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get viewTicketAction => 'عرض التذكرة';
+
+  @override
+  String get courierAvailabilityTitle => 'حالة التوفر';
+
+  @override
+  String get courierStatusOnline => 'متصل';
+
+  @override
+  String get courierStatusOffline => 'غير متصل';
+
+  @override
+  String get courierStatusActiveJobLock => 'الحالة مقفلة أثناء توصيل طلب نشط';
+
+  @override
+  String get courierStatusAcceptingDispatch => 'جاهز لاستلام طلبات توصيل جديدة';
+
+  @override
+  String get courierStatusNotAcceptingDispatch =>
+      'غير متاح لاستلام طلبات توصيل جديدة';
 }
