@@ -1004,43 +1004,43 @@ This section consolidates the resolution status for all 10 findings from the ext
 ## Atomic Device Token Upsert via Positional Update & Guarded Push (QA Audit Q11)
 
 - **Implementation Detail**: In `services/auth-service/internal/store/mongodb.go:UpsertDeviceToken`, replaced the sequential `$pull` followed by `$push` pattern with an atomic two-phase operation: positional `$set` on `device_tokens.$.platform` and `updated_at` if the token already exists, falling back to an atomic `$push` guarded by `device_tokens.token: {"$ne": tokenStr}`. If concurrent requests race to register the same device token, only one push succeeds while the other safely refreshes the existing entry, completely preventing duplicate FCM token array entries.
-- **Commit SHA**: ````
+- **Commit SHA**: ``c57b226b76b13ae8cc91810a8f979b6ad75a168c``
 - **Verification**: Dedicated repro test `TestUpsertDeviceToken_ConcurrentNoDuplicates` in `services/auth-service/internal/store/audit_token_repro_test.go` verifies that 20 concurrent goroutines registering the identical device token result in exactly 1 array element. ✅
 
 ## Cryptographic Random Audit Log Identifiers & Error Surfacing (QA Audit Q12)
 
 - **Implementation Detail**: In `services/auth-service/internal/store/mongodb.go:AppendAudit`, replaced clock-dependent, non-cryptographic identifier generation (`fmt.Sprintf("audit-%d", time.Now().UnixNano())`) with 128-bit cryptographically secure random identifiers generated via `crypto/rand` (`audit-[0-9a-f]{32}`). Updated the `AppendAudit` signature to return an `error` rather than silently swallowing database insertion failures, and updated callers across `RecordAction`, `ReviewKYC`, `SuspendAccount`, and `ReactivateAccount` in `services/auth-service/internal/handlers/auth.go` to handle or log insertion errors.
-- **Commit SHA**: ````
+- **Commit SHA**: ``c57b226b76b13ae8cc91810a8f979b6ad75a168c``
 - **Verification**: Dedicated repro test `TestAppendAudit_CryptoIDAndError` in `services/auth-service/internal/store/audit_token_repro_test.go` verifies cryptographic hex ID format and confirms error propagation on cancelled context. ✅
 
 ## Compare-And-Swap Support Ticket Resolution & HTTP 409 Conflict Handling (QA Audit Q13)
 
 - **Implementation Detail**: In `services/chat-service/internal/store/mongodb.go:ResolveTicket`, added atomic Compare-And-Swap (CAS) guard `status: bson.M{"$ne": "resolved"}` using `FindOneAndUpdate`. When attempting to resolve a ticket that has already been marked resolved, the store returns `ErrTicketAlreadyResolved`. In `services/chat-service/internal/handlers/chat.go:HandleResolveTicket`, added explicit conflict detection mapping `ErrTicketAlreadyResolved` to HTTP 409 Conflict with `{"error": "ticket is already resolved"}`. Marked legacy support-agent resolution route as deprecated in favor of `AdminResolveTicket` per ADR-0023.
-- **Commit SHA**: ````
+- **Commit SHA**: ``c57b226b76b13ae8cc91810a8f979b6ad75a168c``
 - **Verification**: Repro tests `TestResolveTicket_CAS_AlreadyResolved` in `services/chat-service/internal/store/ticket_agent_repro_test.go` and `TestHandleResolveTicket_ConflictWhenAlreadyResolved` in `services/chat-service/internal/handlers/resolve_ticket_repro_test.go` verify CAS conflict rejection and HTTP 409 status code. ✅
 
 ## Automatic Stranded Support Agent Discovery & Recovery Sweeper (QA Audit Q14)
 
 - **Implementation Detail**: Added `SweepStrandedAgents(ctx context.Context) (int64, error)` in `services/chat-service/internal/store/mongodb.go` and added `CurrentTicketID` to `SupportAgent` struct. The sweeper finds agents in `busy` status whose referenced `current_ticket_id` either does not exist or has already reached a terminal state (`resolved` or `closed`), resetting their status to `available` with `current_ticket_id` cleared. Integrated sweeper into `services/chat-service/cmd/main.go` on startup to clean up ungraceful shutdown states.
-- **Commit SHA**: ````
+- **Commit SHA**: ``c57b226b76b13ae8cc91810a8f979b6ad75a168c``
 - **Verification**: Dedicated test `TestSweepStrandedAgents` in `services/chat-service/internal/store/ticket_agent_repro_test.go` verifies automatic recovery of agents stranded by missing tickets, empty ticket IDs, or already resolved tickets while leaving valid active agents untouched. ✅
 
 ## App Version Configuration Persist-First & Monotonic Revision Sequence (QA Audit Q15)
 
 - **Implementation Detail**: In `services/api-gateway/internal/version/version.go`, added monotonic `Revision int64` to `PlatformVersions`. In `UpdateConfig`, inverted the mutation sequence so that the new configuration is persisted to MongoDB first using `FindOneAndUpdate` with `$inc: bson.M{"revision": 1}` before modifying the in-memory cache `s.cached`. If MongoDB persistence fails, in-memory cache remains uncorrupted and retains the previous valid version configuration.
-- **Commit SHA**: ````
+- **Commit SHA**: ``c57b226b76b13ae8cc91810a8f979b6ad75a168c``
 - **Verification**: Unit test `TestVersionStore_MongoDB_PersistBeforeCacheAndRevision` in `services/api-gateway/internal/version/version_test.go` verifies monotonic revision incrementing and proves that in-memory cache is not corrupted when MongoDB updates fail. ✅
 
 ## Redis Pub/Sub Dynamic Channel Subscription Serialization (QA Audit Q16)
 
 - **Implementation Detail**: In `services/chat-service/internal/chat/hub.go`, added a dedicated `subMu sync.Mutex` and `syncRedisSubscription` helper method. All dynamic Redis Pub/Sub subscriptions and unsubscriptions across `Subscribe`, `Unsubscribe`, `Unregister`, and `DisconnectUser` are now strictly serialized through `subMu` while inspecting the latest local client count under read lock. This eliminates out-of-order execution races where a rapid unsubscribe followed by a subscribe could leave Redis in an unsubscribed state for active channels.
-- **Commit SHA**: ````
+- **Commit SHA**: ``c57b226b76b13ae8cc91810a8f979b6ad75a168c``
 - **Verification**: Concurrency test `TestHub_RedisPubSub_SubscribeUnsubscribe_Serialized` in `services/chat-service/internal/chat/hub_concurrency_repro_test.go` verifies thread-safety and accurate subscription state under rapid concurrent join/leave operations with `-race` enabled. ✅
 
 ## Idempotent WebSocket Client Channel Closure & Close Panic Prevention (QA Audit Q17)
 
 - **Implementation Detail**: In `services/chat-service/internal/chat/hub.go`, added `closeOnce sync.Once` and `CloseSend()` method to `Client` struct. Replaced direct `close(client.Send)` invocations across `DisconnectUser`, `Close`, and `Unregister` with `client.CloseSend()`. This ensures the outbound message buffer channel is closed at most once, eliminating `close of closed channel` panics during concurrent client disconnections and hub shutdowns.
-- **Commit SHA**: ````
+- **Commit SHA**: ``c57b226b76b13ae8cc91810a8f979b6ad75a168c``
 - **Verification**: Concurrency tests `TestClient_CloseSend_Idempotent` and `TestHub_Close_ConcurrentWithUnregister` in `services/chat-service/internal/chat/hub_concurrency_repro_test.go` verify safe concurrent channel closure and shutdown without panics with `-race` enabled. ✅
 
 
