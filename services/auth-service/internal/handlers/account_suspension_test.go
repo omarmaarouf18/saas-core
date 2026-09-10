@@ -585,7 +585,7 @@ func TestSuspendAndReactivateLifecycle(t *testing.T) {
 
 	// Verify GET /auth/user returns account_status and suspension_reason (GAP-05)
 	reqGetUser := httptest.NewRequest(http.MethodGet, "/auth/user?id="+user.ID, nil)
-	reqGetUser.Header.Set("X-Internal-Token", "test-internal-token")
+	reqGetUser.Header.Set("X-Internal-Token", auth.internalServiceToken)
 	wGetUser := httptest.NewRecorder()
 	mux.ServeHTTP(wGetUser, reqGetUser)
 	if wGetUser.Code != http.StatusOK {
