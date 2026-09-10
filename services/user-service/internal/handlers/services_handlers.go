@@ -145,6 +145,12 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	// Paid tier membership check
+	if !u.enforcePaidTier(w, r, req.OwnerID, req.OwnerID, "create_service", "Service catalog creation") {
+		return
+	}
+
 	if req.Category != "shipping" && req.Category != "delivery" && req.Category != "transport" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid category, must be: shipping, delivery, transport"})
 		return
@@ -239,6 +245,11 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusForbidden, map[string]string{
 			"error": "action blocked: owner KYC approval is pending",
 		})
+		return
+	}
+
+	// Paid tier membership check
+	if !u.enforcePaidTier(w, r, req.OwnerID, req.OwnerID, "update_service", "Service catalog updates") {
 		return
 	}
 

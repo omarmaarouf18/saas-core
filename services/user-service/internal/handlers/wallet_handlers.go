@@ -147,6 +147,12 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	// Paid tier membership check
+	if !u.enforcePaidTier(w, r, req.TenantID, req.TenantID, "wallet_deposit", "Wallet deposits") {
+		return
+	}
+
 	if err := u.store.Deposit(r.Context(), req.TenantID, req.Amount); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -248,6 +254,11 @@ func (u *UserService) RequestPayout(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": fmt.Sprintf("too many requests; retry in %.0f seconds", remaining.Seconds())})
 			return
 		}
+	}
+
+	// Paid tier membership check
+	if !u.enforcePaidTier(w, r, resolvedTenantID, resolvedTenantID, "request_payout", "Payout requests") {
+		return
 	}
 
 	if req.Amount <= 0 {

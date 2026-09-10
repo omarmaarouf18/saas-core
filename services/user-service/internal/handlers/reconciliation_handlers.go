@@ -170,6 +170,11 @@ func (u *UserService) ResolveReconciliation(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Paid tier membership check
+	if !u.enforcePaidTier(w, r, resolvedOwnerID, resolvedOwnerID, "resolve_reconciliation", "Dispute reconciliation") {
+		return
+	}
+
 	// Idempotency check: job must be in escrow_reconciliation_required status
 	if job.Status != models.JobStatusEscrowReconciliationRequired {
 		writeJSON(w, http.StatusConflict, map[string]string{"error": "job is not pending escrow reconciliation review"})

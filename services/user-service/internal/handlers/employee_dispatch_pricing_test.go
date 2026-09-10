@@ -481,6 +481,13 @@ func TestPricing_EmployeeLocationVsBusinessAddress_EndToEnd(t *testing.T) {
 	custID := "cust-pricing-proof"
 	svcID := "svc-pricing-proof"
 
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		ID:        "sub-" + ownerID,
+		TenantID:  ownerID,
+		Tier:      models.PlanPaid,
+		StartedAt: time.Now().UTC(),
+	})
+
 	// 1. Registered business address: Cairo downtown (30.0444, 31.2357)
 	// Base Price = $50.00, Rate = $2.00 / km
 	s.CreateService(ctx, &models.Service{

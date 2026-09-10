@@ -116,6 +116,12 @@ func TestTrackJob_ConcurrentDuplicateIdempotencyKey(t *testing.T) {
 	serviceID := "race-svc-1"
 
 	s.CreateService(ctx, &models.Service{ID: serviceID, TenantID: ownerID, TenantBasePrice: 10.0, TenantPricePerKM: 1.0, Latitude: 30.0, Longitude: 30.0})
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		ID:        "sub-" + ownerID,
+		TenantID:  ownerID,
+		Tier:      models.PlanPaid,
+		StartedAt: time.Now().UTC(),
+	})
 	_ = s.Deposit(ctx, ownerID, 500.0)
 	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,

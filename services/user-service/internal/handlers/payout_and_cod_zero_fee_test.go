@@ -73,6 +73,13 @@ func TestCODZeroFeeCompletion(t *testing.T) {
 	ownerID := "owner-cod-zero"
 	jobID := "job-cod-zero-1"
 
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		ID:        "sub-" + ownerID,
+		TenantID:  ownerID,
+		Tier:      models.PlanPaid,
+		StartedAt: time.Now().UTC(),
+	})
+
 	s.CreateService(ctx, &models.Service{
 		ID:              "svc-cod",
 		TenantID:        ownerID,
@@ -199,6 +206,13 @@ func TestOwnerPayoutRequestFlow(t *testing.T) {
 	ownerID := "owner-payout-1"
 	ownerToken, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@payout.com")
 
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		ID:        "sub-" + ownerID,
+		TenantID:  ownerID,
+		Tier:      models.PlanPaid,
+		StartedAt: time.Now().UTC(),
+	})
+
 	// Deposit 500 to owner wallet
 	s.GetOrCreateWallet(ctx, ownerID)
 	if err := s.Deposit(ctx, ownerID, 500.0); err != nil {
@@ -322,6 +336,13 @@ func TestElectronicPaymentsFeatureFlag(t *testing.T) {
 
 	ownerToken, _ := jwtutil.GenerateToken("owner-flag", "owner", "owner-flag", "owner@flag.com")
 	custToken, _ := jwtutil.GenerateToken("cust-flag", "customer", "tenant-flag", "cust@flag.com")
+
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		ID:        "sub-owner-flag",
+		TenantID:  "owner-flag",
+		Tier:      models.PlanPaid,
+		StartedAt: time.Now().UTC(),
+	})
 
 	reqBody := map[string]any{
 		"owner_id":       "owner-flag",

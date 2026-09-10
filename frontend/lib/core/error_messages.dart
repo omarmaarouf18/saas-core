@@ -7,6 +7,8 @@ import 'api_client.dart';
 class ErrorMessages {
   static const String badRequest = "Please check your input and try again.";
   static const String unauthorized = "Incorrect login details.";
+  static const String paymentRequired =
+      "A paid subscription is required to perform this action. Please upgrade to continue.";
   static const String forbidden = "You're not allowed to do that.";
   static const String notFound = "This item isn't available.";
   static const String conflict =
@@ -36,6 +38,8 @@ String friendlyErrorMessage(Object? error) {
       return ErrorMessages.badRequest;
     } else if (status == 401) {
       return ErrorMessages.unauthorized;
+    } else if (status == 402) {
+      return ErrorMessages.paymentRequired;
     } else if (status == 403) {
       return ErrorMessages.forbidden;
     } else if (status == 404) {

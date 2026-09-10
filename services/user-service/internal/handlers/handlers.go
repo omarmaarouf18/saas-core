@@ -4,6 +4,7 @@ package handlers
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -307,6 +308,7 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users/ledger", u.GetLedger)
 	mux.HandleFunc("/users/platform/config", u.GetPlatformConfig)
 	mux.HandleFunc("/users/subscription", u.Subscription)
+	mux.HandleFunc("/users/subscription/internal", u.InternalSubscriptionCheck)
 	mux.HandleFunc("/users/jobs/rate", u.RateJob)
 	mux.HandleFunc("/users/ratings", u.GetRatings)
 	mux.HandleFunc("/users/jobs/location/update", u.UpdateJobLocation)
@@ -675,6 +677,9 @@ func (u *UserService) requireTier(ctx context.Context, tenantID string, min mode
 			return err
 		}
 	}
+	if u.store == nil {
+		return nil
+	}
 	sub := u.store.GetSubscription(ctx, tenantID)
 	var currentTier models.PlanTier = models.PlanFree
 	if sub != nil {
@@ -687,4 +692,65 @@ func (u *UserService) requireTier(ctx context.Context, tenantID string, min mode
 		}
 	}
 	return nil
+}
+
+// enforcePaidTier verifies that the tenant has models.PlanPaid.
+// If not, it ships an UPGRADE_REQUIRED security event and writes an HTTP 402 Payment Required response.
+// Returns true if the tenant has PlanPaid, false if rejected (response already written).
+func (u *UserService) enforcePaidTier(w http.ResponseWriter, r *http.Request, tenantID, actorID, actionName, featureDescription string) bool {
+	if err := u.requireTier(r.Context(), tenantID, models.PlanPaid); err != nil {
+		if errors.Is(err, ErrUpgradeRequired) {
+			handlerutil.ShipSecurityEvent(r.Context(), "UPGRADE_REQUIRED", "user-service", actorID, tenantID, fmt.Sprintf("%s rejected for owner %s, paid subscription required", actionName, tenantID), handlerutil.GetClientIP(r))
+			writeJSON(w, http.StatusPaymentRequired, map[string]string{
+				"error":   "upgrade_required",
+				"message": featureDescription + " requires a paid subscription.",
+			})
+			return false
+		}
+		log.Printf("[USER] Subscription verification failed for owner %s: %v", tenantID, err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error":   "internal_error",
+			"message": "could not verify subscription status",
+		})
+		return false
+	}
+	return true
+}
+
+// InternalSubscriptionCheck allows internal services (e.g., auth-service) to verify
+// whether a tenant has an active PlanPaid subscription.
+func (u *UserService) InternalSubscriptionCheck(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	if u.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) != 1 {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: internal token required"})
+		return
+	}
+	tenantID := r.URL.Query().Get("tenant_id")
+	if tenantID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id query parameter is required"})
+		return
+	}
+	err := u.requireTier(r.Context(), tenantID, models.PlanPaid)
+	if err != nil {
+		if errors.Is(err, ErrUpgradeRequired) {
+			writeJSON(w, http.StatusPaymentRequired, map[string]any{
+				"error":   "upgrade_required",
+				"tier":    "free",
+				"message": "paid subscription required",
+			})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error":   "internal_error",
+			"message": "could not verify subscription status",
+		})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"tier":    "paid",
+		"is_paid": true,
+	})
 }

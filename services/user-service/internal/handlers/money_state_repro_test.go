@@ -29,6 +29,13 @@ func TestRepro_Q3_ReconciliationRelease_ZeroLockedEscrow(t *testing.T) {
 	jobID := "job-q3-recon"
 	empID := "emp-q3-courier"
 
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		ID:        "sub-" + ownerID,
+		TenantID:  ownerID,
+		Tier:      models.PlanPaid,
+		StartedAt: time.Now().UTC(),
+	})
+
 	// Create wallet for owner and deposit funds so escrow release can credit owner
 	_ = s.Deposit(ctx, ownerID, 100.0)
 
@@ -230,6 +237,13 @@ func TestRepro_Q10_UpdateService_ConcurrentFieldLevelClobber(t *testing.T) {
 	ctx := context.Background()
 	ownerID := "owner-q10"
 	svcID := "svc-q10"
+
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		ID:        "sub-" + ownerID,
+		TenantID:  ownerID,
+		Tier:      models.PlanPaid,
+		StartedAt: time.Now().UTC(),
+	})
 
 	s.CreateService(ctx, &models.Service{
 		ID:               svcID,

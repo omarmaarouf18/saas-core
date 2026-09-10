@@ -88,6 +88,11 @@ func TestFinding1_CODCancelCompleteRaceCondition(t *testing.T) {
 		Longitude:       31.2357,
 	}
 	s.CreateService(ctx, testService)
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		TenantID:  ownerID,
+		Tier:      models.PlanPaid,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
 
 	activeJob := &models.Job{
 		ID:            jobID,
@@ -259,6 +264,11 @@ func TestFinding2_CancelJob_NegotiatedTransport_AgreedPriceRefund(t *testing.T) 
 		Longitude:        31.2357,
 	}
 	s.CreateService(ctx, testService)
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		TenantID:  ownerID,
+		Tier:      models.PlanPaid,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
 
 	// Create owner wallet and deposit initial withdrawable balance ($200)
 	if _, err := s.GetOrCreateWallet(ctx, ownerID); err != nil {

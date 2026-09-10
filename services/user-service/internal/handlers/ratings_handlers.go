@@ -91,6 +91,12 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if isOwnerRating {
+		if !u.enforcePaidTier(w, r, job.OwnerID, resolvedRatedBy, "rate_job", "Submitting ratings") {
+			return
+		}
+	}
+
 	if job.Status != models.JobStatusCompleted {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "cannot rate a job that is not completed"})
 		return

@@ -14,6 +14,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -804,6 +805,27 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 			"error": "action blocked: owner KYC approval is pending",
 		})
 		return
+	}
+
+	// Verify owner has an active Paid tier subscription
+	if a.userServiceURL != "" && a.userServiceClient != nil {
+		tierURL := fmt.Sprintf("%s/users/subscription/internal?tenant_id=%s", a.userServiceURL, url.QueryEscape(owner.ID))
+		tierReq, err := http.NewRequestWithContext(ctx, http.MethodGet, tierURL, nil)
+		if err == nil {
+			tierReq.Header.Set("X-Internal-Token", a.internalServiceToken)
+			tierResp, err := a.userServiceClient.Do(tierReq)
+			if err == nil {
+				defer tierResp.Body.Close()
+				if tierResp.StatusCode == http.StatusPaymentRequired {
+					handlerutil.ShipSecurityEvent(ctx, "UPGRADE_REQUIRED", "auth-service", owner.ID, owner.ID, fmt.Sprintf("staff management toggle rejected for owner %s, paid subscription required", owner.ID), clientIP)
+					writeJSON(w, http.StatusPaymentRequired, map[string]string{
+						"error":   "upgrade_required",
+						"message": "Staff management requires a paid subscription.",
+					})
+					return
+				}
+			}
+		}
 	}
 
 	// Get Employee to resolve ID. Nonexistent and foreign-tenant employees
