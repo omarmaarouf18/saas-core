@@ -707,6 +707,7 @@ func (u *UserService) enforcePaidTier(w http.ResponseWriter, r *http.Request, te
 			})
 			return false
 		}
+		// #nosec G706 //nolint:gosec -- tenantID is logged for failure diagnostics
 		log.Printf("[USER] Subscription verification failed for owner %s: %v", tenantID, err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error":   "internal_error",
