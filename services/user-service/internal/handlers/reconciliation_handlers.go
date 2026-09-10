@@ -192,9 +192,13 @@ func (u *UserService) ResolveReconciliation(w http.ResponseWriter, r *http.Reque
 		}
 
 		note := fmt.Sprintf("reconciliation_resolved: release_to_employee by owner %s", resolvedOwnerID)
-		if err := u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCompleted, note, "", amount); err != nil {
+		if err := u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCompleted, note, "", 0); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update job reconciliation status: " + err.Error()})
 			return
+		}
+
+		if job.EmployeeID != "" {
+			_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, job.EmployeeID, job.ID)
 		}
 
 		handlerutil.ShipSecurityEvent(ctx, "ESCROW_RECONCILIATION_RESOLVED", "user-service", resolvedOwnerID, job.OwnerID, fmt.Sprintf("resolved escrow reconciliation for job %s: decision=release_to_employee, amount=%.2f", job.ID, amount), handlerutil.GetClientIP(r))
@@ -219,6 +223,10 @@ func (u *UserService) ResolveReconciliation(w http.ResponseWriter, r *http.Reque
 		if err := u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCancelled, note, "", 0); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update job reconciliation status: " + err.Error()})
 			return
+		}
+
+		if job.EmployeeID != "" {
+			_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, job.EmployeeID, job.ID)
 		}
 
 		handlerutil.ShipSecurityEvent(ctx, "ESCROW_RECONCILIATION_RESOLVED", "user-service", resolvedOwnerID, job.OwnerID, fmt.Sprintf("resolved escrow reconciliation for job %s: decision=refund_to_customer, amount=%.2f", job.ID, amount), handlerutil.GetClientIP(r))

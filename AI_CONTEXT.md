@@ -123,7 +123,7 @@ Features are classified into three groups: Done & Verified, Explicitly Deferred 
 
 The detailed project history is distributed across categorized changelog files. Please consult the specific category files for complete details (including file/line references, commit SHAs, and verification details):
 
-*   [Security Fixes](docs/changelog/security-fixes.md) — 147 entries detailing vulnerabilities found and fixed (including Owner-Authenticated Employee Provisioning, see [ADR-0001](docs/adr/0001-owner-authenticated-employee-provisioning.md), Employee Assignment Tenant Binding, see [ADR-0003](docs/adr/0003-employee-assignment-tenant-binding-check.md), Customer Booking Employee Pre-Assignment Gating, see [ADR-0004](docs/adr/0004-customer-booking-employee-assignment-order.md), and Document Encryption at Rest).
+*   [Security Fixes](docs/changelog/security-fixes.md) — 152 entries detailing vulnerabilities found and fixed (including Owner-Authenticated Employee Provisioning, see [ADR-0001](docs/adr/0001-owner-authenticated-employee-provisioning.md), Employee Assignment Tenant Binding, see [ADR-0003](docs/adr/0003-employee-assignment-tenant-binding-check.md), Customer Booking Employee Pre-Assignment Gating, see [ADR-0004](docs/adr/0004-customer-booking-employee-assignment-order.md), and Document Encryption at Rest).
 *   [New Features](docs/changelog/new-features.md) — 71 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters, username propagation, version gating, zero-commission model, owner payout requests, sequential cascade dispatch, reviewer account directory and suspension per ADR-0022).
 *   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 58 tooling, CI/CD hardening, module refactoring, and onboarding CLI tools (including strict CD preflight validation per ADR-0015).
 *   [Bug Fixes](docs/changelog/bug-fixes.md) — 89 corrections to non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic, frontend consistency audit batches 1–5, SegmentedButton contrast, services directory owner auth header resolution, owner configuration KYC status badge & banner restoration, zero-commission platform fee remnants cleanup, SSE multi-instance local-first delivery and dedup per Q18).
@@ -710,6 +710,17 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - **F-01: Persistent Live Tracking Lifecycle**: In `frontend/lib/screens/employee_jobs_screen.dart`, removed `deactivate()` hook which called `stopTracking(notify: false)`. Active job delivery tracking now survives screen switching, tab navigation, and opening chat/notifications uninterrupted.
   - **F-02: Owner Map Marker Active Job Preservation**: In `frontend/lib/providers/map_tracking_provider.dart` (`_handleLocationUpdate`), routine availability heartbeat pings with null/empty `job_id` no longer overwrite an active courier's marker `jobId`. `jobId` is only reset on explicit completion events (`job_completed` / `completed`).
   - **Verification**: Dedicated repro test suites `dispatch_notification_isolation_test.go` (N-01, N-02), `dispatch_cascade_isolation_repro_test.go` (B-01, B-02, A-01), and `dispatch_tracking_lifecycle_repro_test.dart` (F-01, F-02). All 516 frontend tests and all Go service tests passing (100% green).
+
+### Financial, State Machine & Concurrency Hardening (2026-09-10)
+
+* **Financial, State Machine & Concurrency Hardening (QA Audit Q3, Q4, Q6, Q9, Q10)**:
+  - **Q3 (Reconciliation Escrow Zeroing & Courier Lock Release)**: In `reconciliation_handlers.go:ResolveReconciliation`, zeroed `lockedEscrow` (`0` instead of `amount`) in `UpdateJobReconciliation` on `release_to_employee` and released courier concurrency locks on both release and refund.
+  - **Q4 (Atomic Ledger Balance Calculation)**: In `store/mongodb.go`, eliminated stale ledger snapshot race conditions across `Deposit`, `LockEscrow`, `RequestPayout`, `RefundEscrow`, and `RollbackEscrow` by switching to atomic `FindOneAndUpdate` with `options.After`, ensuring unbroken audit trails.
+  - **Q6 (Compare-And-Swap Status Guards)**: In `store/mongodb.go`, added CAS status filtering to `UpdateJobStatus` and `UpdateJobReconciliation`, preventing illegal transitions on cancelled or terminal jobs.
+  - **Q9 (Atomic Tenant Subscription Upsert)**: In `store/mongodb.go:UpsertSubscription`, replaced `FindOne` + `ReplaceOne` with atomic `UpdateOne` using `$setOnInsert` for immutable `_id`, eliminating duplicate key and immutable field write errors under concurrent upserts.
+  - **Q10 (Selective Field-Level Service Updates)**: Added `UpdateServiceFields` in `store/mongodb.go` using atomic `$set`, and updated `services_handlers.go:UpdateService` to selectively mutate only provided fields, preventing concurrent partial update clobbering.
+  - **Verification**: Repro suite in `services/user-service/internal/handlers/money_state_repro_test.go` verifies all 5 findings. Full user-service suite passing (100%).
+
 
 
 

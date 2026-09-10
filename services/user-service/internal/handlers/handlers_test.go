@@ -364,8 +364,19 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 
 		// C. Matching requester_id (Owner) -> 200 OK
+		testJobC := &models.Job{
+			ID:            "test-job-888-c",
+			OwnerID:       "job-owner-888",
+			EmployeeID:    "job-employee-888",
+			UserID:        "client-user-888",
+			ServiceID:     "svc-001",
+			Status:        models.JobStatusActive,
+			PaymentMethod: "cod",
+		}
+		_ = s.CreateJob(ctx, testJobC)
+
 		reqBody = map[string]any{
-			"job_id":         "test-job-888",
+			"job_id":         "test-job-888-c",
 			"cash_collected": true,
 			"requester_id":   tokenJobOwner,
 		}
