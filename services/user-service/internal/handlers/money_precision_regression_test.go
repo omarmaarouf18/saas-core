@@ -33,7 +33,7 @@ func setupMoneyPrecisionHarness(t *testing.T) (*UserService, *store.MongoDB, con
 	jwtutil.Init(secret)
 	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27017"
+		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	t.Cleanup(cancel)
@@ -237,6 +237,11 @@ func TestWalletDeposit_CentRoundsAmount(t *testing.T) {
 	if _, err := s.GetOrCreateWallet(ctx, ownerID); err != nil {
 		t.Fatalf("wallet: %v", err)
 	}
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		TenantID:  ownerID,
+		Tier:      models.PlanPaid,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
 	ownerToken, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "o@d.test")
 
 	body, _ := json.Marshal(map[string]any{
@@ -268,6 +273,11 @@ func TestRequestPayout_CentRoundsAmount(t *testing.T) {
 	if err := s.Deposit(ctx, ownerID, 500); err != nil {
 		t.Fatalf("deposit: %v", err)
 	}
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		TenantID:  ownerID,
+		Tier:      models.PlanPaid,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
 	ownerToken, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "o@pr.test")
 
 	body, _ := json.Marshal(map[string]any{

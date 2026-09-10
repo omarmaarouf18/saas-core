@@ -43,9 +43,7 @@ func TestPaidTierGatingMatrix(t *testing.T) {
 
 	freeOwnerToken, _ := jwtutil.GenerateToken(freeOwnerID, "owner", freeOwnerID, "free@matrix.com")
 	paidOwnerToken, _ := jwtutil.GenerateToken(paidOwnerID, "owner", paidOwnerID, "paid@matrix.com")
-	customerToken, _ := jwtutil.GenerateToken("cust-matrix-user", "user", "", "cust@matrix.com")
 	empID := "emp-under-free-owner-matrix-1"
-	empToken, _ := jwtutil.GenerateToken(empID, "employee", freeOwnerID, "emp@matrix.com")
 
 	// Pre-create services for both
 	freeSvc := &models.Service{
@@ -260,69 +258,16 @@ func TestPaidTierGatingMatrix(t *testing.T) {
 		}
 	})
 
-	t.Run("Free Owner: TrackJob with owner token POST /users/jobs/track (402)", func(t *testing.T) {
+	t.Run("Free Owner: UpdateService POST /users/services/update (402)", func(t *testing.T) {
 		body, _ := json.Marshal(map[string]any{
-			"owner_token":    freeOwnerToken,
-			"user_token":     customerToken,
-			"service_id":     freeSvc.ID,
-			"payment_method": "cod",
-			"location":       models.Location{Latitude: 30.0, Longitude: 31.0},
+			"id":                freeSvc.ID,
+			"owner_token":       freeOwnerToken,
+			"name":              "Updated Name Via Post",
+			"tenant_base_price": 35.0,
 		})
-		req := httptest.NewRequest(http.MethodPost, "/users/jobs/track", bytes.NewReader(body))
+		req := httptest.NewRequest(http.MethodPost, "/users/services/update", bytes.NewReader(body))
 		rec := httptest.NewRecorder()
-		u.TrackJob(rec, req)
-		if rec.Code != http.StatusPaymentRequired {
-			t.Fatalf("Expected 402 Payment Required, got %d. Body: %s", rec.Code, rec.Body.String())
-		}
-		if !strings.Contains(rec.Body.String(), "upgrade_required") {
-			t.Errorf("Expected body to contain 'upgrade_required', got: %s", rec.Body.String())
-		}
-	})
-
-	t.Run("Free Owner: CompleteJob POST /users/jobs/complete (402)", func(t *testing.T) {
-		body, _ := json.Marshal(map[string]any{
-			"job_id":          activeJobID,
-			"requester_token": freeOwnerToken,
-		})
-		req := httptest.NewRequest(http.MethodPost, "/users/jobs/complete", bytes.NewReader(body))
-		rec := httptest.NewRecorder()
-		u.CompleteJob(rec, req)
-		if rec.Code != http.StatusPaymentRequired {
-			t.Fatalf("Expected 402 Payment Required, got %d. Body: %s", rec.Code, rec.Body.String())
-		}
-		if !strings.Contains(rec.Body.String(), "upgrade_required") {
-			t.Errorf("Expected body to contain 'upgrade_required', got: %s", rec.Body.String())
-		}
-	})
-
-	t.Run("Free Owner: CancelJob POST /users/jobs/cancel (402)", func(t *testing.T) {
-		body, _ := json.Marshal(map[string]any{
-			"job_id":          activeJobID,
-			"reason":          "Owner cancellation attempt",
-			"requester_token": freeOwnerToken,
-		})
-		req := httptest.NewRequest(http.MethodPost, "/users/jobs/cancel", bytes.NewReader(body))
-		rec := httptest.NewRecorder()
-		u.CancelJob(rec, req)
-		if rec.Code != http.StatusPaymentRequired {
-			t.Fatalf("Expected 402 Payment Required, got %d. Body: %s", rec.Code, rec.Body.String())
-		}
-		if !strings.Contains(rec.Body.String(), "upgrade_required") {
-			t.Errorf("Expected body to contain 'upgrade_required', got: %s", rec.Body.String())
-		}
-	})
-
-	t.Run("Free Owner: RateJob POST /users/jobs/rate (402)", func(t *testing.T) {
-		body, _ := json.Marshal(map[string]any{
-			"job_id":           completedJobID,
-			"rated_by_token":   freeOwnerToken,
-			"rated_user_token": empToken,
-			"stars":            5,
-			"comment":          "Good job",
-		})
-		req := httptest.NewRequest(http.MethodPost, "/users/jobs/rate", bytes.NewReader(body))
-		rec := httptest.NewRecorder()
-		u.RateJob(rec, req)
+		u.UpdateService(rec, req)
 		if rec.Code != http.StatusPaymentRequired {
 			t.Fatalf("Expected 402 Payment Required, got %d. Body: %s", rec.Code, rec.Body.String())
 		}

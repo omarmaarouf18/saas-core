@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/user-service/internal/models"
@@ -36,6 +37,11 @@ func TestRequestPayout_IdempotencyKeyReplaysAndDeduplicates(t *testing.T) {
 	if err := s.Deposit(ctx, ownerID, 500); err != nil {
 		t.Fatalf("deposit: %v", err)
 	}
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		TenantID:  ownerID,
+		Tier:      models.PlanPaid,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
 	ownerToken, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "o@idem.test")
 
 	doPost := func(key string) (*httptest.ResponseRecorder, models.PayoutRequest) {

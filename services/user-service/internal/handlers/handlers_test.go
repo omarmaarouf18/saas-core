@@ -412,6 +412,11 @@ func TestUserServiceHandlers(t *testing.T) {
 			AllowTestPaymentBypass: true,
 		}
 		u3 := NewUserService(s, cfg3, rdb)
+		_ = s.UpsertSubscription(context.Background(), &models.Subscription{
+			TenantID:  "tenant-id",
+			Tier:      models.PlanPaid,
+			ExpiresAt: time.Now().Add(24 * time.Hour),
+		})
 
 		// A. Valid deposit limit: 500,000 -> 200 OK
 		reqBody := map[string]any{
@@ -2939,6 +2944,11 @@ func TestUserServiceHandlers(t *testing.T) {
 				Latitude:   30.0,
 				Longitude:  31.0,
 				UpdatedAt:  time.Now().UTC(),
+			})
+			_ = s.UpsertSubscription(ctx, &models.Subscription{
+				TenantID:  "kyc-approved-owner-alias",
+				Tier:      models.PlanPaid,
+				ExpiresAt: time.Now().Add(24 * time.Hour),
 			})
 
 			// A. CreateService using owner_token

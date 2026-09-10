@@ -81,9 +81,6 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		hasOwnerToken = true
-		if !u.enforcePaidTier(w, r, resolvedOwnerID, resolvedOwnerID, "track_job", "Job creation and dispatch") {
-			return
-		}
 	}
 
 	// 2. Verify customer user token
@@ -591,11 +588,6 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			handlerutil.ShipSecurityEvent(r.Context(), "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to complete job %s", job.ID), handlerutil.GetClientIP(r))
 			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to complete this job"})
 			return
-		}
-		if resolvedRequester == job.OwnerID {
-			if !u.enforcePaidTier(w, r, job.OwnerID, resolvedRequester, "complete_job", "Job completion") {
-				return
-			}
 		}
 	}
 
@@ -2672,12 +2664,6 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 		handlerutil.ShipSecurityEvent(ctx, "TENANT_SCOPE_BLOCKED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("attempted to cancel job %s", job.ID), handlerutil.GetClientIP(r))
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: you are not authorized to cancel this job"})
 		return
-	}
-
-	if isOwner {
-		if !u.enforcePaidTier(w, r, job.OwnerID, resolvedRequester, "cancel_job", "Job cancellation") {
-			return
-		}
 	}
 
 	// State-specific cancellation rules

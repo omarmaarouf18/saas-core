@@ -24,7 +24,7 @@ func TestService_OwnerConfigurationAndUpdates(t *testing.T) {
 	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
 	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27017"
+		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -95,6 +95,17 @@ func TestService_OwnerConfigurationAndUpdates(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to generate second owner token: %v", err)
 	}
+
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		TenantID:  ownerID1,
+		Tier:      models.PlanPaid,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		TenantID:  ownerID2,
+		Tier:      models.PlanPaid,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
 
 	// 1. CreateService with new Owner Configuration fields
 	t.Run("CreateService with Owner Configuration fields", func(t *testing.T) {
