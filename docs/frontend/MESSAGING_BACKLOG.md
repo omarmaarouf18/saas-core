@@ -172,11 +172,12 @@ pie title Breakdown of Backend Gaps by UI Surface Impact
 
 ---
 
-### GAP-04: Courier Availability Manual Toggle on Home/Jobs Screen
+### GAP-04: Courier Availability Manual Toggle on Home/Jobs Screen [CLOSED]
 
 * **Severity / Priority**: **Medium (P2)**
 * **Impact Classification**: **Addition to Existing Screen**
 * **Related ADR**: [ADR-0008](../adr/0008-live-employee-map-tracking.md), [ADR-0019](../adr/0019-independent-solo-driver-accounts.md)
+* **Status**: **Closed** in `63e43c937df74e5a4154dc9272fd42eba310fcfe`
 
 #### Detailed Finding
 - **Backend Capability**:
@@ -185,8 +186,10 @@ pie title Breakdown of Backend Gaps by UI Surface Impact
   - `EmployeeLocationProvider` (`frontend/lib/providers/employee_location_provider.dart`) implements `startAvailabilityTracking` and `stopAvailabilityTracking`.
   - `EmployeeJobsScreen` (`frontend/lib/screens/employee_jobs_screen.dart:108`) automatically starts availability tracking when the screen mounts.
   - However, there is no visual "Online / Offline" toggle switch on `EmployeeHomeScreen` or `EmployeeJobsScreen` giving couriers conscious control over whether they are currently accepting dispatch offers.
-- **Suggested UI & Fix**:
-  - Add an availability status banner / toggle switch on `EmployeeHomeScreen` and `EmployeeJobsScreen` bound to `EmployeeLocationProvider.isAvailable`.
+- **Resolution**:
+  - Added `isAvailableOnline` / `setAvailableOnline` to `EmployeeLocationProvider`, persisted via `FlutterSecureStorage`.
+  - Added `_buildAvailabilityCard` with `Key('courier_availability_switch')` on `EmployeeJobsScreen`. Switch is disabled with a lock warning when an active job is assigned.
+  - Verified via `frontend/test/gap04_courier_availability_test.dart` (8/8 passing). ✅
 
 ---
 
