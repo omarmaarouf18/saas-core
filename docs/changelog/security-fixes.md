@@ -1043,6 +1043,13 @@ This section consolidates the resolution status for all 10 findings from the ext
 - **Commit SHA**: ``c57b226b76b13ae8cc91810a8f979b6ad75a168c``
 - **Verification**: Concurrency tests `TestClient_CloseSend_Idempotent` and `TestHub_Close_ConcurrentWithUnregister` in `services/chat-service/internal/chat/hub_concurrency_repro_test.go` verify safe concurrent channel closure and shutdown without panics with `-race` enabled. ✅
 
+## Broad Paid-Tier Gating Across All Mutating Owner Endpoints (Part A #3)
+
+- **Implementation Detail**: Enforced broad paid-tier membership check (`models.PlanPaid`) across all 11 owner-facing mutating endpoints in `user-service` and `auth-service`. Free-tier owner accounts are strictly restricted to registration, profile inspection, and catalog viewing (read-only). All mutating endpoints (`CreateService`, `UpdateService`, `WalletDeposit`, `RequestPayout`, `ResolveReconciliation`, `TrackJob` [when owner token], `CompleteJob` [when owner], `CancelJob` [when owner], `RateJob` [when owner rating], `UpdateJobLocation`, and `ToggleEmployee` [via internal `/users/subscription/internal` endpoint]) reject Free-tier owners with HTTP 402 Payment Required (`{"error": "upgrade_required", "message": "<Feature> requires a paid subscription."}`) and emit an `UPGRADE_REQUIRED` security event. Updated `frontend/lib/core/error_messages.dart` to map status code 402 to `ErrorMessages.paymentRequired` ("A paid subscription is required to perform this action. Please upgrade to continue."). Documented full catalog reference matrix in `docs/architecture/tier-matrix.md`.
+- **Commit SHA**: ``63664c8332d5a5bd26e9acef280b03d1b73194e1``
+- **Verification**: Verified via `services/user-service/internal/handlers/paid_tier_gating_matrix_test.go` (10 mutating endpoints returning 402 for Free tier, 6 read-only endpoints returning 200 for Free tier, mutating endpoints succeeding for Paid tier), `services/auth-service/internal/handlers/auth_paid_tier_gating_test.go` (asserting 402 for Free owner toggle vs 200 for Paid owner toggle), and `frontend/test/error_messages_test.dart` (asserting 402 friendly message mapping). Full test suites in `user-service`, `auth-service`, and `frontend` pass 100%. ✅
+
+
 
 
 
