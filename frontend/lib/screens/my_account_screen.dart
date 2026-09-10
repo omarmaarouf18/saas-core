@@ -3,6 +3,7 @@ import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
+import '../models/user_profile.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/themed_panel.dart';
 import '../widgets/email_change_dialog.dart';
@@ -206,6 +207,21 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                       ),
                       const SizedBox(height: AppSpacing.lg),
 
+                      // Account Suspended Banner (GAP-05)
+                      if (user != null && user.isSuspended) ...[
+                        ThemedBanner(
+                          key: const Key('account_suspended_banner'),
+                          type: ThemedBannerType.error,
+                          title: l10n.accountStatusSuspendedTitle,
+                          message: (user.suspensionReason != null &&
+                                  user.suspensionReason!.isNotEmpty)
+                              ? user.suspensionReason!
+                              : l10n.accountStatusSuspendedDefaultReason,
+                          icon: Icons.block,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                      ],
+
                       // Error Banner
                       if (_errorMessage != null) ...[
                         ThemedErrorBanner(
@@ -233,6 +249,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                                     children: [
                                       _buildProfileInfoCard(
                                         l10n: l10n,
+                                        user: user,
                                       ),
                                       const SizedBox(height: AppSpacing.lg),
                                       PrimaryButton(
@@ -241,7 +258,9 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                                         text: l10n.myAccountSaveButton,
                                         trailingIcon: Icons.arrow_forward,
                                         isLoading: _isSubmitting,
-                                        onPressed: _submitForm,
+                                        onPressed: (user?.isSuspended == true)
+                                            ? null
+                                            : _submitForm,
                                       ),
                                     ],
                                   ),
@@ -255,6 +274,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                                       _buildUserOverviewCard(
                                         username: user?.username ?? '',
                                         role: user?.role ?? 'user',
+                                        user: user,
                                       ),
                                       const SizedBox(height: AppSpacing.lg),
                                       _buildFrequentAddressesCard(l10n: l10n),
@@ -271,6 +291,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                             children: [
                               _buildProfileInfoCard(
                                 l10n: l10n,
+                                user: user,
                               ),
                               const SizedBox(height: AppSpacing.lg),
                               _buildFrequentAddressesCard(l10n: l10n),
@@ -280,7 +301,9 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                                 text: l10n.myAccountSaveButton,
                                 trailingIcon: Icons.arrow_forward,
                                 isLoading: _isSubmitting,
-                                onPressed: _submitForm,
+                                onPressed: (user?.isSuspended == true)
+                                    ? null
+                                    : _submitForm,
                               ),
                             ],
                           );
@@ -298,6 +321,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   // --- Profile Information Card (Stitch Left Card) ---
   Widget _buildProfileInfoCard({
     required AppLocalizations l10n,
+    UserProfile? user,
   }) {
     return ThemedCard(
       borderRadius: AppRadius.lg,
@@ -307,20 +331,49 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(
-                Icons.person_outline,
-                size: 20,
-                color: Theme.of(context).colorScheme.primary,
+              Row(
+                children: [
+                  Icon(
+                    Icons.person_outline,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    context.l10n.profileInfoCardTitle,
+                    style: AppTypography.titleMd.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: AppSpacing.xs),
-              Text(
-                context.l10n.profileInfoCardTitle,
-                style: AppTypography.titleMd.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
+              if (user?.accountStatus != null)
+                ThemedPanel(
+                  key: const Key('account_status_badge'),
+                  color: (user?.isSuspended ?? false)
+                      ? AppColors.error.withValues(alpha: 0.15)
+                      : context.semanticColors.success.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xxs,
+                  ),
+                  child: Text(
+                    (user?.isSuspended ?? false)
+                        ? l10n.accountStatusSuspendedBadge
+                        : l10n.accountStatusActiveBadge,
+                    style: AppTypography.labelSm.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: (user?.isSuspended ?? false)
+                          ? AppColors.error
+                          : context.semanticColors.success,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -354,7 +407,9 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
             icon: Icons.email_outlined,
             isOutlined: true,
             isFullWidth: false,
-            onPressed: () => _showEmailChangeDialog(context),
+            onPressed: (user?.isSuspended == true)
+                ? null
+                : () => _showEmailChangeDialog(context),
           ),
           const SizedBox(height: AppSpacing.md),
 
@@ -387,6 +442,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   Widget _buildUserOverviewCard({
     required String username,
     required String role,
+    UserProfile? user,
   }) {
     final l10n = context.l10n;
     final String initial = username.isNotEmpty
@@ -419,21 +475,53 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.xxs),
-          ThemedPanel(
-              color: context.semanticColors.success.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.xxs,
-              ),
-              child: Text(
-                AppTypography.uppercaseLabel(role),
-                style: AppTypography.labelSm.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: context.semanticColors.success,
-                  letterSpacing: 0.8,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xxs,
+            children: [
+              ThemedPanel(
+                color: context.semanticColors.success.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xxs,
                 ),
-              )),
+                child: Text(
+                  AppTypography.uppercaseLabel(role),
+                  style: AppTypography.labelSm.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: context.semanticColors.success,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+              if (user?.accountStatus != null)
+                ThemedPanel(
+                  key: const Key('account_status_overview_badge'),
+                  color: (user?.isSuspended ?? false)
+                      ? AppColors.error.withValues(alpha: 0.15)
+                      : context.semanticColors.success.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xxs,
+                  ),
+                  child: Text(
+                    (user?.isSuspended ?? false)
+                        ? l10n.accountStatusSuspendedBadge
+                        : l10n.accountStatusActiveBadge,
+                    style: AppTypography.labelSm.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: (user?.isSuspended ?? false)
+                          ? AppColors.error
+                          : context.semanticColors.success,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );

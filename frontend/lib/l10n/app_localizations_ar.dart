@@ -192,6 +192,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get myAccountSuccessMsg => 'تم تحديث بيانات حسابك بنجاح';
 
   @override
+  String get accountStatusSuspendedTitle => 'الحساب معلق';
+
+  @override
+  String get accountStatusSuspendedDefaultReason =>
+      'تم تعليق حسابك من قبل الإدارة. يرجى التواصل مع الدعم الفني لمزيد من المعلومات.';
+
+  @override
+  String get accountStatusActiveBadge => 'نشط';
+
+  @override
+  String get accountStatusSuspendedBadge => 'معلق';
+
+  @override
   String get ownerConfigTitle => 'إعدادات الخدمة والمحل';
 
   @override
@@ -2397,4 +2410,23 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get viewTicketAction => 'عرض التذكرة';
+
+  @override
+  String get courierAvailabilityTitle => 'حالة التوفر';
+
+  @override
+  String get courierStatusOnline => 'متصل';
+
+  @override
+  String get courierStatusOffline => 'غير متصل';
+
+  @override
+  String get courierStatusActiveJobLock => 'الحالة مقفلة أثناء توصيل طلب نشط';
+
+  @override
+  String get courierStatusAcceptingDispatch => 'جاهز لاستلام طلبات توصيل جديدة';
+
+  @override
+  String get courierStatusNotAcceptingDispatch =>
+      'غير متاح لاستلام طلبات توصيل جديدة';
 }

@@ -73,9 +73,11 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 
 	// Buffer the body so we can decode it for tenant-scoped rate limiting
 	// and still have it available for the rest of the handler.
+	// Bounded read for WalletDeposit (Q19 defense-in-depth)
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "failed to read request body"})
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "failed to read request body: body too large or unreadable"})
 		return
 	}
 	r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
@@ -145,6 +147,12 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	// Paid tier membership check
+	if !u.enforcePaidTier(w, r, req.TenantID, req.TenantID, "wallet_deposit", "Wallet deposits") {
+		return
+	}
+
 	if err := u.store.Deposit(r.Context(), req.TenantID, req.Amount); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -248,13 +256,29 @@ func (u *UserService) RequestPayout(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Paid tier membership check
+	if !u.enforcePaidTier(w, r, resolvedTenantID, resolvedTenantID, "request_payout", "Payout requests") {
+		return
+	}
+
 	if req.Amount <= 0 {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid payout amount: must be greater than 0"})
 		return
 	}
 
-	if strings.TrimSpace(req.PayoutMethod) == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "payout_method is required (e.g. bank_transfer, instapay)"})
+	payoutMethod := strings.ToLower(strings.TrimSpace(req.PayoutMethod))
+	if payoutMethod == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "payout_method is required (e.g. bank_transfer, instapay, vodafone_cash)"})
+		return
+	}
+	if payoutMethod != "bank_transfer" && payoutMethod != "instapay" && payoutMethod != "vodafone_cash" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid payout_method: must be bank_transfer, instapay, or vodafone_cash"})
+		return
+	}
+	req.PayoutMethod = payoutMethod
+
+	if len([]rune(req.AccountDetails)) > 500 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "account_details cannot exceed 500 characters"})
 		return
 	}
 

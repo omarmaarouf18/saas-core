@@ -60,6 +60,10 @@
   "myAccountMaxAddressesError": "متقدرش تضيف أكتر من 10 عناوين.",
   "myAccountSaveButton": "حفظ البيانات",
   "myAccountSuccessMsg": "تم تحديث بيانات حسابك بنجاح",
+  "accountStatusSuspendedTitle": "الحساب معلق",
+  "accountStatusSuspendedDefaultReason": "تم تعليق حسابك من قبل الإدارة. يرجى التواصل مع الدعم الفني لمزيد من المعلومات.",
+  "accountStatusActiveBadge": "نشط",
+  "accountStatusSuspendedBadge": "معلق",
   "ownerConfigTitle": "إعدادات الخدمة والمحل",
   "ownerConfigHeader": "بيانات المحل/الخدمة",
   "ownerConfigHeaderSub": "تحديث اسم ومواعيد وأسعار الخدمة",
@@ -967,5 +971,11 @@
   "ticketAssignedAgent": "المسؤول: {agent}",
   "ticketPendingAgent": "في انتظار تعيين موظف الدعم...",
   "ticketContextJob": "مرتبط بالطلب #{id}",
-  "viewTicketAction": "عرض التذكرة"
+  "viewTicketAction": "عرض التذكرة",
+  "courierAvailabilityTitle": "حالة التوفر",
+  "courierStatusOnline": "متصل",
+  "courierStatusOffline": "غير متصل",
+  "courierStatusActiveJobLock": "الحالة مقفلة أثناء توصيل طلب نشط",
+  "courierStatusAcceptingDispatch": "جاهز لاستلام طلبات توصيل جديدة",
+  "courierStatusNotAcceptingDispatch": "غير متاح لاستلام طلبات توصيل جديدة"
 }

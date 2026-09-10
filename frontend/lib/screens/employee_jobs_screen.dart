@@ -76,13 +76,6 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   }
 
   @override
-  void deactivate() {
-    Provider.of<EmployeeLocationProvider>(context, listen: false)
-        .stopTracking(notify: false);
-    super.deactivate();
-  }
-
-  @override
   void dispose() {
     _countdownTimer?.cancel();
     _actionController.dispose();
@@ -104,8 +97,10 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
         if (activeJobs.isNotEmpty) {
           await locationProvider.startTracking(
               activeJobs.first.id, auth.token!);
-        } else {
+        } else if (locationProvider.isAvailableOnline) {
           await locationProvider.startAvailabilityTracking(auth.token!);
+        } else {
+          await locationProvider.stopAvailabilityTracking();
         }
       }
     }
@@ -228,7 +223,9 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             _buildHeader(auth.user?.username.isNotEmpty == true
                 ? auth.user!.username
                 : (auth.user?.email ?? '')),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.md),
+            _buildAvailabilityCard(),
+            const SizedBox(height: AppSpacing.md),
             _buildLocationPermissionBanner(),
             ThemedSectionHeader(title: l10n.employeeJobsSectionAssigned),
             const SizedBox(height: AppSpacing.sm),
@@ -455,6 +452,90 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                   ),
               ],
             ));
+      },
+    );
+  }
+
+  Widget _buildAvailabilityCard() {
+    final l10n = AppLocalizations.of(context)!;
+    final jobsProvider = Provider.of<EmployeeJobsProvider>(context);
+    final hasActiveJob =
+        jobsProvider.jobs.any((j) => j.status.toLowerCase().trim() == 'active');
+
+    return Consumer<EmployeeLocationProvider>(
+      builder: (context, locationProvider, child) {
+        final isOnline = locationProvider.isAvailableOnline;
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+
+        return ThemedPanel(
+          key: const Key('courier_availability_card'),
+          borderRadius: AppRadius.lgBorder,
+          border: Border.all(
+            color: isOnline
+                ? context.semanticColors.success.withValues(alpha: 0.3)
+                : Theme.of(context).dividerColor,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                isOnline
+                    ? Icons.check_circle_outline
+                    : Icons.pause_circle_outline,
+                color: isOnline
+                    ? context.semanticColors.success
+                    : Theme.of(context).disabledColor,
+                size: 24,
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isOnline
+                          ? l10n.courierStatusOnline
+                          : l10n.courierStatusOffline,
+                      style: AppTypography.bodyMd.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isOnline
+                            ? context.semanticColors.success
+                            : Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      hasActiveJob
+                          ? l10n.courierStatusActiveJobLock
+                          : (isOnline
+                              ? l10n.courierStatusAcceptingDispatch
+                              : l10n.courierStatusNotAcceptingDispatch),
+                      style: AppTypography.bodySm.copyWith(
+                        color: Theme.of(context).hintColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                key: const Key('courier_availability_switch'),
+                value: isOnline,
+                activeTrackColor: context.semanticColors.success,
+                onChanged: hasActiveJob
+                    ? null
+                    : (val) {
+                        locationProvider.setAvailableOnline(
+                          val,
+                          userToken: auth.token,
+                        );
+                      },
+              ),
+            ],
+          ),
+        );
       },
     );
   }

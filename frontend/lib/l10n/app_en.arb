@@ -60,6 +60,10 @@
   "myAccountMaxAddressesError": "Cannot add more than 10 frequent addresses.",
   "myAccountSaveButton": "SAVE PROFILE",
   "myAccountSuccessMsg": "Profile updated successfully",
+  "accountStatusSuspendedTitle": "Account Suspended",
+  "accountStatusSuspendedDefaultReason": "Your account has been suspended by an administrator. Please contact support for more information.",
+  "accountStatusActiveBadge": "Active",
+  "accountStatusSuspendedBadge": "Suspended",
   "ownerConfigTitle": "Owner Configuration",
   "ownerConfigHeader": "Business Details",
   "ownerConfigHeaderSub": "Update business parameters and service terms",
@@ -1253,5 +1257,11 @@
       }
     }
   },
-  "viewTicketAction": "View Ticket"
+  "viewTicketAction": "View Ticket",
+  "courierAvailabilityTitle": "Courier Availability",
+  "courierStatusOnline": "Online",
+  "courierStatusOffline": "Offline",
+  "courierStatusActiveJobLock": "Availability locked during active job",
+  "courierStatusAcceptingDispatch": "Accepting new delivery requests",
+  "courierStatusNotAcceptingDispatch": "Not accepting new delivery requests"
 }

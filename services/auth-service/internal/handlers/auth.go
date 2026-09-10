@@ -14,6 +14,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -35,7 +36,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var phoneRegex = regexp.MustCompile(`^\+?[0-9]{7,15}$`)
+var (
+	phoneRegex = regexp.MustCompile(`^\+?[0-9]{7,15}$`)
+	emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+)
+
+func isValidEmail(email string) bool {
+	if len(email) < 3 || len(email) > 254 {
+		return false
+	}
+	return emailRegex.MatchString(email)
+}
 
 // Auth holds runtime dependencies for the authentication handlers.
 type Auth struct {
@@ -167,9 +178,17 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate required fields.
+	req.Email = strings.TrimSpace(req.Email)
 	if req.Email == "" || req.Password == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "email and password are required",
+		})
+		return
+	}
+
+	if !isValidEmail(req.Email) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid email format",
 		})
 		return
 	}
@@ -788,6 +807,27 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Verify owner has an active Paid tier subscription
+	if a.userServiceURL != "" && a.userServiceClient != nil {
+		tierURL := fmt.Sprintf("%s/users/subscription/internal?tenant_id=%s", a.userServiceURL, url.QueryEscape(owner.ID))
+		tierReq, err := http.NewRequestWithContext(ctx, http.MethodGet, tierURL, nil)
+		if err == nil {
+			tierReq.Header.Set("X-Internal-Token", a.internalServiceToken)
+			tierResp, err := a.userServiceClient.Do(tierReq)
+			if err == nil {
+				defer tierResp.Body.Close()
+				if tierResp.StatusCode == http.StatusPaymentRequired {
+					handlerutil.ShipSecurityEvent(ctx, "UPGRADE_REQUIRED", "auth-service", owner.ID, owner.ID, fmt.Sprintf("staff management toggle rejected for owner %s, paid subscription required", owner.ID), clientIP)
+					writeJSON(w, http.StatusPaymentRequired, map[string]string{
+						"error":   "upgrade_required",
+						"message": "Staff management requires a paid subscription.",
+					})
+					return
+				}
+			}
+		}
+	}
+
 	// Get Employee to resolve ID. Nonexistent and foreign-tenant employees
 	// return the SAME status and body here: the previous 404-vs-400 split
 	// distinguished "no such account" from "not yours".
@@ -862,6 +902,12 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	if len(req.Action) > 255 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "action cannot exceed 255 characters",
+		})
+		return
+	}
 
 	// Validate caller JWT token matches requested employee email
 	authHeader := r.Header.Get("Authorization")
@@ -932,7 +978,11 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 		Timestamp:  time.Now().UTC(),
 		ClientIP:   clientIP,
 	}
-	a.store.AppendAudit(ctx, entry)
+	if err := a.store.AppendAudit(ctx, entry); err != nil {
+		log.Printf("[AUDIT] Failed to record action in audit log: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to record audit entry"})
+		return
+	}
 
 	// #nosec G706 //nolint:gosec -- action is sanitized by stripping carriage return and newline characters to prevent log injection
 	log.Printf("[AUDIT] Action recorded: employee=%s tenant=%s action=%s ip=%s", emp.ID, emp.OwnerID, strings.ReplaceAll(strings.ReplaceAll(req.Action, "\n", " "), "\r", " "), clientIP)
@@ -953,6 +1003,9 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := r.URL.Query().Get("user_token")
+	if id == "" {
+		id = r.URL.Query().Get("user_id")
+	}
 	if id == "" {
 		id = r.URL.Query().Get("id")
 	}
@@ -997,13 +1050,16 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 		"tenant_id":          user.TenantID,
 		"kyc_status":         user.KYCStatus,
 		"is_active":          user.IsActive,
-		"account_status":     user.AccountStatus,
+		"account_status":     user.EffectiveAccountStatus(),
 	}
 	if user.Role == models.RoleEmployee {
 		resp["kye_status"] = user.KYEStatus
 	}
 	if user.RejectionReason != "" {
 		resp["rejection_reason"] = user.RejectionReason
+	}
+	if user.SuspensionReason != "" {
+		resp["suspension_reason"] = user.SuspensionReason
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -1092,6 +1148,21 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "username cannot be empty"})
 			return
 		}
+		runeCount := len([]rune(str))
+		if runeCount < 3 || runeCount > 30 {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "username must be between 3 and 30 characters",
+			})
+			return
+		}
+		for _, r := range str {
+			if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' || r == ' ' || (r >= 0x0600 && r <= 0x06FF)) {
+				writeJSON(w, http.StatusBadRequest, map[string]string{
+					"error": "username contains invalid characters",
+				})
+				return
+			}
+		}
 		if str != user.Username {
 			existing := a.store.GetByUsername(ctx, str)
 			if existing != nil && existing.ID != user.ID {
@@ -1141,6 +1212,10 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 			}
 			addrStr = strings.TrimSpace(addrStr)
 			if addrStr != "" {
+				if len([]rune(addrStr)) > 200 {
+					writeJSON(w, http.StatusBadRequest, map[string]string{"error": "frequent_addresses entry cannot exceed 200 characters"})
+					return
+				}
 				addresses = append(addresses, addrStr)
 			}
 		}
@@ -1770,13 +1845,15 @@ func (a *Auth) ReviewKYBKYESubmissions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.store.AppendAudit(ctx, models.AuditEntry{
+	if err := a.store.AppendAudit(ctx, models.AuditEntry{
 		EmployeeID: reviewer.ID,
 		TenantID:   targetUser.ID,
 		Action:     "KYC_REVIEWED",
 		Timestamp:  time.Now().UTC(),
 		ClientIP:   handlerutil.GetClientIP(r),
-	})
+	}); err != nil {
+		log.Printf("[AUTH] Failed to record KYC review in audit log: %v", err)
+	}
 
 	handlerutil.ShipSecurityEvent(ctx, "KYC_REVIEWED", "auth-service", reviewer.ID, req.UserID, fmt.Sprintf("action: %s, reason: %s", req.Action, req.Reason), handlerutil.GetClientIP(r))
 
@@ -2065,13 +2142,15 @@ func (a *Auth) SuspendAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Append audit log
-	a.store.AppendAudit(ctx, models.AuditEntry{
+	if err := a.store.AppendAudit(ctx, models.AuditEntry{
 		EmployeeID: reviewer.ID,
 		TenantID:   targetUser.ID,
 		Action:     "ACCOUNT_SUSPENDED",
 		Timestamp:  time.Now().UTC(),
 		ClientIP:   handlerutil.GetClientIP(r),
-	})
+	}); err != nil {
+		log.Printf("[AUTH] Failed to record account suspension in audit log: %v", err)
+	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ACCOUNT_SUSPENDED", "auth-service", reviewer.ID, targetUserID, fmt.Sprintf("reason: %s", reason), handlerutil.GetClientIP(r))
 
@@ -2145,13 +2224,15 @@ func (a *Auth) ReactivateAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Append audit log
-	a.store.AppendAudit(ctx, models.AuditEntry{
+	if err := a.store.AppendAudit(ctx, models.AuditEntry{
 		EmployeeID: reviewer.ID,
 		TenantID:   targetUser.ID,
 		Action:     "ACCOUNT_REACTIVATED",
 		Timestamp:  time.Now().UTC(),
 		ClientIP:   handlerutil.GetClientIP(r),
-	})
+	}); err != nil {
+		log.Printf("[AUTH] Failed to record account reactivation in audit log: %v", err)
+	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ACCOUNT_REACTIVATED", "auth-service", reviewer.ID, targetUserID, fmt.Sprintf("reason: %s", reason), handlerutil.GetClientIP(r))
 
@@ -2700,30 +2781,44 @@ func (a *Auth) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := r.URL.Query().Get("user_token")
-	if id == "" {
-		id = r.URL.Query().Get("id")
+	targetID := r.URL.Query().Get("id")
+	if targetID == "" {
+		targetID = r.URL.Query().Get("user_id")
 	}
-	if id == "" {
+	if targetID == "" {
+		targetID = r.URL.Query().Get("user_token")
+	}
+	if targetID == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "id parameter is required",
 		})
 		return
 	}
 
-	requesterID := r.URL.Query().Get("requester_token")
-	if requesterID == "" {
-		requesterID = r.URL.Query().Get("requester_id")
+	// If targetID is a JWT token alias, resolve to UserID
+	if claims, err := jwtutil.ValidateToken(targetID); err == nil && claims.UserID != "" {
+		targetID = claims.UserID
 	}
-	if requesterID == "" {
+
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") || strings.HasPrefix(requesterToken, "bearer ") {
+		requesterToken = strings.TrimSpace(requesterToken[7:])
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_id")
+	}
+	if requesterToken == "" {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
-			"error": "requester_id parameter is required",
+			"error": "requester_id parameter or Authorization header is required",
 		})
 		return
 	}
 
 	// Validate requester token signature
-	_, err := jwtutil.ValidateToken(requesterID)
+	_, err := jwtutil.ValidateToken(requesterToken)
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
 			"error": "invalid requester token: " + err.Error(),
@@ -2732,7 +2827,7 @@ func (a *Auth) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	user := a.store.GetByID(ctx, id)
+	user := a.store.GetByID(ctx, targetID)
 	if user == nil {
 		writeJSON(w, http.StatusNotFound, map[string]string{
 			"error": "user not found",
@@ -2957,7 +3052,7 @@ func (a *Auth) RequestEmailChange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !strings.Contains(newEmail, "@") || !strings.Contains(newEmail, ".") {
+	if !isValidEmail(newEmail) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "invalid email format",
 		})

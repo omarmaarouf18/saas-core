@@ -195,6 +195,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myAccountSuccessMsg => 'Profile updated successfully';
 
   @override
+  String get accountStatusSuspendedTitle => 'Account Suspended';
+
+  @override
+  String get accountStatusSuspendedDefaultReason =>
+      'Your account has been suspended by an administrator. Please contact support for more information.';
+
+  @override
+  String get accountStatusActiveBadge => 'Active';
+
+  @override
+  String get accountStatusSuspendedBadge => 'Suspended';
+
+  @override
   String get ownerConfigTitle => 'Owner Configuration';
 
   @override
@@ -2437,4 +2450,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewTicketAction => 'View Ticket';
+
+  @override
+  String get courierAvailabilityTitle => 'Courier Availability';
+
+  @override
+  String get courierStatusOnline => 'Online';
+
+  @override
+  String get courierStatusOffline => 'Offline';
+
+  @override
+  String get courierStatusActiveJobLock =>
+      'Availability locked during active job';
+
+  @override
+  String get courierStatusAcceptingDispatch =>
+      'Accepting new delivery requests';
+
+  @override
+  String get courierStatusNotAcceptingDispatch =>
+      'Not accepting new delivery requests';
 }

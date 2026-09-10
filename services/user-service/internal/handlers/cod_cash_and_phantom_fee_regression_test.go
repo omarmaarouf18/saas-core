@@ -28,7 +28,7 @@ func setupCODFeeHarness(t *testing.T) (*UserService, *store.MongoDB, context.Con
 	jwtutil.Init(secret)
 	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27017"
+		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

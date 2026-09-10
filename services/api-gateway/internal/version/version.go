@@ -19,6 +19,7 @@ type PlatformVersions struct {
 	MinimumSupportedVersion string    `bson:"minimum_supported_version" json:"minimum_supported_version"`
 	EnforceMinimumVersion   bool      `bson:"enforce_minimum_version" json:"enforce_minimum_version"`
 	DownloadURL             string    `bson:"download_url" json:"download_url"`
+	Revision                int64     `bson:"revision" json:"revision"`
 	UpdatedAt               time.Time `bson:"updated_at" json:"updated_at"`
 }
 
@@ -127,17 +128,33 @@ func (s *Store) UpdateConfig(ctx context.Context, newConfig PlatformVersions) (P
 		return PlatformVersions{}, fmt.Errorf("invalid minimum_supported_version: %w", err)
 	}
 
-	s.mu.Lock()
-	s.cached = newConfig
-	s.mu.Unlock()
-
 	if !s.useInMemory && s.collection != nil {
-		opts := options.UpdateOne().SetUpsert(true)
-		_, err := s.collection.UpdateOne(ctx, bson.M{"_id": "global"}, bson.M{"$set": newConfig}, opts)
+		opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)
+		update := bson.M{
+			"$set": bson.M{
+				"latest_version":            newConfig.LatestVersion,
+				"minimum_supported_version": newConfig.MinimumSupportedVersion,
+				"enforce_minimum_version":   newConfig.EnforceMinimumVersion,
+				"download_url":              newConfig.DownloadURL,
+				"updated_at":                newConfig.UpdatedAt,
+			},
+			"$inc": bson.M{"revision": 1},
+		}
+		var persisted PlatformVersions
+		err := s.collection.FindOneAndUpdate(ctx, bson.M{"_id": "global"}, update, opts).Decode(&persisted)
 		if err != nil {
 			return PlatformVersions{}, fmt.Errorf("failed to persist version config to MongoDB: %w", err)
 		}
+		newConfig = persisted
+	} else {
+		s.mu.Lock()
+		newConfig.Revision = s.cached.Revision + 1
+		s.mu.Unlock()
 	}
+
+	s.mu.Lock()
+	s.cached = newConfig
+	s.mu.Unlock()
 
 	return newConfig, nil
 }

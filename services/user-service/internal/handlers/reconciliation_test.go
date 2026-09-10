@@ -189,7 +189,7 @@ func TestResolveReconciliation(t *testing.T) {
 
 	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27017"
+		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -225,6 +225,16 @@ func TestResolveReconciliation(t *testing.T) {
 	u := NewUserService(s, userCfg, rdb)
 
 	// Setup wallet and lock escrow for Customer and Owner A
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		TenantID:  ownerA,
+		Tier:      models.PlanPaid,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		TenantID:  ownerB,
+		Tier:      models.PlanPaid,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
 	// Deposit 100 into Customer wallet, lock 50 for Job 1
 	_ = s.Deposit(ctx, ownerA, 100.0)
 	_ = s.LockEscrow(ctx, ownerA, "job-resolve-1", 50.0)

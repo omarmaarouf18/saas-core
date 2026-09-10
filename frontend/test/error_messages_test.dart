@@ -18,6 +18,10 @@ void main() {
           "Incorrect login details."
         ),
         (
+          ApiClientException('upgrade_required', statusCode: 402),
+          "A paid subscription is required to perform this action. Please upgrade to continue."
+        ),
+        (
           ApiClientException('forbidden_action', statusCode: 403),
           "You're not allowed to do that."
         ),

@@ -4,6 +4,7 @@ package store
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
@@ -595,12 +596,20 @@ func (s *MongoDB) GetAndConsumePendingSignup(ctx context.Context, email, otp str
 		return nil, fmt.Errorf("invalid OTP")
 	}
 
-	_, err = s.pendingSignups.DeleteOne(ctx, bson.M{"email": email})
-	if err != nil {
-		log.Printf("[AUTH-STORE] Failed to delete consumed pending signup for %s: %v", email, err)
+	// Atomic deletion with CAS on exact OTPCode ciphertext to prevent race conditions
+	var consumed models.PendingSignup
+	res := s.pendingSignups.FindOneAndDelete(ctx, bson.M{
+		"email":    email,
+		"otp_code": pending.OTPCode,
+	})
+	if err := res.Decode(&consumed); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, fmt.Errorf("OTP has already been consumed")
+		}
+		return nil, fmt.Errorf("failed to consume pending signup: %w", err)
 	}
 
-	return &pending, nil
+	return &consumed, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -774,18 +783,24 @@ func (s *MongoDB) ToggleEmployeeActive(ctx context.Context, employeeEmail, owner
 // ---------------------------------------------------------------------------
 
 // AppendAudit records an employee action in the audit log.
-func (s *MongoDB) AppendAudit(ctx context.Context, entry models.AuditEntry) {
+func (s *MongoDB) AppendAudit(ctx context.Context, entry models.AuditEntry) error {
 	if entry.Timestamp.IsZero() {
 		entry.Timestamp = time.Now().UTC()
 	}
 	if entry.ID == "" {
-		entry.ID = fmt.Sprintf("audit-%d", time.Now().UnixNano())
+		b := make([]byte, 16)
+		if _, err := rand.Read(b); err != nil {
+			return fmt.Errorf("generate audit id: %w", err)
+		}
+		entry.ID = fmt.Sprintf("audit-%x", b)
 	}
 
 	_, err := s.auditLog.InsertOne(ctx, entry)
 	if err != nil {
 		log.Printf("[AUTH-STORE] Failed to insert audit entry: %v", err)
+		return fmt.Errorf("store: insert audit entry: %w", err)
 	}
+	return nil
 }
 
 // GetAuditLog returns audit entries, optionally filtered by tenant (owner) ID.
@@ -898,30 +913,65 @@ func (s *MongoDB) UpsertDeviceToken(ctx context.Context, userID, tokenStr, platf
 		platform = "android"
 	}
 
-	// First pull any existing token with the same token string to avoid duplicate array items
-	_, err := s.users.UpdateOne(ctx,
-		bson.M{"_id": userID},
-		bson.M{"$pull": bson.M{"device_tokens": bson.M{"token": tokenStr}}},
-	)
-	if err != nil {
-		return fmt.Errorf("store: pull existing device token: %w", err)
-	}
-
-	// Push the fresh device token
 	entry := models.DeviceToken{
 		Token:     tokenStr,
 		Platform:  platform,
-		UpdatedAt: time.Now(),
+		UpdatedAt: time.Now().UTC(),
 	}
+
+	// 1. Try to update an existing matching token in-place
 	res, err := s.users.UpdateOne(ctx,
-		bson.M{"_id": userID},
+		bson.M{"_id": userID, "device_tokens.token": tokenStr},
+		bson.M{
+			"$set": bson.M{
+				"device_tokens.$.platform":   platform,
+				"device_tokens.$.updated_at": entry.UpdatedAt,
+			},
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("store: update existing device token: %w", err)
+	}
+	if res.MatchedCount > 0 {
+		return nil
+	}
+
+	// 2. Token does not exist in array yet: push it atomically guarded by $ne to avoid duplicate race conditions
+	res, err = s.users.UpdateOne(ctx,
+		bson.M{
+			"_id":                 userID,
+			"device_tokens.token": bson.M{"$ne": tokenStr},
+		},
 		bson.M{"$push": bson.M{"device_tokens": entry}},
 	)
 	if err != nil {
 		return fmt.Errorf("store: push device token: %w", err)
 	}
-	if res.MatchedCount == 0 {
-		return fmt.Errorf("user %q not found", userID)
+	if res.MatchedCount > 0 {
+		return nil
+	}
+
+	// If MatchedCount is 0, either user does not exist or a concurrent worker inserted the token just now
+	var u models.User
+	if err := s.users.FindOne(ctx, bson.M{"_id": userID}).Decode(&u); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return fmt.Errorf("user %q not found", userID)
+		}
+		return fmt.Errorf("store: verify user existence: %w", err)
+	}
+
+	// If user exists, the token was inserted concurrently by another request. Refresh it.
+	_, err = s.users.UpdateOne(ctx,
+		bson.M{"_id": userID, "device_tokens.token": tokenStr},
+		bson.M{
+			"$set": bson.M{
+				"device_tokens.$.platform":   platform,
+				"device_tokens.$.updated_at": entry.UpdatedAt,
+			},
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("store: update concurrent device token: %w", err)
 	}
 	return nil
 }

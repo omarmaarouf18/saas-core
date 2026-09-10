@@ -249,7 +249,7 @@ func (m *mockDeviceTokenFetcher) UnregisterStaleToken(ctx context.Context, userI
 func TestSSEHub_FCMPushParallelDeliveryAndStaleTokenCleanup(t *testing.T) {
 	h := NewSSEHub()
 
-	client1 := &SSEClient{ID: "c1", TenantID: "tenant-A", Role: RoleOwner, Send: make(chan []byte, 5)}
+	client1 := &SSEClient{ID: "c1", UserID: "user-1", TenantID: "tenant-A", Role: RoleOwner, Send: make(chan []byte, 5)}
 	h.Register(client1)
 
 	var pushedTokens []string
@@ -311,7 +311,7 @@ func TestSSEHub_FCMPushParallelDeliveryAndStaleTokenCleanup(t *testing.T) {
 
 func TestSSEHub_FCMFailureDoesNotFailSSEBroadcast(t *testing.T) {
 	h := NewSSEHub()
-	client1 := &SSEClient{ID: "c1", TenantID: "tenant-A", Role: RoleOwner, Send: make(chan []byte, 5)}
+	client1 := &SSEClient{ID: "c1", UserID: "user-1", TenantID: "tenant-A", Role: RoleOwner, Send: make(chan []byte, 5)}
 	h.Register(client1)
 
 	// Broken FCM dispatcher that returns errors or panics

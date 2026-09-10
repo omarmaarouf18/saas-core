@@ -13,6 +13,8 @@ class UserProfile {
   final String? idBackDoc;
   final String? selfieDoc;
   final String? businessProofDoc;
+  final String? accountStatus;
+  final String? suspensionReason;
 
   UserProfile({
     required this.id,
@@ -29,6 +31,8 @@ class UserProfile {
     this.idBackDoc,
     this.selfieDoc,
     this.businessProofDoc,
+    this.accountStatus,
+    this.suspensionReason,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -55,6 +59,8 @@ class UserProfile {
       idBackDoc: json['id_back_doc'],
       selfieDoc: json['selfie_doc'],
       businessProofDoc: json['business_proof_doc'],
+      accountStatus: json['account_status'] as String?,
+      suspensionReason: json['suspension_reason'] as String?,
     );
   }
 
@@ -73,4 +79,7 @@ class UserProfile {
       effectiveKycStatus.isEmpty ||
       effectiveKycStatus == 'none' ||
       effectiveKycStatus == 'unverified';
+
+  bool get isSuspended => accountStatus == 'suspended';
+  bool get isActiveAccount => !isSuspended;
 }

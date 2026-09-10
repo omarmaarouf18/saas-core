@@ -148,6 +148,12 @@ func TestJobAlertBroadcast_EndToEnd(t *testing.T) {
 		UpdatedAt:  time.Now().UTC(),
 	})
 
+	_ = testStore.UpsertSubscription(context.Background(), &models.Subscription{
+		TenantID:  ownerID,
+		Tier:      models.PlanPaid,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
+
 	cfg := &config.Config{
 		AppEnv:                 "test",
 		JWTSecret:              "test-jwt-secret-12345678901234567890123456789012",

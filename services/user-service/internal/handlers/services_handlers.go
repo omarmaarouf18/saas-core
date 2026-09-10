@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/user-service/internal/models"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // ---------------------------------------------------------------------------
@@ -26,6 +28,18 @@ func (u *UserService) ListServices(w http.ResponseWriter, r *http.Request) {
 	refLon := parseFloat(q.Get("lon"), 31.2357)
 	radius := parseFloat(q.Get("radius"), 50)
 
+	var limit, offset int64
+	if lStr := q.Get("limit"); lStr != "" {
+		if l, err := strconv.ParseInt(lStr, 10, 64); err == nil {
+			limit = l
+		}
+	}
+	if oStr := q.Get("offset"); oStr != "" {
+		if o, err := strconv.ParseInt(oStr, 10, 64); err == nil {
+			offset = o
+		}
+	}
+
 	ctx := r.Context()
 	if nearBy || hasLat || hasLon {
 		if !isValidCoordinate(refLat, refLon) {
@@ -40,7 +54,7 @@ func (u *UserService) ListServices(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	services := u.store.ListServices(ctx, sortBy, nearBy, refLat, refLon, radius)
+	services := u.store.ListServices(ctx, sortBy, nearBy, refLat, refLon, radius, limit, offset)
 	// #nosec G706 //nolint:gosec -- sortBy is validated query parameter, log injection not possible
 	log.Printf("[USER] ListServices: sort_by=%s near_by=%v results=%d", sortBy, nearBy, len(services))
 
@@ -85,6 +99,13 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	if req.CoverageRadiusKM < 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "coverage_radius_km must be non-negative",
+		})
+		return
+	}
+
 	authToken := resolveOwnerAuthToken(r, req.OwnerToken, req.OwnerID)
 	if authToken == "" || req.Name == "" || req.Category == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "owner authorization, name, and category are required"})
@@ -124,6 +145,12 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	// Paid tier membership check
+	if !u.enforcePaidTier(w, r, req.OwnerID, req.OwnerID, "create_service", "Service catalog creation") {
+		return
+	}
+
 	if req.Category != "shipping" && req.Category != "delivery" && req.Category != "transport" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid category, must be: shipping, delivery, transport"})
 		return
@@ -221,6 +248,11 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Paid tier membership check
+	if !u.enforcePaidTier(w, r, req.OwnerID, req.OwnerID, "update_service", "Service catalog updates") {
+		return
+	}
+
 	existing := u.store.GetServiceByID(r.Context(), req.ID)
 	if existing == nil {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "service not found"})
@@ -234,65 +266,76 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	updateFields := bson.M{}
+
 	if req.Category != "" {
 		if req.Category != "shipping" && req.Category != "delivery" && req.Category != "transport" {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid category, must be: shipping, delivery, transport"})
 			return
 		}
-		existing.Category = req.Category
+		updateFields["category"] = req.Category
 	}
 
 	if req.Name != "" {
-		existing.Name = req.Name
+		updateFields["name"] = req.Name
 	}
 	if req.TenantBasePrice != nil {
 		if *req.TenantBasePrice < 0 {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_base_price cannot be negative"})
 			return
 		}
-		existing.TenantBasePrice = *req.TenantBasePrice
-		existing.BasePrice = *req.TenantBasePrice
+		updateFields["tenant_base_price"] = *req.TenantBasePrice
+		updateFields["base_price"] = *req.TenantBasePrice
 	}
 	if req.TenantPricePerKM != nil {
 		if *req.TenantPricePerKM < 0 {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_price_per_km cannot be negative"})
 			return
 		}
-		existing.TenantPricePerKM = *req.TenantPricePerKM
+		updateFields["tenant_price_per_km"] = *req.TenantPricePerKM
 	}
 	if req.Latitude != nil {
-		existing.Latitude = *req.Latitude
+		updateFields["latitude"] = *req.Latitude
 	}
 	if req.Longitude != nil {
-		existing.Longitude = *req.Longitude
+		updateFields["longitude"] = *req.Longitude
 	}
 	if req.Latitude != nil || req.Longitude != nil {
-		existing.Location = models.NewGeoJSONPoint(existing.Latitude, existing.Longitude)
+		newLat := existing.Latitude
+		if req.Latitude != nil {
+			newLat = *req.Latitude
+		}
+		newLon := existing.Longitude
+		if req.Longitude != nil {
+			newLon = *req.Longitude
+		}
+		updateFields["location"] = models.NewGeoJSONPoint(newLat, newLon)
 	}
 	if req.PhotoURL != nil {
-		existing.PhotoURL = *req.PhotoURL
+		updateFields["photo_url"] = *req.PhotoURL
 	}
 	if req.Address != nil {
-		existing.Address = *req.Address
+		updateFields["address"] = *req.Address
 	}
 	if req.WorkingHours != nil {
-		existing.WorkingHours = *req.WorkingHours
+		updateFields["working_hours"] = *req.WorkingHours
 	}
 	if req.CoverageRadiusKM != nil {
 		if *req.CoverageRadiusKM < 0 {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "coverage_radius_km cannot be negative"})
 			return
 		}
-		existing.CoverageRadiusKM = *req.CoverageRadiusKM
+		updateFields["coverage_radius_km"] = *req.CoverageRadiusKM
 	}
 
-	if err := u.store.UpdateService(r.Context(), existing); err != nil {
+	updated, err := u.store.UpdateServiceFields(r.Context(), existing.ID, existing.TenantID, updateFields)
+	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update service: " + err.Error()})
 		return
 	}
 
-	log.Printf("[USER] Service updated: id=%s name=%s owner=%s", existing.ID, existing.Name, existing.TenantID) // #nosec G706 -- existing.Name is owner-controlled service metadata, not attacker-controlled external input path
-	writeJSON(w, http.StatusOK, map[string]any{"message": "service updated", "service": existing})
+	log.Printf("[USER] Service updated: id=%s name=%s owner=%s", updated.ID, updated.Name, updated.TenantID) // #nosec G706 -- updated.Name is owner-controlled service metadata, not attacker-controlled external input path
+	writeJSON(w, http.StatusOK, map[string]any{"message": "service updated", "service": updated})
 }
 
 // ---------------------------------------------------------------------------

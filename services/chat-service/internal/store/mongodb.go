@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -18,10 +19,14 @@ import (
 	"github.com/project/shared/infra/jwtutil"
 )
 
+// ErrTicketAlreadyResolved indicates that the ticket has already reached resolved status.
+var ErrTicketAlreadyResolved = errors.New("ticket is already resolved")
+
 type SupportAgent struct {
 	ID              string `bson:"_id" json:"agent_id"`
 	Status          string `bson:"status" json:"status"` // "available", "busy", "offline"
 	AssignedTickets int    `bson:"assigned_tickets" json:"assigned_tickets"`
+	CurrentTicketID string `bson:"current_ticket_id,omitempty" json:"current_ticket_id,omitempty"`
 	// Token is the agent's bearer credential: stored as a SHA-256 digest and
 	// never serialized (json:"-") so it cannot leak through any response.
 	Token string `bson:"token" json:"-"`
@@ -304,16 +309,39 @@ func (s *MongoDB) CreateTicketAndAssign(ctx context.Context, customerID, context
 	return ticket, nil
 }
 
+// Deprecated: Use AdminResolveTicket (POST /admin/tickets/resolve) per ADR-0023. Preserved for external support-agent-console compatibility.
 // ResolveTicket marks a ticket as resolved and sets the assigned agent to available.
 func (s *MongoDB) ResolveTicket(ctx context.Context, ticketID string) error {
-	var ticket ComplaintTicket
-	err := s.tickets.FindOne(ctx, bson.M{"_id": ticketID}).Decode(&ticket)
-	if err != nil {
-		return err
+	now := time.Now().UTC()
+	filter := bson.M{
+		"_id":    ticketID,
+		"status": bson.M{"$ne": "resolved"},
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"status":      "resolved",
+			"resolved_at": now,
+			"updated_at":  now,
+		},
 	}
 
-	_, err = s.tickets.UpdateOne(ctx, bson.M{"_id": ticketID}, bson.M{"$set": bson.M{"status": "resolved"}})
-	if err != nil {
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	res := s.tickets.FindOneAndUpdate(ctx, filter, update, opts)
+	if res.Err() != nil {
+		if errors.Is(res.Err(), mongo.ErrNoDocuments) {
+			var existing ComplaintTicket
+			if err := s.tickets.FindOne(ctx, bson.M{"_id": ticketID}).Decode(&existing); err == nil {
+				if existing.Status == "resolved" {
+					return ErrTicketAlreadyResolved
+				}
+			}
+			return fmt.Errorf("ticket %s not found or was concurrently modified", ticketID)
+		}
+		return res.Err()
+	}
+
+	var ticket ComplaintTicket
+	if err := res.Decode(&ticket); err != nil {
 		return err
 	}
 
@@ -325,6 +353,63 @@ func (s *MongoDB) ResolveTicket(ctx context.Context, ticketID string) error {
 	}
 
 	return nil
+}
+
+// SweepStrandedAgents finds agents in "busy" status whose current_ticket_id either does not exist
+// or is already resolved/closed, and resets their status to "available" with current_ticket_id cleared.
+func (s *MongoDB) SweepStrandedAgents(ctx context.Context) (int64, error) {
+	cursor, err := s.agents.Find(ctx, bson.M{"status": "busy"})
+	if err != nil {
+		return 0, fmt.Errorf("sweep: query busy agents: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var busyAgents []SupportAgent
+	if err := cursor.All(ctx, &busyAgents); err != nil {
+		return 0, fmt.Errorf("sweep: decode busy agents: %w", err)
+	}
+
+	var recovered int64
+	for _, agent := range busyAgents {
+		if agent.CurrentTicketID == "" {
+			res, updateErr := s.agents.UpdateOne(ctx,
+				bson.M{"_id": agent.ID, "status": "busy"},
+				bson.M{"$set": bson.M{"status": "available", "current_ticket_id": ""}},
+			)
+			if updateErr == nil && res.ModifiedCount > 0 {
+				recovered++
+			}
+			continue
+		}
+
+		var ticket ComplaintTicket
+		err := s.tickets.FindOne(ctx, bson.M{"_id": agent.CurrentTicketID}).Decode(&ticket)
+		if err != nil {
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				// Stranded: referenced ticket does not exist
+				res, updateErr := s.agents.UpdateOne(ctx,
+					bson.M{"_id": agent.ID, "status": "busy", "current_ticket_id": agent.CurrentTicketID},
+					bson.M{"$set": bson.M{"status": "available", "current_ticket_id": ""}},
+				)
+				if updateErr == nil && res.ModifiedCount > 0 {
+					recovered++
+				}
+			}
+			continue
+		}
+
+		if ticket.Status == "resolved" || ticket.Status == "closed" {
+			// Stranded: ticket already reached terminal resolved/closed state
+			res, updateErr := s.agents.UpdateOne(ctx,
+				bson.M{"_id": agent.ID, "status": "busy", "current_ticket_id": agent.CurrentTicketID},
+				bson.M{"$set": bson.M{"status": "available", "current_ticket_id": ""}},
+			)
+			if updateErr == nil && res.ModifiedCount > 0 {
+				recovered++
+			}
+		}
+	}
+	return recovered, nil
 }
 
 // ListTickets returns paginated complaint tickets, optionally filtered by status and search (ADR-0023).

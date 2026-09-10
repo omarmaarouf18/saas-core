@@ -260,8 +260,34 @@ func (s *MongoDB) UpdateService(ctx context.Context, svc *models.Service) error 
 	return nil
 }
 
+// UpdateServiceFields updates specific fields of an existing service record in MongoDB,
+// preventing concurrent field-level clobbers (Q10).
+func (s *MongoDB) UpdateServiceFields(ctx context.Context, id, tenantID string, fields bson.M) (*models.Service, error) {
+	if len(fields) == 0 {
+		return s.GetServiceByID(ctx, id), nil
+	}
+	fields["updated_at"] = time.Now().UTC()
+	filter := bson.M{"_id": id, "tenant_id": tenantID}
+	update := bson.M{"$set": fields}
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	res := s.services.FindOneAndUpdate(ctx, filter, update, opts)
+	if res.Err() != nil {
+		if res.Err() == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("service not found or tenant mismatch")
+		}
+		log.Printf("[USER-STORE] UpdateServiceFields error: %v", res.Err())
+		return nil, res.Err()
+	}
+	var updated models.Service
+	if err := res.Decode(&updated); err != nil {
+		return nil, fmt.Errorf("failed to decode updated service: %w", err)
+	}
+	return &updated, nil
+}
+
 // ListServices uses MongoDB $nearSphere for proximity filtering instead of linear Haversine scan.
-func (s *MongoDB) ListServices(ctx context.Context, sortBy string, nearBy bool, refLat, refLon, maxDistKm float64) []models.ServiceWithPrice {
+func (s *MongoDB) ListServices(ctx context.Context, sortBy string, nearBy bool, refLat, refLon, maxDistKm float64, limit, offset int64) []models.ServiceWithPrice {
+	limit, offset = clampPage(limit, offset, 50, 200)
 	var filter bson.M
 	if nearBy {
 		if maxDistKm <= 0 {
@@ -279,7 +305,8 @@ func (s *MongoDB) ListServices(ctx context.Context, sortBy string, nearBy bool, 
 		filter = bson.M{}
 	}
 
-	cursor, err := s.services.Find(ctx, filter)
+	opts := options.Find().SetLimit(limit).SetSkip(offset)
+	cursor, err := s.services.Find(ctx, filter, opts)
 	if err != nil {
 		log.Printf("[USER-STORE] ListServices error: %v", err)
 		return nil
@@ -350,7 +377,8 @@ func (s *MongoDB) GetJobsByEmployee(ctx context.Context, employeeID string) ([]*
 			},
 		},
 	}
-	cursor, err := s.jobs.Find(ctx, filter)
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).SetLimit(100)
+	cursor, err := s.jobs.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, fmt.Errorf("store: get jobs by employee: %w", err)
 	}
@@ -405,13 +433,38 @@ func (s *MongoDB) GetJobsByCustomer(ctx context.Context, customerID string) ([]*
 }
 
 func (s *MongoDB) UpdateJobStatus(ctx context.Context, id string, status models.JobStatus) error {
-	res, err := s.jobs.UpdateOne(ctx, bson.M{"_id": id},
+	filter := bson.M{"_id": id}
+	switch status {
+	case models.JobStatusCompleted:
+		filter["status"] = bson.M{"$in": []models.JobStatus{
+			models.JobStatusActive,
+			models.JobStatusCompleted,
+		}}
+	case models.JobStatusActive:
+		filter["status"] = bson.M{"$in": []models.JobStatus{
+			models.JobStatusPending,
+			models.JobStatusPendingDispatch,
+			models.JobStatusAwaitingPriceResponse,
+		}}
+	case models.JobStatusCancelled:
+		filter["status"] = bson.M{"$nin": []models.JobStatus{
+			models.JobStatusCompleted,
+			models.JobStatusCancelled,
+		}}
+	default:
+		filter["status"] = bson.M{"$nin": []models.JobStatus{
+			models.JobStatusCompleted,
+			models.JobStatusCancelled,
+		}}
+	}
+
+	res, err := s.jobs.UpdateOne(ctx, filter,
 		bson.M{"$set": bson.M{"status": status, "updated_at": time.Now().UTC()}})
 	if err != nil {
 		return fmt.Errorf("store: update job: %w", err)
 	}
 	if res.MatchedCount == 0 {
-		return fmt.Errorf("job %q not found", id)
+		return fmt.Errorf("job_state_changed: job %q not found or invalid status transition to %s", id, status)
 	}
 	return nil
 }
@@ -429,7 +482,28 @@ func (s *MongoDB) UpdateJobLockedEscrow(ctx context.Context, id string, amount f
 }
 
 func (s *MongoDB) UpdateJobReconciliation(ctx context.Context, id string, status models.JobStatus, note string, failureReason string, lockedEscrow float64) error {
-	res, err := s.jobs.UpdateOne(ctx, bson.M{"_id": id},
+	filter := bson.M{"_id": id}
+	switch status {
+	case models.JobStatusCompleted:
+		filter["status"] = bson.M{"$in": []models.JobStatus{
+			models.JobStatusEscrowReconciliationRequired,
+			models.JobStatusCompleted,
+		}}
+	case models.JobStatusCancelled:
+		filter["status"] = bson.M{"$in": []models.JobStatus{
+			models.JobStatusEscrowReconciliationRequired,
+			models.JobStatusCancelled,
+		}}
+	case models.JobStatusEscrowReconciliationRequired:
+		filter["status"] = bson.M{"$ne": models.JobStatusCompleted}
+	default:
+		filter["status"] = bson.M{"$nin": []models.JobStatus{
+			models.JobStatusCompleted,
+			models.JobStatusCancelled,
+		}}
+	}
+
+	res, err := s.jobs.UpdateOne(ctx, filter,
 		bson.M{"$set": bson.M{
 			"status":                status,
 			"reconciliation_note":   note,
@@ -441,7 +515,7 @@ func (s *MongoDB) UpdateJobReconciliation(ctx context.Context, id string, status
 		return fmt.Errorf("store: update job reconciliation: %w", err)
 	}
 	if res.MatchedCount == 0 {
-		return fmt.Errorf("job %q not found", id)
+		return fmt.Errorf("job_state_changed: job %q not found or invalid status transition to %s", id, status)
 	}
 	return nil
 }
@@ -708,20 +782,28 @@ func newRecordID(prefix, suffix string) string {
 }
 
 func (s *MongoDB) Deposit(ctx context.Context, tenantID string, amount float64) error {
-	w, err := s.GetOrCreateWallet(ctx, tenantID)
+	if _, err := s.GetOrCreateWallet(ctx, tenantID); err != nil {
+		return err
+	}
+	// Atomic increment returning updated document (Q4 audit fix)
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	var updated models.Wallet
+	err := s.wallets.FindOneAndUpdate(ctx,
+		bson.M{"tenant_id": tenantID},
+		bson.M{
+			"$inc": bson.M{"total_balance": amount, "withdrawable_balance": amount},
+			"$set": bson.M{"updated_at": time.Now().UTC()},
+		},
+		opts,
+	).Decode(&updated)
 	if err != nil {
 		return err
 	}
-	// Atomic increment.
-	_, err = s.wallets.UpdateOne(ctx, bson.M{"tenant_id": tenantID},
-		bson.M{"$inc": bson.M{"total_balance": amount, "withdrawable_balance": amount},
-			"$set": bson.M{"updated_at": time.Now().UTC()}})
-	if err != nil {
-		return err
-	}
+	balAfter := updated.TotalBalance
+	balBefore := balAfter - amount
 	if _, err := s.ledger.InsertOne(ctx, models.TransactionLedger{
 		ID: newRecordID("tx", ""), TenantID: tenantID, Type: models.TxDeposit,
-		Amount: amount, BalanceBefore: w.TotalBalance, BalanceAfter: w.TotalBalance + amount,
+		Amount: amount, BalanceBefore: balBefore, BalanceAfter: balAfter,
 		Description: "wallet deposit", Timestamp: time.Now().UTC(),
 	}); err != nil {
 		log.Printf("[ERROR] failed to insert transaction ledger: %v", err)
@@ -731,29 +813,32 @@ func (s *MongoDB) Deposit(ctx context.Context, tenantID string, amount float64) 
 
 // LockEscrow atomically moves funds from WithdrawableBalance to EscrowBalance.
 func (s *MongoDB) LockEscrow(ctx context.Context, tenantID, jobID string, amount float64) error {
-	w, err := s.GetOrCreateWallet(ctx, tenantID)
-	if err != nil {
+	if _, err := s.GetOrCreateWallet(ctx, tenantID); err != nil {
 		return err
 	}
-	if w.WithdrawableBalance < amount {
-		return fmt.Errorf("insufficient withdrawable balance: have %.2f, need %.2f", w.WithdrawableBalance, amount)
-	}
-	res, err := s.wallets.UpdateOne(ctx,
+	// Atomic decrement returning updated document (Q4 audit fix)
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	var updated models.Wallet
+	err := s.wallets.FindOneAndUpdate(ctx,
 		bson.M{"tenant_id": tenantID, "withdrawable_balance": bson.M{"$gte": amount}},
 		bson.M{
 			"$inc": bson.M{"escrow_balance": amount, "withdrawable_balance": -amount},
 			"$set": bson.M{"updated_at": time.Now().UTC()},
-		})
+		},
+		opts,
+	).Decode(&updated)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return fmt.Errorf("escrow lock failed: race condition or insufficient funds")
+		}
 		return err
 	}
-	if res.MatchedCount == 0 {
-		return fmt.Errorf("escrow lock failed: race condition or insufficient funds")
-	}
+	balAfter := updated.WithdrawableBalance
+	balBefore := balAfter + amount
 	if _, err := s.ledger.InsertOne(ctx, models.TransactionLedger{
 		ID: newRecordID("tx", ""), TenantID: tenantID, JobID: jobID,
 		Type: models.TxEscrowLock, Amount: amount,
-		BalanceBefore: w.WithdrawableBalance, BalanceAfter: w.WithdrawableBalance - amount,
+		BalanceBefore: balBefore, BalanceAfter: balAfter,
 		Description: fmt.Sprintf("escrow lock for job %s", jobID), Timestamp: time.Now().UTC(),
 	}); err != nil {
 		log.Printf("[ERROR] failed to insert transaction ledger: %v", err)
@@ -915,19 +1000,26 @@ func (s *MongoDB) CreatePayoutRequest(ctx context.Context, tenantID string, inpu
 	now := time.Now().UTC()
 	payoutID := newRecordID("payout", "")
 
-	// Atomically deduct amount from withdrawable_balance and total_balance
-	res, err := s.wallets.UpdateOne(ctx,
+	// Atomically deduct amount from withdrawable_balance and total_balance (Q4 audit fix)
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	var updated models.Wallet
+	err = s.wallets.FindOneAndUpdate(ctx,
 		bson.M{"tenant_id": tenantID, "withdrawable_balance": bson.M{"$gte": input.Amount}},
 		bson.M{
 			"$inc": bson.M{"withdrawable_balance": -input.Amount, "total_balance": -input.Amount},
 			"$set": bson.M{"updated_at": now},
-		})
+		},
+		opts,
+	).Decode(&updated)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, fmt.Errorf("payout request failed: insufficient withdrawable balance")
+		}
 		return nil, fmt.Errorf("failed to update wallet balance for payout: %w", err)
 	}
-	if res.MatchedCount == 0 {
-		return nil, fmt.Errorf("payout request failed: insufficient withdrawable balance")
-	}
+
+	balAfter := updated.WithdrawableBalance
+	balBefore := balAfter + input.Amount
 
 	payoutReq := &models.PayoutRequest{
 		ID:             payoutID,
@@ -955,8 +1047,8 @@ func (s *MongoDB) CreatePayoutRequest(ctx context.Context, tenantID string, inpu
 		TenantID:      tenantID,
 		Type:          models.TxPayout,
 		Amount:        input.Amount,
-		BalanceBefore: w.WithdrawableBalance,
-		BalanceAfter:  w.WithdrawableBalance - input.Amount,
+		BalanceBefore: balBefore,
+		BalanceAfter:  balAfter,
 		Description:   fmt.Sprintf("payout request %s (%s)", payoutID, input.PayoutMethod),
 		Timestamp:     now,
 	}); err != nil {
@@ -1110,21 +1202,66 @@ func (s *MongoDB) GetSubscriptionByID(ctx context.Context, id string) *models.Su
 	return &sub
 }
 
-// UpsertSubscription inserts or updates a subscription.
-// The tenant's existing document ID is preserved on update: generating a new
-// ID per call violated MongoDB's immutable _id constraint and turned every
-// repeat upsert into a write error.
+// UpsertSubscription atomically inserts or updates a subscription.
+// Uses an atomic UpdateOne with $setOnInsert for _id and $set for mutable fields,
+// eliminating race conditions where concurrent upserts would trigger MongoDB immutable _id write errors.
 func (s *MongoDB) UpsertSubscription(ctx context.Context, sub *models.Subscription) error {
-	var existing models.Subscription
-	err := s.subscriptions.FindOne(ctx, bson.M{"tenant_id": sub.TenantID}).Decode(&existing)
-	if err == nil && existing.ID != "" {
-		sub.ID = existing.ID
-	} else if sub.ID == "" {
-		sub.ID = newRecordID("sub", "")
+	now := time.Now().UTC()
+	subID := sub.ID
+	if subID == "" {
+		subID = newRecordID("sub", "")
 	}
-	opts := options.Replace().SetUpsert(true)
-	_, err = s.subscriptions.ReplaceOne(ctx, bson.M{"tenant_id": sub.TenantID}, sub, opts)
-	return err
+	startedAt := sub.StartedAt
+	if startedAt.IsZero() {
+		startedAt = now
+	}
+
+	setDoc := bson.M{
+		"tier":       sub.Tier,
+		"started_at": startedAt,
+		"updated_at": now,
+	}
+	if !sub.ExpiresAt.IsZero() {
+		setDoc["expires_at"] = sub.ExpiresAt
+	}
+	if sub.Reason != "" {
+		setDoc["reason"] = sub.Reason
+	}
+	if sub.ActivatedBy != "" {
+		setDoc["activated_by"] = sub.ActivatedBy
+	}
+	if sub.RevokedBy != "" {
+		setDoc["revoked_by"] = sub.RevokedBy
+	}
+
+	setOnInsert := bson.M{
+		"_id":       subID,
+		"tenant_id": sub.TenantID,
+	}
+
+	opts := options.UpdateOne().SetUpsert(true)
+	res, err := s.subscriptions.UpdateOne(ctx,
+		bson.M{"tenant_id": sub.TenantID},
+		bson.M{
+			"$set":         setDoc,
+			"$setOnInsert": setOnInsert,
+		},
+		opts,
+	)
+	if err != nil {
+		return err
+	}
+	if res.UpsertedID != nil {
+		if idStr, ok := res.UpsertedID.(string); ok {
+			sub.ID = idStr
+		}
+	} else if sub.ID == "" {
+		var existing models.Subscription
+		if err := s.subscriptions.FindOne(ctx, bson.M{"tenant_id": sub.TenantID}).Decode(&existing); err == nil {
+			sub.ID = existing.ID
+		}
+	}
+	return nil
 }
 
 // ListSubscriptions returns paginated subscriptions, optionally filtered by status or search (ADR-0023).
@@ -1451,20 +1588,25 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 			return fmt.Errorf("escrow refund failed: job %s is not active/pending or has insufficient locked escrow", jobID)
 		}
 
-		res, err := s.wallets.UpdateOne(sc,
+		opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+		var updatedWallet models.Wallet
+		err = s.wallets.FindOneAndUpdate(sc,
 			bson.M{"tenant_id": tenantID, "escrow_balance": bson.M{"$gte": amount}},
 			bson.M{
 				"$inc": bson.M{"escrow_balance": -amount, "withdrawable_balance": amount},
 				"$set": bson.M{"updated_at": time.Now().UTC()},
-			})
+			},
+			opts,
+		).Decode(&updatedWallet)
 		if err != nil {
 			revertJob()
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				return fmt.Errorf("escrow refund failed: insufficient escrow balance")
+			}
 			return err
 		}
-		if res.MatchedCount == 0 {
-			revertJob()
-			return fmt.Errorf("escrow refund failed: insufficient escrow balance")
-		}
+		balAfter := updatedWallet.WithdrawableBalance
+		balBefore := balAfter - amount
 
 		revertWalletAndJob := func() {
 			if isFallback {
@@ -1479,7 +1621,7 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 		_, err = s.ledger.InsertOne(sc, models.TransactionLedger{
 			ID: newRecordID("tx", "-refund"), TenantID: tenantID, JobID: jobID,
 			Type: models.TxEscrowRelease, Amount: amount,
-			BalanceBefore: w.WithdrawableBalance, BalanceAfter: w.WithdrawableBalance + amount,
+			BalanceBefore: balBefore, BalanceAfter: balAfter,
 			Description: fmt.Sprintf("escrow refund for cancelled job %s", jobID), Timestamp: time.Now().UTC(),
 		})
 		if err != nil {
@@ -1514,26 +1656,31 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 }
 
 func (s *MongoDB) RollbackEscrow(ctx context.Context, tenantID string, amount float64) error {
-	w, err := s.GetOrCreateWallet(ctx, tenantID)
-	if err != nil {
+	if _, err := s.GetOrCreateWallet(ctx, tenantID); err != nil {
 		return err
 	}
-	res, err := s.wallets.UpdateOne(ctx,
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	var updated models.Wallet
+	err := s.wallets.FindOneAndUpdate(ctx,
 		bson.M{"tenant_id": tenantID, "escrow_balance": bson.M{"$gte": amount}},
 		bson.M{
 			"$inc": bson.M{"escrow_balance": -amount, "withdrawable_balance": amount},
 			"$set": bson.M{"updated_at": time.Now().UTC()},
-		})
+		},
+		opts,
+	).Decode(&updated)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return fmt.Errorf("escrow rollback failed: insufficient escrow balance")
+		}
 		return err
 	}
-	if res.MatchedCount == 0 {
-		return fmt.Errorf("escrow rollback failed: insufficient escrow balance")
-	}
+	balAfter := updated.WithdrawableBalance
+	balBefore := balAfter - amount
 	_, err = s.ledger.InsertOne(ctx, models.TransactionLedger{
 		ID: newRecordID("tx", "-rollback"), TenantID: tenantID,
 		Type: models.TxEscrowRelease, Amount: amount,
-		BalanceBefore: w.WithdrawableBalance, BalanceAfter: w.WithdrawableBalance + amount,
+		BalanceBefore: balBefore, BalanceAfter: balAfter,
 		Description: "escrow lock rollback due to persistence failure", Timestamp: time.Now().UTC(),
 	})
 	return err

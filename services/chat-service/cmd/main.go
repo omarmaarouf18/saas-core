@@ -74,6 +74,13 @@ func main() {
 		log.Fatalf("[CHAT] Failed to initialize MongoDB store: %v", err)
 	}
 
+	// Sweep any stranded support agents from previous unclean shutdowns
+	if recovered, err := mongoStore.SweepStrandedAgents(ctx); err != nil {
+		log.Printf("[CHAT] Warning: failed to sweep stranded agents on startup: %v", err)
+	} else if recovered > 0 {
+		log.Printf("[CHAT] Swept and recovered %d stranded support agents on startup", recovered)
+	}
+
 	// Create and start the WebSocket hub.
 	hub := chat.NewHub()
 	go hub.Run()
@@ -120,7 +127,7 @@ func main() {
 	addr := ":" + cfg.Port
 	server := &http.Server{
 		Addr:      addr,
-		Handler:   mux,
+		Handler:   handlerutil.MaxBytesMiddleware(1 << 20)(mux),
 		TLSConfig: tlsConfig,
 		// ReadTimeout bounds slow-body slowloris reads (request headers
 		// were already capped at 3s). IdleTimeout reaps idle keep-alive

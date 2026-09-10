@@ -264,7 +264,9 @@ func TestMongoDB_EmployeesAndAudit(t *testing.T) {
 		Timestamp:  time.Now(),
 		ClientIP:   "127.0.0.1",
 	}
-	s.AppendAudit(ctx, entry)
+	if err := s.AppendAudit(ctx, entry); err != nil {
+		t.Fatalf("AppendAudit failed: %v", err)
+	}
 
 	logs := s.GetAuditLog(ctx, ownerID)
 	if len(logs) != 1 || logs[0].Action != "check_in" {

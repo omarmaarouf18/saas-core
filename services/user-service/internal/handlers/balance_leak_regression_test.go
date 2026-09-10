@@ -32,6 +32,11 @@ func TestTrackJob_EscrowFailureWarningDoesNotLeakOwnerBalance(t *testing.T) {
 	ownerID := "leak-owner" // deliberately funded with ZERO balance
 	svcID := "leak-svc"
 	s.CreateService(ctx, &models.Service{ID: svcID, TenantID: ownerID, TenantBasePrice: 40.0, TenantPricePerKM: 1.0, Latitude: 30.0, Longitude: 30.0})
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		TenantID:  ownerID,
+		Tier:      models.PlanPaid,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
 
 	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "leak-owner@example.com")
 	tokenUser, _ := jwtutil.GenerateToken("leak-cust", "user", ownerID, "leak-cust@example.com")

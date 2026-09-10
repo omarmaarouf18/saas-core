@@ -15,6 +15,7 @@ import (
 	"github.com/alicebob/miniredis/v2"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/user-service/internal/config"
+	"github.com/project/user-service/internal/models"
 	"github.com/project/user-service/internal/store"
 	"github.com/redis/go-redis/v9"
 )
@@ -25,7 +26,7 @@ func setupTestUserService(t *testing.T) (*UserService, *store.MongoDB, func()) {
 
 	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27017"
+		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -44,6 +45,7 @@ func setupTestUserService(t *testing.T) (*UserService, *store.MongoDB, func()) {
 	}
 
 	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		id := r.URL.Query().Get("id")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]any{
@@ -64,6 +66,14 @@ func setupTestUserService(t *testing.T) (*UserService, *store.MongoDB, func()) {
 	}
 
 	svc := NewUserService(s, cfg, rdb)
+
+	for _, tenant := range []string{"owner-1", "tenant-1", "t-1", "t-prod", "owner-prod"} {
+		_ = s.UpsertSubscription(context.Background(), &models.Subscription{
+			TenantID:  tenant,
+			Tier:      models.PlanPaid,
+			ExpiresAt: time.Now().Add(24 * time.Hour),
+		})
+	}
 
 	cleanup := func() {
 		mockAuthServer.Close()

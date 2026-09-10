@@ -12,6 +12,7 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/project/user-service/internal/config"
+	"github.com/project/user-service/internal/models"
 	"github.com/project/user-service/internal/store"
 	"github.com/redis/go-redis/v9"
 )
@@ -116,6 +117,27 @@ func TestListServices_CoordinateBoundsValidation(t *testing.T) {
 		}
 		if _, ok := resp["services"]; !ok {
 			t.Errorf("Expected response to contain 'services' key")
+		}
+	})
+
+	// (e) Q22: Pagination limit and offset clamps and respects limits
+	t.Run("Pagination Limit and Offset", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/users/services?limit=2&offset=0", nil)
+		rec := httptest.NewRecorder()
+		u.ListServices(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK for paginated ListServices, got %d: %s", rec.Code, rec.Body.String())
+		}
+		var resp struct {
+			Count    int                       `json:"count"`
+			Services []models.ServiceWithPrice `json:"services"`
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("Failed to parse response JSON: %v", err)
+		}
+		if resp.Count > 2 {
+			t.Errorf("Expected at most 2 services with limit=2, got %d", resp.Count)
 		}
 	})
 }

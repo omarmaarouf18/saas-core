@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geolocator/geolocator.dart';
 import '../core/api_client.dart';
 import '../core/error_messages.dart';
@@ -15,8 +16,11 @@ enum LocationSharingStatus {
 }
 
 class EmployeeLocationProvider extends ChangeNotifier {
+  static const String availabilityStorageKey = 'courier_available_online';
+
   final ApiClient apiClient;
   final GeolocatorPlatform _geolocator;
+  final FlutterSecureStorage _storage;
 
   LocationSharingStatus _status = LocationSharingStatus.idle;
   String? _error;
@@ -26,19 +30,60 @@ class EmployeeLocationProvider extends ChangeNotifier {
   Position? _lastKnownPosition;
   Timer? _availabilityHeartbeatTimer;
 
+  bool _isAvailable = false;
+  bool _isAvailableOnline = true;
+
   EmployeeLocationProvider(
     this.apiClient, {
     GeolocatorPlatform? geolocator,
-  }) : _geolocator = geolocator ?? GeolocatorPlatform.instance;
+    FlutterSecureStorage? storage,
+  })  : _geolocator = geolocator ?? GeolocatorPlatform.instance,
+        _storage = storage ?? const FlutterSecureStorage() {
+    _loadSavedAvailability();
+  }
 
-  bool _isAvailable = false;
+  Future<void> _loadSavedAvailability() async {
+    try {
+      final saved = await _storage.read(key: availabilityStorageKey);
+      if (saved != null) {
+        _isAvailableOnline = saved == 'true';
+        notifyListeners();
+      }
+    } catch (_) {
+      // Quiet fallback
+    }
+  }
 
   LocationSharingStatus get status => _status;
   String? get error => _error;
   String? get activeJobId => _activeJobId;
   bool get isTracking => _status == LocationSharingStatus.tracking;
   bool get isAvailable => _isAvailable;
+  bool get isAvailableOnline => _isAvailableOnline;
   Position? get lastKnownPosition => _lastKnownPosition;
+
+  Future<void> setAvailableOnline(bool online, {String? userToken}) async {
+    if (_isAvailableOnline == online) return;
+    _isAvailableOnline = online;
+    notifyListeners();
+
+    try {
+      await _storage.write(
+        key: availabilityStorageKey,
+        value: online ? 'true' : 'false',
+      );
+    } catch (_) {}
+
+    if (!online) {
+      if (_activeJobId == null) {
+        await stopTracking();
+      }
+    } else {
+      if (userToken != null && _activeJobId == null) {
+        await startAvailabilityTracking(userToken);
+      }
+    }
+  }
 
   /// Starts live location tracking for an active job assigned to the current employee.
   Future<void> startTracking(String jobId, String userToken) async {
@@ -55,6 +100,10 @@ class EmployeeLocationProvider extends ChangeNotifier {
   /// Starts availability location pinging to /users/employee/location while the
   /// employee is online/available without an active job.
   Future<void> startAvailabilityTracking(String userToken) async {
+    if (!_isAvailableOnline) {
+      _isAvailable = false;
+      return;
+    }
     _isAvailable = true;
 
     // If already tracking an active job, job location updates already refresh location on backend.
@@ -168,7 +217,7 @@ class EmployeeLocationProvider extends ChangeNotifier {
     if (jobId != null) {
       _sendLocationUpdate(
           jobId, userToken, position.latitude, position.longitude);
-    } else {
+    } else if (_isAvailableOnline) {
       _sendAvailabilityPing(userToken, position.latitude, position.longitude);
     }
   }
@@ -179,6 +228,7 @@ class EmployeeLocationProvider extends ChangeNotifier {
         Timer.periodic(const Duration(seconds: 60), (_) async {
       if (_status != LocationSharingStatus.tracking ||
           !_isAvailable ||
+          !_isAvailableOnline ||
           _activeJobId != null) {
         return;
       }
@@ -195,6 +245,7 @@ class EmployeeLocationProvider extends ChangeNotifier {
       if (pos != null &&
           _status == LocationSharingStatus.tracking &&
           _isAvailable &&
+          _isAvailableOnline &&
           _activeJobId == null) {
         _sendAvailabilityPing(userToken, pos.latitude, pos.longitude);
       }

@@ -346,7 +346,6 @@ func TestCascade_Race1_TwoJobsToSameCourier_AcceptOnlyOne(t *testing.T) {
 	})
 
 	tokenCust1, _ := jwtutil.GenerateToken("cust-1", "user", ownerID, "cust1@test.com")
-	tokenCust2, _ := jwtutil.GenerateToken("cust-2", "user", ownerID, "cust2@test.com")
 	tokenSolo, _ := jwtutil.GenerateToken(empSolo, "employee", ownerID, "solo@test.com")
 
 	// Create Job 1 -> offered to empSolo
@@ -363,19 +362,23 @@ func TestCascade_Race1_TwoJobsToSameCourier_AcceptOnlyOne(t *testing.T) {
 	_ = json.Unmarshal(rec1.Body.Bytes(), &resp1)
 	job1ID := resp1.Job.ID
 
-	// Create Job 2 -> also nearest to empSolo (offered to empSolo)
-	body2, _ := json.Marshal(map[string]any{
-		"service_id":     svcID,
-		"user_id":        tokenCust2,
-		"payment_method": "cod",
-		"location":       models.Location{Latitude: 30.0, Longitude: 31.0},
+	// Create Job 2 offered to empSolo (simulating concurrent offer scenario)
+	expires := now.Add(60 * time.Second)
+	job2ID := "job-race1-job2"
+	_ = s.CreateJob(ctx, &models.Job{
+		ID:                       job2ID,
+		OwnerID:                  ownerID,
+		UserID:                   "cust-2",
+		ServiceID:                svcID,
+		Status:                   models.JobStatusPendingDispatch,
+		CurrentOfferedEmployeeID: empSolo,
+		OfferExpiresAt:           &expires,
+		OfferedEmployeeIDs:       []string{empSolo},
+		PaymentMethod:            "cod",
+		Location:                 models.Location{Latitude: 30.0, Longitude: 31.0},
+		CreatedAt:                now,
+		UpdatedAt:                now,
 	})
-	req2 := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body2))
-	rec2 := httptest.NewRecorder()
-	u.TrackJob(rec2, req2)
-	var resp2 struct{ Job models.Job }
-	_ = json.Unmarshal(rec2.Body.Bytes(), &resp2)
-	job2ID := resp2.Job.ID
 
 	// Courier accepts Job 1 -> SUCCESS!
 	acceptReq1 := httptest.NewRequest("POST", fmt.Sprintf("/users/employee/jobs/%s/accept", job1ID), nil)

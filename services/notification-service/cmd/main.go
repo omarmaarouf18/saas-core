@@ -29,6 +29,7 @@ import (
 	"github.com/project/notification-service/internal/handlers"
 	"github.com/project/notification-service/internal/hub"
 	"github.com/project/notification-service/internal/store"
+	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/shared/infra/ratelimit"
 	"github.com/project/shared/infra/resilience"
@@ -125,7 +126,7 @@ func main() {
 	addr := ":" + cfg.Port
 	server := &http.Server{
 		Addr:      addr,
-		Handler:   mux,
+		Handler:   handlerutil.MaxBytesMiddleware(1 << 20)(mux),
 		TLSConfig: tlsConfig,
 		// ReadTimeout bounds slow-body slowloris reads (request headers
 		// were already capped at 3s). IdleTimeout reaps idle keep-alive

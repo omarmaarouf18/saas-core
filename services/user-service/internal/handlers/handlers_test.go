@@ -364,8 +364,19 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 
 		// C. Matching requester_id (Owner) -> 200 OK
+		testJobC := &models.Job{
+			ID:            "test-job-888-c",
+			OwnerID:       "job-owner-888",
+			EmployeeID:    "job-employee-888",
+			UserID:        "client-user-888",
+			ServiceID:     "svc-001",
+			Status:        models.JobStatusActive,
+			PaymentMethod: "cod",
+		}
+		_ = s.CreateJob(ctx, testJobC)
+
 		reqBody = map[string]any{
-			"job_id":         "test-job-888",
+			"job_id":         "test-job-888-c",
 			"cash_collected": true,
 			"requester_id":   tokenJobOwner,
 		}
@@ -401,6 +412,11 @@ func TestUserServiceHandlers(t *testing.T) {
 			AllowTestPaymentBypass: true,
 		}
 		u3 := NewUserService(s, cfg3, rdb)
+		_ = s.UpsertSubscription(context.Background(), &models.Subscription{
+			TenantID:  "tenant-id",
+			Tier:      models.PlanPaid,
+			ExpiresAt: time.Now().Add(24 * time.Hour),
+		})
 
 		// A. Valid deposit limit: 500,000 -> 200 OK
 		reqBody := map[string]any{
@@ -2928,6 +2944,11 @@ func TestUserServiceHandlers(t *testing.T) {
 				Latitude:   30.0,
 				Longitude:  31.0,
 				UpdatedAt:  time.Now().UTC(),
+			})
+			_ = s.UpsertSubscription(ctx, &models.Subscription{
+				TenantID:  "kyc-approved-owner-alias",
+				Tier:      models.PlanPaid,
+				ExpiresAt: time.Now().Add(24 * time.Hour),
 			})
 
 			// A. CreateService using owner_token

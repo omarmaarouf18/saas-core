@@ -914,3 +914,144 @@ This section consolidates the resolution status for all 10 findings from the ext
 - **Commit SHA**: ``42f63cf413837f6300e17165617d787e5b0be4b4``
 - **Verification**: Updated `services/auth-service/internal/handlers/reviewer_ratelimit_test.go:TestReviewerLogin_RateLimiting_3Attempts5MinLockout` to explicitly assert HTTP 429 Too Many Requests on `ReactivateAccount` (and `SuspendAccount`) during rate limit lockout. Suite passes (100%). ✅
 
+## Input Payload Bounding via MaxBytesMiddleware & Stream Reader Limits (QA Audit Q19)
+
+- **Implementation Detail**: Implemented `MaxBytesMiddleware` in `shared/infra/handlerutil/max_bytes.go` enforcing a 1 MB global cap on incoming request bodies (10 MB on multipart upload paths `/upload` and `/documents`), wired into all services (`api-gateway`, `auth-service`, `chat-service`, `notification-service`, `user-service`). Bounded inter-service response body reads in `shared/infra/resilience` to 10 MB via `io.LimitReader`. Added explicit `http.MaxBytesReader` to `WalletDeposit`.
+- **Commit SHA**: ``8580a6f1a1ec3c5165052b59302360a3f9c1fe91``
+- **Verification**: Repro test `TestRepro_Q19_WalletDeposit_UnboundedBodyRead` in `user-service/internal/handlers/input_validation_repro_test.go` verifies 2MB payload is rejected. Unit tests in `shared/infra/handlerutil/max_bytes_test.go` pass (100%). ✅
+
+## Field-Level Length & Character Constraints (QA Audit Q20)
+
+- **Implementation Detail**: Applied strict length bounds and character validations:
+  - `auth-service`: Added regex and length (3-254 chars) validation for email in `Signup` and `RequestEmailChange`. In `UpdateProfile`, enforced 3-30 character bounds and character set validation for username, and capped frequent address entries to 200 characters. In `SimulateEmployeeAction`, capped action string to 255 characters. In `approve-kyc` CLI tool, capped rejection reason to 1000 characters.
+  - `user-service`: In `CancelJob`, capped `reason` to 500 characters. In `RequestPayout`, capped `account_details` to 500 characters.
+- **Commit SHA**: ``8580a6f1a1ec3c5165052b59302360a3f9c1fe91``
+- **Verification**: Repro tests `TestRepro_Q20_Signup_InvalidEmailFormat`, `TestRepro_Q20_UpdateProfile_UsernameLengthBypass`, `TestRepro_Q20_UpdateProfile_UnboundedFrequentAddress`, and `TestRepro_Q20_AuditAction_UnboundedActionString` in `auth-service`, and `TestRepro_Q20_CancelJob_UnboundedReason` and `TestRepro_Q20_RequestPayout_UnboundedAccountDetails` in `user-service` confirm rejection of oversized inputs. ✅
+
+## Strict Whitelisting of Payment and Payout Methods & Non-Negative Coverage Radius (QA Audit Q21)
+
+- **Implementation Detail**: Enforced strict input sanitization and enum whitelisting:
+  - `user-service`: In `CreateService`, validated that `coverage_radius_km` cannot be negative (`< 0`). In `TrackJob`, strictly whitelisted `payment_method` to `cod` and `wallet` (rejecting unknown/arbitrary strings with 400). In `RequestPayout`, strictly whitelisted `payout_method` to `bank_transfer`, `instapay`, and `vodafone_cash`.
+- **Commit SHA**: ``8580a6f1a1ec3c5165052b59302360a3f9c1fe91``
+- **Verification**: Repro tests `TestRepro_Q21_CreateService_NegativeCoverageRadius`, `TestRepro_Q21_RequestPayout_ArbitraryPayoutMethod`, and `TestRepro_Q21_TrackJob_ArbitraryPaymentMethod` confirm invalid and negative values are rejected with 400 Bad Request. ✅
+
+## Pagination and Query Bounding on Services and Employee Jobs (QA Audit Q22)
+
+- **Implementation Detail**: In `services/user-service/internal/store/mongodb.go:ListServices`, clamped `limit` and `offset` via `clampPage(limit, offset, 50, 200)` and applied `options.Find().SetLimit(limit).SetSkip(offset)`. In `services_handlers.go:ListServices`, parsed `limit` and `offset` query parameters. In `store/mongodb.go:GetJobsByEmployee`, bounded results by applying `options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).SetLimit(100)`.
+- **Commit SHA**: ``8580a6f1a1ec3c5165052b59302360a3f9c1fe91``
+- **Verification**: New test case in `services/user-service/internal/handlers/list_services_test.go` confirms query parameter `limit=2` properly bounds returned services. ✅
+
+## Pending Signup OTP Atomic Consume via FindOneAndDelete (QA Audit Q8)
+
+- **Implementation Detail**: In `services/auth-service/internal/store/mongodb.go:GetAndConsumePendingSignup`, replaced non-atomic sequential `FindOne` followed by `DeleteOne` with an atomic `s.pendingSignups.FindOneAndDelete(ctx, bson.M{"email": email, "otp_code": pending.OTPCode})`. This prevents concurrent OTP consumption races where multiple simultaneous calls with the same OTP could pass verification.
+- **Commit SHA**: ``25ba7f04b9fc2e661ae78d8fe372cd1980da1d54``
+- **Verification**: New repro test `TestRepro_Q8_ConcurrentConsumePendingSignup` in `services/auth-service/internal/handlers/auth_identity_repro_test.go` confirms that among concurrent workers submitting the same valid OTP, exactly one caller succeeds and other callers receive an error indicating the OTP has already been consumed. ✅
+
+## Public Profile Target Parameter Handling & Alias Resolution (QA Audit Q25)
+
+- **Implementation Detail**: In `services/auth-service/internal/handlers/auth.go:GetPublicProfile`, updated parameter handling so that the target user can be specified via `id`, `user_id`, or `user_token`. If `user_token` or a JWT is provided, claims are validated to extract `claims.UserID`. Requester authentication accepts `Authorization: Bearer <token>`, `requester_token`, or `requester_id`. Also added `user_id` query parameter alias support in `GetUser`.
+- **Commit SHA**: ``25ba7f04b9fc2e661ae78d8fe372cd1980da1d54``
+- **Verification**: New repro test `TestRepro_Q25_GetPublicProfile_AliasAndHeaderHandling` in `services/auth-service/internal/handlers/auth_identity_repro_test.go` verifies requester authentication via `Authorization` header, target lookup via `user_id`, and JWT token target alias resolution. ✅
+
+## Pre-DB Caller Authentication on Mutation & Inspection Endpoints (QA Audit Q26)
+
+- **Implementation Detail**: In `services/user-service/internal/handlers/jobs_handlers.go`, moved caller authentication and token validation before `store.GetJob` in `ProposePrice`, `RespondPrice`, `CompleteJob`, `CancelJob`, and `GetJob`. Previously, querying MongoDB prior to token authentication leaked job ID existence (returning 404 vs 401/400) and allowed unauthenticated callers to impose database load.
+- **Commit SHA**: ``25ba7f04b9fc2e661ae78d8fe372cd1980da1d54``
+- **Verification**: New repro test `TestRepro_Q26_AuthBeforeDBLookup` in `services/user-service/internal/handlers/auth_identity_repro_test.go` verifies that requests with invalid/missing credentials are fast-rejected with HTTP 401 Unauthorized before any DB lookup occurs. ✅
+
+## SSE Stream Bearer Token Omission in Connected Handshake (QA Audit Q27)
+
+- **Implementation Detail**: In `services/notification-service/internal/handlers/handlers.go:Stream`, changed the initial SSE `event: connected` payload from echoing the raw secret bearer token in `data: {"client_id":"<token>"}` to emitting `data: {"client_id": userID}`. Also set `hub.SSEClient.ID` to `userID` instead of raw bearer token.
+- **Commit SHA**: ``25ba7f04b9fc2e661ae78d8fe372cd1980da1d54``
+- **Verification**: New repro test `TestRepro_Q27_SSEConnectedEchoesUserIDNotRawToken` in `services/notification-service/internal/handlers/q27_repro_test.go` verifies that the initial SSE connection handshake emits `userID` and contains no bearer token ciphertext. ✅
+
+## Tenant Owner Exclusion from Dynamic In-Job Price Negotiation (Part B #5)
+
+- **Implementation Detail**: Dynamic price negotiation during transport jobs is strictly scoped between the customer and the assigned employee courier. In `services/user-service/internal/handlers/jobs_handlers.go`, removed `"owner"` from `resolveTokenWithRole(requesterToken, "employee", "user", "customer")` in both `ProposePrice` and `RespondPrice`. Requests signed by tenant owners are now rejected fast with HTTP 401 Unauthorized.
+- **Commit SHA**: ``25ba7f04b9fc2e661ae78d8fe372cd1980da1d54``
+- **Verification**: New repro test `TestRepro_PartB_OwnerPriceNegotiationScope` in `services/user-service/internal/handlers/auth_identity_repro_test.go` verifies that owner tokens attempting to propose or respond to prices are rejected fast with HTTP 401 Unauthorized instead of passing role validation and hitting 403 Forbidden. ✅
+
+## Reconciliation Escrow Zeroing & Courier Lock Release (QA Audit Q3)
+
+- **Implementation Detail**: In `services/user-service/internal/handlers/reconciliation_handlers.go:ResolveReconciliation`, updated the `release_to_employee` branch to pass `0` instead of `amount` into `u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCompleted, note, "", 0)`. Previously, passing `amount` preserved a phantom locked escrow balance on the completed job document despite funds having been transferred to the tenant/employee wallet. Also added `_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, job.EmployeeID, job.ID)` upon both `release_to_employee` and `refund_to_customer` resolutions to clean up courier concurrency locks.
+- **Commit SHA**: ``e67dc2d392ce05f62a01e0759dec731f5b04b826``
+- **Verification**: Repro test `TestRepro_Q3_ReconciliationRelease_ZeroLockedEscrow` in `services/user-service/internal/handlers/money_state_repro_test.go` verifies that `job.LockedEscrowAmount` is strictly `0.0` after reconciliation release. ✅
+
+## Atomic Ledger Balance Calculation via FindOneAndUpdate ReturnDocument (QA Audit Q4)
+
+- **Implementation Detail**: In `services/user-service/internal/store/mongodb.go`, eliminated stale ledger snapshot race conditions across `Deposit`, `LockEscrow`, `RequestPayout`, `RefundEscrow`, and `RollbackEscrow`. Replaced sequential `FindOne` + `UpdateOne` wallet balance mutations with atomic `s.wallets.FindOneAndUpdate(...)` using `options.FindOneAndUpdate().SetReturnDocument(options.After)`. Computed `BalanceAfter` and `BalanceBefore` directly from the atomically returned document, guaranteeing an unbroken, linear balance audit trail under concurrent deposit/lock operations.
+- **Commit SHA**: ``e67dc2d392ce05f62a01e0759dec731f5b04b826``
+- **Verification**: Repro test `TestRepro_Q4_LedgerBalanceAtomicReturnDocument` in `services/user-service/internal/handlers/money_state_repro_test.go` verifies that concurrent wallet operations generate distinct, sequential `BalanceBefore` values without stale snapshots. ✅
+
+## Compare-And-Swap (CAS) State Machine Guards on Job Status & Reconciliation Updates (QA Audit Q6)
+
+- **Implementation Detail**: In `services/user-service/internal/store/mongodb.go`, added CAS status filtering to `UpdateJobStatus` and `UpdateJobReconciliation`. `UpdateJobStatus` strictly enforces allowed pre-states (transitioning to `JobStatusCompleted` requires current status `JobStatusActive` or idempotent `JobStatusCompleted`; transitioning to `JobStatusActive` requires `$in: [JobStatusPending, JobStatusPendingDispatch, JobStatusAwaitingPriceResponse]`; transitioning to `JobStatusCancelled` excludes terminal statuses `$nin: [JobStatusCompleted, JobStatusCancelled]`). `UpdateJobReconciliation` enforces that transitioning to `JobStatusCompleted` or `JobStatusCancelled` requires current status `JobStatusEscrowReconciliationRequired` or terminal state, and setting `JobStatusEscrowReconciliationRequired` requires `$ne: JobStatusCompleted`. Both methods return `job_state_changed: ...` when matched count is zero.
+- **Commit SHA**: ``e67dc2d392ce05f62a01e0759dec731f5b04b826``
+- **Verification**: Repro test `TestRepro_Q6_JobStatusCAS_GuardsBypass` in `services/user-service/internal/handlers/money_state_repro_test.go` verifies that invalid state transitions (such as completing or reconciling a cancelled job) are rejected. ✅
+
+## Atomic Tenant Subscription Upsert via UpdateOne with $setOnInsert (QA Audit Q9)
+
+- **Implementation Detail**: In `services/user-service/internal/store/mongodb.go:UpsertSubscription`, replaced non-atomic `FindOne` followed by `ReplaceOne` with a single atomic `s.subscriptions.UpdateOne(ctx, bson.M{"tenant_id": sub.TenantID}, update, options.UpdateOne().SetUpsert(true))`. Configured `$setOnInsert` for immutable fields (`_id`, `tenant_id`) and `$set` for mutable subscription fields (`tier`, `started_at`, `updated_at`, `expires_at`, `reason`, `activated_by`, `revoked_by`), completely eliminating MongoDB immutable `_id` write alteration errors under concurrent upserts.
+- **Commit SHA**: ``e67dc2d392ce05f62a01e0759dec731f5b04b826``
+- **Verification**: Repro test `TestRepro_Q9_ConcurrentUpsertSubscription_NoDuplicateKey` in `services/user-service/internal/handlers/money_state_repro_test.go` verifies that 10 concurrent upsert calls for a new tenant succeed without errors. ✅
+
+## Atomic Field-Level Updates in UpdateService (QA Audit Q10)
+
+- **Implementation Detail**: Added `UpdateServiceFields(ctx, id, tenantID, fields)` to `services/user-service/internal/store/mongodb.go` using atomic `FindOneAndUpdate` with `options.After`. Updated `UpdateService` in `services/user-service/internal/handlers/services_handlers.go` to construct a selective `bson.M` containing only explicitly provided fields (`category`, `name`, `tenant_base_price`, `tenant_price_per_km`, `location`, `photo_url`, `address`, `working_hours`, `coverage_radius_km`) rather than overwriting the entire document from a stale in-memory struct snapshot. This prevents concurrent partial updates from clobbering each other.
+- **Commit SHA**: ``e67dc2d392ce05f62a01e0759dec731f5b04b826``
+- **Verification**: Repro test `TestRepro_Q10_UpdateService_ConcurrentFieldLevelClobber` in `services/user-service/internal/handlers/money_state_repro_test.go` verifies that concurrent updates to different fields (e.g. `address` and `tenant_base_price`) are both atomically preserved. ✅
+
+## Atomic Device Token Upsert via Positional Update & Guarded Push (QA Audit Q11)
+
+- **Implementation Detail**: In `services/auth-service/internal/store/mongodb.go:UpsertDeviceToken`, replaced the sequential `$pull` followed by `$push` pattern with an atomic two-phase operation: positional `$set` on `device_tokens.$.platform` and `updated_at` if the token already exists, falling back to an atomic `$push` guarded by `device_tokens.token: {"$ne": tokenStr}`. If concurrent requests race to register the same device token, only one push succeeds while the other safely refreshes the existing entry, completely preventing duplicate FCM token array entries.
+- **Commit SHA**: ``c57b226b76b13ae8cc91810a8f979b6ad75a168c``
+- **Verification**: Dedicated repro test `TestUpsertDeviceToken_ConcurrentNoDuplicates` in `services/auth-service/internal/store/audit_token_repro_test.go` verifies that 20 concurrent goroutines registering the identical device token result in exactly 1 array element. ✅
+
+## Cryptographic Random Audit Log Identifiers & Error Surfacing (QA Audit Q12)
+
+- **Implementation Detail**: In `services/auth-service/internal/store/mongodb.go:AppendAudit`, replaced clock-dependent, non-cryptographic identifier generation (`fmt.Sprintf("audit-%d", time.Now().UnixNano())`) with 128-bit cryptographically secure random identifiers generated via `crypto/rand` (`audit-[0-9a-f]{32}`). Updated the `AppendAudit` signature to return an `error` rather than silently swallowing database insertion failures, and updated callers across `RecordAction`, `ReviewKYC`, `SuspendAccount`, and `ReactivateAccount` in `services/auth-service/internal/handlers/auth.go` to handle or log insertion errors.
+- **Commit SHA**: ``c57b226b76b13ae8cc91810a8f979b6ad75a168c``
+- **Verification**: Dedicated repro test `TestAppendAudit_CryptoIDAndError` in `services/auth-service/internal/store/audit_token_repro_test.go` verifies cryptographic hex ID format and confirms error propagation on cancelled context. ✅
+
+## Compare-And-Swap Support Ticket Resolution & HTTP 409 Conflict Handling (QA Audit Q13)
+
+- **Implementation Detail**: In `services/chat-service/internal/store/mongodb.go:ResolveTicket`, added atomic Compare-And-Swap (CAS) guard `status: bson.M{"$ne": "resolved"}` using `FindOneAndUpdate`. When attempting to resolve a ticket that has already been marked resolved, the store returns `ErrTicketAlreadyResolved`. In `services/chat-service/internal/handlers/chat.go:HandleResolveTicket`, added explicit conflict detection mapping `ErrTicketAlreadyResolved` to HTTP 409 Conflict with `{"error": "ticket is already resolved"}`. Marked legacy support-agent resolution route as deprecated in favor of `AdminResolveTicket` per ADR-0023.
+- **Commit SHA**: ``c57b226b76b13ae8cc91810a8f979b6ad75a168c``
+- **Verification**: Repro tests `TestResolveTicket_CAS_AlreadyResolved` in `services/chat-service/internal/store/ticket_agent_repro_test.go` and `TestHandleResolveTicket_ConflictWhenAlreadyResolved` in `services/chat-service/internal/handlers/resolve_ticket_repro_test.go` verify CAS conflict rejection and HTTP 409 status code. ✅
+
+## Automatic Stranded Support Agent Discovery & Recovery Sweeper (QA Audit Q14)
+
+- **Implementation Detail**: Added `SweepStrandedAgents(ctx context.Context) (int64, error)` in `services/chat-service/internal/store/mongodb.go` and added `CurrentTicketID` to `SupportAgent` struct. The sweeper finds agents in `busy` status whose referenced `current_ticket_id` either does not exist or has already reached a terminal state (`resolved` or `closed`), resetting their status to `available` with `current_ticket_id` cleared. Integrated sweeper into `services/chat-service/cmd/main.go` on startup to clean up ungraceful shutdown states.
+- **Commit SHA**: ``c57b226b76b13ae8cc91810a8f979b6ad75a168c``
+- **Verification**: Dedicated test `TestSweepStrandedAgents` in `services/chat-service/internal/store/ticket_agent_repro_test.go` verifies automatic recovery of agents stranded by missing tickets, empty ticket IDs, or already resolved tickets while leaving valid active agents untouched. ✅
+
+## App Version Configuration Persist-First & Monotonic Revision Sequence (QA Audit Q15)
+
+- **Implementation Detail**: In `services/api-gateway/internal/version/version.go`, added monotonic `Revision int64` to `PlatformVersions`. In `UpdateConfig`, inverted the mutation sequence so that the new configuration is persisted to MongoDB first using `FindOneAndUpdate` with `$inc: bson.M{"revision": 1}` before modifying the in-memory cache `s.cached`. If MongoDB persistence fails, in-memory cache remains uncorrupted and retains the previous valid version configuration.
+- **Commit SHA**: ``c57b226b76b13ae8cc91810a8f979b6ad75a168c``
+- **Verification**: Unit test `TestVersionStore_MongoDB_PersistBeforeCacheAndRevision` in `services/api-gateway/internal/version/version_test.go` verifies monotonic revision incrementing and proves that in-memory cache is not corrupted when MongoDB updates fail. ✅
+
+## Redis Pub/Sub Dynamic Channel Subscription Serialization (QA Audit Q16)
+
+- **Implementation Detail**: In `services/chat-service/internal/chat/hub.go`, added a dedicated `subMu sync.Mutex` and `syncRedisSubscription` helper method. All dynamic Redis Pub/Sub subscriptions and unsubscriptions across `Subscribe`, `Unsubscribe`, `Unregister`, and `DisconnectUser` are now strictly serialized through `subMu` while inspecting the latest local client count under read lock. This eliminates out-of-order execution races where a rapid unsubscribe followed by a subscribe could leave Redis in an unsubscribed state for active channels.
+- **Commit SHA**: ``c57b226b76b13ae8cc91810a8f979b6ad75a168c``
+- **Verification**: Concurrency test `TestHub_RedisPubSub_SubscribeUnsubscribe_Serialized` in `services/chat-service/internal/chat/hub_concurrency_repro_test.go` verifies thread-safety and accurate subscription state under rapid concurrent join/leave operations with `-race` enabled. ✅
+
+## Idempotent WebSocket Client Channel Closure & Close Panic Prevention (QA Audit Q17)
+
+- **Implementation Detail**: In `services/chat-service/internal/chat/hub.go`, added `closeOnce sync.Once` and `CloseSend()` method to `Client` struct. Replaced direct `close(client.Send)` invocations across `DisconnectUser`, `Close`, and `Unregister` with `client.CloseSend()`. This ensures the outbound message buffer channel is closed at most once, eliminating `close of closed channel` panics during concurrent client disconnections and hub shutdowns.
+- **Commit SHA**: ``c57b226b76b13ae8cc91810a8f979b6ad75a168c``
+- **Verification**: Concurrency tests `TestClient_CloseSend_Idempotent` and `TestHub_Close_ConcurrentWithUnregister` in `services/chat-service/internal/chat/hub_concurrency_repro_test.go` verify safe concurrent channel closure and shutdown without panics with `-race` enabled. ✅
+
+## Broad Paid-Tier Gating Across All Mutating Owner Endpoints (Part A #3)
+
+- **Implementation Detail**: Enforced broad paid-tier membership check (`models.PlanPaid`) across all 11 owner-facing mutating endpoints in `user-service` and `auth-service`. Free-tier owner accounts are strictly restricted to registration, profile inspection, and catalog viewing (read-only). All mutating endpoints (`CreateService`, `UpdateService`, `WalletDeposit`, `RequestPayout`, `ResolveReconciliation`, `TrackJob` [when owner token], `CompleteJob` [when owner], `CancelJob` [when owner], `RateJob` [when owner rating], `UpdateJobLocation`, and `ToggleEmployee` [via internal `/users/subscription/internal` endpoint]) reject Free-tier owners with HTTP 402 Payment Required (`{"error": "upgrade_required", "message": "<Feature> requires a paid subscription."}`) and emit an `UPGRADE_REQUIRED` security event. Updated `frontend/lib/core/error_messages.dart` to map status code 402 to `ErrorMessages.paymentRequired` ("A paid subscription is required to perform this action. Please upgrade to continue."). Documented full catalog reference matrix in `docs/architecture/tier-matrix.md`.
+- **Commit SHA**: ``63664c8332d5a5bd26e9acef280b03d1b73194e1``
+- **Verification**: Verified via `services/user-service/internal/handlers/paid_tier_gating_matrix_test.go` (10 mutating endpoints returning 402 for Free tier, 6 read-only endpoints returning 200 for Free tier, mutating endpoints succeeding for Paid tier), `services/auth-service/internal/handlers/auth_paid_tier_gating_test.go` (asserting 402 for Free owner toggle vs 200 for Paid owner toggle), and `frontend/test/error_messages_test.dart` (asserting 402 friendly message mapping). Full test suites in `user-service`, `auth-service`, and `frontend` pass 100%. ✅
+## Scope Refinement for Paid-Tier Gating to Mutating Owner Endpoints (Part A #3)
+
+- **Implementation Detail**: Refined paid-tier gating scope to focus strictly on mutating owner operations (`CreateService`, `UpdateService`, `WalletDeposit`, `RequestPayout`, `ResolveReconciliation`, `UpdateJobLocation`, and `ToggleEmployee`). Reverted accidental gating on customer job creation and courier completion/rating actions (`TrackJob`, `CompleteJob`, `CancelJob`, `RateJob`) which are end-user and courier workflows. Seeded `models.PlanPaid` subscription fixtures across regression test suites.
+- **Commit SHA**: ``753a78b8396c65e1fa6da488e533d013d465f7cb``
+- **Verification**: Verified via `services/user-service/internal/handlers/paid_tier_gating_matrix_test.go` and the full `services/user-service/...` and `services/auth-service/...` test suites passing 100%. ✅
+
+

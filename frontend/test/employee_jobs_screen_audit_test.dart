@@ -87,6 +87,15 @@ class MockEmployeeLocationProvider extends ChangeNotifier
   String? error;
 
   @override
+  bool isAvailableOnline = true;
+
+  @override
+  Future<void> setAvailableOnline(bool online, {String? userToken}) async {
+    isAvailableOnline = online;
+    notifyListeners();
+  }
+
+  @override
   Future<void> startTracking(String jobId, String token) async {}
 
   @override

@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`b065e3e`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`a960e3c`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -271,6 +271,7 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`POST /users/services/update`** | `user-service` | Owner JWT (KYC Approved) | Updates an existing service listing (photo, address, working hours, coverage radius, prices, category). | Downstream: calls `auth-service/auth/user`. Updates `services` collection. |
 | **`PUT /users/services/update`** | `user-service` | Owner JWT (KYC Approved) | Updates an existing service listing (photo, address, working hours, coverage radius, prices, category). | Downstream: calls `auth-service/auth/user`. Updates `services` collection. |
 | **`POST /users/subscription`** | `user-service` | Owner JWT (KYC Approved) | Subscribes/renews SaaS tier. Accepts tenant_id (legacy) or tenant_token (preferred), and requester_id (legacy) or requester_token (preferred). | Updates `subscriptions`, writes `wallets`, writes `ledger`. |
+| **`GET /users/subscription/internal`** | `user-service` | `X-Internal-Token` | InternalSubscriptionCheck allows internal services (e.g., auth-service) to verify | <!-- TODO: verify manually --> |
 | **`GET /users/wallet`** | `user-service` | Owner JWT | Fetches active balance details. Accepts tenant_id (legacy) or tenant_token (preferred). | Reads `wallets` collection. |
 | **`POST /users/wallet/deposit`** | `user-service` | Owner JWT | Loads funds up to maximum limits. Accepts tenant_id (legacy) or tenant_token (preferred). | Updates `wallets` collection. |
 | **`POST /users/wallet/payout/request`** | `user-service` | Owner JWT | Processes a tenant owner withdrawal request for electronic wallet balance. | Reads `wallets` collection, writes `payout_requests` collection. |
