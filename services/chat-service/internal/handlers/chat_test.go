@@ -1304,6 +1304,12 @@ func TestHandleResolveTicket(t *testing.T) {
 		t.Fatalf("failed to create ticket: %v", err)
 	}
 
+	// Create second ticket (will be assigned to available agent 2)
+	ticket2, err := mongoStore.CreateTicketAndAssign(ctx, "customer-resolve-2", "context-456")
+	if err != nil {
+		t.Fatalf("failed to create second ticket: %v", err)
+	}
+
 	tests := []struct {
 		name           string
 		method         string
@@ -1362,12 +1368,19 @@ func TestHandleResolveTicket(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "Success - Agent 1 resolving assigned ticket via Bearer header",
+			name:           "Success - Agent 2 resolving assigned ticket via Bearer header",
+			method:         "POST",
+			token:          "agent-resolve-token-2",
+			headerToken:    true,
+			body:           fmt.Sprintf(`{"ticket_id":"%s"}`, ticket2.ID),
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Conflict - Resolving already resolved ticket",
 			method:         "POST",
 			token:          "agent-resolve-token-1",
-			headerToken:    true,
 			body:           fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID),
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusConflict,
 		},
 	}
 

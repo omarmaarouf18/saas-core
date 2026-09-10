@@ -29,10 +29,18 @@ type Message struct {
 
 // Client represents a single WebSocket connection registered with the Hub.
 type Client struct {
-	ID       string          // unique connection ID (from token)
-	Username string          // point-in-time username of the client resolved at connection init time
-	Channels map[string]bool // channels this client is subscribed to
-	Send     chan []byte     // outbound message buffer
+	ID        string          // unique connection ID (from token)
+	Username  string          // point-in-time username of the client resolved at connection init time
+	Channels  map[string]bool // channels this client is subscribed to
+	Send      chan []byte     // outbound message buffer
+	closeOnce sync.Once
+}
+
+// CloseSend safely closes the Send channel at most once, preventing panics on concurrent closes.
+func (c *Client) CloseSend() {
+	c.closeOnce.Do(func() {
+		close(c.Send)
+	})
 }
 
 type hubPubSubPayload struct {
@@ -44,6 +52,7 @@ type hubPubSubPayload struct {
 // to clients subscribed to the target channel.
 type Hub struct {
 	mu         sync.RWMutex
+	subMu      sync.Mutex                  // serializes dynamic Redis Pub/Sub subscribe and unsubscribe calls (Q16)
 	clients    map[*Client]bool            // all connected clients
 	channels   map[string]map[*Client]bool // channel → set of clients
 	instanceID string                      // unique instance ID to prevent duplicate self-delivery from Redis
@@ -98,11 +107,10 @@ func (h *Hub) SetRedisClient(rdb *redis.Client) {
 // DisconnectUser closes and removes all active WebSocket connections belonging to userID (F-03).
 func (h *Hub) DisconnectUser(userID string) {
 	h.mu.Lock()
-	defer h.mu.Unlock()
-
+	var channelsToSync []string
 	for client := range h.clients {
 		if client.ID == userID {
-			close(client.Send)
+			client.CloseSend()
 			delete(h.clients, client)
 			for ch := range client.Channels {
 				if members, exists := h.channels[ch]; exists {
@@ -115,11 +123,17 @@ func (h *Hub) DisconnectUser(userID string) {
 					h.activeSubs[ch] = count - 1
 					if h.activeSubs[ch] <= 0 {
 						delete(h.activeSubs, ch)
+						channelsToSync = append(channelsToSync, ch)
 					}
 				}
 			}
 			log.Printf("[HUB] Force disconnected suspended user: %s", userID)
 		}
+	}
+	h.mu.Unlock()
+
+	for _, ch := range channelsToSync {
+		h.syncRedisSubscription(ch)
 	}
 }
 
@@ -131,12 +145,15 @@ func (h *Hub) Close() {
 		pubsub := h.pubsub
 
 		for client := range h.clients {
-			close(client.Send)
+			client.CloseSend()
 			delete(h.clients, client)
 		}
 		h.channels = make(map[string]map[*Client]bool)
 		h.activeSubs = make(map[string]int)
 		h.mu.Unlock()
+
+		h.subMu.Lock()
+		defer h.subMu.Unlock()
 
 		if cancel != nil {
 			cancel()
@@ -211,6 +228,7 @@ func (h *Hub) Run() {
 
 		case client := <-h.Unregister:
 			h.mu.Lock()
+			var channelsToSync []string
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				// Remove from all channel subscriptions.
@@ -225,19 +243,17 @@ func (h *Hub) Run() {
 						h.activeSubs[ch] = count - 1
 						if h.activeSubs[ch] <= 0 {
 							delete(h.activeSubs, ch)
-							if h.pubsub != nil {
-								go func(c string) {
-									ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-									defer cancel()
-									_ = h.pubsub.Unsubscribe(ctx, redisChannelName(c))
-								}(ch)
-							}
+							channelsToSync = append(channelsToSync, ch)
 						}
 					}
 				}
-				close(client.Send)
+				client.CloseSend()
 			}
 			h.mu.Unlock()
+
+			for _, ch := range channelsToSync {
+				h.syncRedisSubscription(ch)
+			}
 			log.Printf("[HUB] Client unregistered: %s (total: %d)", client.ID, h.ClientCount())
 
 		case msg := <-h.Broadcast:
@@ -271,6 +287,40 @@ func (h *Hub) Run() {
 	}
 }
 
+// syncRedisSubscription safely synchronizes Redis Pub/Sub subscription state for a given channel.
+// Serialized via subMu to prevent concurrent subscribe/unsubscribe race conditions (Q16).
+func (h *Hub) syncRedisSubscription(channel string) {
+	h.subMu.Lock()
+	defer h.subMu.Unlock()
+
+	h.mu.RLock()
+	count := h.activeSubs[channel]
+	pubsub := h.pubsub
+	h.mu.RUnlock()
+
+	if pubsub == nil {
+		return
+	}
+
+	topic := redisChannelName(channel)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if count > 0 {
+		if err := pubsub.Subscribe(ctx, topic); err != nil {
+			log.Printf("[REDIS-PUBSUB-WARNING] Failed to subscribe to Redis topic %s: %v", topic, err)
+		} else {
+			log.Printf("[HUB] Subscribed to Redis topic %s for dynamic channel %q", topic, channel)
+		}
+	} else {
+		if err := pubsub.Unsubscribe(ctx, topic); err != nil {
+			log.Printf("[REDIS-PUBSUB-WARNING] Failed to unsubscribe from Redis topic %s: %v", topic, err)
+		} else {
+			log.Printf("[HUB] Unsubscribed from Redis topic %s (zero local subscribers for %q)", topic, channel)
+		}
+	}
+}
+
 // Subscribe adds a client to a named channel.
 func (h *Hub) Subscribe(client *Client, channel string) {
 	h.mu.Lock()
@@ -283,19 +333,10 @@ func (h *Hub) Subscribe(client *Client, channel string) {
 
 	h.activeSubs[channel]++
 	isFirst := h.activeSubs[channel] == 1
-	pubsub := h.pubsub
-
 	h.mu.Unlock()
 
-	if isFirst && pubsub != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-		topic := redisChannelName(channel)
-		if err := pubsub.Subscribe(ctx, topic); err != nil {
-			log.Printf("[REDIS-PUBSUB-WARNING] Failed to subscribe to Redis topic %s: %v", topic, err)
-		} else {
-			log.Printf("[HUB] Subscribed to Redis topic %s for dynamic channel %q", topic, channel)
-		}
+	if isFirst {
+		h.syncRedisSubscription(channel)
 	}
 
 	log.Printf("[HUB] Client %s joined channel %q", client.ID, channel)
@@ -321,19 +362,10 @@ func (h *Hub) Unsubscribe(client *Client, channel string) {
 			isLast = true
 		}
 	}
-	pubsub := h.pubsub
-
 	h.mu.Unlock()
 
-	if isLast && pubsub != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-		topic := redisChannelName(channel)
-		if err := pubsub.Unsubscribe(ctx, topic); err != nil {
-			log.Printf("[REDIS-PUBSUB-WARNING] Failed to unsubscribe from Redis topic %s: %v", topic, err)
-		} else {
-			log.Printf("[HUB] Unsubscribed from Redis topic %s (zero local subscribers for %q)", topic, channel)
-		}
+	if isLast {
+		h.syncRedisSubscription(channel)
 	}
 
 	log.Printf("[HUB] Client %s left channel %q", client.ID, channel)

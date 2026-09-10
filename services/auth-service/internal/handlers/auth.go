@@ -956,7 +956,11 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 		Timestamp:  time.Now().UTC(),
 		ClientIP:   clientIP,
 	}
-	a.store.AppendAudit(ctx, entry)
+	if err := a.store.AppendAudit(ctx, entry); err != nil {
+		log.Printf("[AUDIT] Failed to record action in audit log: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to record audit entry"})
+		return
+	}
 
 	// #nosec G706 //nolint:gosec -- action is sanitized by stripping carriage return and newline characters to prevent log injection
 	log.Printf("[AUDIT] Action recorded: employee=%s tenant=%s action=%s ip=%s", emp.ID, emp.OwnerID, strings.ReplaceAll(strings.ReplaceAll(req.Action, "\n", " "), "\r", " "), clientIP)
@@ -1816,13 +1820,15 @@ func (a *Auth) ReviewKYBKYESubmissions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.store.AppendAudit(ctx, models.AuditEntry{
+	if err := a.store.AppendAudit(ctx, models.AuditEntry{
 		EmployeeID: reviewer.ID,
 		TenantID:   targetUser.ID,
 		Action:     "KYC_REVIEWED",
 		Timestamp:  time.Now().UTC(),
 		ClientIP:   handlerutil.GetClientIP(r),
-	})
+	}); err != nil {
+		log.Printf("[AUTH] Failed to record KYC review in audit log: %v", err)
+	}
 
 	handlerutil.ShipSecurityEvent(ctx, "KYC_REVIEWED", "auth-service", reviewer.ID, req.UserID, fmt.Sprintf("action: %s, reason: %s", req.Action, req.Reason), handlerutil.GetClientIP(r))
 
@@ -2111,13 +2117,15 @@ func (a *Auth) SuspendAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Append audit log
-	a.store.AppendAudit(ctx, models.AuditEntry{
+	if err := a.store.AppendAudit(ctx, models.AuditEntry{
 		EmployeeID: reviewer.ID,
 		TenantID:   targetUser.ID,
 		Action:     "ACCOUNT_SUSPENDED",
 		Timestamp:  time.Now().UTC(),
 		ClientIP:   handlerutil.GetClientIP(r),
-	})
+	}); err != nil {
+		log.Printf("[AUTH] Failed to record account suspension in audit log: %v", err)
+	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ACCOUNT_SUSPENDED", "auth-service", reviewer.ID, targetUserID, fmt.Sprintf("reason: %s", reason), handlerutil.GetClientIP(r))
 
@@ -2191,13 +2199,15 @@ func (a *Auth) ReactivateAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Append audit log
-	a.store.AppendAudit(ctx, models.AuditEntry{
+	if err := a.store.AppendAudit(ctx, models.AuditEntry{
 		EmployeeID: reviewer.ID,
 		TenantID:   targetUser.ID,
 		Action:     "ACCOUNT_REACTIVATED",
 		Timestamp:  time.Now().UTC(),
 		ClientIP:   handlerutil.GetClientIP(r),
-	})
+	}); err != nil {
+		log.Printf("[AUTH] Failed to record account reactivation in audit log: %v", err)
+	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ACCOUNT_REACTIVATED", "auth-service", reviewer.ID, targetUserID, fmt.Sprintf("reason: %s", reason), handlerutil.GetClientIP(r))
 

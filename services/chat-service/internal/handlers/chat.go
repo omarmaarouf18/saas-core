@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -895,6 +896,10 @@ func (c *Chat) HandleResolveTicket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := c.store.ResolveTicket(r.Context(), req.TicketID); err != nil {
+		if errors.Is(err, store.ErrTicketAlreadyResolved) || strings.Contains(err.Error(), "already resolved") {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": "ticket is already resolved"})
+			return
+		}
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to resolve ticket: " + err.Error()})
 		return
 	}
