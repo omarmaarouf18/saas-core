@@ -193,11 +193,12 @@ pie title Breakdown of Backend Gaps by UI Surface Impact
 
 ---
 
-### GAP-05: User Profile Account Standing & Suspension Metadata
+### GAP-05: User Profile Account Standing & Suspension Metadata [CLOSED]
 
 * **Severity / Priority**: **Low (P3)**
 * **Impact Classification**: **Addition to Existing Screen**
 * **Related ADR**: [ADR-0022](../adr/0022-account-suspension-and-reviewer-directory.md)
+* **Status**: **Closed** in `d618da95712dcae1ff2f15ce32319823c56eda57`
 
 #### Detailed Finding
 - **Backend Capability**:
@@ -206,9 +207,10 @@ pie title Breakdown of Backend Gaps by UI Surface Impact
 - **Frontend State**:
   - `UserProfile` model (`frontend/lib/models/user_profile.dart`) parses KYC/KYE status and rejection reasons, but omits `account_status` and `suspension_reason`.
   - If a user account is suspended while logged in, API requests fail with 403, but `MyAccountScreen` does not show account standing status badges.
-- **Suggested UI & Fix**:
-  - Add `accountStatus` and `suspensionReason` to `UserProfile.fromJson`.
-  - Display an account standing indicator in `MyAccountScreen`.
+- **Resolution**:
+  - Added `accountStatus` and `suspensionReason` to `UserProfile.fromJson` with convenience getters `isSuspended` and `isActiveAccount`.
+  - Displayed `Key('account_suspended_banner')` at top of `MyAccountScreen` showing administrator suspension reason, along with `Key('account_status_badge')` and `Key('account_status_overview_badge')`. Disabled profile modification buttons when suspended.
+  - Verified via `frontend/test/gap05_account_status_test.dart` (8/8 passing). ✅
 
 ---
 
