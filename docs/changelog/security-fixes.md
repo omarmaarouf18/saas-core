@@ -917,6 +917,7 @@ This section consolidates the resolution status for all 10 findings from the ext
 ## Input Payload Bounding via MaxBytesMiddleware & Stream Reader Limits (QA Audit Q19)
 
 - **Implementation Detail**: Implemented `MaxBytesMiddleware` in `shared/infra/handlerutil/max_bytes.go` enforcing a 1 MB global cap on incoming request bodies (10 MB on multipart upload paths `/upload` and `/documents`), wired into all services (`api-gateway`, `auth-service`, `chat-service`, `notification-service`, `user-service`). Bounded inter-service response body reads in `shared/infra/resilience` to 10 MB via `io.LimitReader`. Added explicit `http.MaxBytesReader` to `WalletDeposit`.
+- **Commit SHA**: ``8580a6f1a1ec3c5165052b59302360a3f9c1fe91``
 - **Verification**: Repro test `TestRepro_Q19_WalletDeposit_UnboundedBodyRead` in `user-service/internal/handlers/input_validation_repro_test.go` verifies 2MB payload is rejected. Unit tests in `shared/infra/handlerutil/max_bytes_test.go` pass (100%). ✅
 
 ## Field-Level Length & Character Constraints (QA Audit Q20)
@@ -924,17 +925,20 @@ This section consolidates the resolution status for all 10 findings from the ext
 - **Implementation Detail**: Applied strict length bounds and character validations:
   - `auth-service`: Added regex and length (3-254 chars) validation for email in `Signup` and `RequestEmailChange`. In `UpdateProfile`, enforced 3-30 character bounds and character set validation for username, and capped frequent address entries to 200 characters. In `SimulateEmployeeAction`, capped action string to 255 characters. In `approve-kyc` CLI tool, capped rejection reason to 1000 characters.
   - `user-service`: In `CancelJob`, capped `reason` to 500 characters. In `RequestPayout`, capped `account_details` to 500 characters.
+- **Commit SHA**: ``8580a6f1a1ec3c5165052b59302360a3f9c1fe91``
 - **Verification**: Repro tests `TestRepro_Q20_Signup_InvalidEmailFormat`, `TestRepro_Q20_UpdateProfile_UsernameLengthBypass`, `TestRepro_Q20_UpdateProfile_UnboundedFrequentAddress`, and `TestRepro_Q20_AuditAction_UnboundedActionString` in `auth-service`, and `TestRepro_Q20_CancelJob_UnboundedReason` and `TestRepro_Q20_RequestPayout_UnboundedAccountDetails` in `user-service` confirm rejection of oversized inputs. ✅
 
 ## Strict Whitelisting of Payment and Payout Methods & Non-Negative Coverage Radius (QA Audit Q21)
 
 - **Implementation Detail**: Enforced strict input sanitization and enum whitelisting:
   - `user-service`: In `CreateService`, validated that `coverage_radius_km` cannot be negative (`< 0`). In `TrackJob`, strictly whitelisted `payment_method` to `cod` and `wallet` (rejecting unknown/arbitrary strings with 400). In `RequestPayout`, strictly whitelisted `payout_method` to `bank_transfer`, `instapay`, and `vodafone_cash`.
+- **Commit SHA**: ``8580a6f1a1ec3c5165052b59302360a3f9c1fe91``
 - **Verification**: Repro tests `TestRepro_Q21_CreateService_NegativeCoverageRadius`, `TestRepro_Q21_RequestPayout_ArbitraryPayoutMethod`, and `TestRepro_Q21_TrackJob_ArbitraryPaymentMethod` confirm invalid and negative values are rejected with 400 Bad Request. ✅
 
 ## Pagination and Query Bounding on Services and Employee Jobs (QA Audit Q22)
 
 - **Implementation Detail**: In `services/user-service/internal/store/mongodb.go:ListServices`, clamped `limit` and `offset` via `clampPage(limit, offset, 50, 200)` and applied `options.Find().SetLimit(limit).SetSkip(offset)`. In `services_handlers.go:ListServices`, parsed `limit` and `offset` query parameters. In `store/mongodb.go:GetJobsByEmployee`, bounded results by applying `options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).SetLimit(100)`.
+- **Commit SHA**: ``8580a6f1a1ec3c5165052b59302360a3f9c1fe91``
 - **Verification**: New test case in `services/user-service/internal/handlers/list_services_test.go` confirms query parameter `limit=2` properly bounds returned services. ✅
 
 
