@@ -35,7 +35,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var phoneRegex = regexp.MustCompile(`^\+?[0-9]{7,15}$`)
+var (
+	phoneRegex = regexp.MustCompile(`^\+?[0-9]{7,15}$`)
+	emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+)
+
+func isValidEmail(email string) bool {
+	if len(email) < 3 || len(email) > 254 {
+		return false
+	}
+	return emailRegex.MatchString(email)
+}
 
 // Auth holds runtime dependencies for the authentication handlers.
 type Auth struct {
@@ -167,9 +177,17 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate required fields.
+	req.Email = strings.TrimSpace(req.Email)
 	if req.Email == "" || req.Password == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "email and password are required",
+		})
+		return
+	}
+
+	if !isValidEmail(req.Email) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid email format",
 		})
 		return
 	}
@@ -862,6 +880,12 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	if len(req.Action) > 255 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "action cannot exceed 255 characters",
+		})
+		return
+	}
 
 	// Validate caller JWT token matches requested employee email
 	authHeader := r.Header.Get("Authorization")
@@ -1092,6 +1116,21 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "username cannot be empty"})
 			return
 		}
+		runeCount := len([]rune(str))
+		if runeCount < 3 || runeCount > 30 {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "username must be between 3 and 30 characters",
+			})
+			return
+		}
+		for _, r := range str {
+			if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' || r == ' ' || (r >= 0x0600 && r <= 0x06FF)) {
+				writeJSON(w, http.StatusBadRequest, map[string]string{
+					"error": "username contains invalid characters",
+				})
+				return
+			}
+		}
 		if str != user.Username {
 			existing := a.store.GetByUsername(ctx, str)
 			if existing != nil && existing.ID != user.ID {
@@ -1141,6 +1180,10 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 			}
 			addrStr = strings.TrimSpace(addrStr)
 			if addrStr != "" {
+				if len([]rune(addrStr)) > 200 {
+					writeJSON(w, http.StatusBadRequest, map[string]string{"error": "frequent_addresses entry cannot exceed 200 characters"})
+					return
+				}
 				addresses = append(addresses, addrStr)
 			}
 		}
@@ -2957,7 +3000,7 @@ func (a *Auth) RequestEmailChange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !strings.Contains(newEmail, "@") || !strings.Contains(newEmail, ".") {
+	if !isValidEmail(newEmail) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "invalid email format",
 		})

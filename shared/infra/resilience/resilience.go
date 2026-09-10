@@ -20,17 +20,26 @@ import (
 // instead of being cancelled the moment the execute closure returns, while
 // still guaranteeing eventual resource release on Close or on error paths.
 type cancelReadCloser struct {
-	io.ReadCloser
+	closer     io.Closer
+	reader     io.Reader
 	cancelOnce sync.Once
 	cancel     context.CancelFunc
 }
 
 func newCancelReadCloser(rc io.ReadCloser, cancel context.CancelFunc) *cancelReadCloser {
-	return &cancelReadCloser{ReadCloser: rc, cancel: cancel}
+	return &cancelReadCloser{
+		closer: rc,
+		reader: io.LimitReader(rc, 10<<20),
+		cancel: cancel,
+	}
+}
+
+func (c *cancelReadCloser) Read(p []byte) (int, error) {
+	return c.reader.Read(p)
 }
 
 func (c *cancelReadCloser) Close() error {
-	err := c.ReadCloser.Close()
+	err := c.closer.Close()
 	c.cancelOnce.Do(c.cancel)
 	return err
 }

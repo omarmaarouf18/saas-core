@@ -41,9 +41,15 @@ func main() {
 		log.Fatal("Error: --action flag must be 'approve' or 'reject'")
 	}
 
-	if action == "reject" && strings.TrimSpace(reason) == "" {
-		flag.Usage()
-		log.Fatal("Error: --reason flag is required when action is 'reject'")
+	if action == "reject" {
+		reason = strings.TrimSpace(reason)
+		if reason == "" {
+			flag.Usage()
+			log.Fatal("Error: --reason flag is required when action is 'reject'")
+		}
+		if len(reason) > 1000 {
+			log.Fatal("Error: --reason cannot exceed 1000 characters")
+		}
 	}
 
 	mongoURI := os.Getenv("MONGO_URI")

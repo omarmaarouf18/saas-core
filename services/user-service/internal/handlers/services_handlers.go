@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/project/shared/infra/handlerutil"
@@ -26,6 +27,18 @@ func (u *UserService) ListServices(w http.ResponseWriter, r *http.Request) {
 	refLon := parseFloat(q.Get("lon"), 31.2357)
 	radius := parseFloat(q.Get("radius"), 50)
 
+	var limit, offset int64
+	if lStr := q.Get("limit"); lStr != "" {
+		if l, err := strconv.ParseInt(lStr, 10, 64); err == nil {
+			limit = l
+		}
+	}
+	if oStr := q.Get("offset"); oStr != "" {
+		if o, err := strconv.ParseInt(oStr, 10, 64); err == nil {
+			offset = o
+		}
+	}
+
 	ctx := r.Context()
 	if nearBy || hasLat || hasLon {
 		if !isValidCoordinate(refLat, refLon) {
@@ -40,7 +53,7 @@ func (u *UserService) ListServices(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	services := u.store.ListServices(ctx, sortBy, nearBy, refLat, refLon, radius)
+	services := u.store.ListServices(ctx, sortBy, nearBy, refLat, refLon, radius, limit, offset)
 	// #nosec G706 //nolint:gosec -- sortBy is validated query parameter, log injection not possible
 	log.Printf("[USER] ListServices: sort_by=%s near_by=%v results=%d", sortBy, nearBy, len(services))
 
@@ -85,6 +98,13 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	if req.CoverageRadiusKM < 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "coverage_radius_km must be non-negative",
+		})
+		return
+	}
+
 	authToken := resolveOwnerAuthToken(r, req.OwnerToken, req.OwnerID)
 	if authToken == "" || req.Name == "" || req.Category == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "owner authorization, name, and category are required"})

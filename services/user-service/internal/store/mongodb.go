@@ -261,7 +261,8 @@ func (s *MongoDB) UpdateService(ctx context.Context, svc *models.Service) error 
 }
 
 // ListServices uses MongoDB $nearSphere for proximity filtering instead of linear Haversine scan.
-func (s *MongoDB) ListServices(ctx context.Context, sortBy string, nearBy bool, refLat, refLon, maxDistKm float64) []models.ServiceWithPrice {
+func (s *MongoDB) ListServices(ctx context.Context, sortBy string, nearBy bool, refLat, refLon, maxDistKm float64, limit, offset int64) []models.ServiceWithPrice {
+	limit, offset = clampPage(limit, offset, 50, 200)
 	var filter bson.M
 	if nearBy {
 		if maxDistKm <= 0 {
@@ -279,7 +280,8 @@ func (s *MongoDB) ListServices(ctx context.Context, sortBy string, nearBy bool, 
 		filter = bson.M{}
 	}
 
-	cursor, err := s.services.Find(ctx, filter)
+	opts := options.Find().SetLimit(limit).SetSkip(offset)
+	cursor, err := s.services.Find(ctx, filter, opts)
 	if err != nil {
 		log.Printf("[USER-STORE] ListServices error: %v", err)
 		return nil
@@ -350,7 +352,8 @@ func (s *MongoDB) GetJobsByEmployee(ctx context.Context, employeeID string) ([]*
 			},
 		},
 	}
-	cursor, err := s.jobs.Find(ctx, filter)
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).SetLimit(100)
+	cursor, err := s.jobs.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, fmt.Errorf("store: get jobs by employee: %w", err)
 	}

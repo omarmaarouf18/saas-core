@@ -77,7 +77,7 @@ func TestMongoDB_ServiceOperations(t *testing.T) {
 	}
 
 	// 3. ListServices (returns []models.ServiceWithPrice)
-	svcs := s.ListServices(ctx, "distance", true, 37.7750, -122.4195, 10.0)
+	svcs := s.ListServices(ctx, "distance", true, 37.7750, -122.4195, 10.0, 0, 0)
 	if len(svcs) == 0 {
 		t.Errorf("ListServices returned 0 items")
 	}

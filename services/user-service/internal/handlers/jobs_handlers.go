@@ -177,6 +177,16 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	req.PaymentMethod = strings.ToLower(strings.TrimSpace(req.PaymentMethod))
+	if req.PaymentMethod == "" {
+		req.PaymentMethod = "cod"
+	} else if req.PaymentMethod != "cod" && req.PaymentMethod != "wallet" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid payment_method: must be 'cod' or 'wallet'",
+		})
+		return
+	}
+
 	if req.PaymentMethod != "cod" {
 		if !u.electronicPaymentsEnabled && (!u.allowTestPaymentBypass || (u.appEnv != "test" && u.appEnv != "local")) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{
@@ -2558,8 +2568,13 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if strings.TrimSpace(req.Reason) == "" {
+	req.Reason = strings.TrimSpace(req.Reason)
+	if req.Reason == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason is required"})
+		return
+	}
+	if len([]rune(req.Reason)) > 500 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason cannot exceed 500 characters"})
 		return
 	}
 

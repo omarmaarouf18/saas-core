@@ -172,7 +172,8 @@ func main() {
 	rateLimited := middleware.RateLimitWithOverrides(limiter, map[string]*middleware.RateLimiter{
 		"/api/v1/notifications/stream": sseLimiter,
 	})(versionGated)
-	logged := middleware.Logging(cfg.AllowedOrigin)(rateLimited)
+	maxBounded := handlerutil.MaxBytesMiddleware(1 << 20)(rateLimited)
+	logged := middleware.Logging(cfg.AllowedOrigin)(maxBounded)
 
 	// ---- Start server ----
 	addr := ":" + cfg.Port

@@ -100,7 +100,7 @@ func main() {
 	addr := ":" + cfg.Port
 	server := &http.Server{
 		Addr:      addr,
-		Handler:   mux,
+		Handler:   handlerutil.MaxBytesMiddleware(1 << 20)(mux),
 		TLSConfig: tlsConfig,
 		// ReadTimeout bounds slow-body slowloris reads (request headers
 		// were already capped at 3s). IdleTimeout reaps idle keep-alive
