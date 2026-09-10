@@ -974,31 +974,31 @@ This section consolidates the resolution status for all 10 findings from the ext
 ## Reconciliation Escrow Zeroing & Courier Lock Release (QA Audit Q3)
 
 - **Implementation Detail**: In `services/user-service/internal/handlers/reconciliation_handlers.go:ResolveReconciliation`, updated the `release_to_employee` branch to pass `0` instead of `amount` into `u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCompleted, note, "", 0)`. Previously, passing `amount` preserved a phantom locked escrow balance on the completed job document despite funds having been transferred to the tenant/employee wallet. Also added `_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, job.EmployeeID, job.ID)` upon both `release_to_employee` and `refund_to_customer` resolutions to clean up courier concurrency locks.
-- **Commit SHA**: ````
+- **Commit SHA**: ``e67dc2d392ce05f62a01e0759dec731f5b04b826``
 - **Verification**: Repro test `TestRepro_Q3_ReconciliationRelease_ZeroLockedEscrow` in `services/user-service/internal/handlers/money_state_repro_test.go` verifies that `job.LockedEscrowAmount` is strictly `0.0` after reconciliation release. ✅
 
 ## Atomic Ledger Balance Calculation via FindOneAndUpdate ReturnDocument (QA Audit Q4)
 
 - **Implementation Detail**: In `services/user-service/internal/store/mongodb.go`, eliminated stale ledger snapshot race conditions across `Deposit`, `LockEscrow`, `RequestPayout`, `RefundEscrow`, and `RollbackEscrow`. Replaced sequential `FindOne` + `UpdateOne` wallet balance mutations with atomic `s.wallets.FindOneAndUpdate(...)` using `options.FindOneAndUpdate().SetReturnDocument(options.After)`. Computed `BalanceAfter` and `BalanceBefore` directly from the atomically returned document, guaranteeing an unbroken, linear balance audit trail under concurrent deposit/lock operations.
-- **Commit SHA**: ````
+- **Commit SHA**: ``e67dc2d392ce05f62a01e0759dec731f5b04b826``
 - **Verification**: Repro test `TestRepro_Q4_LedgerBalanceAtomicReturnDocument` in `services/user-service/internal/handlers/money_state_repro_test.go` verifies that concurrent wallet operations generate distinct, sequential `BalanceBefore` values without stale snapshots. ✅
 
 ## Compare-And-Swap (CAS) State Machine Guards on Job Status & Reconciliation Updates (QA Audit Q6)
 
 - **Implementation Detail**: In `services/user-service/internal/store/mongodb.go`, added CAS status filtering to `UpdateJobStatus` and `UpdateJobReconciliation`. `UpdateJobStatus` strictly enforces allowed pre-states (transitioning to `JobStatusCompleted` requires current status `JobStatusActive` or idempotent `JobStatusCompleted`; transitioning to `JobStatusActive` requires `$in: [JobStatusPending, JobStatusPendingDispatch, JobStatusAwaitingPriceResponse]`; transitioning to `JobStatusCancelled` excludes terminal statuses `$nin: [JobStatusCompleted, JobStatusCancelled]`). `UpdateJobReconciliation` enforces that transitioning to `JobStatusCompleted` or `JobStatusCancelled` requires current status `JobStatusEscrowReconciliationRequired` or terminal state, and setting `JobStatusEscrowReconciliationRequired` requires `$ne: JobStatusCompleted`. Both methods return `job_state_changed: ...` when matched count is zero.
-- **Commit SHA**: ````
+- **Commit SHA**: ``e67dc2d392ce05f62a01e0759dec731f5b04b826``
 - **Verification**: Repro test `TestRepro_Q6_JobStatusCAS_GuardsBypass` in `services/user-service/internal/handlers/money_state_repro_test.go` verifies that invalid state transitions (such as completing or reconciling a cancelled job) are rejected. ✅
 
 ## Atomic Tenant Subscription Upsert via UpdateOne with $setOnInsert (QA Audit Q9)
 
 - **Implementation Detail**: In `services/user-service/internal/store/mongodb.go:UpsertSubscription`, replaced non-atomic `FindOne` followed by `ReplaceOne` with a single atomic `s.subscriptions.UpdateOne(ctx, bson.M{"tenant_id": sub.TenantID}, update, options.UpdateOne().SetUpsert(true))`. Configured `$setOnInsert` for immutable fields (`_id`, `tenant_id`) and `$set` for mutable subscription fields (`tier`, `started_at`, `updated_at`, `expires_at`, `reason`, `activated_by`, `revoked_by`), completely eliminating MongoDB immutable `_id` write alteration errors under concurrent upserts.
-- **Commit SHA**: ````
+- **Commit SHA**: ``e67dc2d392ce05f62a01e0759dec731f5b04b826``
 - **Verification**: Repro test `TestRepro_Q9_ConcurrentUpsertSubscription_NoDuplicateKey` in `services/user-service/internal/handlers/money_state_repro_test.go` verifies that 10 concurrent upsert calls for a new tenant succeed without errors. ✅
 
 ## Atomic Field-Level Updates in UpdateService (QA Audit Q10)
 
 - **Implementation Detail**: Added `UpdateServiceFields(ctx, id, tenantID, fields)` to `services/user-service/internal/store/mongodb.go` using atomic `FindOneAndUpdate` with `options.After`. Updated `UpdateService` in `services/user-service/internal/handlers/services_handlers.go` to construct a selective `bson.M` containing only explicitly provided fields (`category`, `name`, `tenant_base_price`, `tenant_price_per_km`, `location`, `photo_url`, `address`, `working_hours`, `coverage_radius_km`) rather than overwriting the entire document from a stale in-memory struct snapshot. This prevents concurrent partial updates from clobbering each other.
-- **Commit SHA**: ````
+- **Commit SHA**: ``e67dc2d392ce05f62a01e0759dec731f5b04b826``
 - **Verification**: Repro test `TestRepro_Q10_UpdateService_ConcurrentFieldLevelClobber` in `services/user-service/internal/handlers/money_state_repro_test.go` verifies that concurrent updates to different fields (e.g. `address` and `tenant_base_price`) are both atomically preserved. ✅
 
 
