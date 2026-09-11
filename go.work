@@ -10,5 +10,6 @@ use (
 	./services/user-service
 	./shared/infra
 	./tools/docgen
+	./tools/paritycheck
 	./tests/e2e
 )

@@ -749,6 +749,27 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
     2. *Internal Notification Dispatch Limiter*: In `services/notification-service/internal/handlers/handlers.go`, expanded `POST /notifications/send` rate limiter from 5/min to 300/min, eliminating inter-service 429 lockout during multi-actor notification fan-out.
   - **Deliverables**: Created reusable operator guide in `docs/STAGING.md`, baseline QA tracker in `QA-COVERAGE.md`, and CI Release Gate workflow in `.github/workflows/release-gate-e2e.yml` running on pushes to `main` and manual dispatch.
 
+### QA Strategy Phase 2: Critical Business Tests & Parity Guard (2026-09-11)
+
+* **Critical User Journeys (CUJ-C through CUJ-H)**:
+  - **CUJ-C (Customer Registration & Authentication)**: Implemented in `tests/e2e/cuj_c_test.go`. Validates weak password rejection (< 6 chars -> HTTP 400), malformed email rejection (400), OTP issuance, invalid OTP rejection (401), account confirmation, duplicate email defense (409), 2FA login challenge, and full profile acquisition through edge gateway.
+  - **CUJ-D (Driver Workflow Full Cycle & IDOR Guard)**: Implemented in `tests/e2e/cuj_d_test.go`. Validates customer booking, courier acceptance, GPS location update (`POST /api/v1/users/jobs/location/update`), cross-courier IDOR blocks on completion and read (403), job completion (`POST /api/v1/users/jobs/complete`), and atomic escrow settlement.
+  - **CUJ-E (Owner Workflow, Paid-Tier Gating & IDOR Guard)**: Implemented in `tests/e2e/cuj_e_test.go`. Validates aggregate dashboard metrics loading, paid-tier gating (`POST /api/v1/users/services` returning 402 for free-tier and succeeding for paid-tier), service update (200), reconciliation queue read, and cross-tenant IDOR guards on service mutation and dispute queues (402/403).
+  - **CUJ-F (Active Job Real-Time Chat & IDOR Isolation)**: Implemented in `tests/e2e/cuj_f_test.go`. Validates WebSocket upgrade, customer dispatch to assigned courier over live WebSocket channel (`job:<id>`), durable MongoDB persistence across reconnects, and cross-tenant IDOR blocks on unauthorized courier history and channel subscription (403).
+  - **CUJ-G (Double-Blind Rating, Bounds & Aggregate Metrics)**: Implemented in `tests/e2e/cuj_g_test.go`. Validates job completion prerequisite (400), 1-5 star bounds checking (400), non-participant authorization block (403), duplicate rating block (409), and aggregate ratings count & score update.
+  - **CUJ-H (Support Ticket Resolution & Dual-Delivery Regression Guard)**: Implemented in `tests/e2e/cuj_h_test.go`. Validates customer ticket creation, WebSocket ticket channel subscription, mandatory resolution note validation (400), reviewer auth guard (401), and dual-delivery verification (real-time SSE notification `ticket_resolved` AND WebSocket system resolution event in `ticket:<id>`).
+* **Auth & RBAC Security Matrix (Phase 2b)**:
+  - Implemented in `tests/e2e/auth_matrix_test.go` (`TestAuthMatrix`). Systematically validates access permissions for Anonymous, Customer, Driver, Owner, and Reviewer roles across representative endpoints, alongside explicit cross-tenant IDOR checks for service mutation, dispute reconciliation queues, job completion, and chat history.
+* **Backend-Frontend Parity Check Tooling (Phase 2c)**:
+  - Built `tools/paritycheck/main.go` and wired target `make backend-frontend-parity-check`.
+  - Added non-blocking informational check to `.github/workflows/ci.yml`.
+  - Parsed 82 registered backend routes and verified against Flutter mobile app call sites and Ops Console proxy call sites.
+  - Identified 53 mobile routes, 19 ops console routes, 6 internal service routes, 3 infra routes, and exactly 1 unconsumed orphan route: `POST /chat/tickets/resolve` (GAP-03 / ADR-0013: legacy support agent token endpoint superseded by Ops Console).
+* **Seam Defect Resolutions Discovered by Staging E2E Execution**:
+  1. *Gateway Notification Routing*: In `services/api-gateway/internal/config/config.go`, corrected route prefix from `/api/v1/notifications/stream` to `/api/v1/notifications/`, restoring proxy routing for notification history, read receipts, and deletions.
+  2. *Auth Service Password Validation*: In `services/auth-service/internal/handlers/auth.go`, added missing minimum password length validation (`len(req.Password) < 6` -> 400 Bad Request).
+
+
 
 
 

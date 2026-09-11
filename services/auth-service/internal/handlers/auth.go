@@ -186,6 +186,13 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(req.Password) < 6 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "password must be at least 6 characters",
+		})
+		return
+	}
+
 	if !isValidEmail(req.Email) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "invalid email format",

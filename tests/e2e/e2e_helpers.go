@@ -547,17 +547,45 @@ func (db *StagingDB) SeedKYCSubmission(ctx context.Context, userID, email, role,
 	return err
 }
 
+func (db *StagingDB) SeedFreeSubscription(ctx context.Context, tenantID string) error {
+	userSubs := db.client.Database("staging_user_db").Collection("subscriptions")
+	_, err := userSubs.UpdateOne(
+		ctx,
+		bson.M{"_id": tenantID},
+		bson.M{
+			"$set": bson.M{
+				"_id":        tenantID,
+				"tenant_id":  tenantID,
+				"tier":       "free",
+				"plan":       "free",
+				"status":     "active",
+				"updated_at": time.Now().UTC(),
+			},
+			"$setOnInsert": bson.M{
+				"created_at": time.Now().UTC(),
+			},
+		},
+		options.UpdateOne().SetUpsert(true),
+	)
+	return err
+}
+
 func (db *StagingDB) CleanupTestEntities(ctx context.Context, tenantIDs, userIDs []string) {
 	_, _ = db.client.Database("staging_auth_db").Collection("users").DeleteMany(ctx, bson.M{"_id": bson.M{"$in": userIDs}})
+	_, _ = db.client.Database("staging_auth_db").Collection("pending_signups").DeleteMany(ctx, bson.M{"email": bson.M{"$in": userIDs}})
 	_, _ = db.client.Database("staging_user_db").Collection("employee_locations").DeleteMany(ctx, bson.M{"_id": bson.M{"$in": userIDs}})
 	_, _ = db.client.Database("staging_user_db").Collection("services").DeleteMany(ctx, bson.M{"tenant_id": bson.M{"$in": tenantIDs}})
 	_, _ = db.client.Database("staging_user_db").Collection("subscriptions").DeleteMany(ctx, bson.M{"_id": bson.M{"$in": tenantIDs}})
 	_, _ = db.client.Database("staging_user_db").Collection("wallets").DeleteMany(ctx, bson.M{"tenant_id": bson.M{"$in": tenantIDs}})
+	_, _ = db.client.Database("staging_user_db").Collection("ledger").DeleteMany(ctx, bson.M{"tenant_id": bson.M{"$in": tenantIDs}})
 	_, _ = db.client.Database("staging_user_db").Collection("jobs").DeleteMany(ctx, bson.M{"tenant_id": bson.M{"$in": tenantIDs}})
+	_, _ = db.client.Database("staging_user_db").Collection("ratings").DeleteMany(ctx, bson.M{"$or": []bson.M{{"rated_by": bson.M{"$in": userIDs}}, {"rated_user": bson.M{"$in": userIDs}}}})
+	_, _ = db.client.Database("staging_chat_db").Collection("complaint_tickets").DeleteMany(ctx, bson.M{"customer_id": bson.M{"$in": userIDs}})
+	_, _ = db.client.Database("staging_chat_db").Collection("messages").DeleteMany(ctx, bson.M{"sender_id": bson.M{"$in": userIDs}})
 	_, _ = db.client.Database("staging_notification_db").Collection("notifications").DeleteMany(ctx, bson.M{"tenant_id": bson.M{"$in": tenantIDs}})
 }
 
-func PostJSON(ctx context.Context, targetURL, token string, body any) (*http.Response, []byte, error) {
+func DoJSONRequest(ctx context.Context, method, targetURL, token string, body any) (*http.Response, []byte, error) {
 	var bodyReader io.Reader
 	if body != nil {
 		b, err := json.Marshal(body)
@@ -567,7 +595,7 @@ func PostJSON(ctx context.Context, targetURL, token string, body any) (*http.Res
 		bodyReader = bytes.NewReader(b)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", targetURL, bodyReader)
+	req, err := http.NewRequestWithContext(ctx, method, targetURL, bodyReader)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -586,21 +614,22 @@ func PostJSON(ctx context.Context, targetURL, token string, body any) (*http.Res
 	return resp, respBody, err
 }
 
+func PostJSON(ctx context.Context, targetURL, token string, body any) (*http.Response, []byte, error) {
+	return DoJSONRequest(ctx, http.MethodPost, targetURL, token, body)
+}
+
+func PutJSON(ctx context.Context, targetURL, token string, body any) (*http.Response, []byte, error) {
+	return DoJSONRequest(ctx, http.MethodPut, targetURL, token, body)
+}
+
+func PatchJSON(ctx context.Context, targetURL, token string, body any) (*http.Response, []byte, error) {
+	return DoJSONRequest(ctx, http.MethodPatch, targetURL, token, body)
+}
+
+func DeleteJSON(ctx context.Context, targetURL, token string) (*http.Response, []byte, error) {
+	return DoJSONRequest(ctx, http.MethodDelete, targetURL, token, nil)
+}
+
 func GetJSON(ctx context.Context, targetURL, token string) (*http.Response, []byte, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
-	return resp, respBody, err
+	return DoJSONRequest(ctx, http.MethodGet, targetURL, token, nil)
 }

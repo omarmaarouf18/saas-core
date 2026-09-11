@@ -1,4 +1,4 @@
-.PHONY: docs docs-counts docs-check setup ci ensure-hooks commit push since-last-report report-hash
+.PHONY: docs docs-counts docs-check setup ci ensure-hooks commit push since-last-report report-hash backend-frontend-parity-check
 
 ensure-hooks:
 	@if [ "$$(git config --get core.hooksPath 2>/dev/null)" != ".githooks" ]; then \
@@ -18,6 +18,9 @@ docs-counts: ensure-hooks
 docs-check: ensure-hooks
 	go run tools/docgen/main.go -check
 	go test -v -count=1 ./shared/infra/docgen ./shared/infra/handlerutil ./shared/infra/jwtutil ./shared/infra/ratelimit ./shared/infra/resilience ./shared/infra/tlsutil
+
+backend-frontend-parity-check: ensure-hooks
+	go run tools/paritycheck/main.go
 
 ci: ensure-hooks
 	./.githooks/pre-push
