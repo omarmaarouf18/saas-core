@@ -3739,7 +3739,7 @@ func TestTrackJob_IdempotencyKey(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())

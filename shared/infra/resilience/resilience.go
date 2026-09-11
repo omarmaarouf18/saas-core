@@ -176,8 +176,13 @@ func (rc *ResilienceClient) Do(req *http.Request) (*http.Response, error) {
 			// Headers received: disarm the per-attempt timer. The body now
 			// lives under the caller's original request context; cancel fires
 			// when the body is closed (or immediately on any error path).
+			// Protocol upgrades (101 Switching Protocols / WebSockets) must NOT
+			// have their body wrapped, as httputil.ReverseProxy requires the
+			// underlying io.ReadWriteCloser for bidirectional streaming.
 			timer.Stop()
-			resp.Body = newCancelReadCloser(resp.Body, cancel)
+			if resp.StatusCode != http.StatusSwitchingProtocols {
+				resp.Body = newCancelReadCloser(resp.Body, cancel)
+			}
 
 			if resp.StatusCode >= 500 {
 				return resp, fmt.Errorf("HTTP status %d", resp.StatusCode)
@@ -284,8 +289,13 @@ func (rt *ResilienceRoundTripper) RoundTrip(req *http.Request) (*http.Response, 
 
 			// Headers received: disarm the per-attempt timer and hand cancel
 			// to the body wrapper so it fires on Close rather than on return.
+			// Protocol upgrades (101 Switching Protocols / WebSockets) must NOT
+			// have their body wrapped, as httputil.ReverseProxy requires the
+			// underlying io.ReadWriteCloser for bidirectional streaming.
 			timer.Stop()
-			resp.Body = newCancelReadCloser(resp.Body, cancel)
+			if resp.StatusCode != http.StatusSwitchingProtocols {
+				resp.Body = newCancelReadCloser(resp.Body, cancel)
+			}
 
 			if resp.StatusCode >= 500 {
 				return resp, fmt.Errorf("HTTP status %d", resp.StatusCode)

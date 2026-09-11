@@ -1,0 +1,316 @@
+# =============================================================================
+# Quick Delivery SaaS Platform — Staging Environment Docker Compose
+# =============================================================================
+# Usage:
+#   docker compose -f infrastructure/staging/docker-compose.staging.yml --env-file infrastructure/staging/.env.staging up -d --build
+#   docker compose -f infrastructure/staging/docker-compose.staging.yml --env-file infrastructure/staging/.env.staging down -v
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Isolated Staging Data Stores
+  # ---------------------------------------------------------------------------
+  mongo:
+    image: mongo:7
+    container_name: staging-saas-mongo
+    restart: unless-stopped
+    ports:
+      - "${STAGING_MONGO_PORT:-27018}:27017"
+    volumes:
+      - staging_mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh -u \"$$MONGO_INITDB_ROOT_USERNAME\" -p \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval \"db.adminCommand('ping')\""]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - staging-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: staging-saas-redis
+    restart: unless-stopped
+    ports:
+      - "${STAGING_REDIS_PORT:-6381}:6379"
+    volumes:
+      - staging_redis_data:/data
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 3s
+    networks:
+      - staging-net
+
+  # ---------------------------------------------------------------------------
+  # Production-Target Microservices (Compiled with target: prod)
+  # ---------------------------------------------------------------------------
+  api-gateway:
+    build:
+      context: ../..
+      dockerfile: services/api-gateway/Dockerfile
+      target: prod
+    container_name: staging-saas-api-gateway
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - ../certs/ca.crt:/app/certs/ca.crt:ro
+      - ../certs/api-gateway.crt:/app/certs/api-gateway.crt:ro
+      - ../certs/api-gateway.key:/app/certs/api-gateway.key:ro
+      - ../certs/api-gateway-external.crt:/app/certs/api-gateway-external.crt:ro
+      - ../certs/api-gateway-external.key:/app/certs/api-gateway-external.key:ro
+    environment:
+      PORT: ${API_GATEWAY_PORT}
+      MONGO_URI: ${MONGO_URI}
+      REDIS_URI: ${REDIS_URI}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      USER_SERVICE_URL: ${USER_SERVICE_URL}
+      CHAT_SERVICE_URL: ${CHAT_SERVICE_URL}
+      NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL}
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
+      APP_ENV: ${APP_ENV}
+      LOG_LEVEL: ${LOG_LEVEL}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      TLS_CERT_PATH: /app/certs/api-gateway.crt
+      TLS_KEY_PATH: /app/certs/api-gateway.key
+      TLS_CA_PATH: /app/certs/ca.crt
+      EXTERNAL_TLS_CERT_PATH: /app/certs/api-gateway-external.crt
+      EXTERNAL_TLS_KEY_PATH: /app/certs/api-gateway-external.key
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-127.0.0.1,::1,172.16.0.0/12,10.0.0.0/8}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - staging-net
+
+  chat-service:
+    build:
+      context: ../..
+      dockerfile: services/chat-service/Dockerfile
+      target: prod
+    container_name: staging-saas-chat-service
+    restart: unless-stopped
+    expose:
+      - "${CHAT_SERVICE_PORT}"
+    volumes:
+      - ../certs/ca.crt:/app/certs/ca.crt:ro
+      - ../certs/chat-service.crt:/app/certs/chat-service.crt:ro
+      - ../certs/chat-service.key:/app/certs/chat-service.key:ro
+    environment:
+      PORT: ${CHAT_SERVICE_PORT}
+      MONGO_URI: ${MONGO_URI}
+      CHAT_MONGO_DATABASE: ${CHAT_MONGO_DATABASE}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+      REDIS_URI: ${REDIS_URI}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      USER_SERVICE_URL: ${USER_SERVICE_URL}
+      NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL}
+      APP_ENV: ${APP_ENV}
+      LOG_LEVEL: ${LOG_LEVEL}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      TLS_CERT_PATH: /app/certs/chat-service.crt
+      TLS_KEY_PATH: /app/certs/chat-service.key
+      TLS_CA_PATH: /app/certs/ca.crt
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - staging-net
+
+  auth-service:
+    build:
+      context: ../..
+      dockerfile: services/auth-service/Dockerfile
+      target: prod
+    container_name: staging-saas-auth-service
+    restart: unless-stopped
+    expose:
+      - "${AUTH_SERVICE_PORT}"
+    volumes:
+      - ../certs/ca.crt:/app/certs/ca.crt:ro
+      - ../certs/auth-service.crt:/app/certs/auth-service.crt:ro
+      - ../certs/auth-service.key:/app/certs/auth-service.key:ro
+    environment:
+      PORT: ${AUTH_SERVICE_PORT}
+      MONGO_URI: ${MONGO_URI}
+      AUTH_MONGO_DATABASE: ${AUTH_MONGO_DATABASE}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+      REDIS_URI: ${REDIS_URI}
+      APP_ENV: ${APP_ENV}
+      LOG_LEVEL: ${LOG_LEVEL}
+      JWT_SECRET: ${JWT_SECRET}
+      DOCUMENT_SIGNING_SECRET: ${DOCUMENT_SIGNING_SECRET}
+      DOCUMENT_ENCRYPTION_KEY: ${DOCUMENT_ENCRYPTION_KEY}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      OTP_AES_KEY: ${OTP_AES_KEY}
+      TLS_CERT_PATH: /app/certs/auth-service.crt
+      TLS_KEY_PATH: /app/certs/auth-service.key
+      TLS_CA_PATH: /app/certs/ca.crt
+      USER_SERVICE_URL: ${USER_SERVICE_URL}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - staging-net
+
+  user-service:
+    build:
+      context: ../..
+      dockerfile: services/user-service/Dockerfile
+      target: prod
+    container_name: staging-saas-user-service
+    restart: unless-stopped
+    expose:
+      - "${USER_SERVICE_PORT}"
+    volumes:
+      - ../certs/ca.crt:/app/certs/ca.crt:ro
+      - ../certs/user-service.crt:/app/certs/user-service.crt:ro
+      - ../certs/user-service.key:/app/certs/user-service.key:ro
+    environment:
+      PORT: ${USER_SERVICE_PORT}
+      MONGO_URI: ${MONGO_URI}
+      USER_MONGO_DATABASE: ${USER_MONGO_DATABASE}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+      REDIS_URI: ${REDIS_URI}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      CHAT_SERVICE_URL: ${CHAT_SERVICE_URL}
+      NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL}
+      APP_ENV: ${APP_ENV}
+      LOG_LEVEL: ${LOG_LEVEL}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      ALLOW_TEST_PAYMENT_BYPASS: ${ALLOW_TEST_PAYMENT_BYPASS:-true}
+      TLS_CERT_PATH: /app/certs/user-service.crt
+      TLS_KEY_PATH: /app/certs/user-service.key
+      TLS_CA_PATH: /app/certs/ca.crt
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - staging-net
+
+  notification-service:
+    build:
+      context: ../..
+      dockerfile: services/notification-service/Dockerfile
+      target: prod
+    container_name: staging-saas-notification-service
+    restart: unless-stopped
+    expose:
+      - "${NOTIFICATION_SERVICE_PORT}"
+    volumes:
+      - ../certs/ca.crt:/app/certs/ca.crt:ro
+      - ../certs/notification-service.crt:/app/certs/notification-service.crt:ro
+      - ../certs/notification-service.key:/app/certs/notification-service.key:ro
+    environment:
+      PORT: ${NOTIFICATION_SERVICE_PORT}
+      MONGO_URI: ${MONGO_URI}
+      NOTIFICATION_MONGO_DATABASE: ${NOTIFICATION_MONGO_DATABASE}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+      REDIS_URI: ${REDIS_URI}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
+      APP_ENV: ${APP_ENV}
+      LOG_LEVEL: ${LOG_LEVEL}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      TLS_CERT_PATH: /app/certs/notification-service.crt
+      TLS_KEY_PATH: /app/certs/notification-service.key
+      TLS_CA_PATH: /app/certs/ca.crt
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - staging-net
+
+  # ---------------------------------------------------------------------------
+  # KYC/KYB/KYE Reviewer Console (saas-core ADR-0021)
+  # ---------------------------------------------------------------------------
+  kyc-reviewer-console:
+    image: ghcr.io/omarmaarouf18/kyc-reviewer-console:${KYC_CONSOLE_IMAGE_TAG:-latest}
+    container_name: staging-saas-kyc-reviewer-console
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8092:8090"
+    volumes:
+      - ../certs/ca.crt:/app/certs/ca.crt:ro
+      - ../certs/reviewer-console.crt:/app/certs/reviewer-console.crt:ro
+      - ../certs/reviewer-console.key:/app/certs/reviewer-console.key:ro
+    environment:
+      PORT: 8090
+      AUTH_SERVICE_URL: https://auth-service:${AUTH_SERVICE_PORT}
+      USER_SERVICE_URL: https://user-service:${USER_SERVICE_PORT}
+      CHAT_SERVICE_URL: https://chat-service:${CHAT_SERVICE_PORT}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      APP_ENV: ${APP_ENV}
+      TLS_CERT_PATH: /app/certs/reviewer-console.crt
+      TLS_KEY_PATH: /app/certs/reviewer-console.key
+      TLS_CA_PATH: /app/certs/ca.crt
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - staging-net
+
+  # ---------------------------------------------------------------------------
+  # Caddy Reverse Proxy (Production Mirroring)
+  # ---------------------------------------------------------------------------
+  caddy:
+    image: caddy:2-alpine
+    container_name: staging-saas-caddy
+    restart: unless-stopped
+    ports:
+      - "${STAGING_CADDY_HTTP_PORT:-8088}:80"
+      - "${STAGING_CADDY_CONSOLE_PORT:-8091}:8090"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - staging_caddy_data:/data
+      - staging_caddy_config:/config
+    networks:
+      - staging-net
+    depends_on:
+      api-gateway:
+        condition: service_started
+      kyc-reviewer-console:
+        condition: service_started
+
+volumes:
+  staging_mongo_data:
+    name: staging_saas_mongo_data
+  staging_redis_data:
+    name: staging_saas_redis_data
+  staging_caddy_data:
+    name: staging_saas_caddy_data
+  staging_caddy_config:
+    name: staging_saas_caddy_config
+
+networks:
+  staging-net:
+    driver: bridge

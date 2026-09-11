@@ -736,6 +736,19 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - **Q17 (Idempotent WebSocket Client Channel Closure)**: In `chat-service/internal/chat/hub.go`, added `closeOnce sync.Once` and `CloseSend()` to `Client`, eliminating `close of closed channel` panics during concurrent client unregister and hub shutdown.
   - **Verification**: Repro suites in `services/auth-service/internal/store/audit_token_repro_test.go` (Q11, Q12), `services/chat-service/internal/store/ticket_agent_repro_test.go` (Q13, Q14), `services/chat-service/internal/handlers/resolve_ticket_repro_test.go` (Q13 HTTP 409), `services/api-gateway/internal/version/version_test.go` (Q15), and `services/chat-service/internal/chat/hub_concurrency_repro_test.go` (Q16, Q17 under `-race`). All tests passing (100% green).
 
+### QA Strategy Phase 0: Staging Parity & First 2 Critical User Journeys (2026-09-11)
+
+* **Staging Parity & End-to-End Release Gate (Phase 0)**:
+  - **Staging Orchestration & Edge Topology**: Established complete production parity with dedicated Compose configuration (`infrastructure/staging/docker-compose.staging.yml`) utilizing production build targets (`target: prod`), enforced mTLS, and dedicated isolated datastores (`staging-saas-mongo:27018` with `staging_*` DBs, `staging-saas-redis:6381`). Fronted by Caddy reverse proxy (`infrastructure/staging/Caddyfile`) exposing port `8088` (routed to `api-gateway:8080`) and port `8091` (routed to `kyc-reviewer-console:8090`), with automated provisioning scripts (`scripts/staging_up.sh`, `scripts/staging_down.sh`).
+  - **Reviewer Console Cert Integration**: Added `reviewer-console` to `SERVICES` list in `infrastructure/certs/generate-certs.sh` and enforced container-compatible `chmod 644` key permissions.
+  - **E2E Test Suite Scaffold (`tests/e2e`)**: Created dedicated module (`go.mod` on Go 1.26.6), added to `go.work`, and synchronized across Go drift guard checks in both `.githooks/pre-push` and `.github/workflows/ci.yml`.
+  - **CUJ-A (Cascade Offer, Isolation, Pricing Lock & Live GPS Tracking)**: Implemented in `tests/e2e/cuj_a_test.go`. Verifies customer booking in `pending_dispatch` with deferred pricing (0), nearest-courier cascade offer, N-01/N-02 SSE and history notification isolation, pricing calculation & escrow locking upon courier accept, F-01 live tracking survival across client app queries, and real-time WebSocket GPS position updates streamed through Caddy and API Gateway.
+  - **CUJ-B (KYC Submission, Reviewer Queue, Mandatory Rejection & SSE Outcome)**: Implemented in `tests/e2e/cuj_b_test.go`. Verifies customer discovery in Reviewer Console queue (`GET /api/queue`), mandatory rejection reason validation (empty and whitespace-only reasons rejected with HTTP 400 Bad Request per ADR-0021), valid rejection recorded with 200 OK, and real-time delivery of `kyc_rejected` and `kyc_approved` outcome events over open SSE streams traversing Caddy and API Gateway without buffering.
+  - **Seam Defect Resolutions Discovered by E2E Execution**:
+    1. *Gateway WebSocket Upgrades*: In `shared/infra/resilience/resilience.go`, bypassed `cancelReadCloser` wrapping on `http.StatusSwitchingProtocols` (101), preserving the underlying `io.ReadWriteCloser` required by `httputil.ReverseProxy` for full-duplex WebSocket streaming.
+    2. *Internal Notification Dispatch Limiter*: In `services/notification-service/internal/handlers/handlers.go`, expanded `POST /notifications/send` rate limiter from 5/min to 300/min, eliminating inter-service 429 lockout during multi-actor notification fan-out.
+  - **Deliverables**: Created reusable operator guide in `docs/STAGING.md`, baseline QA tracker in `QA-COVERAGE.md`, and CI Release Gate workflow in `.github/workflows/release-gate-e2e.yml` running on pushes to `main` and manual dispatch.
+
 
 
 

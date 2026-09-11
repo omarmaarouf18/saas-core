@@ -9,7 +9,7 @@ echo "Generating Local Root CA..."
 openssl genrsa -out ca.key 4096
 openssl req -x509 -new -nodes -key ca.key -sha256 -days 3650 -out ca.crt -subj "/CN=SaaS-Platform-Local-Root-CA"
 
-SERVICES=("api-gateway" "auth-service" "chat-service" "notification-service" "user-service")
+SERVICES=("api-gateway" "auth-service" "chat-service" "notification-service" "user-service" "reviewer-console")
 
 for service in "${SERVICES[@]}"; do
   echo "Generating certificate for service: $service..."
@@ -41,8 +41,8 @@ done
 echo "Generating public/external gateway certificate..."
 openssl req -x509 -newkey rsa:2048 -nodes -keyout api-gateway-external.key -out api-gateway-external.crt -days 3650 -subj "/CN=localhost" -addext "subjectAltName = DNS:localhost, IP:127.0.0.1"
 
-# Set permissions
-chmod 600 *.key
+# Set permissions (644 required so non-root container users can read mounted keys)
+chmod 644 *.key
 chmod 644 *.crt
 
 echo "Certificates generated successfully in $DIR!"

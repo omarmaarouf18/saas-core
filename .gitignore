@@ -4,6 +4,7 @@
 /cmd
 .env
 .env.local
+.env.staging
 **/tmp/
 docs/local/
 

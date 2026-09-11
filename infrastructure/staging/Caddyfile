@@ -1,0 +1,27 @@
+{
+    auto_https off
+    admin off
+}
+
+# API Gateway & KYC Console reverse proxy for Staging
+# In production, Caddy routes api.logiclinkeg.tech to api-gateway and kyc.logiclinkeg.tech to kyc-reviewer-console.
+# Here in staging, Caddy routes :80 (and kyc.* hosts) to ensure full proxy-layer fidelity.
+:80 {
+    @console host kyc.* kyc.localhost
+    handle @console {
+        reverse_proxy http://kyc-reviewer-console:8090
+    }
+
+    handle {
+        reverse_proxy https://api-gateway:8080 {
+            transport http {
+                tls_insecure_skip_verify
+            }
+        }
+    }
+}
+
+# Direct port proxy for Reviewer Console in Staging
+:8090 {
+    reverse_proxy http://kyc-reviewer-console:8090
+}

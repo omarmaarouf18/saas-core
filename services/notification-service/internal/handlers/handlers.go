@@ -61,7 +61,8 @@ func NewNotification(h *hub.SSEHub, st store.Store, cfg *config.Config, rdb *red
 		client = http.DefaultClient
 	}
 
-	rl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Minute, "notification")
+	// Internal dispatch limiter: sized for high-throughput inter-service notification fanout (300 req/min).
+	rl := ratelimit.NewRateLimiter(rdb, 300, 1*time.Minute, "notification")
 	streamRl := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "notification:stream")
 
 	resClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)

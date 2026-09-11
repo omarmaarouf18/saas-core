@@ -10,4 +10,5 @@ use (
 	./services/user-service
 	./shared/infra
 	./tools/docgen
+	./tests/e2e
 )

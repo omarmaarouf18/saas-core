@@ -428,3 +428,44 @@ func TestResilienceClient_StreamingResponseBodyReadable(t *testing.T) {
 		}
 	}
 }
+
+type dummyReadWriteCloser struct {
+	io.ReadCloser
+}
+
+func (d *dummyReadWriteCloser) Write(p []byte) (n int, err error) {
+	return len(p), nil
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
+
+func TestResilienceRoundTripper_SwitchingProtocolsPreserved(t *testing.T) {
+	dummyBody := &dummyReadWriteCloser{ReadCloser: io.NopCloser(strings.NewReader("websocket stream"))}
+	mockRT := roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusSwitchingProtocols,
+			Body:       dummyBody,
+			Header:     make(http.Header),
+		}, nil
+	})
+
+	rt := NewRoundTripper(mockRT, "test-ws-upgrade", 0, 500*time.Millisecond)
+	req, _ := http.NewRequest("GET", "http://example.com/ws", nil)
+
+	resp, err := rt.RoundTrip(req)
+	if err != nil {
+		t.Fatalf("RoundTrip failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusSwitchingProtocols {
+		t.Errorf("expected 101 Switching Protocols, got %d", resp.StatusCode)
+	}
+	if _, ok := resp.Body.(io.ReadWriteCloser); !ok {
+		t.Errorf("expected resp.Body to implement io.ReadWriteCloser for WebSocket upgrades, got %T", resp.Body)
+	}
+}
