@@ -32,8 +32,7 @@ func TestContract_NotifToAuth_GetUser_DeviceTokens(t *testing.T) {
 		}
 
 		if !hasDeviceTokensKey {
-			// This test documents the real undetected drift discovered during this audit!
-			t.Logf("REAL SCHEMA DRIFT DETECTED: auth-service GetUser response map omits 'device_tokens', though notification-service HTTPDeviceTokenFetcher explicitly decodes 'device_tokens' (fetcher.go:51)")
+			t.Errorf("REAL SCHEMA DRIFT DETECTED: auth-service GetUser response map omits 'device_tokens', though notification-service HTTPDeviceTokenFetcher explicitly decodes 'device_tokens' (fetcher.go:51)")
 		}
 	})
 

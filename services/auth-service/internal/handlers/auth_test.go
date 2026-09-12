@@ -212,6 +212,10 @@ func setupTestAuth(t *testing.T) (*Auth, *store.MongoDB, func()) {
 	}
 
 	s, err := store.NewMongoDB(ctx, mongoURI, dbName, cipher)
+	if err != nil && mongoURI == "mongodb://localhost:27017" {
+		mongoURI = "mongodb://root:devpassword123@localhost:27017/?authSource=admin"
+		s, err = store.NewMongoDB(ctx, mongoURI, dbName, cipher)
+	}
 	if err != nil {
 		t.Skipf("Skipping auth-service store integration tests: MongoDB not available at %s (%v)", mongoURI, err)
 		return nil, nil, nil
@@ -2168,6 +2172,121 @@ func TestGetUserUsernameResponse(t *testing.T) {
 
 	if res["username"] != "propagate_username" {
 		t.Errorf("expected username 'propagate_username', got %v", res["username"])
+	}
+}
+
+func TestGetUser_DeviceTokensResponse(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		t.Skip("setup failed")
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+
+	// 1. User with registered tokens
+	userWithTokens := &models.User{
+		ID:        "test-user-tokens-123",
+		Email:     "tokens_user@example.com",
+		Username:  "tokens_user",
+		Password:  "hashedpass",
+		Role:      models.RoleUser,
+		IsActive:  true,
+		CreatedAt: time.Now().UTC(),
+		DeviceTokens: []models.DeviceToken{
+			{Token: "fcm-tok-android-001", Platform: "android", UpdatedAt: time.Now().UTC()},
+			{Token: "fcm-tok-ios-002", Platform: "ios", UpdatedAt: time.Now().UTC()},
+		},
+	}
+	if err := s.CreateUser(ctx, userWithTokens); err != nil {
+		t.Fatalf("failed to create user with tokens: %v", err)
+	}
+
+	reqWithTokens := httptest.NewRequest("GET", "/auth/user?id="+userWithTokens.ID, nil)
+	reqWithTokens.Header.Set("X-Internal-Token", a.internalServiceToken)
+	recWithTokens := httptest.NewRecorder()
+	a.GetUser(recWithTokens, reqWithTokens)
+
+	if recWithTokens.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for user with tokens, got %d: %s", recWithTokens.Code, recWithTokens.Body.String())
+	}
+
+	var respWithTokens map[string]any
+	if err := json.Unmarshal(recWithTokens.Body.Bytes(), &respWithTokens); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	rawTokens, ok := respWithTokens["device_tokens"]
+	if !ok {
+		t.Fatalf("GetUser response missing 'device_tokens' key")
+	}
+	tokensSlice, ok := rawTokens.([]any)
+	if !ok {
+		t.Fatalf("expected 'device_tokens' to be a JSON array, got %T (%v)", rawTokens, rawTokens)
+	}
+	if len(tokensSlice) != 2 {
+		t.Fatalf("expected 2 device tokens, got %d", len(tokensSlice))
+	}
+
+	// Verify exact consumer decoding compatibility (notification-service fetcher.go)
+	var consumerPayload struct {
+		DeviceTokens []struct {
+			Token string `json:"token"`
+		} `json:"device_tokens"`
+	}
+	if err := json.Unmarshal(recWithTokens.Body.Bytes(), &consumerPayload); err != nil {
+		t.Fatalf("notification-service failed to unmarshal GetUser response: %v", err)
+	}
+	if len(consumerPayload.DeviceTokens) != 2 ||
+		consumerPayload.DeviceTokens[0].Token != "fcm-tok-android-001" ||
+		consumerPayload.DeviceTokens[1].Token != "fcm-tok-ios-002" {
+		t.Errorf("unexpected consumer decoded tokens: %+v", consumerPayload.DeviceTokens)
+	}
+
+	// 2. User with no device tokens (empty array, not missing key, not null)
+	userNoTokens := &models.User{
+		ID:        "test-user-notokens-456",
+		Email:     "notokens_user@example.com",
+		Username:  "notokens_user",
+		Password:  "hashedpass",
+		Role:      models.RoleUser,
+		IsActive:  true,
+		CreatedAt: time.Now().UTC(),
+	}
+	if err := s.CreateUser(ctx, userNoTokens); err != nil {
+		t.Fatalf("failed to create user without tokens: %v", err)
+	}
+
+	reqNoTokens := httptest.NewRequest("GET", "/auth/user?id="+userNoTokens.ID, nil)
+	reqNoTokens.Header.Set("X-Internal-Token", a.internalServiceToken)
+	recNoTokens := httptest.NewRecorder()
+	a.GetUser(recNoTokens, reqNoTokens)
+
+	if recNoTokens.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for user without tokens, got %d: %s", recNoTokens.Code, recNoTokens.Body.String())
+	}
+
+	// Confirm raw JSON contains `"device_tokens":[]` (empty array, not missing key and not null)
+	bodyStr := recNoTokens.Body.String()
+	if !strings.Contains(bodyStr, `"device_tokens":[]`) {
+		t.Errorf("expected raw JSON response to include '\"device_tokens\":[]', got: %s", bodyStr)
+	}
+
+	var respNoTokens map[string]any
+	if err := json.Unmarshal(recNoTokens.Body.Bytes(), &respNoTokens); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	val, exists := respNoTokens["device_tokens"]
+	if !exists {
+		t.Fatalf("GetUser response missing 'device_tokens' key for user without tokens")
+	}
+	slice, ok := val.([]any)
+	if !ok {
+		t.Fatalf("expected 'device_tokens' to be empty array, got %T (%v)", val, val)
+	}
+	if len(slice) != 0 {
+		t.Errorf("expected 0 device tokens, got %d", len(slice))
 	}
 }
 

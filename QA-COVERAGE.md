@@ -461,10 +461,11 @@ The following coverage was introduced net-new during Phase 0 and Phase 2 of this
     `chat_user_contract_test.go:34: Contract drift: models.Job.EmployeeID JSON tag is "driver_id", expected "employee_id"`
     Reverting the mutation restored `PASS` (`0.004s`).
 
-* **Real Undetected Schema Drift Discovered & Audited**:
+* **Real Undetected Schema Drift Discovered & Resolved**:
   - **Boundary**: `notif -> auth` (`GET /auth/user?id={id}`)
-  - **Defect**: In `services/notification-service/internal/hub/fetcher.go:51-55` (`GetUserDeviceTokens`), consumer decodes `user.DeviceTokens []struct { Token string "token" } json:"device_tokens"`. However, in `services/auth-service/internal/handlers/auth.go:1050-1071` (`GetUser`), the response map explicitly constructs profile fields but omits `device_tokens`, despite `models.User.DeviceTokens` existing in `auth-service`. In production/staging, FCM token retrieval over HTTP silently received empty tokens (masked because staging tests relied on mock dispatchers).
-  - **Audit Contract Protection**: Contract test `TestContract_NotifToAuth_GetUser_DeviceTokens` actively asserts and flags this omission.
+  - **Defect**: In `services/notification-service/internal/hub/fetcher.go:51-55` (`GetUserDeviceTokens`), consumer decodes `user.DeviceTokens []struct { Token string "token" } json:"device_tokens"`. However, in `services/auth-service/internal/handlers/auth.go:1050-1071` (`GetUser`), the response map explicitly constructed profile fields but omitted `device_tokens`, despite `models.User.DeviceTokens` existing in `auth-service`. In production/staging, FCM token retrieval over HTTP silently received empty tokens (masked because staging tests relied on mock dispatchers).
+  - **Resolution**: ✅ **RESOLVED**. Added `"device_tokens": deviceTokens` to `GetUser` response construction in `services/auth-service/internal/handlers/auth.go:1050` with empty-slice fallback (`[]models.DeviceToken{}`), ensuring users with registered tokens return their token array and users with none return an empty JSON array (`[]`) rather than a missing key or `null`.
+  - **Contract Test & Handler Protection**: Verified with `TestGetUser_DeviceTokensResponse` in `services/auth-service/internal/handlers/auth_test.go` and enforced via `TestContract_NotifToAuth_GetUser_DeviceTokens` in `tests/contracts/notif_auth_contract_test.go`.
 
 ---
 
@@ -501,7 +502,7 @@ In accordance with product owner guidelines, uncovered items discovered during t
 * **Priority**: P2 (Closed in Phase 4)
 * **Status**: ✅ **RESOLVED / CLOSED**
 * **Resolution**: Implemented pure Go schema-based contract testing suite in `tests/contracts/` covering 8 inter-service REST boundaries with AST reflection guards and strict JSON deserialization (`tests/contracts/*_contract_test.go`). Runs in-process in CI and pre-push hooks without Docker Compose (~45ms). Drift detection proven via fail-then-pass experiments on `user -> chat` and `chat -> user`.
-* **Discovered Drift**: Uncovered real undetected schema drift on `notif -> auth` (`device_tokens` omission in `auth-service` `GetUser`), actively audited in `notif_auth_contract_test.go`.
+* **Discovered Drift**: Uncovered real undetected schema drift on `notif -> auth` (`device_tokens` omission in `auth-service` `GetUser`), now fully resolved with handler remediation and verified in `notif_auth_contract_test.go` and `auth_test.go`.
 
 ### QA-GAP-03: Real FCM Push Notification Wakeup Verification
 * **Priority**: P3

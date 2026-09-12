@@ -1047,6 +1047,11 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	deviceTokens := user.DeviceTokens
+	if deviceTokens == nil {
+		deviceTokens = []models.DeviceToken{}
+	}
+
 	resp := map[string]any{
 		"id":                 user.ID,
 		"email":              user.Email,
@@ -1058,6 +1063,7 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 		"kyc_status":         user.KYCStatus,
 		"is_active":          user.IsActive,
 		"account_status":     user.EffectiveAccountStatus(),
+		"device_tokens":      deviceTokens,
 	}
 	if user.Role == models.RoleEmployee {
 		resp["kye_status"] = user.KYEStatus

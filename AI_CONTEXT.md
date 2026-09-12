@@ -830,3 +830,15 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
     - `CI Gate` run `34677332029`: SUCCESS (all microservices built, vetted, tested, plus static security scans).
     - `Release Gate E2E` run `34677332018`: SUCCESS (live staging container orchestration, mTLS health checks, and end-to-end CUJ test suite in 3m52s).
 
+### Bug Fix & Production Parity Promotion: `device_tokens` Schema Drift Resolved (2026-09-12)
+
+* **Remediated `auth-service` `GetUser` Handler (`services/auth-service/internal/handlers/auth.go:1050`)**:
+  - Populated `"device_tokens": deviceTokens` in the response map of `GetUser` with fallback to an empty slice (`[]models.DeviceToken{}`).
+  - Resolves FCM push token lookup returning 0 tokens for users in `notification-service/internal/hub/fetcher.go`.
+* **Verification Evidence**:
+  - AST drift guard in `tests/contracts/notif_auth_contract_test.go` flipped from detecting drift to passing cleanly with strict enforcement (`t.Errorf` on missing key).
+  - Handler unit test `TestGetUser_DeviceTokensResponse` in `auth_test.go` verified registered tokens round-trip and non-registered users receive empty JSON array `[]` (not missing key, not null).
+  - `make contract-test` passes cleanly (11/11 tests across 8 REST boundaries in ~40ms).
+  - Full CI and release gate passing locally and downstream.
+
+
