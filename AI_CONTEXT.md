@@ -812,3 +812,21 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - Updated Comprehensive Master Coverage Gap Matrix row 55 to reflect closed status for `QA-GAP-02`.
   - Updated `QA-GAP-02` section to RESOLVED / CLOSED.
 
+### Production Release Promotion (main at 6f3180f, 2026-09-12 — QA Phases 0, 1, 2, 4)
+
+* **Promoted `logic-exploitation` to `main` at commit `6f3180f7acd68771f656da64f069e2c58f398b70`**:
+  - Fast-forward merge of 4 commits:
+    1. `370893d`: Phase 0 staging parity architecture (`infrastructure/staging`), CI release gate (`.github/workflows/release-gate-e2e.yml`), and first 2 E2E user journeys (CUJ-A, CUJ-B).
+    2. `7ffae4f`: Phase 2 net-new Critical User Journeys (CUJ-C through CUJ-H), unified Auth/RBAC security matrix (`tests/e2e/auth_matrix_test.go`), and backend-frontend parity tooling (`tools/paritycheck`).
+    3. `9ad699e`: Retroactive Phase 1 baseline audit cataloguing pre-existing test coverage across 7 categories and structuring `QA-COVERAGE.md`.
+    4. `6f3180f`: Phase 4 inter-service API contract testing suite (`tests/contracts/`) covering 8 REST boundaries with AST reflection guards and strict deserialization, closing `QA-GAP-02`.
+* **Critical Bug Detection Status (`device_tokens` schema drift)**:
+  - **Detection Live**: `TestContract_NotifToAuth_GetUser_DeviceTokens` actively detects and audits the schema gap where `services/auth-service/internal/handlers/auth.go` (`GetUser`) omits `device_tokens` expected by `services/notification-service/internal/hub/fetcher.go`.
+  - **Remediation Pending**: Note that this merge promotes the detection test suite and audit documentation; the handler-level remediation in `auth-service` `GetUser` has NOT yet landed in code and is logged as an immediate follow-up fix.
+* **Verification Evidence**:
+  - Local pre-merge & post-merge: `make ci` exit 0 (532/532 Flutter tests, API contract tests pass in 44ms, static analysis clean).
+  - Downstream GitHub Actions verified green on `main`:
+    - `Build and Publish Docker Images` run `34677332061`: SUCCESS (all 5 microservices published to GHCR, deployment sync succeeded).
+    - `CI Gate` run `34677332029`: SUCCESS (all microservices built, vetted, tested, plus static security scans).
+    - `Release Gate E2E` run `34677332018`: SUCCESS (live staging container orchestration, mTLS health checks, and end-to-end CUJ test suite in 3m52s).
+
