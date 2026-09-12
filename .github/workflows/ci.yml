@@ -56,7 +56,7 @@ jobs:
           CANONICAL_GO_PATCH_VERSION="1.26.6"
           CANONICAL_GO_TOOLCHAIN="go1.26.6"
           DRIFT_FAILED=0
-          for f in go.work services/*/go.mod shared/infra/go.mod tools/*/go.mod tests/e2e/go.mod; do
+          for f in go.work services/*/go.mod shared/infra/go.mod tools/*/go.mod tests/*/go.mod; do
             if [ -f "$f" ]; then
               v=$(grep -E '^go [0-9]+\.[0-9]+' "$f" | head -n 1 | awk '{print $2}')
               if [ "$v" != "$CANONICAL_GO_VERSION" ]; then

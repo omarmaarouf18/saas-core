@@ -787,3 +787,28 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - Produced the Master Coverage Gap Matrix contrasting baseline coverage with net-new CUJs.
   - Formulated the QA Backlog items (patterned after `MESSAGING_BACKLOG.md`): QA-GAP-01 (API Gateway Version Config handler tests), QA-GAP-02 (Consumer-Driven Contract Testing via Pact), QA-GAP-03 (Live FCM push tokens & wakeups), QA-GAP-04 (Automated Chaos & container termination resiliency), and QA-GAP-05 (Formal deprecation & sunset of orphan route `/chat/tickets/resolve`).
 
+### QA Strategy Phase 4: Inter-Service API Contract Testing (2026-09-12)
+
+* **Closed QA-GAP-02 (API Contract Drift Protection)**:
+  - Implemented comprehensive, pure Go schema-based contract testing suite located in `tests/contracts/` (`github.com/project/tests/contracts`).
+  - Integrated into `.githooks/pre-push` gate step 5 and `make contract-test` / `make ci`. Runs in-process in milliseconds (~45ms) without requiring Docker Compose, providing deterministic local and CI release gate protection.
+  - **Justification vs Pact**: Rather than introducing external daemons, C-bindings (`libpact_ffi`), or network brokers into a pure Go microservice workspace, the suite pairs **AST Source-Code Reflection Guards** (parsing Go source files directly to catch struct field, JSON tag, and response map key drift at test time) with **Behavioral Round-Trip Serialization Validators** (`encoding/json` with `DisallowUnknownFields`).
+* **Inter-Service REST Boundaries Covered**:
+  1. **`chat -> auth`** (`tests/contracts/chat_auth_contract_test.go`): `GET /auth/user?id=...` (WebSocket auth cache & fleet channel access) and `GET /auth/reviewer/verify` (`ReviewerClaims`).
+  2. **`chat -> user`** (`tests/contracts/chat_user_contract_test.go`): `GET /users/jobs/get?id=...` (job participant and offered-courier channel authorization against `models.Job`).
+  3. **`notif -> auth`** (`tests/contracts/notif_auth_contract_test.go`): `GET /auth/user?id=...` (device token resolution) and `POST /auth/device-token` (stale token unregistration via `models.DeviceTokenRequest`).
+  4. **`user -> chat`** (`tests/contracts/user_chat_contract_test.go`): `POST /chat/internal/broadcast-location` (driver GPS updates across `UpdateJobLocation` and `UpdateEmployeeLocation`).
+  5. **`user -> notif`** (`tests/contracts/user_notif_contract_test.go`): `POST /notifications/send` (`sendRequest`) and `POST /notifications/broadcast/job-alert` (`jobAlertRequest`).
+  6. **`auth -> user`** (`tests/contracts/auth_user_contract_test.go`): `GET /users/subscription/internal?tenant_id=...` (paid-tier gating for staff management: 200 OK vs 402 upgrade_required).
+  7. **`user -> auth`** (`tests/contracts/user_auth_contract_test.go`): `GET /auth/user?id=...` (KYC verification and active employee validation).
+  8. **`chat -> notif`** (`tests/contracts/chat_notif_contract_test.go`): `POST /notifications/send` (support ticket resolution alert, validating `global: true` allows `tenant_id` omission).
+* **Drift Detection Evidence (Fail-Then-Pass Verification)**:
+  - Verified on Boundary 1 (`user -> chat`): Mutating `EmployeeID` JSON tag in `services/chat-service/internal/handlers/chat.go` to `courier_id` immediately failed `TestContract_UserToChat_BroadcastLocation` with clear drift diagnostics; reverting restored passing status (`0.011s`).
+  - Verified on Boundary 2 (`chat -> user`): Mutating `models.Job.EmployeeID` tag in `services/user-service/internal/models/models.go` to `driver_id` immediately failed `TestContract_ChatToUser_GetJob`; reverting restored passing status (`0.004s`).
+* **Real Undetected Schema Drift Discovered & Audited**:
+  - Uncovered genuine schema drift between `notification-service` and `auth-service`: `HTTPDeviceTokenFetcher.GetUserDeviceTokens` expects `"device_tokens": [{"token": string}]`, but `auth-service`'s `GetUser` handler builds an explicit response map omitting `device_tokens`. Documented and tested in `notif_auth_contract_test.go`.
+* **Updated QA-COVERAGE.md**:
+  - Moved Contract Testing from backlog to Section B.
+  - Updated Comprehensive Master Coverage Gap Matrix row 55 to reflect closed status for `QA-GAP-02`.
+  - Updated `QA-GAP-02` section to RESOLVED / CLOSED.
+

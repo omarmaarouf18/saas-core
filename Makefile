@@ -1,4 +1,4 @@
-.PHONY: docs docs-counts docs-check setup ci ensure-hooks commit push since-last-report report-hash backend-frontend-parity-check
+.PHONY: docs docs-counts docs-check setup ci ensure-hooks commit push since-last-report report-hash backend-frontend-parity-check contract-test
 
 ensure-hooks:
 	@if [ "$$(git config --get core.hooksPath 2>/dev/null)" != ".githooks" ]; then \
@@ -24,6 +24,9 @@ backend-frontend-parity-check: ensure-hooks
 
 ci: ensure-hooks
 	./.githooks/pre-push
+
+contract-test: ensure-hooks
+	cd tests/contracts && go test -v -count=1 ./...
 
 commit: ensure-hooks
 	git add -A && git commit -m "$(MSG)"

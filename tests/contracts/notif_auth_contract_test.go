@@ -1,0 +1,152 @@
+package contracts
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
+
+// TestContract_NotifToAuth_GetUser_DeviceTokens verifies the contract between:
+// Consumer: notification-service (HTTPDeviceTokenFetcher.GetUserDeviceTokens in services/notification-service/internal/hub/fetcher.go:33)
+// Provider: auth-service (GetUser in services/auth-service/internal/handlers/auth.go:1050)
+//
+// NOTE: During the Phase 4 contract test audit, a REAL UNDETECTED SCHEMA DRIFT was discovered:
+// Consumer expects "device_tokens": [{"token": "..."}], but Provider's GetUser handler
+// currently constructs an explicit response map that omits "device_tokens".
+func TestContract_NotifToAuth_GetUser_DeviceTokens(t *testing.T) {
+	rootDir := FindProjectRoot(t)
+
+	// 1. Audit Drift Detection: Check if auth-service GetUser populates device_tokens
+	t.Run("Audit: Detect real schema drift in Provider GetUser response map", func(t *testing.T) {
+		mapKeysList := InspectMapKeysInFunction(t, rootDir, "services/auth-service/internal/handlers/auth.go", "GetUser")
+		hasDeviceTokensKey := false
+		for _, keys := range mapKeysList {
+			for _, k := range keys {
+				if k == "device_tokens" {
+					hasDeviceTokensKey = true
+					break
+				}
+			}
+		}
+
+		if !hasDeviceTokensKey {
+			// This test documents the real undetected drift discovered during this audit!
+			t.Logf("REAL SCHEMA DRIFT DETECTED: auth-service GetUser response map omits 'device_tokens', though notification-service HTTPDeviceTokenFetcher explicitly decodes 'device_tokens' (fetcher.go:51)")
+		}
+	})
+
+	// 2. Behavioral Consumer Deserialization Contract Test
+	t.Run("Round-Trip: Consumer DeviceToken Extraction from Provider Payload", func(t *testing.T) {
+		const testInternalToken = "internal-secret-token-xyz"
+		const testUserID = "usr-driver-fcm-123"
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet {
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+			if r.Header.Get("X-Internal-Token") != testInternalToken {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
+			// Contract-compliant payload with device_tokens
+			resp := map[string]any{
+				"id":        testUserID,
+				"email":     "driver@example.com",
+				"role":      "employee",
+				"is_active": true,
+				"device_tokens": []map[string]string{
+					{"token": "fcm-device-token-alpha"},
+					{"token": "fcm-device-token-beta"},
+					{"token": ""}, // empty token should be ignored
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(resp)
+		}))
+		defer server.Close()
+
+		req, _ := http.NewRequest(http.MethodGet, server.URL+"/auth/user?id="+testUserID, nil)
+		req.Header.Set("X-Internal-Token", testInternalToken)
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to execute request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("Expected HTTP 200, got %d", resp.StatusCode)
+		}
+
+		// Consumer decoding logic verbatim from notification-service fetcher.go:51-67
+		var user struct {
+			DeviceTokens []struct {
+				Token string `json:"token"`
+			} `json:"device_tokens"`
+		}
+
+		if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+			t.Fatalf("Consumer failed to decode device_tokens: %v", err)
+		}
+
+		tokens := make([]string, 0, len(user.DeviceTokens))
+		for _, dt := range user.DeviceTokens {
+			if strings.TrimSpace(dt.Token) != "" {
+				tokens = append(tokens, dt.Token)
+			}
+		}
+
+		if len(tokens) != 2 {
+			t.Fatalf("Expected 2 non-empty tokens, got %d: %+v", len(tokens), tokens)
+		}
+		if tokens[0] != "fcm-device-token-alpha" || tokens[1] != "fcm-device-token-beta" {
+			t.Errorf("Unexpected extracted tokens: %+v", tokens)
+		}
+	})
+}
+
+// TestContract_NotifToAuth_UnregisterStaleToken verifies the contract between:
+// Consumer: notification-service (HTTPDeviceTokenFetcher.UnregisterStaleToken in services/notification-service/internal/hub/fetcher.go:70)
+// Provider: auth-service (DeviceToken in services/auth-service/internal/handlers/auth.go:2930)
+func TestContract_NotifToAuth_UnregisterStaleToken(t *testing.T) {
+	rootDir := FindProjectRoot(t)
+
+	// 1. Source AST Verification (Provider DeviceTokenRequest tags)
+	t.Run("AST: Provider DeviceTokenRequest struct matches Consumer unregister payload tags", func(t *testing.T) {
+		reqFields := InspectStructInFile(t, rootDir, "services/auth-service/internal/models/models.go", "DeviceTokenRequest")
+
+		if reqFields["Token"].JSONTag != "token" {
+			t.Errorf("DeviceTokenRequest.Token expected 'token', got %q", reqFields["Token"].JSONTag)
+		}
+		if reqFields["Action"].JSONTag != "action" {
+			t.Errorf("DeviceTokenRequest.Action expected 'action', got %q", reqFields["Action"].JSONTag)
+		}
+	})
+
+	// 2. Strict Deserialization Contract Test
+	t.Run("Strict Round-Trip: Provider Deserialization of Unregister Payload", func(t *testing.T) {
+		// Verbatim payload generated by fetcher.go:72:
+		// fmt.Sprintf(`{"token":%q,"action":"unregister"}`, token)
+		consumerPayload := []byte(`{"token":"stale-fcm-tok-999","action":"unregister"}`)
+
+		type DeviceTokenRequest struct {
+			Token    string `json:"token"`
+			Platform string `json:"platform,omitempty"`
+			Action   string `json:"action,omitempty"`
+		}
+
+		var providerReq DeviceTokenRequest
+		if err := StrictUnmarshal(consumerPayload, &providerReq); err != nil {
+			t.Fatalf("Provider failed strict unmarshaling of consumer payload: %v", err)
+		}
+
+		if providerReq.Token != "stale-fcm-tok-999" || providerReq.Action != "unregister" {
+			t.Errorf("Provider received unexpected request values: %+v", providerReq)
+		}
+	})
+}

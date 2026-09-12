@@ -12,4 +12,5 @@ use (
 	./tools/docgen
 	./tools/paritycheck
 	./tests/e2e
+	./tests/contracts
 )
