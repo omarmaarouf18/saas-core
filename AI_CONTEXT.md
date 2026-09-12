@@ -769,13 +769,21 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   1. *Gateway Notification Routing*: In `services/api-gateway/internal/config/config.go`, corrected route prefix from `/api/v1/notifications/stream` to `/api/v1/notifications/`, restoring proxy routing for notification history, read receipts, and deletions.
   2. *Auth Service Password Validation*: In `services/auth-service/internal/handlers/auth.go`, added missing minimum password length validation (`len(req.Password) < 6` -> 400 Bad Request).
 
+### QA Strategy Phase 1: Baseline Audit (Retroactive Execution & Phase-Ordering Correction) (2026-09-12)
 
-
-
-
-
-
-
-
-
+* **Phase-Ordering Correction**:
+  - In the initial execution of the QA strategy initiative, work proceeded directly from staging parity (Phase 0) to end-to-end user journeys (Phase 2: CUJ-A through CUJ-H) without completing the Phase 1 Baseline Audit.
+  - Per product owner guidance, Phase 1 was retroactively performed after Phases 0 and 2 rather than before. This historical sequence is recorded honestly to preserve architectural fidelity.
+* **Baseline Test Inventory & Audit Scope (Pre-dating Commit `370893d`)**:
+  - **Category 1 (API Endpoints)**: Audited all 98 registered HTTP route entries (82 canonical endpoints + 16 companion aliases) across Go service handler test suites. 80 of the 82 canonical endpoints (97.6%) had pre-existing unit/handler tests. Identified exactly 2 untested endpoints: `GET /api/v1/admin/version-config` and `PUT /api/v1/admin/version-config` in `api-gateway` (registered inline in `cmd/main.go:94`). Identified 1 unconsumed orphan route: `POST /chat/tickets/resolve` in `chat-service` (superseded by Ops Console `/admin/tickets/resolve`).
+  - **Category 2 (Authentication)**: Documented extensive pre-existing test suites across JWT validation (`shared/infra/jwtutil/jwt_test.go`), session revocation/denylists (`auth_test.go:1147`), password reset anti-enumeration & timing parity (`auth_test.go:2862`), AES-GCM OTP cryptography & CAS consume race defense (`crypto_test.go`, `otp_consume_race_regression_test.go`), account suspension cascades (`account_suspension_test.go`), and hashed reviewer/agent tokens at rest (`reviewer_token_hash_regression_test.go`).
+  - **Category 3 (RBAC Regression Finding)**: Established the critical finding that **RBAC had ZERO systematic regression test coverage** before `TestAuthMatrix` (added in Phase 2b). Pre-existing role checks were isolated and ad-hoc inside specific handler tests, leaving role permission boundaries vulnerable to regressions.
+  - **Category 4 (WebSocket Flows & Proxy Upgrade Blindspot)**: Audited pre-existing WS tests (`chat_test.go`, `hub_test.go`), noting that all pre-existing tests connected directly to `httptest.Server` in memory. This test blindspot is why the `101 Switching Protocols` reverse-proxy bug in the API Gateway's resilience transport survived unnoticed until live staging testing in Phase 0.
+  - **Category 5 (Critical Business Flows)**: Catalogued pre-existing unit/integration coverage across all 8 core domains (Authentication, Orders, Delivery lifecycle, Driver workflow, Owner workflow, Chat, Notifications, Rating).
+  - **Category 6 (Existing Security Checks)**: Catalogued CI security gates (`gosec`, `govulncheck`, Markdown Commit SHA verifier, Go version drift guard, and the 27 security repro suites from the Independent Code Review).
+  - **Category 7 (Existing Docker/Infra Checks)**: Documented pre-existing CI limitations: CI only ran isolated GitHub Actions runner containers (`mongo:7`, `redis:7-alpine`); Compose images were only syntax-checked in `build-and-publish.yml` with dummy env vars; zero multi-container live boot, health check, or mTLS testing existed in CI before Phase 0.
+* **Restructured QA-COVERAGE.md**:
+  - Restructured `QA-COVERAGE.md` into Section A ("Pre-Existing Coverage (Baseline, audited retroactively)") and Section B ("New Coverage Added by QA Strategy Initiative").
+  - Produced the Master Coverage Gap Matrix contrasting baseline coverage with net-new CUJs.
+  - Formulated the QA Backlog items (patterned after `MESSAGING_BACKLOG.md`): QA-GAP-01 (API Gateway Version Config handler tests), QA-GAP-02 (Consumer-Driven Contract Testing via Pact), QA-GAP-03 (Live FCM push tokens & wakeups), QA-GAP-04 (Automated Chaos & container termination resiliency), and QA-GAP-05 (Formal deprecation & sunset of orphan route `/chat/tickets/resolve`).
 
