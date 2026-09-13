@@ -18,6 +18,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/project/shared/infra/jwtutil"
+	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -27,6 +28,7 @@ type Config struct {
 	GatewayURL string
 	ConsoleURL string
 	MongoURI   string
+	RedisURI   string
 	JWTSecret  string
 }
 
@@ -35,6 +37,7 @@ func LoadConfig() *Config {
 		GatewayURL: os.Getenv("STAGING_GATEWAY_URL"),
 		ConsoleURL: os.Getenv("STAGING_CONSOLE_URL"),
 		MongoURI:   os.Getenv("STAGING_MONGO_URI"),
+		RedisURI:   os.Getenv("STAGING_REDIS_URI"),
 		JWTSecret:  os.Getenv("JWT_SECRET"),
 	}
 	if cfg.GatewayURL == "" {
@@ -46,11 +49,31 @@ func LoadConfig() *Config {
 	if cfg.MongoURI == "" {
 		cfg.MongoURI = "mongodb://staging_root:staging_secret123@localhost:27018/?authSource=admin"
 	}
+	if cfg.RedisURI == "" {
+		cfg.RedisURI = "redis://:staging_redis_secret123@localhost:6381/0"
+	}
 	if cfg.JWTSecret == "" {
 		cfg.JWTSecret = "NrrYbDqT4bRD/ADvJ5U2VKmLqXr8nk21IRVAbrzVI1mqEhuMhII3IO26PPa4qJtR"
 	}
 	jwtutil.Init(cfg.JWTSecret)
 	return cfg
+}
+
+// FlushReviewerRateLimits clears any reviewer auth lockout keys in Redis
+// to prevent cumulative test failures from polluting staging state.
+func FlushReviewerRateLimits(ctx context.Context, redisURI string) error {
+	opt, err := redis.ParseURL(redisURI)
+	if err != nil {
+		return err
+	}
+	client := redis.NewClient(opt)
+	defer client.Close()
+
+	iter := client.Scan(ctx, 0, "ratelimit:auth:reviewer*", 0).Iterator()
+	for iter.Next(ctx) {
+		_ = client.Del(ctx, iter.Val()).Err()
+	}
+	return iter.Err()
 }
 
 func (c *Config) GenerateJWT(userID, role, tenantID, email string) (string, error) {
@@ -190,18 +213,30 @@ type WSClient struct {
 }
 
 func ConnectWS(ctx context.Context, gatewayURL, token string) (*WSClient, error) {
+	return ConnectWSPath(ctx, gatewayURL, "/api/v1/chat/ws", token)
+}
+
+func ConnectConsoleWS(ctx context.Context, consoleURL, token string) (*WSClient, error) {
+	return ConnectWSPath(ctx, consoleURL, "/api/chat/ws", token)
+}
+
+func ConnectWSPath(ctx context.Context, baseURL, path, token string) (*WSClient, error) {
 	wsCtx, wsCancel := context.WithCancel(ctx)
-	u, err := url.Parse(gatewayURL)
+	u, err := url.Parse(baseURL)
 	if err != nil {
 		wsCancel()
-		return nil, fmt.Errorf("invalid gateway url: %w", err)
+		return nil, fmt.Errorf("invalid base url: %w", err)
 	}
 
 	scheme := "ws"
 	if u.Scheme == "https" {
 		scheme = "wss"
 	}
-	wsTarget := fmt.Sprintf("%s://%s/api/v1/chat/ws?token=%s", scheme, u.Host, url.QueryEscape(token))
+	separator := "?"
+	if strings.Contains(path, "?") {
+		separator = "&"
+	}
+	wsTarget := fmt.Sprintf("%s://%s%s%stoken=%s", scheme, u.Host, path, separator, url.QueryEscape(token))
 
 	dialer := websocket.Dialer{
 		HandshakeTimeout: 10 * time.Second,

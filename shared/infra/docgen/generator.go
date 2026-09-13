@@ -247,13 +247,28 @@ var KnownEndpoints = map[string]struct {
 	},
 	"POST /chat/tickets": {
 		Permissions: "User JWT",
-		Function:    "Submits complaint ticket & assigns agent.",
-		Targets:     "Reads/writes `complaint_tickets` and `support_agents` (atomic).",
+		Function:    "Submits complaint ticket in pending status for reviewer pickup.",
+		Targets:     "Writes `complaint_tickets` collection.",
 	},
-	"POST /chat/tickets/resolve": {
-		Permissions: "Support Agent Token",
-		Function:    "Resolves ticket & releases agent status.",
-		Targets:     "Updates `complaint_tickets` and `support_agents`.",
+	"POST /chat/admin/tickets/accept": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Atomically assigns a pending ticket to a reviewer (CAS) and dispatches customer notification.",
+		Targets:     "CAS updates `complaint_tickets` and dispatches notification via notification-service.",
+	},
+	"POST /admin/tickets/accept": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Atomically assigns a pending ticket to a reviewer (CAS) and dispatches customer notification.",
+		Targets:     "CAS updates `complaint_tickets` and dispatches notification via notification-service.",
+	},
+	"POST /chat/admin/tickets/{id}/accept": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Atomically assigns a pending ticket to a reviewer (CAS) and dispatches customer notification.",
+		Targets:     "CAS updates `complaint_tickets` and dispatches notification via notification-service.",
+	},
+	"POST /admin/tickets/{id}/accept": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Atomically assigns a pending ticket to a reviewer (CAS) and dispatches customer notification.",
+		Targets:     "CAS updates `complaint_tickets` and dispatches notification via notification-service.",
 	},
 	"GET /chat/admin/tickets": {
 		Permissions: "Reviewer Token & `X-Internal-Token`",

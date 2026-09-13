@@ -33,17 +33,18 @@ type SupportAgent struct {
 }
 
 type ComplaintTicket struct {
-	ID              string     `bson:"_id" json:"ticket_id"`
-	CustomerID      string     `bson:"customer_id" json:"customer_id"`
-	AssignedAgentID string     `bson:"assigned_agent_id,omitempty" json:"assigned_agent_id,omitempty"`
-	ContextID       string     `bson:"context_id,omitempty" json:"context_id,omitempty"`
-	Subject         string     `bson:"subject,omitempty" json:"subject,omitempty"`
-	Status          string     `bson:"status" json:"status"` // "pending", "assigned", "resolved"
-	ResolutionNote  string     `bson:"resolution_note,omitempty" json:"resolution_note,omitempty"`
-	ResolvedBy      string     `bson:"resolved_by,omitempty" json:"resolved_by,omitempty"`
-	ResolvedAt      *time.Time `bson:"resolved_at,omitempty" json:"resolved_at,omitempty"`
-	CreatedAt       time.Time  `bson:"created_at" json:"created_at"`
-	UpdatedAt       time.Time  `bson:"updated_at,omitempty" json:"updated_at,omitempty"`
+	ID               string     `bson:"_id" json:"ticket_id"`
+	CustomerID       string     `bson:"customer_id" json:"customer_id"`
+	AssignedAgentID  string     `bson:"assigned_agent_id,omitempty" json:"assigned_agent_id,omitempty"`
+	AssignedReviewer string     `bson:"assigned_reviewer,omitempty" json:"assigned_reviewer,omitempty"`
+	ContextID        string     `bson:"context_id,omitempty" json:"context_id,omitempty"`
+	Subject          string     `bson:"subject,omitempty" json:"subject,omitempty"`
+	Status           string     `bson:"status" json:"status"` // "pending", "assigned", "resolved"
+	ResolutionNote   string     `bson:"resolution_note,omitempty" json:"resolution_note,omitempty"`
+	ResolvedBy       string     `bson:"resolved_by,omitempty" json:"resolved_by,omitempty"`
+	ResolvedAt       *time.Time `bson:"resolved_at,omitempty" json:"resolved_at,omitempty"`
+	CreatedAt        time.Time  `bson:"created_at" json:"created_at"`
+	UpdatedAt        time.Time  `bson:"updated_at,omitempty" json:"updated_at,omitempty"`
 }
 
 type MongoDB struct {
@@ -263,8 +264,8 @@ func (s *MongoDB) GetTicket(ctx context.Context, ticketID string) (*ComplaintTic
 	return &ticket, nil
 }
 
-// CreateTicketAndAssign attempts to atomically assign an available support agent to a new ticket.
-// If no agent is available, the ticket is created with "pending" status (queued).
+// CreateTicketAndAssign creates a new support ticket in "pending" status.
+// Every new ticket is unassigned until explicitly accepted by a reviewer.
 func (s *MongoDB) CreateTicketAndAssign(ctx context.Context, customerID, contextID string) (*ComplaintTicket, error) {
 	tktUUID, err := jwtutil.GenerateUUID()
 	if err != nil {
@@ -280,29 +281,8 @@ func (s *MongoDB) CreateTicketAndAssign(ctx context.Context, customerID, context
 		CreatedAt:  time.Now().UTC(),
 	}
 
-	// Atomic Compare-And-Swap (CAS): FindOneAndUpdate claims an available support agent single-document atomically.
-	filter := bson.M{"status": "available"}
-	update := bson.M{
-		"$set": bson.M{
-			"status":            "busy",
-			"current_ticket_id": ticket.ID,
-		},
-	}
-	var agent SupportAgent
-	err = s.agents.FindOneAndUpdate(ctx, filter, update, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&agent)
-	if err == nil {
-		ticket.Status = "assigned"
-		ticket.AssignedAgentID = agent.ID
-	} else if err != mongo.ErrNoDocuments {
-		return nil, err
-	}
-
 	_, err = s.tickets.InsertOne(ctx, ticket)
 	if err != nil {
-		if ticket.Status == "assigned" {
-			// Rollback agent assignment
-			_, _ = s.agents.UpdateOne(ctx, bson.M{"_id": agent.ID}, bson.M{"$set": bson.M{"status": "available", "current_ticket_id": ""}})
-		}
 		return nil, fmt.Errorf("failed to insert ticket: %w", err)
 	}
 
@@ -549,6 +529,50 @@ func (s *MongoDB) AdminResolveTicket(ctx context.Context, ticketID, resolutionNo
 			bson.M{"_id": updated.AssignedAgentID, "current_ticket_id": ticketID},
 			bson.M{"$set": bson.M{"status": "available", "current_ticket_id": ""}},
 		)
+	}
+
+	return &updated, nil
+}
+
+// AdminAcceptTicket atomically assigns a pending ticket to a reviewer (CAS: status "pending" -> "assigned").
+func (s *MongoDB) AdminAcceptTicket(ctx context.Context, ticketID, reviewerID string) (*ComplaintTicket, error) {
+	now := time.Now().UTC()
+
+	filter := bson.M{
+		"_id":    ticketID,
+		"status": "pending",
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"status":            "assigned",
+			"assigned_agent_id": reviewerID,
+			"assigned_reviewer": reviewerID,
+			"updated_at":        now,
+		},
+	}
+
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	res := s.tickets.FindOneAndUpdate(ctx, filter, update, opts)
+	if res.Err() != nil {
+		if res.Err() == mongo.ErrNoDocuments {
+			var existing ComplaintTicket
+			if err := s.tickets.FindOne(ctx, bson.M{"_id": ticketID}).Decode(&existing); err == nil {
+				if existing.Status == "assigned" {
+					return nil, fmt.Errorf("ticket %s is already assigned", ticketID)
+				}
+				if existing.Status == "resolved" {
+					return nil, fmt.Errorf("ticket %s is already resolved", ticketID)
+				}
+				return nil, fmt.Errorf("ticket %s is not in pending status (status: %s)", ticketID, existing.Status)
+			}
+			return nil, fmt.Errorf("ticket %s not found", ticketID)
+		}
+		return nil, fmt.Errorf("failed to accept ticket: %w", res.Err())
+	}
+
+	var updated ComplaintTicket
+	if err := res.Decode(&updated); err != nil {
+		return nil, fmt.Errorf("failed to decode accepted ticket: %w", err)
 	}
 
 	return &updated, nil

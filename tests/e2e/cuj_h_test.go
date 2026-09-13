@@ -41,7 +41,9 @@ func TestCUJ_H_SupportTicketResolution(t *testing.T) {
 	reviewerID := fmt.Sprintf("rev-cuj-h-%d", rnd)
 	rawReviewerToken := fmt.Sprintf("reviewer-secret-token-%d", rnd)
 
+	_ = FlushReviewerRateLimits(ctx, cfg.RedisURI)
 	defer func() {
+		_ = FlushReviewerRateLimits(ctx, cfg.RedisURI)
 		db.CleanupTestEntities(ctx, []string{tenantID}, []string{customerID})
 		_, _ = db.client.Database("staging_auth_db").Collection("reviewers").DeleteOne(ctx, map[string]any{"_id": reviewerID})
 	}()

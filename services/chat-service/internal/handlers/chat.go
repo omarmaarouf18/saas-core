@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/subtle"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -122,9 +121,12 @@ func (c *Chat) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/chat/tickets", c.HandleCreateTicket)
 	mux.HandleFunc("/chat/tickets/mine", c.GetCustomerTickets)
 	mux.HandleFunc("/tickets/mine", c.GetCustomerTickets)
-	mux.HandleFunc("/chat/tickets/resolve", c.HandleResolveTicket)
 	mux.HandleFunc("/chat/admin/tickets", c.AdminListTickets)
 	mux.HandleFunc("/admin/tickets", c.AdminListTickets)
+	mux.HandleFunc("/chat/admin/tickets/accept", c.AdminAcceptTicket)
+	mux.HandleFunc("/admin/tickets/accept", c.AdminAcceptTicket)
+	mux.HandleFunc("/chat/admin/tickets/{id}/accept", c.AdminAcceptTicket)
+	mux.HandleFunc("/admin/tickets/{id}/accept", c.AdminAcceptTicket)
 	mux.HandleFunc("/chat/admin/tickets/resolve", c.AdminResolveTicket)
 	mux.HandleFunc("/admin/tickets/resolve", c.AdminResolveTicket)
 }
@@ -195,7 +197,7 @@ func (c *Chat) canAccessChannel(userID, channel string) (bool, error) {
 		if err != nil {
 			return false, nil
 		}
-		return userID == ticket.CustomerID || (ticket.AssignedAgentID != "" && userID == ticket.AssignedAgentID), nil
+		return userID == ticket.CustomerID || (ticket.AssignedAgentID != "" && userID == ticket.AssignedAgentID) || (ticket.AssignedReviewer != "" && userID == ticket.AssignedReviewer), nil
 	}
 
 	if strings.HasPrefix(channel, "fleet:") {
@@ -302,6 +304,12 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		// as system support operators do not have an associated models.User account.
 		userID = agent.ID
 		username = "Agent " + agent.ID
+	} else if reviewer, rerr := c.verifyReviewerToken(r.Context(), token); rerr == nil && reviewer != nil {
+		userID = reviewer.ID
+		username = reviewer.Name
+		if username == "" {
+			username = "Reviewer " + reviewer.ID
+		}
 	} else {
 		// 1. Primary trust boundary: Validate JWT token signature and expiry locally
 		claims, err := jwtutil.ValidateToken(token)
@@ -376,7 +384,16 @@ func (c *Chat) GetHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requesterToken := r.URL.Query().Get("requester_id")
+	requesterToken := r.Header.Get("X-Reviewer-Token")
+	if requesterToken == "" {
+		authHeader := r.Header.Get("Authorization")
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			requesterToken = strings.TrimPrefix(authHeader, "Bearer ")
+		}
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_id")
+	}
 	if requesterToken == "" {
 		requesterToken = r.URL.Query().Get("token")
 	}
@@ -389,6 +406,8 @@ func (c *Chat) GetHistory(w http.ResponseWriter, r *http.Request) {
 	agent, err := c.store.GetAgentByToken(r.Context(), requesterToken)
 	if err == nil && agent != nil {
 		userID = agent.ID
+	} else if reviewer, rerr := c.verifyReviewerToken(r.Context(), requesterToken); rerr == nil && reviewer != nil {
+		userID = reviewer.ID
 	} else {
 		claims, err := jwtutil.ValidateToken(requesterToken)
 		if err != nil {
@@ -846,67 +865,6 @@ func (c *Chat) GetCustomerTickets(w http.ResponseWriter, r *http.Request) {
 		Page:    int(page),
 		Limit:   int(limit),
 	})
-}
-
-func (c *Chat) HandleResolveTicket(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed, use POST"})
-		return
-	}
-
-	token := r.URL.Query().Get("token")
-	if token == "" {
-		authHeader := r.Header.Get("Authorization")
-		if strings.HasPrefix(authHeader, "Bearer ") {
-			token = strings.TrimPrefix(authHeader, "Bearer ")
-		}
-	}
-	if token == "" {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing token"})
-		return
-	}
-
-	agent, err := c.store.GetAgentByToken(r.Context(), token)
-	if err != nil || agent == nil {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: invalid agent token"})
-		return
-	}
-
-	var req struct {
-		TicketID string `json:"ticket_id"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
-		return
-	}
-
-	ticket, err := c.store.GetTicket(r.Context(), req.TicketID)
-	if err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "ticket not found"})
-		return
-	}
-
-	// IDOR check: agent can only resolve their assigned ticket
-	if ticket.AssignedAgentID != agent.ID {
-		// #nosec G706 //nolint:gosec -- IDs are from verified JWT tokens and database, log injection not possible
-		log.Printf("[SECURITY EVENT] Agent %s attempted unauthorized resolve of ticket %s (assigned to %s)", agent.ID, ticket.ID, ticket.AssignedAgentID)
-		handlerutil.ShipSecurityEvent(r.Context(), "TICKET_RESOLVE_BLOCKED", "chat-service", agent.ID, "", fmt.Sprintf("unauthorized attempt to resolve ticket %s", ticket.ID), handlerutil.GetClientIP(r))
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "not authorized to resolve this ticket"})
-		return
-	}
-
-	if err := c.store.ResolveTicket(r.Context(), req.TicketID); err != nil {
-		if errors.Is(err, store.ErrTicketAlreadyResolved) || strings.Contains(err.Error(), "already resolved") {
-			writeJSON(w, http.StatusConflict, map[string]string{"error": "ticket is already resolved"})
-			return
-		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to resolve ticket: " + err.Error()})
-		return
-	}
-
-	handlerutil.ShipSecurityEvent(r.Context(), "TICKET_RESOLVED", "chat-service", agent.ID, "", fmt.Sprintf("ticket %s resolved by agent %s", ticket.ID, agent.ID), handlerutil.GetClientIP(r))
-
-	writeJSON(w, http.StatusOK, map[string]string{"status": "resolved", "ticket_id": req.TicketID})
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {

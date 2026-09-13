@@ -7,7 +7,6 @@ import '../providers/locale_provider.dart';
 import '../providers/theme_provider.dart';
 import '../utils/logout_helper.dart';
 import '../widgets/themed_panel.dart';
-import '../widgets/create_ticket_dialog.dart';
 import '../widgets/entity_avatar.dart';
 import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
@@ -445,7 +444,7 @@ class SettingsScreen extends StatelessWidget {
                       color: theme.colorScheme.primary,
                     ),
                     title: Text(
-                      l10n.settingsCustomerService,
+                      l10n.supportTicketsTitle,
                       style: AppTypography.bodyLg.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -461,9 +460,10 @@ class SettingsScreen extends StatelessWidget {
                       color: theme.colorScheme.outline,
                     ),
                     onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => const CreateTicketDialog(),
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const CustomerTicketsScreen(),
+                        ),
                       );
                     },
                   ),

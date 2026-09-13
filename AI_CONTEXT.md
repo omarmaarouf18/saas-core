@@ -839,6 +839,47 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - AST drift guard in `tests/contracts/notif_auth_contract_test.go` flipped from detecting drift to passing cleanly with strict enforcement (`t.Errorf` on missing key).
   - Handler unit test `TestGetUser_DeviceTokensResponse` in `auth_test.go` verified registered tokens round-trip and non-registered users receive empty JSON array `[]` (not missing key, not null).
   - `make contract-test` passes cleanly (11/11 tests across 8 REST boundaries in ~40ms).
-  - Full CI and release gate passing locally and downstream.
+### Support Ticket Lifecycle Realignment & Ops Console Real-Time Chat (2026-09-13)
+
+* **Item 1: Eliminated Duplicate Ticket Creation Entry Point**:
+  - `frontend/lib/screens/settings_screen.dart`: Removed `CreateTicketDialog` invocation and import, wiring the "Support Tickets" settings tile to push `CustomerTicketsScreen()`.
+  - `frontend/test/settings_screen_test.dart`: Updated widget tests to verify navigation to `CustomerTicketsScreen`.
+  - Frontend verified: `flutter test test/settings_screen_test.dart` (8/8 passed), `flutter test test/customer_tickets_test.dart` (11/11 passed), `flutter analyze` (0 issues).
+
+* **Item 2 & 3: Chat Service Backend Pending-First Lifecycle & Deprecation of Orphan Route**:
+  - `services/chat-service/internal/store/mongodb.go`:
+    - Added `AssignedReviewer string` field to `ComplaintTicket`.
+    - Updated `CreateTicketAndAssign` to ALWAYS initialize tickets in `status: "pending"` with empty `assigned_agent_id` and `assigned_reviewer`.
+    - Implemented `AdminAcceptTicket(ctx, ticketID, reviewerID)` with Compare-And-Swap (CAS) query `{_id: ticketID, status: "pending"}`, transitioning to `status: "assigned"`, `assigned_agent_id: reviewerID`, `assigned_reviewer: reviewerID`. Returns 409 Conflict if already claimed or resolved.
+  - `services/chat-service/internal/handlers/admin_tickets.go`:
+    - Added `AdminAcceptTicket(w, r)` registered at `POST /admin/tickets/accept`, `POST /chat/admin/tickets/accept`, and parameterized paths `POST /admin/tickets/{id}/accept`.
+    - Added dual delivery on accept: persists system chat message `"A support agent has joined your ticket"` to `ticket:<id>` and publishes live SSE event `ticket_assigned`.
+    - Emits structured security event `ADMIN_TICKET_ACCEPTED`.
+  - `services/chat-service/internal/handlers/chat.go`:
+    - Decommissioned and removed deprecated orphan endpoint `POST /chat/tickets/resolve` and its handler `HandleResolveTicket`, closing GAP-05 / QA-GAP-05.
+    - Updated `canAccessChannel` for `ticket:<id>` to authorize `ticket.AssignedReviewer != "" && userID == ticket.AssignedReviewer`.
+    - Updated `HandleWebSocket` and `GetHistory` to authenticate reviewer tokens via `verifyReviewerToken`.
+  - `shared/infra/docgen/generator.go` & `tools/paritycheck/main.go`:
+    - Removed `POST /chat/tickets/resolve`; registered `POST /admin/tickets/accept` (and companion alias).
+    - Regenerated `docs/APPLICATION_MAP.md` via `make docs`.
+    - `make backend-frontend-parity-check` confirms 0 unconsumed routes (100% active/consumed).
+  - All unit and concurrency tests passing: `TestAdminAcceptTicket_CASConcurrencyRace`, `TestComplaintRoutingConcurrency`, `TestComplaintRoutingAccessControl` (`go test ./services/chat-service/...`).
+
+* **Item 4: Operations Console Expansion (`kyc-reviewer-console`)**:
+  - `internal/proxy/proxy.go`:
+    - Added `Me` (`GET /auth/reviewer/verify`), `AcceptTicket` (`POST /admin/tickets/accept`), `TicketsHistory` (`GET /chat/history`), and `ChatWebSocket` (`GET /chat/ws` reverse proxy with TLS client transport).
+  - `cmd/server/main.go`:
+    - Registered `/api/me`, `/api/tickets/accept`, `/api/tickets/history`, `/api/chat/history`, `/api/chat/ws`.
+  - `web/index.html`, `web/style.css`, `web/app.js`:
+    - Added `#ticket-chat-card` drawer with ticket metadata header, live messages stream, auto-scroll, message form, and real-time WebSocket connection.
+    - Updated ticket list actions: "Accept Ticket" for pending, "Open Chat" + "Resolve…" for assigned, and "View Chat" for resolved.
+  - Image built and published locally as `ghcr.io/omarmaarouf18/kyc-reviewer-console:latest` and pushed to `origin/main` at `2c0643a`.
+
+* **Live Staging Critical User Journey (CUJ-I) Implemented & Verified**:
+  - `tests/e2e/cuj_i_test.go` (`TestCUJ_I_SupportTicketLifecycle`):
+    - End-to-end multi-party validation: customer opens ticket in `pending` -> reviewer lists unassigned ticket on console -> customer subscribes to SSE & WS -> reviewer accepts ticket (status `assigned`) -> CAS race test rejects duplicate claim with 409 Conflict -> customer receives dual delivery (SSE `ticket_assigned` + WS `"A support agent has joined your ticket"`) -> reviewer connects to console WebSocket -> two-way real-time chat between customer and reviewer verified -> reviewer resolves ticket -> customer receives dual delivery (`ticket_resolved` SSE + WS system message) -> console ticket list verifies final `resolved` status with note and reviewer ID.
+  - Enhanced `tests/e2e/e2e_helpers.go` with `ConnectConsoleWS` and `FlushReviewerRateLimits` to protect against Redis lockout accumulation across test runs.
+  - All 9 CUJ tests (CUJ-A through CUJ-I) and `TestAuthAndRBACMatrix` pass 100% cleanly against live staging stack.
+
 
 

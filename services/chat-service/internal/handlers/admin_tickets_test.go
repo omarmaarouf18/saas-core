@@ -574,3 +574,211 @@ func TestAdminResolveTicket_NotificationAndChatMessageDelivery(t *testing.T) {
 		}
 	})
 }
+
+func TestAdminAcceptTicket(t *testing.T) {
+	c, mongoStore, validToken, authServer := setupAdminTicketsTestEnvironment(t)
+	defer authServer.Close()
+	ctx := context.Background()
+
+	t.Run("Method Not Allowed (GET)", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/chat/admin/tickets/accept", nil)
+		rec := httptest.NewRecorder()
+		c.AdminAcceptTicket(rec, req)
+
+		if rec.Code != http.StatusMethodNotAllowed {
+			t.Fatalf("expected 405 Method Not Allowed, got %d", rec.Code)
+		}
+	})
+
+	t.Run("Unauthorized - Missing Internal Token", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/accept", nil)
+		req.Header.Set("X-Reviewer-Token", validToken)
+		rec := httptest.NewRecorder()
+		c.AdminAcceptTicket(rec, req)
+
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("expected 401 Unauthorized, got %d", rec.Code)
+		}
+	})
+
+	t.Run("Unauthorized - Invalid Reviewer Token", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/accept", nil)
+		req.Header.Set("X-Internal-Token", "test-internal-token")
+		req.Header.Set("X-Reviewer-Token", "invalid-token")
+		rec := httptest.NewRecorder()
+		c.AdminAcceptTicket(rec, req)
+
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("expected 401 Unauthorized, got %d", rec.Code)
+		}
+	})
+
+	t.Run("Missing Ticket ID", func(t *testing.T) {
+		body := bytes.NewReader([]byte(`{}`))
+		req := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/accept", body)
+		req.Header.Set("X-Internal-Token", "test-internal-token")
+		req.Header.Set("X-Reviewer-Token", validToken)
+		rec := httptest.NewRecorder()
+		c.AdminAcceptTicket(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 Bad Request for missing ticket_id, got %d", rec.Code)
+		}
+	})
+
+	t.Run("Ticket Not Found", func(t *testing.T) {
+		body := bytes.NewReader([]byte(`{"ticket_id":"nonexistent-tkt-999"}`))
+		req := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/accept", body)
+		req.Header.Set("X-Internal-Token", "test-internal-token")
+		req.Header.Set("X-Reviewer-Token", validToken)
+		rec := httptest.NewRecorder()
+		c.AdminAcceptTicket(rec, req)
+
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("expected 404 Not Found, got %d: %s", rec.Code, rec.Body.String())
+		}
+	})
+
+	t.Run("Success - Pending Ticket Accepted", func(t *testing.T) {
+		ticket, err := mongoStore.CreateTicketAndAssign(ctx, "cust-accept-1", "job-accept-101")
+		if err != nil {
+			t.Fatalf("failed to create ticket: %v", err)
+		}
+		if ticket.Status != "pending" {
+			t.Fatalf("expected ticket initially pending, got %s", ticket.Status)
+		}
+
+		body := bytes.NewReader([]byte(fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID)))
+		req := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/accept", body)
+		req.Header.Set("X-Internal-Token", "test-internal-token")
+		req.Header.Set("X-Reviewer-Token", validToken)
+		rec := httptest.NewRecorder()
+		c.AdminAcceptTicket(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK, got %d: %s", rec.Code, rec.Body.String())
+		}
+
+		// Verify ticket status in DB
+		updated, err := mongoStore.GetTicket(ctx, ticket.ID)
+		if err != nil {
+			t.Fatalf("failed to fetch updated ticket: %v", err)
+		}
+		if updated.Status != "assigned" {
+			t.Errorf("expected status 'assigned', got '%s'", updated.Status)
+		}
+		if updated.AssignedReviewer != "reviewer-ticket-admin" || updated.AssignedAgentID != "reviewer-ticket-admin" {
+			t.Errorf("expected assigned reviewer/agent 'reviewer-ticket-admin', got agent='%s', reviewer='%s'", updated.AssignedAgentID, updated.AssignedReviewer)
+		}
+
+		// Verify system chat message was persisted
+		channel := "ticket:" + ticket.ID
+		history, err := mongoStore.GetHistory(ctx, channel, 10)
+		if err != nil {
+			t.Fatalf("failed to get chat history: %v", err)
+		}
+		if len(history) != 1 {
+			t.Fatalf("expected 1 system chat message, got %d", len(history))
+		}
+		if history[0].Content != "A support agent has joined your ticket" {
+			t.Errorf("expected message 'A support agent has joined your ticket', got '%s'", history[0].Content)
+		}
+
+		// Attempting to accept already assigned ticket returns 409 Conflict
+		body2 := bytes.NewReader([]byte(fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID)))
+		req2 := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/accept", body2)
+		req2.Header.Set("X-Internal-Token", "test-internal-token")
+		req2.Header.Set("X-Reviewer-Token", validToken)
+		rec2 := httptest.NewRecorder()
+		c.AdminAcceptTicket(rec2, req2)
+
+		if rec2.Code != http.StatusConflict {
+			t.Fatalf("expected 409 Conflict on already assigned ticket, got %d: %s", rec2.Code, rec2.Body.String())
+		}
+	})
+
+	t.Run("Accept Already Resolved Ticket Rejection", func(t *testing.T) {
+		ticket, err := mongoStore.CreateTicketAndAssign(ctx, "cust-accept-resolved", "job-102")
+		if err != nil {
+			t.Fatalf("failed to create ticket: %v", err)
+		}
+		_, err = mongoStore.AdminResolveTicket(ctx, ticket.ID, "Resolution", "reviewer-123")
+		if err != nil {
+			t.Fatalf("failed to resolve ticket: %v", err)
+		}
+
+		body := bytes.NewReader([]byte(fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID)))
+		req := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/accept", body)
+		req.Header.Set("X-Internal-Token", "test-internal-token")
+		req.Header.Set("X-Reviewer-Token", validToken)
+		rec := httptest.NewRecorder()
+		c.AdminAcceptTicket(rec, req)
+
+		if rec.Code != http.StatusConflict {
+			t.Fatalf("expected 409 Conflict on already resolved ticket, got %d", rec.Code)
+		}
+	})
+
+	t.Run("Path Parameter URL Accept", func(t *testing.T) {
+		ticket, err := mongoStore.CreateTicketAndAssign(ctx, "cust-accept-path", "job-103")
+		if err != nil {
+			t.Fatalf("failed to create ticket: %v", err)
+		}
+
+		url := fmt.Sprintf("/chat/admin/tickets/%s/accept", ticket.ID)
+		req := httptest.NewRequest(http.MethodPost, url, nil)
+		req.Header.Set("X-Internal-Token", "test-internal-token")
+		req.Header.Set("X-Reviewer-Token", validToken)
+		rec := httptest.NewRecorder()
+		c.AdminAcceptTicket(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK via path parameter accept, got %d: %s", rec.Code, rec.Body.String())
+		}
+	})
+}
+
+func TestAdminAcceptTicket_CASConcurrencyRace(t *testing.T) {
+	c, mongoStore, validToken, authServer := setupAdminTicketsTestEnvironment(t)
+	defer authServer.Close()
+	ctx := context.Background()
+
+	ticket, err := mongoStore.CreateTicketAndAssign(ctx, "cust-accept-race", "job-race-99")
+	if err != nil {
+		t.Fatalf("failed to create ticket: %v", err)
+	}
+
+	var wg sync.WaitGroup
+	results := make([]int, 2)
+
+	for i := 0; i < 2; i++ {
+		wg.Add(1)
+		idx := i
+		go func() {
+			defer wg.Done()
+			body := bytes.NewReader([]byte(fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID)))
+			req := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/accept", body)
+			req.Header.Set("X-Internal-Token", "test-internal-token")
+			req.Header.Set("X-Reviewer-Token", validToken)
+			rec := httptest.NewRecorder()
+			c.AdminAcceptTicket(rec, req)
+			results[idx] = rec.Code
+		}()
+	}
+
+	wg.Wait()
+
+	count200 := 0
+	count409 := 0
+	for _, code := range results {
+		if code == http.StatusOK {
+			count200++
+		} else if code == http.StatusConflict {
+			count409++
+		}
+	}
+
+	if count200 != 1 || count409 != 1 {
+		t.Fatalf("AdminAcceptTicket CAS race failed: expected exactly 1 200 OK and 1 409 Conflict, got %+v", results)
+	}
+}

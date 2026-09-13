@@ -59,6 +59,10 @@ var (
 		"/notifications/read-all":             {"/notifications/{id}/read"},
 		"/chat/admin/tickets":                 {"/admin/tickets"},
 		"/admin/tickets":                      {"/chat/admin/tickets"},
+		"/chat/admin/tickets/accept":          {"/admin/tickets/accept", "/admin/tickets/{id}/accept", "/chat/admin/tickets/{id}/accept"},
+		"/admin/tickets/accept":               {"/chat/admin/tickets/accept", "/admin/tickets/{id}/accept", "/chat/admin/tickets/{id}/accept"},
+		"/chat/admin/tickets/{id}/accept":     {"/admin/tickets/accept", "/chat/admin/tickets/accept", "/admin/tickets/{id}/accept"},
+		"/admin/tickets/{id}/accept":          {"/admin/tickets/accept", "/chat/admin/tickets/accept", "/chat/admin/tickets/{id}/accept"},
 		"/chat/admin/tickets/resolve":         {"/admin/tickets/resolve"},
 		"/admin/tickets/resolve":              {"/chat/admin/tickets/resolve"},
 		"/users/admin/reconciliation/queue":   {"/admin/reconciliation/queue"},
@@ -214,6 +218,7 @@ func scanConsoleCallSites(consoleDir string) (map[string][]CallSite, error) {
 			"/admin/subscriptions/activate",
 			"/admin/subscriptions/revoke",
 			"/admin/tickets",
+			"/admin/tickets/accept",
 			"/admin/tickets/resolve",
 		}
 		for _, r := range knownConsoleRoutes {

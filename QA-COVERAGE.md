@@ -22,7 +22,7 @@ The following table provides the authoritative before/after audit across all fun
 | :--- | :---: | :--- | :---: | :---: | :--- |
 | **API Endpoints (80 Canonical Routes)** | **YES** | Unit/handler tests in service `*_test.go` | **YES** | ❌ No | Fully Covered |
 | **API Endpoints: Version Config** (`GET`/`PUT /api/v1/admin/version-config`) | **NO** | Zero HTTP handler tests (`cmd/main.go:94`) | **NO** | ⚠️ **YES** | **Backlog QA-GAP-01** |
-| **API Endpoints: Deprecated Orphan** (`POST /chat/tickets/resolve`) | **YES** | `services/chat-service/.../chat_test.go:1282` | **NO** (superseded by `/admin/tickets/resolve`) | ❌ No | **Backlog QA-GAP-05** (Sunset) |
+| **API Endpoints: Deprecated Orphan** (`POST /chat/tickets/resolve`) | **YES** | Superseded by `/admin/tickets/resolve` | **NO** | ❌ No | **Closed / Sunset** (Decommissioned) |
 | **Authentication: Signup & Account Creation** | **YES** | `auth_test.go:271`, `auth_identity_repro_test.go:19` | **YES** (CUJ-C) | ❌ No | Fully Covered |
 | **Authentication: 2FA Login & OTP Lifecycle** | **YES** | `auth_test.go:291`, `otp_consume_race_regression_test.go:31` | **YES** (CUJ-C) | ❌ No | Fully Covered |
 | **Authentication: Password Reset & Anti-Enumeration** | **YES** | `auth_test.go:2862` (`TestForgotPassword_AntiEnumeration`) | **NO** | ❌ No | Baseline Protected |
@@ -400,6 +400,19 @@ The following coverage was introduced net-new during Phase 0 and Phase 2 of this
   3. Reviewer resolution without note rejected with HTTP 400; non-reviewer resolution rejected with HTTP 401.
   4. **Dual-Delivery Verification**: Customer receives real-time SSE notification `ticket_resolved` AND WebSocket system resolution event inside `ticket:<id>`.
 
+#### CUJ-I: Pending-First Support Ticket Lifecycle & Live 2-Way Console Chat
+* **Test Implementation**: `tests/e2e/cuj_i_test.go` (`TestCUJ_I_SupportTicketLifecycle`)
+* **Infrastructure Path**: Customer/Reviewer -> Caddy (`:8088` & `:8091`) -> API Gateway & Ops Console -> `chat-service`, `auth-service`, `notification-service`.
+* **Verified Invariants**:
+  1. Customer creates complaint ticket initialized in state `pending` with empty `assigned_reviewer`.
+  2. Reviewer 1 lists tickets via Reviewer Console (`GET /api/tickets`), verifying ticket is pending and unassigned.
+  3. Reviewer 1 accepts ticket via Reviewer Console (`POST /api/tickets/accept`), atomically setting state to `assigned` with reviewer attribution.
+  4. **CAS Concurrency Guard**: Reviewer 2 attempt to accept the same ticket is rejected with HTTP 409 Conflict.
+  5. **Dual-Delivery Verification on Accept**: Customer receives live SSE notification `ticket_assigned` AND WebSocket system message (`"A support agent has joined your ticket"`).
+  6. **Two-Way WebSocket Chat**: Reviewer connects to Reviewer Console WebSocket (`/api/chat/ws`), sends a chat message received live by Customer; Customer sends reply received live by Reviewer.
+  7. Reviewer resolves ticket with mandatory note; Customer receives dual-delivery `ticket_resolved` SSE + WS system message.
+  8. Final ticket status verified as `resolved` with complete audit attribution in Reviewer Console.
+
 ---
 
 ### Net-New Auth & RBAC Security Matrix (Phase 2b)
@@ -516,11 +529,11 @@ In accordance with product owner guidelines, uncovered items discovered during t
 * **Defect**: Zero automated crash/kill tests during active dispatch cascades.
 * **Remediation**: Implement automated container termination tests (e.g. killing Redis or Mongo during a cascade or escrow lock) to verify graceful recovery and transaction rollback.
 
-### QA-GAP-05: Formal Deprecation & Sunset of Orphan Route
+### QA-GAP-05: Formal Deprecation & Sunset of Orphan Route [CLOSED]
 * **Priority**: P4
 * **Target Route**: `POST /chat/tickets/resolve`
-* **Defect**: Unconsumed legacy support agent token endpoint superseded by Ops Console `/admin/tickets/resolve` per GAP-03 / ADR-0013.
-* **Remediation**: Formally remove or place behind sunset header before next major release.
+* **Status**: **Closed** in `logic-exploitation` branch.
+* **Resolution**: Decommissioned legacy route and handler from `services/chat-service/internal/handlers/chat.go`, removed from docgen and application map. Parity check tool confirms 0 unconsumed routes. Full pending-first lifecycle and console CAS resolution covered in `TestCUJ_I_SupportTicketLifecycle`.
 
 ---
 
