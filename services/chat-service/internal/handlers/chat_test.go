@@ -471,21 +471,9 @@ func TestComplaintRoutingConcurrency(t *testing.T) {
 	wg.Wait()
 	close(resultsChan)
 
-	assignedCount := 0
 	pendingCount := 0
-	assignedAgents := make(map[string]bool)
-
 	for ticket := range resultsChan {
-		if ticket.Status == "assigned" {
-			assignedCount++
-			if ticket.AssignedAgentID == "" {
-				t.Errorf("ticket status is assigned but AssignedAgentID is empty")
-			}
-			if assignedAgents[ticket.AssignedAgentID] {
-				t.Errorf("agent %s was assigned to multiple tickets concurrently!", ticket.AssignedAgentID)
-			}
-			assignedAgents[ticket.AssignedAgentID] = true
-		} else if ticket.Status == "pending" {
+		if ticket.Status == "pending" {
 			pendingCount++
 			if ticket.AssignedAgentID != "" {
 				t.Errorf("ticket status is pending but has AssignedAgentID %s", ticket.AssignedAgentID)
@@ -495,13 +483,9 @@ func TestComplaintRoutingConcurrency(t *testing.T) {
 		}
 	}
 
-	// Since we seeded exactly 5 available agents, exactly 5 tickets should be assigned, and the rest 15 queued/pending.
-	if assignedCount != numAgents {
-		t.Errorf("expected exactly %d assigned tickets, got %d", numAgents, assignedCount)
-	}
-	expectedPending := numTickets - numAgents
-	if pendingCount != expectedPending {
-		t.Errorf("expected exactly %d pending tickets, got %d", expectedPending, pendingCount)
+	// In the reviewer-accepted model, all newly created tickets start as pending
+	if pendingCount != numTickets {
+		t.Errorf("expected all %d tickets to start as pending, got %d", numTickets, pendingCount)
 	}
 }
 
@@ -554,10 +538,16 @@ func TestComplaintRoutingAccessControl(t *testing.T) {
 	_ = mongoStore.AddSupportAgent(ctx, agent1)
 	_ = mongoStore.AddSupportAgent(ctx, agent2)
 
-	// 2. Create ticket for customer-1, will be atomically assigned to agent-1
+	// 2. Create ticket for customer-1 (starts pending)
 	ticket, err := mongoStore.CreateTicketAndAssign(ctx, "customer-1", "job-123")
 	if err != nil {
 		t.Fatalf("failed to create ticket: %v", err)
+	}
+
+	// Explicitly accept ticket by reviewer agent-1
+	_, err = mongoStore.AdminAcceptTicket(ctx, ticket.ID, "agent-1")
+	if err != nil {
+		t.Fatalf("failed to accept ticket: %v", err)
 	}
 
 	cfg := &config.Config{
@@ -1279,138 +1269,6 @@ func TestReconnectionCachingBehavior(t *testing.T) {
 	mu.Unlock()
 }
 
-func TestHandleResolveTicket(t *testing.T) {
-	c, mongoStore, cleanup := setupTestChat(t)
-	if c == nil {
-		return
-	}
-	defer cleanup()
-
-	ctx := context.Background()
-
-	// Seed agent 1 (assigned) and agent 2 (unassigned)
-	agent1 := &store.SupportAgent{ID: "agent-resolve-1", Status: "available", Token: "agent-resolve-token-1"}
-	agent2 := &store.SupportAgent{ID: "agent-resolve-2", Status: "available", Token: "agent-resolve-token-2"}
-	if err := mongoStore.AddSupportAgent(ctx, agent1); err != nil {
-		t.Fatalf("failed to add agent 1: %v", err)
-	}
-	if err := mongoStore.AddSupportAgent(ctx, agent2); err != nil {
-		t.Fatalf("failed to add agent 2: %v", err)
-	}
-
-	// Create a ticket assigned to agent 1
-	ticket, err := mongoStore.CreateTicketAndAssign(ctx, "customer-resolve-1", "context-123")
-	if err != nil {
-		t.Fatalf("failed to create ticket: %v", err)
-	}
-
-	// Create second ticket (will be assigned to available agent 2)
-	ticket2, err := mongoStore.CreateTicketAndAssign(ctx, "customer-resolve-2", "context-456")
-	if err != nil {
-		t.Fatalf("failed to create second ticket: %v", err)
-	}
-
-	tests := []struct {
-		name           string
-		method         string
-		token          string
-		headerToken    bool
-		body           string
-		expectedStatus int
-	}{
-		{
-			name:           "Method Not Allowed (GET)",
-			method:         "GET",
-			token:          "agent-resolve-token-1",
-			body:           fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID),
-			expectedStatus: http.StatusMethodNotAllowed,
-		},
-		{
-			name:           "Missing Token",
-			method:         "POST",
-			token:          "",
-			body:           fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID),
-			expectedStatus: http.StatusUnauthorized,
-		},
-		{
-			name:           "Invalid Agent Token",
-			method:         "POST",
-			token:          "invalid-token-xyz",
-			body:           fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID),
-			expectedStatus: http.StatusForbidden,
-		},
-		{
-			name:           "Invalid JSON Body",
-			method:         "POST",
-			token:          "agent-resolve-token-1",
-			body:           `{"ticket_id":`,
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name:           "Ticket Not Found",
-			method:         "POST",
-			token:          "agent-resolve-token-1",
-			body:           `{"ticket_id":"non-existent-ticket-id"}`,
-			expectedStatus: http.StatusNotFound,
-		},
-		{
-			name:           "IDOR Mismatch - Agent 2 resolving Agent 1's ticket",
-			method:         "POST",
-			token:          "agent-resolve-token-2",
-			body:           fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID),
-			expectedStatus: http.StatusForbidden,
-		},
-		{
-			name:           "Success - Agent 1 resolving assigned ticket via query token",
-			method:         "POST",
-			token:          "agent-resolve-token-1",
-			body:           fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID),
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name:           "Success - Agent 2 resolving assigned ticket via Bearer header",
-			method:         "POST",
-			token:          "agent-resolve-token-2",
-			headerToken:    true,
-			body:           fmt.Sprintf(`{"ticket_id":"%s"}`, ticket2.ID),
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name:           "Conflict - Resolving already resolved ticket",
-			method:         "POST",
-			token:          "agent-resolve-token-1",
-			body:           fmt.Sprintf(`{"ticket_id":"%s"}`, ticket.ID),
-			expectedStatus: http.StatusConflict,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			url := "/chat/tickets/resolve"
-			if tt.token != "" && !tt.headerToken {
-				url += "?token=" + tt.token
-			}
-			var bodyReader *bytes.Reader
-			if tt.body != "" {
-				bodyReader = bytes.NewReader([]byte(tt.body))
-			} else {
-				bodyReader = bytes.NewReader([]byte{})
-			}
-
-			req := httptest.NewRequest(tt.method, url, bodyReader)
-			if tt.headerToken && tt.token != "" {
-				req.Header.Set("Authorization", "Bearer "+tt.token)
-			}
-			rec := httptest.NewRecorder()
-			c.HandleResolveTicket(rec, req)
-
-			if rec.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d. Body: %s", tt.expectedStatus, rec.Code, rec.Body.String())
-			}
-		})
-	}
-}
-
 func TestRegisterRoutes(t *testing.T) {
 	c, _, cleanup := setupTestChat(t)
 	if c == nil {
@@ -1429,7 +1287,8 @@ func TestRegisterRoutes(t *testing.T) {
 		{"GET", "/chat/history"},
 		{"POST", "/chat/internal/broadcast-location"},
 		{"POST", "/chat/tickets"},
-		{"POST", "/chat/tickets/resolve"},
+		{"POST", "/chat/admin/tickets/accept"},
+		{"POST", "/chat/admin/tickets/resolve"},
 	}
 
 	for _, r := range routes {
@@ -1557,13 +1416,28 @@ func TestCanAccessChannel_ExtraCoverage(t *testing.T) {
 		t.Fatalf("CreateTicketAndAssign failed: %v", err)
 	}
 
-	// 1. Ticket channel access by assigned support agent -> true
-	ok, err := c.canAccessChannel(ticket.AssignedAgentID, "ticket:"+ticket.ID)
+	// 1. Pending ticket: customer has access, unassigned agent does not
+	ok, err := c.canAccessChannel("cust-access-1", "ticket:"+ticket.ID)
 	if err != nil || !ok {
-		t.Errorf("Expected support agent to have access to ticket channel, got ok=%v, err=%v", ok, err)
+		t.Errorf("Expected customer to have access to pending ticket, got ok=%v, err=%v", ok, err)
+	}
+	ok, err = c.canAccessChannel("reviewer-access-1", "ticket:"+ticket.ID)
+	if err != nil || ok {
+		t.Errorf("Expected unassigned reviewer to NOT have access to pending ticket, got ok=%v, err=%v", ok, err)
 	}
 
-	// 2. Non-ticket/non-job channel -> false
+	// 2. Accept ticket: assigned reviewer now has access
+	accepted, err := mongoStore.AdminAcceptTicket(ctx, ticket.ID, "reviewer-access-1")
+	if err != nil {
+		t.Fatalf("AdminAcceptTicket failed: %v", err)
+	}
+
+	ok, err = c.canAccessChannel(accepted.AssignedReviewer, "ticket:"+ticket.ID)
+	if err != nil || !ok {
+		t.Errorf("Expected assigned reviewer to have access to ticket channel, got ok=%v, err=%v", ok, err)
+	}
+
+	// 3. Non-ticket/non-job channel -> false
 	ok, err = c.canAccessChannel("usr-A", "general-channel")
 	if err != nil || ok {
 		t.Errorf("Expected non-job channel to return false, got ok=%v, err=%v", ok, err)

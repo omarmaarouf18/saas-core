@@ -10,7 +10,7 @@ import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/providers/locale_provider.dart';
 import 'package:frontend/providers/chat_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
-import 'package:frontend/widgets/create_ticket_dialog.dart';
+import 'package:frontend/screens/customer_tickets_screen.dart';
 import 'package:frontend/screens/settings_screen.dart';
 import 'package:frontend/screens/login_screen.dart';
 
@@ -191,7 +191,7 @@ void main() {
     expect(localeProvider.locale?.languageCode, 'ar');
   });
 
-  testWidgets('(b3) Tapping Customer Service row opens CreateTicketDialog',
+  testWidgets('(b3) Tapping Customer Service row navigates to CustomerTicketsScreen',
       (WidgetTester tester) async {
     final themeProvider = ThemeProvider(storage: FakeSecureStorage());
     final ownerUser = UserProfile(
@@ -214,8 +214,8 @@ void main() {
     await tester.tap(csRow);
     await tester.pumpAndSettle();
 
-    expect(find.byType(CreateTicketDialog), findsOneWidget);
-    expect(find.text("Open Complaint Ticket"), findsOneWidget);
+    expect(find.byType(CustomerTicketsScreen), findsOneWidget);
+    expect(find.text("Support Tickets"), findsAtLeastNWidgets(1));
   });
 
   testWidgets(

@@ -159,51 +159,40 @@ func TestMongoDB_ComplaintTicketOperations(t *testing.T) {
 
 	ctx := context.Background()
 
-	// 1. CreateTicketAndAssign when no agent is available -> ticket "pending"
+	// 1. CreateTicketAndAssign creates ticket with "pending" status (unassigned)
 	ticketPending, err := s.CreateTicketAndAssign(ctx, "cust-1", "job-100")
-	if err != nil || ticketPending.Status != "pending" {
-		t.Fatalf("Expected ticket pending when no agent available: %v, err=%v", ticketPending, err)
+	if err != nil || ticketPending.Status != "pending" || ticketPending.AssignedAgentID != "" {
+		t.Fatalf("Expected ticket pending and unassigned: %v, err=%v", ticketPending, err)
 	}
 
-	// 2. Add an available support agent
-	agent := &SupportAgent{
-		ID:     "agent-supp-1",
-		Status: "available",
-		Token:  "supp-token-1",
-	}
-	_ = s.AddSupportAgent(ctx, agent)
-
-	// 3. CreateTicketAndAssign when agent is available -> ticket "assigned"
-	ticketAssigned, err := s.CreateTicketAndAssign(ctx, "cust-2", "job-101")
-	if err != nil || ticketAssigned.Status != "assigned" || ticketAssigned.AssignedAgentID != "agent-supp-1" {
-		t.Fatalf("Expected ticket assigned: %v, err=%v", ticketAssigned, err)
-	}
-
-	// Verify agent status changed to busy
-	updatedAgent, _ := s.GetAgent(ctx, "agent-supp-1")
-	if updatedAgent.Status != "busy" {
-		t.Errorf("Expected agent to be busy, got %v", updatedAgent)
-	}
-
-	// 4. GetTicket
-	gotTicket, err := s.GetTicket(ctx, ticketAssigned.ID)
-	if err != nil || gotTicket.CustomerID != "cust-2" {
+	// 2. GetTicket verifies pending ticket
+	gotTicket, err := s.GetTicket(ctx, ticketPending.ID)
+	if err != nil || gotTicket.CustomerID != "cust-1" || gotTicket.Status != "pending" {
 		t.Errorf("GetTicket failed: %v, err=%v", gotTicket, err)
 	}
 
-	// 5. ResolveTicket
-	if err := s.ResolveTicket(ctx, ticketAssigned.ID); err != nil {
-		t.Fatalf("ResolveTicket failed: %v", err)
+	// 3. AdminAcceptTicket transitions ticket from "pending" to "assigned"
+	acceptedTicket, err := s.AdminAcceptTicket(ctx, ticketPending.ID, "rev-001")
+	if err != nil || acceptedTicket.Status != "assigned" || acceptedTicket.AssignedReviewer != "rev-001" {
+		t.Fatalf("AdminAcceptTicket failed: %v, err=%v", acceptedTicket, err)
 	}
 
-	resolvedTicket, _ := s.GetTicket(ctx, ticketAssigned.ID)
-	if resolvedTicket.Status != "resolved" {
-		t.Errorf("Expected status resolved, got %s", resolvedTicket.Status)
+	// 4. Duplicate AdminAcceptTicket returns conflict error
+	_, err = s.AdminAcceptTicket(ctx, ticketPending.ID, "rev-002")
+	if err == nil {
+		t.Fatalf("expected error on duplicate accept, got nil")
 	}
 
-	freedAgent, _ := s.GetAgent(ctx, "agent-supp-1")
-	if freedAgent.Status != "available" {
-		t.Errorf("Expected agent to be freed and available, got %v", freedAgent)
+	// 5. AdminResolveTicket marks ticket as resolved
+	resolvedTicket, err := s.AdminResolveTicket(ctx, ticketPending.ID, "Resolved properly", "rev-001")
+	if err != nil || resolvedTicket.Status != "resolved" {
+		t.Fatalf("AdminResolveTicket failed: %v, err=%v", resolvedTicket, err)
+	}
+
+	// 6. AdminAcceptTicket on resolved ticket returns error
+	_, err = s.AdminAcceptTicket(ctx, ticketPending.ID, "rev-003")
+	if err == nil {
+		t.Fatalf("expected error on accept of resolved ticket, got nil")
 	}
 }
 

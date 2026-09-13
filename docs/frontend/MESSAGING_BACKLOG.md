@@ -85,7 +85,7 @@ The table below catalogs every registered HTTP endpoint across all 5 backend mic
 | `chat-service` | `POST /chat/internal/broadcast-location` | `c.BroadcastLocation` | Internal | None (Called by `user-service`) | N/A |
 | `chat-service` | `POST /chat/tickets` | `c.HandleCreateTicket` | Mobile App | `lib/providers/chat_provider.dart:222` | N/A |
 | `chat-service` | `GET /chat/tickets/mine`<br>`GET /tickets/mine` | `c.GetCustomerTickets` | Mobile App | `lib/core/api_client.dart:457`<br>`lib/providers/chat_provider.dart:253` | N/A |
-| `chat-service` | `POST /chat/tickets/resolve` | `c.HandleResolveTicket` | Legacy Agent | None (Orphan agent-token endpoint) | None |
+| `chat-service` | `POST /admin/tickets/accept`<br>`POST /chat/admin/tickets/accept` | `c.AdminAcceptTicket` | Ops Console | None (Excluded per ADR-0023) | `internal/proxy/proxy.go:505` |
 | `chat-service` | `GET /admin/tickets`<br>`GET /chat/admin/tickets` | `c.AdminListTickets` | Ops Console | None (Excluded per ADR-0023) | `internal/proxy/proxy.go:442` |
 | `chat-service` | `POST /admin/tickets/resolve`<br>`POST /chat/admin/tickets/resolve` | `c.AdminResolveTicket` | Ops Console | None (Excluded per ADR-0023) | `internal/proxy/proxy.go:486` |
 | **`notification-service`** | `GET /notifications/stream` | `n.Stream` | Mobile App | `lib/providers/notifications_provider.dart:73` | N/A |
@@ -152,23 +152,21 @@ pie title Breakdown of Backend Gaps by UI Surface Impact
 
 ---
 
-### GAP-03: Orphan Agent-Token Support Resolution Endpoint (`POST /chat/tickets/resolve`)
+### GAP-03: Orphan Agent-Token Support Resolution Endpoint (`POST /chat/tickets/resolve`) [CLOSED]
 
 * **Severity / Priority**: **Low (P3 - Technical Debt)**
 * **Impact Classification**: **Orphan Backend Scaffolding**
 * **Related ADR**: [ADR-0013](../adr/0013-support-agent-console-as-separate-client-application.md), [ADR-0023](../adr/0023-modular-ops-console-expansion.md)
+* **Status**: **Closed** in `logic-exploitation` branch
 
 #### Detailed Finding
 - **Backend Capability**:
-  - `services/chat-service/internal/handlers/chat.go:351`: `HandleResolveTicket` (`POST /chat/tickets/resolve`) accepts `X-Agent-Token` header.
-  - `services/chat-service/cmd/onboard-agent`: Standalone CLI tool to generate agent tokens in `support_agents` collection.
+  - Legacy `HandleResolveTicket` (`POST /chat/tickets/resolve`) has been decommissioned and removed.
+  - Replaced by pending-first support ticket workflow with explicit CAS acceptance (`POST /admin/tickets/accept`) and reviewer console resolution (`POST /admin/tickets/resolve`) with dual-delivery notifications.
 - **Frontend & Console State**:
-  - The mobile app intentionally excludes agent resolution per ADR-0013.
-  - The Operations Console (`kyc-reviewer-console`) uses `POST /admin/tickets/resolve` with `X-Reviewer-Token` per ADR-0023.
+  - The Operations Console (`kyc-reviewer-console`) uses `POST /admin/tickets/accept` and `POST /admin/tickets/resolve` with `X-Reviewer-Token` per ADR-0023.
 - **Result**:
-  - `POST /chat/tickets/resolve` and `cmd/onboard-agent` are legacy unconsumed endpoints with zero active callers across the ecosystem.
-- **Suggested Recommendation**:
-  - Retain for backward compatibility or deprecate in a future maintenance cycle.
+  - Orphan endpoint eliminated; `make backend-frontend-parity-check` reports 0 unconsumed routes. Full lifecycle verified in `TestCUJ_I_SupportTicketLifecycle`.
 
 ---
 
@@ -246,4 +244,4 @@ A bidirectional check was performed to confirm whether any Flutter frontend prov
 | **MSG-02** | Customer Ticket History & Status Screen | **P1 (High)** | Net-New Screen + Backend Endpoint | `frontend/lib/screens/customer_tickets_screen.dart`<br>`services/chat-service/internal/handlers/chat.go` (`GET /chat/tickets/mine`) |
 | **OPS-01** | Courier Online/Offline Availability Toggle | **P2 (Medium)** | Screen Addition | `frontend/lib/screens/employee_jobs_screen.dart`<br>`frontend/lib/providers/employee_location_provider.dart` |
 | **AUTH-01** | User Profile Account Standing Metadata | **P3 (Low)** | Model & Screen Addition | `frontend/lib/models/user_profile.dart`<br>`frontend/lib/screens/my_account_screen.dart` |
-| **DEPR-01** | Deprecate Unused Support Agent Endpoint | **P3 (Low)** | Code Cleanup | `services/chat-service/internal/handlers/chat.go` (`POST /chat/tickets/resolve`) |
+| **DEPR-01** | Deprecate Unused Support Agent Endpoint | **P3 (Low)** | Code Cleanup | `services/chat-service/internal/handlers/chat.go` (`POST /chat/tickets/resolve`) [CLOSED] |

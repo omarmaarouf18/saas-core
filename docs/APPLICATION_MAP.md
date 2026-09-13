@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`9ad699e`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`6043a4c`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -213,17 +213,19 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`GET /auth/user/public-profile`** | `auth-service` | User JWT | Returns only non-sensitive, public profile fields (ID and username). Accepts id (legacy) or user_token (preferred), and requester_id (legacy) or requester_token (preferred). | Reads `users` collection. |
 | **`POST /auth/verify-otp`** | `auth-service` | Public (via Gateway) | Validates 2FA OTP, issues JWT. | Reads/writes `users` collection. Writes `audit_logs`. |
 | **`GET /admin/tickets`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Lists all support tickets globally for ops console oversight (ADR-0023). | Reads `complaint_tickets` collection. Paginated. |
+| **`POST /admin/tickets/accept`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Atomically assigns a pending ticket to a reviewer (CAS) and dispatches customer notification. | CAS updates `complaint_tickets` and dispatches notification via notification-service. |
 | **`POST /admin/tickets/resolve`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Resolves support ticket globally with mandatory resolution note (ADR-0023). | CAS updates `complaint_tickets` and releases assigned agent. |
+| **`POST /admin/tickets/{id}/accept`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Atomically assigns a pending ticket to a reviewer (CAS) and dispatches customer notification. | CAS updates `complaint_tickets` and dispatches notification via notification-service. |
 | **`GET /chat/admin/tickets`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Lists all support tickets globally for ops console oversight (ADR-0023). | Reads `complaint_tickets` collection. Paginated. |
+| **`POST /chat/admin/tickets/accept`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Atomically assigns a pending ticket to a reviewer (CAS) and dispatches customer notification. | CAS updates `complaint_tickets` and dispatches notification via notification-service. |
 | **`POST /chat/admin/tickets/resolve`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Resolves support ticket globally with mandatory resolution note (ADR-0023). | CAS updates `complaint_tickets` and releases assigned agent. |
+| **`POST /chat/admin/tickets/{id}/accept`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Atomically assigns a pending ticket to a reviewer (CAS) and dispatches customer notification. | CAS updates `complaint_tickets` and dispatches notification via notification-service. |
 | **`GET /chat/history`** | `chat-service` | Channel Member JWT | Retrieves channel chat history (containing sender_username point-in-time snapshot). | Reads `chat_messages` collection. Downstream: calls `user-service/users/jobs/get`. |
 | **`POST /chat/internal/broadcast-location`** | `chat-service` | `X-Internal-Token` | Broadcasts driver location event. | None. |
-| **`POST /chat/tickets`** | `chat-service` | User JWT | Submits complaint ticket & assigns agent. | Reads/writes `complaint_tickets` and `support_agents` (atomic). |
+| **`POST /chat/tickets`** | `chat-service` | User JWT | Submits complaint ticket in pending status for reviewer pickup. | Writes `complaint_tickets` collection. |
 | **`GET /chat/tickets/mine`** | `chat-service` | User JWT | Lists support tickets submitted by the authenticated customer, sorted newest first. | Queries `complaint_tickets` collection by `customer_id`. Paginated. |
-| **`POST /chat/tickets/resolve`** | `chat-service` | Support Agent Token | Resolves ticket & releases agent status. | Updates `complaint_tickets` and `support_agents`. |
 | **`GET /chat/ws`** | `chat-service` | User JWT OR Agent Token | WebSocket connection upgrade path. | Reads `support_agents` (for agent tokens). Downstream: calls `auth-service/auth/user`. |
 | **`GET /tickets/mine`** | `chat-service` | User JWT | Lists support tickets submitted by the authenticated customer, sorted newest first. | Queries `complaint_tickets` collection by `customer_id`. Paginated. |
-| **`DELETE /notifications`** | `notification-service` | User JWT | Clears all notifications for the authenticated user. | Deletes from `notifications` collection. |
 | **`POST /notifications/broadcast/job-alert`** | `notification-service` | `X-Internal-Token` | Broadcasts job alert to employees. | Dispatches message to SSE clients. |
 | **`GET /notifications/history`** | `notification-service` | User JWT | Returns the authenticated user's persisted notifications, paginated. | Reads `notifications` collection. |
 | **`POST /notifications/read-all`** | `notification-service` | User JWT | Marks all notifications as read for the authenticated user. | Updates `notifications` collection. |

@@ -42,15 +42,42 @@ func (sr *statusRecorder) Flush() {
 //   - Duration
 //
 // This fulfills the Traffic API monitoring requirement.
+func isOriginAllowed(origin, allowedOrigin string) bool {
+	if allowedOrigin == "*" {
+		return true
+	}
+	for _, o := range strings.Split(allowedOrigin, ",") {
+		if strings.TrimSpace(o) == origin {
+			return true
+		}
+	}
+	return false
+}
+
 // Logging is a global middleware that logs every request and provides CORS.
 func Logging(allowedOrigin string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Forwarded-For")
+			origin := r.Header.Get("Origin")
+			if allowedOrigin == "*" {
+				w.Header().Set("Access-Control-Allow-Origin", "*")
+			} else if origin != "" {
+				if isOriginAllowed(origin, allowedOrigin) {
+					w.Header().Set("Access-Control-Allow-Origin", origin)
+					w.Header().Set("Vary", "Origin")
+				}
+			} else {
+				w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+			}
+
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Forwarded-For, X-Reviewer-Token, X-Internal-Token")
 
 			if r.Method == http.MethodOptions {
+				if origin != "" && !isOriginAllowed(origin, allowedOrigin) {
+					w.WriteHeader(http.StatusForbidden)
+					return
+				}
 				w.WriteHeader(http.StatusOK)
 				return
 			}

@@ -18,24 +18,29 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/project/shared/infra/jwtutil"
+	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type Config struct {
-	GatewayURL string
-	ConsoleURL string
-	MongoURI   string
-	JWTSecret  string
+	GatewayURL    string
+	ConsoleURL    string
+	MongoURI      string
+	RedisURI      string
+	JWTSecret     string
+	InternalToken string
 }
 
 func LoadConfig() *Config {
 	cfg := &Config{
-		GatewayURL: os.Getenv("STAGING_GATEWAY_URL"),
-		ConsoleURL: os.Getenv("STAGING_CONSOLE_URL"),
-		MongoURI:   os.Getenv("STAGING_MONGO_URI"),
-		JWTSecret:  os.Getenv("JWT_SECRET"),
+		GatewayURL:    os.Getenv("STAGING_GATEWAY_URL"),
+		ConsoleURL:    os.Getenv("STAGING_CONSOLE_URL"),
+		MongoURI:      os.Getenv("STAGING_MONGO_URI"),
+		RedisURI:      os.Getenv("STAGING_REDIS_URI"),
+		JWTSecret:     os.Getenv("JWT_SECRET"),
+		InternalToken: os.Getenv("INTERNAL_SERVICE_TOKEN"),
 	}
 	if cfg.GatewayURL == "" {
 		cfg.GatewayURL = "http://localhost:8088"
@@ -46,11 +51,45 @@ func LoadConfig() *Config {
 	if cfg.MongoURI == "" {
 		cfg.MongoURI = "mongodb://staging_root:staging_secret123@localhost:27018/?authSource=admin"
 	}
+	if cfg.RedisURI == "" {
+		cfg.RedisURI = "redis://:staging_redis_secret123@localhost:6381/0"
+	}
 	if cfg.JWTSecret == "" {
 		cfg.JWTSecret = "NrrYbDqT4bRD/ADvJ5U2VKmLqXr8nk21IRVAbrzVI1mqEhuMhII3IO26PPa4qJtR"
 	}
+	if cfg.InternalToken == "" {
+		cfg.InternalToken = "zE0JCJ9YxiqyXsYGEWJAwVFDf9kHPFV6eMJQm5M+yU8J4F6bdR1QX8/ZmH/buB9F"
+	}
 	jwtutil.Init(cfg.JWTSecret)
 	return cfg
+}
+
+// FlushReviewerRateLimits clears any reviewer auth lockout keys in Redis
+// to prevent cumulative test failures from polluting staging state.
+func FlushReviewerRateLimits(ctx context.Context, redisURI string) error {
+	return FlushKeysPattern(ctx, redisURI, "ratelimit:auth:reviewer*")
+}
+
+// FlushAllAuthRateLimits clears all rate limit keys in Redis
+// between test runs to ensure clean isolated test runs.
+func FlushAllAuthRateLimits(ctx context.Context, redisURI string) error {
+	_ = FlushKeysPattern(ctx, redisURI, "ratelimit:*")
+	return nil
+}
+
+func FlushKeysPattern(ctx context.Context, redisURI, pattern string) error {
+	opt, err := redis.ParseURL(redisURI)
+	if err != nil {
+		return err
+	}
+	client := redis.NewClient(opt)
+	defer client.Close()
+
+	iter := client.Scan(ctx, 0, pattern, 0).Iterator()
+	for iter.Next(ctx) {
+		_ = client.Del(ctx, iter.Val()).Err()
+	}
+	return iter.Err()
 }
 
 func (c *Config) GenerateJWT(userID, role, tenantID, email string) (string, error) {
@@ -190,18 +229,30 @@ type WSClient struct {
 }
 
 func ConnectWS(ctx context.Context, gatewayURL, token string) (*WSClient, error) {
+	return ConnectWSPath(ctx, gatewayURL, "/api/v1/chat/ws", token)
+}
+
+func ConnectConsoleWS(ctx context.Context, consoleURL, token string) (*WSClient, error) {
+	return ConnectWSPath(ctx, consoleURL, "/api/chat/ws", token)
+}
+
+func ConnectWSPath(ctx context.Context, baseURL, path, token string) (*WSClient, error) {
 	wsCtx, wsCancel := context.WithCancel(ctx)
-	u, err := url.Parse(gatewayURL)
+	u, err := url.Parse(baseURL)
 	if err != nil {
 		wsCancel()
-		return nil, fmt.Errorf("invalid gateway url: %w", err)
+		return nil, fmt.Errorf("invalid base url: %w", err)
 	}
 
 	scheme := "ws"
 	if u.Scheme == "https" {
 		scheme = "wss"
 	}
-	wsTarget := fmt.Sprintf("%s://%s/api/v1/chat/ws?token=%s", scheme, u.Host, url.QueryEscape(token))
+	separator := "?"
+	if strings.Contains(path, "?") {
+		separator = "&"
+	}
+	wsTarget := fmt.Sprintf("%s://%s%s%stoken=%s", scheme, u.Host, path, separator, url.QueryEscape(token))
 
 	dialer := websocket.Dialer{
 		HandshakeTimeout: 10 * time.Second,
@@ -570,6 +621,22 @@ func (db *StagingDB) SeedFreeSubscription(ctx context.Context, tenantID string) 
 	return err
 }
 
+func (db *StagingDB) SeedJob(ctx context.Context, jobDoc bson.M) error {
+	jobs := db.client.Database("staging_user_db").Collection("jobs")
+	id, ok := jobDoc["_id"]
+	if !ok {
+		id = jobDoc["id"]
+		jobDoc["_id"] = id
+	}
+	_, err := jobs.UpdateOne(
+		ctx,
+		bson.M{"_id": id},
+		bson.M{"$set": jobDoc},
+		options.UpdateOne().SetUpsert(true),
+	)
+	return err
+}
+
 func (db *StagingDB) CleanupTestEntities(ctx context.Context, tenantIDs, userIDs []string) {
 	_, _ = db.client.Database("staging_auth_db").Collection("users").DeleteMany(ctx, bson.M{"_id": bson.M{"$in": userIDs}})
 	_, _ = db.client.Database("staging_auth_db").Collection("pending_signups").DeleteMany(ctx, bson.M{"email": bson.M{"$in": userIDs}})
@@ -578,7 +645,13 @@ func (db *StagingDB) CleanupTestEntities(ctx context.Context, tenantIDs, userIDs
 	_, _ = db.client.Database("staging_user_db").Collection("subscriptions").DeleteMany(ctx, bson.M{"_id": bson.M{"$in": tenantIDs}})
 	_, _ = db.client.Database("staging_user_db").Collection("wallets").DeleteMany(ctx, bson.M{"tenant_id": bson.M{"$in": tenantIDs}})
 	_, _ = db.client.Database("staging_user_db").Collection("ledger").DeleteMany(ctx, bson.M{"tenant_id": bson.M{"$in": tenantIDs}})
-	_, _ = db.client.Database("staging_user_db").Collection("jobs").DeleteMany(ctx, bson.M{"tenant_id": bson.M{"$in": tenantIDs}})
+	_, _ = db.client.Database("staging_user_db").Collection("jobs").DeleteMany(ctx, bson.M{
+		"$or": []bson.M{
+			{"tenant_id": bson.M{"$in": tenantIDs}},
+			{"owner_id": bson.M{"$in": tenantIDs}},
+			{"user_id": bson.M{"$in": userIDs}},
+		},
+	})
 	_, _ = db.client.Database("staging_user_db").Collection("ratings").DeleteMany(ctx, bson.M{"$or": []bson.M{{"rated_by": bson.M{"$in": userIDs}}, {"rated_user": bson.M{"$in": userIDs}}}})
 	_, _ = db.client.Database("staging_chat_db").Collection("complaint_tickets").DeleteMany(ctx, bson.M{"customer_id": bson.M{"$in": userIDs}})
 	_, _ = db.client.Database("staging_chat_db").Collection("messages").DeleteMany(ctx, bson.M{"sender_id": bson.M{"$in": userIDs}})
@@ -632,4 +705,28 @@ func DeleteJSON(ctx context.Context, targetURL, token string) (*http.Response, [
 
 func GetJSON(ctx context.Context, targetURL, token string) (*http.Response, []byte, error) {
 	return DoJSONRequest(ctx, http.MethodGet, targetURL, token, nil)
+}
+
+func DoRequestWithHeaders(ctx context.Context, method, targetURL string, headers map[string]string, body []byte) (*http.Response, []byte, error) {
+	var bodyReader io.Reader
+	if body != nil {
+		bodyReader = bytes.NewReader(body)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, targetURL, bodyReader)
+	if err != nil {
+		return nil, nil, err
+	}
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	return resp, respBody, err
 }

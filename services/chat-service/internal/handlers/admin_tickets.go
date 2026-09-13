@@ -24,28 +24,14 @@ type ReviewerClaims struct {
 	Name string `json:"name"`
 }
 
-// authenticateReviewer validates that the inbound request contains valid X-Internal-Token
-// and a reviewer token verified by auth-service (ADR-0021/ADR-0023).
-func (c *Chat) authenticateReviewer(r *http.Request) (*ReviewerClaims, error) {
-	internalToken := r.Header.Get("X-Internal-Token")
-	if c.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(internalToken), []byte(c.internalServiceToken)) != 1 {
-		return nil, fmt.Errorf("missing or invalid X-Internal-Token")
-	}
-
-	reviewerToken := r.Header.Get("X-Reviewer-Token")
-	if reviewerToken == "" {
-		reviewerToken = r.Header.Get("Authorization")
-		if strings.HasPrefix(reviewerToken, "Bearer ") {
-			reviewerToken = strings.TrimPrefix(reviewerToken, "Bearer ")
-		}
-	}
+// verifyReviewerToken validates a reviewer token with auth-service (ADR-0021/ADR-0023).
+func (c *Chat) verifyReviewerToken(ctx context.Context, reviewerToken string) (*ReviewerClaims, error) {
 	if reviewerToken == "" {
 		return nil, fmt.Errorf("missing reviewer token")
 	}
 
-	// Verify reviewer credential with auth-service
 	reqURL := fmt.Sprintf("%s/auth/reviewer/verify", c.authServiceURL)
-	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create auth verification request: %w", err)
 	}
@@ -67,6 +53,28 @@ func (c *Chat) authenticateReviewer(r *http.Request) (*ReviewerClaims, error) {
 		return nil, fmt.Errorf("failed to parse reviewer claims: %w", err)
 	}
 	return &claims, nil
+}
+
+// authenticateReviewer validates that the inbound request contains valid X-Internal-Token
+// and a reviewer token verified by auth-service (ADR-0021/ADR-0023).
+func (c *Chat) authenticateReviewer(r *http.Request) (*ReviewerClaims, error) {
+	internalToken := r.Header.Get("X-Internal-Token")
+	if c.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(internalToken), []byte(c.internalServiceToken)) != 1 {
+		return nil, fmt.Errorf("missing or invalid X-Internal-Token")
+	}
+
+	reviewerToken := r.Header.Get("X-Reviewer-Token")
+	if reviewerToken == "" {
+		reviewerToken = r.Header.Get("Authorization")
+		if strings.HasPrefix(reviewerToken, "Bearer ") {
+			reviewerToken = strings.TrimPrefix(reviewerToken, "Bearer ")
+		}
+	}
+	if reviewerToken == "" {
+		return nil, fmt.Errorf("missing reviewer token")
+	}
+
+	return c.verifyReviewerToken(r.Context(), reviewerToken)
 }
 
 // AdminListTicketsResponse is the JSON response for GET /admin/tickets.
@@ -261,6 +269,163 @@ func (c *Chat) AdminResolveTicket(w http.ResponseWriter, r *http.Request) {
 
 	respData := map[string]any{
 		"message":           "ticket resolved successfully",
+		"ticket":            ticket,
+		"customer_notified": notified,
+	}
+	if !notified && notifyErr != "" {
+		respData["notify_error"] = notifyErr
+	}
+
+	writeJSON(w, http.StatusOK, respData)
+}
+
+// dispatchTicketAcceptedNotification posts an internal customer notification to notification-service.
+func (c *Chat) dispatchTicketAcceptedNotification(ctx context.Context, ticket *store.ComplaintTicket, reviewerName string) (bool, string) {
+	if ticket == nil || ticket.CustomerID == "" {
+		return false, "missing customer ID"
+	}
+
+	notificationURL := c.notificationServiceURL
+	if notificationURL == "" {
+		notificationURL = "http://notification-service:3004"
+	}
+	sendURL := strings.TrimSuffix(notificationURL, "/") + "/notifications/send"
+
+	agentName := "A support agent"
+	if reviewerName != "" {
+		agentName = reviewerName
+	}
+
+	payload := map[string]any{
+		"type":    "ticket_assigned",
+		"global":  true,
+		"user_id": ticket.CustomerID,
+		"title":   "Support Agent Assigned",
+		"body":    fmt.Sprintf("%s has joined your ticket (%s)", agentName, ticket.ID),
+	}
+
+	bodyBytes, err := json.Marshal(payload)
+	if err != nil {
+		// #nosec G706 //nolint:gosec -- ticket.ID is internal DB UUID, log injection not possible
+		log.Printf("[ADMIN-TICKET-NOTIFY] Failed to marshal accept notification payload for ticket %s: %v", ticket.ID, err)
+		return false, err.Error()
+	}
+
+	reqCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// #nosec G704 // internal service URL
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodPost, sendURL, bytes.NewReader(bodyBytes))
+	if err != nil {
+		// #nosec G706 //nolint:gosec -- ticket.ID is internal DB UUID, log injection not possible
+		log.Printf("[ADMIN-TICKET-NOTIFY] Failed to build accept notification request for ticket %s: %v", ticket.ID, err)
+		return false, err.Error()
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Internal-Token", c.internalServiceToken)
+
+	var resp *http.Response
+	if c.notificationClient != nil {
+		resp, err = c.notificationClient.Do(req)
+	} else {
+		resp, err = http.DefaultClient.Do(req)
+	}
+	if err != nil {
+		// #nosec G706 //nolint:gosec -- ticket.ID and CustomerID are internal DB UUIDs, log injection not possible
+		log.Printf("[ADMIN-TICKET-NOTIFY] Failed to dispatch accept notification for ticket %s to user %s: %v", ticket.ID, ticket.CustomerID, err)
+		return false, err.Error()
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		// #nosec G706 //nolint:gosec -- ticket.ID is internal DB UUID, log injection not possible
+		log.Printf("[ADMIN-TICKET-NOTIFY] notification-service returned status %d for ticket %s", resp.StatusCode, ticket.ID)
+		return false, fmt.Sprintf("notification-service returned status %d", resp.StatusCode)
+	}
+
+	return true, ""
+}
+
+// AdminAcceptTicket transitions a pending ticket to assigned under the accepting reviewer's identity.
+// POST /chat/admin/tickets/accept & POST /admin/tickets/accept & POST /admin/tickets/{id}/accept
+func (c *Chat) AdminAcceptTicket(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	reviewer, err := c.authenticateReviewer(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		return
+	}
+
+	ticketID := r.PathValue("id")
+	if ticketID == "" && strings.HasPrefix(r.URL.Path, "/admin/tickets/") {
+		trimmed := strings.TrimPrefix(r.URL.Path, "/admin/tickets/")
+		if idx := strings.Index(trimmed, "/accept"); idx > 0 {
+			ticketID = trimmed[:idx]
+		}
+	} else if ticketID == "" && strings.HasPrefix(r.URL.Path, "/chat/admin/tickets/") {
+		trimmed := strings.TrimPrefix(r.URL.Path, "/chat/admin/tickets/")
+		if idx := strings.Index(trimmed, "/accept"); idx > 0 {
+			ticketID = trimmed[:idx]
+		}
+	}
+
+	if ticketID == "" && r.Body != nil {
+		var req struct {
+			TicketID string `json:"ticket_id"`
+		}
+		_ = json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req)
+		ticketID = strings.TrimSpace(req.TicketID)
+	}
+
+	if ticketID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ticket_id is required"})
+		return
+	}
+
+	ctx := r.Context()
+	ticket, err := c.store.AdminAcceptTicket(ctx, ticketID, reviewer.ID)
+	if err != nil {
+		if strings.Contains(err.Error(), "already assigned") || strings.Contains(err.Error(), "already resolved") || strings.Contains(err.Error(), "not in pending") {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+			return
+		}
+		if strings.Contains(err.Error(), "not found") {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	// 1. Persist system chat message into the ticket channel
+	chatMsg := &chat.Message{
+		Channel:        "ticket:" + ticket.ID,
+		SenderID:       "system:support",
+		SenderUsername: "Support Team",
+		Content:        "A support agent has joined your ticket",
+		Type:           "system",
+	}
+	if err := c.store.PersistMessage(ctx, chatMsg); err != nil {
+		// #nosec G706 //nolint:gosec -- ticket.ID is internal DB UUID, log injection not possible
+		log.Printf("[ADMIN-TICKET] Failed to persist accept chat message for ticket %s: %v", ticket.ID, err)
+	} else if c.hub != nil {
+		select {
+		case c.hub.Broadcast <- chatMsg:
+		default:
+		}
+	}
+
+	// 2. Dispatch customer notification via notification-service
+	notified, notifyErr := c.dispatchTicketAcceptedNotification(ctx, ticket, reviewer.Name)
+
+	handlerutil.ShipSecurityEvent(ctx, "ADMIN_TICKET_ACCEPTED", "chat-service", reviewer.ID, ticket.CustomerID, fmt.Sprintf("accepted ticket %s (customer=%s, reviewer=%s, notified=%t)", ticket.ID, ticket.CustomerID, reviewer.ID, notified), handlerutil.GetClientIP(r))
+
+	respData := map[string]any{
+		"message":           "ticket accepted successfully",
 		"ticket":            ticket,
 		"customer_notified": notified,
 	}
