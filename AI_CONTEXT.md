@@ -881,5 +881,45 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - Enhanced `tests/e2e/e2e_helpers.go` with `ConnectConsoleWS` and `FlushReviewerRateLimits` to protect against Redis lockout accumulation across test runs.
   - All 9 CUJ tests (CUJ-A through CUJ-I) and `TestAuthAndRBACMatrix` pass 100% cleanly against live staging stack.
 
+### Systematic API Contract Testing & Security Regression Suite (Phases 4 & 6, 2026-09-13)
+
+* **Systematic API Contract Testing Suite (Phase 4 Priority)**:
+  - Implemented end-to-end staging API contract test suites systematically covering all **82 canonical backend endpoints** from the `make backend-frontend-parity-check` inventory:
+    1. `tests/e2e/contract_gateway_test.go`: 5 endpoints (`/health`, `/health/internal`, `/`, `GET /api/v1/admin/version-config`, `PUT /api/v1/admin/version-config`) — 100% PASS (0.02s).
+    2. `tests/e2e/contract_auth_test.go`: 27 endpoints across signup, login, OTP, KYC/KYB uploads/reviews, account suspensions, device tokens, email changes, and logout — 100% PASS (0.44s).
+    3. `tests/e2e/contract_chat_test.go`: 8 endpoints across WebSocket upgrade (`101 Switching Protocols`), chat history, location broadcast, customer tickets, reviewer tickets list/accept/resolve — 100% PASS (0.09s).
+    4. `tests/e2e/contract_notif_test.go`: 8 endpoints across SSE stream, internal send, job alerts, in-app history, read receipts, and single/bulk deletions — 100% PASS (0.06s).
+    5. `tests/e2e/contract_user_test.go`: 34 endpoints across services catalog (CRUD), job tracking/booking, price negotiation, dispatch accept/decline, driver telemetry, wallets, deposits, payouts, ledger, subscriptions, double-blind ratings, and COD reconciliation — 100% PASS (0.28s).
+  - Overall Contract Pass Rate: **82/82 (100.0%)** running against live staging container infrastructure in **0.93s**.
+  - Negative & Boundary Testing: Exercised missing fields (400), malformed JSON (400), wrong types (400), non-existent resource IDs (404), CAS concurrency conflicts (409), unauthorized access (401/403), and pagination limit/offset clamping across all domains.
+
+* **Dedicated Standalone Security Regression Suite (Phase 6)**:
+  - Implemented standalone security regression suite in `tests/e2e/security_regression_test.go` covering 6 major vulnerability classes:
+    1. `TestSecurity_JWTTampering`: Bit flip on JWT signature fails signature verification across all 4 microservices with HTTP 401 Unauthorized.
+    2. `TestSecurity_JWTExpiry`: Tokens with expiration in past (`now - 1 hour`) rejected across all 4 microservices with HTTP 401 Unauthorized.
+    3. `TestSecurity_TokenReplayAfterLogout`: Tokens added to Redis session denylist upon logout rejected on replay across microservices.
+    4. `TestSecurity_ReviewerRateLimitBypass`: Both dimensions tested:
+       - Dimension A (Hold IP constant, rotate tokens across attempts): IP locked out after 3 failures.
+       - Dimension B (Hold token constant, rotate IPs across attempts): Token locked out after 3 failures.
+    5. `TestSecurity_CORSConfiguration`: Whitelisted origins receive reflected header and `Vary: Origin`; malicious origins rejected on preflight with HTTP 403.
+    6. `TestSecurity_BroadRBACMatrix`: Matrix of 5 roles (Anonymous, Customer, Courier, Owner, Reviewer) evaluated against 6 domain actions.
+  - Overall Security Suite Pass Rate: **100.0%** (6/6 suites passing in 0.24s).
+
+* **QA Backlog Resolution (`QA-GAP-01` Closed)**:
+  - Extracted `VersionConfigHandler` in `services/api-gateway/cmd/main.go` and implemented unit test suite in `services/api-gateway/cmd/main_test.go` (`TestVersionConfigHandler`, 8 subtests) validating auth guards, JSON parsing, semver validation, and HTTP 405 methods.
+  - Verified live against staging reverse-proxy in `tests/e2e/contract_gateway_test.go`.
+  - Updated `QA-COVERAGE.md` closing `QA-GAP-01`.
+
+* **Release Gate Definition (`docs/RELEASE-GATE.md`)**:
+  - Published comprehensive Release Gate specification defining concrete automated criteria, pipeline stages (`release-gate-e2e.yml`, `ci.yml`, `make ci`, `make contract-test`, `make backend-frontend-parity-check`), GREEN/YELLOW/RED decision matrix, and an emergency hotfix bypass policy.
+
+* **Architectural Discoveries & Lessons Learned**:
+  1. **Multi-Tenant Identity Architecture (`tenantID == ownerID`)**: In the Quick Delivery multi-tenant model, the tenant ID is identically the owner's user ID. When seeding owners for testing, setting `testOwnerID := testTenantID` ensures inter-service KYC validation (`checkKYC`), wallet lookups, and employee assignment checks match the owner identity.
+  2. **Sub-Cent Financial Discipline & Rounding**: `WalletDeposit` applies banker's rounding to 2 decimal places (`roundMoney`). Amounts below 0.005 (such as 0.001) round to zero and are rejected with HTTP 400 (`amount rounds to zero`), protecting financial ledgers from sub-cent dust attacks.
+  3. **Spatial Telemetry & Speed Plausibility (`MaxReasonableSpeedKmh`)**: Employee and job location update endpoints calculate speed relative to timestamps. Setting distance to 0 (heartbeat pings at current coordinates) or backdating `job.CreatedAt` by sufficient elapsed time ensures movement speed remains within plausible physical limits (`<= 120 km/h`).
+  4. **CORS Strict Whitelisting at Gateway Edge**: Gateway logging middleware previously had static `Access-Control-Allow-Origin: *` or allowedOrigin without checking request `Origin`. Refactored to inspect the `Origin` header against `allowedOrigin`, set `Vary: Origin`, and reject disallowed origins with HTTP 403 on preflight OPTIONS.
+  5. **Trailing Slash Proxy Routing in Notification Service**: The notification deletion handler registered at `/notifications` did not match `/notifications/` with trailing slash, causing HTTP 404 when clients invoked the endpoint with trailing slash. Added companion route registration for `/notifications/` in `notification-service/internal/handlers/handlers.go`.
+
+
 
 

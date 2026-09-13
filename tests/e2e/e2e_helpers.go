@@ -25,20 +25,22 @@ import (
 )
 
 type Config struct {
-	GatewayURL string
-	ConsoleURL string
-	MongoURI   string
-	RedisURI   string
-	JWTSecret  string
+	GatewayURL    string
+	ConsoleURL    string
+	MongoURI      string
+	RedisURI      string
+	JWTSecret     string
+	InternalToken string
 }
 
 func LoadConfig() *Config {
 	cfg := &Config{
-		GatewayURL: os.Getenv("STAGING_GATEWAY_URL"),
-		ConsoleURL: os.Getenv("STAGING_CONSOLE_URL"),
-		MongoURI:   os.Getenv("STAGING_MONGO_URI"),
-		RedisURI:   os.Getenv("STAGING_REDIS_URI"),
-		JWTSecret:  os.Getenv("JWT_SECRET"),
+		GatewayURL:    os.Getenv("STAGING_GATEWAY_URL"),
+		ConsoleURL:    os.Getenv("STAGING_CONSOLE_URL"),
+		MongoURI:      os.Getenv("STAGING_MONGO_URI"),
+		RedisURI:      os.Getenv("STAGING_REDIS_URI"),
+		JWTSecret:     os.Getenv("JWT_SECRET"),
+		InternalToken: os.Getenv("INTERNAL_SERVICE_TOKEN"),
 	}
 	if cfg.GatewayURL == "" {
 		cfg.GatewayURL = "http://localhost:8088"
@@ -55,6 +57,9 @@ func LoadConfig() *Config {
 	if cfg.JWTSecret == "" {
 		cfg.JWTSecret = "NrrYbDqT4bRD/ADvJ5U2VKmLqXr8nk21IRVAbrzVI1mqEhuMhII3IO26PPa4qJtR"
 	}
+	if cfg.InternalToken == "" {
+		cfg.InternalToken = "zE0JCJ9YxiqyXsYGEWJAwVFDf9kHPFV6eMJQm5M+yU8J4F6bdR1QX8/ZmH/buB9F"
+	}
 	jwtutil.Init(cfg.JWTSecret)
 	return cfg
 }
@@ -62,6 +67,17 @@ func LoadConfig() *Config {
 // FlushReviewerRateLimits clears any reviewer auth lockout keys in Redis
 // to prevent cumulative test failures from polluting staging state.
 func FlushReviewerRateLimits(ctx context.Context, redisURI string) error {
+	return FlushKeysPattern(ctx, redisURI, "ratelimit:auth:reviewer*")
+}
+
+// FlushAllAuthRateLimits clears all rate limit keys in Redis
+// between test runs to ensure clean isolated test runs.
+func FlushAllAuthRateLimits(ctx context.Context, redisURI string) error {
+	_ = FlushKeysPattern(ctx, redisURI, "ratelimit:*")
+	return nil
+}
+
+func FlushKeysPattern(ctx context.Context, redisURI, pattern string) error {
 	opt, err := redis.ParseURL(redisURI)
 	if err != nil {
 		return err
@@ -69,7 +85,7 @@ func FlushReviewerRateLimits(ctx context.Context, redisURI string) error {
 	client := redis.NewClient(opt)
 	defer client.Close()
 
-	iter := client.Scan(ctx, 0, "ratelimit:auth:reviewer*", 0).Iterator()
+	iter := client.Scan(ctx, 0, pattern, 0).Iterator()
 	for iter.Next(ctx) {
 		_ = client.Del(ctx, iter.Val()).Err()
 	}
@@ -605,6 +621,22 @@ func (db *StagingDB) SeedFreeSubscription(ctx context.Context, tenantID string) 
 	return err
 }
 
+func (db *StagingDB) SeedJob(ctx context.Context, jobDoc bson.M) error {
+	jobs := db.client.Database("staging_user_db").Collection("jobs")
+	id, ok := jobDoc["_id"]
+	if !ok {
+		id = jobDoc["id"]
+		jobDoc["_id"] = id
+	}
+	_, err := jobs.UpdateOne(
+		ctx,
+		bson.M{"_id": id},
+		bson.M{"$set": jobDoc},
+		options.UpdateOne().SetUpsert(true),
+	)
+	return err
+}
+
 func (db *StagingDB) CleanupTestEntities(ctx context.Context, tenantIDs, userIDs []string) {
 	_, _ = db.client.Database("staging_auth_db").Collection("users").DeleteMany(ctx, bson.M{"_id": bson.M{"$in": userIDs}})
 	_, _ = db.client.Database("staging_auth_db").Collection("pending_signups").DeleteMany(ctx, bson.M{"email": bson.M{"$in": userIDs}})
@@ -613,7 +645,13 @@ func (db *StagingDB) CleanupTestEntities(ctx context.Context, tenantIDs, userIDs
 	_, _ = db.client.Database("staging_user_db").Collection("subscriptions").DeleteMany(ctx, bson.M{"_id": bson.M{"$in": tenantIDs}})
 	_, _ = db.client.Database("staging_user_db").Collection("wallets").DeleteMany(ctx, bson.M{"tenant_id": bson.M{"$in": tenantIDs}})
 	_, _ = db.client.Database("staging_user_db").Collection("ledger").DeleteMany(ctx, bson.M{"tenant_id": bson.M{"$in": tenantIDs}})
-	_, _ = db.client.Database("staging_user_db").Collection("jobs").DeleteMany(ctx, bson.M{"tenant_id": bson.M{"$in": tenantIDs}})
+	_, _ = db.client.Database("staging_user_db").Collection("jobs").DeleteMany(ctx, bson.M{
+		"$or": []bson.M{
+			{"tenant_id": bson.M{"$in": tenantIDs}},
+			{"owner_id": bson.M{"$in": tenantIDs}},
+			{"user_id": bson.M{"$in": userIDs}},
+		},
+	})
 	_, _ = db.client.Database("staging_user_db").Collection("ratings").DeleteMany(ctx, bson.M{"$or": []bson.M{{"rated_by": bson.M{"$in": userIDs}}, {"rated_user": bson.M{"$in": userIDs}}}})
 	_, _ = db.client.Database("staging_chat_db").Collection("complaint_tickets").DeleteMany(ctx, bson.M{"customer_id": bson.M{"$in": userIDs}})
 	_, _ = db.client.Database("staging_chat_db").Collection("messages").DeleteMany(ctx, bson.M{"sender_id": bson.M{"$in": userIDs}})
@@ -667,4 +705,28 @@ func DeleteJSON(ctx context.Context, targetURL, token string) (*http.Response, [
 
 func GetJSON(ctx context.Context, targetURL, token string) (*http.Response, []byte, error) {
 	return DoJSONRequest(ctx, http.MethodGet, targetURL, token, nil)
+}
+
+func DoRequestWithHeaders(ctx context.Context, method, targetURL string, headers map[string]string, body []byte) (*http.Response, []byte, error) {
+	var bodyReader io.Reader
+	if body != nil {
+		bodyReader = bytes.NewReader(body)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, targetURL, bodyReader)
+	if err != nil {
+		return nil, nil, err
+	}
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	return resp, respBody, err
 }

@@ -71,6 +71,10 @@ func main() {
 
 	// ---- Health check endpoint ----
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			handlerutil.WriteJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+			return
+		}
 		handlerutil.WriteJSON(w, http.StatusOK, map[string]any{
 			"status": "ok",
 		})
@@ -78,6 +82,10 @@ func main() {
 
 	// ---- Internal Health check endpoint ----
 	mux.HandleFunc("/health/internal", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			handlerutil.WriteJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+			return
+		}
 		gotToken := r.Header.Get("X-Internal-Token")
 		// Empty-secret guard (QA audit Q23): never authenticate when unconfigured.
 		if cfg.InternalServiceToken == "" || subtle.ConstantTimeCompare([]byte(gotToken), []byte(cfg.InternalServiceToken)) != 1 {
@@ -91,47 +99,17 @@ func main() {
 	})
 
 	// ---- Admin App Version Configuration Endpoint ----
-	mux.HandleFunc("/api/v1/admin/version-config", func(w http.ResponseWriter, r *http.Request) {
-		gotToken := r.Header.Get("X-Internal-Token")
-		// Empty-secret guard (QA audit Q23): never authenticate when unconfigured.
-		if cfg.InternalServiceToken == "" || subtle.ConstantTimeCompare([]byte(gotToken), []byte(cfg.InternalServiceToken)) != 1 {
-			handlerutil.WriteJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: invalid internal token"})
-			return
-		}
-
-		if r.Method == http.MethodGet {
-			vConfig, err := versionStore.GetConfig(r.Context())
-			if err != nil {
-				handlerutil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-				return
-			}
-			handlerutil.WriteJSON(w, http.StatusOK, vConfig)
-			return
-		}
-
-		if r.Method == http.MethodPut {
-			var req version.PlatformVersions
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				handlerutil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
-				return
-			}
-			updated, err := versionStore.UpdateConfig(r.Context(), req)
-			if err != nil {
-				handlerutil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
-				return
-			}
-			handlerutil.WriteJSON(w, http.StatusOK, map[string]any{"message": "version configuration updated successfully", "config": updated})
-			return
-		}
-
-		handlerutil.WriteJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
-	})
+	mux.HandleFunc("/api/v1/admin/version-config", VersionConfigHandler(cfg.InternalServiceToken, versionStore))
 
 	// ---- Service info endpoint ----
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Only match the exact root path; anything else should 404.
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
+			return
+		}
+		if r.Method != http.MethodGet {
+			handlerutil.WriteJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 			return
 		}
 		info := map[string]any{
@@ -208,5 +186,44 @@ func main() {
 
 	if err := server.ListenAndServeTLS(cfg.ExternalTLSCertPath, cfg.ExternalTLSKeyPath); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
+	}
+}
+
+// VersionConfigHandler handles GET and PUT requests for /api/v1/admin/version-config.
+func VersionConfigHandler(internalToken string, versionStore *version.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		gotToken := r.Header.Get("X-Internal-Token")
+		// Empty-secret guard (QA audit Q23): never authenticate when unconfigured.
+		if internalToken == "" || subtle.ConstantTimeCompare([]byte(gotToken), []byte(internalToken)) != 1 {
+			handlerutil.WriteJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: invalid internal token"})
+			return
+		}
+
+		if r.Method == http.MethodGet {
+			vConfig, err := versionStore.GetConfig(r.Context())
+			if err != nil {
+				handlerutil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteJSON(w, http.StatusOK, vConfig)
+			return
+		}
+
+		if r.Method == http.MethodPut {
+			var req version.PlatformVersions
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				handlerutil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
+				return
+			}
+			updated, err := versionStore.UpdateConfig(r.Context(), req)
+			if err != nil {
+				handlerutil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteJSON(w, http.StatusOK, map[string]any{"message": "version configuration updated successfully", "config": updated})
+			return
+		}
+
+		handlerutil.WriteJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 	}
 }

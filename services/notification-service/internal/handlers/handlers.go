@@ -101,13 +101,21 @@ func (n *Notification) RegisterRoutes(mux *http.ServeMux) {
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use DELETE"})
 		}
 	})
-	mux.HandleFunc("/notifications", func(w http.ResponseWriter, r *http.Request) {
+	deleteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodDelete:
 			n.DeleteAll(w, r)
 		default:
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use DELETE"})
 		}
+	}
+	mux.HandleFunc("/notifications", deleteHandler)
+	mux.HandleFunc("/notifications/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/notifications/" {
+			deleteHandler(w, r)
+			return
+		}
+		http.NotFound(w, r)
 	})
 }
 
