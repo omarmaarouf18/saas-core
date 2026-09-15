@@ -142,6 +142,131 @@ func TestAdminTickets_Authentication(t *testing.T) {
 	})
 }
 
+func TestAdminTickets_Authentication_TransientFailureDiscrimination(t *testing.T) {
+	var authStatus int
+	var authBody string
+
+	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(authStatus)
+		_, _ = w.Write([]byte(authBody))
+	}))
+	defer mockAuthServer.Close()
+
+	cfg := &config.Config{
+		InternalServiceToken:   "test-internal-token",
+		AuthServiceURL:         mockAuthServer.URL,
+		NotificationServiceURL: mockAuthServer.URL,
+	}
+
+	c := NewChat(chat.NewHub(), nil, cfg, nil)
+
+	testCases := []struct {
+		name                 string
+		status               int
+		body                 string
+		invalidServerAddress bool
+		wantCode             int
+	}{
+		{
+			name:     "Auth-Service 401 Unauthorized -> Chat-Service 401",
+			status:   http.StatusUnauthorized,
+			body:     `{"error":"invalid or expired reviewer token"}`,
+			wantCode: http.StatusUnauthorized,
+		},
+		{
+			name:     "Auth-Service 403 Forbidden -> Chat-Service 401",
+			status:   http.StatusForbidden,
+			body:     `{"error":"reviewer account suspended"}`,
+			wantCode: http.StatusUnauthorized,
+		},
+		{
+			name:     "Auth-Service 429 Too Many Requests -> Chat-Service 503 (Explicitly Not 401)",
+			status:   http.StatusTooManyRequests,
+			body:     `{"error":"too many requests, try again later"}`,
+			wantCode: http.StatusServiceUnavailable,
+		},
+		{
+			name:     "Auth-Service 500 Internal Server Error -> Chat-Service 503 (Explicitly Not 401)",
+			status:   http.StatusInternalServerError,
+			body:     `{"error":"database connection pool exhausted"}`,
+			wantCode: http.StatusServiceUnavailable,
+		},
+		{
+			name:     "Auth-Service 502 Bad Gateway -> Chat-Service 503 (Explicitly Not 401)",
+			status:   http.StatusBadGateway,
+			body:     `{"error":"bad gateway"}`,
+			wantCode: http.StatusServiceUnavailable,
+		},
+		{
+			name:     "Auth-Service 503 Service Unavailable -> Chat-Service 503 (Explicitly Not 401)",
+			status:   http.StatusServiceUnavailable,
+			body:     `{"error":"upstream down for maintenance"}`,
+			wantCode: http.StatusServiceUnavailable,
+		},
+		{
+			name:                 "Network Error / Unreachable Auth-Service -> Chat-Service 503 (Explicitly Not 401)",
+			invalidServerAddress: true,
+			wantCode:             http.StatusServiceUnavailable,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			authStatus = tc.status
+			authBody = tc.body
+
+			if tc.invalidServerAddress {
+				c.authServiceURL = "http://127.0.0.1:1" // Unreachable port
+			} else {
+				c.authServiceURL = mockAuthServer.URL
+			}
+
+			// 1. Assert AdminListTickets returns the expected code (and explicitly NOT 401 when 503 expected)
+			reqList := httptest.NewRequest(http.MethodGet, "/chat/admin/tickets", nil)
+			reqList.Header.Set("X-Internal-Token", "test-internal-token")
+			reqList.Header.Set("X-Reviewer-Token", "any-reviewer-token")
+			recList := httptest.NewRecorder()
+			c.AdminListTickets(recList, reqList)
+
+			if recList.Code != tc.wantCode {
+				t.Fatalf("AdminListTickets: expected HTTP %d, got %d (body: %s)", tc.wantCode, recList.Code, recList.Body.String())
+			}
+			if tc.wantCode == http.StatusServiceUnavailable && recList.Code == http.StatusUnauthorized {
+				t.Fatalf("AdminListTickets: transient failure returned HTTP 401 Unauthorized! Must return 503 Service Unavailable")
+			}
+
+			// 2. Assert AdminResolveTicket returns the expected code
+			bodyResolve := `{"ticket_id":"tkt-123","resolution_note":"Fixed customer issue"}`
+			reqResolve := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/resolve", strings.NewReader(bodyResolve))
+			reqResolve.Header.Set("X-Internal-Token", "test-internal-token")
+			reqResolve.Header.Set("X-Reviewer-Token", "any-reviewer-token")
+			recResolve := httptest.NewRecorder()
+			c.AdminResolveTicket(recResolve, reqResolve)
+
+			if recResolve.Code != tc.wantCode {
+				t.Fatalf("AdminResolveTicket: expected HTTP %d, got %d (body: %s)", tc.wantCode, recResolve.Code, recResolve.Body.String())
+			}
+			if tc.wantCode == http.StatusServiceUnavailable && recResolve.Code == http.StatusUnauthorized {
+				t.Fatalf("AdminResolveTicket: transient failure returned HTTP 401 Unauthorized! Must return 503 Service Unavailable")
+			}
+
+			// 3. Assert AdminAcceptTicket returns the expected code
+			reqAccept := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/tkt-123/accept", nil)
+			reqAccept.Header.Set("X-Internal-Token", "test-internal-token")
+			reqAccept.Header.Set("X-Reviewer-Token", "any-reviewer-token")
+			recAccept := httptest.NewRecorder()
+			c.AdminAcceptTicket(recAccept, reqAccept)
+
+			if recAccept.Code != tc.wantCode {
+				t.Fatalf("AdminAcceptTicket: expected HTTP %d, got %d (body: %s)", tc.wantCode, recAccept.Code, recAccept.Body.String())
+			}
+			if tc.wantCode == http.StatusServiceUnavailable && recAccept.Code == http.StatusUnauthorized {
+				t.Fatalf("AdminAcceptTicket: transient failure returned HTTP 401 Unauthorized! Must return 503 Service Unavailable")
+			}
+		})
+	}
+}
+
 func TestAdminTickets_ListingAndFiltering(t *testing.T) {
 	c, mongoStore, validToken, _ := setupAdminTicketsTestEnvironment(t)
 	ctx := context.Background()

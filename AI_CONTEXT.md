@@ -126,7 +126,7 @@ The detailed project history is distributed across categorized changelog files. 
 *   [Security Fixes](docs/changelog/security-fixes.md) — 159 entries detailing vulnerabilities found and fixed (including Owner-Authenticated Employee Provisioning, see [ADR-0001](docs/adr/0001-owner-authenticated-employee-provisioning.md), Employee Assignment Tenant Binding, see [ADR-0003](docs/adr/0003-employee-assignment-tenant-binding-check.md), Customer Booking Employee Pre-Assignment Gating, see [ADR-0004](docs/adr/0004-customer-booking-employee-assignment-order.md), and Document Encryption at Rest).
 *   [New Features](docs/changelog/new-features.md) — 71 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters, username propagation, version gating, zero-commission model, owner payout requests, sequential cascade dispatch, reviewer account directory and suspension per ADR-0022).
 *   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 58 tooling, CI/CD hardening, module refactoring, and onboarding CLI tools (including strict CD preflight validation per ADR-0015).
-*   [Bug Fixes](docs/changelog/bug-fixes.md) — 89 corrections to non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic, frontend consistency audit batches 1–5, SegmentedButton contrast, services directory owner auth header resolution, owner configuration KYC status badge & banner restoration, zero-commission platform fee remnants cleanup, SSE multi-instance local-first delivery and dedup per Q18).
+*   [Bug Fixes](docs/changelog/bug-fixes.md) — 94 corrections to non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic, frontend consistency audit batches 1–5, SegmentedButton contrast, services directory owner auth header resolution, owner configuration KYC status badge & banner restoration, zero-commission platform fee remnants cleanup, SSE multi-instance local-first delivery and dedup per Q18, reviewer auth transient failure discrimination).
 *   [Documentation](docs/changelog/documentation.md) — 40 documentation-only updates (e.g. Business Logic Audit Report, Application Map auto-sync, Frontend Consistency Audit, Four-Repo Deployment Map, Documentation Freshness Audits #1 & #2).
 *   [Localization Infrastructure](docs/changelog/localization-infrastructure.md) — 4 entries covering Egyptian Colloquial Arabic (ar_EG) i18n and RTL layout architecture.
 *   [Refactoring](docs/changelog/refactoring.md) — 10 entries documenting handler modularization and architecture alignments.
@@ -958,8 +958,23 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
     - Console frontend `onclose`/`onerror` triggering logout: Ruled out by inspecting `kyc-reviewer-console/web/app.js` (no `onclose` handler, `onerror` only logs warnings).
   - **Confirmed Kickout & Crash Mechanism**:
     - In `kyc-reviewer-console/web/app.js`, `api()` (line 61) triggers `logout('Session expired or invalid token.')` and throws `new Error('unauthorized')` on any HTTP 401 response.
-    - In `submitResolveTicket()`, `await api('/api/tickets/resolve', ...)` lacks a `try...catch` block. When a 401 occurs, the uncaught rejection manifests as a browser console crash while `logout()` redirects the user to `#login-view`.
     - At `06:44:56`, the console recorded `POST /api/tickets/resolve 999.845µs` (sub-millisecond early return; ticket was not resolved in DB until `06:50:27`). 6 seconds later at `06:45:02`, the idle WebSocket read pump closed due to reviewer being kicked out.
+
+### Reviewer Authentication Transient Failure Discrimination & Console Kickout Remediation (2026-09-15)
+
+* **Root Cause & Fix Implementation**:
+  - **saas-core (`services/chat-service/`)**:
+    - `internal/handlers/admin_tickets.go`: In `verifyReviewerToken`, failure to verify a reviewer token against `auth-service` previously converted all errors into an undifferentiated error, which callers (`AdminListTickets`, `AdminResolveTicket`, `AdminAcceptTicket`) converted into HTTP 401 Unauthorized.
+    - Defined sentinel error `var ErrServiceUnavailable = errors.New("service_unavailable")`. Discriminated true authentication rejections (HTTP 401/403 from `auth-service`) from transient/infrastructure failures (network errors, HTTP 429 rate limits, HTTP 5xx responses, or unparseable payloads). Transient failures now wrap `ErrServiceUnavailable`.
+    - Added `writeReviewerAuthError(w, err)` helper responding with HTTP 503 Service Unavailable (`{"error":"service_unavailable","message":"Authentication service is temporarily unavailable. Please try again later."}`) for transient errors, preserving HTTP 401 for true auth rejections.
+    - Updated `AdminListTickets`, `AdminResolveTicket`, and `AdminAcceptTicket` to use `writeReviewerAuthError(w, err)`.
+    - Added unit test suite `TestAdminTickets_Authentication_TransientFailureDiscrimination` in `admin_tickets_test.go` covering 7 scenarios (401, 403, 429, 500, 502, 503, network unreachable) across all 3 admin endpoints.
+  - **kyc-reviewer-console (commit `7fa8d94...`)**:
+    - `web/app.js`: In `submitResolveTicket()`, wrapped `api('/api/tickets/resolve')` in a `try...catch...finally` block. Managed submit button disabled/text state (`Resolving...` -> `Confirm Resolve`), surfaced retryable error messages in `#resolve-ticket-error`, and suppressed action on `e.message === 'unauthorized'` to avoid double-handling.
+    - Protected sibling dialog submission handlers across `web/app.js`: `openDocument`, `submitReview`, `submitSuspend`, `submitReactivate`, `submitResolveDispute`, `submitActivateSub`, and `submitRevokeSub`.
+    - Maintained session expiration policy in `api()`: only genuine 401s trigger `logout()`, while transient 503/502/429 codes return to dialog callers for retry.
+    - Added Node.js test suite (`web/app_test.js`) passing 100% and Go proxy relay tests (`internal/proxy/proxy_test.go`) passing 100%.
+
 
 
 

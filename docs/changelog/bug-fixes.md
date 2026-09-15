@@ -854,6 +854,37 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
   - `frontend`: `flutter analyze lib/ test/` (0 issues), `dart format` (0 changed), unit and integration tests across early chat, tickets, and map tracking pass 100%.
   - Pre-push gate: `make ci` passed 100% (Go build, vet, test, govulncheck, gosec dev scanner, and 532/532 Flutter tests).
 
+## Reviewer Authentication Transient Failure Discrimination (HTTP 503 vs 401)
+
+**Date**: 2026-09-15
+**Category**: Bug Fix / Support Ticket Operations & Auth Resilience
+**Target Branch**: `logic-exploitation`
+
+- **Problem / Gap**:
+  - In `services/chat-service/internal/handlers/admin_tickets.go`, `verifyReviewerToken` converted all errors verifying tokens with `auth-service` into an undifferentiated error.
+  - When `auth-service` experienced transient network errors, HTTP 429 rate limits, HTTP 5xx errors, timeouts, or circuit breaker trips, `authenticateReviewer`'s callers (`AdminListTickets`, `AdminResolveTicket`, `AdminAcceptTicket`) converted that error into HTTP 401 Unauthorized.
+  - This 401 caused the reviewer console (`kyc-reviewer-console`) to treat transient infrastructure failures as an expired session, immediately calling `logout()` and kicking the reviewer out to the login screen. Furthermore, `submitResolveTicket()` lacked `try...catch` handling, turning the 401 rejection into an unhandled promise rejection ("weird crash").
+
+- **Implementation Details**:
+  - **Chat Service (`services/chat-service/`)**:
+    - `internal/handlers/admin_tickets.go`: Defined sentinel error `var ErrServiceUnavailable = errors.New("service_unavailable")`.
+    - `verifyReviewerToken`: Discriminated genuine authentication rejections (HTTP 401/403 from `auth-service`, which still return standard errors mapped to 401) from transient failures (network errors, HTTP 429, HTTP 5xx, or unparseable responses), which wrap `ErrServiceUnavailable`.
+    - Implemented `writeReviewerAuthError(w, err)` helper: if `errors.Is(err, ErrServiceUnavailable)`, responds with HTTP 503 Service Unavailable and JSON `{"error":"service_unavailable","message":"Authentication service is temporarily unavailable. Please try again later."}`, preserving existing HTTP 401 response for true auth rejections.
+    - Updated `AdminListTickets`, `AdminResolveTicket`, and `AdminAcceptTicket` to use `writeReviewerAuthError(w, err)`.
+  - **Reviewer Console (`kyc-reviewer-console`, commit `7fa8d94...`)**:
+    - `web/app.js`: Wrapped `submitResolveTicket()` and sibling action dialog handlers in `try...catch...finally` blocks, surfacing retryable errors in `#resolve-ticket-error` without crashing or clearing session state.
+    - Preserved session expiration policy in `api()`: only genuine 401 responses call `logout()`, while transient 503 responses return to dialog callers for retry.
+  - **Unit Testing**:
+    - `services/chat-service/internal/handlers/admin_tickets_test.go`: Added `TestAdminTickets_Authentication_TransientFailureDiscrimination` verifying 7 failure modes (401, 403, 429, 500, 502, 503, network unreachable) across all 3 admin endpoints (`AdminListTickets`, `AdminResolveTicket`, `AdminAcceptTicket`), asserting that transient errors return HTTP 503 and explicitly never 401.
+
+- **Verification**:
+  - `services/chat-service/internal/handlers/admin_tickets_test.go`: `TestAdminTickets_Authentication_TransientFailureDiscrimination` passed 100% (0.64s).
+  - Uncached module tests: `go test -count=1 ./services/chat-service/...` passed 100%.
+  - Shared infra tests: `go test -count=1 ./shared/infra/...` passed 100%.
+  - `kyc-reviewer-console`: Go unit tests (`go test -count=1 ./...`) and Node.js frontend tests (`node --test web/app_test.js`) passed 100%.
+  - Code hygiene: `gofmt -l .` empty, `go vet` clean.
+
+
 
 
 
