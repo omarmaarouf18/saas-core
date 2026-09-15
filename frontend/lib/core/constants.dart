@@ -32,11 +32,11 @@ const String mapTileUserAgent = String.fromEnvironment(
   defaultValue: 'QuickDeliveryApp/1.0',
 );
 
-/// WebSocket Origin header required by chat-service's origin allow-list.
-/// Configurable via compile-time environment variable CHAT_WS_ORIGIN so
-/// production builds can be paired with the server's ALLOWED_ORIGIN setting;
-/// defaults to the backend's own dev default.
+/// Optional WebSocket Origin header for browser-hosted web builds.
+/// Non-browser clients (dart:io WebSocket on Android/iOS) send no Origin header
+/// by default, which chat-service admits without CSRF gating.
+/// If CHAT_WS_ORIGIN is provided via --dart-define, it is passed explicitly.
 const String chatWsOrigin = String.fromEnvironment(
   'CHAT_WS_ORIGIN',
-  defaultValue: 'http://localhost:3000',
+  defaultValue: '',
 );

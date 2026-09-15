@@ -1667,6 +1667,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		want   bool
 	}{
 		{"", true},
+		{"http://localhost:3000", true},
 		{"https://logiclinkeg.tech", true},
 		{"https://app.logiclinkeg.tech", true},
 		{"https://kyc.logiclinkeg.tech", true},

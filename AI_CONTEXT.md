@@ -938,6 +938,30 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - Queried `git ls-remote https://github.com/omarmaarouf18/quick-delivery-mobile.git`: confirmed remote HEAD is `fd2235c...` tagged `app-release-fd2235c` corresponding to commit `6043a4c...` (`ticket_chat_screen.dart` work).
   - Confirmed mobile GitHub release `app-release-fd2235c` contains latest `app-release.apk`. Directing product owner to reinstall from this latest release rather than modifying mobile frontend code.
 
+### Mobile Ticket Chat WebSocket Handshake & Reviewer Console Investigation (2026-09-15)
+
+* **Bug 1: Mobile Ticket Chat WebSocket Origin Rejected (Confirmed & Remediated)**:
+  - **Smoking-Gun Logs on `quickdelivery-vm`**:
+    - `saas-api-gateway`: `2026/09/15 06:44:43 [TRAFFIC] GET /api/v1/chat/ws → 403 (8.282ms)`
+    - `saas-chat-service`: `2026/09/15 06:44:43 [WS] Upgrade failed for user=7ad3a56be324e9fd: websocket: request origin not allowed by Upgrader.CheckOrigin`
+  - **Root Cause**: Mobile build workflow (`build-apk.yml`) compiles without `--dart-define=CHAT_WS_ORIGIN`, falling back to `defaultValue: 'http://localhost:3000'` in `constants.dart`. `chat_provider.dart` and `map_tracking_provider.dart` passed `headers: {'Origin': chatWsOrigin}`, sending `Origin: http://localhost:3000`. Production `chat-service` was configured with `ALLOWED_ORIGIN=https://logiclinkeg.tech,https://kyc.logiclinkeg.tech`, causing `isOriginAllowed` to reject the handshake with HTTP 403. Client remained in `_isConnected = false`, blocking message sending with `"WebSocket is not connected"`.
+  - **Remediation**:
+    1. `services/chat-service/internal/handlers/chat.go`: Updated `isOriginAllowed` to admit `http://localhost:3000` alongside `""` and `https://kyc.logiclinkeg.tech`, immediately restoring WebSocket connectivity for all currently distributed mobile APKs.
+    2. `frontend/lib/core/constants.dart`: Changed `chatWsOrigin` `defaultValue` to `''`.
+    3. `frontend/lib/providers/chat_provider.dart` & `frontend/lib/providers/map_tracking_provider.dart`: Changed headers to `chatWsOrigin.isNotEmpty ? {'Origin': chatWsOrigin} : null`. Non-browser native clients omit the `Origin` header by default, matching backend non-browser CSRF bypass design.
+  - **Verification**: `chat_test.go` (`TestIsOriginAllowed`), `flutter test` across chat and tracking suites, and full `make ci` (exit code 0).
+
+* **Bug 2: Reviewer Console Disconnect / "Weird Crash" Investigation (Ruled Out & Mechanism Confirmed)**:
+  - **Ruled Out**:
+    - Backend panic in `chat-service`: Ruled out via `docker inspect saas-chat-service --format '{{.RestartCount}}'` (returned 0) and container uptime of >2 hours without panics.
+    - WebSocket rejected by `CheckOrigin`: Ruled out by logs showing reviewer `omar` established connection at `06:44:18` (`[WS] Connection established: user_id=omar remote=172.20.0.4:42080`).
+    - Console frontend `onclose`/`onerror` triggering logout: Ruled out by inspecting `kyc-reviewer-console/web/app.js` (no `onclose` handler, `onerror` only logs warnings).
+  - **Confirmed Kickout & Crash Mechanism**:
+    - In `kyc-reviewer-console/web/app.js`, `api()` (line 61) triggers `logout('Session expired or invalid token.')` and throws `new Error('unauthorized')` on any HTTP 401 response.
+    - In `submitResolveTicket()`, `await api('/api/tickets/resolve', ...)` lacks a `try...catch` block. When a 401 occurs, the uncaught rejection manifests as a browser console crash while `logout()` redirects the user to `#login-view`.
+    - At `06:44:56`, the console recorded `POST /api/tickets/resolve 999.845µs` (sub-millisecond early return; ticket was not resolved in DB until `06:50:27`). 6 seconds later at `06:45:02`, the idle WebSocket read pump closed due to reviewer being kicked out.
+
+
 
 
 
