@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -17,6 +18,10 @@ import (
 	"github.com/project/chat-service/internal/store"
 	"github.com/project/shared/infra/handlerutil"
 )
+
+// ErrServiceUnavailable indicates auth-service or an upstream dependency is temporarily unreachable,
+// rate-limited, or encountering transient errors, distinguishing it from an invalid reviewer token.
+var ErrServiceUnavailable = errors.New("service_unavailable")
 
 // ReviewerClaims represents the validated reviewer identity from auth-service.
 type ReviewerClaims struct {
@@ -33,24 +38,36 @@ func (c *Chat) verifyReviewerToken(ctx context.Context, reviewerToken string) (*
 	reqURL := fmt.Sprintf("%s/auth/reviewer/verify", c.authServiceURL)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create auth verification request: %w", err)
+		return nil, fmt.Errorf("%w: failed to create auth verification request: %v", ErrServiceUnavailable, err)
 	}
 	req.Header.Set("X-Internal-Token", c.internalServiceToken)
 	req.Header.Set("X-Reviewer-Token", reviewerToken)
 
 	resp, err := c.authClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("reviewer verification failed: %w", err)
+		return nil, fmt.Errorf("%w: reviewer verification network failure: %v", ErrServiceUnavailable, err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 		return nil, fmt.Errorf("unauthorized reviewer: status %d", resp.StatusCode)
+	}
+
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return nil, fmt.Errorf("%w: auth-service rate limit exceeded (status 429)", ErrServiceUnavailable)
+	}
+
+	if resp.StatusCode >= 500 {
+		return nil, fmt.Errorf("%w: auth-service upstream error (status %d)", ErrServiceUnavailable, resp.StatusCode)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%w: unexpected auth-service response (status %d)", ErrServiceUnavailable, resp.StatusCode)
 	}
 
 	var claims ReviewerClaims
 	if err := json.NewDecoder(resp.Body).Decode(&claims); err != nil {
-		return nil, fmt.Errorf("failed to parse reviewer claims: %w", err)
+		return nil, fmt.Errorf("%w: failed to parse reviewer claims: %v", ErrServiceUnavailable, err)
 	}
 	return &claims, nil
 }
@@ -77,6 +94,17 @@ func (c *Chat) authenticateReviewer(r *http.Request) (*ReviewerClaims, error) {
 	return c.verifyReviewerToken(r.Context(), reviewerToken)
 }
 
+func writeReviewerAuthError(w http.ResponseWriter, err error) {
+	if errors.Is(err, ErrServiceUnavailable) {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{
+			"error":   "service_unavailable",
+			"message": "Authentication service is temporarily unavailable. Please try again later.",
+		})
+		return
+	}
+	writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+}
+
 // AdminListTicketsResponse is the JSON response for GET /admin/tickets.
 type AdminListTicketsResponse struct {
 	Tickets []store.ComplaintTicket `json:"tickets"`
@@ -101,7 +129,7 @@ func (c *Chat) AdminListTickets(w http.ResponseWriter, r *http.Request) {
 
 	reviewer, err := c.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		writeReviewerAuthError(w, err)
 		return
 	}
 
@@ -208,7 +236,7 @@ func (c *Chat) AdminResolveTicket(w http.ResponseWriter, r *http.Request) {
 
 	reviewer, err := c.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		writeReviewerAuthError(w, err)
 		return
 	}
 
@@ -356,7 +384,7 @@ func (c *Chat) AdminAcceptTicket(w http.ResponseWriter, r *http.Request) {
 
 	reviewer, err := c.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		writeReviewerAuthError(w, err)
 		return
 	}
 

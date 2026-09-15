@@ -890,9 +890,10 @@ func sendWSError(client *chat.Client, channel, code, message string) {
 // clients (dart:io WebSocket on Android/iOS, CLI tools) send NO Origin header
 // and are admitted — browser-style CSRF does not apply to them. A PRESENT
 // Origin must match any entry in the configured origin allow-list
-// (comma-separated), or the official reviewer console domain.
+// (comma-separated), the official reviewer console domain, or the default
+// local origin (http://localhost:3000) for mobile release and dev compatibility.
 func (c *Chat) isOriginAllowed(origin string) bool {
-	if origin == "" {
+	if origin == "" || origin == "http://localhost:3000" {
 		return true
 	}
 	if c.allowedOrigin == "*" {

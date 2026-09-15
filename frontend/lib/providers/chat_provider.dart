@@ -129,9 +129,7 @@ class ChatProvider extends ChangeNotifier {
 
       _webSocketChannel = IOWebSocketChannel.connect(
         Uri.parse(wsUrl),
-        headers: {
-          'Origin': chatWsOrigin
-        }, // see core/constants.dart (CHAT_WS_ORIGIN)
+        headers: chatWsOrigin.isNotEmpty ? {'Origin': chatWsOrigin} : null,
       );
 
       // Immediately send subscribe action on connection

@@ -126,7 +126,7 @@ The detailed project history is distributed across categorized changelog files. 
 *   [Security Fixes](docs/changelog/security-fixes.md) — 159 entries detailing vulnerabilities found and fixed (including Owner-Authenticated Employee Provisioning, see [ADR-0001](docs/adr/0001-owner-authenticated-employee-provisioning.md), Employee Assignment Tenant Binding, see [ADR-0003](docs/adr/0003-employee-assignment-tenant-binding-check.md), Customer Booking Employee Pre-Assignment Gating, see [ADR-0004](docs/adr/0004-customer-booking-employee-assignment-order.md), and Document Encryption at Rest).
 *   [New Features](docs/changelog/new-features.md) — 71 net-new capabilities (e.g. complaint ticketing, KYB uploads, location tracking, Redis rate limiters, username propagation, version gating, zero-commission model, owner payout requests, sequential cascade dispatch, reviewer account directory and suspension per ADR-0022).
 *   [Infrastructure & Tooling](docs/changelog/infrastructure.md) — 58 tooling, CI/CD hardening, module refactoring, and onboarding CLI tools (including strict CD preflight validation per ADR-0015).
-*   [Bug Fixes](docs/changelog/bug-fixes.md) — 89 corrections to non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic, frontend consistency audit batches 1–5, SegmentedButton contrast, services directory owner auth header resolution, owner configuration KYC status badge & banner restoration, zero-commission platform fee remnants cleanup, SSE multi-instance local-first delivery and dedup per Q18).
+*   [Bug Fixes](docs/changelog/bug-fixes.md) — 94 corrections to non-security behavior (e.g. deactivation grace, CORS ordering, random notification IDs, token refresh panic, frontend consistency audit batches 1–5, SegmentedButton contrast, services directory owner auth header resolution, owner configuration KYC status badge & banner restoration, zero-commission platform fee remnants cleanup, SSE multi-instance local-first delivery and dedup per Q18, reviewer auth transient failure discrimination).
 *   [Documentation](docs/changelog/documentation.md) — 40 documentation-only updates (e.g. Business Logic Audit Report, Application Map auto-sync, Frontend Consistency Audit, Four-Repo Deployment Map, Documentation Freshness Audits #1 & #2).
 *   [Localization Infrastructure](docs/changelog/localization-infrastructure.md) — 4 entries covering Egyptian Colloquial Arabic (ar_EG) i18n and RTL layout architecture.
 *   [Refactoring](docs/changelog/refactoring.md) — 10 entries documenting handler modularization and architecture alignments.
@@ -937,6 +937,45 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
 * **Item 3: Confirmed Frontend Mobile Build Currency**:
   - Queried `git ls-remote https://github.com/omarmaarouf18/quick-delivery-mobile.git`: confirmed remote HEAD is `fd2235c...` tagged `app-release-fd2235c` corresponding to commit `6043a4c...` (`ticket_chat_screen.dart` work).
   - Confirmed mobile GitHub release `app-release-fd2235c` contains latest `app-release.apk`. Directing product owner to reinstall from this latest release rather than modifying mobile frontend code.
+
+### Mobile Ticket Chat WebSocket Handshake & Reviewer Console Investigation (2026-09-15)
+
+* **Bug 1: Mobile Ticket Chat WebSocket Origin Rejected (Confirmed & Remediated)**:
+  - **Smoking-Gun Logs on `quickdelivery-vm`**:
+    - `saas-api-gateway`: `2026/09/15 06:44:43 [TRAFFIC] GET /api/v1/chat/ws → 403 (8.282ms)`
+    - `saas-chat-service`: `2026/09/15 06:44:43 [WS] Upgrade failed for user=7ad3a56be324e9fd: websocket: request origin not allowed by Upgrader.CheckOrigin`
+  - **Root Cause**: Mobile build workflow (`build-apk.yml`) compiles without `--dart-define=CHAT_WS_ORIGIN`, falling back to `defaultValue: 'http://localhost:3000'` in `constants.dart`. `chat_provider.dart` and `map_tracking_provider.dart` passed `headers: {'Origin': chatWsOrigin}`, sending `Origin: http://localhost:3000`. Production `chat-service` was configured with `ALLOWED_ORIGIN=https://logiclinkeg.tech,https://kyc.logiclinkeg.tech`, causing `isOriginAllowed` to reject the handshake with HTTP 403. Client remained in `_isConnected = false`, blocking message sending with `"WebSocket is not connected"`.
+  - **Remediation**:
+    1. `services/chat-service/internal/handlers/chat.go`: Updated `isOriginAllowed` to admit `http://localhost:3000` alongside `""` and `https://kyc.logiclinkeg.tech`, immediately restoring WebSocket connectivity for all currently distributed mobile APKs.
+    2. `frontend/lib/core/constants.dart`: Changed `chatWsOrigin` `defaultValue` to `''`.
+    3. `frontend/lib/providers/chat_provider.dart` & `frontend/lib/providers/map_tracking_provider.dart`: Changed headers to `chatWsOrigin.isNotEmpty ? {'Origin': chatWsOrigin} : null`. Non-browser native clients omit the `Origin` header by default, matching backend non-browser CSRF bypass design.
+  - **Verification**: `chat_test.go` (`TestIsOriginAllowed`), `flutter test` across chat and tracking suites, and full `make ci` (exit code 0).
+
+* **Bug 2: Reviewer Console Disconnect / "Weird Crash" Investigation (Ruled Out & Mechanism Confirmed)**:
+  - **Ruled Out**:
+    - Backend panic in `chat-service`: Ruled out via `docker inspect saas-chat-service --format '{{.RestartCount}}'` (returned 0) and container uptime of >2 hours without panics.
+    - WebSocket rejected by `CheckOrigin`: Ruled out by logs showing reviewer `omar` established connection at `06:44:18` (`[WS] Connection established: user_id=omar remote=172.20.0.4:42080`).
+    - Console frontend `onclose`/`onerror` triggering logout: Ruled out by inspecting `kyc-reviewer-console/web/app.js` (no `onclose` handler, `onerror` only logs warnings).
+  - **Confirmed Kickout & Crash Mechanism**:
+    - In `kyc-reviewer-console/web/app.js`, `api()` (line 61) triggers `logout('Session expired or invalid token.')` and throws `new Error('unauthorized')` on any HTTP 401 response.
+    - At `06:44:56`, the console recorded `POST /api/tickets/resolve 999.845µs` (sub-millisecond early return; ticket was not resolved in DB until `06:50:27`). 6 seconds later at `06:45:02`, the idle WebSocket read pump closed due to reviewer being kicked out.
+
+### Reviewer Authentication Transient Failure Discrimination & Console Kickout Remediation (2026-09-15)
+
+* **Root Cause & Fix Implementation**:
+  - **saas-core (`services/chat-service/`)**:
+    - `internal/handlers/admin_tickets.go`: In `verifyReviewerToken`, failure to verify a reviewer token against `auth-service` previously converted all errors into an undifferentiated error, which callers (`AdminListTickets`, `AdminResolveTicket`, `AdminAcceptTicket`) converted into HTTP 401 Unauthorized.
+    - Defined sentinel error `var ErrServiceUnavailable = errors.New("service_unavailable")`. Discriminated true authentication rejections (HTTP 401/403 from `auth-service`) from transient/infrastructure failures (network errors, HTTP 429 rate limits, HTTP 5xx responses, or unparseable payloads). Transient failures now wrap `ErrServiceUnavailable`.
+    - Added `writeReviewerAuthError(w, err)` helper responding with HTTP 503 Service Unavailable (`{"error":"service_unavailable","message":"Authentication service is temporarily unavailable. Please try again later."}`) for transient errors, preserving HTTP 401 for true auth rejections.
+    - Updated `AdminListTickets`, `AdminResolveTicket`, and `AdminAcceptTicket` to use `writeReviewerAuthError(w, err)`.
+    - Added unit test suite `TestAdminTickets_Authentication_TransientFailureDiscrimination` in `admin_tickets_test.go` covering 7 scenarios (401, 403, 429, 500, 502, 503, network unreachable) across all 3 admin endpoints.
+  - **kyc-reviewer-console (commit `7fa8d94...`)**:
+    - `web/app.js`: In `submitResolveTicket()`, wrapped `api('/api/tickets/resolve')` in a `try...catch...finally` block. Managed submit button disabled/text state (`Resolving...` -> `Confirm Resolve`), surfaced retryable error messages in `#resolve-ticket-error`, and suppressed action on `e.message === 'unauthorized'` to avoid double-handling.
+    - Protected sibling dialog submission handlers across `web/app.js`: `openDocument`, `submitReview`, `submitSuspend`, `submitReactivate`, `submitResolveDispute`, `submitActivateSub`, and `submitRevokeSub`.
+    - Maintained session expiration policy in `api()`: only genuine 401s trigger `logout()`, while transient 503/502/429 codes return to dialog callers for retry.
+    - Added Node.js test suite (`web/app_test.js`) passing 100% and Go proxy relay tests (`internal/proxy/proxy_test.go`) passing 100%.
+
+
 
 
 

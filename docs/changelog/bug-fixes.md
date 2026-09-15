@@ -831,6 +831,61 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
   - `frontend/test/dispatch_tracking_lifecycle_repro_test.dart`: Added widget tests for F-01 (live tracking survives navigation to chat screen) and unit tests for F-02 (heartbeat pings preserve active job marker on owner map) passing 100%.
   - All unit, integration, and repro suites passing: Go services (100% pass), `flutter analyze` (0 issues), and `flutter test` (516/516 pass).
 
+## Mobile WebSocket Origin Handshake Normalization and Reviewer Console Incident Audit
+
+**Date**: 2026-09-15
+**Category**: Bug Fix / Real-Time WebSocket Messaging & Console Resilience
+**Target Branch**: `logic-exploitation`
+
+- **Problem / Gap**:
+  1. **Customer-side Ticket Chat Blocked (Bug 1)**: Mobile clients were unable to send messages in ticket chat. Tapping send threw `"WebSocket is not connected"` because the WebSocket upgrade failed with HTTP 403 (`websocket: request origin not allowed by Upgrader.CheckOrigin`). In `frontend/lib/core/constants.dart`, `chatWsOrigin` defaulted to `'http://localhost:3000'` and was sent as an artificial `Origin` header by `chat_provider.dart` and `map_tracking_provider.dart`, which production `chat-service` rejected under `ALLOWED_ORIGIN=https://logiclinkeg.tech,https://kyc.logiclinkeg.tech`.
+  2. **Reviewer Console Kickout / "Weird Crash" (Bug 2)**: Reviewers reported an unexpected kickout to login accompanied by a browser console error during ticket resolution. Runtime logs proved `chat-service` did not crash/panic (restart count 0) and the reviewer's WebSocket connected cleanly at `06:44:18`. In `kyc-reviewer-console/web/app.js`, an unhandled 401 response in `submitResolveTicket()` invoked `logout()` (wiping session storage and routing to login) while throwing an uncaught `Error: unauthorized` in the browser.
+
+- **Implementation Details**:
+  - **Backend (`services/chat-service/`)**:
+    - `internal/handlers/chat.go`: In `isOriginAllowed`, explicitly admitted `"http://localhost:3000"` alongside `""` and `"https://kyc.logiclinkeg.tech"`. This allows all previously built and deployed mobile release APKs to connect immediately without requiring immediate app store / release updates.
+    - `internal/handlers/chat_test.go`: Added test case `{"http://localhost:3000", true}` to `TestIsOriginAllowed` under multi-domain production origins.
+  - **Frontend (`frontend/`)**:
+    - `lib/core/constants.dart`: Changed `chatWsOrigin` `defaultValue` to `''`.
+    - `lib/providers/chat_provider.dart` & `lib/providers/map_tracking_provider.dart`: Changed WebSocket headers to `chatWsOrigin.isNotEmpty ? {'Origin': chatWsOrigin} : null`. Native mobile (`dart:io`) clients omit the artificial `Origin` header by default, allowing the backend to natively accept non-browser clients without CSRF gating.
+
+- **Verification**:
+  - `services/chat-service/internal/handlers/chat_test.go`: `TestIsOriginAllowed` passes 100%.
+  - `frontend`: `flutter analyze lib/ test/` (0 issues), `dart format` (0 changed), unit and integration tests across early chat, tickets, and map tracking pass 100%.
+  - Pre-push gate: `make ci` passed 100% (Go build, vet, test, govulncheck, gosec dev scanner, and 532/532 Flutter tests).
+
+## Reviewer Authentication Transient Failure Discrimination (HTTP 503 vs 401)
+
+**Date**: 2026-09-15
+**Category**: Bug Fix / Support Ticket Operations & Auth Resilience
+**Target Branch**: `logic-exploitation`
+
+- **Problem / Gap**:
+  - In `services/chat-service/internal/handlers/admin_tickets.go`, `verifyReviewerToken` converted all errors verifying tokens with `auth-service` into an undifferentiated error.
+  - When `auth-service` experienced transient network errors, HTTP 429 rate limits, HTTP 5xx errors, timeouts, or circuit breaker trips, `authenticateReviewer`'s callers (`AdminListTickets`, `AdminResolveTicket`, `AdminAcceptTicket`) converted that error into HTTP 401 Unauthorized.
+  - This 401 caused the reviewer console (`kyc-reviewer-console`) to treat transient infrastructure failures as an expired session, immediately calling `logout()` and kicking the reviewer out to the login screen. Furthermore, `submitResolveTicket()` lacked `try...catch` handling, turning the 401 rejection into an unhandled promise rejection ("weird crash").
+
+- **Implementation Details**:
+  - **Chat Service (`services/chat-service/`)**:
+    - `internal/handlers/admin_tickets.go`: Defined sentinel error `var ErrServiceUnavailable = errors.New("service_unavailable")`.
+    - `verifyReviewerToken`: Discriminated genuine authentication rejections (HTTP 401/403 from `auth-service`, which still return standard errors mapped to 401) from transient failures (network errors, HTTP 429, HTTP 5xx, or unparseable responses), which wrap `ErrServiceUnavailable`.
+    - Implemented `writeReviewerAuthError(w, err)` helper: if `errors.Is(err, ErrServiceUnavailable)`, responds with HTTP 503 Service Unavailable and JSON `{"error":"service_unavailable","message":"Authentication service is temporarily unavailable. Please try again later."}`, preserving existing HTTP 401 response for true auth rejections.
+    - Updated `AdminListTickets`, `AdminResolveTicket`, and `AdminAcceptTicket` to use `writeReviewerAuthError(w, err)`.
+  - **Reviewer Console (`kyc-reviewer-console`, commit `7fa8d94...`)**:
+    - `web/app.js`: Wrapped `submitResolveTicket()` and sibling action dialog handlers in `try...catch...finally` blocks, surfacing retryable errors in `#resolve-ticket-error` without crashing or clearing session state.
+    - Preserved session expiration policy in `api()`: only genuine 401 responses call `logout()`, while transient 503 responses return to dialog callers for retry.
+  - **Unit Testing**:
+    - `services/chat-service/internal/handlers/admin_tickets_test.go`: Added `TestAdminTickets_Authentication_TransientFailureDiscrimination` verifying 7 failure modes (401, 403, 429, 500, 502, 503, network unreachable) across all 3 admin endpoints (`AdminListTickets`, `AdminResolveTicket`, `AdminAcceptTicket`), asserting that transient errors return HTTP 503 and explicitly never 401.
+
+- **Verification**:
+  - `services/chat-service/internal/handlers/admin_tickets_test.go`: `TestAdminTickets_Authentication_TransientFailureDiscrimination` passed 100% (0.64s).
+  - Uncached module tests: `go test -count=1 ./services/chat-service/...` passed 100%.
+  - Shared infra tests: `go test -count=1 ./shared/infra/...` passed 100%.
+  - `kyc-reviewer-console`: Go unit tests (`go test -count=1 ./...`) and Node.js frontend tests (`node --test web/app_test.js`) passed 100%.
+  - Code hygiene: `gofmt -l .` empty, `go vet` clean.
+
+
+
 
 
 
