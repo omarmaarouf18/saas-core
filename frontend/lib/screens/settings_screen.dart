@@ -400,74 +400,35 @@ class SettingsScreen extends StatelessWidget {
             padding: 0,
             child: Material(
               color: Colors.transparent,
-              child: Column(
-                children: [
-                  ListTile(
-                    key: const Key('support_tickets_setting_row'),
-                    leading: Icon(
-                      Icons.confirmation_number_outlined,
-                      color: theme.colorScheme.primary,
-                    ),
-                    title: Text(
-                      l10n.settingsSupportTickets,
-                      style: AppTypography.bodyLg.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    subtitle: Text(
-                      l10n.settingsSupportTicketsSub,
-                      style: AppTypography.bodySm.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    trailing: Icon(
-                      Icons.chevron_right,
-                      color: theme.colorScheme.outline,
-                    ),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const CustomerTicketsScreen(),
-                        ),
-                      );
-                    },
+              child: ListTile(
+                key: const Key('support_tickets_setting_row'),
+                leading: Icon(
+                  Icons.confirmation_number_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+                title: Text(
+                  l10n.settingsSupportTickets,
+                  style: AppTypography.bodyLg.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
-                  Divider(
-                    height: 1,
-                    color:
-                        theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                ),
+                subtitle: Text(
+                  l10n.settingsSupportTicketsSub,
+                  style: AppTypography.bodySm.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  ListTile(
-                    key: const Key('customer_service_setting_row'),
-                    leading: Icon(
-                      Icons.support_agent_outlined,
-                      color: theme.colorScheme.primary,
+                ),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: theme.colorScheme.outline,
+                ),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const CustomerTicketsScreen(),
                     ),
-                    title: Text(
-                      l10n.supportTicketsTitle,
-                      style: AppTypography.bodyLg.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    subtitle: Text(
-                      l10n.settingsCustomerServiceSub,
-                      style: AppTypography.bodySm.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    trailing: Icon(
-                      Icons.chevron_right,
-                      color: theme.colorScheme.outline,
-                    ),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const CustomerTicketsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                  );
+                },
               ),
             ),
           ),

@@ -191,7 +191,8 @@ void main() {
     expect(localeProvider.locale?.languageCode, 'ar');
   });
 
-  testWidgets('(b3) Tapping Customer Service row navigates to CustomerTicketsScreen',
+  testWidgets(
+      '(b3) Exactly one support tickets row exists and navigates to CustomerTicketsScreen',
       (WidgetTester tester) async {
     final themeProvider = ThemeProvider(storage: FakeSecureStorage());
     final ownerUser = UserProfile(
@@ -208,10 +209,17 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    final csRow = find.byKey(const Key('customer_service_setting_row'));
-    expect(csRow, findsOneWidget);
-    await tester.ensureVisible(csRow);
-    await tester.tap(csRow);
+    // Strengthened assertion: exactly one row exists, obsolete duplicate is absent
+    final supportRow = find.byKey(const Key('support_tickets_setting_row'));
+    final duplicateRow = find.byKey(const Key('customer_service_setting_row'));
+    expect(supportRow, findsOneWidget);
+    expect(duplicateRow, findsNothing);
+
+    // Exactly one row labeled "Support Tickets" in settings before navigating
+    expect(find.text('Support Tickets'), findsOneWidget);
+
+    await tester.ensureVisible(supportRow);
+    await tester.tap(supportRow);
     await tester.pumpAndSettle();
 
     expect(find.byType(CustomerTicketsScreen), findsOneWidget);

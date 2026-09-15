@@ -919,6 +919,24 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   3. **Spatial Telemetry & Speed Plausibility (`MaxReasonableSpeedKmh`)**: Employee and job location update endpoints calculate speed relative to timestamps. Setting distance to 0 (heartbeat pings at current coordinates) or backdating `job.CreatedAt` by sufficient elapsed time ensures movement speed remains within plausible physical limits (`<= 120 km/h`).
   4. **CORS Strict Whitelisting at Gateway Edge**: Gateway logging middleware previously had static `Access-Control-Allow-Origin: *` or allowedOrigin without checking request `Origin`. Refactored to inspect the `Origin` header against `allowedOrigin`, set `Vary: Origin`, and reject disallowed origins with HTTP 403 on preflight OPTIONS.
   5. **Trailing Slash Proxy Routing in Notification Service**: The notification deletion handler registered at `/notifications` did not match `/notifications/` with trailing slash, causing HTTP 404 when clients invoked the endpoint with trailing slash. Added companion route registration for `/notifications/` in `notification-service/internal/handlers/handlers.go`.
+  6. **WebSocket Origin Policy Alignment for Internal Ops Consoles**: Non-browser clients (such as mobile `dart:io` WebSockets) omit `Origin`, while browser clients always send `Origin`. In `chat-service`, `isOriginAllowed` was updated to support comma-separated allow-lists (matching `api-gateway`) and explicitly admit the official reviewer console origin (`https://kyc.logiclinkeg.tech`), closing browser WebSocket upgrade 403s through reverse-proxies.
+
+### Support Tickets Settings Deduplication & Ops Console Real-Time Chat Origin Remediation (2026-09-15)
+
+* **Item 1: Eliminated Duplicate Support Tickets Entry Point in Settings Screen**:
+  - `frontend/lib/screens/settings_screen.dart`: Removed redundant `customer_service_setting_row` and intermediate divider in the Support card, retaining the single canonical `support_tickets_setting_row` (`l10n.settingsSupportTickets` / `l10n.settingsSupportTicketsSub`). Preserved `supportTicketsTitle` (used as `CustomerTicketsScreen` AppBar title) and `settingsCustomerService`/`settingsCustomerServiceSub` (used in `CreateTicketDialog`) to prevent orphaned/broken localization keys.
+  - `frontend/test/settings_screen_test.dart`: Strengthened test `(b3)` to assert `support_tickets_setting_row` exists (`findsOneWidget`), obsolete `customer_service_setting_row` is absent (`findsNothing`), exactly one "Support Tickets" text is present before navigating, and tapping navigates to `CustomerTicketsScreen`.
+  - Frontend verified: `flutter analyze` (0 issues), `flutter test test/settings_screen_test.dart` (8/8 passed), `flutter test test/customer_tickets_test.dart` (11/11 passed).
+
+* **Item 2: Confirmed Reviewer Console Deployment Status & Fixed Chat Service WebSocket Origin Allow-List**:
+  - Investigated `saas-kyc-reviewer-console` on `quickdelivery-vm`: confirmed container image ID `0b1ba7aef675` matches GHCR `latest` digest `sha256:0b1ba7aef67588dd4957924f886dd675197f96586740a226046392e00c8274bd` containing commit `2c0643a...` ("attach client transport with TLS config to reverse proxy in ChatWebSocket").
+  - Diagnosed live browser WebSocket failure: `saas-chat-service` rejected browser upgrades (`Upgrader.CheckOrigin`) because `isOriginAllowed` only accepted a single origin defaulting to `http://localhost:3000` while the browser sent `Origin: https://kyc.logiclinkeg.tech`.
+  - Remediated `services/chat-service/internal/handlers/chat.go`: updated `isOriginAllowed` to parse comma-separated `c.allowedOrigin` lists and admit `https://kyc.logiclinkeg.tech`. Added unit tests in `chat_test.go` (`TestIsOriginAllowed`). Added `ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}` to `chat-service` in `infrastructure/deploy/docker-compose.prod.yml`, `infrastructure/staging/docker-compose.staging.yml`, and `infrastructure/docker-compose.yml`.
+  - Live production verification: updated `/home/deploybot/.env` with `ALLOWED_ORIGIN=https://logiclinkeg.tech,https://kyc.logiclinkeg.tech`, verified live `wss://kyc.logiclinkeg.tech/api/chat/ws` connects with `Origin: https://kyc.logiclinkeg.tech`, subscribed to ticket channel, sent message, and captured live broadcast message.
+
+* **Item 3: Confirmed Frontend Mobile Build Currency**:
+  - Queried `git ls-remote https://github.com/omarmaarouf18/quick-delivery-mobile.git`: confirmed remote HEAD is `fd2235c...` tagged `app-release-fd2235c` corresponding to commit `6043a4c...` (`ticket_chat_screen.dart` work).
+  - Confirmed mobile GitHub release `app-release-fd2235c` contains latest `app-release.apk`. Directing product owner to reinstall from this latest release rather than modifying mobile frontend code.
 
 
 
