@@ -1639,7 +1639,7 @@ func TestWebSocket_MessageRateLimiting(t *testing.T) {
 
 // WS Origin policy regression guards: non-browser clients (dart:io WebSocket
 // on mobile, CLI tooling) send NO Origin header and must be admitted, while a
-// PRESENT Origin must still match the configured allow-list entry exactly.
+// PRESENT Origin must match the configured allow-list entries or reviewer console.
 func TestIsOriginAllowed(t *testing.T) {
 	c := &Chat{allowedOrigin: "http://localhost:3000"}
 
@@ -1649,6 +1649,7 @@ func TestIsOriginAllowed(t *testing.T) {
 	}{
 		{"", true},                                // non-browser client (no Origin)
 		{"http://localhost:3000", true},           // exact match
+		{"https://kyc.logiclinkeg.tech", true},    // official reviewer console origin
 		{"https://localhost:3000", false},         // scheme mismatch
 		{"http://localhost:3000.evil.com", false}, // suffix spoof
 		{"http://evil.com", false},                // foreign origin
@@ -1657,6 +1658,30 @@ func TestIsOriginAllowed(t *testing.T) {
 		if got := c.isOriginAllowed(tc.origin); got != tc.want {
 			t.Errorf("isOriginAllowed(%q) = %v, want %v", tc.origin, got, tc.want)
 		}
+	}
+
+	// Comma-separated allow-list support matching api-gateway
+	multi := &Chat{allowedOrigin: "https://logiclinkeg.tech, https://app.logiclinkeg.tech"}
+	multiCases := []struct {
+		origin string
+		want   bool
+	}{
+		{"", true},
+		{"https://logiclinkeg.tech", true},
+		{"https://app.logiclinkeg.tech", true},
+		{"https://kyc.logiclinkeg.tech", true},
+		{"https://evil.com", false},
+	}
+	for _, tc := range multiCases {
+		if got := multi.isOriginAllowed(tc.origin); got != tc.want {
+			t.Errorf("multi.isOriginAllowed(%q) = %v, want %v", tc.origin, got, tc.want)
+		}
+	}
+
+	// Wildcard support
+	all := &Chat{allowedOrigin: "*"}
+	if !all.isOriginAllowed("https://any-domain.com") {
+		t.Errorf("wildcard allow-list should admit any origin")
 	}
 }
 

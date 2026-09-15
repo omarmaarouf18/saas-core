@@ -125,6 +125,7 @@ services:
       TLS_CERT_PATH: /app/certs/chat-service.crt
       TLS_KEY_PATH: /app/certs/chat-service.key
       TLS_CA_PATH: /app/certs/ca.crt
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
     depends_on:
       mongo:
         condition: service_healthy
