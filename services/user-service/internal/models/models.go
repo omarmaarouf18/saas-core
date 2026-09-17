@@ -107,6 +107,7 @@ type Job struct {
 	ServiceID                string     `json:"service_id"                    bson:"service_id"`
 	Status                   JobStatus  `json:"status"                        bson:"status"`
 	Location                 Location   `json:"location"                      bson:"location"`
+	Destination              Location   `json:"destination"                   bson:"destination"`
 	CurrentLocation          *Location  `json:"current_location,omitempty"   bson:"current_location,omitempty"`
 	Waypoints                []Location `json:"waypoints,omitempty"          bson:"waypoints,omitempty"`
 	PaymentMethod            string     `json:"payment_method"                bson:"payment_method"`
@@ -141,6 +142,7 @@ type OwnerJobResponse struct {
 	OfferedEmployeeIDs       []string   `json:"offered_employee_ids,omitempty"`
 	Status                   JobStatus  `json:"status"`
 	Location                 Location   `json:"location"`
+	Destination              Location   `json:"destination"`
 	CurrentLocation          *Location  `json:"current_location,omitempty"`
 	PaymentMethod            string     `json:"payment_method"`
 	CancellationReason       string     `json:"cancellation_reason,omitempty"`
@@ -173,6 +175,7 @@ func NewOwnerJobResponse(j *Job) OwnerJobResponse {
 		OfferedEmployeeIDs:       j.OfferedEmployeeIDs,
 		Status:                   j.Status,
 		Location:                 j.Location,
+		Destination:              j.Destination,
 		CurrentLocation:          j.CurrentLocation,
 		PaymentMethod:            j.PaymentMethod,
 		CancellationReason:       j.CancellationReason,
@@ -197,6 +200,7 @@ type CustomerJobResponse struct {
 	EmployeeID             string     `json:"employee_id,omitempty"`
 	Status                 JobStatus  `json:"status"`
 	Location               Location   `json:"location"`
+	Destination            Location   `json:"destination"`
 	CurrentLocation        *Location  `json:"current_location,omitempty"`
 	PaymentMethod          string     `json:"payment_method"`
 	CancellationReason     string     `json:"cancellation_reason,omitempty"`
@@ -220,6 +224,7 @@ func NewCustomerJobResponse(j *Job) CustomerJobResponse {
 		EmployeeID:             j.EmployeeID,
 		Status:                 j.Status,
 		Location:               j.Location,
+		Destination:            j.Destination,
 		CurrentLocation:        j.CurrentLocation,
 		PaymentMethod:          j.PaymentMethod,
 		CancellationReason:     j.CancellationReason,
@@ -245,6 +250,7 @@ type EmployeeJobResponse struct {
 	OfferExpiresAt           *time.Time `json:"offer_expires_at,omitempty"`
 	Status                   JobStatus  `json:"status"`
 	Location                 Location   `json:"location"`
+	Destination              Location   `json:"destination"`
 	CurrentLocation          *Location  `json:"current_location,omitempty"`
 	PaymentMethod            string     `json:"payment_method"`
 	CancellationReason       string     `json:"cancellation_reason,omitempty"`
@@ -273,6 +279,7 @@ func NewEmployeeJobResponse(j *Job, requesterEmployeeID string) EmployeeJobRespo
 		EmployeeID:             j.EmployeeID,
 		Status:                 j.Status,
 		Location:               j.Location,
+		Destination:            j.Destination,
 		CurrentLocation:        j.CurrentLocation,
 		PaymentMethod:          j.PaymentMethod,
 		CancellationReason:     j.CancellationReason,
@@ -414,17 +421,18 @@ type UpdateServiceRequest struct {
 
 // CreateJobRequest is the expected JSON body for POST /users/jobs/track.
 type CreateJobRequest struct {
-	OwnerID        string   `json:"owner_id"`
-	OwnerToken     string   `json:"owner_token,omitempty"`
-	EmployeeID     string   `json:"employee_id,omitempty"`
-	EmployeeToken  string   `json:"employee_token,omitempty"`
-	ServiceID      string   `json:"service_id"`
-	Location       Location `json:"location"`
-	PaymentMethod  string   `json:"payment_method"`
-	UserID         string   `json:"user_id"`
-	UserToken      string   `json:"user_token,omitempty"`
-	IdempotencyKey string   `json:"idempotency_key,omitempty"`
-	ProposedPrice  *float64 `json:"proposed_price,omitempty"`
+	OwnerID        string    `json:"owner_id"`
+	OwnerToken     string    `json:"owner_token,omitempty"`
+	EmployeeID     string    `json:"employee_id,omitempty"`
+	EmployeeToken  string    `json:"employee_token,omitempty"`
+	ServiceID      string    `json:"service_id"`
+	Location       Location  `json:"location"`
+	Destination    *Location `json:"destination"`
+	PaymentMethod  string    `json:"payment_method"`
+	UserID         string    `json:"user_id"`
+	UserToken      string    `json:"user_token,omitempty"`
+	IdempotencyKey string    `json:"idempotency_key,omitempty"`
+	ProposedPrice  *float64  `json:"proposed_price,omitempty"`
 }
 
 // DepositRequest is the expected JSON body for POST /users/wallet/deposit.

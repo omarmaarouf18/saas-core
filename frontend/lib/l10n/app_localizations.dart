@@ -4526,6 +4526,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not accepting new delivery requests'**
   String get courierStatusNotAcceptingDispatch;
+
+  /// No description provided for @destinationLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination Location'**
+  String get destinationLocationLabel;
+
+  /// No description provided for @choosePickupLocationBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Pickup on Map'**
+  String get choosePickupLocationBtn;
+
+  /// No description provided for @chooseDestinationLocationBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Destination on Map'**
+  String get chooseDestinationLocationBtn;
+
+  /// No description provided for @changePickupLocationBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Pickup'**
+  String get changePickupLocationBtn;
+
+  /// No description provided for @changeDestinationLocationBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Destination'**
+  String get changeDestinationLocationBtn;
+
+  /// No description provided for @tripDistanceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip Distance:'**
+  String get tripDistanceLabel;
+
+  /// No description provided for @selectDestinationPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a destination on the map to calculate trip distance and price estimate.'**
+  String get selectDestinationPrompt;
+
+  /// No description provided for @destinationRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose a destination on the map before booking.'**
+  String get destinationRequiredError;
+
+  /// No description provided for @estimatedPriceTripNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated price is based on the actual trip distance from pickup to destination.'**
+  String get estimatedPriceTripNotice;
 }
 
 class _AppLocalizationsDelegate

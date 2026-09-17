@@ -74,6 +74,7 @@ func TestRepro_B01_CourierWithPendingOfferNotReoffered(t *testing.T) {
 		"service_id":     svcID,
 		"user_id":        tokenCust1,
 		"location":       map[string]float64{"latitude": pickupLat, "longitude": pickupLon},
+		"destination":    map[string]float64{"latitude": pickupLat + 0.05, "longitude": pickupLon + 0.05},
 		"payment_method": "cod",
 	})
 	req1 := httptest.NewRequest(http.MethodPost, "/users/jobs/track", bytes.NewReader(body1))
@@ -99,6 +100,7 @@ func TestRepro_B01_CourierWithPendingOfferNotReoffered(t *testing.T) {
 		"service_id":     svcID,
 		"user_id":        tokenCust2,
 		"location":       map[string]float64{"latitude": pickupLat, "longitude": pickupLon},
+		"destination":    map[string]float64{"latitude": pickupLat + 0.05, "longitude": pickupLon + 0.05},
 		"payment_method": "cod",
 	})
 	req2 := httptest.NewRequest(http.MethodPost, "/users/jobs/track", bytes.NewReader(body2))
@@ -196,6 +198,7 @@ func TestRepro_B02_CourierInReconciliationExcludedFromOffers(t *testing.T) {
 		"service_id":     svcID,
 		"user_id":        tokenCust,
 		"location":       map[string]float64{"latitude": pickupLat, "longitude": pickupLon},
+		"destination":    map[string]float64{"latitude": pickupLat + 0.05, "longitude": pickupLon + 0.05},
 		"payment_method": "cod",
 	})
 	req := httptest.NewRequest(http.MethodPost, "/users/jobs/track", bytes.NewReader(body))

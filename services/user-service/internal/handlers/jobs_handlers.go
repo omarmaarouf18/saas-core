@@ -70,6 +70,22 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Destination == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_coordinates",
+			"message": "destination is required",
+		})
+		return
+	}
+
+	if !isValidCoordinate(req.Destination.Latitude, req.Destination.Longitude) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_coordinates",
+			"message": "Destination Latitude must be between -90 and 90, and Longitude must be between -180 and 180",
+		})
+		return
+	}
+
 	// 1. Resolve owner token if provided
 	var resolvedOwnerID string
 	var hasOwnerToken bool
@@ -283,6 +299,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 			ServiceID:                req.ServiceID,
 			Status:                   initialStatus,
 			Location:                 req.Location,
+			Destination:              *req.Destination,
 			PaymentMethod:            req.PaymentMethod,
 			BookedDistance:           0,
 			AssignedEmployeeLocation: nil,
@@ -339,8 +356,8 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Calculate ride cost: base_price + (distance × price_per_km) from assigned employee's location.
-	dist := haversineKm(req.Location.Latitude, req.Location.Longitude, empLoc.Latitude, empLoc.Longitude)
+	// Calculate ride cost: base_price + (distance × price_per_km) based on trip distance (pickup to destination).
+	dist := haversineKm(req.Location.Latitude, req.Location.Longitude, req.Destination.Latitude, req.Destination.Longitude)
 	escrowAmount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
 
 	isTransport := svc.Category == "transport"
@@ -384,6 +401,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		ServiceID:                req.ServiceID,
 		Status:                   initialStatus,
 		Location:                 req.Location,
+		Destination:              *req.Destination,
 		PaymentMethod:            req.PaymentMethod,
 		BookedDistance:           dist,
 		AssignedEmployeeLocation: &assignedLoc,
@@ -611,8 +629,12 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dist := job.BookedDistance
-	if dist == 0 && job.AssignedEmployeeLocation != nil {
-		dist = haversineKm(job.Location.Latitude, job.Location.Longitude, job.AssignedEmployeeLocation.Latitude, job.AssignedEmployeeLocation.Longitude)
+	if dist == 0 {
+		if job.Destination.Latitude != 0 || job.Destination.Longitude != 0 {
+			dist = haversineKm(job.Location.Latitude, job.Location.Longitude, job.Destination.Latitude, job.Destination.Longitude)
+		} else if job.AssignedEmployeeLocation != nil {
+			dist = haversineKm(job.Location.Latitude, job.Location.Longitude, job.AssignedEmployeeLocation.Latitude, job.AssignedEmployeeLocation.Longitude)
+		}
 	}
 	amount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
 	if job.AgreedPrice != nil && *job.AgreedPrice > 0 {
@@ -1930,7 +1952,7 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dist := haversineKm(job.Location.Latitude, job.Location.Longitude, empLoc.Latitude, empLoc.Longitude)
+	dist := haversineKm(job.Location.Latitude, job.Location.Longitude, job.Destination.Latitude, job.Destination.Longitude)
 	finalPrice := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
 	assignedLoc := models.Location{Latitude: empLoc.Latitude, Longitude: empLoc.Longitude}
 

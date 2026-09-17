@@ -66,6 +66,8 @@ class MarketplaceProvider extends ChangeNotifier {
     required String userId, // JWT token
     required double latitude,
     required double longitude,
+    required double destinationLatitude,
+    required double destinationLongitude,
     required String paymentMethod,
   }) async {
     _isLoading = true;
@@ -80,6 +82,10 @@ class MarketplaceProvider extends ChangeNotifier {
         'location': {
           'latitude': latitude,
           'longitude': longitude,
+        },
+        'destination': {
+          'latitude': destinationLatitude,
+          'longitude': destinationLongitude,
         },
         'payment_method': paymentMethod,
       });

@@ -122,6 +122,7 @@ func TestTrackJob_ProposedPriceCentRounded(t *testing.T) {
 		"payment_method": "cod",
 		"proposed_price": 40.123456789, // within [0.5x, 1.5x] of 66.66 but carries sub-cent residue
 		"location":       map[string]any{"latitude": 30.0444, "longitude": 31.2357},
+		"destination":    map[string]any{"latitude": 30.0500, "longitude": 31.2400},
 	})
 	req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+ownerToken)

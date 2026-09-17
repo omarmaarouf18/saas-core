@@ -338,6 +338,10 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         userId: auth.token!,
         latitude: _currentJob.location.latitude,
         longitude: _currentJob.location.longitude,
+        destinationLatitude:
+            _currentJob.destination?.latitude ?? _currentJob.location.latitude,
+        destinationLongitude: _currentJob.destination?.longitude ??
+            _currentJob.location.longitude,
         paymentMethod: _currentJob.paymentMethod,
       );
 

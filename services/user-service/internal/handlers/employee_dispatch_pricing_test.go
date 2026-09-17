@@ -421,6 +421,7 @@ func TestDispatch_RejectionPaths(t *testing.T) {
 			"user_id":        tokenCust,
 			"payment_method": "cod",
 			"location":       models.Location{Latitude: 30.05, Longitude: 31.25},
+			"destination":    models.Location{Latitude: 30.10, Longitude: 31.30},
 		})
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
 		rec := httptest.NewRecorder()
@@ -448,6 +449,7 @@ func TestDispatch_RejectionPaths(t *testing.T) {
 			"employee_id":    tokenUnpingedEmp,
 			"payment_method": "cod",
 			"location":       models.Location{Latitude: 30.05, Longitude: 31.25},
+			"destination":    models.Location{Latitude: 30.10, Longitude: 31.30},
 		})
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
 		rec := httptest.NewRecorder()
@@ -502,17 +504,18 @@ func TestPricing_EmployeeLocationVsBusinessAddress_EndToEnd(t *testing.T) {
 	})
 
 	// 2. Customer pickup location: Giza (30.0131, 31.2089)
-	// Distance customer <-> business address: ~4.33 km
+	// Destination: Heliopolis / Airport (30.1114, 31.3995) -> ~21.26 km actual trip
 	customerLoc := models.Location{Latitude: 30.0131, Longitude: 31.2089}
-	oldBuggyDistance := haversineKm(customerLoc.Latitude, customerLoc.Longitude, 30.0444, 31.2357)
-	oldBuggyPrice := math.Round((50.0+(oldBuggyDistance*2.0))*100) / 100
+	destinationLoc := models.Location{Latitude: 30.1114, Longitude: 31.3995}
+	actualTripDistance := haversineKm(customerLoc.Latitude, customerLoc.Longitude, destinationLoc.Latitude, destinationLoc.Longitude)
+	expectedTripPrice := math.Round((50.0+(actualTripDistance*2.0))*100) / 100
 
 	// 3. Assigned courier is actually located far away in Alexandria (31.2001, 29.9187)
 	// Distance customer <-> courier location: ~180.89 km
 	courierLat := 31.2001
 	courierLon := 29.9187
-	expectedCorrectDistance := haversineKm(customerLoc.Latitude, customerLoc.Longitude, courierLat, courierLon)
-	expectedCorrectPrice := math.Round((50.0+(expectedCorrectDistance*2.0))*100) / 100
+	oldCourierDistance := haversineKm(customerLoc.Latitude, customerLoc.Longitude, courierLat, courierLon)
+	oldCourierBuggyPrice := math.Round((50.0+(oldCourierDistance*2.0))*100) / 100
 
 	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
@@ -532,6 +535,7 @@ func TestPricing_EmployeeLocationVsBusinessAddress_EndToEnd(t *testing.T) {
 		"user_id":        tokenCust,
 		"payment_method": "cod",
 		"location":       customerLoc,
+		"destination":    destinationLoc,
 	})
 	req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(trackBody))
 	rec := httptest.NewRecorder()
@@ -569,15 +573,15 @@ func TestPricing_EmployeeLocationVsBusinessAddress_EndToEnd(t *testing.T) {
 	suggestedPrice := acceptedJobData["suggested_price"].(float64)
 
 	// MATHEMATICAL PROOF:
-	t.Logf("Old buggy price (business address distance %.2f km): $%.2f", oldBuggyDistance, oldBuggyPrice)
-	t.Logf("Expected correct price (courier location distance %.2f km): $%.2f", expectedCorrectDistance, expectedCorrectPrice)
+	t.Logf("Old buggy price (courier proximity distance %.2f km): $%.2f", oldCourierDistance, oldCourierBuggyPrice)
+	t.Logf("Expected correct price (actual trip distance %.2f km): $%.2f", actualTripDistance, expectedTripPrice)
 	t.Logf("Actual calculated suggested price: $%.2f", suggestedPrice)
 
-	if math.Abs(suggestedPrice-expectedCorrectPrice) > 0.05 {
-		t.Errorf("Price does NOT match courier location math! Expected ~$%.2f, got $%.2f", expectedCorrectPrice, suggestedPrice)
+	if math.Abs(suggestedPrice-expectedTripPrice) > 0.05 {
+		t.Errorf("Price does NOT match trip distance math! Expected ~$%.2f, got $%.2f", expectedTripPrice, suggestedPrice)
 	}
-	if math.Abs(suggestedPrice-oldBuggyPrice) < 5.0 {
-		t.Fatalf("CRITICAL BUG: Price matches the old fixed business address ($%.2f) instead of the courier's location!", suggestedPrice)
+	if math.Abs(suggestedPrice-oldCourierBuggyPrice) < 5.0 {
+		t.Fatalf("CRITICAL BUG: Price matches the old courier proximity formula ($%.2f) instead of actual trip distance ($%.2f)!", suggestedPrice, expectedTripPrice)
 	}
 
 	// 6. Verify snapshot on Job in DB
@@ -585,8 +589,8 @@ func TestPricing_EmployeeLocationVsBusinessAddress_EndToEnd(t *testing.T) {
 	if dbJob == nil {
 		t.Fatalf("Job %s not found in DB", jobID)
 	}
-	if dbJob.BookedDistance <= 0 {
-		t.Errorf("Expected BookedDistance to be snapshotted on Job, got %f", dbJob.BookedDistance)
+	if math.Abs(dbJob.BookedDistance-actualTripDistance) > 0.05 {
+		t.Errorf("Expected BookedDistance to snapshot trip distance %.2f km, got %f", actualTripDistance, dbJob.BookedDistance)
 	}
 	if dbJob.AssignedEmployeeLocation == nil {
 		t.Fatalf("Expected AssignedEmployeeLocation to be snapshotted on Job, got nil")
@@ -595,7 +599,7 @@ func TestPricing_EmployeeLocationVsBusinessAddress_EndToEnd(t *testing.T) {
 		t.Errorf("Snapshotted AssignedEmployeeLocation mismatch: got lat=%f, lon=%f", dbJob.AssignedEmployeeLocation.Latitude, dbJob.AssignedEmployeeLocation.Longitude)
 	}
 
-	// 6. Driver accepts suggested price and completes job
+	// 7. Driver accepts suggested price and completes job
 	acceptBody, _ := json.Marshal(map[string]any{
 		"job_id":          jobID,
 		"decision":        "accept",
@@ -624,8 +628,8 @@ func TestPricing_EmployeeLocationVsBusinessAddress_EndToEnd(t *testing.T) {
 	_ = json.Unmarshal(recComplete.Body.Bytes(), &completeResp)
 	totalAmount, _ := completeResp["total_amount"].(float64)
 
-	if math.Abs(totalAmount-expectedCorrectPrice) > 0.05 {
-		t.Errorf("Final complete job total_amount $%.2f does not match expected $%.2f", totalAmount, expectedCorrectPrice)
+	if math.Abs(totalAmount-expectedTripPrice) > 0.05 {
+		t.Errorf("Final complete job total_amount $%.2f does not match expected $%.2f", totalAmount, expectedTripPrice)
 	}
 }
 

@@ -83,6 +83,10 @@ func TestCUJ_F_Chat(t *testing.T) {
 			"latitude":  startLat,
 			"longitude": startLon,
 		},
+		"destination": map[string]float64{
+			"latitude":  startLat + 0.05,
+			"longitude": startLon + 0.05,
+		},
 	}
 	resp, body, err := PostJSON(ctx, cfg.GatewayURL+"/api/v1/users/jobs/track", custToken, bookPayload)
 	if err != nil || resp.StatusCode != http.StatusCreated {

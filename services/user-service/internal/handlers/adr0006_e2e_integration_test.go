@@ -167,6 +167,7 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 			"payment_method": "cod",
 			"proposed_price": 95.0,
 			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+			"destination":    models.Location{Latitude: 30.05, Longitude: 30.05},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -243,6 +244,7 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 			"payment_method": "cod",
 			"proposed_price": 110.0,
 			"location":       models.Location{Latitude: 30.1, Longitude: 30.1},
+			"destination":    models.Location{Latitude: 30.15, Longitude: 30.15},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -313,6 +315,7 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 			"employee_id":    tokenEmp,
 			"payment_method": "cod",
 			"location":       models.Location{Latitude: 30.2, Longitude: 30.2},
+			"destination":    models.Location{Latitude: 30.25, Longitude: 30.25},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -355,6 +358,7 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 			"payment_method": "wallet",
 			"proposed_price": 100.0,
 			"location":       models.Location{Latitude: 30.3, Longitude: 30.3},
+			"destination":    models.Location{Latitude: 30.35, Longitude: 30.35},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))

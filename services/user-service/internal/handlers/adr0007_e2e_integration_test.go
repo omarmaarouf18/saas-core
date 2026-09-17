@@ -175,6 +175,7 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 			"employee_id":    tokenEmp,
 			"payment_method": "cod",
 			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+			"destination":    models.Location{Latitude: 30.9, Longitude: 30.0},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -258,6 +259,7 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 			"employee_id":    tokenEmp,
 			"payment_method": "wallet",
 			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+			"destination":    models.Location{Latitude: 30.1, Longitude: 30.0},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -321,6 +323,7 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 			"employee_id":    tokenEmp,
 			"payment_method": "cod",
 			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+			"destination":    models.Location{Latitude: 30.1, Longitude: 30.0},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))

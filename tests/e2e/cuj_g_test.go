@@ -89,6 +89,10 @@ func TestCUJ_G_Rating(t *testing.T) {
 			"latitude":  startLat,
 			"longitude": startLon,
 		},
+		"destination": map[string]float64{
+			"latitude":  startLat,
+			"longitude": startLon,
+		},
 	}
 	resp, body, err := PostJSON(ctx, cfg.GatewayURL+"/api/v1/users/jobs/track", custToken, bookPayload)
 	if err != nil || resp.StatusCode != http.StatusCreated {

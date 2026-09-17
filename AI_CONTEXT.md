@@ -655,6 +655,29 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - **Courier Acceptance & Unavailable Notifications (`jobs_handlers.go`)**: Dispatches asynchronous customer notifications via `POST /notifications/send` upon courier acceptance (`broadcastCourierAccepted` with final locked fare) and upon cascade exhaustion (`broadcastJobUnavailable`).
   - **Verification**: Dedicated repro test `TestCascade_CustomerCancelsDuringPendingDispatch_HaltsCascade` passing in `cascade_dispatch_repro_test.go` (7/7 tests pass), `gosec` clean (0 issues), frontend composition gate clean, widget tests passing in `customer_jobs_screen_test.dart`, `job_cancellation_test.dart`, and `customer_marketplace_screen_test.dart`, and full Flutter test suite (495/495 tests pass).
 
+### Trip Distance Pricing (Pickup → Destination) & Mandatory Booking Destination
+
+* **Verified Trip Distance Pricing & Destination Enforcement (`user-service` & Flutter frontend)**: Corrected critical money-correctness bug where job pricing previously derived from courier proximity to pickup (`haversineKm(loc, courierLoc)`), pricing jobs based on courier starting location rather than the actual delivery/trip distance. Updated both direct assignment and cascade acceptance pricing paths to strictly use actual trip distance (`haversineKm(pickup, destination)`):
+  - **Trip Distance Pricing Principle**:
+    - Courier's distance to pickup is completely ignored for pricing — no separate dispatch/arrival fee. Price is based solely on actual trip distance from pickup to destination.
+    - Direct assignment (`TrackJob`): `dist := haversineKm(req.Location.Latitude, req.Location.Longitude, req.Destination.Latitude, req.Destination.Longitude)`.
+    - Offer cascade acceptance (`AcceptJobOffer`): `dist := haversineKm(job.Location.Latitude, job.Location.Longitude, job.Destination.Latitude, job.Destination.Longitude)`.
+    - Completion fallback (`CompleteJob`): `job.Destination` takes precedence when reconstructing trip distance.
+  - **Mandatory Destination Enforcement**:
+    - Destination is mandatory on every booking across all service categories, with no exceptions.
+    - `POST /users/jobs/track`: Validates destination presence and bounds (`-90 <= lat <= 90`, `-180 <= lon <= 180`, non-zero `(0,0)`), rejecting missing or invalid coordinates with HTTP 400 (`invalid_coordinates`).
+    - Stored on `Job` model and exposed in `CustomerJobResponse`, `OwnerJobResponse`, and `EmployeeJobResponse`.
+    - Historical jobs and escrow records left untouched (no migration).
+  - **Flutter Client Integration (`frontend/`)**:
+    - `Job` model: added `destination` field (`Location`) and deserialization in `Job.fromJson`.
+    - `MarketplaceProvider`: added `destinationLatitude` and `destinationLongitude` parameters to `bookJob`.
+    - `BookingDialog`: added interactive pickup and destination map pickers (`LocationPickerMap`), live Haversine trip distance calculation (`_tripDistanceKM`), dynamic suggested price estimate (`_estimatedPrice`), placeholder `" — "` when destination is unset, disabled booking button until destination selected, and updated trip distance pricing notice (`estimatedPriceTripNotice`).
+    - `JobStatusScreen`: updated `_retryBooking` with destination coordinates.
+    - Localized strings: added 10 localized keys across `app_en.arb` and `app_ar.arb`.
+  - **Verification**:
+    - Repro-first proof in `trip_distance_pricing_repro_test.go`: verified Cairo -> Alexandria trip (181.32 km) with courier 100m away was previously mispriced at $20.30 vs $563.95 after fix; mirror short trip with distant courier fixed from $563.95 to $20.30.
+    - Full `user-service` test suite (100% pass), `employee_dispatch_pricing_test.go` (PASS), `cascade_dispatch_repro_test.go` (PASS), `contract_user_test.go` (34/34 routes PASS), `cuj_a_test.go` (PASS: Distance=17.451 km, Locked Escrow=77.35 EGP), full E2E test suite (100% PASS), `flutter analyze` (0 issues), and `flutter test` (532/532 tests pass).
+
 ### Reviewer Console Post-Activation Production Fixes (`kyc-reviewer-console@a1c12c7`, 2026-09-02)
 
 * **Verified Reviewer Console CSS Hidden Specificity & chat-service Upstream Port Corrections**: Diagnosed and resolved two post-activation production bugs identified via operator UI inspection and container log capture:
