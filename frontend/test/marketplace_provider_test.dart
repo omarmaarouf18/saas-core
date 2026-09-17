@@ -81,6 +81,8 @@ void main() {
       userId: 'cust-tok',
       latitude: 30.05,
       longitude: 31.23,
+      destinationLatitude: 30.15,
+      destinationLongitude: 31.33,
       paymentMethod: 'cod',
     );
 
@@ -90,6 +92,7 @@ void main() {
       'service_id': 'svc-9',
       'user_id': 'cust-tok',
       'location': {'latitude': 30.05, 'longitude': 31.23},
+      'destination': {'latitude': 30.15, 'longitude': 31.33},
       'payment_method': 'cod',
     });
     expect(job!.id, 'QD-1');
@@ -117,6 +120,8 @@ void main() {
       userId: 'u',
       latitude: 1,
       longitude: 1,
+      destinationLatitude: 2,
+      destinationLongitude: 2,
       paymentMethod: 'cod',
     );
 
@@ -136,6 +141,8 @@ void main() {
           userId: 'u',
           latitude: 1,
           longitude: 1,
+          destinationLatitude: 2,
+          destinationLongitude: 2,
           paymentMethod: 'cod'),
       throwsA(isA<ApiClientException>()),
     );

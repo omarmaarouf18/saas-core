@@ -112,6 +112,10 @@ func TestCUJ_A_CascadeOfferAcceptAndLiveTracking(t *testing.T) {
 			"latitude":  serviceLat,
 			"longitude": serviceLon,
 		},
+		"destination": map[string]float64{
+			"latitude":  30.1114, // Cairo Airport (~17.4 km from Downtown Cairo)
+			"longitude": 31.3997,
+		},
 	}
 
 	resp, respBody, err := PostJSON(ctx, cfg.GatewayURL+"/api/v1/users/jobs/track", custToken, bookPayload)
@@ -203,18 +207,46 @@ func TestCUJ_A_CascadeOfferAcceptAndLiveTracking(t *testing.T) {
 		t.Fatalf("Expected 200 OK from AcceptJobOffer, got %d: %s", acceptResp.StatusCode, string(acceptBody))
 	}
 
+	var acceptResult struct {
+		Message string `json:"message"`
+		Job     struct {
+			ID                 string  `json:"id"`
+			Status             string  `json:"status"`
+			EmployeeID         string  `json:"employee_id"`
+			BookedDistance     float64 `json:"booked_distance"`
+			LockedEscrowAmount float64 `json:"locked_escrow_amount"`
+			SuggestedPrice     float64 `json:"suggested_price"`
+		} `json:"job"`
+	}
+	if err := json.Unmarshal(acceptBody, &acceptResult); err != nil {
+		t.Fatalf("Failed to parse accept response: %v", err)
+	}
+
 	// 8. ASSERTION 4: Price is calculated and locked upon acceptance
+	if acceptResult.Job.BookedDistance <= 0 {
+		t.Errorf("Expected BookedDistance > 0 after acceptance, got %v", acceptResult.Job.BookedDistance)
+	}
+	if acceptResult.Job.BookedDistance < 15.0 {
+		t.Errorf("Expected BookedDistance > 15.0 km (actual trip distance Downtown -> Airport), got %v", acceptResult.Job.BookedDistance)
+	}
+	if acceptResult.Job.LockedEscrowAmount <= 0 {
+		t.Errorf("Expected LockedEscrowAmount > 0 after acceptance, got %v", acceptResult.Job.LockedEscrowAmount)
+	}
+	t.Logf("Verified: Price locked post-acceptance: Distance=%.3f km, Locked Escrow=%.2f EGP", acceptResult.Job.BookedDistance, acceptResult.Job.LockedEscrowAmount)
+
 	_, getJobBody, err := GetJSON(ctx, cfg.GatewayURL+"/api/v1/users/jobs/get?id="+jobID, custToken)
 	if err != nil {
 		t.Fatalf("Failed to fetch accepted job: %v", err)
 	}
 
 	var acceptedJob struct {
-		ID                 string  `json:"id"`
-		Status             string  `json:"status"`
-		EmployeeID         string  `json:"employee_id"`
-		BookedDistance     float64 `json:"booked_distance"`
-		LockedEscrowAmount float64 `json:"locked_escrow_amount"`
+		ID          string `json:"id"`
+		Status      string `json:"status"`
+		EmployeeID  string `json:"employee_id"`
+		Destination struct {
+			Latitude  float64 `json:"latitude"`
+			Longitude float64 `json:"longitude"`
+		} `json:"destination"`
 	}
 	if err := json.Unmarshal(getJobBody, &acceptedJob); err != nil {
 		t.Fatalf("Failed to parse get job response: %v", err)
@@ -226,13 +258,9 @@ func TestCUJ_A_CascadeOfferAcceptAndLiveTracking(t *testing.T) {
 	if acceptedJob.EmployeeID != courier1ID {
 		t.Errorf("Expected employee_id to be %q, got %q", courier1ID, acceptedJob.EmployeeID)
 	}
-	if acceptedJob.BookedDistance <= 0 {
-		t.Errorf("Expected BookedDistance > 0 after acceptance, got %v", acceptedJob.BookedDistance)
+	if acceptedJob.Destination.Latitude != 30.1114 || acceptedJob.Destination.Longitude != 31.3997 {
+		t.Errorf("Expected destination (30.1114, 31.3997), got (%v, %v)", acceptedJob.Destination.Latitude, acceptedJob.Destination.Longitude)
 	}
-	if acceptedJob.LockedEscrowAmount <= 0 {
-		t.Errorf("Expected LockedEscrowAmount > 0 after acceptance, got %v", acceptedJob.LockedEscrowAmount)
-	}
-	t.Logf("Verified: Price locked post-acceptance: Distance=%.3f km, Locked Escrow=%.2f EGP", acceptedJob.BookedDistance, acceptedJob.LockedEscrowAmount)
 
 	// 9. Customer connects to Live WebSocket Feed (chat-service channel job:<jobID>)
 	wsClient, err := ConnectWS(ctx, cfg.GatewayURL, custToken)

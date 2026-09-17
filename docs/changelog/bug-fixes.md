@@ -4,6 +4,31 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Trip Distance Pricing (Pickup to Destination) and Mandatory Booking Destination
+
+- **Implementation Detail**:
+  - **Backend (`services/user-service/`)**:
+    - Corrected fundamental money-correctness bug where job pricing was derived from courier proximity to pickup (`haversineKm(loc, courierLoc)`), causing jobs with close couriers to be severely underpriced and distant couriers to be overpriced regardless of actual trip distance.
+    - Updated `TrackJob` (direct assignment) to compute distance from `req.Location` to `req.Destination`: `haversineKm(req.Location.Latitude, req.Location.Longitude, req.Destination.Latitude, req.Destination.Longitude)`.
+    - Updated `AcceptJobOffer` (offer cascade acceptance) to compute distance from `job.Location` to `job.Destination`: `haversineKm(job.Location.Latitude, job.Location.Longitude, job.Destination.Latitude, job.Destination.Longitude)`. Courier proximity is completely ignored for pricing with zero dispatch fee.
+    - Updated `CompleteJob` fallback distance computation to prioritize `job.Destination`.
+    - Enforced mandatory `Destination` on all bookings across all service categories in `TrackJob` (`req.Destination != nil` and within valid bounds `[-90,90], [-180,180]` and not `(0,0)`), rejecting missing or invalid coordinates with HTTP 400 `invalid_coordinates`.
+    - `internal/models/models.go`: Added `Destination Location` field to `Job`, `CreateJobRequest`, and response DTOs (`CustomerJobResponse`, `OwnerJobResponse`, `EmployeeJobResponse`).
+    - Zero historical migration: existing jobs and historical escrow records left untouched as-is.
+    - Audited and verified all 11 `haversineKm` call sites across the codebase.
+    - Added comprehensive repro test suite `trip_distance_pricing_repro_test.go` proving the before-and-after dollar calculations on direct assignment and cascade acceptance.
+  - **Frontend (`frontend/`)**:
+    - `lib/models/job.dart`: Added `destination` field and updated `Job.fromJson`.
+    - `lib/providers/marketplace_provider.dart`: Added `destinationLatitude` and `destinationLongitude` parameters to `bookJob`.
+    - `lib/screens/customer_marketplace_screen.dart`: Updated `_BookingDialog` with interactive pickup and destination map pickers (`LocationPickerMap`), live Haversine trip distance calculation (`_tripDistanceKM`), dynamic suggested price estimate (`_estimatedPrice`), placeholder `" — "` when destination is unset, disabled booking button until destination selected, and updated trip distance pricing notice (`estimatedPriceTripNotice`).
+    - `lib/screens/job_status_screen.dart`: Updated `_retryBooking` with destination coordinates.
+    - `lib/l10n/app_en.arb` & `app_ar.arb`: Added 10 localized keys across English and Arabic for trip destination and distance UI.
+  - **E2E & Integration Suites (`tests/e2e/`, `services/user-service/`)**:
+    - Updated `tests/e2e/cuj_a_test.go` with destination coordinates and asserted `BookedDistance > 15.0 km` (actual trip distance Downtown -> Airport).
+    - Updated `tests/e2e/contract_user_test.go` with positive destination booking and negative boundary tests for missing destination and invalid destination coordinates (34/34 routes pass).
+    - Updated `cuj_d_test.go`, `cuj_f_test.go`, `cuj_g_test.go`, `auth_matrix_test.go`, and all `user-service` integration test payloads with destination coordinates.
+- **Verification**: Verified via `go test ./...` in `services/user-service` (100% pass), `go test ./tests/contracts/...` (100% pass), `go test ./tests/e2e/...` (100% pass), `dart format` (clean), `flutter analyze` (0 issues), and `flutter test` (532/532 tests pass).
+
 ## Environment-Driven MONGO_URI Fallback in Integration Tests
 
 - **Implementation Detail**: Resolved CI test failures across `user-service` and `chat-service` caused by hardcoded MongoDB credentials (`mongodb://root:devpassword123@...`) in newly added and legacy test files (`admin_reconciliation_test.go`, `admin_subscription_test.go`, `admin_tickets_test.go`, `balance_leak_regression_test.go`, `idempotency_race_regression_test.go`, `employee_dispatch_pricing_test.go`). Updated all test harnesses to read `os.Getenv("MONGO_URI")` first matching CI service credentials, falling back to local defaults only when `MONGO_URI` is unset. Added missing `"os"` package imports and verified repository-wide with 0 unhandled hardcoded test credentials remaining.

@@ -141,6 +141,7 @@ func TestTrackJob_ConcurrentDuplicateIdempotencyKey(t *testing.T) {
 		"payment_method":  "cod",
 		"idempotency_key": "concurrent-key-single-run",
 		"location":        models.Location{Latitude: 30.0, Longitude: 30.0},
+		"destination":     models.Location{Latitude: 30.1, Longitude: 30.1},
 	})
 
 	var mu sync.Mutex

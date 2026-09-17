@@ -131,7 +131,7 @@ Every endpoint was audited against pre-existing test suites (excluding `tests/e2
 | 59 | `user-service` | `PUT` | `/users/services/update` | `UpdateService` | Companion (Alias of `/users/services`) | services/user-service/internal/handlers/money_state_repro_test.go:284 (`TestRepro_Q10_UpdateService_ConcurrentFieldLevelClobber`) | ✅ Yes |
 | 60 | `user-service` | `PATCH` | `/users/services/update` | `UpdateService` | Companion (Alias of `/users/services`) | services/user-service/internal/handlers/money_state_repro_test.go:284 (`TestRepro_Q10_UpdateService_ConcurrentFieldLevelClobber`) | ✅ Yes |
 | 61 | `user-service` | `POST` | `/users/jobs/track` | `TrackJob` | Canonical | services/user-service/internal/handlers/handlers_test.go:230 (`TestUserServiceHandlers`) | ✅ Yes |
-| 62 | `user-service` | `GET` | `/users/jobs/get` | `GetJob` | Canonical | services/user-service/internal/handlers/handlers_test.go:120 (`TestUserServiceHandlers`) | ✅ Yes |
+| 62 | `user-service` | `GET` | `/users/jobs/get` | `GetJob` | Canonical | services/user-service/internal/handlers/handlers_test.go:120 (`TestUserServiceHandlers`), services/user-service/internal/handlers/job_detail_leak_prevention_test.go:16 (`TestGetJob_RoleBasedDTOFiltering`) | ✅ Yes |
 | 63 | `user-service` | `GET` | `/users/jobs/owner` | `GetOwnerJobs` | Canonical | services/user-service/internal/handlers/handlers_test.go:3100 (`TestUserServiceHandlers`) | ✅ Yes |
 | 64 | `user-service` | `GET` | `/users/jobs/mine` | `GetCustomerJobs` | Canonical | services/user-service/internal/handlers/handlers_test.go:3152 (`TestUserServiceHandlers`) | ✅ Yes |
 | 65 | `user-service` | `POST` | `/users/jobs/complete` | `CompleteJob` | Canonical | services/user-service/internal/handlers/handlers_test.go:710 (`TestUserServiceHandlers`) | ✅ Yes |
@@ -288,6 +288,7 @@ The repository has an extensive prior security pedigree stemming from the Indepe
     - `hub_concurrency_repro_test.go` (Q16, Q17: Redis pub/sub serialization & idempotent client close)
     - `auth_identity_repro_test.go` (Q8, Q25, Q26: auth check before database lookup)
     - `auth_input_validation_repro_test.go` (Q20: username length & address bounds)
+    - `job_detail_leak_prevention_test.go` and `models_test.go`: Information disclosure prevention for `GET /users/jobs/get` ensuring customer and courier responses use filtered DTOs (`CustomerJobResponse`, `EmployeeJobResponse`), redacting internal escrow, reconciliation, coordinates, and dispatch offer candidate metadata (commit `7184fbceac850396dbd1b24b39a8ad530e858725`).
 
 ---
 

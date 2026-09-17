@@ -25,6 +25,7 @@ class Job {
   final String serviceId;
   final String status; // pending, active, completed, cancelled
   final JobLocation location;
+  final JobLocation? destination;
   final JobLocation? currentLocation;
   final String paymentMethod;
   final String? cancellationReason;
@@ -48,6 +49,7 @@ class Job {
     required this.serviceId,
     required this.status,
     required this.location,
+    this.destination,
     this.currentLocation,
     required this.paymentMethod,
     this.cancellationReason,
@@ -73,6 +75,9 @@ class Job {
       serviceId: json['service_id'] ?? '',
       status: json['status'] ?? 'pending',
       location: JobLocation.fromJson(json['location'] ?? {}),
+      destination: json['destination'] != null
+          ? JobLocation.fromJson(json['destination'])
+          : null,
       currentLocation: json['current_location'] != null
           ? JobLocation.fromJson(json['current_location'])
           : null,

@@ -70,6 +70,22 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Destination == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_coordinates",
+			"message": "destination is required",
+		})
+		return
+	}
+
+	if !isValidCoordinate(req.Destination.Latitude, req.Destination.Longitude) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_coordinates",
+			"message": "Destination Latitude must be between -90 and 90, and Longitude must be between -180 and 180",
+		})
+		return
+	}
+
 	// 1. Resolve owner token if provided
 	var resolvedOwnerID string
 	var hasOwnerToken bool
@@ -283,6 +299,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 			ServiceID:                req.ServiceID,
 			Status:                   initialStatus,
 			Location:                 req.Location,
+			Destination:              *req.Destination,
 			PaymentMethod:            req.PaymentMethod,
 			BookedDistance:           0,
 			AssignedEmployeeLocation: nil,
@@ -339,8 +356,8 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Calculate ride cost: base_price + (distance × price_per_km) from assigned employee's location.
-	dist := haversineKm(req.Location.Latitude, req.Location.Longitude, empLoc.Latitude, empLoc.Longitude)
+	// Calculate ride cost: base_price + (distance × price_per_km) based on trip distance (pickup to destination).
+	dist := haversineKm(req.Location.Latitude, req.Location.Longitude, req.Destination.Latitude, req.Destination.Longitude)
 	escrowAmount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
 
 	isTransport := svc.Category == "transport"
@@ -384,6 +401,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		ServiceID:                req.ServiceID,
 		Status:                   initialStatus,
 		Location:                 req.Location,
+		Destination:              *req.Destination,
 		PaymentMethod:            req.PaymentMethod,
 		BookedDistance:           dist,
 		AssignedEmployeeLocation: &assignedLoc,
@@ -611,8 +629,12 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dist := job.BookedDistance
-	if dist == 0 && job.AssignedEmployeeLocation != nil {
-		dist = haversineKm(job.Location.Latitude, job.Location.Longitude, job.AssignedEmployeeLocation.Latitude, job.AssignedEmployeeLocation.Longitude)
+	if dist == 0 {
+		if job.Destination.Latitude != 0 || job.Destination.Longitude != 0 {
+			dist = haversineKm(job.Location.Latitude, job.Location.Longitude, job.Destination.Latitude, job.Destination.Longitude)
+		} else if job.AssignedEmployeeLocation != nil {
+			dist = haversineKm(job.Location.Latitude, job.Location.Longitude, job.AssignedEmployeeLocation.Latitude, job.AssignedEmployeeLocation.Longitude)
+		}
 	}
 	amount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
 	if job.AgreedPrice != nil && *job.AgreedPrice > 0 {
@@ -795,18 +817,18 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 			return
 		}
-		filtered := make([]*models.Job, 0, len(jobs))
+		filtered := make([]models.EmployeeJobResponse, 0, len(jobs))
 		for _, j := range jobs {
 			if j.Status == models.JobStatusPendingDispatch {
 				if u.checkCascadeOfferExpiry(r.Context(), j) {
 					refreshed := u.store.GetJob(r.Context(), j.ID)
 					if refreshed != nil && refreshed.Status == models.JobStatusPendingDispatch && refreshed.CurrentOfferedEmployeeID == resolvedRequester {
-						filtered = append(filtered, refreshed)
+						filtered = append(filtered, models.NewEmployeeJobResponse(refreshed, resolvedRequester))
 					}
 					continue
 				}
 			}
-			filtered = append(filtered, j)
+			filtered = append(filtered, models.NewEmployeeJobResponse(j, resolvedRequester))
 		}
 		writeJSON(w, http.StatusOK, filtered)
 		return
@@ -815,7 +837,10 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 	isInternal := u.internalServiceToken != "" &&
 		subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
 
-	var resolvedRequester string
+	var (
+		resolvedRequester string
+		requesterRole     string
+	)
 	if !isInternal {
 		// External client check: require requester authorization BEFORE querying DB
 		requesterToken := r.Header.Get("Authorization")
@@ -835,12 +860,17 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "requester_id parameter or Authorization header is required"})
 			return
 		}
-		var err error
-		resolvedRequester, err = resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
+		claims, err := resolveClaims(requesterToken)
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 			return
 		}
+		if claims.Role != "owner" && claims.Role != "employee" && claims.Role != "user" && claims.Role != "customer" {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": fmt.Sprintf("role mismatch: claim role %q not in allowed roles [owner employee user customer]", claims.Role)})
+			return
+		}
+		resolvedRequester = claims.UserID
+		requesterRole = claims.Role
 	}
 
 	ctx := r.Context()
@@ -871,7 +901,32 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, job)
+	if requesterRole == "owner" && resolvedRequester == job.OwnerID {
+		writeJSON(w, http.StatusOK, models.NewOwnerJobResponse(job))
+		return
+	}
+	if (requesterRole == "user" || requesterRole == "customer") && resolvedRequester == job.UserID {
+		writeJSON(w, http.StatusOK, models.NewCustomerJobResponse(job))
+		return
+	}
+	if requesterRole == "employee" && ((job.EmployeeID != "" && resolvedRequester == job.EmployeeID) || isOfferedCourier) {
+		writeJSON(w, http.StatusOK, models.NewEmployeeJobResponse(job, resolvedRequester))
+		return
+	}
+
+	// Fallback to relationship matching if token role did not strictly disambiguate
+	if resolvedRequester == job.OwnerID {
+		writeJSON(w, http.StatusOK, models.NewOwnerJobResponse(job))
+		return
+	}
+	if resolvedRequester == job.UserID {
+		writeJSON(w, http.StatusOK, models.NewCustomerJobResponse(job))
+		return
+	}
+	if (job.EmployeeID != "" && resolvedRequester == job.EmployeeID) || isOfferedCourier {
+		writeJSON(w, http.StatusOK, models.NewEmployeeJobResponse(job, resolvedRequester))
+		return
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -1897,7 +1952,7 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dist := haversineKm(job.Location.Latitude, job.Location.Longitude, empLoc.Latitude, empLoc.Longitude)
+	dist := haversineKm(job.Location.Latitude, job.Location.Longitude, job.Destination.Latitude, job.Destination.Longitude)
 	finalPrice := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
 	assignedLoc := models.Location{Latitude: empLoc.Latitude, Longitude: empLoc.Longitude}
 

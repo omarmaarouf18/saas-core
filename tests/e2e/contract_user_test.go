@@ -343,9 +343,10 @@ func TestContract_UserService(t *testing.T) {
 
 		// Negative: Invalid user token -> 401
 		respBadToken, _, _ := PostJSON(ctx, url, "", map[string]any{
-			"service_id": testServiceID,
-			"user_token": "invalid_jwt_token",
-			"location":   map[string]any{"latitude": 30.0444, "longitude": 31.2357},
+			"service_id":  testServiceID,
+			"user_token":  "invalid_jwt_token",
+			"location":    map[string]any{"latitude": 30.0444, "longitude": 31.2357},
+			"destination": map[string]any{"latitude": 30.05, "longitude": 31.25},
 		})
 		if respBadToken.StatusCode != http.StatusUnauthorized {
 			t.Errorf("Expected 401 for invalid user token, got %d", respBadToken.StatusCode)
@@ -353,12 +354,34 @@ func TestContract_UserService(t *testing.T) {
 
 		// Negative: Invalid coordinates -> 400
 		respBadCoord, _, _ := PostJSON(ctx, url, custToken, map[string]any{
-			"service_id": testServiceID,
-			"user_token": custToken,
-			"location":   map[string]any{"latitude": 999.0, "longitude": 31.0},
+			"service_id":  testServiceID,
+			"user_token":  custToken,
+			"location":    map[string]any{"latitude": 999.0, "longitude": 31.0},
+			"destination": map[string]any{"latitude": 30.05, "longitude": 31.25},
 		})
 		if respBadCoord.StatusCode != http.StatusBadRequest {
 			t.Errorf("Expected 400 for invalid job coordinates, got %d", respBadCoord.StatusCode)
+		}
+
+		// Negative: Missing destination -> 400
+		respNoDest, _, _ := PostJSON(ctx, url, custToken, map[string]any{
+			"service_id": testServiceID,
+			"user_token": custToken,
+			"location":   map[string]any{"latitude": 30.0444, "longitude": 31.2357},
+		})
+		if respNoDest.StatusCode != http.StatusBadRequest {
+			t.Errorf("Expected 400 for missing destination, got %d", respNoDest.StatusCode)
+		}
+
+		// Negative: Invalid destination coordinates -> 400
+		respBadDest, _, _ := PostJSON(ctx, url, custToken, map[string]any{
+			"service_id":  testServiceID,
+			"user_token":  custToken,
+			"location":    map[string]any{"latitude": 30.0444, "longitude": 31.2357},
+			"destination": map[string]any{"latitude": 999.0, "longitude": 31.0},
+		})
+		if respBadDest.StatusCode != http.StatusBadRequest {
+			t.Errorf("Expected 400 for invalid destination coordinates, got %d", respBadDest.StatusCode)
 		}
 
 		// Wrong Method: GET -> 405
@@ -373,6 +396,7 @@ func TestContract_UserService(t *testing.T) {
 			"user_token":     custToken,
 			"payment_method": "cod",
 			"location":       map[string]any{"latitude": 30.0444, "longitude": 31.2357},
+			"destination":    map[string]any{"latitude": 30.0500, "longitude": 31.2400},
 		}
 		respGood, body, err := PostJSON(ctx, url, custToken, bookPayload)
 		if err != nil {
@@ -400,7 +424,13 @@ func TestContract_UserService(t *testing.T) {
 		_, _ = db.client.Database("staging_user_db").Collection("jobs").UpdateOne(
 			ctx,
 			bson.M{"_id": bookedDeliveryJobID},
-			bson.M{"$set": bson.M{"employee_id": testCourierID, "status": "active"}},
+			bson.M{"$set": bson.M{
+				"employee_id": testCourierID,
+				"status":      "active",
+				"waypoints": []bson.M{
+					{"latitude": 30.0500, "longitude": 31.2400},
+				},
+			}},
 		)
 	})
 

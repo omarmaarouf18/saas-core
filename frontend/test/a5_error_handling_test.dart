@@ -181,6 +181,10 @@ void main() {
           scrollable: find.byType(Scrollable).first);
       await tester.tap(bookBtn);
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('choose_destination_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('confirm_destination_location_button')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('confirm_booking_button')));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
@@ -372,6 +376,8 @@ class _BookingFailingMarketplaceProvider extends MarketplaceProvider {
     required String userId,
     required double latitude,
     required double longitude,
+    required double destinationLatitude,
+    required double destinationLongitude,
     required String paymentMethod,
   }) async {
     throw ApiClientException('insufficient wallet balance', statusCode: 400);

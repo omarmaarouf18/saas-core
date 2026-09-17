@@ -11,6 +11,7 @@ import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/screens/customer_marketplace_screen.dart';
+import 'package:frontend/widgets/primary_button.dart';
 import 'package:frontend/widgets/themed_error_banner.dart';
 
 class MockAuthProviderForTest extends AuthProvider {
@@ -260,13 +261,45 @@ void main() {
     expect(find.byType(ThemedWarningBanner), findsOneWidget);
     expect(
         find.text(
-            "Estimated based on store address. Final fare is calculated from the assigned courier's location once accepted."),
+            "Estimated price is based on the actual trip distance from pickup to destination."),
+        findsOneWidget);
+    expect(
+        find.text(
+            "Select a destination on the map to calculate trip distance and price estimate."),
         findsOneWidget);
     expect(
         find.text(
             "Note: Escrow payments and wallet deductions are currently deferred for this beta launch."),
         findsOneWidget);
-    expect(find.byKey(const Key('confirm_booking_button')), findsOneWidget);
+
+    final confirmBtn = find.byKey(const Key('confirm_booking_button'));
+    expect(confirmBtn, findsOneWidget);
+    // Confirm button is disabled when destination is not set
+    final primaryBtnWidget = tester.widget<PrimaryButton>(confirmBtn);
+    expect(primaryBtnWidget.onPressed, isNull);
+
+    // Initial trip distance and price show placeholder
+    expect(find.byKey(const Key('booking_trip_distance_text')), findsOneWidget);
+    expect(find.text(" — "), findsNWidgets(2)); // distance & price placeholders
+
+    // Open destination picker
+    final chooseDestBtn = find.byKey(const Key('choose_destination_button'));
+    expect(chooseDestBtn, findsOneWidget);
+    await tester.tap(chooseDestBtn);
+    await tester.pumpAndSettle();
+
+    // Verify destination picker dialog opens
+    expect(find.byKey(const Key('destination_location_picker_dialog')), findsOneWidget);
+    final confirmDestBtn = find.byKey(const Key('confirm_destination_location_button'));
+    expect(confirmDestBtn, findsOneWidget);
+    await tester.tap(confirmDestBtn);
+    await tester.pumpAndSettle();
+
+    // Dialog closed, destination set, confirm button now enabled
+    expect(find.byKey(const Key('destination_location_picker_dialog')), findsNothing);
+    final enabledConfirmBtn = tester.widget<PrimaryButton>(confirmBtn);
+    expect(enabledConfirmBtn.onPressed, isNotNull);
+
     expect(find.text("Cancel"), findsOneWidget);
 
     // Verify zero RenderFlex overflow

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/error_messages.dart';
 import 'package:frontend/l10n/l10n.dart';
@@ -631,8 +632,154 @@ class _BookingDialog extends StatefulWidget {
 
 class _BookingDialogState extends State<_BookingDialog> {
   bool _isSubmitting = false;
+  late double _pickupLat;
+  late double _pickupLon;
+  double? _destinationLat;
+  double? _destinationLon;
+  double? _tripDistanceKM;
+  double? _estimatedPrice;
+
+  @override
+  void initState() {
+    super.initState();
+    _pickupLat = widget.customerLat;
+    _pickupLon = widget.customerLon;
+  }
+
+  double _haversineKm(double lat1, double lon1, double lat2, double lon2) {
+    const double r = 6371.0;
+    final double dLat = (lat2 - lat1) * math.pi / 180.0;
+    final double dLon = (lon2 - lon1) * math.pi / 180.0;
+    final double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1 * math.pi / 180.0) *
+            math.cos(lat2 * math.pi / 180.0) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return r * c;
+  }
+
+  void _recalculatePrice() {
+    if (_destinationLat != null && _destinationLon != null) {
+      final dist = _haversineKm(
+        _pickupLat,
+        _pickupLon,
+        _destinationLat!,
+        _destinationLon!,
+      );
+      _tripDistanceKM = dist;
+      final base = widget.service.tenantBasePrice > 0
+          ? widget.service.tenantBasePrice
+          : widget.service.basePrice;
+      final rate = widget.service.tenantPricePerKM;
+      _estimatedPrice = ((base + (dist * rate)) * 100).round() / 100;
+    } else {
+      _tripDistanceKM = null;
+      _estimatedPrice = null;
+    }
+  }
+
+  void _openLocationPicker({required bool isPickup}) {
+    final l10n = context.l10n;
+    LatLng tempLocation = isPickup
+        ? LatLng(_pickupLat, _pickupLon)
+        : LatLng(_destinationLat ?? _pickupLat, _destinationLon ?? _pickupLon);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final dialogWidth = screenWidth > 600 ? 500.0 : screenWidth * 0.95;
+    final dialogHeight = screenHeight > 800 ? 600.0 : screenHeight * 0.75;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return Dialog(
+          key: Key(isPickup
+              ? 'pickup_location_picker_dialog'
+              : 'destination_location_picker_dialog'),
+          insetPadding: const EdgeInsets.all(AppSpacing.md),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          child: SizedBox(
+            width: dialogWidth,
+            height: dialogHeight,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          isPickup
+                              ? l10n.pickupLocationLabel
+                              : l10n.destinationLocationLabel,
+                          style: AppTypography.titleMd.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: l10n.tooltipClose,
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(dialogCtx).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      child: LocationPickerMap(
+                        initialLocation: tempLocation,
+                        onLocationSelected: (newLocation) {
+                          tempLocation = newLocation;
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  PrimaryButton(
+                    key: Key(isPickup
+                        ? 'confirm_pickup_location_button'
+                        : 'confirm_destination_location_button'),
+                    text: l10n.locationPickerConfirmBtn,
+                    trailingIcon: Icons.arrow_forward,
+                    onPressed: () {
+                      setState(() {
+                        if (isPickup) {
+                          _pickupLat = tempLocation.latitude;
+                          _pickupLon = tempLocation.longitude;
+                        } else {
+                          _destinationLat = tempLocation.latitude;
+                          _destinationLon = tempLocation.longitude;
+                        }
+                        _recalculatePrice();
+                      });
+                      Navigator.of(dialogCtx).pop();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   Future<void> _confirmBooking() async {
+    final l10n = AppLocalizations.of(context)!;
+    if (_destinationLat == null || _destinationLon == null) {
+      ThemedSnackBar.showError(
+        context,
+        l10n.destinationRequiredError,
+      );
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
     });
@@ -642,8 +789,10 @@ class _BookingDialogState extends State<_BookingDialog> {
       final job = await provider.bookJob(
         serviceId: widget.service.id,
         userId: widget.userToken,
-        latitude: widget.customerLat,
-        longitude: widget.customerLon,
+        latitude: _pickupLat,
+        longitude: _pickupLon,
+        destinationLatitude: _destinationLat!,
+        destinationLongitude: _destinationLon!,
         paymentMethod: "cod", // forced COD only
       );
 
@@ -662,7 +811,6 @@ class _BookingDialogState extends State<_BookingDialog> {
       setState(() {
         _isSubmitting = false;
       });
-      final l10n = AppLocalizations.of(context)!;
       ThemedSnackBar.showError(
         context,
         l10n.bookingFailed(friendlyErrorMessage(e)),
@@ -677,6 +825,8 @@ class _BookingDialogState extends State<_BookingDialog> {
     final dialogWidth = screenWidth > 600 ? 500.0 : screenWidth * 0.92;
     final categoryLabel = serviceCategoryLabels[widget.service.category] ??
         widget.service.category;
+    final hasDestination = _destinationLat != null && _destinationLon != null;
+
     return AlertDialog(
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
@@ -713,12 +863,113 @@ class _BookingDialogState extends State<_BookingDialog> {
               const SizedBox(height: AppSpacing.md),
               const Divider(color: AppColors.outlineVariant),
               const SizedBox(height: AppSpacing.sm),
+
+              // Pickup Location Block
+              ThemedCard(
+                padding: AppSpacing.sm,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.trip_origin,
+                            size: 18, color: AppColors.primary),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          l10n.pickupLocationLabel,
+                          style: AppTypography.bodyMd.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      "${_pickupLat.toStringAsFixed(4)}, ${_pickupLon.toStringAsFixed(4)}",
+                      key: const Key('booking_pickup_coords_text'),
+                      style: AppTypography.labelMd.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: TextButton.icon(
+                        key: const Key('choose_pickup_button'),
+                        icon: const Icon(Icons.edit_location_alt_outlined,
+                            size: 16),
+                        label: Text(l10n.changePickupLocationBtn),
+                        onPressed: () => _openLocationPicker(isPickup: true),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+
+              // Destination Location Block
+              ThemedCard(
+                padding: AppSpacing.sm,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on,
+                            size: 18, color: AppColors.secondary),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          l10n.destinationLocationLabel,
+                          style: AppTypography.bodyMd.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    if (hasDestination)
+                      Text(
+                        "${_destinationLat!.toStringAsFixed(4)}, ${_destinationLon!.toStringAsFixed(4)}",
+                        key: const Key('booking_destination_coords_text'),
+                        style: AppTypography.labelMd.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      )
+                    else
+                      Text(
+                        l10n.selectDestinationPrompt,
+                        style: AppTypography.bodySm.copyWith(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: OutlinedButton.icon(
+                        key: const Key('choose_destination_button'),
+                        icon: const Icon(Icons.map, size: 16),
+                        label: Text(hasDestination
+                            ? l10n.changeDestinationLocationBtn
+                            : l10n.chooseDestinationLocationBtn),
+                        onPressed: () => _openLocationPicker(isPickup: false),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              const Divider(color: AppColors.outlineVariant),
+              const SizedBox(height: AppSpacing.sm),
+
+              // Distance and Price Summary
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
                     child: Text(
-                      l10n.pickupDistanceLabel,
+                      l10n.tripDistanceLabel,
                       style: AppTypography.bodyMd.copyWith(
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
@@ -726,7 +977,10 @@ class _BookingDialogState extends State<_BookingDialog> {
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Text(
-                    l10n.kmUnitLine("${widget.service.distanceKM}"),
+                    _tripDistanceKM != null
+                        ? l10n.kmUnitLine(_tripDistanceKM!.toStringAsFixed(2))
+                        : " — ",
+                    key: const Key('booking_trip_distance_text'),
                     style: AppTypography.bodyMd.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.bold,
@@ -748,7 +1002,10 @@ class _BookingDialogState extends State<_BookingDialog> {
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Text(
-                    "\$${widget.service.finalPrice}",
+                    _estimatedPrice != null
+                        ? "\$${_estimatedPrice!.toStringAsFixed(2)}"
+                        : " — ",
+                    key: const Key('booking_estimated_price_text'),
                     style: AppTypography.titleMd.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onSurface,
@@ -758,7 +1015,7 @@ class _BookingDialogState extends State<_BookingDialog> {
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                l10n.estimatedPriceCourierNotice,
+                l10n.estimatedPriceTripNotice,
                 style: AppTypography.caption.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontStyle: FontStyle.italic,
@@ -823,7 +1080,8 @@ class _BookingDialogState extends State<_BookingDialog> {
                 trailingIcon: Icons.arrow_forward,
                 isLoading: _isSubmitting,
                 isFullWidth: false,
-                onPressed: _isSubmitting ? null : _confirmBooking,
+                onPressed:
+                    (_isSubmitting || !hasDestination) ? null : _confirmBooking,
               ),
             ),
           ],

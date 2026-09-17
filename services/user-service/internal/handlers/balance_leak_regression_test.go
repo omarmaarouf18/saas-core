@@ -47,6 +47,7 @@ func TestTrackJob_EscrowFailureWarningDoesNotLeakOwnerBalance(t *testing.T) {
 		"user_id":        tokenUser,
 		"payment_method": "wallet",
 		"location":       models.Location{Latitude: 30.05, Longitude: 30.05},
+		"destination":    models.Location{Latitude: 30.10, Longitude: 30.10},
 	})
 	req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
 	rec := httptest.NewRecorder()
@@ -136,6 +137,7 @@ func TestRespondPrice_EscrowFailureWarningDoesNotLeakOwnerBalance(t *testing.T) 
 		"employee_id":    tokenEmp,
 		"payment_method": "wallet",
 		"location":       models.Location{Latitude: 30.01, Longitude: 30.01},
+		"destination":    models.Location{Latitude: 30.10, Longitude: 30.10},
 	})
 	reqBook := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(bookBody))
 	recBook := httptest.NewRecorder()

@@ -78,6 +78,8 @@ class MockMarketplaceProviderForTest extends MarketplaceProvider {
     required String userId,
     required double latitude,
     required double longitude,
+    required double destinationLatitude,
+    required double destinationLongitude,
     required String paymentMethod,
     String? employeeId,
   }) async {
@@ -87,6 +89,8 @@ class MockMarketplaceProviderForTest extends MarketplaceProvider {
       'userId': userId,
       'latitude': latitude,
       'longitude': longitude,
+      'destinationLatitude': destinationLatitude,
+      'destinationLongitude': destinationLongitude,
       'paymentMethod': paymentMethod,
     };
     return Job(

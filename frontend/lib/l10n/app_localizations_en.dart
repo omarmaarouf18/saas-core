@@ -2471,4 +2471,34 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get courierStatusNotAcceptingDispatch =>
       'Not accepting new delivery requests';
+
+  @override
+  String get destinationLocationLabel => 'Destination Location';
+
+  @override
+  String get choosePickupLocationBtn => 'Choose Pickup on Map';
+
+  @override
+  String get chooseDestinationLocationBtn => 'Choose Destination on Map';
+
+  @override
+  String get changePickupLocationBtn => 'Change Pickup';
+
+  @override
+  String get changeDestinationLocationBtn => 'Change Destination';
+
+  @override
+  String get tripDistanceLabel => 'Trip Distance:';
+
+  @override
+  String get selectDestinationPrompt =>
+      'Select a destination on the map to calculate trip distance and price estimate.';
+
+  @override
+  String get destinationRequiredError =>
+      'Please choose a destination on the map before booking.';
+
+  @override
+  String get estimatedPriceTripNotice =>
+      'Estimated price is based on the actual trip distance from pickup to destination.';
 }

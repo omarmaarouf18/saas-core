@@ -1263,5 +1263,15 @@
   "courierStatusOffline": "Offline",
   "courierStatusActiveJobLock": "Availability locked during active job",
   "courierStatusAcceptingDispatch": "Accepting new delivery requests",
-  "courierStatusNotAcceptingDispatch": "Not accepting new delivery requests"
+  "courierStatusNotAcceptingDispatch": "Not accepting new delivery requests",
+  "pickupLocationLabel": "Pickup Location",
+  "destinationLocationLabel": "Destination Location",
+  "choosePickupLocationBtn": "Choose Pickup on Map",
+  "chooseDestinationLocationBtn": "Choose Destination on Map",
+  "changePickupLocationBtn": "Change Pickup",
+  "changeDestinationLocationBtn": "Change Destination",
+  "tripDistanceLabel": "Trip Distance:",
+  "selectDestinationPrompt": "Select a destination on the map to calculate trip distance and price estimate.",
+  "destinationRequiredError": "Please choose a destination on the map before booking.",
+  "estimatedPriceTripNotice": "Estimated price is based on the actual trip distance from pickup to destination."
 }

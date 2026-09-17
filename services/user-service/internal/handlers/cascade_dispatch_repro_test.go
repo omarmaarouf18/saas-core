@@ -62,6 +62,7 @@ func TestCascade_TrackJob_CreatesPendingDispatchWithoutPricing(t *testing.T) {
 		"user_id":        tokenCust,
 		"payment_method": "cod",
 		"location":       models.Location{Latitude: 30.0444, Longitude: 31.2357},
+		"destination":    models.Location{Latitude: 30.0500, Longitude: 31.2400},
 	})
 	req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
 	rec := httptest.NewRecorder()
@@ -136,6 +137,7 @@ func TestCascade_TrackJob_ZeroCouriers_ReturnsUnavailableNot422(t *testing.T) {
 		"user_id":        tokenCust,
 		"payment_method": "cod",
 		"location":       models.Location{Latitude: 30.0444, Longitude: 31.2357},
+		"destination":    models.Location{Latitude: 30.0500, Longitude: 31.2400},
 	})
 	req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
 	rec := httptest.NewRecorder()
@@ -214,12 +216,15 @@ func TestCascade_SequentialOffers_DeclineAdvancesAndPricingAtAccept(t *testing.T
 	tokenClose, _ := jwtutil.GenerateToken(empClose, "employee", ownerID, "close@test.com")
 	tokenFar, _ := jwtutil.GenerateToken(empFar, "employee", ownerID, "far@test.com")
 
+	destLoc := models.Location{Latitude: 30.0800, Longitude: 31.2800}
+
 	// 1. Customer creates job without employee_id
 	body, _ := json.Marshal(map[string]any{
 		"service_id":     svcID,
 		"user_id":        tokenCust,
 		"payment_method": "cod",
 		"location":       custLoc,
+		"destination":    destLoc,
 	})
 	req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
 	rec := httptest.NewRecorder()
@@ -281,7 +286,7 @@ func TestCascade_SequentialOffers_DeclineAdvancesAndPricingAtAccept(t *testing.T
 		t.Fatalf("AcceptJobOffer failed: %d, body: %s", acceptRec.Code, acceptRec.Body.String())
 	}
 
-	// 5. Verify final accepted state & pricing derives from empFar (NOT empClose)
+	// 5. Verify final accepted state & pricing derives from trip distance (NOT courier proximity)
 	jobFinal := s.GetJob(ctx, jobID)
 	if jobFinal.EmployeeID != empFar {
 		t.Errorf("Expected assigned EmployeeID to be %q, got %q", empFar, jobFinal.EmployeeID)
@@ -289,13 +294,13 @@ func TestCascade_SequentialOffers_DeclineAdvancesAndPricingAtAccept(t *testing.T
 	if jobFinal.Status != models.JobStatusAwaitingPriceResponse {
 		t.Errorf("Expected transport job status to be awaiting_price_response, got %q", jobFinal.Status)
 	}
-	expectedDistFar := haversineKm(custLoc.Latitude, custLoc.Longitude, 30.0500, 31.0000)
-	if math.Abs(jobFinal.BookedDistance-expectedDistFar) > 0.01 {
-		t.Errorf("Expected BookedDistance to be based on empFar (~%.3f km), got %.3f km", expectedDistFar, jobFinal.BookedDistance)
+	expectedDist := haversineKm(custLoc.Latitude, custLoc.Longitude, destLoc.Latitude, destLoc.Longitude)
+	if math.Abs(jobFinal.BookedDistance-expectedDist) > 0.01 {
+		t.Errorf("Expected BookedDistance to be based on trip distance (~%.3f km), got %.3f km", expectedDist, jobFinal.BookedDistance)
 	}
-	expectedPriceFar := math.Round((20.0+(expectedDistFar*5.0))*100) / 100
-	if math.Abs(jobFinal.SuggestedPrice-expectedPriceFar) > 0.02 {
-		t.Errorf("Expected SuggestedPrice based on empFar (~%.2f), got %.2f", expectedPriceFar, jobFinal.SuggestedPrice)
+	expectedPrice := math.Round((20.0+(expectedDist*5.0))*100) / 100
+	if math.Abs(jobFinal.SuggestedPrice-expectedPrice) > 0.02 {
+		t.Errorf("Expected SuggestedPrice based on trip distance (~%.2f), got %.2f", expectedPrice, jobFinal.SuggestedPrice)
 	}
 }
 
@@ -354,6 +359,7 @@ func TestCascade_Race1_TwoJobsToSameCourier_AcceptOnlyOne(t *testing.T) {
 		"user_id":        tokenCust1,
 		"payment_method": "cod",
 		"location":       models.Location{Latitude: 30.0, Longitude: 31.0},
+		"destination":    models.Location{Latitude: 30.05, Longitude: 31.05},
 	})
 	req1 := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body1))
 	rec1 := httptest.NewRecorder()
@@ -376,6 +382,7 @@ func TestCascade_Race1_TwoJobsToSameCourier_AcceptOnlyOne(t *testing.T) {
 		OfferedEmployeeIDs:       []string{empSolo},
 		PaymentMethod:            "cod",
 		Location:                 models.Location{Latitude: 30.0, Longitude: 31.0},
+		Destination:              models.Location{Latitude: 30.05, Longitude: 31.05},
 		CreatedAt:                now,
 		UpdatedAt:                now,
 	})
@@ -627,6 +634,10 @@ func TestCascade_CustomerCancelsDuringPendingDispatch_HaltsCascade(t *testing.T)
 		"location": models.Location{
 			Latitude:  30.0000,
 			Longitude: 31.0000,
+		},
+		"destination": models.Location{
+			Latitude:  30.0500,
+			Longitude: 31.0500,
 		},
 	}
 	b, _ := json.Marshal(trackBody)

@@ -163,6 +163,8 @@ func TestUserServiceHandlers(t *testing.T) {
 			"user_id":        tokenClientUser,
 			"service_id":     "some-service-id",
 			"payment_method": "cod",
+			"location":       models.Location{Latitude: 30.0444, Longitude: 31.2357},
+			"destination":    models.Location{Latitude: 30.0500, Longitude: 31.2400},
 		}
 		body, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -182,6 +184,8 @@ func TestUserServiceHandlers(t *testing.T) {
 			"user_id":        tokenClientUser,
 			"service_id":     "some-service-id",
 			"payment_method": "wallet", // non-cod payment
+			"location":       models.Location{Latitude: 30.0444, Longitude: 31.2357},
+			"destination":    models.Location{Latitude: 30.0500, Longitude: 31.2400},
 		}
 		body, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -1435,6 +1439,8 @@ func TestUserServiceHandlers(t *testing.T) {
 			"user_id":        tokenUser,
 			"employee_id":    tokenDeactEmp,
 			"payment_method": "cod",
+			"location":       models.Location{Latitude: 30.0444, Longitude: 31.2357},
+			"destination":    models.Location{Latitude: 30.0500, Longitude: 31.2400},
 		}
 		body, _ := json.Marshal(reqBody)
 		rdb.FlushAll(ctx)
@@ -1521,6 +1527,8 @@ func TestUserServiceHandlers(t *testing.T) {
 			"user_id":        tokenUser,
 			"employee_id":    tokenDeactEmp,
 			"payment_method": "cod",
+			"location":       models.Location{Latitude: 30.0444, Longitude: 31.2357},
+			"destination":    models.Location{Latitude: 30.0500, Longitude: 31.2400},
 		}
 		body, _ := json.Marshal(reqBody)
 		rdb.FlushAll(ctx)
@@ -1848,6 +1856,10 @@ func TestUserServiceHandlers(t *testing.T) {
 			"location": models.Location{
 				Latitude:  30.1,
 				Longitude: 30.1,
+			},
+			"destination": models.Location{
+				Latitude:  30.2,
+				Longitude: 30.2,
 			},
 		}
 		trackBody, _ := json.Marshal(trackReqBody)
@@ -2256,6 +2268,10 @@ func TestUserServiceHandlers(t *testing.T) {
 						"latitude":  tc.lat,
 						"longitude": tc.lon,
 					},
+					"destination": map[string]float64{
+						"latitude":  30.05,
+						"longitude": 31.25,
+					},
 				}
 				body, _ := json.Marshal(reqBody)
 				req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -2351,6 +2367,10 @@ func TestUserServiceHandlers(t *testing.T) {
 				"latitude":  30.0,
 				"longitude": 31.0,
 			},
+			"destination": map[string]any{
+				"latitude":  30.05,
+				"longitude": 31.05,
+			},
 		}
 		body, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -2385,6 +2405,10 @@ func TestUserServiceHandlers(t *testing.T) {
 				"latitude":  30.0,
 				"longitude": 31.0,
 			},
+			"destination": map[string]any{
+				"latitude":  30.05,
+				"longitude": 31.05,
+			},
 		}
 		bodySpoofRaw, _ := json.Marshal(reqBodySpoofRaw)
 		reqSpoofRaw := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(bodySpoofRaw))
@@ -2407,6 +2431,10 @@ func TestUserServiceHandlers(t *testing.T) {
 			"location": map[string]any{
 				"latitude":  30.0,
 				"longitude": 31.0,
+			},
+			"destination": map[string]any{
+				"latitude":  30.05,
+				"longitude": 31.05,
 			},
 		}
 		bodySpoofToken, _ := json.Marshal(reqBodySpoofToken)
@@ -2468,6 +2496,10 @@ func TestUserServiceHandlers(t *testing.T) {
 			"payment_method": "wallet",
 			"location": map[string]float64{
 				"latitude":  30.0, // Identical to service coords
+				"longitude": 30.0,
+			},
+			"destination": map[string]float64{
+				"latitude":  30.0, // Identical to pickup coords -> 0 km -> base price
 				"longitude": 30.0,
 			},
 		}
@@ -2983,6 +3015,10 @@ func TestUserServiceHandlers(t *testing.T) {
 				"employee_token": tokenEmployee,
 				"payment_method": "cod",
 				"location": map[string]any{
+					"latitude":  30.0,
+					"longitude": 31.0,
+				},
+				"destination": map[string]any{
 					"latitude":  30.0,
 					"longitude": 31.0,
 				},
@@ -3684,6 +3720,10 @@ func TestTrackJob_EscrowRollbackFailure_ReconciliationRequired(t *testing.T) {
 			Latitude:  30.0,
 			Longitude: 30.0,
 		},
+		"destination": models.Location{
+			Latitude:  30.1,
+			Longitude: 30.1,
+		},
 	}
 	trackBody, _ := json.Marshal(trackReqBody)
 	req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(trackBody))
@@ -3829,6 +3869,10 @@ func TestTrackJob_IdempotencyKey(t *testing.T) {
 		"location": models.Location{
 			Latitude:  30.0,
 			Longitude: 30.0,
+		},
+		"destination": models.Location{
+			Latitude:  30.05,
+			Longitude: 30.05,
 		},
 	}
 	trackBody, _ := json.Marshal(trackReqBody)
@@ -4067,7 +4111,7 @@ func TestTestPaymentBypass_Gating(t *testing.T) {
 	ownerToken, _ := jwtutil.GenerateToken("o1", "owner", "o1", "owner@example.com")
 
 	// TrackJob non-COD without AllowTestPaymentBypass MUST be rejected (400 Bad Request)
-	trackBody := strings.NewReader(fmt.Sprintf(`{"owner_id":%q,"service_id":"s1","user_id":%q,"payment_method":"wallet","location":{"latitude":30.0,"longitude":30.0}}`, ownerToken, userToken))
+	trackBody := strings.NewReader(fmt.Sprintf(`{"owner_id":%q,"service_id":"s1","user_id":%q,"payment_method":"wallet","location":{"latitude":30.0,"longitude":30.0},"destination":{"latitude":30.05,"longitude":30.05}}`, ownerToken, userToken))
 	reqTrack := httptest.NewRequest("POST", "/users/jobs/track", trackBody)
 	recTrack := httptest.NewRecorder()
 	uDisabled.TrackJob(recTrack, reqTrack)
@@ -4153,6 +4197,7 @@ func TestRoleEnforcement_CreateServiceAndTrackJob(t *testing.T) {
 		"service_id":     "svc-1",
 		"payment_method": "cod",
 		"location":       map[string]float64{"latitude": 30.0, "longitude": 30.0},
+		"destination":    map[string]float64{"latitude": 30.1, "longitude": 30.1},
 	})
 	reqTrack1 := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(bodyTrack1))
 	recTrack1 := httptest.NewRecorder()
@@ -4168,6 +4213,7 @@ func TestRoleEnforcement_CreateServiceAndTrackJob(t *testing.T) {
 		"service_id":     "svc-1",
 		"payment_method": "cod",
 		"location":       map[string]float64{"latitude": 30.0, "longitude": 30.0},
+		"destination":    map[string]float64{"latitude": 30.1, "longitude": 30.1},
 	})
 	reqTrack2 := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(bodyTrack2))
 	recTrack2 := httptest.NewRecorder()
@@ -4416,6 +4462,10 @@ func TestTrackJob_RedisBackedIdempotency_MultiInstanceAndTTL(t *testing.T) {
 			Latitude:  30.0,
 			Longitude: 30.0,
 		},
+		"destination": models.Location{
+			Latitude:  30.05,
+			Longitude: 30.05,
+		},
 	}
 	trackBody, _ := json.Marshal(trackReqBody)
 
@@ -4593,6 +4643,7 @@ func TestNegotiableTransportPricing(t *testing.T) {
 			"payment_method": "cod",
 			"proposed_price": 120.0,
 			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+			"destination":    models.Location{Latitude: 30.05, Longitude: 30.05},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -4651,6 +4702,7 @@ func TestNegotiableTransportPricing(t *testing.T) {
 			"payment_method": "cod",
 			"proposed_price": 80.0,
 			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+			"destination":    models.Location{Latitude: 30.05, Longitude: 30.05},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -4698,6 +4750,7 @@ func TestNegotiableTransportPricing(t *testing.T) {
 			"employee_id":    tokenEmp,
 			"payment_method": "cod",
 			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+			"destination":    models.Location{Latitude: 30.05, Longitude: 30.05},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -4752,7 +4805,7 @@ func TestNegotiableTransportPricing(t *testing.T) {
 		}
 	})
 
-	// 4. Employee accepts SuggestedPrice directly with no prior proposal
+	// 4. Employee accepts SuggestedPrice Directly with no prior proposal
 	t.Run("Employee Accepts SuggestedPrice Directly", func(t *testing.T) {
 		trackReq := map[string]any{
 			"owner_id":       tokenOwner,
@@ -4761,6 +4814,7 @@ func TestNegotiableTransportPricing(t *testing.T) {
 			"employee_id":    tokenEmp,
 			"payment_method": "cod",
 			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+			"destination":    models.Location{Latitude: 30.05, Longitude: 30.05},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -4809,6 +4863,7 @@ func TestNegotiableTransportPricing(t *testing.T) {
 			"payment_method": "cod",
 			"proposed_price": 120.0,
 			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+			"destination":    models.Location{Latitude: 30.05, Longitude: 30.05},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -4851,6 +4906,7 @@ func TestNegotiableTransportPricing(t *testing.T) {
 			"payment_method": "cod",
 			"proposed_price": 120.0,
 			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+			"destination":    models.Location{Latitude: 30.05, Longitude: 30.05},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -4894,6 +4950,7 @@ func TestNegotiableTransportPricing(t *testing.T) {
 			"payment_method": "cod",
 			"proposed_price": 40.0,
 			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+			"destination":    models.Location{Latitude: 30.05, Longitude: 30.05},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -4913,6 +4970,7 @@ func TestNegotiableTransportPricing(t *testing.T) {
 			"employee_id":    tokenEmp,
 			"payment_method": "cod",
 			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+			"destination":    models.Location{Latitude: 30.05, Longitude: 30.05},
 		}
 		body, _ = json.Marshal(trackReqValid)
 		req = httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -4950,6 +5008,7 @@ func TestNegotiableTransportPricing(t *testing.T) {
 			"employee_id":    tokenEmp,
 			"payment_method": "cod",
 			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+			"destination":    models.Location{Latitude: 30.05, Longitude: 30.05},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -5005,6 +5064,7 @@ func TestNegotiableTransportPricing(t *testing.T) {
 			"payment_method": "cod",
 			"proposed_price": 120.0,
 			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+			"destination":    models.Location{Latitude: 30.05, Longitude: 30.05},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -5068,6 +5128,7 @@ func TestNegotiableTransportPricing(t *testing.T) {
 			"employee_id":    tokenEmp,
 			"payment_method": "cod",
 			"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+			"destination":    models.Location{Latitude: 30.05, Longitude: 30.05},
 		}
 		body, _ := json.Marshal(trackReq)
 		req := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
@@ -5206,7 +5267,7 @@ func TestUpdateJobLocation_RedisBackedThrottle_MultiInstance(t *testing.T) {
 
 	rec1 := httptest.NewRecorder()
 	req1 := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
-	req1.Header.Set("X-Real-IP", "10.0.0.1")
+	req1.Header.Set("X-Real-IP", "192.168.201.1")
 
 	u1Done := make(chan struct{})
 	go func() {
@@ -5215,12 +5276,18 @@ func TestUpdateJobLocation_RedisBackedThrottle_MultiInstance(t *testing.T) {
 	}()
 
 	// Wait until u1 is in-flight (holding Redis lock loc:inflight:job-multi-instance-throttle)
-	<-writeStartCh
+	select {
+	case <-writeStartCh:
+	case <-u1Done:
+		t.Fatalf("u1 completed prematurely with status %d: %s", rec1.Code, rec1.Body.String())
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for u1 to reach in-flight hook")
+	}
 
 	// Make concurrent update on u2 -> must be rejected as in-flight (429) across instances
 	rec2 := httptest.NewRecorder()
 	req2 := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
-	req2.Header.Set("X-Real-IP", "10.0.0.2")
+	req2.Header.Set("X-Real-IP", "192.168.201.2")
 	u2.UpdateJobLocation(rec2, req2)
 
 	if rec2.Code != http.StatusTooManyRequests {
@@ -5232,7 +5299,11 @@ func TestUpdateJobLocation_RedisBackedThrottle_MultiInstance(t *testing.T) {
 
 	// Unblock u1 to finish write
 	close(writeProceedCh)
-	<-u1Done
+	select {
+	case <-u1Done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for u1 to finish")
+	}
 
 	if rec1.Code != http.StatusOK {
 		t.Fatalf("Expected 200 OK on u1, got %d: %s", rec1.Code, rec1.Body.String())
@@ -5242,7 +5313,7 @@ func TestUpdateJobLocation_RedisBackedThrottle_MultiInstance(t *testing.T) {
 	// Immediate next update on u2 -> must be rejected for minimum interval throttle (429)
 	rec3 := httptest.NewRecorder()
 	req3 := httptest.NewRequest("POST", "/users/jobs/location/update", bytes.NewReader(body))
-	req3.Header.Set("X-Real-IP", "10.0.0.3")
+	req3.Header.Set("X-Real-IP", "192.168.201.3")
 	u2.UpdateJobLocation(rec3, req3)
 
 	if rec3.Code != http.StatusTooManyRequests {
@@ -6289,6 +6360,7 @@ func TestTrackJob_IdempotencyReplayRequiresAuthentication(t *testing.T) {
 		"payment_method":  "cod",
 		"idempotency_key": idempotencyKey,
 		"location":        models.Location{Latitude: 30.0, Longitude: 30.0},
+		"destination":     models.Location{Latitude: 30.05, Longitude: 30.05},
 	}
 	trackBody, _ := json.Marshal(trackReqBody)
 
@@ -6316,6 +6388,7 @@ func TestTrackJob_IdempotencyReplayRequiresAuthentication(t *testing.T) {
 		"user_id":        "not-a-token-attacker",
 		"payment_method": "cod",
 		"location":       models.Location{Latitude: 30.0, Longitude: 30.0},
+		"destination":    models.Location{Latitude: 30.05, Longitude: 30.05},
 	})
 	reqAttack := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(attackBody))
 	reqAttack.Header.Set("Idempotency-Key", idempotencyKey)

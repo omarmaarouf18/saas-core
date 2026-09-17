@@ -175,6 +175,10 @@ func TestJobAlertBroadcast_EndToEnd(t *testing.T) {
 				"latitude":  30.0444,
 				"longitude": 31.2357,
 			},
+			"destination": map[string]any{
+				"latitude":  30.0500,
+				"longitude": 31.2400,
+			},
 		}
 
 		b, _ := json.Marshal(reqBody)
@@ -239,6 +243,10 @@ func TestJobAlertBroadcast_EndToEnd(t *testing.T) {
 			"location": map[string]any{
 				"latitude":  30.0444,
 				"longitude": 31.2357,
+			},
+			"destination": map[string]any{
+				"latitude":  30.0500,
+				"longitude": 31.2400,
 			},
 		}
 

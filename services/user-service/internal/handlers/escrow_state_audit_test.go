@@ -149,6 +149,10 @@ func Test1_FullLifecycleStateAudit(t *testing.T) {
 			Latitude:  30.0,
 			Longitude: 30.0,
 		},
+		"destination": models.Location{
+			Latitude:  30.1,
+			Longitude: 30.1,
+		},
 	}
 	tBody, _ := json.Marshal(trackReq)
 	req1 := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(tBody))
@@ -402,6 +406,10 @@ func Test3_CrossFeatureInteraction_RespondPrice_And_ADR0007_SpeedCheck(t *testin
 		"location": models.Location{
 			Latitude:  30.0,
 			Longitude: 30.0,
+		},
+		"destination": models.Location{
+			Latitude:  30.1,
+			Longitude: 30.1,
 		},
 	}
 	tBody, _ := json.Marshal(trackReq)

@@ -2429,4 +2429,34 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get courierStatusNotAcceptingDispatch =>
       'غير متاح لاستلام طلبات توصيل جديدة';
+
+  @override
+  String get destinationLocationLabel => 'موقع الوجهة';
+
+  @override
+  String get choosePickupLocationBtn => 'تحديد موقع الاستلام على الخريطة';
+
+  @override
+  String get chooseDestinationLocationBtn => 'تحديد موقع الوجهة على الخريطة';
+
+  @override
+  String get changePickupLocationBtn => 'تغيير موقع الاستلام';
+
+  @override
+  String get changeDestinationLocationBtn => 'تغيير موقع الوجهة';
+
+  @override
+  String get tripDistanceLabel => 'مسافة الرحلة:';
+
+  @override
+  String get selectDestinationPrompt =>
+      'يرجى تحديد الوجهة على الخريطة لحساب مسافة الرحلة والسعر التقديري.';
+
+  @override
+  String get destinationRequiredError =>
+      'يرجى تحديد موقع الوجهة على الخريطة قبل تأكيد الحجز.';
+
+  @override
+  String get estimatedPriceTripNotice =>
+      'السعر التقديري محسوب بناءً على مسافة الرحلة الفعلية من موقع الاستلام إلى الوجهة.';
 }
