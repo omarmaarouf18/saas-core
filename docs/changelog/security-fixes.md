@@ -1054,4 +1054,16 @@ This section consolidates the resolution status for all 10 findings from the ext
 - **Commit SHA**: ``753a78b8396c65e1fa6da488e533d013d465f7cb``
 - **Verification**: Verified via `services/user-service/internal/handlers/paid_tier_gating_matrix_test.go` and the full `services/user-service/...` and `services/auth-service/...` test suites passing 100%. ✅
 
+## Single-Job Detail Information Disclosure Prevention (GET /users/jobs/get)
+
+- **Implementation Detail**: Eliminated backend-to-frontend information disclosure on `GET /users/jobs/get` (`services/user-service/internal/handlers/jobs_handlers.go:GetJob`). Previously, the single-job detail endpoint returned the raw internal `models.Job` struct directly for all authenticated participants, leaking sensitive escrow locks (`locked_escrow_amount`), operator reconciliation notes (`reconciliation_note`), escrow failure reasons (`escrow_failure_reason`), sequential dispatch candidate lists (`offered_employee_ids`), internal coordinates (`booked_distance`, `assigned_employee_location`), and courier offer scoping (`current_offered_employee_id`, `offer_expires_at`). Replaced the raw struct return with role-tailored DTOs:
+  - **Customer**: Returns `models.CustomerJobResponse`, omitting all internal escrow, reconciliation, dispatch candidates, and operator fields. Added `CurrentLocation` to `CustomerJobResponse` to preserve active courier tracking coordinates.
+  - **Owner**: Returns `models.OwnerJobResponse`, preserving legitimate access to escrow, reconciliation details, and employee/customer identifiers. Added `CancellationReason` to `OwnerJobResponse`.
+  - **Assigned/Offered Courier**: Introduced `models.EmployeeJobResponse` (and constructor `NewEmployeeJobResponse`) in `services/user-service/internal/models/models.go`. Omits internal reconciliation notes, escrow failure reasons, candidate employee lists, booked distance, and raw employee coordinates. Scopes `CurrentOfferedEmployeeID` and `OfferExpiresAt` exclusively to the courier who currently holds the active offer; unoffered couriers cannot view offer timers or candidate identifiers.
+  - **Internal Services**: Preserved raw `models.Job` struct return for internal callers authenticated via `X-Internal-Token` (`isInternal == true`).
+  - **Courier Listing**: Updated employee job listing (`id == ""`) to map to `[]models.EmployeeJobResponse`.
+- **Commit SHA**: ``7184fbceac850396dbd1b24b39a8ad530e858725``
+- **Verification**: Verified via unit tests in `services/user-service/internal/models/models_test.go` (`TestNewEmployeeJobResponse_FiltersInternalFields`, `TestNewCustomerJobResponse_ExcludesLeakedFields`) and comprehensive integration test suite `services/user-service/internal/handlers/job_detail_leak_prevention_test.go` (`TestGetJob_RoleBasedDTOFiltering` with 8 subtests covering customer redaction, owner full detail, internal raw struct, assigned courier filtering, offered courier scoping, unoffered courier 403, attacker 403, and employee listing filtering). Flutter analyze (0 issues) and test suite (532/532 passing) confirm frontend compatibility. ✅
+
+
 
