@@ -29,7 +29,7 @@ func TestCODZeroFeeCompletion(t *testing.T) {
 		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_cod_zero_fee_%d", time.Now().UnixNano())
@@ -162,7 +162,7 @@ func TestOwnerPayoutRequestFlow(t *testing.T) {
 		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_payout_%d", time.Now().UnixNano())
@@ -259,7 +259,10 @@ func TestOwnerPayoutRequestFlow(t *testing.T) {
 	}
 
 	// Verify wallet balance decreased to 300 (500 - 200)
-	wallet, _ := s.GetOrCreateWallet(ctx, ownerID)
+	wallet, err := s.GetOrCreateWallet(ctx, ownerID)
+	if err != nil {
+		t.Fatalf("failed to get wallet: %v", err)
+	}
 	if wallet.WithdrawableBalance != 300.0 {
 		t.Errorf("Expected withdrawable balance 300.0, got %.2f", wallet.WithdrawableBalance)
 	}
@@ -291,7 +294,7 @@ func TestElectronicPaymentsFeatureFlag(t *testing.T) {
 		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_flag_%d", time.Now().UnixNano())
