@@ -143,6 +143,7 @@ type OwnerJobResponse struct {
 	Location                 Location   `json:"location"`
 	CurrentLocation          *Location  `json:"current_location,omitempty"`
 	PaymentMethod            string     `json:"payment_method"`
+	CancellationReason       string     `json:"cancellation_reason,omitempty"`
 	LockedEscrowAmount       float64    `json:"locked_escrow_amount,omitempty"`
 	ActualCashAmount         *float64   `json:"actual_cash_amount,omitempty"`
 	ReconciliationNote       string     `json:"reconciliation_note,omitempty"`
@@ -174,6 +175,7 @@ func NewOwnerJobResponse(j *Job) OwnerJobResponse {
 		Location:                 j.Location,
 		CurrentLocation:          j.CurrentLocation,
 		PaymentMethod:            j.PaymentMethod,
+		CancellationReason:       j.CancellationReason,
 		LockedEscrowAmount:       j.LockedEscrowAmount,
 		ActualCashAmount:         j.ActualCashAmount,
 		ReconciliationNote:       j.ReconciliationNote,
@@ -195,6 +197,7 @@ type CustomerJobResponse struct {
 	EmployeeID             string     `json:"employee_id,omitempty"`
 	Status                 JobStatus  `json:"status"`
 	Location               Location   `json:"location"`
+	CurrentLocation        *Location  `json:"current_location,omitempty"`
 	PaymentMethod          string     `json:"payment_method"`
 	CancellationReason     string     `json:"cancellation_reason,omitempty"`
 	SuggestedPrice         float64    `json:"suggested_price,omitempty"`
@@ -217,6 +220,7 @@ func NewCustomerJobResponse(j *Job) CustomerJobResponse {
 		EmployeeID:             j.EmployeeID,
 		Status:                 j.Status,
 		Location:               j.Location,
+		CurrentLocation:        j.CurrentLocation,
 		PaymentMethod:          j.PaymentMethod,
 		CancellationReason:     j.CancellationReason,
 		SuggestedPrice:         j.SuggestedPrice,
@@ -227,6 +231,66 @@ func NewCustomerJobResponse(j *Job) CustomerJobResponse {
 		CreatedAt:              j.CreatedAt,
 		UpdatedAt:              j.UpdatedAt,
 	}
+}
+
+// EmployeeJobResponse provides job detail for assigned or candidate employees,
+// excluding internal reconciliation notes, escrow failure details, and other candidates' IDs.
+type EmployeeJobResponse struct {
+	ID                       string     `json:"id"`
+	OwnerID                  string     `json:"owner_id"`
+	ServiceID                string     `json:"service_id"`
+	UserID                   string     `json:"user_id"`
+	EmployeeID               string     `json:"employee_id,omitempty"`
+	CurrentOfferedEmployeeID string     `json:"current_offered_employee_id,omitempty"`
+	OfferExpiresAt           *time.Time `json:"offer_expires_at,omitempty"`
+	Status                   JobStatus  `json:"status"`
+	Location                 Location   `json:"location"`
+	CurrentLocation          *Location  `json:"current_location,omitempty"`
+	PaymentMethod            string     `json:"payment_method"`
+	CancellationReason       string     `json:"cancellation_reason,omitempty"`
+	LockedEscrowAmount       float64    `json:"locked_escrow_amount,omitempty"`
+	ActualCashAmount         *float64   `json:"actual_cash_amount,omitempty"`
+	SuggestedPrice           float64    `json:"suggested_price,omitempty"`
+	ProposedPrice            *float64   `json:"proposed_price,omitempty"`
+	ProposedBy               string     `json:"proposed_by,omitempty"`
+	AgreedPrice              *float64   `json:"agreed_price,omitempty"`
+	PriceProposalExpiresAt   *time.Time `json:"price_proposal_expires_at,omitempty"`
+	CreatedAt                time.Time  `json:"created_at"`
+	UpdatedAt                time.Time  `json:"updated_at"`
+}
+
+// NewEmployeeJobResponse maps a Job struct to an EmployeeJobResponse DTO,
+// scoped to the requester's employee identity.
+func NewEmployeeJobResponse(j *Job, requesterEmployeeID string) EmployeeJobResponse {
+	if j == nil {
+		return EmployeeJobResponse{}
+	}
+	resp := EmployeeJobResponse{
+		ID:                     j.ID,
+		OwnerID:                j.OwnerID,
+		ServiceID:              j.ServiceID,
+		UserID:                 j.UserID,
+		EmployeeID:             j.EmployeeID,
+		Status:                 j.Status,
+		Location:               j.Location,
+		CurrentLocation:        j.CurrentLocation,
+		PaymentMethod:          j.PaymentMethod,
+		CancellationReason:     j.CancellationReason,
+		LockedEscrowAmount:     j.LockedEscrowAmount,
+		ActualCashAmount:       j.ActualCashAmount,
+		SuggestedPrice:         j.SuggestedPrice,
+		ProposedPrice:          j.ProposedPrice,
+		ProposedBy:             j.ProposedBy,
+		AgreedPrice:            j.AgreedPrice,
+		PriceProposalExpiresAt: j.PriceProposalExpiresAt,
+		CreatedAt:              j.CreatedAt,
+		UpdatedAt:              j.UpdatedAt,
+	}
+	if j.CurrentOfferedEmployeeID != "" && j.CurrentOfferedEmployeeID == requesterEmployeeID {
+		resp.CurrentOfferedEmployeeID = j.CurrentOfferedEmployeeID
+		resp.OfferExpiresAt = j.OfferExpiresAt
+	}
+	return resp
 }
 
 // ---------------------------------------------------------------------------

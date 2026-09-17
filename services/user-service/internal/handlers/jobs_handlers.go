@@ -795,18 +795,18 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 			return
 		}
-		filtered := make([]*models.Job, 0, len(jobs))
+		filtered := make([]models.EmployeeJobResponse, 0, len(jobs))
 		for _, j := range jobs {
 			if j.Status == models.JobStatusPendingDispatch {
 				if u.checkCascadeOfferExpiry(r.Context(), j) {
 					refreshed := u.store.GetJob(r.Context(), j.ID)
 					if refreshed != nil && refreshed.Status == models.JobStatusPendingDispatch && refreshed.CurrentOfferedEmployeeID == resolvedRequester {
-						filtered = append(filtered, refreshed)
+						filtered = append(filtered, models.NewEmployeeJobResponse(refreshed, resolvedRequester))
 					}
 					continue
 				}
 			}
-			filtered = append(filtered, j)
+			filtered = append(filtered, models.NewEmployeeJobResponse(j, resolvedRequester))
 		}
 		writeJSON(w, http.StatusOK, filtered)
 		return
@@ -815,7 +815,10 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 	isInternal := u.internalServiceToken != "" &&
 		subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
 
-	var resolvedRequester string
+	var (
+		resolvedRequester string
+		requesterRole     string
+	)
 	if !isInternal {
 		// External client check: require requester authorization BEFORE querying DB
 		requesterToken := r.Header.Get("Authorization")
@@ -835,12 +838,17 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "requester_id parameter or Authorization header is required"})
 			return
 		}
-		var err error
-		resolvedRequester, err = resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
+		claims, err := resolveClaims(requesterToken)
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 			return
 		}
+		if claims.Role != "owner" && claims.Role != "employee" && claims.Role != "user" && claims.Role != "customer" {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": fmt.Sprintf("role mismatch: claim role %q not in allowed roles [owner employee user customer]", claims.Role)})
+			return
+		}
+		resolvedRequester = claims.UserID
+		requesterRole = claims.Role
 	}
 
 	ctx := r.Context()
@@ -871,7 +879,32 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, job)
+	if requesterRole == "owner" && resolvedRequester == job.OwnerID {
+		writeJSON(w, http.StatusOK, models.NewOwnerJobResponse(job))
+		return
+	}
+	if (requesterRole == "user" || requesterRole == "customer") && resolvedRequester == job.UserID {
+		writeJSON(w, http.StatusOK, models.NewCustomerJobResponse(job))
+		return
+	}
+	if requesterRole == "employee" && ((job.EmployeeID != "" && resolvedRequester == job.EmployeeID) || isOfferedCourier) {
+		writeJSON(w, http.StatusOK, models.NewEmployeeJobResponse(job, resolvedRequester))
+		return
+	}
+
+	// Fallback to relationship matching if token role did not strictly disambiguate
+	if resolvedRequester == job.OwnerID {
+		writeJSON(w, http.StatusOK, models.NewOwnerJobResponse(job))
+		return
+	}
+	if resolvedRequester == job.UserID {
+		writeJSON(w, http.StatusOK, models.NewCustomerJobResponse(job))
+		return
+	}
+	if (job.EmployeeID != "" && resolvedRequester == job.EmployeeID) || isOfferedCourier {
+		writeJSON(w, http.StatusOK, models.NewEmployeeJobResponse(job, resolvedRequester))
+		return
+	}
 }
 
 // ---------------------------------------------------------------------------
