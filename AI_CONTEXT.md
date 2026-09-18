@@ -999,6 +999,24 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
     - Maintained session expiration policy in `api()`: only genuine 401s trigger `logout()`, while transient 503/502/429 codes return to dialog callers for retry.
     - Added Node.js test suite (`web/app_test.js`) passing 100% and Go proxy relay tests (`internal/proxy/proxy_test.go`) passing 100%.
 
+### Comprehensive Frontend Behavioral UI/UX Audit (2026-09-18)
+
+* **Scope & Methodology**:
+  - Conducted full behavioral and dynamic UI/UX audit of all 30 screens in `frontend/lib/screens/` and 33 reusable widgets in `frontend/lib/widgets/`.
+  - Published findings, double-submit protection matrix (42 controls), and 3-tier remediation roadmap in `docs/frontend/UI_UX_BEHAVIOR_AUDIT.md`.
+  - Updated `docs/frontend/STATUS.md` screen count (29 production + 1 debug catalog = 30 total).
+
+* **Key Behavioral Vulnerabilities & Findings Identified**:
+  1. **WebSocket Disposal Leak Regression (`ticket_chat_screen.dart:65-70`)**: Reintroduced defect A6; wrapping `chat.disconnect()` in a post-frame `if (mounted)` inside `dispose()` creates dead code (`mounted` is always `false` after disposal). Leaks active WebSockets and reconnect timers indefinitely after popping the screen.
+  2. **Rating Flow Role Lockout / 403 Rejection (`rating_screen.dart:65-68` vs `ratings_handlers.go:86-89`)**: Customers are prompted to "Rate Your Experience" on completed jobs in `JobStatusScreen`, but backend `RateJob` strictly enforces Owner <-> Employee ratings (`req.RatedBy == job.OwnerID` or `req.RatedBy == job.EmployeeID`). Customer ratings (`req.RatedBy == job.UserID`) are rejected with 403 Forbidden. Additionally, employee rating binds `_otherPartyId = job.ownerId` (rating the business owner instead of the customer).
+  3. **Pseudo-Retry in Money Flow Dialogs (`deposit_funds_dialog.dart:130`, `payout_request_dialog.dart:155, 282`)**: Error banner "Retry" action is bound to `() => setState(() => _dialogError = null)`, which dismisses the error without re-dispatching the deposit/payout transaction.
+  4. **Chat Message Deduplication Silently Drops Repeated Words (`chat_provider.dart:194-201`)**: Deduplication checks only sender ID, content, and type without timestamp or message ID; repeated words (e.g. "Yes", "OK", "Thank you") are discarded permanently.
+  5. **History vs WebSocket Race Condition (`ticket_chat_screen.dart:55-57`)**: History fetch and WebSocket subscription run concurrently; history completion resets `_messages = []`, overwriting live messages received during loading.
+  6. **Customer Jobs Empty State Pop Trap (`customer_jobs_screen.dart:165`)**: "Browse Services" CTA calls `Navigator.pop(context)` instead of switching to Tab 1, popping out of `CustomerHomeScreen`.
+  7. **Route Timeline Metric Misrepresentation (`employee_jobs_screen.dart:995`, `employee_history_screen.dart:185`)**: Locked escrow credits are passed to `RouteTimeline(distanceText:)`, rendering "50 Credits" adjacent to the road distance icon.
+  8. **42-Control Double-Submit Protection Matrix**: 36 fully guarded, 5 partial (reliance on provider state without immediate local disabled state), 1 unguarded driver status toggle.
+
+
 
 
 
