@@ -241,7 +241,7 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
   });
 
-  testWidgets('employee rates the owner instead (party inversion)',
+  testWidgets('employee rates the customer (courier rating customer)',
       (tester) async {
     final overrides = await pumpRatingScreen(
       tester,
@@ -269,8 +269,7 @@ void main() {
     );
     await settle(tester);
 
-    expect(find.text('Client / Owner'), findsNWidgets(2));
-    expect(find.text('Owner'), findsOneWidget); // subtitle, single site
+    expect(find.text('Customer'), findsNWidgets(3));
 
     await tester.dragUntilVisible(find.text('SUBMIT RATING'),
         find.byType(SingleChildScrollView), const Offset(0, -200));
@@ -282,7 +281,144 @@ void main() {
         .lastWhere((r) => r.uri.path.endsWith('/users/jobs/rate'));
     final body = jsonDecode(posted.body!) as Map<String, dynamic>;
     expect(body['rated_by'], 'emp-tok');
-    expect(body['rated_user'], 'owner-1'); // inverted target
+    expect(body['rated_user'], 'cust-1'); // Rates customer
+  });
+
+  testWidgets('customer rates the owner when employee is unassigned',
+      (tester) async {
+    final directJob = Job(
+      id: 'job-direct-1',
+      ownerId: 'owner-1',
+      employeeId: null,
+      userId: 'cust-1',
+      serviceId: 'svc-1',
+      status: 'completed',
+      location: JobLocation(latitude: 30.0, longitude: 31.0),
+      paymentMethod: 'cod',
+    );
+    final overrides = await pumpRatingScreen(
+      tester,
+      directJob,
+      session: customerSession,
+      handler: (req) {
+        if (req.uri.path.endsWith('/users/jobs/rate')) {
+          return MockHttpResponse(200, jsonBody: {'ok': true});
+        }
+        return MockHttpResponse(200, jsonBody: {'ratings': []});
+      },
+    );
+    await settle(tester);
+
+    expect(find.text('Client / Owner'), findsNWidgets(2));
+    expect(find.text('Owner'), findsOneWidget);
+
+    await tester.dragUntilVisible(find.text('SUBMIT RATING'),
+        find.byType(SingleChildScrollView), const Offset(0, -200));
+    await tester.tap(find.text('SUBMIT RATING'));
+    await tester.pump();
+    await tester.pump();
+
+    final posted = overrides.requests
+        .lastWhere((r) => r.uri.path.endsWith('/users/jobs/rate'));
+    final body = jsonDecode(posted.body!) as Map<String, dynamic>;
+    expect(body['rated_by'], 'cust-tok');
+    expect(body['rated_user'], 'owner-1'); // Falls back to rating owner
+  });
+
+  testWidgets('owner rates assigned employee', (tester) async {
+    final overrides = await pumpRatingScreen(
+      tester,
+      jobFixture(),
+      session: {
+        'jwt_token': 'owner-tok',
+        'user_id': 'owner-1',
+        'user_email': 'o@x.dev',
+        'user_role': 'owner',
+      },
+      handler: (req) {
+        if (req.uri.path.endsWith('/auth/user')) {
+          return MockHttpResponse(200, jsonBody: {
+            'id': 'owner-1',
+            'email': 'o@x.dev',
+            'username': 'boss',
+            'role': 'owner',
+          });
+        }
+        if (req.uri.path.endsWith('/users/jobs/rate')) {
+          return MockHttpResponse(200, jsonBody: {'ok': true});
+        }
+        return MockHttpResponse(200, jsonBody: {'ratings': []});
+      },
+    );
+    await settle(tester);
+
+    expect(find.text('Driver / Employee'), findsNWidgets(2));
+    expect(find.text('Specialist'), findsOneWidget);
+
+    await tester.dragUntilVisible(find.text('SUBMIT RATING'),
+        find.byType(SingleChildScrollView), const Offset(0, -200));
+    await tester.tap(find.text('SUBMIT RATING'));
+    await tester.pump();
+    await tester.pump();
+
+    final posted = overrides.requests
+        .lastWhere((r) => r.uri.path.endsWith('/users/jobs/rate'));
+    final body = jsonDecode(posted.body!) as Map<String, dynamic>;
+    expect(body['rated_by'], 'owner-tok');
+    expect(body['rated_user'], 'emp-9'); // Rates employee
+  });
+
+  testWidgets('owner rates customer when employee is unassigned',
+      (tester) async {
+    final directJob = Job(
+      id: 'job-direct-2',
+      ownerId: 'owner-1',
+      employeeId: null,
+      userId: 'cust-1',
+      serviceId: 'svc-1',
+      status: 'completed',
+      location: JobLocation(latitude: 30.0, longitude: 31.0),
+      paymentMethod: 'cod',
+    );
+    final overrides = await pumpRatingScreen(
+      tester,
+      directJob,
+      session: {
+        'jwt_token': 'owner-tok',
+        'user_id': 'owner-1',
+        'user_email': 'o@x.dev',
+        'user_role': 'owner',
+      },
+      handler: (req) {
+        if (req.uri.path.endsWith('/auth/user')) {
+          return MockHttpResponse(200, jsonBody: {
+            'id': 'owner-1',
+            'email': 'o@x.dev',
+            'username': 'boss',
+            'role': 'owner',
+          });
+        }
+        if (req.uri.path.endsWith('/users/jobs/rate')) {
+          return MockHttpResponse(200, jsonBody: {'ok': true});
+        }
+        return MockHttpResponse(200, jsonBody: {'ratings': []});
+      },
+    );
+    await settle(tester);
+
+    expect(find.text('Customer'), findsNWidgets(3));
+
+    await tester.dragUntilVisible(find.text('SUBMIT RATING'),
+        find.byType(SingleChildScrollView), const Offset(0, -200));
+    await tester.tap(find.text('SUBMIT RATING'));
+    await tester.pump();
+    await tester.pump();
+
+    final posted = overrides.requests
+        .lastWhere((r) => r.uri.path.endsWith('/users/jobs/rate'));
+    final body = jsonDecode(posted.body!) as Map<String, dynamic>;
+    expect(body['rated_by'], 'owner-tok');
+    expect(body['rated_user'], 'cust-1'); // Rates customer
   });
 
   testWidgets('identity guard blocks submit without any network call',

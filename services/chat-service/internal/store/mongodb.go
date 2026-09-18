@@ -145,24 +145,32 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 
 // PersistMessage stores a chat message in MongoDB
 func (s *MongoDB) PersistMessage(ctx context.Context, msg *chat.Message) error {
-	msgUUID, err := jwtutil.GenerateUUID()
-	if err != nil {
-		b := make([]byte, 8)
-		_, _ = rand.Read(b)
-		msgUUID = fmt.Sprintf("%d-%s", time.Now().UnixNano(), hex.EncodeToString(b))
+	if msg.ID == "" {
+		msgUUID, err := jwtutil.GenerateUUID()
+		if err != nil {
+			b := make([]byte, 8)
+			_, _ = rand.Read(b)
+			msgUUID = fmt.Sprintf("%d-%s", time.Now().UnixNano(), hex.EncodeToString(b))
+		}
+		msg.ID = fmt.Sprintf("msg-%s", msgUUID)
+	}
+
+	if msg.CreatedAt == nil || msg.CreatedAt.IsZero() {
+		now := time.Now().UTC()
+		msg.CreatedAt = &now
 	}
 
 	doc := bson.M{
-		"_id":             fmt.Sprintf("msg-%s", msgUUID),
+		"_id":             msg.ID,
 		"channel":         msg.Channel,
 		"sender_id":       msg.SenderID,
 		"sender_username": msg.SenderUsername,
 		"content":         msg.Content,
 		"type":            msg.Type,
-		"timestamp":       time.Now().UTC(),
+		"timestamp":       *msg.CreatedAt,
 	}
 
-	_, err = s.messages.InsertOne(ctx, doc)
+	_, err := s.messages.InsertOne(ctx, doc)
 	if err != nil {
 		return fmt.Errorf("store: failed to insert message: %w", err)
 	}
@@ -187,11 +195,13 @@ func (s *MongoDB) GetHistory(ctx context.Context, channel string, limit int64) (
 	defer cursor.Close(ctx)
 
 	var dbMsgs []struct {
-		Channel        string `bson:"channel"`
-		SenderID       string `bson:"sender_id"`
-		SenderUsername string `bson:"sender_username"`
-		Content        string `bson:"content"`
-		Type           string `bson:"type"`
+		ID             string    `bson:"_id"`
+		Channel        string    `bson:"channel"`
+		SenderID       string    `bson:"sender_id"`
+		SenderUsername string    `bson:"sender_username"`
+		Content        string    `bson:"content"`
+		Type           string    `bson:"type"`
+		Timestamp      time.Time `bson:"timestamp"`
 	}
 	if err := cursor.All(ctx, &dbMsgs); err != nil {
 		return nil, fmt.Errorf("store: failed to decode messages: %w", err)
@@ -201,12 +211,15 @@ func (s *MongoDB) GetHistory(ctx context.Context, channel string, limit int64) (
 	n := len(dbMsgs)
 	res := make([]chat.Message, n)
 	for i, m := range dbMsgs {
+		t := m.Timestamp
 		res[n-1-i] = chat.Message{
+			ID:             m.ID,
 			Channel:        m.Channel,
 			SenderID:       m.SenderID,
 			SenderUsername: m.SenderUsername,
 			Content:        m.Content,
 			Type:           m.Type,
+			CreatedAt:      &t,
 		}
 	}
 

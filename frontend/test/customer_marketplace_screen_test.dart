@@ -289,14 +289,17 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify destination picker dialog opens
-    expect(find.byKey(const Key('destination_location_picker_dialog')), findsOneWidget);
-    final confirmDestBtn = find.byKey(const Key('confirm_destination_location_button'));
+    expect(find.byKey(const Key('destination_location_picker_dialog')),
+        findsOneWidget);
+    final confirmDestBtn =
+        find.byKey(const Key('confirm_destination_location_button'));
     expect(confirmDestBtn, findsOneWidget);
     await tester.tap(confirmDestBtn);
     await tester.pumpAndSettle();
 
     // Dialog closed, destination set, confirm button now enabled
-    expect(find.byKey(const Key('destination_location_picker_dialog')), findsNothing);
+    expect(find.byKey(const Key('destination_location_picker_dialog')),
+        findsNothing);
     final enabledConfirmBtn = tester.widget<PrimaryButton>(confirmBtn);
     expect(enabledConfirmBtn.onPressed, isNotNull);
 

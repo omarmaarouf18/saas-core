@@ -4,6 +4,31 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Tier 1 Behavioral Audit Remediations (Resource Leaks, Rating Lockout, Money Flow Retry, and Chat Deduplication)
+
+- **Implementation Detail**:
+  - **TicketChatScreen WebSocket Disposal Teardown (`ticket_chat_screen.dart`, `chat_provider.dart`)**:
+    - Resolved critical defect where `ticket_chat_screen.dart` scheduled `chat.disconnect()` inside `addPostFrameCallback((_) { if (mounted) { chat.disconnect(); } })`. Because `mounted` is always `false` after `dispose()`, the disconnect callback was dead code, leaking WebSocket connections and reconnect timers indefinitely.
+    - Caches `ChatProvider` in `didChangeDependencies()` and invokes `disconnect()` synchronously in `dispose()`.
+    - Hardened `chat_provider.dart` `disconnect()` to absorb notifications safely if called during widget tree disposal phases.
+    - Added regression tests in `frontend/test/a6_disposal_test.dart` asserting disconnect on disposal.
+  - **Customer Rating Flow Role Lockout & Party Resolution (`ratings_handlers.go`, `rating_screen.dart`)**:
+    - Resolved critical defect where customers were prompted on `JobStatusScreen` to rate completed deliveries, but `RateJob` strictly enforced Owner <-> Employee ratings, returning HTTP 403 Forbidden on customer ratings.
+    - Backend: Updated `services/user-service/internal/handlers/ratings_handlers.go` `RateJob` authorization matrix to allow Customer <-> Courier (`job.UserID` <-> `job.EmployeeID`) and Customer <-> Owner (`job.UserID` <-> `job.OwnerID`). Added self-rating (`400 Bad Request`) and incomplete job (`400 Bad Request`) guards.
+    - Frontend: Updated `frontend/lib/screens/rating_screen.dart` `_determineParties()` to dynamically route between courier, customer, and owner based on user role and job assignees.
+    - Added backend unit test suite `services/user-service/internal/handlers/ratings_target_guard_regression_test.go` covering 9 role authorization scenarios, and updated `frontend/test/rating_screen_test.dart` and `frontend/test/golden_screens_test.dart`.
+  - **Pseudo-Retry on Money Dialog Error Banners (`deposit_funds_dialog.dart`, `payout_request_dialog.dart`)**:
+    - Resolved high-severity UX bug where error banner "Retry" actions simply cleared the banner state (`setState(() => _dialogError = null)`) instead of re-submitting transactions.
+    - In `deposit_funds_dialog.dart`: Extracted `_handleDeposit()` and wired `ThemedErrorBanner.onRetry: _isSubmitting ? null : _handleDeposit` and `onDismiss: () => setState(() => _dialogError = null)`.
+    - In `payout_request_dialog.dart`: Extracted `_handlePayout()` and `_handleContinue()` and wired `ThemedErrorBanner.onRetry` and `onDismiss` across both form and confirmation steps.
+    - Added regression tests verifying transaction re-submission in `frontend/test/deposit_funds_dialog_test.dart` and `frontend/test/payout_request_dialog_test.dart`.
+  - **Chat Message Deduplication Silently Dropping Repeated Content (`chat-service`, `chat_provider.dart`)**:
+    - Resolved high-severity defect where `ChatProvider._handleIncomingData` deduplicated messages purely on raw text, dropping consecutive identical messages (e.g. "Yes", "OK", "Thank you").
+    - Backend: Added message `ID` and `CreatedAt` to `chat.Message` in `services/chat-service/internal/chat/hub.go`, and updated `services/chat-service/internal/store/mongodb.go` to store and return them in `PersistMessage` and `GetHistory`.
+    - Frontend: Updated `frontend/lib/models/chat_message.dart` to parse `id` and `createdAt` with fallbacks. Updated `frontend/lib/providers/chat_provider.dart` deduplication to verify message ID matches or 2-second timestamp proximity rather than discarding repeated content.
+    - Added tests in `services/chat-service/internal/store/mongodb_test.go` and `frontend/test/chat_provider_deduplication_test.dart`.
+- **Verification**: Verified across `go test ./services/user-service/...` (100% pass), `go test ./services/chat-service/...` (100% pass), `flutter analyze` (0 issues), `flutter test` (545/545 pass), `make backend-frontend-parity-check` (100% pass), `make docs-check` (clean).
+
 ## Trip Distance Pricing (Pickup to Destination) and Mandatory Booking Destination
 
 - **Implementation Detail**:

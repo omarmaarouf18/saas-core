@@ -44,10 +44,58 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
     super.dispose();
   }
 
+  void _handleContinue() {
+    if (_formKey.currentState != null && _formKey.currentState!.validate()) {
+      setState(() {
+        _isConfirming = true;
+        _dialogError = null;
+      });
+    }
+  }
+
+  Future<void> _handlePayout() async {
+    if (_isSubmitting) return;
+    final l10n = context.l10n;
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
+
+    setState(() {
+      _isSubmitting = true;
+      _dialogError = null;
+    });
+
+    try {
+      final amount = double.parse(_amountController.text.trim());
+      await ownerProvider.requestPayout(
+        amount: amount,
+        payoutMethod: _selectedMethod,
+        accountDetails: _accountDetailsController.text.trim(),
+      );
+      if (auth.token != null) {
+        await ownerProvider.fetchDashboardData(auth.token!);
+      }
+      if (mounted) {
+        Navigator.of(context).pop();
+        ThemedSnackBar.showSuccess(
+          context,
+          l10n.payoutSuccessMessage,
+          key: const Key('payout_success_snackbar'),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error requesting payout: $e');
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+          _dialogError = friendlyErrorMessage(e);
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final auth = Provider.of<AuthProvider>(context, listen: false);
     final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
 
     final screenSize = MediaQuery.of(context).size;
@@ -152,7 +200,8 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
                     ThemedErrorBanner(
                       key: const Key('payout_dialog_error_banner'),
                       message: _dialogError!,
-                      onRetry: () => setState(() => _dialogError = null),
+                      onRetry: _isSubmitting ? null : _handlePayout,
+                      onDismiss: () => setState(() => _dialogError = null),
                     ),
                   ],
                 ] else ...[
@@ -279,7 +328,9 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
                           ThemedErrorBanner(
                             key: const Key('payout_dialog_error_banner'),
                             message: _dialogError!,
-                            onRetry: () => setState(() => _dialogError = null),
+                            onRetry: _isSubmitting ? null : _handleContinue,
+                            onDismiss: () =>
+                                setState(() => _dialogError = null),
                           ),
                         ],
                       ],
@@ -320,52 +371,15 @@ class _PayoutRequestDialogState extends State<PayoutRequestDialog> {
                             ? l10n.confirmPayoutBtn
                             : l10n.continueActionLabel,
                         isLoading: _isSubmitting,
-                        onPressed: () async {
-                          if (!_isConfirming) {
-                            if (_formKey.currentState!.validate()) {
-                              setState(() {
-                                _isConfirming = true;
-                                _dialogError = null;
-                              });
-                            }
-                          } else {
-                            setState(() {
-                              _isSubmitting = true;
-                              _dialogError = null;
-                            });
-
-                            try {
-                              final amount =
-                                  double.parse(_amountController.text.trim());
-                              await ownerProvider.requestPayout(
-                                amount: amount,
-                                payoutMethod: _selectedMethod,
-                                accountDetails:
-                                    _accountDetailsController.text.trim(),
-                              );
-                              if (auth.token != null) {
-                                await ownerProvider
-                                    .fetchDashboardData(auth.token!);
-                              }
-                              if (context.mounted) {
-                                Navigator.of(context).pop();
-                                ThemedSnackBar.showSuccess(
-                                  context,
-                                  l10n.payoutSuccessMessage,
-                                  key: const Key('payout_success_snackbar'),
-                                );
-                              }
-                            } catch (e) {
-                              debugPrint('Error requesting payout: $e');
-                              if (mounted) {
-                                setState(() {
-                                  _isSubmitting = false;
-                                  _dialogError = friendlyErrorMessage(e);
-                                });
-                              }
-                            }
-                          }
-                        },
+                        onPressed: _isSubmitting
+                            ? null
+                            : () {
+                                if (!_isConfirming) {
+                                  _handleContinue();
+                                } else {
+                                  _handlePayout();
+                                }
+                              },
                       ),
                     ),
                   ],

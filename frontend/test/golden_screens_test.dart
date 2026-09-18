@@ -290,9 +290,10 @@ UserProfile _customer() => UserProfile(
       role: 'user',
     );
 
-Job _job(String id, String status) => Job(
+Job _job(String id, String status, {String? employeeId}) => Job(
       id: id,
       ownerId: 'owner-1',
+      employeeId: employeeId,
       userId: 'cust-1',
       serviceId: 'service-delivery-1',
       status: status,
@@ -992,14 +993,16 @@ void main() {
 
   testWidgets('GOLDEN rating screen — mobile', (tester) async {
     final app = _customerApp(
-      home: RatingScreen(job: _job('custjob1234', 'completed')),
+      home: RatingScreen(
+          job: _job('custjob1234', 'completed', employeeId: 'emp-1')),
     );
     await _pumpGolden(tester, app, _mobile, 'rating_screen_mobile_360x800');
   });
 
   testWidgets('GOLDEN dark rating screen — mobile', (tester) async {
     final app = _customerApp(
-      home: RatingScreen(job: _job('custjob1234', 'completed')),
+      home: RatingScreen(
+          job: _job('custjob1234', 'completed', employeeId: 'emp-1')),
       brightness: Brightness.dark,
     );
     await _pumpGolden(

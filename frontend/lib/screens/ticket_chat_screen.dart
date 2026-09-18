@@ -57,17 +57,20 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
     }
   }
 
+  ChatProvider? _chatProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _chatProvider = Provider.of<ChatProvider>(context, listen: false);
+  }
+
   @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
-    // Teardown chat connection cleanly
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        final chat = Provider.of<ChatProvider>(context, listen: false);
-        chat.disconnect();
-      }
-    });
+    // Teardown chat connection cleanly before unmounting
+    _chatProvider?.disconnect();
     super.dispose();
   }
 

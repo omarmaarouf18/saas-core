@@ -170,3 +170,131 @@ func ratingSeed(h *ratingsRoleHarness, target, rater string) *models.Rating {
 		CreatedAt: time.Now().UTC(),
 	}
 }
+
+func TestRateJob_RoleAuthorizationMatrix(t *testing.T) {
+	harness := newRatingsRoleHarness(t)
+	h, s, ctx := harness.handler, harness.store, harness.ctx
+
+	ownerID := "own-boss-1"
+	employeeID := "emp-courier-1"
+	customerID := "cust-client-1"
+	outsiderID := "cust-outsider-9"
+
+	newJob := func(id, status string) *models.Job {
+		return &models.Job{
+			ID:         id,
+			OwnerID:    ownerID,
+			EmployeeID: employeeID,
+			UserID:     customerID,
+			ServiceID:  "svc-test-1",
+			Status:     models.JobStatus(status),
+			CreatedAt:  time.Now().UTC(),
+			UpdatedAt:  time.Now().UTC(),
+		}
+	}
+
+	completedJob := newJob("job-completed-matrix", string(models.JobStatusCompleted))
+	if err := s.CreateJob(ctx, completedJob); err != nil {
+		t.Fatalf("seed completed job: %v", err)
+	}
+
+	activeJob := newJob("job-active-matrix", string(models.JobStatusActive))
+	if err := s.CreateJob(ctx, activeJob); err != nil {
+		t.Fatalf("seed active job: %v", err)
+	}
+
+	postRate := func(jobID, raterID, raterRole, targetID string) *httptest.ResponseRecorder {
+		token := harness.tokenFor(raterID, raterRole)
+		body := fmt.Sprintf(`{"job_id":"%s","rated_by_token":"%s","rated_user":"%s","stars":5,"comment":"Role matrix test"}`,
+			jobID, token, targetID)
+		req := httptest.NewRequest("POST", "/users/jobs/rate", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		h.RateJob(w, req)
+		return w
+	}
+
+	// 1. Customer rates Courier (Primary bug: was 403 Forbidden)
+	t.Run("Customer rates Courier (201 Created)", func(t *testing.T) {
+		job := newJob("job-c-rates-e", string(models.JobStatusCompleted))
+		_ = s.CreateJob(ctx, job)
+		w := postRate(job.ID, customerID, "customer", employeeID)
+		if w.Code != http.StatusCreated {
+			t.Errorf("customer rating courier: got %d %s, want 201 Created", w.Code, w.Body.String())
+		}
+	})
+
+	// 2. Courier rates Customer (was 403 Forbidden)
+	t.Run("Courier rates Customer (201 Created)", func(t *testing.T) {
+		job := newJob("job-e-rates-c", string(models.JobStatusCompleted))
+		_ = s.CreateJob(ctx, job)
+		w := postRate(job.ID, employeeID, "employee", customerID)
+		if w.Code != http.StatusCreated {
+			t.Errorf("courier rating customer: got %d %s, want 201 Created", w.Code, w.Body.String())
+		}
+	})
+
+	// 3. Customer rates Owner (was 403 Forbidden)
+	t.Run("Customer rates Owner (201 Created)", func(t *testing.T) {
+		job := newJob("job-c-rates-o", string(models.JobStatusCompleted))
+		_ = s.CreateJob(ctx, job)
+		w := postRate(job.ID, customerID, "customer", ownerID)
+		if w.Code != http.StatusCreated {
+			t.Errorf("customer rating owner: got %d %s, want 201 Created", w.Code, w.Body.String())
+		}
+	})
+
+	// 4. Owner rates Courier (pre-existing authorized path)
+	t.Run("Owner rates Courier (201 Created)", func(t *testing.T) {
+		job := newJob("job-o-rates-e", string(models.JobStatusCompleted))
+		_ = s.CreateJob(ctx, job)
+		w := postRate(job.ID, ownerID, "owner", employeeID)
+		if w.Code != http.StatusCreated {
+			t.Errorf("owner rating courier: got %d %s, want 201 Created", w.Code, w.Body.String())
+		}
+	})
+
+	// 5. Courier rates Owner (pre-existing authorized path)
+	t.Run("Courier rates Owner (201 Created)", func(t *testing.T) {
+		job := newJob("job-e-rates-o", string(models.JobStatusCompleted))
+		_ = s.CreateJob(ctx, job)
+		w := postRate(job.ID, employeeID, "employee", ownerID)
+		if w.Code != http.StatusCreated {
+			t.Errorf("courier rating owner: got %d %s, want 201 Created", w.Code, w.Body.String())
+		}
+	})
+
+	// 6. Owner rates Customer (201 Created)
+	t.Run("Owner rates Customer (201 Created)", func(t *testing.T) {
+		job := newJob("job-o-rates-c", string(models.JobStatusCompleted))
+		_ = s.CreateJob(ctx, job)
+		w := postRate(job.ID, ownerID, "owner", customerID)
+		if w.Code != http.StatusCreated {
+			t.Errorf("owner rating customer: got %d %s, want 201 Created", w.Code, w.Body.String())
+		}
+	})
+
+	// 7. Unauthorized third party (403 Forbidden)
+	t.Run("Outsider rates Courier (403 Forbidden)", func(t *testing.T) {
+		w := postRate(completedJob.ID, outsiderID, "customer", employeeID)
+		if w.Code != http.StatusForbidden {
+			t.Errorf("outsider rating courier: got %d %s, want 403 Forbidden", w.Code, w.Body.String())
+		}
+	})
+
+	// 8. Self-rating attempt (400 Bad Request)
+	t.Run("Self-rating rejected (400 Bad Request)", func(t *testing.T) {
+		w := postRate(completedJob.ID, employeeID, "employee", employeeID)
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("self-rating: got %d %s, want 400 Bad Request", w.Code, w.Body.String())
+		}
+	})
+
+	// 9. Rating non-completed job (400 Bad Request)
+	t.Run("Active job rating rejected (400 Bad Request)", func(t *testing.T) {
+		w := postRate(activeJob.ID, customerID, "customer", employeeID)
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("active job rating: got %d %s, want 400 Bad Request", w.Code, w.Body.String())
+		}
+	})
+}

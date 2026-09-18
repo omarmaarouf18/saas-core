@@ -183,7 +183,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('choose_destination_button')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('confirm_destination_location_button')));
+      await tester
+          .tap(find.byKey(const Key('confirm_destination_location_button')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('confirm_booking_button')));
       await tester.pump();

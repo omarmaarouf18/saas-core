@@ -191,10 +191,23 @@ class ChatProvider extends ChangeNotifier {
       } else if (type == 'message' || map['content'] != null) {
         final msg = ChatMessage.fromJson(map);
         // Avoid duplicating messages already fetched via history
-        final isDuplicate = _messages.any((m) =>
-            m.senderId == msg.senderId &&
-            m.content == msg.content &&
-            m.type == msg.type);
+        final isDuplicate = _messages.any((m) {
+          if (m.id != null &&
+              msg.id != null &&
+              m.id!.isNotEmpty &&
+              msg.id!.isNotEmpty) {
+            return m.id == msg.id;
+          }
+          if (m.createdAt != null && msg.createdAt != null) {
+            final diff =
+                m.createdAt!.difference(msg.createdAt!).inSeconds.abs();
+            return diff < 2 &&
+                m.senderId == msg.senderId &&
+                m.content == msg.content &&
+                m.type == msg.type;
+          }
+          return false;
+        });
         if (!isDuplicate) {
           _messages.add(msg);
           notifyListeners();
@@ -204,6 +217,15 @@ class ChatProvider extends ChangeNotifier {
       // Gracefully handle parsing failures without crashing
       debugPrint("Failed to parse websocket data: $e");
     }
+  }
+
+  @visibleForTesting
+  void handleIncomingDataForTesting(dynamic data) => _handleIncomingData(data);
+
+  @visibleForTesting
+  void setMessagesForTesting(List<ChatMessage> msgs) {
+    _messages = List.from(msgs);
+    notifyListeners();
   }
 
   void _subscribe(String channel) {
@@ -305,7 +327,9 @@ class ChatProvider extends ChangeNotifier {
     // A6: safe against post-dispose invocation (see _isDisposed note).
     if (_isDisposed) return;
     _teardownConnection();
-    notifyListeners();
+    try {
+      notifyListeners();
+    } catch (_) {}
   }
 
   /// Releases the socket, subscription, and reconnect timer without

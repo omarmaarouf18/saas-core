@@ -40,9 +40,13 @@ class _RatingScreenState extends State<RatingScreen> {
     // A8: party labels are localized now, so resolution must wait until
     // Localizations is available (post-frame), unlike the old raw strings.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _determineParties();
+      if (mounted) {
+        setState(() {
+          _determineParties();
+        });
+        _checkOtherPartyRatingStatus();
+      }
     });
-    _checkOtherPartyRatingStatus();
   }
 
   @override
@@ -57,15 +61,34 @@ class _RatingScreenState extends State<RatingScreen> {
     final l10n = AppLocalizations.of(context)!;
     if (user != null) {
       if (user.role == 'employee') {
-        // Employee is rating the Owner (customer)
-        _otherPartyId = widget.job.ownerId;
-        _otherPartyName = l10n.clientOwnerRoleLabel;
-        _otherPartyRole = l10n.roleOwnerLabel;
+        // Employee rates Customer
+        _otherPartyId = widget.job.userId;
+        _otherPartyName = l10n.proposalRoleCustomer;
+        _otherPartyRole = l10n.signupRoleCustomer;
+      } else if (user.role == 'owner') {
+        // Owner rates Employee if assigned, otherwise Customer
+        if (widget.job.employeeId != null &&
+            widget.job.employeeId!.isNotEmpty) {
+          _otherPartyId = widget.job.employeeId;
+          _otherPartyName = l10n.proposalRoleDriverEmployee;
+          _otherPartyRole = l10n.specialistRoleLabel;
+        } else {
+          _otherPartyId = widget.job.userId;
+          _otherPartyName = l10n.proposalRoleCustomer;
+          _otherPartyRole = l10n.signupRoleCustomer;
+        }
       } else {
-        // Owner/Customer is rating the Employee (driver)
-        _otherPartyId = widget.job.employeeId;
-        _otherPartyName = l10n.proposalRoleDriverEmployee;
-        _otherPartyRole = l10n.specialistRoleLabel;
+        // Customer rates Employee if assigned, otherwise Owner
+        if (widget.job.employeeId != null &&
+            widget.job.employeeId!.isNotEmpty) {
+          _otherPartyId = widget.job.employeeId;
+          _otherPartyName = l10n.proposalRoleDriverEmployee;
+          _otherPartyRole = l10n.specialistRoleLabel;
+        } else {
+          _otherPartyId = widget.job.ownerId;
+          _otherPartyName = l10n.clientOwnerRoleLabel;
+          _otherPartyRole = l10n.roleOwnerLabel;
+        }
       }
     }
   }

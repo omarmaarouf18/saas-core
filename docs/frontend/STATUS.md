@@ -323,7 +323,12 @@
     5. **Real-Time Race Condition (`ticket_chat_screen.dart:55-57`)**: History fetch and WebSocket subscription are initiated concurrently; history completion overwrites `_messages = []`, dropping incoming live messages.
     6. **Navigation Pop Trap (`customer_jobs_screen.dart:165`)**: Empty state "Browse Services" CTA calls `Navigator.pop(context)` instead of switching to Tab 1, popping out of the root `CustomerHomeScreen` shell.
     7. **42-Control Double-Submit Matrix**: Evaluated all 42 network-triggering controls across the application (36 guarded, 5 partial, 1 unguarded driver status toggle).
-    Defined a 3-tier prioritized remediation roadmap (Tier 1: leaks, ratings, money flows, chat drops; Tier 2: navigation traps, history races, 402 UX; Tier 3: consistency and labels).
+    Defined a 3-tier prioritized remediation roadmap. **Tier 1 Remediation Completed (2026-09-18)**:
+    - *TicketChatScreen Teardown Leak*: Synchronous disconnect in `dispose()` with provider caching in `didChangeDependencies()`.
+    - *Customer Rating 403 Lockout*: Expanded backend `RateJob` role matrix for Customer <-> Courier and Customer <-> Owner, and aligned frontend party routing.
+    - *Pseudo-Retry in Money Dialogs*: Wired `ThemedErrorBanner.onRetry` to `_handleDeposit()` and `_handlePayout()`.
+    - *Chat Deduplication*: Added backend message IDs and timestamps to MongoDB and WebSocket payloads; updated frontend deduplication to preserve repeated text.
+    - Verified across full test suites (Go user-service & chat-service 100% pass, Flutter 545/545 pass).
 
 *   **Backend Capabilities & Messaging Backlog Audit (2026-09-02)**: Completed full 5-service backend inventory audit cross-referenced against the Flutter mobile app and `kyc-reviewer-console`. Documented in [docs/frontend/MESSAGING_BACKLOG.md](MESSAGING_BACKLOG.md). Identified 5 capability gaps: (1) P1 Support Ticket Chat Thread (`ticket:<ticketID>` channel WebSocket/history/sending in `ChatProvider` & dedicated conversation UI); (2) P1 Customer Ticket History & Status Screen (missing `GET /chat/tickets/mine` query endpoint + `CustomerTicketsScreen`); (3) P3 Orphan support agent resolution endpoint (`POST /chat/tickets/resolve`); (4) P2 Courier availability toggle switch on `EmployeeJobsScreen` [CLOSED in `63e43c937df74e5a4154dc9272fd42eba310fcfe`]; (5) P3 User profile account standing/suspension metadata [CLOSED in `d618da95712dcae1ff2f15ce32319823c56eda57`]. Confirmed 0 reverse-direction contract breakages.
 

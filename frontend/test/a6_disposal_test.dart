@@ -4,12 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:frontend/models/employee_marker.dart';
+import 'package:frontend/models/support_ticket.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/chat_provider.dart';
 import 'package:frontend/providers/map_tracking_provider.dart';
 import 'package:frontend/screens/chat_screen.dart';
 import 'package:frontend/screens/customer_job_map_screen.dart';
 import 'package:frontend/screens/owner_fleet_map_screen.dart';
+import 'package:frontend/screens/ticket_chat_screen.dart';
 import 'package:frontend/widgets/otp_pin_input.dart';
 import 'package:provider/provider.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -120,6 +122,45 @@ void main() {
       expect(chat.disconnectCount, 1,
           reason:
               'leaving the chat screen MUST close the WebSocket subscription '
+              'and cancel the auto-reconnect timer');
+    });
+
+    testWidgets(
+        'ticket chat screen pop disconnects the app-lifetime ChatProvider socket',
+        (tester) async {
+      final chat = _SpyChatProvider(ApiClient());
+      final auth = AuthProvider(ApiClient());
+
+      await tester.pumpWidget(
+        _buildL10nApp(
+          child: MultiProvider(
+            providers: [
+              ChangeNotifierProvider<AuthProvider>.value(value: auth),
+              ChangeNotifierProvider<ChatProvider>.value(value: chat),
+            ],
+            child: TicketChatScreen(
+              ticket: SupportTicket(
+                id: 'tkt-test-a6',
+                customerId: 'cust-a6',
+                status: 'pending',
+                createdAt: DateTime.now(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(chat.disconnectCount, 0,
+          reason: 'pre-condition: connected while screen is open');
+
+      await tester.pumpWidget(
+        _buildL10nApp(child: const SizedBox.shrink()),
+      );
+      await tester.pump();
+
+      expect(chat.disconnectCount, 1,
+          reason:
+              'leaving ticket chat screen MUST close the WebSocket subscription '
               'and cancel the auto-reconnect timer');
     });
 

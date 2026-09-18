@@ -39,12 +39,47 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Future<void> _handleDeposit() async {
+    if (_isSubmitting) return;
+    if (_formKey.currentState == null || !_formKey.currentState!.validate()) {
+      return;
+    }
+
     final l10n = context.l10n;
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
 
+    setState(() {
+      _isSubmitting = true;
+      _dialogError = null;
+    });
+
+    try {
+      final amount = double.parse(_amountController.text.trim());
+      if (auth.token != null) {
+        await ownerProvider.deposit(auth.token!, amount);
+      }
+      if (mounted) {
+        Navigator.of(context).pop();
+        ThemedSnackBar.showSuccess(
+          context,
+          l10n.depositSuccessMessage(amount.toStringAsFixed(2)),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error making deposit: $e');
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+          _dialogError = friendlyErrorMessage(e);
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final screenSize = MediaQuery.of(context).size;
     final dialogWidth = math.min(500.0, screenSize.width * 0.92);
 
@@ -127,7 +162,8 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                     ThemedErrorBanner(
                       key: const Key('deposit_dialog_error_banner'),
                       message: _dialogError!,
-                      onRetry: () => setState(() => _dialogError = null),
+                      onRetry: _isSubmitting ? null : _handleDeposit,
+                      onDismiss: () => setState(() => _dialogError = null),
                     ),
                   ],
                   const SizedBox(height: AppSpacing.lg),
@@ -148,39 +184,7 @@ class _DepositFundsDialogState extends State<DepositFundsDialog> {
                           key: const Key('deposit_confirm_button'),
                           text: l10n.confirm,
                           isLoading: _isSubmitting,
-                          onPressed: () async {
-                            if (_formKey.currentState!.validate()) {
-                              setState(() {
-                                _isSubmitting = true;
-                                _dialogError = null;
-                              });
-
-                              try {
-                                final amount =
-                                    double.parse(_amountController.text.trim());
-                                if (auth.token != null) {
-                                  await ownerProvider.deposit(
-                                      auth.token!, amount);
-                                }
-                                if (context.mounted) {
-                                  Navigator.of(context).pop();
-                                  ThemedSnackBar.showSuccess(
-                                    context,
-                                    l10n.depositSuccessMessage(
-                                        amount.toStringAsFixed(2)),
-                                  );
-                                }
-                              } catch (e) {
-                                debugPrint('Error making deposit: $e');
-                                if (mounted) {
-                                  setState(() {
-                                    _isSubmitting = false;
-                                    _dialogError = friendlyErrorMessage(e);
-                                  });
-                                }
-                              }
-                            }
-                          },
+                          onPressed: _isSubmitting ? null : _handleDeposit,
                         ),
                       ),
                     ],

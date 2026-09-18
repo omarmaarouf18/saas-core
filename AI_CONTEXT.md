@@ -1016,6 +1016,19 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   7. **Route Timeline Metric Misrepresentation (`employee_jobs_screen.dart:995`, `employee_history_screen.dart:185`)**: Locked escrow credits are passed to `RouteTimeline(distanceText:)`, rendering "50 Credits" adjacent to the road distance icon.
   8. **42-Control Double-Submit Protection Matrix**: 36 fully guarded, 5 partial (reliance on provider state without immediate local disabled state), 1 unguarded driver status toggle.
 
+* **Tier 1 Remediation (Critical & High Severity Core Fixes — 2026-09-18)**:
+  - **TicketChatScreen WebSocket Disposal Teardown**: Replaced the dead post-frame `mounted` check in `ticket_chat_screen.dart` with provider caching in `didChangeDependencies()` and synchronous `_chatProvider?.disconnect()` in `dispose()`. Hardened `chat_provider.dart:disconnect()` against widget unmount listener notifications. Verified with `frontend/test/a6_disposal_test.dart` (7/7 pass).
+  - **Rating Flow Role Lockout & Party Resolution**:
+    - Backend: Updated `services/user-service/internal/handlers/ratings_handlers.go` `RateJob` to authorize Customer <-> Courier (`job.UserID` <-> `job.EmployeeID`) and Customer <-> Owner (`job.UserID` <-> `job.OwnerID`), while rejecting self-ratings (400) and uncompleted jobs (400).
+    - Frontend: Updated `frontend/lib/screens/rating_screen.dart` `_determineParties()` to dynamically route between courier, customer, and owner based on user role and job assignees.
+    - Verified with Go role authorization matrix (`ratings_target_guard_regression_test.go`, 9/9 pass), frontend widget suite (`rating_screen_test.dart`, 9/9 pass), and golden fixtures (`golden_screens_test.dart`, 58/58 pass).
+  - **Pseudo-Retry in Deposit & Payout Dialogs**: Extracted real retry callbacks (`_handleDeposit` in `deposit_funds_dialog.dart`, `_handlePayout` and `_handleContinue` in `payout_request_dialog.dart`) and wired `ThemedErrorBanner.onRetry` and `onDismiss`. Verified with `deposit_funds_dialog_test.dart` (9/9 pass) and `payout_request_dialog_test.dart` (9/9 pass).
+  - **Chat Message Deduplication**:
+    - Backend: Added `ID` and `CreatedAt` fields to `chat.Message` in `services/chat-service/internal/chat/hub.go`, persisting and returning them via `mongodb.go`.
+    - Frontend: Added `id` and `createdAt` parsing in `chat_message.dart`; updated `chat_provider.dart` deduplication to verify message ID or a 2-second timestamp window proximity rather than dropping identical consecutive message bodies.
+    - Verified with `mongodb_test.go` and `chat_provider_deduplication_test.dart` (7/7 pass).
+
+
 
 
 

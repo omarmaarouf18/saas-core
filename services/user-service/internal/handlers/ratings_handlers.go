@@ -83,16 +83,25 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isOwnerRating := req.RatedBy == job.OwnerID && req.RatedUser == job.EmployeeID
-	isEmployeeRating := req.RatedBy == job.EmployeeID && req.RatedUser == job.OwnerID
-
-	if !isOwnerRating && !isEmployeeRating {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "not authorized to rate this job/user"})
+	if req.RatedBy == req.RatedUser {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "cannot rate yourself"})
 		return
 	}
 
 	if job.Status != models.JobStatusCompleted {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "cannot rate a job that is not completed"})
+		return
+	}
+
+	isOwnerRatingEmployee := job.EmployeeID != "" && req.RatedBy == job.OwnerID && req.RatedUser == job.EmployeeID
+	isOwnerRatingCustomer := req.RatedBy == job.OwnerID && req.RatedUser == job.UserID
+	isEmployeeRatingOwner := job.EmployeeID != "" && req.RatedBy == job.EmployeeID && req.RatedUser == job.OwnerID
+	isEmployeeRatingCustomer := job.EmployeeID != "" && req.RatedBy == job.EmployeeID && req.RatedUser == job.UserID
+	isCustomerRatingEmployee := job.EmployeeID != "" && req.RatedBy == job.UserID && req.RatedUser == job.EmployeeID
+	isCustomerRatingOwner := req.RatedBy == job.UserID && req.RatedUser == job.OwnerID
+
+	if !isOwnerRatingEmployee && !isOwnerRatingCustomer && !isEmployeeRatingOwner && !isEmployeeRatingCustomer && !isCustomerRatingEmployee && !isCustomerRatingOwner {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "not authorized to rate this job/user"})
 		return
 	}
 

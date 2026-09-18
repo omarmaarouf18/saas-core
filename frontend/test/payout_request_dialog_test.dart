@@ -294,6 +294,52 @@ void main() {
   });
 
   testWidgets(
+      'PayoutRequestDialog onRetry in confirmation step re-requests payout',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final auth = MockAuthProviderForPayout(apiClient);
+    final owner = MockOwnerProviderForPayoutDialog(apiClient);
+    owner.shouldThrowOnRequest = true;
+
+    await tester
+        .pumpWidget(buildTestApp(ownerProvider: owner, authProvider: auth));
+    await tester.tap(find.text('Open Dialog'));
+    await tester.pumpAndSettle();
+
+    final amountField = find.descendant(
+      of: find.byKey(const Key('payout_amount_field')),
+      matching: find.byType(TextField),
+    );
+    final detailsField = find.descendant(
+      of: find.byKey(const Key('payout_account_details_field')),
+      matching: find.byType(TextField),
+    );
+
+    await tester.enterText(amountField, '50.00');
+    await tester.enterText(detailsField, 'ACC-RETRY');
+
+    await tester.tap(find.byKey(const Key('payout_submit_button')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('payout_confirm_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('payout_dialog_error_banner')), findsOneWidget);
+    expect(owner.requestPayoutCalled, isFalse);
+
+    // Resolve failure and tap Retry on error banner
+    owner.shouldThrowOnRequest = false;
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+
+    expect(owner.requestPayoutCalled, isTrue);
+    expect(owner.lastRequestedAmount, 50.0);
+    expect(owner.lastRequestedAccountDetails, 'ACC-RETRY');
+    expect(find.byKey(const Key('payout_success_snackbar')), findsOneWidget);
+    expect(find.byType(PayoutRequestDialog), findsNothing);
+  });
+
+  testWidgets(
       'PayoutRequestDialog adapts without overflow on 360dp mobile viewport',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(360, 800);

@@ -222,6 +222,40 @@ void main() {
     expect(find.byType(DepositFundsDialog), findsOneWidget);
   });
 
+  testWidgets('DepositFundsDialog onRetry triggers real deposit resubmission',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final auth = MockAuthProviderForDeposit(apiClient);
+    final owner = MockOwnerProviderForDepositDialog(apiClient);
+    owner.shouldThrowOnDeposit = true;
+
+    await tester.pumpWidget(buildDepositTestApp(
+      ownerProvider: owner,
+      authProvider: auth,
+    ));
+    await tester.tap(find.text('Open Deposit Dialog'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+        find.byKey(const Key('deposit_amount_field')), '100.00');
+    await tester.tap(find.byKey(const Key('deposit_confirm_button')));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key('deposit_dialog_error_banner')), findsOneWidget);
+    expect(owner.depositCalled, isFalse);
+
+    // Resolve failure condition and tap Retry on error banner
+    owner.shouldThrowOnDeposit = false;
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+
+    expect(owner.depositCalled, isTrue);
+    expect(owner.lastDepositedAmount, 100.00);
+    expect(find.text('Successfully deposited 100.00 credits.'), findsOneWidget);
+    expect(find.byType(DepositFundsDialog), findsNothing);
+  });
+
   testWidgets(
       'DepositFundsDialog renders without overflow on 360dp mobile viewport',
       (WidgetTester tester) async {

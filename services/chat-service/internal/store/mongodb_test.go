@@ -109,6 +109,18 @@ func TestMongoDB_MessageOperations(t *testing.T) {
 	if history[0].SenderID != "user-1" || history[1].SenderID != "user-2" {
 		t.Errorf("Expected oldest to newest sorting in history: got %v", history)
 	}
+	if msg1.ID == "" || msg2.ID == "" {
+		t.Errorf("Expected PersistMessage to populate ID, got msg1.ID=%q, msg2.ID=%q", msg1.ID, msg2.ID)
+	}
+	if msg1.CreatedAt == nil || msg2.CreatedAt == nil {
+		t.Errorf("Expected PersistMessage to populate CreatedAt, got msg1.CreatedAt=%v, msg2.CreatedAt=%v", msg1.CreatedAt, msg2.CreatedAt)
+	}
+	if history[0].ID != msg1.ID || history[1].ID != msg2.ID {
+		t.Errorf("Expected history to include message IDs: got [0].ID=%q want %q, [1].ID=%q want %q", history[0].ID, msg1.ID, history[1].ID, msg2.ID)
+	}
+	if history[0].CreatedAt == nil || history[1].CreatedAt == nil {
+		t.Errorf("Expected history to decode non-nil CreatedAt timestamps")
+	}
 }
 
 func TestMongoDB_SupportAgentOperations(t *testing.T) {
