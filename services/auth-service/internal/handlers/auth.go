@@ -1267,6 +1267,22 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if !b {
+			clientIP := handlerutil.GetClientIP(r)
+			if locked, remaining := a.limiter.IsLocked(clientIP); locked {
+				writeJSON(w, http.StatusTooManyRequests, map[string]string{
+					"error": fmt.Sprintf("too many failed attempts from this IP. Please try again in %.0f seconds.", remaining.Seconds()),
+				})
+				return
+			}
+			if user.Email != "" {
+				if locked, remaining := a.limiter.IsLocked(user.Email); locked {
+					writeJSON(w, http.StatusTooManyRequests, map[string]string{
+						"error": fmt.Sprintf("too many failed attempts for this account. Please try again in %.0f seconds.", remaining.Seconds()),
+					})
+					return
+				}
+			}
+
 			// Disabling 2FA weakens account security and requires password re-verification.
 			pwdVal, hasPwd := raw["password"]
 			pwdStr, isStr := pwdVal.(string)
@@ -1276,7 +1292,6 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 				})
 				return
 			}
-			clientIP := handlerutil.GetClientIP(r)
 			if user.Password == "" {
 				// Timing-parity: burn a real bcrypt comparison against a dummy hash
 				// so accounts without passwords do not reveal account state or bypass timing.
@@ -1299,6 +1314,12 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 					"error": "invalid password",
 				})
 				return
+			}
+
+			// Reset limits on success
+			a.limiter.Reset(clientIP)
+			if user.Email != "" {
+				a.limiter.Reset(user.Email)
 			}
 		}
 		updateFields["two_factor_enabled"] = b

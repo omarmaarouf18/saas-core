@@ -210,3 +210,81 @@ func TestTwoFactor_DisableTimingParityForUserWithoutPassword(t *testing.T) {
 		t.Errorf("Expected 2FA to remain enabled in DB")
 	}
 }
+
+func TestTwoFactor_DisableRateLimitingLockout(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	plainPassword := "Correct-Password-Lockout-99"
+	hash, err := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
+	if err != nil {
+		t.Fatalf("failed to hash password: %v", err)
+	}
+
+	trueVal := true
+	user := &models.User{
+		ID:               "usr-2fa-lockout-test",
+		Email:            "twofa-lockout@example.com",
+		Username:         "twofa_lockout_user",
+		Password:         string(hash),
+		Role:             models.RoleUser,
+		IsActive:         true,
+		KYCStatus:        models.KYCNone,
+		TwoFactorEnabled: &trueVal,
+		CreatedAt:        time.Now(),
+	}
+	if err := s.CreateUser(ctx, user); err != nil {
+		t.Fatalf("failed to seed test user: %v", err)
+	}
+
+	token, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.ID, user.Email)
+	if err != nil {
+		t.Fatalf("failed to generate token: %v", err)
+	}
+
+	// Lockout threshold in auth-service is 5 failures.
+	// Submit 5 wrong-password attempts.
+	for i := 0; i < 5; i++ {
+		payload := map[string]any{
+			"two_factor_enabled": false,
+			"password":           "wrong-guess-password",
+		}
+		bodyBytes, _ := json.Marshal(payload)
+		req := httptest.NewRequest(http.MethodPatch, "/auth/user", bytes.NewReader(bodyBytes))
+		req.Header.Set("Authorization", "Bearer "+token)
+		rec := httptest.NewRecorder()
+
+		a.UpdateProfile(rec, req)
+
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("Attempt %d: expected 401 Unauthorized, got %d. Body: %s", i+1, rec.Code, rec.Body.String())
+		}
+	}
+
+	// 6th attempt: submit the CORRECT password.
+	// Because account/IP is locked out, it MUST return 429 Too Many Requests, not 200 OK.
+	payload := map[string]any{
+		"two_factor_enabled": false,
+		"password":           plainPassword,
+	}
+	bodyBytes, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPatch, "/auth/user", bytes.NewReader(bodyBytes))
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec := httptest.NewRecorder()
+
+	a.UpdateProfile(rec, req)
+
+	if rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("Expected 429 Too Many Requests when locked out (even with correct password), got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	// Verify DB state remains 2FA enabled
+	dbUser := s.GetByID(ctx, user.ID)
+	if !dbUser.Is2FAEnabled() {
+		t.Errorf("Expected 2FA to remain enabled in DB after locked-out attempt")
+	}
+}
