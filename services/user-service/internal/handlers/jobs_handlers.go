@@ -633,6 +633,14 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		if job.Destination.Latitude != 0 || job.Destination.Longitude != 0 {
 			dist = haversineKm(job.Location.Latitude, job.Location.Longitude, job.Destination.Latitude, job.Destination.Longitude)
 		} else if job.AssignedEmployeeLocation != nil {
+			// LEGACY FALLBACK — added 2026-09-17 alongside the Destination field
+			// (commit 2a3712d). Only reachable for jobs created before that commit,
+			// which have no Destination recorded. Safe to delete once no job with
+			// Destination == zero-value and status other than completed/cancelled
+			// remains in the database — check with a one-off query before removing:
+			//   db.jobs.count({ "destination.latitude": 0, "destination.longitude": 0,
+			//                    status: { $nin: ["completed", "cancelled"] } })
+			// Tracked for removal: see AI_CONTEXT.md backlog.
 			dist = haversineKm(job.Location.Latitude, job.Location.Longitude, job.AssignedEmployeeLocation.Latitude, job.AssignedEmployeeLocation.Longitude)
 		}
 	}

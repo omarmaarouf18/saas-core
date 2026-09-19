@@ -1069,4 +1069,5 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
 
 * **Codebase Review Hardening (2026-09-19)**:
   - **CancelJob Dead Pricing Removal (`services/user-service`)**: Removed dead recomputed pricing calculation from `CancelJob` (`jobs_handlers.go`), ensuring escrow refunds strictly and unambiguously use `job.LockedEscrowAmount` without misleading intermediate variables.
+  - **CompleteJob Legacy Fallback Expiry (`services/user-service`)**: Tracked legacy compatibility fallback in `CompleteJob` (`jobs_handlers.go:635`) falling back to `AssignedEmployeeLocation` for pre-2026-09-17 jobs lacking recorded `Destination`. Safe to remove once query `db.jobs.count({ "destination.latitude": 0, "destination.longitude": 0, status: { $nin: ["completed", "cancelled"] } })` returns 0.
 
