@@ -12,9 +12,12 @@ import '../widgets/themed_panel.dart';
 import '../widgets/entity_avatar.dart';
 import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/secondary_button.dart';
 import '../widgets/themed_card.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_success_banner.dart';
+import '../widgets/themed_text_field.dart';
 import 'customer_tickets_screen.dart';
 import 'kyc_document_upload_screen.dart';
 import 'my_account_screen.dart';
@@ -438,9 +441,30 @@ class SettingsScreen extends StatelessWidget {
                         isDestructive: true,
                       );
                       if (confirmed != true) return;
+
+                      if (!context.mounted) return;
+                      final disabled =
+                          await _DisableTwoFactorPasswordDialog.show(
+                        context,
+                        auth,
+                      );
+                      if (disabled == true && context.mounted) {
+                        ThemedSnackBar.showSuccess(
+                          context,
+                          l10n.twoFactorDisabledSuccess,
+                        );
+                      }
+                      return;
                     }
+
                     try {
-                      await auth.toggleTwoFactor(newVal);
+                      await auth.toggleTwoFactor(true);
+                      if (context.mounted) {
+                        ThemedSnackBar.showSuccess(
+                          context,
+                          l10n.twoFactorEnabledSuccess,
+                        );
+                      }
                     } catch (e) {
                       if (context.mounted) {
                         ThemedSnackBar.showError(
@@ -512,6 +536,146 @@ class SettingsScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DisableTwoFactorPasswordDialog extends StatefulWidget {
+  final AuthProvider auth;
+
+  const _DisableTwoFactorPasswordDialog({required this.auth});
+
+  static Future<bool?> show(BuildContext context, AuthProvider auth) {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => _DisableTwoFactorPasswordDialog(auth: auth),
+    );
+  }
+
+  @override
+  State<_DisableTwoFactorPasswordDialog> createState() =>
+      _DisableTwoFactorPasswordDialogState();
+}
+
+class _DisableTwoFactorPasswordDialogState
+    extends State<_DisableTwoFactorPasswordDialog> {
+  final _passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _passwordController.clear();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    setState(() => _errorMessage = null);
+    if (!_formKey.currentState!.validate()) return;
+
+    final password = _passwordController.text;
+    setState(() => _isLoading = true);
+
+    try {
+      await widget.auth.toggleTwoFactor(false, password: password);
+      // Immediately clear the password to avoid retention in memory
+      _passwordController.clear();
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = context.l10n.disableTwoFactorPasswordError;
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.mdBorder),
+      backgroundColor: theme.colorScheme.surface,
+      title: Row(
+        children: [
+          Icon(Icons.lock_outline_rounded,
+              color: context.semanticColors.danger),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              l10n.disableTwoFactorPasswordTitle,
+              style: AppTypography.titleMd.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                l10n.disableTwoFactorPasswordBody,
+                style: AppTypography.bodyMd.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (_errorMessage != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                ThemedErrorBanner(
+                  key: const Key('disable_2fa_password_error'),
+                  message: _errorMessage!,
+                ),
+              ],
+              const SizedBox(height: AppSpacing.md),
+              ThemedTextField(
+                key: const Key('disable_2fa_password_field'),
+                controller: _passwordController,
+                labelText: l10n.loginPasswordLabel,
+                isPasswordField: true,
+                enabled: !_isLoading,
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _submit(),
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) {
+                    return l10n.loginPasswordReq;
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        SecondaryButton(
+          key: const Key('disable_2fa_cancel_btn'),
+          text: l10n.cancel,
+          isFullWidth: false,
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(false),
+        ),
+        PrimaryButton(
+          key: const Key('disable_2fa_confirm_btn'),
+          text: l10n.disableTwoFactorConfirmAction,
+          isFullWidth: false,
+          isDestructive: true,
+          isLoading: _isLoading,
+          onPressed: _isLoading ? null : _submit,
+        ),
+      ],
     );
   }
 }

@@ -995,5 +995,10 @@
   "disableTwoFactorConfirmTitle": "تعطيل المصادقة الثنائية؟",
   "disableTwoFactorConfirmBody": "تعطيل المصادقة الثنائية يقلل من أمان حسابك. سيتمكن أي شخص لديه كلمة المرور الخاصة بك من تسجيل الدخول دون خطوة التحقق عبر رمز OTP.",
   "disableTwoFactorConfirmAction": "تعطيل المصادقة",
+  "disableTwoFactorPasswordTitle": "تأكيد كلمة المرور",
+  "disableTwoFactorPasswordBody": "يرجى إدخال كلمة المرور لتأكيد تعطيل المصادقة الثنائية.",
+  "disableTwoFactorPasswordError": "كلمة المرور غير صحيحة. لم يتم تعطيل المصادقة الثنائية.",
+  "twoFactorDisabledSuccess": "تم تعطيل المصادقة الثنائية",
+  "twoFactorEnabledSuccess": "تم تفعيل المصادقة الثنائية",
   "ratingSubmittedSuccess": "تم إرسال التقييم"
 }

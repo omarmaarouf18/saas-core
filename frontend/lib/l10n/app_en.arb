@@ -1281,5 +1281,10 @@
   "disableTwoFactorConfirmTitle": "Disable Two-Factor Authentication?",
   "disableTwoFactorConfirmBody": "Disabling 2FA reduces your account security. Anyone with your password will be able to log in without an OTP verification step.",
   "disableTwoFactorConfirmAction": "Disable 2FA",
+  "disableTwoFactorPasswordTitle": "Confirm Password",
+  "disableTwoFactorPasswordBody": "Please enter your account password to confirm disabling two-factor authentication.",
+  "disableTwoFactorPasswordError": "Incorrect password. 2FA was not disabled.",
+  "twoFactorDisabledSuccess": "Two-factor authentication disabled",
+  "twoFactorEnabledSuccess": "Two-factor authentication enabled",
   "ratingSubmittedSuccess": "Rating Submitted"
 }

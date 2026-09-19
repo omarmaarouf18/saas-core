@@ -2528,5 +2528,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get disableTwoFactorConfirmAction => 'Disable 2FA';
 
   @override
+  String get disableTwoFactorPasswordTitle => 'Confirm Password';
+
+  @override
+  String get disableTwoFactorPasswordBody =>
+      'Please enter your account password to confirm disabling two-factor authentication.';
+
+  @override
+  String get disableTwoFactorPasswordError =>
+      'Incorrect password. 2FA was not disabled.';
+
+  @override
+  String get twoFactorDisabledSuccess => 'Two-factor authentication disabled';
+
+  @override
+  String get twoFactorEnabledSuccess => 'Two-factor authentication enabled';
+
+  @override
   String get ratingSubmittedSuccess => 'Rating Submitted';
 }

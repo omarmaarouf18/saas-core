@@ -1266,6 +1266,41 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "two_factor_enabled must be a boolean"})
 			return
 		}
+		if !b {
+			// Disabling 2FA weakens account security and requires password re-verification.
+			pwdVal, hasPwd := raw["password"]
+			pwdStr, isStr := pwdVal.(string)
+			if !hasPwd || !isStr || strings.TrimSpace(pwdStr) == "" {
+				writeJSON(w, http.StatusBadRequest, map[string]string{
+					"error": "current password is required to disable two-factor authentication",
+				})
+				return
+			}
+			clientIP := handlerutil.GetClientIP(r)
+			if user.Password == "" {
+				// Timing-parity: burn a real bcrypt comparison against a dummy hash
+				// so accounts without passwords do not reveal account state or bypass timing.
+				_ = bcrypt.CompareHashAndPassword(dummyBcryptHash, []byte(pwdStr))
+				a.limiter.RecordFailure(clientIP)
+				if user.Email != "" {
+					a.limiter.RecordFailure(user.Email)
+				}
+				writeJSON(w, http.StatusUnauthorized, map[string]string{
+					"error": "invalid password",
+				})
+				return
+			}
+			if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(pwdStr)); err != nil {
+				a.limiter.RecordFailure(clientIP)
+				if user.Email != "" {
+					a.limiter.RecordFailure(user.Email)
+				}
+				writeJSON(w, http.StatusUnauthorized, map[string]string{
+					"error": "invalid password",
+				})
+				return
+			}
+		}
 		updateFields["two_factor_enabled"] = b
 	}
 

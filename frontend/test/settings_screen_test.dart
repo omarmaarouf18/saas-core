@@ -13,6 +13,7 @@ import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/screens/customer_tickets_screen.dart';
 import 'package:frontend/screens/settings_screen.dart';
 import 'package:frontend/screens/login_screen.dart';
+import 'package:frontend/widgets/primary_button.dart';
 
 class FakeSecureStorage extends FlutterSecureStorage {
   final Map<String, String> storage = {};
@@ -50,8 +51,12 @@ class FakeSecureStorage extends FlutterSecureStorage {
 }
 
 class MockAuthProvider extends AuthProvider {
-  final UserProfile? _mockUser;
+  UserProfile? _mockUser;
   bool logoutCalled = false;
+  bool toggleTwoFactorCalled = false;
+  bool? lastToggledValue;
+  String? lastPassword;
+  bool shouldFailToggle = false;
 
   MockAuthProvider(super.apiClient, this._mockUser);
 
@@ -64,6 +69,21 @@ class MockAuthProvider extends AuthProvider {
   @override
   Future<void> logout() async {
     logoutCalled = true;
+  }
+
+  @override
+  Future<bool> toggleTwoFactor(bool enabled, {String? password}) async {
+    toggleTwoFactorCalled = true;
+    lastToggledValue = enabled;
+    lastPassword = password;
+
+    if (shouldFailToggle) {
+      throw ApiClientException('invalid password', statusCode: 401);
+    }
+
+    _mockUser = _mockUser?.copyWith(twoFactorEnabled: enabled);
+    notifyListeners();
+    return true;
   }
 }
 
@@ -488,5 +508,186 @@ void main() {
 
     expect(darkUnselectedRatio, greaterThanOrEqualTo(4.5));
     expect(darkSelectedRatio, greaterThanOrEqualTo(4.5));
+  });
+
+  testWidgets(
+      '(g1) Flipping 2FA OFF shows warning confirmation, then prompts for password',
+      (WidgetTester tester) async {
+    final themeProvider = ThemeProvider(storage: FakeSecureStorage());
+    final user = UserProfile(
+      id: 'owner-1',
+      email: 'owner@example.com',
+      username: 'owner1',
+      role: 'owner',
+      twoFactorEnabled: true,
+    );
+    final authProvider = MockAuthProvider(apiClient, user);
+
+    await tester.pumpWidget(buildSettingsApp(
+      authProvider: authProvider,
+      themeProvider: themeProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    final switchFinder = find.byKey(const Key('settings_two_factor_switch'));
+    expect(switchFinder, findsOneWidget);
+    await tester.ensureVisible(switchFinder);
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+
+    // Step 1: Warning modal is shown
+    expect(find.text('Disable Two-Factor Authentication?'), findsOneWidget);
+    expect(find.byKey(const Key('disable_2fa_password_field')), findsNothing);
+
+    // Step 2: Confirm warning modal
+    final confirmWarningBtn = find.widgetWithText(PrimaryButton, 'Disable 2FA');
+    expect(confirmWarningBtn, findsOneWidget);
+    await tester.tap(confirmWarningBtn);
+    await tester.pumpAndSettle();
+
+    // Step 3: Password verification modal is shown
+    expect(find.text('Confirm Password'), findsOneWidget);
+    expect(find.byKey(const Key('disable_2fa_password_field')), findsOneWidget);
+    expect(find.byKey(const Key('disable_2fa_confirm_btn')), findsOneWidget);
+    expect(find.byKey(const Key('disable_2fa_cancel_btn')), findsOneWidget);
+  });
+
+  testWidgets(
+      '(g2) Submitting wrong password in 2FA disable prompt displays error and keeps toggle ON',
+      (WidgetTester tester) async {
+    final themeProvider = ThemeProvider(storage: FakeSecureStorage());
+    final user = UserProfile(
+      id: 'owner-1',
+      email: 'owner@example.com',
+      username: 'owner1',
+      role: 'owner',
+      twoFactorEnabled: true,
+    );
+    final authProvider = MockAuthProvider(apiClient, user);
+    authProvider.shouldFailToggle = true;
+
+    await tester.pumpWidget(buildSettingsApp(
+      authProvider: authProvider,
+      themeProvider: themeProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    final switchFinder = find.byKey(const Key('settings_two_factor_switch'));
+    await tester.ensureVisible(switchFinder);
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+
+    // Confirm warning
+    await tester.tap(find.widgetWithText(PrimaryButton, 'Disable 2FA'));
+    await tester.pumpAndSettle();
+
+    // Enter wrong password
+    await tester.enterText(
+        find.byKey(const Key('disable_2fa_password_field')), 'wrong-pass');
+    await tester.tap(find.byKey(const Key('disable_2fa_confirm_btn')));
+    await tester.pumpAndSettle();
+
+    // Error banner shown inside dialog
+    expect(find.byKey(const Key('disable_2fa_password_error')), findsOneWidget);
+    expect(
+        find.text('Incorrect password. 2FA was not disabled.'), findsOneWidget);
+
+    // Cancel dialog
+    await tester.tap(find.byKey(const Key('disable_2fa_cancel_btn')));
+    await tester.pumpAndSettle();
+
+    // Switch remains ON (true)
+    final Switch switchWidget = tester.widget(switchFinder);
+    expect(switchWidget.value, isTrue);
+  });
+
+  testWidgets(
+      '(g3) Submitting correct password in 2FA disable prompt flips toggle OFF and shows success snackbar',
+      (WidgetTester tester) async {
+    final themeProvider = ThemeProvider(storage: FakeSecureStorage());
+    final user = UserProfile(
+      id: 'owner-1',
+      email: 'owner@example.com',
+      username: 'owner1',
+      role: 'owner',
+      twoFactorEnabled: true,
+    );
+    final authProvider = MockAuthProvider(apiClient, user);
+    authProvider.shouldFailToggle = false;
+
+    await tester.pumpWidget(buildSettingsApp(
+      authProvider: authProvider,
+      themeProvider: themeProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    final switchFinder = find.byKey(const Key('settings_two_factor_switch'));
+    await tester.ensureVisible(switchFinder);
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+
+    // Confirm warning
+    await tester.tap(find.widgetWithText(PrimaryButton, 'Disable 2FA'));
+    await tester.pumpAndSettle();
+
+    // Enter correct password
+    await tester.enterText(
+        find.byKey(const Key('disable_2fa_password_field')), 'correct-pwd-123');
+    await tester.tap(find.byKey(const Key('disable_2fa_confirm_btn')));
+    await tester.pumpAndSettle();
+
+    // Dialog closed
+    expect(find.byKey(const Key('disable_2fa_password_field')), findsNothing);
+
+    // Switch is flipped OFF (false)
+    final Switch switchWidget = tester.widget(switchFinder);
+    expect(switchWidget.value, isFalse);
+
+    // Success snackbar shown
+    expect(find.text('Two-factor authentication disabled'), findsOneWidget);
+    expect(authProvider.lastPassword, 'correct-pwd-123');
+    expect(authProvider.lastToggledValue, isFalse);
+  });
+
+  testWidgets(
+      '(g4) Flipping 2FA ON requires no password prompt and enables immediately',
+      (WidgetTester tester) async {
+    final themeProvider = ThemeProvider(storage: FakeSecureStorage());
+    final user = UserProfile(
+      id: 'owner-1',
+      email: 'owner@example.com',
+      username: 'owner1',
+      role: 'owner',
+      twoFactorEnabled: false,
+    );
+    final authProvider = MockAuthProvider(apiClient, user);
+
+    await tester.pumpWidget(buildSettingsApp(
+      authProvider: authProvider,
+      themeProvider: themeProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    final switchFinder = find.byKey(const Key('settings_two_factor_switch'));
+    await tester.ensureVisible(switchFinder);
+    final Switch initialSwitch = tester.widget(switchFinder);
+    expect(initialSwitch.value, isFalse);
+
+    // Tap switch to turn ON
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+
+    // No warning or password modal is shown
+    expect(find.text('Disable Two-Factor Authentication?'), findsNothing);
+    expect(find.byKey(const Key('disable_2fa_password_field')), findsNothing);
+
+    // Switch is now flipped ON (true)
+    final Switch updatedSwitch = tester.widget(switchFinder);
+    expect(updatedSwitch.value, isTrue);
+
+    // Success snackbar shown
+    expect(find.text('Two-factor authentication enabled'), findsOneWidget);
+    expect(authProvider.lastToggledValue, isTrue);
+    expect(authProvider.lastPassword, isNull);
   });
 }

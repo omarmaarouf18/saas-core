@@ -417,6 +417,7 @@ class AuthProvider extends ChangeNotifier {
     String? phone,
     List<String>? frequentAddresses,
     bool? twoFactorEnabled,
+    String? password,
   }) async {
     _isLoading = true;
     _error = null;
@@ -431,6 +432,9 @@ class AuthProvider extends ChangeNotifier {
       }
       if (twoFactorEnabled != null) {
         body['two_factor_enabled'] = twoFactorEnabled;
+      }
+      if (password != null && password.isNotEmpty) {
+        body['password'] = password;
       }
 
       final res = await apiClient.patch('/auth/user', body);
@@ -457,17 +461,21 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> toggleTwoFactor(bool enabled) async {
+  Future<bool> toggleTwoFactor(bool enabled, {String? password}) async {
     final previousProfile = _user;
-    if (_user != null) {
-      _user = _user!.copyWith(twoFactorEnabled: enabled);
+    if (enabled && _user != null) {
+      _user = _user!.copyWith(twoFactorEnabled: true);
       notifyListeners();
     }
 
     try {
-      final res = await apiClient.patch('/auth/user', {
+      final body = <String, dynamic>{
         'two_factor_enabled': enabled,
-      });
+      };
+      if (password != null && password.isNotEmpty) {
+        body['password'] = password;
+      }
+      final res = await apiClient.patch('/auth/user', body);
       if (res is Map<String, dynamic> && res.containsKey('user')) {
         final userObj = res['user'];
         if (userObj is Map<String, dynamic>) {

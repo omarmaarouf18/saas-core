@@ -1039,10 +1039,10 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
     - In `CustomerMarketplaceScreen`, added `_initLocation()` on mount to query GPS position via `Geolocator.getCurrentPosition()`, falling back to Cairo (`30.0444, 31.2357`). Added `setCustomerLocation(lat, lon)`.
     - In `_BookingDialog`: Centered `LocationPickerMap` on active pickup coordinates (`_pickupLat, _pickupLon`) and added dedicated `Key('use_current_location_pickup_button')` for one-tap current GPS selection.
     - Verified via `customer_marketplace_screen_test.dart`.
-  - **A3 — Two-Factor Authentication (2FA) Enable/Disable Toggle**:
-    - Backend (`auth-service`): Added `TwoFactorEnabled *bool` to `models.User` (defaults to `true` via `Is2FAEnabled()`). Updated `Login` to bypass OTP verification when disabled, issuing JWT directly. Updated `UpdateProfile` to persist `two_factor_enabled`. Verified via `auth-service` unit tests.
-    - Frontend: Added `twoFactorEnabled` to `UserProfile`, `updateOwnProfile`, and `toggleTwoFactor` in `AuthProvider`. Added "Security" card with `Key('settings_two_factor_switch')` in `SettingsScreen`.
-    - Product Decision Safeguard: Disabling 2FA enforces confirmation modal (`ConfirmActionDialog`, `disableTwoFactorConfirmTitle`) warning of reduced security before execution. Toggling on activates immediately.
+  - **A3 — Two-Factor Authentication (2FA) Enable/Disable Toggle & Password Re-Verification Hardening**:
+    - Backend (`auth-service`): Added `TwoFactorEnabled *bool` to `models.User` (defaults to `true` via `Is2FAEnabled()`). Updated `Login` to bypass OTP verification when disabled, issuing JWT directly. Updated `UpdateProfile` to require password re-verification on disable (`two_factor_enabled == false`), verifying password with constant-time dummy hash fallback (`dummyBcryptHash`) for accounts without passwords to preserve timing parity. Missing/wrong password returns 400/401 and keeps 2FA enabled. Enabling 2FA requires no password. Verified via `two_factor_password_test.go`.
+    - Frontend: Added `twoFactorEnabled` and `password` parameters to `UserProfile`, `updateOwnProfile`, and `toggleTwoFactor` in `AuthProvider`. Added "Security" card with `Key('settings_two_factor_switch')` in `SettingsScreen`.
+    - Product Decision Safeguard: Disabling 2FA enforces warning confirmation modal (`ConfirmActionDialog`), followed immediately by password re-verification dialog (`_DisableTwoFactorPasswordDialog`, `Key('disable_2fa_password_field')`). Wrong password displays inline error banner, allows retry without dismissal, and keeps toggle ON. Correct password disables 2FA, flips toggle OFF, and displays confirmation snackbar. Enabling 2FA activates immediately with confirmation snackbar.
   - **A4 — Ticket Chat Username Truncation & Support Agent Privacy**:
     - Frontend (`ticket_chat_screen.dart`): Added `maxLines: 1, overflow: TextOverflow.ellipsis` to sender headers.
     - Backend (`chat-service`): In `chat.go`, updated WebSocket message dispatch on `ticket:` channels to mask `SenderUsername` to `"Support Team"` for all non-customer messages, preserving customer usernames while protecting reviewer privacy. Verified via `TestTicketChatMessageMasking`.
@@ -1062,7 +1062,7 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - **C-03 (`CustomerMarketplaceScreen:1006`)**: Replaced hardcoded `"\$${...}"` in `_BookingDialog` with localized `l10n.creditsAmountLine(...)`.
 
 * **Verification Summary**:
-  - Flutter test suite: 547 passed (exceeds >= 545 baseline).
+  - Flutter test suite: 551 passed (exceeds >= 547 baseline).
   - Flutter analyzer: 0 issues (`flutter analyze` clean).
   - Go services: `services/auth-service`, `services/chat-service`, and `shared/infra` unit tests 100% green.
   - Golden fixtures updated: Settings screen (Security 2FA section) and Customer Home screen (single-line constrained search card + active job Column Expanded layout).

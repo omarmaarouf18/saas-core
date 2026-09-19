@@ -2484,5 +2484,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String get disableTwoFactorConfirmAction => 'تعطيل المصادقة';
 
   @override
+  String get disableTwoFactorPasswordTitle => 'تأكيد كلمة المرور';
+
+  @override
+  String get disableTwoFactorPasswordBody =>
+      'يرجى إدخال كلمة المرور لتأكيد تعطيل المصادقة الثنائية.';
+
+  @override
+  String get disableTwoFactorPasswordError =>
+      'كلمة المرور غير صحيحة. لم يتم تعطيل المصادقة الثنائية.';
+
+  @override
+  String get twoFactorDisabledSuccess => 'تم تعطيل المصادقة الثنائية';
+
+  @override
+  String get twoFactorEnabledSuccess => 'تم تفعيل المصادقة الثنائية';
+
+  @override
   String get ratingSubmittedSuccess => 'تم إرسال التقييم';
 }

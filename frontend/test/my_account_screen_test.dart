@@ -72,6 +72,7 @@ class MockAuthProviderForMyAccount extends AuthProvider {
     String? phone,
     List<String>? frequentAddresses,
     bool? twoFactorEnabled,
+    String? password,
   }) async {
     updateCalled = true;
     lastUpdatePayload = {
@@ -79,6 +80,7 @@ class MockAuthProviderForMyAccount extends AuthProvider {
       'phone': phone,
       'frequent_addresses': frequentAddresses,
       if (twoFactorEnabled != null) 'two_factor_enabled': twoFactorEnabled,
+      if (password != null) 'password': password,
     };
 
     if (shouldFailUpdate) {

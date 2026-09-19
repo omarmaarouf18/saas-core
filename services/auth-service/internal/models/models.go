@@ -211,6 +211,7 @@ type UpdateProfileRequest struct {
 	Phone             *string   `json:"phone,omitempty"`
 	FrequentAddresses *[]string `json:"frequent_addresses,omitempty"`
 	TwoFactorEnabled  *bool     `json:"two_factor_enabled,omitempty"`
+	Password          *string   `json:"password,omitempty"`
 }
 
 // AccountDirectoryItem represents a single account row in the reviewer directory.

@@ -54,11 +54,11 @@ Four high-friction UX issues identified during manual end-to-end testing were in
 ### Finding A3: Missing Two-Factor Authentication (2FA) Enable/Disable Option
 * **Reported Behavior**: Users cannot choose whether to enforce 2FA OTP verification upon login.
 * **Remediation**:
-  - **Backend (`auth-service`)**: Added `TwoFactorEnabled *bool` to `models.User` (defaults to `true` via `Is2FAEnabled()`). Updated `Login` to check `user.Is2FAEnabled()`; if disabled, login immediately issues JWT session tokens without an OTP challenge. Updated `UpdateProfile` to accept and persist `two_factor_enabled` patches. Verified via `go test ./...`.
-  - **Frontend**: Added `twoFactorEnabled` to `UserProfile`, `updateOwnProfile`, and implemented `AuthProvider.toggleTwoFactor(bool enabled)`.
+  - **Backend (`auth-service`)**: Added `TwoFactorEnabled *bool` to `models.User` (defaults to `true` via `Is2FAEnabled()`). Updated `Login` to check `user.Is2FAEnabled()`; if disabled, login immediately issues JWT session tokens without an OTP challenge. Updated `UpdateProfile` to accept and persist `two_factor_enabled` patches. Added mandatory password re-verification when disabling 2FA (`two_factor_enabled == false`), verifying password with constant-time dummy hash fallback (`dummyBcryptHash`) for accounts without passwords to maintain timing parity. Missing or invalid passwords return 400/401 and keep 2FA enabled. Enabling 2FA does not require a password. Verified via unit tests in `two_factor_password_test.go`.
+  - **Frontend**: Added `twoFactorEnabled` and `password` parameters to `UserProfile`, `updateOwnProfile`, and implemented `AuthProvider.toggleTwoFactor(bool enabled, {String? password})`.
   - **Settings Screen**: Added a new "Security" card with `Key('settings_two_factor_switch')`.
-  - **Product Safeguard**: Disabling 2FA prompts a confirmation dialog (`ConfirmActionDialog`, `disableTwoFactorConfirmTitle`) warning the user about reduced account security before applying the change. Toggling on activates immediately.
-  - Verified via `gap05_account_status_test.dart`, `my_account_screen_test.dart`, and `golden_screens_test.dart`.
+  - **Product Safeguard**: Disabling 2FA prompts a confirmation dialog (`ConfirmActionDialog`, `disableTwoFactorConfirmTitle`) warning the user about reduced account security, followed immediately by a password confirmation modal (`_DisableTwoFactorPasswordDialog`, `Key('disable_2fa_password_field')`). If an incorrect password is submitted, an inline error banner is displayed and the dialog remains open for retries while keeping the toggle ON. Submitting the correct password disables 2FA, flips the toggle OFF, and displays a confirmation snackbar. Toggling ON activates immediately without a password prompt.
+  - Verified via `gap05_account_status_test.dart`, `my_account_screen_test.dart`, `settings_screen_test.dart`, and `golden_screens_test.dart`.
 
 ### Finding A4: Ticket Chat Username Truncation & Support Agent Privacy
 * **Reported Behavior**: Long sender usernames overflow chat bubble headers; customer sees reviewer internal identity.

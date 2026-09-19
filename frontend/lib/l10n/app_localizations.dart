@@ -4623,6 +4623,36 @@ abstract class AppLocalizations {
   /// **'Disable 2FA'**
   String get disableTwoFactorConfirmAction;
 
+  /// No description provided for @disableTwoFactorPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Password'**
+  String get disableTwoFactorPasswordTitle;
+
+  /// No description provided for @disableTwoFactorPasswordBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your account password to confirm disabling two-factor authentication.'**
+  String get disableTwoFactorPasswordBody;
+
+  /// No description provided for @disableTwoFactorPasswordError.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect password. 2FA was not disabled.'**
+  String get disableTwoFactorPasswordError;
+
+  /// No description provided for @twoFactorDisabledSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Two-factor authentication disabled'**
+  String get twoFactorDisabledSuccess;
+
+  /// No description provided for @twoFactorEnabledSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Two-factor authentication enabled'**
+  String get twoFactorEnabledSuccess;
+
   /// No description provided for @ratingSubmittedSuccess.
   ///
   /// In en, this message translates to:
