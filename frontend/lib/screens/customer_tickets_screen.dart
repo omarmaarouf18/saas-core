@@ -139,11 +139,13 @@ class _CustomerTicketsScreenState extends State<CustomerTicketsScreen> {
   Widget _buildTicketCard(BuildContext context, SupportTicket ticket) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final displayId =
+        ticket.id.length > 8 ? ticket.id.substring(0, 8) : ticket.id;
     final subject = ticket.subject != null && ticket.subject!.isNotEmpty
         ? ticket.subject!
         : (ticket.contextId != null && ticket.contextId!.isNotEmpty
             ? l10n.ticketContextJob(ticket.contextId!)
-            : l10n.ticketChatTitle(ticket.id));
+            : l10n.ticketChatTitle(displayId));
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -175,7 +177,7 @@ class _CustomerTicketsScreenState extends State<CustomerTicketsScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      l10n.ticketChatTitle(ticket.id),
+                      l10n.ticketChatTitle(displayId),
                       style: AppTypography.labelMd.copyWith(
                         color: theme.colorScheme.primary,
                         fontWeight: FontWeight.bold,

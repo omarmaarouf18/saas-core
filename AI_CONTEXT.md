@@ -1088,6 +1088,11 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
     - Guarded the Book button in `CustomerMarketplaceScreen` (`_buildServiceCard`) with `isLoading: _isLocating` and `onPressed: _isLocating ? null : () => _showBookingDialog(...)` to prevent booking against unresolved default coordinates.
     - Added defensive guard in `requestLocationPermission` (`location_permission.dart`) when executing under `TestWidgetsFlutterBinding` with unmocked `MethodChannelGeolocator` to return `serviceDisabled` immediately and prevent test hangs.
     - Verified via `customer_home_screen_test.dart`, `customer_marketplace_screen_test.dart`, and `a1_diagnosis_test.dart`.
+  - **Item 4 — Truncate Ticket ID in Ticket Titles to Match App Convention (`CustomerTicketsScreen`, `TicketChatScreen`)**:
+    - Applied 8-character ID truncation convention (`ticket.id.length > 8 ? ticket.id.substring(0, 8) : ticket.id`) to ticket title display in `_buildTicketCard` (`customer_tickets_screen.dart`) and `AppShell.titleWidget` (`ticket_chat_screen.dart`).
+    - Preserved raw full ticket IDs for card widget keys and backend WebSocket channels (`'ticket:${widget.ticket.id}'`).
+    - Verified via `customer_tickets_test.dart` with dedicated tests for truncation, short ID retention, and raw WebSocket channel preservation (14/14 pass).
+
 
 
 

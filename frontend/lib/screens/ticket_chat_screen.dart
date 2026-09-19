@@ -127,6 +127,9 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
     final chat = Provider.of<ChatProvider>(context);
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final currentUserId = auth.user?.id ?? '';
+    final displayId = widget.ticket.id.length > 8
+        ? widget.ticket.id.substring(0, 8)
+        : widget.ticket.id;
 
     // Check if any incoming message marked ticket resolved in real-time
     for (final m in chat.messages) {
@@ -143,7 +146,7 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            l10n.ticketChatTitle(widget.ticket.id),
+            l10n.ticketChatTitle(displayId),
             style: AppTypography.titleMd.copyWith(
               fontWeight: FontWeight.bold,
             ),

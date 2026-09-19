@@ -188,7 +188,7 @@ void main() {
         (WidgetTester tester) async {
       final tickets = [
         SupportTicket(
-          id: 'TICKET-001',
+          id: 'TICKET-1-12345',
           customerId: 'cust-101',
           subject: 'Damaged package delivery',
           status: 'open',
@@ -196,7 +196,7 @@ void main() {
           createdAt: DateTime.now().subtract(const Duration(hours: 2)),
         ),
         SupportTicket(
-          id: 'TICKET-002',
+          id: 'TICKET-2-12345',
           customerId: 'cust-101',
           subject: 'Late food order',
           status: 'resolved',
@@ -221,10 +221,10 @@ void main() {
       // Verify header / title
       expect(find.text('Support Tickets'), findsOneWidget);
 
-      // Verify tickets rendered
-      expect(find.text('Ticket #TICKET-001'), findsOneWidget);
+      // Verify tickets rendered with IDs truncated to 8 characters
+      expect(find.text('Ticket #TICKET-1'), findsOneWidget);
       expect(find.text('Damaged package delivery'), findsOneWidget);
-      expect(find.text('Ticket #TICKET-002'), findsOneWidget);
+      expect(find.text('Ticket #TICKET-2'), findsOneWidget);
       expect(find.text('Late food order'), findsOneWidget);
 
       // Verify resolution note preview on resolved ticket
@@ -241,14 +241,14 @@ void main() {
         (WidgetTester tester) async {
       final tickets = [
         SupportTicket(
-          id: 'TICKET-OPEN',
+          id: 'tkt-open',
           customerId: 'cust-101',
           subject: 'Unresolved issue',
           status: 'pending',
           createdAt: DateTime.now(),
         ),
         SupportTicket(
-          id: 'TICKET-RESOLVED',
+          id: 'tkt-done',
           customerId: 'cust-101',
           subject: 'Already fixed issue',
           status: 'resolved',
@@ -270,29 +270,72 @@ void main() {
       await tester.pumpAndSettle();
 
       // Initial state: 'All' selected -> both visible
-      expect(find.text('Ticket #TICKET-OPEN'), findsOneWidget);
-      expect(find.text('Ticket #TICKET-RESOLVED'), findsOneWidget);
+      expect(find.text('Ticket #tkt-open'), findsOneWidget);
+      expect(find.text('Ticket #tkt-done'), findsOneWidget);
 
       // Tap 'Open' filter
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Ticket #TICKET-OPEN'), findsOneWidget);
-      expect(find.text('Ticket #TICKET-RESOLVED'), findsNothing);
+      expect(find.text('Ticket #tkt-open'), findsOneWidget);
+      expect(find.text('Ticket #tkt-done'), findsNothing);
 
       // Tap 'Resolved' filter
       await tester.tap(find.text('Resolved'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Ticket #TICKET-OPEN'), findsNothing);
-      expect(find.text('Ticket #TICKET-RESOLVED'), findsOneWidget);
+      expect(find.text('Ticket #tkt-open'), findsNothing);
+      expect(find.text('Ticket #tkt-done'), findsOneWidget);
 
       // Tap 'All' again
       await tester.tap(find.text('All'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Ticket #TICKET-OPEN'), findsOneWidget);
-      expect(find.text('Ticket #TICKET-RESOLVED'), findsOneWidget);
+      expect(find.text('Ticket #tkt-open'), findsOneWidget);
+      expect(find.text('Ticket #tkt-done'), findsOneWidget);
+    });
+
+    testWidgets(
+        'truncates ticket ID in ticket card to 8 characters when longer',
+        (WidgetTester tester) async {
+      final tickets = [
+        SupportTicket(
+          id: 'tkt-34654037-ed52-4de2-b354-91f3c010bdd1',
+          customerId: 'cust-101',
+          subject: 'Long ID ticket',
+          status: 'open',
+          createdAt: DateTime.now(),
+        ),
+        SupportTicket(
+          id: 'short-id',
+          customerId: 'cust-101',
+          subject: 'Short ID ticket',
+          status: 'open',
+          createdAt: DateTime.now(),
+        ),
+      ];
+
+      final chatProvider = MockChatProviderForTest(
+        apiClient,
+        mockTickets: tickets,
+      );
+
+      await tester.pumpWidget(buildTestApp(
+        home: const CustomerTicketsScreen(),
+        authProvider: authProvider,
+        chatProvider: chatProvider,
+      ));
+      await tester.pumpAndSettle();
+
+      // Long ID truncated to 8 characters: tkt-3465
+      expect(find.text('Ticket #tkt-3465'), findsOneWidget);
+      expect(
+        find.text('Ticket #tkt-34654037-ed52-4de2-b354-91f3c010bdd1'),
+        findsNothing,
+      );
+
+      // Short ID (<= 8 characters) retained in full
+      expect(find.text('Ticket #short-id'), findsOneWidget);
     });
 
     testWidgets('shows empty state when no tickets match',
@@ -557,6 +600,72 @@ void main() {
         findsOneWidget,
       );
       expect(find.byKey(const Key('ticket_chat_input_field')), findsNothing);
+    });
+
+    testWidgets(
+        'truncates ticket ID to 8 characters in title while preserving full ID in WebSocket channel',
+        (WidgetTester tester) async {
+      const fullTicketId = 'tkt-34654037-ed52-4de2-b354-91f3c010bdd1';
+      final ticket = SupportTicket(
+        id: fullTicketId,
+        customerId: 'cust-101',
+        subject: 'Truncation verification',
+        status: 'open',
+        createdAt: DateTime.now(),
+      );
+
+      final chatProvider = MockChatProviderForTest(
+        apiClient,
+        mockMessages: [],
+      );
+
+      await tester.pumpWidget(buildTestApp(
+        home: TicketChatScreen(ticket: ticket),
+        authProvider: authProvider,
+        chatProvider: chatProvider,
+      ));
+      await tester.pumpAndSettle();
+
+      // Truncated title (first 8 characters: tkt-3465)
+      expect(find.text('Ticket #tkt-3465'), findsOneWidget);
+      expect(find.text('Ticket #$fullTicketId'), findsNothing);
+
+      // Full raw ticket ID preserved in WebSocket channel subscription
+      expect(
+        chatProvider.lastSubscribedChannel,
+        equals('ticket:$fullTicketId'),
+      );
+    });
+
+    testWidgets(
+        'displays full ticket ID in title when length is 8 characters or fewer',
+        (WidgetTester tester) async {
+      const shortTicketId = 'tkt-1234';
+      final ticket = SupportTicket(
+        id: shortTicketId,
+        customerId: 'cust-101',
+        subject: 'Short ID verification',
+        status: 'open',
+        createdAt: DateTime.now(),
+      );
+
+      final chatProvider = MockChatProviderForTest(
+        apiClient,
+        mockMessages: [],
+      );
+
+      await tester.pumpWidget(buildTestApp(
+        home: TicketChatScreen(ticket: ticket),
+        authProvider: authProvider,
+        chatProvider: chatProvider,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ticket #$shortTicketId'), findsOneWidget);
+      expect(
+        chatProvider.lastSubscribedChannel,
+        equals('ticket:$shortTicketId'),
+      );
     });
   });
 
