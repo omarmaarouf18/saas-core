@@ -2750,11 +2750,12 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "service not found for job"})
 			return
 		}
-		dist := haversineKm(job.Location.Latitude, job.Location.Longitude, svc.Latitude, svc.Longitude)
-		amount := math.Round((svc.TenantBasePrice+(dist*svc.TenantPricePerKM))*100) / 100
-		if job.AgreedPrice != nil && *job.AgreedPrice > 0 {
-			amount = *job.AgreedPrice
-		}
+		// Refund exactly the amount locked at booking time — see comment below.
+		// (Recomputing a price here is intentionally not done: see ADR/commit
+		// history around 2a3712d and the CompleteJob fallback fix for why
+		// recomputed distance-based pricing must never silently substitute for
+		// the locked escrow amount.)
+		var amount float64
 
 		if job.LockedEscrowAmount == 0 {
 			log.Printf("[SECURITY WARNING] LockedEscrowAmount is 0 for non-COD job %s during CancelJob. Refund aborted.", job.ID)

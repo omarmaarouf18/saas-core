@@ -1067,11 +1067,6 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - Go services: `services/auth-service`, `services/chat-service`, and `shared/infra` unit tests 100% green.
   - Golden fixtures updated: Settings screen (Security 2FA section) and Customer Home screen (single-line constrained search card + active job Column Expanded layout).
 
-
-
-
-
-
-
-
+* **Codebase Review Hardening (2026-09-19)**:
+  - **CancelJob Dead Pricing Removal (`services/user-service`)**: Removed dead recomputed pricing calculation from `CancelJob` (`jobs_handlers.go`), ensuring escrow refunds strictly and unambiguously use `job.LockedEscrowAmount` without misleading intermediate variables.
 
