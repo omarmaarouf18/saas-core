@@ -398,7 +398,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                 child: Row(
                   children: [
                     Icon(
-                      Icons.search,
+                      Icons.location_on_outlined,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       size: AppIconSize.md,
                     ),

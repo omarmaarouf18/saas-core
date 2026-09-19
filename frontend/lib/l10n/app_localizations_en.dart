@@ -1295,7 +1295,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customerHomeWhereDeliver => 'Where to deliver?';
 
   @override
-  String get customerHomeSearchHint => 'Enter destination or pickup area...';
+  String get customerHomeSearchHint => 'Tap to set your pickup location';
 
   @override
   String get commonOrigin => 'Origin';

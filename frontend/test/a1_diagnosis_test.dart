@@ -122,8 +122,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     // 1. Locate the area search box
-    final searchBoxHint = find.text('Enter destination or pickup area...');
+    final searchBoxHint = find.text('Tap to set your pickup location');
     expect(searchBoxHint, findsOneWidget);
+    expect(find.byIcon(Icons.location_on_outlined), findsOneWidget);
 
     // 2. Identify the enclosing InkWell
     final inkWell =
@@ -185,7 +186,7 @@ void main() {
 
     // Inspect the text widget for maxLines and overflow constraints
     final textWidget = tester.widget<Text>(find.byWidgetPredicate(
-      (w) => w is Text && (w.data?.contains('التسليم') ?? false),
+      (w) => w is Text && (w.data?.contains('الاستلام') ?? false),
     ));
     expect(textWidget.maxLines, equals(1));
     expect(textWidget.overflow, equals(TextOverflow.ellipsis));

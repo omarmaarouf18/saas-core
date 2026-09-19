@@ -2472,7 +2472,7 @@ abstract class AppLocalizations {
   /// No description provided for @customerHomeSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Enter destination or pickup area...'**
+  /// **'Tap to set your pickup location'**
   String get customerHomeSearchHint;
 
   /// No description provided for @commonOrigin.

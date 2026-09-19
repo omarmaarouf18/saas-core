@@ -612,7 +612,7 @@
     }
   },
   "customerHomeWhereDeliver": "Where to deliver?",
-  "customerHomeSearchHint": "Enter destination or pickup area...",
+  "customerHomeSearchHint": "Tap to set your pickup location",
   "commonOrigin": "Origin",
   "commonDestination": "Destination",
   "courierAssignedLabel": "Courier: Assigned",

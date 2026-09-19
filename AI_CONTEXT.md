@@ -1071,4 +1071,11 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - **CompleteJob Legacy Fallback Expiry (`services/user-service`)**: Tracked legacy compatibility fallback in `CompleteJob` (`jobs_handlers.go:635`) falling back to `AssignedEmployeeLocation` for pre-2026-09-17 jobs lacking recorded `Destination`. Safe to remove once query `db.jobs.count({ "destination.latitude": 0, "destination.longitude": 0, status: { $nin: ["completed", "cancelled"] } })` returns 0.
   - **JWT AMR (Authentication Methods Reference) Claim (`shared/infra/jwtutil`, `services/auth-service`)**: Added OIDC-standard `AMR []string` (`json:"amr,omitempty"`) claim to `jwtutil.Claims`. Updated `GenerateToken` to accept variadic `amr ...[]string` (and added `GenerateTokenWithAMR` helper) ensuring full backward compatibility. Updated `auth-service` token generation call sites to populate `["pwd"]` on single-factor password logins (2FA disabled, employees) and `["pwd", "otp"]` on multi-factor flows (`VerifyLoginOTP`, `VerifySignupOTP`, `ConfirmEmailChange`), while preserving AMR on `Refresh`. Verified with `jwtutil` roundtrip suite and `auth-service` flow tests.
 
+* **Frontend Usability Fixes (2026-09-19)**:
+  - **Item 1 — Relabel Fake Search Affordance (`CustomerHomeScreen`)**:
+    - Replaced misleading search icon (`Icons.search`) with location pin icon (`Icons.location_on_outlined`) in `home_quick_search_card`.
+    - Updated `customerHomeSearchHint` localization copy from text search prompt to action prompt ("Tap to set your pickup location" / "اضغط لتحديد مكان الاستلام").
+    - Updated `frontend/test/a1_diagnosis_test.dart` assertions and refreshed golden fixtures (`customer_home_mobile_360x800`, `customer_home_dark_mobile_360x800`).
+
+
 

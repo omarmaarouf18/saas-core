@@ -1279,7 +1279,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get customerHomeWhereDeliver => 'هتوصّل فين؟';
 
   @override
-  String get customerHomeSearchHint => 'اكتب مكان التسليم أو الاستلام...';
+  String get customerHomeSearchHint => 'اضغط لتحديد مكان الاستلام';
 
   @override
   String get commonOrigin => 'الاستلام';

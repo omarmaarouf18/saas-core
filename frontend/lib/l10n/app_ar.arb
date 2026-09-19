@@ -409,7 +409,7 @@
     }
   },
   "customerHomeWhereDeliver": "هتوصّل فين؟",
-  "customerHomeSearchHint": "اكتب مكان التسليم أو الاستلام...",
+  "customerHomeSearchHint": "اضغط لتحديد مكان الاستلام",
   "commonOrigin": "الاستلام",
   "commonDestination": "التسليم",
   "courierAssignedLabel": "الكورير: اتحدد",
