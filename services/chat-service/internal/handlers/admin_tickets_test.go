@@ -10,12 +10,14 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/project/chat-service/internal/chat"
 	"github.com/project/chat-service/internal/config"
 	"github.com/project/chat-service/internal/store"
+	"github.com/project/shared/infra/resilience"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -905,5 +907,289 @@ func TestAdminAcceptTicket_CASConcurrencyRace(t *testing.T) {
 
 	if count200 != 1 || count409 != 1 {
 		t.Fatalf("AdminAcceptTicket CAS race failed: expected exactly 1 200 OK and 1 409 Conflict, got %+v", results)
+	}
+}
+
+func TestAdminTickets_CircuitBreaker_OpenHalfOpenClosedLifecycle(t *testing.T) {
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
+	}
+	dbName := fmt.Sprintf("saas_chat_cb_test_%d", time.Now().UnixNano())
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	mongoStore, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	if err != nil {
+		t.Fatalf("failed to connect to mongodb for test: %v", err)
+	}
+
+	validReviewerToken := "valid-reviewer-tickets-token"
+
+	// Seed a test ticket for accept/resolve
+	tkt, err := mongoStore.CreateTicketAndAssign(context.Background(), "cust-test-cb", "job-cb-1")
+	if err != nil {
+		t.Fatalf("failed to seed ticket: %v", err)
+	}
+
+	var callCount atomic.Int32
+
+	// Fake auth-service HTTP server: fails (500, 503, connection reset via hijack) for first 5 calls, then succeeds.
+	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/notifications/send" {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"status":"success"}`))
+			return
+		}
+
+		if r.URL.Path != "/auth/reviewer/verify" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		count := callCount.Add(1)
+		if count <= 5 {
+			// Cover multiple failure modes:
+			// Calls 1 & 2: HTTP 500
+			// Call 3: connection reset / dropped via hijack
+			// Call 4: HTTP 503
+			// Call 5: HTTP 500
+			switch count {
+			case 3:
+				hj, ok := w.(http.Hijacker)
+				if ok {
+					conn, _, err := hj.Hijack()
+					if err == nil {
+						_ = conn.Close()
+						return
+					}
+				}
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte(`{"error":"connection drop fallback"}`))
+			case 4:
+				w.WriteHeader(http.StatusServiceUnavailable)
+				_, _ = w.Write([]byte(`{"error":"auth-service temporarily overloaded"}`))
+			default:
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte(`{"error":"auth-service database error"}`))
+			}
+			return
+		}
+
+		// Calls 6+: Succeeds
+		revTok := r.Header.Get("X-Reviewer-Token")
+		if revTok == validReviewerToken {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"id":"reviewer-ticket-admin","name":"Support Ops Admin"}`))
+			return
+		}
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"invalid reviewer token"}`))
+	}))
+
+	t.Cleanup(func() {
+		mockAuthServer.Close()
+		dropCtx, dropCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer dropCancel()
+		client, err := mongo.Connect(dropCtx, options.Client().ApplyURI(mongoURI))
+		if err == nil {
+			_ = client.Database(dbName).Drop(dropCtx)
+			_ = client.Disconnect(dropCtx)
+		}
+	})
+
+	cfg := &config.Config{
+		InternalServiceToken:   "test-internal-token",
+		AuthServiceURL:         mockAuthServer.URL,
+		NotificationServiceURL: mockAuthServer.URL,
+	}
+
+	hub := chat.NewHub()
+	go hub.Run()
+
+	c := NewChat(hub, mongoStore, cfg, nil)
+
+	getAuthBreakerStat := func() *resilience.BreakerStats {
+		for _, s := range resilience.GetBreakerStats() {
+			if s.Name == "auth-service" {
+				return &s
+			}
+		}
+		return nil
+	}
+
+	// -------------------------------------------------------------------------
+	// Phase 1: Calls 1 to 5 fail against fake auth-service
+	// -------------------------------------------------------------------------
+	// Initial state: Breaker is closed
+	stat := getAuthBreakerStat()
+	if stat == nil || stat.State != "closed" {
+		t.Fatalf("expected initial breaker state 'closed', got %+v", stat)
+	}
+
+	// Request 1: GET /chat/admin/tickets (attempts 1, 2, 3 -> calls 1, 2, 3 fail)
+	req1 := httptest.NewRequest(http.MethodGet, "/chat/admin/tickets", nil)
+	req1.Header.Set("X-Internal-Token", "test-internal-token")
+	req1.Header.Set("X-Reviewer-Token", validReviewerToken)
+	rec1 := httptest.NewRecorder()
+	c.AdminListTickets(rec1, req1)
+
+	if rec1.Code != http.StatusServiceUnavailable {
+		t.Fatalf("Request 1: expected HTTP 503, got %d: %s", rec1.Code, rec1.Body.String())
+	}
+	if callCount.Load() != 3 {
+		t.Fatalf("Request 1: expected 3 calls to fake server, got %d", callCount.Load())
+	}
+	stat = getAuthBreakerStat()
+	if stat.State != "closed" || stat.ConsecFailures != 3 {
+		t.Fatalf("after Request 1: expected state 'closed' with 3 consecutive failures, got %+v", stat)
+	}
+
+	// Request 2: POST /chat/admin/tickets/accept (attempts 1, 2 -> calls 4, 5 fail -> TRIPS BREAKER TO OPEN; attempt 3 fast-fails)
+	req2 := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/"+tkt.ID+"/accept", nil)
+	req2.Header.Set("X-Internal-Token", "test-internal-token")
+	req2.Header.Set("X-Reviewer-Token", validReviewerToken)
+	rec2 := httptest.NewRecorder()
+	c.AdminAcceptTicket(rec2, req2)
+
+	if rec2.Code != http.StatusServiceUnavailable {
+		t.Fatalf("Request 2: expected HTTP 503, got %d: %s", rec2.Code, rec2.Body.String())
+	}
+	if callCount.Load() != 5 {
+		t.Fatalf("Request 2: expected exactly 5 calls to fake server, got %d", callCount.Load())
+	}
+
+	// Breaker must now be OPEN
+	stat = getAuthBreakerStat()
+	if stat == nil || stat.State != "open" {
+		t.Fatalf("expected breaker state 'open' after 5 consecutive failures, got %+v", stat)
+	}
+
+	// -------------------------------------------------------------------------
+	// Phase 2: Subsequent calls fail fast in OPEN state (no HTTP calls attempted)
+	// -------------------------------------------------------------------------
+	// Request 3: POST /chat/admin/tickets/resolve
+	start3 := time.Now()
+	bodyResolve := fmt.Sprintf(`{"ticket_id":"%s","resolution_note":"Fixed issue"}`, tkt.ID)
+	req3 := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/resolve", strings.NewReader(bodyResolve))
+	req3.Header.Set("X-Internal-Token", "test-internal-token")
+	req3.Header.Set("X-Reviewer-Token", validReviewerToken)
+	rec3 := httptest.NewRecorder()
+	c.AdminResolveTicket(rec3, req3)
+	dur3 := time.Since(start3)
+
+	if rec3.Code != http.StatusServiceUnavailable {
+		t.Fatalf("Request 3 (resolve): expected HTTP 503 while breaker is open, got %d: %s", rec3.Code, rec3.Body.String())
+	}
+	if dur3 > 50*time.Millisecond {
+		t.Fatalf("Request 3 (resolve): expected fast-fail under 50ms, took %v", dur3)
+	}
+	if callCount.Load() != 5 {
+		t.Fatalf("Request 3 (resolve): fake server must not be called while open, got %d calls", callCount.Load())
+	}
+
+	// Request 4: GET /chat/admin/tickets
+	start4 := time.Now()
+	req4 := httptest.NewRequest(http.MethodGet, "/chat/admin/tickets", nil)
+	req4.Header.Set("X-Internal-Token", "test-internal-token")
+	req4.Header.Set("X-Reviewer-Token", validReviewerToken)
+	rec4 := httptest.NewRecorder()
+	c.AdminListTickets(rec4, req4)
+	dur4 := time.Since(start4)
+
+	if rec4.Code != http.StatusServiceUnavailable {
+		t.Fatalf("Request 4 (list): expected HTTP 503 while breaker is open, got %d", rec4.Code)
+	}
+	if dur4 > 50*time.Millisecond {
+		t.Fatalf("Request 4 (list): expected fast-fail under 50ms, took %v", dur4)
+	}
+	if callCount.Load() != 5 {
+		t.Fatalf("Request 4 (list): fake server must not be called while open, got %d calls", callCount.Load())
+	}
+
+	// Assert BreakerStats still reports open
+	stat = getAuthBreakerStat()
+	if stat.State != "open" {
+		t.Fatalf("expected breaker state to remain 'open', got %s", stat.State)
+	}
+
+	// -------------------------------------------------------------------------
+	// Phase 3: Wait for breaker Timeout window (15 seconds) to elapse
+	// -------------------------------------------------------------------------
+	time.Sleep(15500 * time.Millisecond)
+
+	// -------------------------------------------------------------------------
+	// Phase 4: Fake server now succeeds. Breaker transitions half-open -> closed after MaxRequests (3) successes
+	// -------------------------------------------------------------------------
+	// Success 1 (half-open): GET /chat/admin/tickets
+	req5 := httptest.NewRequest(http.MethodGet, "/chat/admin/tickets", nil)
+	req5.Header.Set("X-Internal-Token", "test-internal-token")
+	req5.Header.Set("X-Reviewer-Token", validReviewerToken)
+	rec5 := httptest.NewRecorder()
+	c.AdminListTickets(rec5, req5)
+
+	if rec5.Code != http.StatusOK {
+		t.Fatalf("Success 1 (half-open): expected HTTP 200 OK, got %d: %s", rec5.Code, rec5.Body.String())
+	}
+	if callCount.Load() != 6 {
+		t.Fatalf("Success 1 (half-open): expected callCount 6, got %d", callCount.Load())
+	}
+	stat = getAuthBreakerStat()
+	if stat.State != "half-open" {
+		t.Fatalf("expected breaker state 'half-open' after 1 success, got %s", stat.State)
+	}
+
+	// Success 2 (half-open): POST /chat/admin/tickets/accept
+	req6 := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/"+tkt.ID+"/accept", nil)
+	req6.Header.Set("X-Internal-Token", "test-internal-token")
+	req6.Header.Set("X-Reviewer-Token", validReviewerToken)
+	rec6 := httptest.NewRecorder()
+	c.AdminAcceptTicket(rec6, req6)
+
+	if rec6.Code != http.StatusOK {
+		t.Fatalf("Success 2 (half-open): expected HTTP 200 OK, got %d: %s", rec6.Code, rec6.Body.String())
+	}
+	if callCount.Load() != 7 {
+		t.Fatalf("Success 2 (half-open): expected callCount 7, got %d", callCount.Load())
+	}
+	stat = getAuthBreakerStat()
+	if stat.State != "half-open" {
+		t.Fatalf("expected breaker state 'half-open' after 2 successes, got %s", stat.State)
+	}
+
+	// Success 3 (half-open): POST /chat/admin/tickets/resolve
+	req7 := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/resolve", strings.NewReader(bodyResolve))
+	req7.Header.Set("X-Internal-Token", "test-internal-token")
+	req7.Header.Set("X-Reviewer-Token", validReviewerToken)
+	rec7 := httptest.NewRecorder()
+	c.AdminResolveTicket(rec7, req7)
+
+	if rec7.Code != http.StatusOK {
+		t.Fatalf("Success 3 (half-open): expected HTTP 200 OK, got %d: %s", rec7.Code, rec7.Body.String())
+	}
+	if callCount.Load() != 8 {
+		t.Fatalf("Success 3 (half-open): expected callCount 8, got %d", callCount.Load())
+	}
+
+	// Breaker should now be closed after 3 consecutive successes (MaxRequests: 3)
+	stat = getAuthBreakerStat()
+	if stat == nil || stat.State != "closed" {
+		t.Fatalf("expected breaker state 'closed' after 3 consecutive successes, got %+v", stat)
+	}
+
+	// Subsequent call executes in closed state
+	req8 := httptest.NewRequest(http.MethodGet, "/chat/admin/tickets", nil)
+	req8.Header.Set("X-Internal-Token", "test-internal-token")
+	req8.Header.Set("X-Reviewer-Token", validReviewerToken)
+	rec8 := httptest.NewRecorder()
+	c.AdminListTickets(rec8, req8)
+
+	if rec8.Code != http.StatusOK {
+		t.Fatalf("Subsequent call (closed): expected HTTP 200 OK, got %d: %s", rec8.Code, rec8.Body.String())
+	}
+	stat = getAuthBreakerStat()
+	if stat.State != "closed" {
+		t.Fatalf("expected breaker state to remain 'closed', got %s", stat.State)
 	}
 }

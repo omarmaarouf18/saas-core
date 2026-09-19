@@ -1108,9 +1108,21 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
     - Identified 4 key findings:
       1. Availability tracking not re-activated post job completion in `EmployeeJobsScreen`, causing location to go stale after 5 minutes.
       2. Missing location tracking teardown on logout in `AuthProvider`.
-      3. Misleading COD confirmation dialog displaying \$0.00 collection requirement instead of agreed/suggested price.
+      3. Misleading COD confirmation dialog displaying $0.00 collection requirement instead of agreed/suggested price.
       4. Rating flow implemented in `RatingScreen` for couriers but completely unreachable from employee screens.
     - Documented complete analysis, journey diagram, findings matrix, and hardening roadmap in [docs/frontend/EMPLOYEE_FUNCTIONALITY_AUDIT.md](docs/frontend/EMPLOYEE_FUNCTIONALITY_AUDIT.md).
+  - **Item 4 — Reviewer Console 503 Investigation & Circuit Breaker Lifecycle Verification (`services/chat-service`)**:
+    - Investigated reported intermittent HTTP 503 errors on reviewer support ticket actions (`/admin/tickets`, `/admin/tickets/accept`, `/admin/tickets/resolve`).
+    - Verified that `chat-service` routes reviewer token verification via `authClient` (`resilience.NewClient(client, "auth-service", 2, 5*time.Second)`), protected by a global `gobreaker` circuit breaker configured with `ReadyToTrip: consecutiveFailures >= 5`, `Timeout: 15s`, `MaxRequests: 3`, and `Interval: 10s`.
+    - Live environment audit revealed: `staging-saas-chat-service` container was compiled 2026-09-13 prior to commit `9e6cb60...` (which introduced 503 mapping for transient reviewer auth errors, whereas pre-fix returned 401). Runtime logs across all containers showed 0 occurrences of `[SECURITY EVENT / DOWNSTREAM DEGRADED] Circuit breaker auth-service transitioned from closed to open`.
+    - Timing calibration analysis revealed that sequential timeouts (5s per attempt × 3 attempts = 15s) exceed `Interval: 10s`, clearing consecutive failures before reaching 5; only fast failures (HTTP 5xx / connection reset in <1s) or concurrent bursts can trip the breaker.
+    - Added deterministic integration test `TestAdminTickets_CircuitBreaker_OpenHalfOpenClosedLifecycle` in `admin_tickets_test.go` verifying:
+      1. Fake upstream auth-service multi-mode failures (HTTP 500, 503, TCP hijack connection drop) returning HTTP 503.
+      2. Breaker transitions `closed` -> `open` after 5 consecutive failures.
+      3. Fail-fast behavior (<50ms, zero upstream HTTP calls attempted) returning HTTP 503 during the 15-second `open` window.
+      4. Breaker recovery through `half-open` upon cooldown expiry and transition back to `closed` after exactly 3 consecutive successes.
+      5. Full state assertion on `resilience.GetBreakerStats()` across all lifecycle transitions (`closed` -> `open` -> `half-open` -> `closed`).
+
 
 
 
