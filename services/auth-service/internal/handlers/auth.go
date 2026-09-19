@@ -518,7 +518,7 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	case models.RoleOwner, models.RoleUser:
 		if !user.Is2FAEnabled() {
 			// 2FA disabled by user preference: issue JWT token directly.
-			token, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email)
+			token, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email, []string{"pwd"})
 			if err != nil {
 				writeJSON(w, http.StatusInternalServerError, map[string]string{
 					"error": "failed to generate token: " + err.Error(),
@@ -577,7 +577,7 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 
 	case models.RoleEmployee:
 		// Employees bypass 2FA.
-		token, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email)
+		token, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email, []string{"pwd"})
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{
 				"error": "failed to generate token: " + err.Error(),
@@ -670,7 +670,7 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 
 		log.Printf("[AUTH] 2FA Login OTP verified: email=%s role=%s", user.Email, user.Role)
 
-		token, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email)
+		token, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email, []string{"pwd", "otp"})
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{
 				"error": "failed to generate token: " + err.Error(),
@@ -735,7 +735,7 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[AUTH] Signup completed & user created: email=%s role=%s id=%s", newUser.Email, newUser.Role, newUser.ID)
 
-	token, err := jwtutil.GenerateToken(newUser.ID, string(newUser.Role), newUser.TenantID, newUser.Email)
+	token, err := jwtutil.GenerateToken(newUser.ID, string(newUser.Role), newUser.TenantID, newUser.Email, []string{"pwd", "otp"})
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": "failed to generate token: " + err.Error(),
@@ -1464,7 +1464,11 @@ func (a *Auth) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newToken, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email)
+	amr := claims.AMR
+	if len(amr) == 0 {
+		amr = []string{"pwd"}
+	}
+	newToken, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email, amr)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to generate fresh token"})
 		return
@@ -3326,7 +3330,22 @@ func (a *Auth) ConfirmEmailChange(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updatedUser := a.store.GetByID(ctx, user.ID)
-	token, err := jwtutil.GenerateToken(updatedUser.ID, string(updatedUser.Role), updatedUser.TenantID, updatedUser.Email)
+	amr := claims.AMR
+	if len(amr) == 0 {
+		amr = []string{"pwd", "otp"}
+	} else {
+		hasOtp := false
+		for _, m := range amr {
+			if m == "otp" {
+				hasOtp = true
+				break
+			}
+		}
+		if !hasOtp {
+			amr = append(amr, "otp")
+		}
+	}
+	token, err := jwtutil.GenerateToken(updatedUser.ID, string(updatedUser.Role), updatedUser.TenantID, updatedUser.Email, amr)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": "failed to generate updated token: " + err.Error(),

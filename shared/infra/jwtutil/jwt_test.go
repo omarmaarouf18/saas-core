@@ -651,3 +651,59 @@ func TestValidateToken_GracefulDegradation(t *testing.T) {
 		}
 	})
 }
+
+func TestAMRClaimRoundTrip(t *testing.T) {
+	Init("super-secret-key-that-is-at-least-thirty-two-bytes-long")
+
+	// 1. Password-only token
+	tokPwd, err := GenerateToken("user-pwd", "owner", "tenant1", "pwd@test.com", []string{"pwd"})
+	if err != nil {
+		t.Fatalf("failed to generate pwd token: %v", err)
+	}
+	claimsPwd, err := ValidateToken(tokPwd)
+	if err != nil {
+		t.Fatalf("failed to validate pwd token: %v", err)
+	}
+	if len(claimsPwd.AMR) != 1 || claimsPwd.AMR[0] != "pwd" {
+		t.Errorf("expected amr [pwd], got %v", claimsPwd.AMR)
+	}
+
+	// 2. Password + OTP token
+	tokMfa, err := GenerateToken("user-mfa", "owner", "tenant1", "mfa@test.com", []string{"pwd", "otp"})
+	if err != nil {
+		t.Fatalf("failed to generate mfa token: %v", err)
+	}
+	claimsMfa, err := ValidateToken(tokMfa)
+	if err != nil {
+		t.Fatalf("failed to validate mfa token: %v", err)
+	}
+	if len(claimsMfa.AMR) != 2 || claimsMfa.AMR[0] != "pwd" || claimsMfa.AMR[1] != "otp" {
+		t.Errorf("expected amr [pwd otp], got %v", claimsMfa.AMR)
+	}
+
+	// 3. GenerateTokenWithAMR helper
+	tokWithAMR, err := GenerateTokenWithAMR("user-helper", "user", "tenant2", "helper@test.com", []string{"pwd", "otp"})
+	if err != nil {
+		t.Fatalf("failed to generate token with AMR helper: %v", err)
+	}
+	claimsHelper, err := ValidateToken(tokWithAMR)
+	if err != nil {
+		t.Fatalf("failed to validate token with AMR helper: %v", err)
+	}
+	if len(claimsHelper.AMR) != 2 || claimsHelper.AMR[0] != "pwd" || claimsHelper.AMR[1] != "otp" {
+		t.Errorf("expected amr [pwd otp], got %v", claimsHelper.AMR)
+	}
+
+	// 4. Backward compatibility (no amr parameter passed)
+	tokLegacy, err := GenerateToken("user-legacy", "owner", "tenant1", "legacy@test.com")
+	if err != nil {
+		t.Fatalf("failed to generate legacy token: %v", err)
+	}
+	claimsLegacy, err := ValidateToken(tokLegacy)
+	if err != nil {
+		t.Fatalf("failed to validate legacy token: %v", err)
+	}
+	if len(claimsLegacy.AMR) != 0 {
+		t.Errorf("expected empty amr for legacy token, got %v", claimsLegacy.AMR)
+	}
+}

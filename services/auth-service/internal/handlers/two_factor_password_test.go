@@ -288,3 +288,158 @@ func TestTwoFactor_DisableRateLimitingLockout(t *testing.T) {
 		t.Errorf("Expected 2FA to remain enabled in DB after locked-out attempt")
 	}
 }
+
+func TestTokenAMRClaims_AuthenticationFlows(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	plainPassword := "TestPassword123!"
+	hash, err := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
+	if err != nil {
+		t.Fatalf("failed to hash password: %v", err)
+	}
+
+	// 1. Login with 2FA disabled: token has amr: ["pwd"]
+	falseVal := false
+	userNo2FA := &models.User{
+		ID:               "usr-amr-no2fa",
+		Email:            "amr-no2fa@example.com",
+		Username:         "amr_no2fa",
+		Password:         string(hash),
+		Role:             models.RoleUser,
+		IsActive:         true,
+		TwoFactorEnabled: &falseVal,
+		CreatedAt:        time.Now(),
+	}
+	if err := s.CreateUser(ctx, userNo2FA); err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	loginBody, _ := json.Marshal(map[string]string{
+		"email":    userNo2FA.Email,
+		"password": plainPassword,
+	})
+	req := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewReader(loginBody))
+	rec := httptest.NewRecorder()
+	a.Login(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var loginResp map[string]any
+	json.Unmarshal(rec.Body.Bytes(), &loginResp)
+	tokenStr, _ := loginResp["token"].(string)
+	claims, err := jwtutil.ValidateToken(tokenStr)
+	if err != nil {
+		t.Fatalf("failed to validate token: %v", err)
+	}
+	if len(claims.AMR) != 1 || claims.AMR[0] != "pwd" {
+		t.Errorf("expected amr [pwd] for 2FA-disabled login, got %v", claims.AMR)
+	}
+
+	// 2. Login as Employee: token has amr: ["pwd"]
+	emp := &models.User{
+		ID:        "emp-amr-test",
+		Email:     "amr-emp@example.com",
+		Username:  "amr_emp",
+		Password:  string(hash),
+		Role:      models.RoleEmployee,
+		TenantID:  "tenant-owner",
+		IsActive:  true,
+		CreatedAt: time.Now(),
+	}
+	if err := s.CreateUser(ctx, emp); err != nil {
+		t.Fatalf("failed to create employee: %v", err)
+	}
+
+	empBody, _ := json.Marshal(map[string]string{
+		"email":    emp.Email,
+		"password": plainPassword,
+	})
+	req = httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewReader(empBody))
+	rec = httptest.NewRecorder()
+	a.Login(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for employee login, got %d: %s", rec.Code, rec.Body.String())
+	}
+	json.Unmarshal(rec.Body.Bytes(), &loginResp)
+	empToken, _ := loginResp["token"].(string)
+	empClaims, err := jwtutil.ValidateToken(empToken)
+	if err != nil {
+		t.Fatalf("failed to validate emp token: %v", err)
+	}
+	if len(empClaims.AMR) != 1 || empClaims.AMR[0] != "pwd" {
+		t.Errorf("expected amr [pwd] for employee login, got %v", empClaims.AMR)
+	}
+
+	// 3. VerifyLoginOTP: token has amr: ["pwd", "otp"]
+	trueVal := true
+	userWith2FA := &models.User{
+		ID:               "usr-amr-2fa",
+		Email:            "amr-2fa@example.com",
+		Username:         "amr_2fa",
+		Password:         string(hash),
+		Role:             models.RoleUser,
+		IsActive:         true,
+		TwoFactorEnabled: &trueVal,
+		CreatedAt:        time.Now(),
+	}
+	if err := s.CreateUser(ctx, userWith2FA); err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	// Store OTP
+	testOTP := "123456"
+	if err := s.SetOTP(ctx, userWith2FA.Email, testOTP); err != nil {
+		t.Fatalf("failed to set OTP: %v", err)
+	}
+
+	otpBody, _ := json.Marshal(map[string]string{
+		"email": userWith2FA.Email,
+		"otp":   testOTP,
+	})
+	req = httptest.NewRequest(http.MethodPost, "/auth/verify-otp", bytes.NewReader(otpBody))
+	rec = httptest.NewRecorder()
+	a.VerifyOTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for verify-otp, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var otpResp map[string]any
+	json.Unmarshal(rec.Body.Bytes(), &otpResp)
+	mfaToken, _ := otpResp["token"].(string)
+	mfaClaims, err := jwtutil.ValidateToken(mfaToken)
+	if err != nil {
+		t.Fatalf("failed to validate mfa token: %v", err)
+	}
+	if len(mfaClaims.AMR) != 2 || mfaClaims.AMR[0] != "pwd" || mfaClaims.AMR[1] != "otp" {
+		t.Errorf("expected amr [pwd otp] for 2FA OTP verify, got %v", mfaClaims.AMR)
+	}
+
+	// 4. RefreshToken preserves AMR
+	refreshBody, _ := json.Marshal(map[string]string{
+		"token": mfaToken,
+	})
+	req = httptest.NewRequest(http.MethodPost, "/auth/refresh", bytes.NewReader(refreshBody))
+	rec = httptest.NewRecorder()
+	a.Refresh(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for refresh, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var refreshResp map[string]any
+	json.Unmarshal(rec.Body.Bytes(), &refreshResp)
+	refreshedToken, _ := refreshResp["token"].(string)
+	refreshedClaims, err := jwtutil.ValidateToken(refreshedToken)
+	if err != nil {
+		t.Fatalf("failed to validate refreshed token: %v", err)
+	}
+	if len(refreshedClaims.AMR) != 2 || refreshedClaims.AMR[0] != "pwd" || refreshedClaims.AMR[1] != "otp" {
+		t.Errorf("expected refreshed token to preserve amr [pwd otp], got %v", refreshedClaims.AMR)
+	}
+}
