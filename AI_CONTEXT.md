@@ -1076,6 +1076,13 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
     - Replaced misleading search icon (`Icons.search`) with location pin icon (`Icons.location_on_outlined`) in `home_quick_search_card`.
     - Updated `customerHomeSearchHint` localization copy from text search prompt to action prompt ("Tap to set your pickup location" / "اضغط لتحديد مكان الاستلام").
     - Updated `frontend/test/a1_diagnosis_test.dart` assertions and refreshed golden fixtures (`customer_home_mobile_360x800`, `customer_home_dark_mobile_360x800`).
+  - **Item 2 — Retain Marketplace Filter Sheet Across Setting Adjustments (`CustomerMarketplaceScreen`)**:
+    - Wrapped filter bottom sheet content in `StatefulBuilder` with `setSheetState`, allowing local state toggles without premature sheet popping.
+    - Updated `nearby_filter_switch` to toggle state in-place without dismissing the sheet.
+    - Updated `choose_location_map_button` to await `_openLocationPickerDialog` without popping the sheet.
+    - Added "Apply Filters" CTA (`PrimaryButton`, key `apply_filters_button`) utilizing new localized key `applyFiltersBtn` ("Apply Filters" / "تطبيق الفلاتر") to commit filters and refresh services.
+    - Verified via `customer_marketplace_screen_test.dart` and refreshed golden snapshots (`customer_marketplace_mobile_360x800`, `customer_marketplace_dark_mobile_360x800`).
+
 
 
 

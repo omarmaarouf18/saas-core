@@ -141,6 +141,15 @@ class _MockMarketplaceProvider extends MarketplaceProvider {
   Future<Map<String, dynamic>> fetchRatings(String token) async {
     return {'ratings': []};
   }
+
+  @override
+  Future<void> fetchServices({
+    bool nearBy = true,
+    double lat = 30.0444,
+    double lon = 31.2357,
+    double radius = 50.0,
+    String sortBy = 'price',
+  }) async {}
 }
 
 class _MockChatProvider extends ChatProvider {

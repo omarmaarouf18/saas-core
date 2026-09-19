@@ -142,6 +142,7 @@
   "customerMarketplaceFilterCategory": "القسم",
   "customerMarketplaceFilterRadius": "أقصى مسافة (كم)",
   "customerMarketplaceChooseMap": "حدد المكان على الخريطة",
+  "applyFiltersBtn": "تطبيق الفلاتر",
   "customerJobsTitle": "طلباتي",
   "customerJobsSub": "تتبع وإدارة سجل طلباتك.",
   "customerJobsSearchHint": "ابحث برقم الطلب أو الموقع...",

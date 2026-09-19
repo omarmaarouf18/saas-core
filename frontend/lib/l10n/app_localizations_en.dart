@@ -445,6 +445,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customerMarketplaceChooseMap => 'Choose Location on Map';
 
   @override
+  String get applyFiltersBtn => 'Apply Filters';
+
+  @override
   String get customerJobsTitle => 'My Orders';
 
   @override

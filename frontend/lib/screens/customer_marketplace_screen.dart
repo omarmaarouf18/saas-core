@@ -364,61 +364,80 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
     // picker, radius) moved into a bottom sheet.
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       builder: (sheetContext) {
         final l10n = context.l10n;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
+        return StatefulBuilder(
+          builder: (sheetInnerContext, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: AppSpacing.lg,
+                  right: AppSpacing.lg,
+                  top: AppSpacing.lg,
+                  bottom: AppSpacing.lg +
+                      MediaQuery.of(sheetInnerContext).viewInsets.bottom,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Switch(
-                      key: const Key('nearby_filter_switch'),
-                      value: _nearBy,
-                      activeTrackColor: Theme.of(context).colorScheme.primary,
-                      onChanged: (val) {
+                    Row(
+                      children: [
+                        Switch(
+                          key: const Key('nearby_filter_switch'),
+                          value: _nearBy,
+                          activeTrackColor:
+                              Theme.of(context).colorScheme.primary,
+                          onChanged: (val) {
+                            setSheetState(() => _nearBy = val);
+                            setState(() => _nearBy = val);
+                          },
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          l10n.customerMarketplaceFilterNearby,
+                          style: AppTypography.bodyMd.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    SecondaryButton(
+                      key: const Key('choose_location_map_button'),
+                      isOutlined: true,
+                      icon: Icons.map_outlined,
+                      text: l10n.customerMarketplaceChooseMap,
+                      onPressed: () async {
+                        await _openLocationPickerDialog(context);
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    ThemedTextField(
+                      controller: _radiusController,
+                      labelText: l10n.customerMarketplaceFilterRadius,
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    PrimaryButton(
+                      key: const Key('apply_filters_button'),
+                      text: l10n.applyFiltersBtn,
+                      onPressed: () {
                         Navigator.pop(sheetContext);
-                        setState(() => _nearBy = val);
                         _loadServices();
                       },
                     ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      l10n.customerMarketplaceFilterNearby,
-                      style: AppTypography.bodyMd.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.md),
-                SecondaryButton(
-                  key: const Key('choose_location_map_button'),
-                  isOutlined: true,
-                  icon: Icons.map_outlined,
-                  text: l10n.customerMarketplaceChooseMap,
-                  onPressed: () {
-                    Navigator.pop(sheetContext);
-                    _openLocationPickerDialog(context);
-                  },
-                ),
-                const SizedBox(height: AppSpacing.md),
-                ThemedTextField(
-                  controller: _radiusController,
-                  labelText: l10n.customerMarketplaceFilterRadius,
-                  keyboardType: TextInputType.number,
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -548,7 +567,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
     );
   }
 
-  void _openLocationPickerDialog(BuildContext context) {
+  Future<void> _openLocationPickerDialog(BuildContext context) async {
     final l10n = context.l10n;
     LatLng tempLocation = LatLng(_customerLat, _customerLon);
     final screenWidth = MediaQuery.of(context).size.width;
@@ -556,7 +575,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
     final dialogWidth = screenWidth > 600 ? 500.0 : screenWidth * 0.95;
     final dialogHeight = screenHeight > 800 ? 600.0 : screenHeight * 0.75;
 
-    showDialog(
+    await showDialog(
       context: context,
       builder: (dialogCtx) {
         return Dialog(

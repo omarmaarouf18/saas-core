@@ -442,6 +442,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get customerMarketplaceChooseMap => 'حدد المكان على الخريطة';
 
   @override
+  String get applyFiltersBtn => 'تطبيق الفلاتر';
+
+  @override
   String get customerJobsTitle => 'طلباتي';
 
   @override

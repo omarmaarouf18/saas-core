@@ -950,6 +950,12 @@ abstract class AppLocalizations {
   /// **'Choose Location on Map'**
   String get customerMarketplaceChooseMap;
 
+  /// No description provided for @applyFiltersBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply Filters'**
+  String get applyFiltersBtn;
+
   /// No description provided for @customerJobsTitle.
   ///
   /// In en, this message translates to:

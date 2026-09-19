@@ -28,6 +28,7 @@ class MockAuthProviderForTest extends AuthProvider {
 
 class MockMarketplaceProviderForTest extends MarketplaceProvider {
   bool? lastFetchNearBy;
+  double? lastFetchRadius;
   List<MarketplaceService> mockServices = [];
 
   MockMarketplaceProviderForTest(super.apiClient);
@@ -50,6 +51,7 @@ class MockMarketplaceProviderForTest extends MarketplaceProvider {
     String sortBy = 'price',
   }) async {
     lastFetchNearBy = nearBy;
+    lastFetchRadius = radius;
   }
 
   @override
@@ -199,12 +201,64 @@ void main() {
     final switchFinder = find.byKey(const Key('nearby_filter_switch'));
     expect(switchFinder, findsOneWidget);
 
-    // 3. Toggle switch ON
+    // 3. Toggle switch ON — verify sheet remains open (switch still visible)
     await tester.tap(switchFinder);
     await tester.pumpAndSettle();
+    expect(find.byKey(const Key('nearby_filter_switch')), findsOneWidget);
 
-    // 4. Verify fetchServices was called with nearBy = true
+    // 4. Tap Apply Filters — sheet closes and services reload with nearBy = true
+    await tester.tap(find.byKey(const Key('apply_filters_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('nearby_filter_switch')), findsNothing);
     expect(mockMarketplaceProvider.lastFetchNearBy, isTrue);
+  });
+
+  testWidgets(
+      'FiltersSheet stays open across combined toggle and radius changes until Apply is pressed',
+      (WidgetTester tester) async {
+    final customerUser = UserProfile(
+      id: 'cust-1',
+      email: 'customer@example.com',
+      username: 'cust_user',
+      role: 'user',
+    );
+
+    await tester.pumpWidget(buildMarketplaceApp(
+      MockAuthProviderForTest(apiClient, customerUser),
+    ));
+    await tester.pumpAndSettle();
+
+    // Open filters sheet
+    await tester.tap(find.byKey(const Key('marketplace_filters_button')));
+    await tester.pumpAndSettle();
+
+    final switchFinder = find.byKey(const Key('nearby_filter_switch'));
+    expect(switchFinder, findsOneWidget);
+
+    // Toggle switch ON
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+    // Sheet must remain open
+    expect(find.byKey(const Key('nearby_filter_switch')), findsOneWidget);
+
+    // Enter radius
+    final radiusFinder = find.byType(TextField);
+    expect(radiusFinder, findsOneWidget);
+    await tester.enterText(radiusFinder, '25');
+    await tester.pumpAndSettle();
+
+    // Sheet still open
+    expect(find.byKey(const Key('nearby_filter_switch')), findsOneWidget);
+
+    // Tap Apply Filters
+    await tester.tap(find.byKey(const Key('apply_filters_button')));
+    await tester.pumpAndSettle();
+
+    // Sheet is now dismissed and services fetched with updated filters
+    expect(find.byKey(const Key('nearby_filter_switch')), findsNothing);
+    expect(mockMarketplaceProvider.lastFetchNearBy, isTrue);
+    expect(mockMarketplaceProvider.lastFetchRadius, equals(25.0));
   });
 
   testWidgets(

@@ -142,6 +142,7 @@
   "customerMarketplaceFilterCategory": "Category",
   "customerMarketplaceFilterRadius": "Max Distance (KM)",
   "customerMarketplaceChooseMap": "Choose Location on Map",
+  "applyFiltersBtn": "Apply Filters",
   "customerJobsTitle": "My Orders",
   "customerJobsSub": "Track and manage your delivery history.",
   "customerJobsSearchHint": "Search by Order ID, Location...",
