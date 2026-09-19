@@ -934,6 +934,33 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
   - `kyc-reviewer-console`: Go unit tests (`go test -count=1 ./...`) and Node.js frontend tests (`node --test web/app_test.js`) passed 100%.
   - Code hygiene: `gofmt -l .` empty, `go vet` clean.
 
+## Reviewer Support Ticket Action Circuit Breaker Lifecycle Integration Verification
+
+**Date**: 2026-09-19
+**Category**: Bug Fix / Support Ticket Operations & Auth Resilience
+**Target Branch**: `logic-exploitation`
+- **Commit SHA**: ``7868df08ae5c453b6e679d6451c92009eddf0477``
+
+- **Problem / Gap**:
+  - Investigation into reported intermittent HTTP 503 errors on reviewer support ticket actions (`/admin/tickets`, `/admin/tickets/accept`, `/admin/tickets/resolve`) revealed that `chat-service`'s `authClient` (`resilience.NewClient(client, "auth-service", 2, 5*time.Second)`) wraps reviewer token verification with a global `gobreaker` circuit breaker (`ReadyToTrip: consecutiveFailures >= 5`, `Timeout: 15s`, `MaxRequests: 3`, `Interval: 10s`).
+  - While commit `9e6cb60...` properly mapped transient errors to 503 instead of 401, deterministic end-to-end integration test coverage was needed to verify the circuit breaker's complete state machine lifecycle (`closed` -> `open` -> `half-open` -> `closed`), fail-fast execution (<50ms, 0 upstream HTTP requests) during open windows, and live state reporting via `resilience.GetBreakerStats()`.
+  - Furthermore, timing analysis of `Interval: 10s` vs `attemptTimeout: 5s` confirmed that sequential timeouts alone cannot trip the breaker (as 3 attempts exceed 10s and trigger interval reset); only fast failures (HTTP 5xx / connection drops) or concurrent bursts accumulate 5 consecutive failures.
+
+- **Implementation Details**:
+  - `services/chat-service/internal/handlers/admin_tickets_test.go`:
+    - Added `TestAdminTickets_CircuitBreaker_OpenHalfOpenClosedLifecycle` standing up a fake `auth-service` HTTP mock server failing with multiple failure modes (HTTP 500, HTTP 503, TCP socket drop via `http.Hijacker`) for the first 5 calls, then succeeding.
+    - Verified Phase 1: Calls 1–5 fail through `AdminListTickets` (attempts 1–3) and `AdminAcceptTicket` (attempts 4–5), returning HTTP 503 and tripping the breaker to `open`.
+    - Verified Phase 2: Subsequent calls (`AdminResolveTicket`, `AdminListTickets`, `AdminAcceptTicket`) fail fast in <50ms with HTTP 503 without executing any upstream HTTP calls.
+    - Verified Phase 3 & 4: After the 15-second `Timeout` window expires, the breaker transitions to `half-open`, allows probe requests that succeed with HTTP 200 OK, and transitions back to `closed` after exactly `MaxRequests: 3` consecutive successes.
+    - Asserted `resilience.GetBreakerStats()` state transitions across all 4 phases (`closed` -> `open` -> `half-open` -> `closed`).
+
+- **Verification**:
+  - `TestAdminTickets_CircuitBreaker_OpenHalfOpenClosedLifecycle`: passed 100% (16.13s).
+  - Uncached module tests: `go test -count=1 ./services/chat-service/...` passed 100%.
+  - Shared infra tests: `go test -count=1 ./shared/infra/...` passed 100%.
+  - Code hygiene: `gofmt -l .` empty, `go vet` clean.
+
+
 
 
 
