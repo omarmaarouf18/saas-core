@@ -159,12 +159,19 @@ class _RatingScreenState extends State<RatingScreen> {
         // Refresh the other party status to see if it unlocks
         await _checkOtherPartyRatingStatus();
         if (mounted) {
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(true);
         }
       }
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
+        final errorStr = e.toString().toLowerCase();
+        if (errorStr.contains('already rated') ||
+            errorStr.contains('conflict')) {
+          ThemedSnackBar.showSuccess(context, l10n.ratingSuccessMsg);
+          Navigator.of(context).pop(true);
+          return;
+        }
         ThemedSnackBar.showError(
           context,
           l10n.ratingFailed(friendlyErrorMessage(e)),

@@ -14,11 +14,18 @@ import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_text_field.dart';
+import 'customer_marketplace_screen.dart';
 import 'job_status_screen.dart';
 
 class CustomerJobsScreen extends StatefulWidget {
   final bool isEmbeddedInTab;
-  const CustomerJobsScreen({super.key, this.isEmbeddedInTab = false});
+  final VoidCallback? onBrowseServices;
+
+  const CustomerJobsScreen({
+    super.key,
+    this.isEmbeddedInTab = false,
+    this.onBrowseServices,
+  });
 
   @override
   State<CustomerJobsScreen> createState() => _CustomerJobsScreenState();
@@ -162,7 +169,19 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
         title: l10n.customerJobsEmpty,
         description: l10n.customerJobsEmptyDescription,
         actionText: l10n.browseServicesBtn,
-        onActionPressed: () => Navigator.pop(context),
+        onActionPressed: () {
+          if (widget.onBrowseServices != null) {
+            widget.onBrowseServices!();
+          } else if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const CustomerMarketplaceScreen(),
+              ),
+            );
+          }
+        },
       ),
       listPadding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,

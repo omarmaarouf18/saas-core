@@ -516,6 +516,30 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	// Role-based 2FA decision.
 	switch user.Role {
 	case models.RoleOwner, models.RoleUser:
+		if !user.Is2FAEnabled() {
+			// 2FA disabled by user preference: issue JWT token directly.
+			token, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email)
+			if err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{
+					"error": "failed to generate token: " + err.Error(),
+				})
+				return
+			}
+			response := map[string]any{
+				"status":   "success",
+				"message":  "authenticated",
+				"user_id":  user.ID,
+				"role":     user.Role,
+				"username": user.Username,
+				"token":    token,
+			}
+			if user.Role == models.RoleOwner {
+				response["kyc_status"] = user.KYCStatus
+			}
+			writeJSON(w, http.StatusOK, response)
+			return
+		}
+
 		// Generate a 6-digit OTP.
 		otpCode := generate6DigitOTP()
 
@@ -1233,6 +1257,16 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		updateFields["frequent_addresses"] = addresses
+	}
+
+	// 4. Two-Factor Authentication (2FA) Preference Toggle
+	if val, exists := raw["two_factor_enabled"]; exists {
+		b, ok := val.(bool)
+		if !ok {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "two_factor_enabled must be a boolean"})
+			return
+		}
+		updateFields["two_factor_enabled"] = b
 	}
 
 	if len(updateFields) == 0 {

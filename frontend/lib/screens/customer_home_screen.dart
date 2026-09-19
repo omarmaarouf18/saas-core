@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
+import 'package:latlong2/latlong.dart';
 import '../core/theme.dart';
 import '../core/constants.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../providers/notifications_provider.dart';
+import '../widgets/location_picker_map.dart';
 import '../widgets/themed_panel.dart';
 import '../widgets/dashboard_screen_template.dart';
 import '../widgets/themed_card.dart';
@@ -72,6 +74,16 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _marketplaceKey.currentState?.selectCategory(category);
+    });
+  }
+
+  void _navigateToServicesWithLocation(double lat, double lon) {
+    setState(() {
+      _currentIndex = 1; // Switch to Services tab
+      _visitedTabs.add(1);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _marketplaceKey.currentState?.setCustomerLocation(lat, lon);
     });
   }
 
@@ -153,6 +165,7 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
         _visitedTabs.contains(0)
             ? _CustomerHomeDashboardTab(
                 onCategorySelected: _navigateToServicesCategory,
+                onLocationSelected: _navigateToServicesWithLocation,
                 onGoToServices: () => onTabTapped(1),
                 onGoToHistory: () => onTabTapped(2),
               )
@@ -164,8 +177,9 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
               )
             : const SizedBox.shrink(),
         _visitedTabs.contains(2)
-            ? const CustomerJobsScreen(
+            ? CustomerJobsScreen(
                 isEmbeddedInTab: true,
+                onBrowseServices: () => onTabTapped(1),
               )
             : const SizedBox.shrink(),
         _visitedTabs.contains(3)
@@ -203,11 +217,13 @@ class CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
 class _CustomerHomeDashboardTab extends StatefulWidget {
   final ValueChanged<String> onCategorySelected;
+  final void Function(double lat, double lon)? onLocationSelected;
   final VoidCallback onGoToServices;
   final VoidCallback onGoToHistory;
 
   const _CustomerHomeDashboardTab({
     required this.onCategorySelected,
+    this.onLocationSelected,
     required this.onGoToServices,
     required this.onGoToHistory,
   });
@@ -365,7 +381,8 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
           ),
           const SizedBox(height: AppSpacing.md),
           InkWell(
-            onTap: widget.onGoToServices,
+            key: const Key('home_quick_search_card'),
+            onTap: () => _openLocationPickerDialog(context),
             borderRadius: AppRadius.smBorder,
             child: ThemedPanel(
                 color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -389,6 +406,8 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                     Expanded(
                       child: Text(
                         context.l10n.customerHomeSearchHint,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: AppTypography.bodyMd.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -407,6 +426,83 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
           ),
         ],
       ),
+    );
+  }
+
+  void _openLocationPickerDialog(BuildContext context) {
+    final l10n = context.l10n;
+    LatLng tempLocation = LocationPickerMap.cairoDefault;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final dialogWidth = screenWidth > 600 ? 500.0 : screenWidth * 0.95;
+    final dialogHeight = screenHeight > 800 ? 600.0 : screenHeight * 0.75;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return Dialog(
+          key: const Key('home_search_location_picker_dialog'),
+          insetPadding: const EdgeInsets.all(AppSpacing.md),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          child: SizedBox(
+            width: dialogWidth,
+            height: dialogHeight,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          l10n.chooseSearchLocation,
+                          style: AppTypography.titleMd.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: l10n.tooltipClose,
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(dialogCtx).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      child: LocationPickerMap(
+                        initialLocation: tempLocation,
+                        onLocationSelected: (newLocation) {
+                          tempLocation = newLocation;
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  PrimaryButton(
+                    key: const Key('confirm_search_location_button'),
+                    text: l10n.locationPickerConfirmBtn,
+                    trailingIcon: Icons.arrow_forward,
+                    onPressed: () {
+                      Navigator.of(dialogCtx).pop();
+                      widget.onLocationSelected?.call(
+                        tempLocation.latitude,
+                        tempLocation.longitude,
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -556,32 +652,37 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "#QD-$displayId",
-                                style: AppTypography.caption.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "#QD-$displayId",
+                                  style: AppTypography.caption.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: AppSpacing.xxs),
-                              Text(
-                                job.serviceId.isNotEmpty
-                                    ? job.serviceId
-                                    : l10n.expressDeliveryFallbackLabel,
-                                style: AppTypography.titleMd.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
+                                const SizedBox(height: AppSpacing.xxs),
+                                Text(
+                                  job.serviceId.isNotEmpty
+                                      ? job.serviceId
+                                      : l10n.expressDeliveryFallbackLabel,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.titleMd.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: AppSpacing.sm),
                           StatusBadge(status: job.status),
                         ],
                       ),

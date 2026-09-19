@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
+import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
 import '../providers/theme_provider.dart';
 import '../utils/logout_helper.dart';
+import '../widgets/confirm_action_dialog.dart';
 import '../widgets/themed_panel.dart';
 import '../widgets/entity_avatar.dart';
 import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_section_header.dart';
+import '../widgets/themed_success_banner.dart';
 import 'customer_tickets_screen.dart';
 import 'kyc_document_upload_screen.dart';
 import 'my_account_screen.dart';
@@ -390,7 +393,70 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
 
-          // 3. Support Section
+          // 3. Security Section (A3)
+          ThemedSectionHeader(
+            title: l10n.settingsSecurity,
+            subtitle: l10n.settingsSecuritySub,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          ThemedCard(
+            padding: AppSpacing.md,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.settingsTwoFactorAuth,
+                        style: AppTypography.bodyLg.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xxs),
+                      Text(
+                        l10n.settingsTwoFactorAuthSub,
+                        style: AppTypography.bodySm.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch.adaptive(
+                  key: const Key('settings_two_factor_switch'),
+                  value: user?.twoFactorEnabled ?? true,
+                  onChanged: (bool newVal) async {
+                    if (!newVal) {
+                      final confirmed = await ConfirmActionDialog.show(
+                        context,
+                        title: l10n.disableTwoFactorConfirmTitle,
+                        message: l10n.disableTwoFactorConfirmBody,
+                        confirmLabel: l10n.disableTwoFactorConfirmAction,
+                        cancelLabel: l10n.cancel,
+                        isDestructive: true,
+                      );
+                      if (confirmed != true) return;
+                    }
+                    try {
+                      await auth.toggleTwoFactor(newVal);
+                    } catch (e) {
+                      if (context.mounted) {
+                        ThemedSnackBar.showError(
+                          context,
+                          friendlyErrorMessage(e),
+                        );
+                      }
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // 4. Support Section
           ThemedSectionHeader(
             title: l10n.settingsSupport,
             subtitle: l10n.settingsSupportSub,

@@ -416,6 +416,7 @@ class AuthProvider extends ChangeNotifier {
     String? username,
     String? phone,
     List<String>? frequentAddresses,
+    bool? twoFactorEnabled,
   }) async {
     _isLoading = true;
     _error = null;
@@ -427,6 +428,9 @@ class AuthProvider extends ChangeNotifier {
       if (phone != null) body['phone'] = phone;
       if (frequentAddresses != null) {
         body['frequent_addresses'] = frequentAddresses;
+      }
+      if (twoFactorEnabled != null) {
+        body['two_factor_enabled'] = twoFactorEnabled;
       }
 
       final res = await apiClient.patch('/auth/user', body);
@@ -450,6 +454,36 @@ class AuthProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<bool> toggleTwoFactor(bool enabled) async {
+    final previousProfile = _user;
+    if (_user != null) {
+      _user = _user!.copyWith(twoFactorEnabled: enabled);
+      notifyListeners();
+    }
+
+    try {
+      final res = await apiClient.patch('/auth/user', {
+        'two_factor_enabled': enabled,
+      });
+      if (res is Map<String, dynamic> && res.containsKey('user')) {
+        final userObj = res['user'];
+        if (userObj is Map<String, dynamic>) {
+          _user = UserProfile.fromJson(userObj);
+        }
+      } else {
+        await fetchUserProfile();
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Toggle 2FA error: $e');
+      _user = previousProfile;
+      notifyListeners();
+      _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      rethrow;
     }
   }
 }

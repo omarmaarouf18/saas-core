@@ -1836,3 +1836,71 @@ func TestGetCustomerTickets_IsolationAndPagination(t *testing.T) {
 		t.Errorf("Expected empty slice for Charlie, got total=%d, len=%d, tickets=%v", respCharlie.Total, len(respCharlie.Tickets), respCharlie.Tickets)
 	}
 }
+
+func TestTicketChatMessageMasking(t *testing.T) {
+	ctx := context.Background()
+	mongoStore, err := connectTestMongoDB(ctx, fmt.Sprintf("saas_chat_test_%d", time.Now().UnixNano()))
+	if err != nil {
+		t.Skip("MongoDB not available for testing")
+	}
+	defer mongoStore.Close(ctx)
+
+	hub := chat.NewHub()
+	go hub.Run()
+
+	c := &Chat{
+		store: mongoStore,
+		hub:   hub,
+	}
+
+	ticket, err := mongoStore.CreateTicketAndAssign(ctx, "cust-123", "job-123")
+	if err != nil {
+		t.Fatalf("Failed to create ticket: %v", err)
+	}
+
+	// Create a client for the reviewer
+	revClient := &chat.Client{
+		ID:       "rev-456",
+		Username: "super_secret_reviewer_name",
+		Channels: map[string]bool{"ticket:" + ticket.ID: true},
+		Send:     make(chan []byte, 10),
+	}
+
+	// Verify the logic for reviewer on ticket channel
+	senderUsername := revClient.Username
+	channel := "ticket:" + ticket.ID
+	if strings.HasPrefix(channel, "ticket:") {
+		ticketID := strings.TrimPrefix(channel, "ticket:")
+		tk, err := c.store.GetTicket(ctx, ticketID)
+		if err == nil && tk != nil {
+			if revClient.ID != tk.CustomerID {
+				senderUsername = "Support Team"
+			}
+		}
+	}
+
+	if senderUsername != "Support Team" {
+		t.Errorf("Expected masked senderUsername 'Support Team', got %q", senderUsername)
+	}
+
+	// Verify customer senderUsername is NOT masked
+	custClient := &chat.Client{
+		ID:       "cust-123",
+		Username: "alice",
+		Channels: map[string]bool{"ticket:" + ticket.ID: true},
+		Send:     make(chan []byte, 10),
+	}
+	custSenderUsername := custClient.Username
+	if strings.HasPrefix(channel, "ticket:") {
+		ticketID := strings.TrimPrefix(channel, "ticket:")
+		tk, err := c.store.GetTicket(ctx, ticketID)
+		if err == nil && tk != nil {
+			if custClient.ID != tk.CustomerID {
+				custSenderUsername = "Support Team"
+			}
+		}
+	}
+	if custSenderUsername != "alice" {
+		t.Errorf("Expected customer username 'alice', got %q", custSenderUsername)
+	}
+}

@@ -2501,4 +2501,32 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get estimatedPriceTripNotice =>
       'Estimated price is based on the actual trip distance from pickup to destination.';
+
+  @override
+  String get settingsSecurity => 'Security';
+
+  @override
+  String get settingsSecuritySub =>
+      'Two-factor authentication and login protection';
+
+  @override
+  String get settingsTwoFactorAuth => 'Two-Factor Authentication';
+
+  @override
+  String get settingsTwoFactorAuthSub =>
+      'Require a 6-digit verification code when logging in';
+
+  @override
+  String get disableTwoFactorConfirmTitle =>
+      'Disable Two-Factor Authentication?';
+
+  @override
+  String get disableTwoFactorConfirmBody =>
+      'Disabling 2FA reduces your account security. Anyone with your password will be able to log in without an OTP verification step.';
+
+  @override
+  String get disableTwoFactorConfirmAction => 'Disable 2FA';
+
+  @override
+  String get ratingSubmittedSuccess => 'Rating Submitted';
 }

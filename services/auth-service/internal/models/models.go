@@ -81,6 +81,16 @@ type User struct {
 	OTPVerified       bool          `json:"otp_verified"              bson:"otp_verified"`
 	CreatedAt         time.Time     `json:"created_at"                bson:"created_at"`
 	DeviceTokens      []DeviceToken `json:"device_tokens,omitempty"  bson:"device_tokens,omitempty"`
+	TwoFactorEnabled  *bool         `json:"two_factor_enabled,omitempty" bson:"two_factor_enabled,omitempty"`
+}
+
+// Is2FAEnabled returns whether two-factor authentication is enabled for this user.
+// Defaults to true for RoleOwner and RoleUser to preserve backwards compatibility and security.
+func (u *User) Is2FAEnabled() bool {
+	if u == nil || u.TwoFactorEnabled == nil {
+		return true
+	}
+	return *u.TwoFactorEnabled
 }
 
 // EffectiveAccountStatus returns the resolved operational standing of the user.
@@ -200,6 +210,7 @@ type UpdateProfileRequest struct {
 	Username          *string   `json:"username,omitempty"`
 	Phone             *string   `json:"phone,omitempty"`
 	FrequentAddresses *[]string `json:"frequent_addresses,omitempty"`
+	TwoFactorEnabled  *bool     `json:"two_factor_enabled,omitempty"`
 }
 
 // AccountDirectoryItem represents a single account row in the reviewer directory.

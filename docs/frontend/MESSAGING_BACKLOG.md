@@ -236,12 +236,42 @@ A bidirectional check was performed to confirm whether any Flutter frontend prov
 
 ---
 
-## 4. Summary & Prioritization Backlog
+## 4. Recent Capability Implementations & Hardening
+
+### MSG-03: Support Ticket Chat Reviewer Privacy Masking [CLOSED]
+* **Category**: Real-Time Hub / User Privacy
+* **Implementation Details**:
+  - `services/chat-service/internal/handlers/chat.go`: In `HandleWebSocket` channel broadcast for `ticket:*` channels, incoming non-customer messages (`msg.SenderID != ticket.CustomerID`) have their `SenderUsername` dynamically masked to `"Support Team"`.
+  - Customer messages retain their original username. Reviewer internal usernames are shielded from customer-facing displays across both live WebSocket deliveries and historical channel loads.
+  - Client side (`frontend/lib/screens/ticket_chat_screen.dart`): Added `maxLines: 1, overflow: TextOverflow.ellipsis` to sender headers.
+  - Verified via `services/chat-service/internal/handlers/chat_test.go` (`TestTicketChatMessageMasking`). ✅
+
+### MSG-04: Ticket Chat Real-Time Race Condition Sequentialization [CLOSED]
+* **Category**: Real-Time Messaging Synchronization
+* **Implementation Details**:
+  - `frontend/lib/screens/ticket_chat_screen.dart:52-60`: In `initState`, replaced concurrent invocation of `fetchChannelHistory` and `connectAndSubscribeChannel` with sequential execution: history is awaited before opening/subscribing to the WebSocket channel.
+  - Closes the race condition where `fetchChannelHistory` resetting the local message list wiped live WebSocket messages received during initial screen hydration.
+  - In `_sendMessage`: Caught errors and surfaced localized `ThemedSnackBar.showError` while retaining un-sent text in `_messageController`. ✅
+
+### AUTH-02: Optional Two-Factor Authentication (2FA) & Toggle Safeguard [CLOSED]
+* **Category**: Authentication & Account Security
+* **Implementation Details**:
+  - `services/auth-service/internal/models/models.go`: Added `TwoFactorEnabled *bool` to `User` and `UpdateProfileRequest` with `Is2FAEnabled()` defaulting to `true`.
+  - `services/auth-service/internal/handlers/auth.go`: `Login` skips 2FA OTP challenge when `!user.Is2FAEnabled()`, issuing session tokens directly. `UpdateProfile` handles `two_factor_enabled` patch.
+  - `frontend/lib/screens/settings_screen.dart`: Added "Security" section with `settings_two_factor_switch`. Enforces `ConfirmActionDialog` confirmation modal when toggling off 2FA, warning users of reduced account security before execution. Toggling on activates immediately.
+  - Verified via Go unit tests and Flutter widget test suites. ✅
+
+---
+
+## 5. Summary & Prioritization Backlog
 
 | Backlog ID | Capability Summary | Priority | Required Scope | Primary Component |
 | :--- | :--- | :--- | :--- | :--- |
-| **MSG-01** | Support Ticket Chat Screen (`ticket:<ticketID>` Channel) | **P1 (High)** | Net-New Screen | `frontend/lib/screens/ticket_chat_screen.dart`<br>`frontend/lib/providers/chat_provider.dart` |
-| **MSG-02** | Customer Ticket History & Status Screen | **P1 (High)** | Net-New Screen + Backend Endpoint | `frontend/lib/screens/customer_tickets_screen.dart`<br>`services/chat-service/internal/handlers/chat.go` (`GET /chat/tickets/mine`) |
-| **OPS-01** | Courier Online/Offline Availability Toggle | **P2 (Medium)** | Screen Addition | `frontend/lib/screens/employee_jobs_screen.dart`<br>`frontend/lib/providers/employee_location_provider.dart` |
-| **AUTH-01** | User Profile Account Standing Metadata | **P3 (Low)** | Model & Screen Addition | `frontend/lib/models/user_profile.dart`<br>`frontend/lib/screens/my_account_screen.dart` |
+| **MSG-01** | Support Ticket Chat Screen (`ticket:<ticketID>` Channel) | **P1 (High)** | Net-New Screen | `frontend/lib/screens/ticket_chat_screen.dart`<br>`frontend/lib/providers/chat_provider.dart` [CLOSED] |
+| **MSG-02** | Customer Ticket History & Status Screen | **P1 (High)** | Net-New Screen + Backend Endpoint | `frontend/lib/screens/customer_tickets_screen.dart`<br>`services/chat-service/internal/handlers/chat.go` (`GET /chat/tickets/mine`) [CLOSED] |
+| **MSG-03** | Support Ticket Reviewer Privacy Masking | **P1 (High)** | Backend Masking & UI Constrain | `services/chat-service/internal/handlers/chat.go`<br>`frontend/lib/screens/ticket_chat_screen.dart` [CLOSED] |
+| **MSG-04** | Ticket Chat Real-Time Race Sequentialization | **P2 (Medium)** | Frontend Synchronization | `frontend/lib/screens/ticket_chat_screen.dart` [CLOSED] |
+| **OPS-01** | Courier Online/Offline Availability Toggle | **P2 (Medium)** | Screen Addition | `frontend/lib/screens/employee_jobs_screen.dart`<br>`frontend/lib/providers/employee_location_provider.dart` [CLOSED] |
+| **AUTH-01** | User Profile Account Standing Metadata | **P3 (Low)** | Model & Screen Addition | `frontend/lib/models/user_profile.dart`<br>`frontend/lib/screens/my_account_screen.dart` [CLOSED] |
+| **AUTH-02** | Optional Two-Factor Authentication (2FA) | **P2 (Medium)** | Backend Model & Settings UI | `services/auth-service/internal/handlers/auth.go`<br>`frontend/lib/screens/settings_screen.dart` [CLOSED] |
 | **DEPR-01** | Deprecate Unused Support Agent Endpoint | **P3 (Low)** | Code Cleanup | `services/chat-service/internal/handlers/chat.go` (`POST /chat/tickets/resolve`) [CLOSED] |

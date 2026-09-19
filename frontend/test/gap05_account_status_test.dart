@@ -28,6 +28,7 @@ class MockAuthProviderForAccountStatus extends AuthProvider {
     String? username,
     String? phone,
     List<String>? frequentAddresses,
+    bool? twoFactorEnabled,
   }) async =>
       true;
 }

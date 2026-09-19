@@ -4580,6 +4580,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Estimated price is based on the actual trip distance from pickup to destination.'**
   String get estimatedPriceTripNotice;
+
+  /// No description provided for @settingsSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get settingsSecurity;
+
+  /// No description provided for @settingsSecuritySub.
+  ///
+  /// In en, this message translates to:
+  /// **'Two-factor authentication and login protection'**
+  String get settingsSecuritySub;
+
+  /// No description provided for @settingsTwoFactorAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'Two-Factor Authentication'**
+  String get settingsTwoFactorAuth;
+
+  /// No description provided for @settingsTwoFactorAuthSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Require a 6-digit verification code when logging in'**
+  String get settingsTwoFactorAuthSub;
+
+  /// No description provided for @disableTwoFactorConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable Two-Factor Authentication?'**
+  String get disableTwoFactorConfirmTitle;
+
+  /// No description provided for @disableTwoFactorConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabling 2FA reduces your account security. Anyone with your password will be able to log in without an OTP verification step.'**
+  String get disableTwoFactorConfirmBody;
+
+  /// No description provided for @disableTwoFactorConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable 2FA'**
+  String get disableTwoFactorConfirmAction;
+
+  /// No description provided for @ratingSubmittedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating Submitted'**
+  String get ratingSubmittedSuccess;
 }
 
 class _AppLocalizationsDelegate

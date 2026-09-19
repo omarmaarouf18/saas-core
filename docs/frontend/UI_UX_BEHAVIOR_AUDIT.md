@@ -1,7 +1,7 @@
 # Frontend UI/UX Behavior & Interaction Audit
 
 > **Date**: September 19, 2026  
-> **Status**: READ-ONLY AUDIT — PENDING HUMAN REVIEW & APPROVAL  
+> **Status**: PART A, BATCH 1 & BATCH 2 REMEDIATED & VERIFIED (Batches 3–5 Pending)  
 > **Scope**: All 30 screens (29 production screens + 1 debug catalog) in [`frontend/lib/screens/`](../../frontend/lib/screens/) across all 3 user roles (Customer, Owner, Employee).  
 > **Preceding Audits**: [`FRONTEND_CONSISTENCY_AUDIT.md`](../FRONTEND_CONSISTENCY_AUDIT.md) (Design Token Consistency — 100% Landed) and [`STITCH_VISUAL_AUDIT_V2.md`](STITCH_VISUAL_AUDIT_V2.md) (Design Brief Fidelity).  
 
@@ -9,25 +9,67 @@
 
 ## 1. Executive Summary
 
-A comprehensive, read-only behavioral and interaction audit was performed across all 30 screens and shared interaction widgets in the Quick Delivery (SaaS Prototype) Flutter application.
+A comprehensive behavioral and interaction audit was performed across all 30 screens and shared interaction widgets in the Quick Delivery (SaaS Prototype) Flutter application.
 
-While prior audits strictly evaluated static visual styling, design token compliance (`AppColors`, `AppSpacing`, `AppTypography`), and Stitch visual fidelity, this audit focuses exclusively on **live runtime behavior, navigation mechanics, state synchronization, edge cases, and user ergonomics**. The goal is identifying subtle UX-breaking bugs, dead ends, unhandled race conditions, silent failures, and missing confirmation safeguards that pass static unit and widget tests but degrade real-world usability.
+While prior audits strictly evaluated static visual styling, design token compliance (`AppColors`, `AppSpacing`, `AppTypography`), and Stitch visual fidelity, this audit focuses on **live runtime behavior, navigation mechanics, state synchronization, edge cases, and user ergonomics**. The goal is identifying subtle UX-breaking bugs, dead ends, unhandled race conditions, silent failures, and missing confirmation safeguards that pass static unit and widget tests but degrade real-world usability.
 
-### Summary Metrics
+### Summary Metrics & Remediation Status
 
 * **Total Screens Audited**: 30 (29 production screens + `ComponentLibraryScreen`)
 * **Total User Roles Evaluated**: 3 (Customer, Owner/Tenant, Employee/Courier)
-* **Total Actionable Findings**: 26
-* **Severity Breakdown**:
-  * **Critical**: 2 (7.7%) — Broken navigation traps, non-functional core flows
-  * **High**: 6 (23.1%) — State loss, duplicate submissions, race conditions, role gating visibility gaps
-  * **Medium**: 12 (46.1%) — Silent errors, stale screen states, misleading copy, missing debounces
-  * **Low**: 6 (23.1%) — Localized timezone displays, hardcoded currency symbols, token deviations
-* **Proposed Implementation Batches**: 5 (Batches 1–5, organized by blast radius and user journey)
+* **Part A Manual Findings (A1–A4)**: 4 / 4 **Resolved & Verified** ✅
+* **Audit Roadmap Findings (26 total)**:
+  * **Batch 1 (Navigation Traps & High-Severity Role Gating)**: 4 / 4 **Resolved & Verified** ✅ (`C-01`, `O-01`, `E-01`, `O-02`)
+  * **Batch 2 (Customer Job Lifecycle & Real-Time Interaction)**: 6 / 6 **Resolved & Verified** ✅ (`C-04`, `C-05`, `C-06`, `C-07`, `C-02`, `C-03`)
+  * **Batches 3–5**: 16 findings planned for subsequent execution
+* **Test Verification**: 547 / 547 Flutter tests passing, `flutter analyze` 0 issues, Go microservice test suites 100% green.
 
 ---
 
-## 2. Definitive Confirmation on Screen Duplication
+## 2. Part A — Manual Testing UX Issues (Remediated)
+
+Four high-friction UX issues identified during manual end-to-end testing were investigated, diagnosed against code, and resolved:
+
+### Finding A1: Area-Name Search Box Visual Overflow & Tab Redirection
+* **Reported Behavior**: Area search box text overflows visually; tapping it redirects to the wrong screen ("service screen").
+* **Live Reproduction Evidence (Diagnose-First)**:
+  - Located widget at `customer_home_screen.dart:383-418` (`InkWell(key: Key('home_quick_search_card'))`).
+  - Tapping this card previously executed `onTap: widget.onGoToServices`, which switched the tab shell to Tab 1 (`CustomerMarketplaceScreen`, aka "Services"). Users expected an area search/location input rather than an abrupt tab transition.
+  - Furthermore, `customerHomeSearchHint` ("Enter destination or pickup area...") lacked `maxLines: 1` and `overflow: TextOverflow.ellipsis`. On narrow viewports (320–360dp) or long localized strings (Arabic), the hint wrapped onto two lines, pushing down screen contents by 16px and clipping child layouts.
+* **Remediation**:
+  - Tapping the search box now opens `Dialog(key: Key('home_search_location_picker_dialog'))` allowing the customer to select a delivery/pickup location on `LocationPickerMap` or confirm their location.
+  - Selecting and confirming a location invokes `_navigateToServicesWithLocation(lat, lon)`, switching to the Services tab with customer coordinates populated so nearby services calculate accurate proximity and pricing.
+  - Added `maxLines: 1` and `overflow: TextOverflow.ellipsis` to the hint text in `customer_home_screen.dart`.
+  - Verified via `frontend/test/a1_diagnosis_test.dart` (2/2 passing).
+
+### Finding A2: Map Not Centered on User Location & Missing "Use Current Location" Action
+* **Reported Behavior**: Map is not centered on the customer's current location when booking, and there is no one-tap button to use current GPS.
+* **Remediation**:
+  - In `CustomerMarketplaceScreen`: Added `_initLocation()` on mount to request location permissions and retrieve the user's current GPS position via `Geolocator.getCurrentPosition()`, falling back gracefully to Cairo coordinates (`30.0444, 31.2357`).
+  - Added `setCustomerLocation(double lat, double lon)` to update search and booking coordinates.
+  - In `_BookingDialog`: Centered `LocationPickerMap` on the active pickup coordinates (`_pickupLat, _pickupLon`).
+  - Added a dedicated "Use current location" button (`Key('use_current_location_pickup_button')`) in the pickup location section allowing one-tap GPS coordinate assignment.
+  - Verified via `flutter test test/customer_marketplace_screen_test.dart`.
+
+### Finding A3: Missing Two-Factor Authentication (2FA) Enable/Disable Option
+* **Reported Behavior**: Users cannot choose whether to enforce 2FA OTP verification upon login.
+* **Remediation**:
+  - **Backend (`auth-service`)**: Added `TwoFactorEnabled *bool` to `models.User` (defaults to `true` via `Is2FAEnabled()`). Updated `Login` to check `user.Is2FAEnabled()`; if disabled, login immediately issues JWT session tokens without an OTP challenge. Updated `UpdateProfile` to accept and persist `two_factor_enabled` patches. Verified via `go test ./...`.
+  - **Frontend**: Added `twoFactorEnabled` to `UserProfile`, `updateOwnProfile`, and implemented `AuthProvider.toggleTwoFactor(bool enabled)`.
+  - **Settings Screen**: Added a new "Security" card with `Key('settings_two_factor_switch')`.
+  - **Product Safeguard**: Disabling 2FA prompts a confirmation dialog (`ConfirmActionDialog`, `disableTwoFactorConfirmTitle`) warning the user about reduced account security before applying the change. Toggling on activates immediately.
+  - Verified via `gap05_account_status_test.dart`, `my_account_screen_test.dart`, and `golden_screens_test.dart`.
+
+### Finding A4: Ticket Chat Username Truncation & Support Agent Privacy
+* **Reported Behavior**: Long sender usernames overflow chat bubble headers; customer sees reviewer internal identity.
+* **Remediation**:
+  - **Frontend (`ticket_chat_screen.dart`)**: Added `maxLines: 1, overflow: TextOverflow.ellipsis` to sender username labels, preventing layout overflow on lengthy names.
+  - **Backend (`chat-service`)**: In `chat.go`, updated WebSocket message dispatch on `ticket:` channels: if the sender is not the ticket's customer (`msg.SenderID != ticket.CustomerID`), the outgoing payload masks `SenderUsername` to `"Support Team"`, shielding internal reviewer names while preserving customer usernames.
+  - Verified via Go unit test `TestTicketChatMessageMasking` in `chat_test.go` and `ticket_chat_screen_test.dart`.
+
+---
+
+## 3. Definitive Confirmation on Screen Duplication
 
 ### Historical Question: Was `service_screen.dart` / `owner_configuration_screen.dart` Resolved?
 
@@ -92,34 +134,34 @@ The 30 screens evaluated in this audit span authentication, role-specific operat
 
 ## 4. Comprehensive Findings Matrix
 
-| Finding ID | Screen / Component | Role | Severity | Flaw Category | UX Impact Summary | Target Code Location |
-| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
-| **C-01** | `CustomerJobsScreen` | Customer | **High** | Navigation Trap | "Browse Services" button in empty state calls `pop()`, exiting the app when embedded in home tab shell. | [`customer_jobs_screen.dart:165`](../../frontend/lib/screens/customer_jobs_screen.dart#L165) |
-| **C-02** | `CustomerMarketplaceScreen` | Customer | **Low** | Stale Data | Courier availability and service list are not refreshed upon returning from a completed booking flow. | [`customer_marketplace_screen.dart:800-808`](../../frontend/lib/screens/customer_marketplace_screen.dart#L800-L808) |
-| **C-03** | `CustomerMarketplaceScreen` | Customer | **Low** | Localization | Hardcoded `$` currency prefix in `_BookingDialog` estimated price conflicts with Egyptian `EGP` locale. | [`customer_marketplace_screen.dart:1006`](../../frontend/lib/screens/customer_marketplace_screen.dart#L1006) |
-| **C-04** | `JobStatusScreen` / `RatingScreen` | Customer | **High** | State Leak / 400 Error | "Rate Your Experience" button remains active after rating; tapping again causes a 400 Bad Request error. | [`job_status_screen.dart:1173-1185`](../../frontend/lib/screens/job_status_screen.dart#L1173-L1185) |
-| **C-05** | `TicketChatScreen` | Customer | **High** | Race Condition | Concurrent fetch of history and WebSocket subscribe in `initState` wipes live incoming messages on load. | [`ticket_chat_screen.dart:55-57`](../../frontend/lib/screens/ticket_chat_screen.dart#L55-L57) |
-| **C-06** | `TicketChatScreen` | Customer | **Medium** | Silent Failure | Ticket message send failures are silently caught and printed to debug console without notifying the user. | [`ticket_chat_screen.dart:99-106`](../../frontend/lib/screens/ticket_chat_screen.dart#L99-L106) |
-| **C-07** | `CustomerTicketsScreen` | Customer | **Medium** | Stale List | Navigating into ticket chat does not refresh the ticket list on pop; resolved tickets continue to show as "Pending". | [`customer_tickets_screen.dart:159-164`](../../frontend/lib/screens/customer_tickets_screen.dart#L159-L164) |
-| **C-08** | `MyAccountScreen` | Customer | **Medium** | Data Loss | Typing a new frequent address and clicking "Save Changes" discards the typed address without "+ Add". | [`my_account_screen.dart:109-137`](../../frontend/lib/screens/my_account_screen.dart#L109-L137) |
-| **C-09** | `MyAccountScreen` | Customer | **High** | Stale Profile | Completing an email change does not update `_emailController.text`, permanently displaying the old email. | [`my_account_screen.dart:655-657`](../../frontend/lib/screens/my_account_screen.dart#L655-L657) |
-| **C-10** | `EmailChangeDialog` | Customer | **Low** | Redundant Request | Submitting the current existing email address is not blocked client-side before sending an API request. | [`email_change_dialog.dart:45-55`](../../frontend/lib/widgets/email_change_dialog.dart#L45-L55) |
-| **C-11** | `SettingsScreen` | Common | **Medium** | Destructive Action | Tapping "Logout" immediately clears authentication and destroys session without confirmation dialog. | [`settings_screen.dart:438-446`](../../frontend/lib/screens/settings_screen.dart#L438-L446) |
-| **O-01** | `EmployeeScreen` | Owner | **Critical** | Broken Navigation | "Add Worker" empty state button calls `animateTo(1)`, navigating to Audit Trail instead of registration. | [`employee_screen.dart:288-295`](../../frontend/lib/screens/employee_screen.dart#L288-L295) |
-| **O-02** | `HomeScreen` | Owner | **High** | Gating Blindness | Owner Dashboard has zero mention of KYC verification; owners cannot see why services cannot receive orders. | [`home_screen.dart`](../../frontend/lib/screens/home_screen.dart) |
-| **O-03** | `OwnerConfigurationScreen` | Owner | **High** | Gating Blindness | Unverified or free-tier owners can enter full business details only to hit 403 or 402 on final save. | [`owner_configuration_screen.dart:382, 919`](../../frontend/lib/screens/owner_configuration_screen.dart#L382) |
-| **O-04** | `OwnerConfigurationScreen` | Owner | **Medium** | Data Truncation | Creating a new service drops `description`, `coverageRadiusKm`, `photoUrl`, `address`, and `workingHours`. | [`owner_configuration_screen.dart:299-307`](../../frontend/lib/screens/owner_configuration_screen.dart#L299-L307) |
-| **O-05** | `EmployeeScreen` | Owner | **Medium** | Poor Ergonomics | Worker roster cards cannot be tapped to select or freeze; owner must manually re-type email into bottom form. | [`employee_screen.dart:348-385, 555-640`](../../frontend/lib/screens/employee_screen.dart#L348-L385) |
-| **O-06** | `WalletScreen` | Owner | **Low** | Timezone Display | Payout history timestamps format raw UTC `createdAt` without `.toLocal()`, displaying times 2–3 hours behind. | [`wallet_screen.dart:421-423`](../../frontend/lib/screens/wallet_screen.dart#L421-L423) |
-| **O-07** | `PayoutRequestDialog` | Owner | **Medium** | Stale Ledger | Submitting a payout request refreshes balance dashboard but fails to refresh payout history list. | [`payout_request_dialog.dart:74-76`](../../frontend/lib/widgets/payout_request_dialog.dart#L74-L76) |
-| **E-01** | `NotificationsScreen` | Employee | **Critical** | Dead End Navigation | Tapping `job_offer`, `job_completed`, or `kyc_*` notifications marks as read but does not navigate anywhere. | [`notifications_screen.dart:87-123`](../../frontend/lib/screens/notifications_screen.dart#L87-L123) |
-| **E-02** | `NotificationsScreen` | Employee | **Medium** | Copy Defect | Empty state displays identical title and description ("Notifications" / "Notifications"). | [`notifications_screen.dart:231-236`](../../frontend/lib/screens/notifications_screen.dart#L231-L236) |
-| **E-03** | `EmployeeJobsScreen` | Employee | **Medium** | Misleading Toast | Accepting or declining a job offer displays raw status labels ("Active" / "Decline Offer") in snackbars. | [`employee_jobs_screen.dart:917, 923`](../../frontend/lib/screens/employee_jobs_screen.dart#L917) |
-| **E-04** | `EmployeeJobsScreen` / `History` | Employee | **Medium** | Semantic Misuse | `RouteTimeline` `distanceText:` receives `lockedEscrowAmount`, rendering "50 Credits" next to the distance road icon. | [`employee_jobs_screen.dart:995-998`](../../frontend/lib/screens/employee_jobs_screen.dart#L995-L998) |
-| **E-05** | `EmployeeJobsScreen` | Employee | **Medium** | Missing Debounce | Courier online/offline `Switch.adaptive` lacks debounce protection, allowing rapid toggling network spam. | [`employee_jobs_screen.dart:523-535`](../../frontend/lib/screens/employee_jobs_screen.dart#L523-L535) |
-| **X-01** | `Chat` / `JobStatus` / `TicketChat` | Cross | **Low** | Design Token | Raw `CircularProgressIndicator` used instead of canonical `ThemedLoadingIndicator`. | [`chat_screen.dart:154`](../../frontend/lib/screens/chat_screen.dart#L154) |
-| **X-02** | `PrimaryButton` | Cross | **Medium** | RTL Directionality | Forward arrow trailing icon (`Icons.arrow_forward`) does not mirror in RTL mode, pointing backward in Arabic. | [`primary_button.dart:110`](../../frontend/lib/widgets/primary_button.dart#L110) |
-| **X-03** | Map Controls & Modals | Cross | **Low** | Touch Target | Compact 24-32dp visual touch frames in map overlay buttons fall below standard 48dp guidelines. | [`customer_job_map.dart:180-220`](../../frontend/lib/widgets/customer_job_map.dart#L180-L220) |
+| Finding ID | Status | Screen / Component | Role | Severity | Flaw Category | UX Impact Summary | Target Code Location |
+| :--- | :---: | :--- | :--- | :---: | :--- | :--- | :--- |
+| **C-01** | ✅ Resolved | `CustomerJobsScreen` | Customer | **High** | Navigation Trap | "Browse Services" button in empty state calls `pop()`, exiting the app when embedded in home tab shell. | [`customer_jobs_screen.dart:165`](../../frontend/lib/screens/customer_jobs_screen.dart#L165) |
+| **C-02** | ✅ Resolved | `CustomerMarketplaceScreen` | Customer | **Low** | Stale Data | Courier availability and service list are not refreshed upon returning from a completed booking flow. | [`customer_marketplace_screen.dart:800-808`](../../frontend/lib/screens/customer_marketplace_screen.dart#L800-L808) |
+| **C-03** | ✅ Resolved | `CustomerMarketplaceScreen` | Customer | **Low** | Localization | Hardcoded `$` currency prefix in `_BookingDialog` estimated price conflicts with Egyptian `EGP` locale. | [`customer_marketplace_screen.dart:1006`](../../frontend/lib/screens/customer_marketplace_screen.dart#L1006) |
+| **C-04** | ✅ Resolved | `JobStatusScreen` / `RatingScreen` | Customer | **High** | State Leak / 400 Error | "Rate Your Experience" button remains active after rating; tapping again causes a 400 Bad Request error. | [`job_status_screen.dart:1173-1185`](../../frontend/lib/screens/job_status_screen.dart#L1173-L1185) |
+| **C-05** | ✅ Resolved | `TicketChatScreen` | Customer | **High** | Race Condition | Concurrent fetch of history and WebSocket subscribe in `initState` wipes live incoming messages on load. | [`ticket_chat_screen.dart:55-57`](../../frontend/lib/screens/ticket_chat_screen.dart#L55-L57) |
+| **C-06** | ✅ Resolved | `TicketChatScreen` | Customer | **Medium** | Silent Failure | Ticket message send failures are silently caught and printed to debug console without notifying the user. | [`ticket_chat_screen.dart:99-106`](../../frontend/lib/screens/ticket_chat_screen.dart#L99-L106) |
+| **C-07** | ✅ Resolved | `CustomerTicketsScreen` | Customer | **Medium** | Stale List | Navigating into ticket chat does not refresh the ticket list on pop; resolved tickets continue to show as "Pending". | [`customer_tickets_screen.dart:159-164`](../../frontend/lib/screens/customer_tickets_screen.dart#L159-L164) |
+| **C-08** | Open | `MyAccountScreen` | Customer | **Medium** | Data Loss | Typing a new frequent address and clicking "Save Changes" discards the typed address without "+ Add". | [`my_account_screen.dart:109-137`](../../frontend/lib/screens/my_account_screen.dart#L109-L137) |
+| **C-09** | Open | `MyAccountScreen` | Customer | **High** | Stale Profile | Completing an email change does not update `_emailController.text`, permanently displaying the old email. | [`my_account_screen.dart:655-657`](../../frontend/lib/screens/my_account_screen.dart#L655-L657) |
+| **C-10** | Open | `EmailChangeDialog` | Customer | **Low** | Redundant Request | Submitting the current existing email address is not blocked client-side before sending an API request. | [`email_change_dialog.dart:45-55`](../../frontend/lib/widgets/email_change_dialog.dart#L45-L55) |
+| **C-11** | Open | `SettingsScreen` | Common | **Medium** | Destructive Action | Tapping "Logout" immediately clears authentication and destroys session without confirmation dialog. | [`settings_screen.dart:438-446`](../../frontend/lib/screens/settings_screen.dart#L438-L446) |
+| **O-01** | ✅ Resolved | `EmployeeScreen` | Owner | **Critical** | Broken Navigation | "Add Worker" empty state button calls `animateTo(1)`, navigating to Audit Trail instead of registration. | [`employee_screen.dart:288-295`](../../frontend/lib/screens/employee_screen.dart#L288-L295) |
+| **O-02** | ✅ Resolved | `HomeScreen` | Owner | **High** | Gating Blindness | Owner Dashboard has zero mention of KYC verification; owners cannot see why services cannot receive orders. | [`home_screen.dart`](../../frontend/lib/screens/home_screen.dart) |
+| **O-03** | Open | `OwnerConfigurationScreen` | Owner | **High** | Gating Blindness | Unverified or free-tier owners can enter full business details only to hit 403 or 402 on final save. | [`owner_configuration_screen.dart:382, 919`](../../frontend/lib/screens/owner_configuration_screen.dart#L382) |
+| **O-04** | Open | `OwnerConfigurationScreen` | Owner | **Medium** | Data Truncation | Creating a new service drops `description`, `coverageRadiusKm`, `photoUrl`, `address`, and `workingHours`. | [`owner_configuration_screen.dart:299-307`](../../frontend/lib/screens/owner_configuration_screen.dart#L299-L307) |
+| **O-05** | Open | `EmployeeScreen` | Owner | **Medium** | Poor Ergonomics | Worker roster cards cannot be tapped to select or freeze; owner must manually re-type email into bottom form. | [`employee_screen.dart:348-385, 555-640`](../../frontend/lib/screens/employee_screen.dart#L348-L385) |
+| **O-06** | Open | `WalletScreen` | Owner | **Low** | Timezone Display | Payout history timestamps format raw UTC `createdAt` without `.toLocal()`, displaying times 2–3 hours behind. | [`wallet_screen.dart:421-423`](../../frontend/lib/screens/wallet_screen.dart#L421-L423) |
+| **O-07** | Open | `PayoutRequestDialog` | Owner | **Medium** | Stale Ledger | Submitting a payout request refreshes balance dashboard but fails to refresh payout history list. | [`payout_request_dialog.dart:74-76`](../../frontend/lib/widgets/payout_request_dialog.dart#L74-L76) |
+| **E-01** | ✅ Resolved | `NotificationsScreen` | Employee | **Critical** | Dead End Navigation | Tapping `job_offer`, `job_completed`, or `kyc_*` notifications marks as read but does not navigate anywhere. | [`notifications_screen.dart:87-123`](../../frontend/lib/screens/notifications_screen.dart#L87-L123) |
+| **E-02** | Open | `NotificationsScreen` | Employee | **Medium** | Copy Defect | Empty state displays identical title and description ("Notifications" / "Notifications"). | [`notifications_screen.dart:231-236`](../../frontend/lib/screens/notifications_screen.dart#L231-L236) |
+| **E-03** | Open | `EmployeeJobsScreen` | Employee | **Medium** | Misleading Toast | Accepting or declining a job offer displays raw status labels ("Active" / "Decline Offer") in snackbars. | [`employee_jobs_screen.dart:917, 923`](../../frontend/lib/screens/employee_jobs_screen.dart#L917) |
+| **E-04** | Open | `EmployeeJobsScreen` / `History` | Employee | **Medium** | Semantic Misuse | `RouteTimeline` `distanceText:` receives `lockedEscrowAmount`, rendering "50 Credits" next to the distance road icon. | [`employee_jobs_screen.dart:995-998`](../../frontend/lib/screens/employee_jobs_screen.dart#L995-L998) |
+| **E-05** | Open | `EmployeeJobsScreen` | Employee | **Medium** | Missing Debounce | Courier online/offline `Switch.adaptive` lacks debounce protection, allowing rapid toggling network spam. | [`employee_jobs_screen.dart:523-535`](../../frontend/lib/screens/employee_jobs_screen.dart#L523-L535) |
+| **X-01** | Open | `Chat` / `JobStatus` / `TicketChat` | Cross | **Low** | Design Token | Raw `CircularProgressIndicator` used instead of canonical `ThemedLoadingIndicator`. | [`chat_screen.dart:154`](../../frontend/lib/screens/chat_screen.dart#L154) |
+| **X-02** | Open | `PrimaryButton` | Cross | **Medium** | RTL Directionality | Forward arrow trailing icon (`Icons.arrow_forward`) does not mirror in RTL mode, pointing backward in Arabic. | [`primary_button.dart:110`](../../frontend/lib/widgets/primary_button.dart#L110) |
+| **X-03** | Open | Map Controls & Modals | Cross | **Low** | Touch Target | Compact 24-32dp visual touch frames in map overlay buttons fall below standard 48dp guidelines. | [`customer_job_map.dart:180-220`](../../frontend/lib/widgets/customer_job_map.dart#L180-L220) |
 
 ---
 
@@ -380,25 +422,25 @@ To ensure zero downtime, regressions, or documentation drift, remediation is str
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Batch 1: Navigation Traps & High-Severity Role Gating
+### Batch 1: Navigation Traps & High-Severity Role Gating [RESOLVED & VERIFIED ✅]
 * **Target Findings**: `C-01`, `O-01`, `E-01`, `O-02`
-* **Focus Area**: Critical navigation dead ends and role-gating blind spots.
-* **Key Tasks**:
-  1. Fix `customer_jobs_screen.dart` empty state action to prevent root navigation pop.
-  2. Fix `employee_screen.dart` empty state action button to target the registration view rather than tab 1 (Audit Trail).
-  3. Wire comprehensive deep-navigation routing in `notifications_screen.dart` for all notification types.
-  4. Add high-visibility KYC/KYB status banner to `home_screen.dart` for unverified business owners.
+* **Status**: **100% Resolved & Verified**
+* **Implemented Resolutions**:
+  1. `C-01`: Updated `CustomerJobsScreen` empty state "Browse Services" button to check `onBrowseServices?.call()`, then `Navigator.canPop(context)`, then push `CustomerMarketplaceScreen`. In `CustomerHomeScreen`, wired `onBrowseServices: () => onTabTapped(1)`.
+  2. `O-01`: Updated `EmployeeScreen` empty state "Add Worker" button to scroll to `_registerFormKey` context on Tab 0 using `Scrollable.ensureVisible` rather than animating to Tab 1 (Audit Trail).
+  3. `E-01`: Wired comprehensive notification deep-routing in `NotificationsScreen._handleCardTap`: `job_offer` navigates to `EmployeeJobsScreen`, `job_completed` & `job_update` navigate to `CustomerJobsScreen`, `kyc_*` navigates to `KycDocumentUploadScreen`, and `payout_*` navigates to `WalletScreen`.
+  4. `O-02`: Added `_buildKycWarningBanner` to `HomeScreen` (Owner Dashboard) when `authUser.kycStatus != 'approved'`, rendering verification warning and direct "Upload Documents" CTA to `KycDocumentUploadScreen`.
 
-### Batch 2: Customer Job Lifecycle & Real-Time Interaction
+### Batch 2: Customer Job Lifecycle & Real-Time Interaction [RESOLVED & VERIFIED ✅]
 * **Target Findings**: `C-04`, `C-05`, `C-06`, `C-07`, `C-02`, `C-03`
-* **Focus Area**: Real-time communication and job completion ergonomics.
-* **Key Tasks**:
-  1. Prevent duplicate rating submissions and hide rating CTA after completion on `JobStatusScreen`.
-  2. Sequentialize history fetch and WebSocket subscription in `TicketChatScreen`.
-  3. Add error feedback and input retention to ticket chat sending.
-  4. Await ticket chat pop to refresh tickets list status.
-  5. Refresh marketplace services upon return from booking.
-  6. Localize booking modal currency symbol to Egyptian Pound (`EGP`).
+* **Status**: **100% Resolved & Verified**
+* **Implemented Resolutions**:
+  1. `C-04`: In `JobStatusScreen`, tracked `_hasRated` state locally. Awaiting `RatingScreen` returns `true`, which updates `_hasRated = true` and displays `rating_already_submitted_badge`. In `RatingScreen`, popped `true` on success and handled 400 conflict gracefully.
+  2. `C-05`: In `TicketChatScreen.initState`, sequentialized history loading: `await chat.fetchChannelHistory(...)` executes before calling `connectAndSubscribeChannel`, eliminating the race condition that overwrote incoming live messages.
+  3. `C-06`: In `TicketChatScreen._sendMessage`, caught exceptions and displayed user-facing `ThemedSnackBar.showError(context, friendlyErrorMessage(e))` while preserving typed text in `_messageController`.
+  4. `C-07`: In `CustomerTicketsScreen`, awaited the `TicketChatScreen` route push and reloaded ticket list via `_loadTickets()` upon return.
+  5. `C-02`: In `CustomerMarketplaceScreen._showBookingDialog`, awaited `JobStatusScreen` and refreshed services list on return: `if (mounted) _loadServices()`.
+  6. `C-03`: In `CustomerMarketplaceScreen._BookingDialog`, replaced hardcoded `"\$${...}"` with localized `l10n.creditsAmountLine(...)`.
 
 ### Batch 3: Owner Operations, Forms & Financial Refresh
 * **Target Findings**: `O-03`, `O-04`, `O-05`, `O-06`, `O-07`

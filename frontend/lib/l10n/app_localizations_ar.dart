@@ -2459,4 +2459,30 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get estimatedPriceTripNotice =>
       'السعر التقديري محسوب بناءً على مسافة الرحلة الفعلية من موقع الاستلام إلى الوجهة.';
+
+  @override
+  String get settingsSecurity => 'الأمان';
+
+  @override
+  String get settingsSecuritySub => 'المصادقة الثنائية وحماية تسجيل الدخول';
+
+  @override
+  String get settingsTwoFactorAuth => 'المصادقة الثنائية (2FA)';
+
+  @override
+  String get settingsTwoFactorAuthSub =>
+      'طلب رمز تحقق مكون من 6 أرقام عند تسجيل الدخول';
+
+  @override
+  String get disableTwoFactorConfirmTitle => 'تعطيل المصادقة الثنائية؟';
+
+  @override
+  String get disableTwoFactorConfirmBody =>
+      'تعطيل المصادقة الثنائية يقلل من أمان حسابك. سيتمكن أي شخص لديه كلمة المرور الخاصة بك من تسجيل الدخول دون خطوة التحقق عبر رمز OTP.';
+
+  @override
+  String get disableTwoFactorConfirmAction => 'تعطيل المصادقة';
+
+  @override
+  String get ratingSubmittedSuccess => 'تم إرسال التقييم';
 }

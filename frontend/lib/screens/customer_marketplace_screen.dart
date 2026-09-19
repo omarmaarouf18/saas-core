@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import '../core/error_messages.dart';
+import '../core/location_permission.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
@@ -18,6 +20,7 @@ import '../widgets/secondary_button.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
+import '../models/job.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
 import '../widgets/themed_success_banner.dart';
@@ -54,8 +57,35 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
     super.initState();
     _nearBy = widget.initialNearBy;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initLocation();
       _loadServices();
     });
+  }
+
+  Future<void> _initLocation() async {
+    try {
+      final perm = await requestLocationPermission();
+      if (perm == LocationPermissionResult.granted) {
+        final pos = await Geolocator.getCurrentPosition();
+        if (mounted) {
+          setState(() {
+            _customerLat = pos.latitude;
+            _customerLon = pos.longitude;
+          });
+          _loadServices();
+        }
+      }
+    } catch (_) {
+      // Keep default Cairo coordinates fallback
+    }
+  }
+
+  void setCustomerLocation(double lat, double lon) {
+    setState(() {
+      _customerLat = lat;
+      _customerLon = lon;
+    });
+    _loadServices();
   }
 
   @override
@@ -596,9 +626,9 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
     );
   }
 
-  void _showBookingDialog(
-      BuildContext context, MarketplaceService service, String userToken) {
-    showDialog(
+  Future<void> _showBookingDialog(BuildContext context,
+      MarketplaceService service, String userToken) async {
+    final createdJob = await showDialog<Job?>(
       context: context,
       barrierDismissible: false,
       builder: (dialogCtx) {
@@ -610,6 +640,17 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
         );
       },
     );
+
+    if (createdJob != null && context.mounted) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => JobStatusScreen(job: createdJob),
+        ),
+      );
+      if (mounted) {
+        _loadServices();
+      }
+    }
   }
 }
 
@@ -676,6 +717,33 @@ class _BookingDialogState extends State<_BookingDialog> {
     } else {
       _tripDistanceKM = null;
       _estimatedPrice = null;
+    }
+  }
+
+  Future<void> _useCurrentLocationForPickup() async {
+    try {
+      final perm = await requestLocationPermission();
+      if (perm == LocationPermissionResult.granted) {
+        final pos = await Geolocator.getCurrentPosition();
+        if (mounted) {
+          setState(() {
+            _pickupLat = pos.latitude;
+            _pickupLon = pos.longitude;
+            _recalculatePrice();
+          });
+        }
+      } else {
+        if (mounted) {
+          ThemedSnackBar.showError(
+            context,
+            context.l10n.locationPermissionDeniedDefault,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ThemedSnackBar.showError(context, friendlyErrorMessage(e));
+      }
     }
   }
 
@@ -797,15 +865,7 @@ class _BookingDialogState extends State<_BookingDialog> {
       );
 
       if (!mounted) return;
-      Navigator.of(context).pop(); // close dialog
-
-      if (job != null) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => JobStatusScreen(job: job),
-          ),
-        );
-      }
+      Navigator.of(context).pop(job); // close dialog and return created job
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -895,12 +955,26 @@ class _BookingDialogState extends State<_BookingDialog> {
                     const SizedBox(height: AppSpacing.xs),
                     Align(
                       alignment: AlignmentDirectional.centerEnd,
-                      child: TextButton.icon(
-                        key: const Key('choose_pickup_button'),
-                        icon: const Icon(Icons.edit_location_alt_outlined,
-                            size: 16),
-                        label: Text(l10n.changePickupLocationBtn),
-                        onPressed: () => _openLocationPicker(isPickup: true),
+                      child: Wrap(
+                        alignment: WrapAlignment.end,
+                        spacing: AppSpacing.xs,
+                        children: [
+                          TextButton.icon(
+                            key:
+                                const Key('use_current_location_pickup_button'),
+                            icon: const Icon(Icons.my_location, size: 16),
+                            label: Text(l10n.locationPickerUseMyLocation),
+                            onPressed: _useCurrentLocationForPickup,
+                          ),
+                          TextButton.icon(
+                            key: const Key('choose_pickup_button'),
+                            icon: const Icon(Icons.edit_location_alt_outlined,
+                                size: 16),
+                            label: Text(l10n.changePickupLocationBtn),
+                            onPressed: () =>
+                                _openLocationPicker(isPickup: true),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -1003,7 +1077,8 @@ class _BookingDialogState extends State<_BookingDialog> {
                   const SizedBox(width: AppSpacing.sm),
                   Text(
                     _estimatedPrice != null
-                        ? "\$${_estimatedPrice!.toStringAsFixed(2)}"
+                        ? l10n.creditsAmountLine(
+                            _estimatedPrice!.toStringAsFixed(2))
                         : " — ",
                     key: const Key('booking_estimated_price_text'),
                     style: AppTypography.titleMd.copyWith(

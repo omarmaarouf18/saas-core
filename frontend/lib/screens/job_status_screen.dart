@@ -54,6 +54,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
   bool _isSubmittingProposal = false;
   bool _isRespondingProposal = false;
   String? _proposalError;
+  bool _hasRated = false;
 
   @override
   void initState() {
@@ -1170,19 +1171,49 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         const SizedBox(height: AppSpacing.sm),
       ],
       if (isCompleted) ...[
-        PrimaryButton(
-          key: const Key('rate_job_button'),
-          text: context.l10n.rateYourExperienceCta,
-          icon: Icons.star_outline,
-          trailingIcon: Icons.arrow_forward,
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => RatingScreen(job: _currentJob),
-              ),
-            );
-          },
-        ),
+        if (_hasRated)
+          ThemedCard(
+            key: const Key('rating_already_submitted_badge'),
+            padding: AppSpacing.md,
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  color: context.semanticColors.success,
+                  size: 20,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  context.l10n.ratingSubmittedSuccess,
+                  style: AppTypography.bodyMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: context.semanticColors.success,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          PrimaryButton(
+            key: const Key('rate_job_button'),
+            text: context.l10n.rateYourExperienceCta,
+            icon: Icons.star_outline,
+            trailingIcon: Icons.arrow_forward,
+            onPressed: () async {
+              final rated = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(
+                  builder: (context) => RatingScreen(job: _currentJob),
+                ),
+              );
+              if (rated == true && mounted) {
+                setState(() {
+                  _hasRated = true;
+                });
+              }
+            },
+          ),
         const SizedBox(height: AppSpacing.sm),
       ],
       if (isPending || isPendingDispatch) ...[

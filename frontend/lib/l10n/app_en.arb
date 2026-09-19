@@ -1273,5 +1273,13 @@
   "tripDistanceLabel": "Trip Distance:",
   "selectDestinationPrompt": "Select a destination on the map to calculate trip distance and price estimate.",
   "destinationRequiredError": "Please choose a destination on the map before booking.",
-  "estimatedPriceTripNotice": "Estimated price is based on the actual trip distance from pickup to destination."
+  "estimatedPriceTripNotice": "Estimated price is based on the actual trip distance from pickup to destination.",
+  "settingsSecurity": "Security",
+  "settingsSecuritySub": "Two-factor authentication and login protection",
+  "settingsTwoFactorAuth": "Two-Factor Authentication",
+  "settingsTwoFactorAuthSub": "Require a 6-digit verification code when logging in",
+  "disableTwoFactorConfirmTitle": "Disable Two-Factor Authentication?",
+  "disableTwoFactorConfirmBody": "Disabling 2FA reduces your account security. Anyone with your password will be able to log in without an OTP verification step.",
+  "disableTwoFactorConfirmAction": "Disable 2FA",
+  "ratingSubmittedSuccess": "Rating Submitted"
 }

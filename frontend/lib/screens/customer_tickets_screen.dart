@@ -155,12 +155,15 @@ class _CustomerTicketsScreenState extends State<CustomerTicketsScreen> {
         padding: 0,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          onTap: () {
-            Navigator.of(context).push(
+          onTap: () async {
+            await Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => TicketChatScreen(ticket: ticket),
               ),
             );
+            if (mounted) {
+              _loadTickets();
+            }
           },
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),

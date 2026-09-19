@@ -15,6 +15,7 @@ class UserProfile {
   final String? businessProofDoc;
   final String? accountStatus;
   final String? suspensionReason;
+  final bool twoFactorEnabled;
 
   UserProfile({
     required this.id,
@@ -33,6 +34,7 @@ class UserProfile {
     this.businessProofDoc,
     this.accountStatus,
     this.suspensionReason,
+    this.twoFactorEnabled = true,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -43,6 +45,9 @@ class UserProfile {
           .map((e) => e.toString())
           .toList();
     }
+
+    final twoFactorRaw = json['two_factor_enabled'];
+    final bool twoFactorEnabled = twoFactorRaw is bool ? twoFactorRaw : true;
 
     return UserProfile(
       id: json['user_id'] ?? json['id'] ?? '',
@@ -61,6 +66,47 @@ class UserProfile {
       businessProofDoc: json['business_proof_doc'],
       accountStatus: json['account_status'] as String?,
       suspensionReason: json['suspension_reason'] as String?,
+      twoFactorEnabled: twoFactorEnabled,
+    );
+  }
+
+  UserProfile copyWith({
+    String? id,
+    String? email,
+    String? username,
+    String? phone,
+    List<String>? frequentAddresses,
+    String? role,
+    String? tenantId,
+    String? kycStatus,
+    String? kyeStatus,
+    String? rejectionReason,
+    String? idFrontDoc,
+    String? idBackDoc,
+    String? selfieDoc,
+    String? businessProofDoc,
+    String? accountStatus,
+    String? suspensionReason,
+    bool? twoFactorEnabled,
+  }) {
+    return UserProfile(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      username: username ?? this.username,
+      phone: phone ?? this.phone,
+      frequentAddresses: frequentAddresses ?? this.frequentAddresses,
+      role: role ?? this.role,
+      tenantId: tenantId ?? this.tenantId,
+      kycStatus: kycStatus ?? this.kycStatus,
+      kyeStatus: kyeStatus ?? this.kyeStatus,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
+      idFrontDoc: idFrontDoc ?? this.idFrontDoc,
+      idBackDoc: idBackDoc ?? this.idBackDoc,
+      selfieDoc: selfieDoc ?? this.selfieDoc,
+      businessProofDoc: businessProofDoc ?? this.businessProofDoc,
+      accountStatus: accountStatus ?? this.accountStatus,
+      suspensionReason: suspensionReason ?? this.suspensionReason,
+      twoFactorEnabled: twoFactorEnabled ?? this.twoFactorEnabled,
     );
   }
 

@@ -601,10 +601,23 @@ func (c *Chat) readPump(conn *websocket.Conn, client *chat.Client) {
 				// Capture point-in-time snapshot of the username at send-time (not live-resolved later).
 				// Consistent with Slack/Discord design, if the username changes in the future,
 				// historical messages will still display the username that was active when sent.
+				senderUsername := client.Username
+				if strings.HasPrefix(msg.Channel, "ticket:") {
+					ticketID := strings.TrimPrefix(msg.Channel, "ticket:")
+					ticket, err := c.store.GetTicket(context.Background(), ticketID)
+					if err == nil && ticket != nil {
+						// Reviewer/agent messages sent in ticket channels use "Support Team" label
+						// consistent with AdminResolveTicket, protecting reviewer privacy.
+						if client.ID != ticket.CustomerID {
+							senderUsername = "Support Team"
+						}
+					}
+				}
+
 				chatMsg := &chat.Message{
 					Channel:        msg.Channel,
 					SenderID:       client.ID,
-					SenderUsername: client.Username,
+					SenderUsername: senderUsername,
 					Content:        msg.Content,
 					Type:           "message",
 				}

@@ -12,8 +12,12 @@ import '../widgets/pill_filter_bar.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_empty_state.dart';
+import 'customer_jobs_screen.dart';
 import 'customer_tickets_screen.dart';
+import 'employee_jobs_screen.dart';
+import 'kyc_document_upload_screen.dart';
 import 'ticket_chat_screen.dart';
+import 'wallet_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key, this.clock, this.showBackButton});
@@ -119,6 +123,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         );
       }
+    } else if (notif.type == 'job_offer') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const EmployeeJobsScreen(),
+        ),
+      );
+    } else if (notif.type == 'job_completed' || notif.type == 'job_update') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const CustomerJobsScreen(),
+        ),
+      );
+    } else if (notif.type.startsWith('kyc_')) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const KycDocumentUploadScreen(),
+        ),
+      );
+    } else if (notif.type.startsWith('payout_')) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const WalletScreen(),
+        ),
+      );
     }
   }
 

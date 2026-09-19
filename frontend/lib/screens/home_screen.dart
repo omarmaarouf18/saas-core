@@ -23,6 +23,7 @@ import '../widgets/skeleton_loader.dart';
 import 'login_screen.dart';
 import 'wallet_screen.dart';
 import 'employee_screen.dart';
+import 'kyc_document_upload_screen.dart';
 import 'settings_screen.dart';
 import 'notifications_screen.dart';
 import 'subscription_screen.dart';
@@ -291,6 +292,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Finding O-02: Prominent KYC Verification Warning Banner
+                      if (authUser.kycStatus != 'approved') ...[
+                        _buildKycWarningBanner(context, authUser, l10n),
+                        const SizedBox(height: AppSpacing.lg),
+                      ],
+
                       // 1. Stitch Hero Welcome Banner (Deep Navy + Gold Accent)
                       _buildHeroCard(authUser, walletText, l10n),
                       const SizedBox(height: AppSpacing.lg),
@@ -336,6 +343,93 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildKycWarningBanner(
+    BuildContext context,
+    UserProfile authUser,
+    AppLocalizations l10n,
+  ) {
+    final isPending = authUser.kycStatus == 'pending_super_admin_approval';
+    final isRejected = authUser.kycStatus == 'rejected';
+
+    final String title = isRejected
+        ? l10n.kycRejectedDialogTitle
+        : (isPending
+            ? l10n.settingsKycSubtitlePending
+            : l10n.settingsKycRowTitle);
+
+    final String subtitle = isRejected
+        ? (authUser.rejectionReason?.isNotEmpty == true
+            ? authUser.rejectionReason!
+            : l10n.kycRejectedBanner)
+        : (isPending ? l10n.kycPendingBanner : l10n.kycUploadAllBanner);
+
+    final Color bannerColor = isRejected
+        ? AppColors.errorContainer
+        : (isPending
+            ? context.semanticColors.warning.withValues(alpha: 0.15)
+            : Theme.of(context).colorScheme.primaryContainer);
+
+    return ThemedCard(
+      key: const Key('owner_kyc_status_banner'),
+      color: bannerColor,
+      borderRadius: AppRadius.md,
+      padding: AppSpacing.md,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            isRejected
+                ? Icons.error_outline
+                : (isPending
+                    ? Icons.hourglass_top
+                    : Icons.verified_user_outlined),
+            color: isRejected
+                ? AppColors.error
+                : (isPending
+                    ? context.semanticColors.warning
+                    : Theme.of(context).colorScheme.primary),
+            size: 28,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTypography.titleMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  subtitle,
+                  style: AppTypography.bodySm.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                OutlinedButton.icon(
+                  key: const Key('owner_kyc_banner_button'),
+                  icon: const Icon(Icons.upload_file, size: 16),
+                  label: Text(l10n.uploadDocumentBtn),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const KycDocumentUploadScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

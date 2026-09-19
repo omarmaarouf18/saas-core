@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
+import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../models/chat_message.dart';
 import '../models/support_ticket.dart';
@@ -13,6 +14,7 @@ import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_panel.dart';
+import '../widgets/themed_success_banner.dart';
 
 class TicketChatScreen extends StatefulWidget {
   final SupportTicket ticket;
@@ -46,14 +48,16 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
     });
   }
 
-  void _connectAndLoad() {
+  Future<void> _connectAndLoad() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final chat = Provider.of<ChatProvider>(context, listen: false);
     final token = auth.token;
     if (token != null && token.isNotEmpty) {
       final channel = 'ticket:${widget.ticket.id}';
-      chat.fetchChannelHistory(channel, token);
-      chat.connectAndSubscribeChannel(channel, token);
+      await chat.fetchChannelHistory(channel, token);
+      if (mounted) {
+        chat.connectAndSubscribeChannel(channel, token);
+      }
     }
   }
 
@@ -101,6 +105,12 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
       _scrollToBottom();
     } catch (e) {
       debugPrint('Error sending ticket message: $e');
+      if (mounted) {
+        ThemedSnackBar.showError(
+          context,
+          context.l10n.chatFailedSend(friendlyErrorMessage(e)),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -457,6 +467,8 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Text(
                   message.senderUsername,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTypography.caption.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,

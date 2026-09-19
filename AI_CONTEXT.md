@@ -1028,6 +1028,46 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
     - Frontend: Added `id` and `createdAt` parsing in `chat_message.dart`; updated `chat_provider.dart` deduplication to verify message ID or a 2-second timestamp window proximity rather than dropping identical consecutive message bodies.
     - Verified with `mongodb_test.go` and `chat_provider_deduplication_test.dart` (7/7 pass).
 
+### Behavioral UI/UX Audit Part A, Batch 1, & Batch 2 Remediation (2026-09-19)
+
+* **Part A: Manual Testing UX Issues (4/4 Resolved & Verified)**:
+  - **A1 — Area-Name Search Box Overflow & Tab Redirection**:
+    - Diagnosed live reproduction in `CustomerHomeScreen`: tapping `home_quick_search_card` redirected abruptly to `CustomerMarketplaceScreen` via `widget.onGoToServices`, and hint text wrapped onto 2 lines on narrow viewports/Arabic locale.
+    - Implemented `_openLocationPickerDialog`: tapping the search card opens `Dialog(key: Key('home_search_location_picker_dialog'))` hosting `LocationPickerMap`. Confirming selection invokes `_navigateToServicesWithLocation(lat, lon)` which sets customer coordinates and switches to Services. Constrained hint text to `maxLines: 1, overflow: TextOverflow.ellipsis`.
+    - Verified via `frontend/test/a1_diagnosis_test.dart` (2/2 passing).
+  - **A2 — Map Centering on Current Location & GPS Button**:
+    - In `CustomerMarketplaceScreen`, added `_initLocation()` on mount to query GPS position via `Geolocator.getCurrentPosition()`, falling back to Cairo (`30.0444, 31.2357`). Added `setCustomerLocation(lat, lon)`.
+    - In `_BookingDialog`: Centered `LocationPickerMap` on active pickup coordinates (`_pickupLat, _pickupLon`) and added dedicated `Key('use_current_location_pickup_button')` for one-tap current GPS selection.
+    - Verified via `customer_marketplace_screen_test.dart`.
+  - **A3 — Two-Factor Authentication (2FA) Enable/Disable Toggle**:
+    - Backend (`auth-service`): Added `TwoFactorEnabled *bool` to `models.User` (defaults to `true` via `Is2FAEnabled()`). Updated `Login` to bypass OTP verification when disabled, issuing JWT directly. Updated `UpdateProfile` to persist `two_factor_enabled`. Verified via `auth-service` unit tests.
+    - Frontend: Added `twoFactorEnabled` to `UserProfile`, `updateOwnProfile`, and `toggleTwoFactor` in `AuthProvider`. Added "Security" card with `Key('settings_two_factor_switch')` in `SettingsScreen`.
+    - Product Decision Safeguard: Disabling 2FA enforces confirmation modal (`ConfirmActionDialog`, `disableTwoFactorConfirmTitle`) warning of reduced security before execution. Toggling on activates immediately.
+  - **A4 — Ticket Chat Username Truncation & Support Agent Privacy**:
+    - Frontend (`ticket_chat_screen.dart`): Added `maxLines: 1, overflow: TextOverflow.ellipsis` to sender headers.
+    - Backend (`chat-service`): In `chat.go`, updated WebSocket message dispatch on `ticket:` channels to mask `SenderUsername` to `"Support Team"` for all non-customer messages, preserving customer usernames while protecting reviewer privacy. Verified via `TestTicketChatMessageMasking`.
+
+* **Batch 1: Navigation Traps & High-Severity Role Gating (4/4 Resolved & Verified)**:
+  - **C-01 (`CustomerJobsScreen:165`)**: Updated empty state "Browse Services" CTA to check `onBrowseServices?.call()`, then `Navigator.canPop(context)`, then push `CustomerMarketplaceScreen`. In `CustomerHomeScreen`, wired `onBrowseServices: () => onTabTapped(1)`.
+  - **O-01 (`EmployeeScreen:288-295`)**: Fixed empty state "Add Worker" button to scroll to `_registerFormKey` context on Tab 0 via `Scrollable.ensureVisible` rather than animating to Tab 1 (Audit Trail).
+  - **E-01 (`NotificationsScreen:87-123`)**: Wired comprehensive deep routing in `_handleCardTap` for `job_offer` (EmployeeJobsScreen), `job_completed`/`job_update` (CustomerJobsScreen), `kyc_*` (KycDocumentUploadScreen), and `payout_*` (WalletScreen).
+  - **O-02 (`HomeScreen`)**: Added `_buildKycWarningBanner` at top of Owner Dashboard when `authUser.kycStatus != 'approved'`, displaying status and direct "Upload Documents" navigation to `KycDocumentUploadScreen`.
+
+* **Batch 2: Customer Job Lifecycle & Real-Time Interaction (6/6 Resolved & Verified)**:
+  - **C-04 (`JobStatusScreen:1173-1185`, `RatingScreen:132-160`)**: Maintained `_hasRated` state on `JobStatusScreen`; awaiting `RatingScreen` returns `true` and renders `Key('rating_already_submitted_badge')`. In `RatingScreen`, popped `true` upon rating success and handled duplicate rating conflict gracefully.
+  - **C-05 (`TicketChatScreen:55-57`)**: Sequentialized history fetch and WebSocket subscription (`await chat.fetchChannelHistory(...)` before `connectAndSubscribeChannel`), closing race condition that wiped live messages.
+  - **C-06 (`TicketChatScreen:99-106`)**: Caught message send exceptions, displayed localized `ThemedSnackBar.showError`, and retained un-sent text in `_messageController`.
+  - **C-07 (`CustomerTicketsScreen:159-164`)**: Awaited `TicketChatScreen` route push and reloaded ticket list via `_loadTickets()` upon pop.
+  - **C-02 (`CustomerMarketplaceScreen:800-808`)**: Awaited `JobStatusScreen` route push and refreshed services list on return: `if (mounted) _loadServices()`.
+  - **C-03 (`CustomerMarketplaceScreen:1006`)**: Replaced hardcoded `"\$${...}"` in `_BookingDialog` with localized `l10n.creditsAmountLine(...)`.
+
+* **Verification Summary**:
+  - Flutter test suite: 547 passed (exceeds >= 545 baseline).
+  - Flutter analyzer: 0 issues (`flutter analyze` clean).
+  - Go services: `services/auth-service`, `services/chat-service`, and `shared/infra` unit tests 100% green.
+  - Golden fixtures updated: Settings screen (Security 2FA section) and Customer Home screen (single-line constrained search card + active job Column Expanded layout).
+
+
 
 
 

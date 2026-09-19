@@ -291,7 +291,15 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                       title: l10n.noEmployeesRegistered,
                       description: l10n.employeeRegisterIntro,
                       actionText: l10n.addWorkerAction,
-                      onActionPressed: () => _tabController.animateTo(1),
+                      onActionPressed: () {
+                        if (_registerFormKey.currentContext != null) {
+                          Scrollable.ensureVisible(
+                            _registerFormKey.currentContext!,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      },
                     )
                   else if (filteredEmployees.isEmpty)
                     Padding(
