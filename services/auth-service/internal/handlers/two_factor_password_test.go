@@ -443,3 +443,205 @@ func TestTokenAMRClaims_AuthenticationFlows(t *testing.T) {
 		t.Errorf("expected refreshed token to preserve amr [pwd otp], got %v", refreshedClaims.AMR)
 	}
 }
+
+func TestTwoFactor_ResponseSyncRegression(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	plainPassword := "Sync-Test-Password-42!"
+	hash, err := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
+	if err != nil {
+		t.Fatalf("failed to hash password: %v", err)
+	}
+
+	// 1. User with 2FA disabled: login response and GetUser MUST include two_factor_enabled: false
+	t.Run("Login with 2FA disabled returns two_factor_enabled: false", func(t *testing.T) {
+		falseVal := false
+		disabledUser := &models.User{
+			ID:               "usr-sync-2fa-disabled",
+			Email:            "sync-disabled@example.com",
+			Username:         "sync_disabled_user",
+			Password:         string(hash),
+			Role:             models.RoleUser,
+			IsActive:         true,
+			KYCStatus:        models.KYCNone,
+			TwoFactorEnabled: &falseVal,
+			CreatedAt:        time.Now(),
+		}
+		if err := s.CreateUser(ctx, disabledUser); err != nil {
+			t.Fatalf("failed to create user: %v", err)
+		}
+
+		loginBody, _ := json.Marshal(map[string]string{
+			"email":    disabledUser.Email,
+			"password": plainPassword,
+		})
+		req := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewReader(loginBody))
+		rec := httptest.NewRecorder()
+		a.Login(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK for login with 2FA disabled, got %d: %s", rec.Code, rec.Body.String())
+		}
+
+		var resp map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("failed to decode login response: %v", err)
+		}
+
+		val, exists := resp["two_factor_enabled"]
+		if !exists {
+			t.Fatalf("regression: login response missing 'two_factor_enabled' key: %v", resp)
+		}
+		twoFaBool, ok := val.(bool)
+		if !ok || twoFaBool != false {
+			t.Errorf("expected two_factor_enabled to be false, got: %v (%T)", val, val)
+		}
+
+		token, ok := resp["token"].(string)
+		if !ok || token == "" {
+			t.Fatalf("expected token in login response, got: %v", resp["token"])
+		}
+
+		// Verify GetUser (/auth/user) also preserves two_factor_enabled: false
+		getReq := httptest.NewRequest(http.MethodGet, "/auth/user?user_token="+token, nil)
+		getRec := httptest.NewRecorder()
+		a.GetUser(getRec, getReq)
+
+		if getRec.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK for GetUser, got %d: %s", getRec.Code, getRec.Body.String())
+		}
+		var getResp map[string]any
+		if err := json.Unmarshal(getRec.Body.Bytes(), &getResp); err != nil {
+			t.Fatalf("failed to decode GetUser response: %v", err)
+		}
+		getVal, getExists := getResp["two_factor_enabled"]
+		if !getExists {
+			t.Fatalf("regression: GetUser response missing 'two_factor_enabled' key: %v", getResp)
+		}
+		if getBool, ok := getVal.(bool); !ok || getBool != false {
+			t.Errorf("expected GetUser two_factor_enabled to be false, got: %v", getVal)
+		}
+	})
+
+	// 2. User with 2FA enabled: VerifyOTP response and GetUser MUST include two_factor_enabled: true
+	t.Run("VerifyOTP with 2FA enabled returns two_factor_enabled: true", func(t *testing.T) {
+		trueVal := true
+		enabledUser := &models.User{
+			ID:               "usr-sync-2fa-enabled",
+			Email:            "sync-enabled@example.com",
+			Username:         "sync_enabled_user",
+			Password:         string(hash),
+			Role:             models.RoleUser,
+			IsActive:         true,
+			KYCStatus:        models.KYCNone,
+			TwoFactorEnabled: &trueVal,
+			CreatedAt:        time.Now(),
+		}
+		if err := s.CreateUser(ctx, enabledUser); err != nil {
+			t.Fatalf("failed to create user: %v", err)
+		}
+
+		otpCode := "654321"
+		if err := s.SetOTP(ctx, enabledUser.Email, otpCode); err != nil {
+			t.Fatalf("failed to set OTP: %v", err)
+		}
+
+		verifyBody, _ := json.Marshal(map[string]string{
+			"email": enabledUser.Email,
+			"otp":   otpCode,
+		})
+		req := httptest.NewRequest(http.MethodPost, "/auth/verify-otp", bytes.NewReader(verifyBody))
+		rec := httptest.NewRecorder()
+		a.VerifyOTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK for verify-otp, got %d: %s", rec.Code, rec.Body.String())
+		}
+
+		var resp map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("failed to decode verify-otp response: %v", err)
+		}
+
+		val, exists := resp["two_factor_enabled"]
+		if !exists {
+			t.Fatalf("regression: verify-otp response missing 'two_factor_enabled' key: %v", resp)
+		}
+		twoFaBool, ok := val.(bool)
+		if !ok || twoFaBool != true {
+			t.Errorf("expected two_factor_enabled to be true, got: %v (%T)", val, val)
+		}
+
+		token, ok := resp["token"].(string)
+		if !ok || token == "" {
+			t.Fatalf("expected token in verify-otp response, got: %v", resp["token"])
+		}
+
+		// Verify GetUser (/auth/user) also preserves two_factor_enabled: true
+		getReq := httptest.NewRequest(http.MethodGet, "/auth/user?user_token="+token, nil)
+		getRec := httptest.NewRecorder()
+		a.GetUser(getRec, getReq)
+
+		if getRec.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK for GetUser, got %d: %s", getRec.Code, getRec.Body.String())
+		}
+		var getResp map[string]any
+		if err := json.Unmarshal(getRec.Body.Bytes(), &getResp); err != nil {
+			t.Fatalf("failed to decode GetUser response: %v", err)
+		}
+		getVal, getExists := getResp["two_factor_enabled"]
+		if !getExists {
+			t.Fatalf("regression: GetUser response missing 'two_factor_enabled' key: %v", getResp)
+		}
+		if getBool, ok := getVal.(bool); !ok || getBool != true {
+			t.Errorf("expected GetUser two_factor_enabled to be true, got: %v", getVal)
+		}
+	})
+
+	// 3. Employee login response MUST include two_factor_enabled
+	t.Run("Employee login returns two_factor_enabled", func(t *testing.T) {
+		emp := &models.User{
+			ID:        "emp-sync-test",
+			Email:     "emp-sync@example.com",
+			Username:  "emp_sync_user",
+			Password:  string(hash),
+			Role:      models.RoleEmployee,
+			TenantID:  "tenant-sync",
+			IsActive:  true,
+			CreatedAt: time.Now(),
+		}
+		if err := s.CreateUser(ctx, emp); err != nil {
+			t.Fatalf("failed to create employee: %v", err)
+		}
+
+		empBody, _ := json.Marshal(map[string]string{
+			"email":    emp.Email,
+			"password": plainPassword,
+		})
+		req := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewReader(empBody))
+		rec := httptest.NewRecorder()
+		a.Login(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK for employee login, got %d: %s", rec.Code, rec.Body.String())
+		}
+
+		var resp map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("failed to decode employee login response: %v", err)
+		}
+
+		val, exists := resp["two_factor_enabled"]
+		if !exists {
+			t.Fatalf("regression: employee login response missing 'two_factor_enabled' key: %v", resp)
+		}
+		if _, ok := val.(bool); !ok {
+			t.Errorf("expected two_factor_enabled to be bool, got %T: %v", val, val)
+		}
+	})
+}

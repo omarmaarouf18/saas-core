@@ -173,6 +173,9 @@ class AuthProvider extends ChangeNotifier {
           res['username'] ?? '',
           res['role'] ?? 'employee',
           res['kyc_status'],
+          twoFactorEnabled: res['two_factor_enabled'] is bool
+              ? res['two_factor_enabled'] as bool
+              : null,
         );
       }
       return res['dev_otp'] as String?;
@@ -205,6 +208,9 @@ class AuthProvider extends ChangeNotifier {
           res['username'] ?? '',
           res['role'] ?? '',
           res['kyc_status'],
+          twoFactorEnabled: res['two_factor_enabled'] is bool
+              ? res['two_factor_enabled'] as bool
+              : null,
         );
         return true;
       }
@@ -330,6 +336,7 @@ class AuthProvider extends ChangeNotifier {
           updatedUser.username,
           updatedUser.role,
           updatedUser.kycStatus,
+          twoFactorEnabled: updatedUser.twoFactorEnabled,
         );
       }
       return true;
@@ -343,8 +350,15 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _handleAuthSuccess(String token, String id, String email,
-      String username, String role, String? kycStatus) async {
+  Future<void> _handleAuthSuccess(
+    String token,
+    String id,
+    String email,
+    String username,
+    String role,
+    String? kycStatus, {
+    bool? twoFactorEnabled,
+  }) async {
     _token = token;
     _user = UserProfile(
       id: id,
@@ -352,6 +366,7 @@ class AuthProvider extends ChangeNotifier {
       username: username,
       role: role,
       kycStatus: kycStatus,
+      twoFactorEnabled: twoFactorEnabled ?? true,
     );
     apiClient.setToken(token);
 

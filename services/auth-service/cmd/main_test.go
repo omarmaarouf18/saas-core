@@ -6,14 +6,17 @@ import (
 )
 
 func TestSelectOTPDispatcher(t *testing.T) {
-	t.Run("local environments use the stdout mock", func(t *testing.T) {
+	t.Run("local environments without key fail fast", func(t *testing.T) {
 		for _, env := range []string{"local", "dev", "development"} {
 			d, err := selectOTPDispatcher(env, "", "")
-			if err != nil {
-				t.Fatalf("env %q: unexpected error: %v", env, err)
+			if err == nil {
+				t.Fatalf("env %q: expected fail-fast error when RESEND_API_KEY is unset, got nil", env)
 			}
-			if d.Name() != "MockSMS" {
-				t.Errorf("env %q: expected MockSMS dispatcher, got %q", env, d.Name())
+			if d != nil {
+				t.Errorf("env %q: expected nil dispatcher on error, got %v", env, d.Name())
+			}
+			if !strings.Contains(err.Error(), "RESEND_API_KEY") {
+				t.Errorf("env %q: error should mention RESEND_API_KEY, got: %v", env, err)
 			}
 		}
 	})

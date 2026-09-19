@@ -142,9 +142,9 @@ The detailed project history is distributed across categorized changelog files. 
 * **Manual KYC Approval Process (Ops Runbook)**
   * **Decision**: Initial KYC status approval for tenant owners is deliberately not automated or exposed via API endpoints and must be handled manually directly in the database.
   * **Reasoning**: To maintain security and avoid exposing administrative endpoints that could be targeted by attackers. In contrast, KYB/KYE document reviews are performed via the `/auth/kyb-kye/review` endpoint, which is secured by individual reviewer credentials and internal network token validations.
-* **Mock OTP SMS/Email Dispatcher**
-  * **Decision**: SMS dispatching is stubbed using a mock that logs OTPs to stdout, used ONLY in local environments (`APP_ENV=local|dev|development`), where OTPs are additionally exposed directly in response payloads as `dev_otp`. In every non-local environment, `RESEND_API_KEY` is REQUIRED: email OTPs are dispatched via the Resend REST API (`ResendDispatcher`). If `RESEND_API_KEY` is unset outside local environments, `auth-service` now FAILS FAST at startup instead of silently falling back to the stdout-printing mock (which would leak every OTP code into container logs). `RESEND_FROM_EMAIL` remains a required companion setting whenever `RESEND_API_KEY` is set, failing fast at startup if omitted.
-  * **Reasoning**: Speeds up development and avoids dependencies on external paid SMS gateways during local testing, while providing a real email dispatch path via Resend for production. The previous silent production fallback to `MockSMSDispatcher` was removed as an OTP-leakage risk (selection logic in `selectOTPDispatcher`, verified by `TestSelectOTPDispatcher`).
+* **OTP Email Dispatcher & Fail-Fast Startup**
+  * **Decision**: Mock SMS/email dispatchers (`MockSMSDispatcher`, `MockEmailDispatcher`) have been completely removed from production code paths in `auth-service` (`internal/otp/dispatcher.go`). In all server environments (including `local`, `dev`, `development`), `RESEND_API_KEY` is REQUIRED to initialize the OTP dispatcher via `ResendDispatcher`. If `RESEND_API_KEY` is unset in any environment, `auth-service` now FAILS FAST at startup to eliminate any silent fallback or OTP-code leakage to container logs. `RESEND_FROM_EMAIL` remains a required companion setting whenever `RESEND_API_KEY` is set, failing fast at startup if omitted. Unit tests and benchmarks use dedicated test doubles (e.g. `NoopDispatcher` in `dispatcher.go`).
+  * **Reasoning**: Completely removes the risk of OTP leakage into production logs from accidental fallback, ensuring that live and local containers alike strictly require a valid email dispatch configuration.
 * **Query Parameter Transport of Session/Signed Tokens**
   * **Decision**: Transporting authentication tokens via query parameters for WebSocket connections (`chat-service`), SSE connections (`notification-service`), and document viewing (`auth-service/documents/view`) is accepted as an intentional design tradeoff.
   * **Reasoning**: This matches standard patterns for browser APIs (like WebSockets and EventSource/SSE) which do not natively support setting custom headers during the initial handshake.
@@ -1092,6 +1092,26 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
     - Applied 8-character ID truncation convention (`ticket.id.length > 8 ? ticket.id.substring(0, 8) : ticket.id`) to ticket title display in `_buildTicketCard` (`customer_tickets_screen.dart`) and `AppShell.titleWidget` (`ticket_chat_screen.dart`).
     - Preserved raw full ticket IDs for card widget keys and backend WebSocket channels (`'ticket:${widget.ticket.id}'`).
     - Verified via `customer_tickets_test.dart` with dedicated tests for truncation, short ID retention, and raw WebSocket channel preservation (14/14 pass).
+
+* **2FA State-Sync Bug Fix & Mock OTP Dispatcher Removal (2026-09-19)**:
+  - **Item 1 — 2FA State-Sync Root Cause Fix (`services/auth-service`, `frontend/lib/providers/auth_provider.dart`)**:
+    - Root Cause: `auth.go`'s `Login` handler (2FA-disabled fast path and employee login path), `VerifyOTP` handler (2FA login verification and signup path), and `GetUser` (`GET /auth/user`) omitted `"two_factor_enabled"` from their response JSON maps. In the Dart model (`UserProfile.fromJson`), missing or non-bool `two_factor_enabled` values defaulted to `true`. Consequently, after every fresh login or profile fetch, the Settings screen displayed 2FA as "Enabled" regardless of the user's actual database preference.
+    - Backend Fix: Added `"two_factor_enabled": user.Is2FAEnabled()` to all five response construction sites in `auth.go` (`Login` fast path, `Login` employee path, `VerifyOTP` 2FA login, `VerifyOTP` signup, and `GetUser`).
+    - Frontend Fix: Updated `AuthProvider._handleAuthSuccess` to parse and persist `res['two_factor_enabled']` into `_user`. Verified `fetchUserProfile` (`/auth/user`) preserves `false` without overwriting.
+    - Tests Added: Backend `TestTwoFactor_ResponseSyncRegression` in `two_factor_password_test.go` asserting presence and accuracy of `two_factor_enabled` on login with 2FA disabled, `VerifyOTP` + `GetUser` with 2FA enabled, and employee login. Frontend unit tests in `auth_provider_test.dart` asserting proper persistence across `login`, `fetchUserProfile`, and `verifyOtp`.
+  - **Item 2 — Removal of Mock OTP Dispatchers from Production Code Paths (`services/auth-service`)**:
+    - Deleted `MockSMSDispatcher` and `MockEmailDispatcher` from `internal/otp/dispatcher.go` and `dispatcher_test.go`.
+    - Removed the dev/local fallback branch in `selectOTPDispatcher` (`cmd/main.go`). All environments (including `local`, `dev`, and `production`) now fail fast at startup if `RESEND_API_KEY` is unset.
+    - Updated `TestSelectOTPDispatcher` in `cmd/main_test.go` to assert fail-fast behavior across all environments.
+  - **Item 3 — Full Functional Audit of Employee-Role Screens (`docs/frontend/EMPLOYEE_FUNCTIONALITY_AUDIT.md`)**:
+    - Conducted comprehensive functional audit of `employee_home_screen.dart`, `employee_jobs_screen.dart`, `employee_history_screen.dart`, `employee_screen.dart`, and `employee_location_provider.dart` across the end-to-end courier journey (login, availability toggle, incoming cascade offers, active job tracking, customer chat, complete job, earnings, and role boundaries).
+    - Identified 4 key findings:
+      1. Availability tracking not re-activated post job completion in `EmployeeJobsScreen`, causing location to go stale after 5 minutes.
+      2. Missing location tracking teardown on logout in `AuthProvider`.
+      3. Misleading COD confirmation dialog displaying \$0.00 collection requirement instead of agreed/suggested price.
+      4. Rating flow implemented in `RatingScreen` for couriers but completely unreachable from employee screens.
+    - Documented complete analysis, journey diagram, findings matrix, and hardening roadmap in [docs/frontend/EMPLOYEE_FUNCTIONALITY_AUDIT.md](docs/frontend/EMPLOYEE_FUNCTIONALITY_AUDIT.md).
+
 
 
 

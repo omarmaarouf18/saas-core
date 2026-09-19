@@ -139,11 +139,78 @@ void main() {
     });
     await pump();
 
-    final ok = await auth.verifyOtp('e@x.dev', '111222');
+    final ok = await auth.verifyOtp('e@x.dev', '123456');
 
     expect(ok, isTrue);
-    expect(auth.user!.role, 'customer');
-    expect(storage.store['user_role'], 'customer');
+    expect(auth.isAuthenticated, isTrue);
+    expect(auth.token, 'jwt-after-otp');
+    expect(auth.user!.username, 'nine');
+    expect(storage.store['jwt_token'], 'jwt-after-otp');
+  });
+
+  test(
+      'login with two_factor_enabled: false correctly persists 2FA disabled state',
+      () async {
+    final (auth, _) = makeAuth(
+        handler: (req) => MockHttpResponse(200, jsonBody: {
+              'token': 'jwt-no-2fa',
+              'user_id': 'u-no-2fa',
+              'username': 'alice',
+              'role': 'user',
+              'two_factor_enabled': false,
+            }));
+    await pump();
+
+    final otp = await auth.login('alice@x.dev', 'pw');
+
+    expect(otp, isNull);
+    expect(auth.isAuthenticated, isTrue);
+    expect(auth.user!.twoFactorEnabled, isFalse);
+  });
+
+  test('fetchUserProfile preserves two_factor_enabled: false from /auth/user',
+      () async {
+    final (auth, _) = makeAuth(
+        seededSession: {
+          'jwt_token': 'jwt-session',
+          'user_id': 'u1',
+          'user_email': 'alice@x.dev',
+          'user_username': 'alice',
+          'user_role': 'user',
+        },
+        handler: (req) => MockHttpResponse(200, jsonBody: {
+              'id': 'u1',
+              'email': 'alice@x.dev',
+              'username': 'alice',
+              'role': 'user',
+              'two_factor_enabled': false,
+            }));
+    await pump();
+
+    expect(auth.isAuthenticated, isTrue);
+    expect(auth.user!.twoFactorEnabled, isFalse);
+  });
+
+  test('verifyOtp persists two_factor_enabled: true into user profile',
+      () async {
+    final (auth, _) = makeAuth(handler: (req) {
+      expect(req.uri.path, endsWith('/auth/verify-otp'));
+      return MockHttpResponse(200, jsonBody: {
+        'token': 'jwt-after-otp',
+        'user_id': 'u9',
+        'email': 'e@x.dev',
+        'username': 'nine',
+        'role': 'customer',
+        'two_factor_enabled': true,
+      });
+    });
+    await pump();
+
+    final ok = await auth.verifyOtp('e@x.dev', '123456');
+
+    expect(ok, isTrue);
+    expect(auth.isAuthenticated, isTrue);
+    expect(auth.user!.twoFactorEnabled, isTrue);
   });
 
   test('signup surfaces dev_otp; duplicate email maps to a friendly error',

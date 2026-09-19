@@ -162,6 +162,10 @@ The 30 screens evaluated in this audit span authentication, role-specific operat
 | **E-03** | Open | `EmployeeJobsScreen` | Employee | **Medium** | Misleading Toast | Accepting or declining a job offer displays raw status labels ("Active" / "Decline Offer") in snackbars. | [`employee_jobs_screen.dart:917, 923`](../../frontend/lib/screens/employee_jobs_screen.dart#L917) |
 | **E-04** | Open | `EmployeeJobsScreen` / `History` | Employee | **Medium** | Semantic Misuse | `RouteTimeline` `distanceText:` receives `lockedEscrowAmount`, rendering "50 Credits" next to the distance road icon. | [`employee_jobs_screen.dart:995-998`](../../frontend/lib/screens/employee_jobs_screen.dart#L995-L998) |
 | **E-05** | Open | `EmployeeJobsScreen` | Employee | **Medium** | Missing Debounce | Courier online/offline `Switch.adaptive` lacks debounce protection, allowing rapid toggling network spam. | [`employee_jobs_screen.dart:523-535`](../../frontend/lib/screens/employee_jobs_screen.dart#L523-L535) |
+| **E-06** | Open | `EmployeeJobsScreen` | Employee | **High** | Telemetry Drop | Completing a job calls `stopTracking()` but fails to restart availability tracking if courier is online, stranding location after 5m. | [`employee_jobs_screen.dart:183-184`](../../frontend/lib/screens/employee_jobs_screen.dart#L183) |
+| **E-07** | Open | `AuthProvider` | Employee | **High** | Resource Leak | Logging out via `logout()` or `forceLogout()` does not stop `EmployeeLocationProvider`, leaking GPS stream and 60s timer. | [`auth_provider.dart:389-425`](../../frontend/lib/providers/auth_provider.dart#L389) |
+| **E-08** | Open | `EmployeeJobsScreen` | Employee | **Medium** | Misleading Modal | COD complete confirmation dialog reads `lockedEscrowAmount` (0 for COD), showing "$0.00" collection required. | [`employee_jobs_screen.dart:151-153`](../../frontend/lib/screens/employee_jobs_screen.dart#L151) |
+| **E-09** | Open | `EmployeeJobsScreen` / `History` | Employee | **High** | Unreachable Feature | `RatingScreen` supports employee role rating customer, but no button exists in any employee screen to open it. | [`rating_screen.dart:63-67`](../../frontend/lib/screens/rating_screen.dart#L63) |
 | **X-01** | Open | `Chat` / `JobStatus` / `TicketChat` | Cross | **Low** | Design Token | Raw `CircularProgressIndicator` used instead of canonical `ThemedLoadingIndicator`. | [`chat_screen.dart:154`](../../frontend/lib/screens/chat_screen.dart#L154) |
 | **X-02** | Open | `PrimaryButton` | Cross | **Medium** | RTL Directionality | Forward arrow trailing icon (`Icons.arrow_forward`) does not mirror in RTL mode, pointing backward in Arabic. | [`primary_button.dart:110`](../../frontend/lib/widgets/primary_button.dart#L110) |
 | **X-03** | Open | Map Controls & Modals | Cross | **Low** | Touch Target | Compact 24-32dp visual touch frames in map overlay buttons fall below standard 48dp guidelines. | [`customer_job_map.dart:180-220`](../../frontend/lib/widgets/customer_job_map.dart#L180-L220) |
@@ -456,13 +460,18 @@ To ensure zero downtime, regressions, or documentation drift, remediation is str
   5. Format payout history timestamps using `.toLocal()`.
 
 ### Batch 4: Employee Workflow, Dispatch & Telemetry Integrity
-* **Target Findings**: `E-02`, `E-03`, `E-04`, `E-05`
-* **Focus Area**: Courier ergonomics, feedback clarity, and telemetry safety.
+* **Target Findings**: `E-02`, `E-03`, `E-04`, `E-05`, `E-06`, `E-07`, `E-08`, `E-09`
+* **Reference Document**: Comprehensive functional analysis in [docs/frontend/EMPLOYEE_FUNCTIONALITY_AUDIT.md](EMPLOYEE_FUNCTIONALITY_AUDIT.md).
+* **Focus Area**: Courier ergonomics, feedback clarity, rating access, and telemetry lifecycle safety.
 * **Key Tasks**:
-  1. Fix notifications empty state duplicate copy.
-  2. Replace raw status labels with actionable confirmation copy in job offer toasts.
-  3. Disentangle escrow credits from distance display in `RouteTimeline`.
-  4. Add 600ms debounce protection to courier online/offline toggle.
+  1. Fix notifications empty state duplicate copy (`E-02`).
+  2. Replace raw status labels with actionable confirmation copy in job offer toasts (`E-03`).
+  3. Disentangle escrow credits from distance display in `RouteTimeline` (`E-04`).
+  4. Add 600ms debounce protection to courier online/offline toggle (`E-05`).
+  5. Re-activate availability tracking post job completion in `EmployeeJobsScreen` when courier is online (`E-06`).
+  6. Stop location tracking and heartbeat timers on logout / session termination in `AuthProvider` (`E-07`).
+  7. Fix COD confirmation dialog copy to display agreed/suggested cash collection amount instead of $0.00 (`E-08`).
+  8. Expose customer rating button on completed employee job cards navigating to `RatingScreen` (`E-09`).
 
 ### Batch 5: Cross-Cutting UX Polish, RTL & Accessibility
 * **Target Findings**: `C-08`, `C-09`, `C-10`, `C-11`, `X-01`, `X-02`, `X-03`

@@ -526,12 +526,13 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			response := map[string]any{
-				"status":   "success",
-				"message":  "authenticated",
-				"user_id":  user.ID,
-				"role":     user.Role,
-				"username": user.Username,
-				"token":    token,
+				"status":             "success",
+				"message":            "authenticated",
+				"user_id":            user.ID,
+				"role":               user.Role,
+				"username":           user.Username,
+				"token":              token,
+				"two_factor_enabled": user.Is2FAEnabled(),
 			}
 			if user.Role == models.RoleOwner {
 				response["kyc_status"] = user.KYCStatus
@@ -585,12 +586,13 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]any{
-			"status":   "success",
-			"message":  "authenticated",
-			"user_id":  user.ID,
-			"role":     user.Role,
-			"username": user.Username,
-			"token":    token,
+			"status":             "success",
+			"message":            "authenticated",
+			"user_id":            user.ID,
+			"role":               user.Role,
+			"username":           user.Username,
+			"token":              token,
+			"two_factor_enabled": user.Is2FAEnabled(),
 		})
 	}
 }
@@ -679,13 +681,14 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		response := map[string]any{
-			"status":       "success",
-			"message":      "2FA verification successful — authenticated",
-			"user_id":      user.ID,
-			"role":         user.Role,
-			"username":     user.Username,
-			"otp_verified": true,
-			"token":        token,
+			"status":             "success",
+			"message":            "2FA verification successful — authenticated",
+			"user_id":            user.ID,
+			"role":               user.Role,
+			"username":           user.Username,
+			"otp_verified":       true,
+			"token":              token,
+			"two_factor_enabled": user.Is2FAEnabled(),
 		}
 		if user.Role == models.RoleOwner {
 			response["kyc_status"] = user.KYCStatus
@@ -744,13 +747,14 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := map[string]any{
-		"status":       "success",
-		"message":      "2FA verification successful — authenticated",
-		"user_id":      newUser.ID,
-		"role":         newUser.Role,
-		"username":     newUser.Username,
-		"otp_verified": true,
-		"token":        token,
+		"status":             "success",
+		"message":            "2FA verification successful — authenticated",
+		"user_id":            newUser.ID,
+		"role":               newUser.Role,
+		"username":           newUser.Username,
+		"otp_verified":       true,
+		"token":              token,
+		"two_factor_enabled": newUser.Is2FAEnabled(),
 	}
 
 	if newUser.Role == models.RoleOwner {
@@ -1088,6 +1092,7 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 		"is_active":          user.IsActive,
 		"account_status":     user.EffectiveAccountStatus(),
 		"device_tokens":      deviceTokens,
+		"two_factor_enabled": user.Is2FAEnabled(),
 	}
 	if user.Role == models.RoleEmployee {
 		resp["kye_status"] = user.KYEStatus
