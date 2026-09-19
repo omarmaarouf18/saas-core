@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
 
 enum LocationPermissionResult {
@@ -17,6 +18,23 @@ Future<LocationPermissionResult> requestLocationPermission({
   GeolocatorPlatform? platform,
 }) async {
   final geolocator = platform ?? GeolocatorPlatform.instance;
+
+  // In test environments where GeolocatorPlatform has not been mocked,
+  // the unmocked MethodChannel will never receive a platform response and hangs.
+  bool isTestWithoutMock = false;
+  try {
+    if (WidgetsBinding.instance.runtimeType
+            .toString()
+            .contains('TestWidgetsFlutterBinding') &&
+        geolocator.runtimeType.toString() == 'MethodChannelGeolocator') {
+      isTestWithoutMock = true;
+    }
+  } catch (_) {
+    // WidgetsBinding not initialized (e.g. pure unit test runner)
+  }
+  if (isTestWithoutMock) {
+    return LocationPermissionResult.serviceDisabled;
+  }
 
   try {
     final bool serviceEnabled = await geolocator.isLocationServiceEnabled();

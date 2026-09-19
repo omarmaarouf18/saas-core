@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/l10n/l10n.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
+import '../core/location_permission.dart';
 import '../core/theme.dart';
 import '../core/constants.dart';
 import '../providers/auth_provider.dart';
@@ -429,9 +431,21 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
     );
   }
 
-  void _openLocationPickerDialog(BuildContext context) {
+  Future<void> _openLocationPickerDialog(BuildContext context) async {
     final l10n = context.l10n;
     LatLng tempLocation = LocationPickerMap.cairoDefault;
+    try {
+      final perm = await requestLocationPermission();
+      if (perm == LocationPermissionResult.granted) {
+        final pos = await Geolocator.getCurrentPosition();
+        tempLocation = LatLng(pos.latitude, pos.longitude);
+      }
+    } catch (_) {
+      // Fallback to LocationPickerMap.cairoDefault on exception or denial
+    }
+
+    if (!context.mounted) return;
+
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final dialogWidth = screenWidth > 600 ? 500.0 : screenWidth * 0.95;

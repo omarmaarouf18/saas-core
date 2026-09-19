@@ -1082,6 +1082,13 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
     - Updated `choose_location_map_button` to await `_openLocationPickerDialog` without popping the sheet.
     - Added "Apply Filters" CTA (`PrimaryButton`, key `apply_filters_button`) utilizing new localized key `applyFiltersBtn` ("Apply Filters" / "تطبيق الفلاتر") to commit filters and refresh services.
     - Verified via `customer_marketplace_screen_test.dart` and refreshed golden snapshots (`customer_marketplace_mobile_360x800`, `customer_marketplace_dark_mobile_360x800`).
+  - **Item 3 — Fetch Real GPS Position Before Opening Location Pickers Instead of Defaulting to Cairo**:
+    - Updated `_openLocationPickerDialog` in `CustomerHomeScreen` to be asynchronous, requesting location permission via `requestLocationPermission()` and querying `Geolocator.getCurrentPosition()`, centering the picker map on the user's real coordinates when available, with fallback to Cairo (`LocationPickerMap.cairoDefault`) on permission denial or location error, guarded by `if (!context.mounted) return;`.
+    - Added `_isLocating` state in `CustomerMarketplaceScreenState`, initialized to `true` on mount and set to `false` when `_initLocation()` resolves or when explicit coordinates are supplied via `setCustomerLocation(...)`.
+    - Guarded the Book button in `CustomerMarketplaceScreen` (`_buildServiceCard`) with `isLoading: _isLocating` and `onPressed: _isLocating ? null : () => _showBookingDialog(...)` to prevent booking against unresolved default coordinates.
+    - Added defensive guard in `requestLocationPermission` (`location_permission.dart`) when executing under `TestWidgetsFlutterBinding` with unmocked `MethodChannelGeolocator` to return `serviceDisabled` immediately and prevent test hangs.
+    - Verified via `customer_home_screen_test.dart`, `customer_marketplace_screen_test.dart`, and `a1_diagnosis_test.dart`.
+
 
 
 

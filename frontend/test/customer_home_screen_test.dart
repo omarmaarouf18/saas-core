@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 import 'package:frontend/providers/auth_provider.dart';
@@ -16,6 +18,40 @@ import 'package:frontend/screens/settings_screen.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/models/marketplace_service.dart';
+import 'package:frontend/widgets/location_picker_map.dart';
+
+class MockGeolocatorPlatform extends GeolocatorPlatform
+    with MockPlatformInterfaceMixin {
+  bool isServiceEnabled = true;
+  LocationPermission initialPermission = LocationPermission.denied;
+  LocationPermission requestedPermission = LocationPermission.whileInUse;
+  Position mockPosition = Position(
+    latitude: 31.2001,
+    longitude: 29.9187,
+    timestamp: DateTime.now(),
+    accuracy: 10,
+    altitude: 0,
+    altitudeAccuracy: 0,
+    heading: 0,
+    headingAccuracy: 0,
+    speed: 0,
+    speedAccuracy: 0,
+  );
+
+  @override
+  Future<bool> isLocationServiceEnabled() async => isServiceEnabled;
+
+  @override
+  Future<LocationPermission> checkPermission() async => initialPermission;
+
+  @override
+  Future<LocationPermission> requestPermission() async => requestedPermission;
+
+  @override
+  Future<Position> getCurrentPosition(
+          {LocationSettings? locationSettings}) async =>
+      mockPosition;
+}
 
 class MockAuthProvider extends ChangeNotifier implements AuthProvider {
   @override
@@ -223,5 +259,73 @@ void main() {
 
     // Verify switched to Services tab
     expect(find.byType(CustomerMarketplaceScreen), findsOneWidget);
+  });
+
+  testWidgets(
+      'Tapping home location card fetches real GPS coordinates and initializes picker with them',
+      (WidgetTester tester) async {
+    final mockGeolocator = MockGeolocatorPlatform();
+    GeolocatorPlatform.instance = mockGeolocator;
+
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+        createTestApp(child: const CustomerHomeScreen(initialTabIndex: 0)));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final locationCard = find.byKey(const Key('home_quick_search_card'));
+    expect(locationCard, findsOneWidget);
+
+    await tester.tap(locationCard);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('home_search_location_picker_dialog')),
+        findsOneWidget);
+
+    final pickerMapFinder = find.byType(LocationPickerMap);
+    expect(pickerMapFinder, findsOneWidget);
+    final pickerMap = tester.widget<LocationPickerMap>(pickerMapFinder);
+    expect(pickerMap.initialLocation!.latitude, equals(31.2001));
+    expect(pickerMap.initialLocation!.longitude, equals(29.9187));
+
+    // Confirm location navigates to Services tab
+    final confirmBtn = find.byKey(const Key('confirm_search_location_button'));
+    await tester.tap(confirmBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CustomerMarketplaceScreen), findsOneWidget);
+  });
+
+  testWidgets(
+      'Tapping home location card falls back to Cairo default when permission denied',
+      (WidgetTester tester) async {
+    final mockGeolocator = MockGeolocatorPlatform();
+    mockGeolocator.isServiceEnabled = false;
+    GeolocatorPlatform.instance = mockGeolocator;
+
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+        createTestApp(child: const CustomerHomeScreen(initialTabIndex: 0)));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final locationCard = find.byKey(const Key('home_quick_search_card'));
+    await tester.tap(locationCard);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('home_search_location_picker_dialog')),
+        findsOneWidget);
+
+    final pickerMapFinder = find.byType(LocationPickerMap);
+    expect(pickerMapFinder, findsOneWidget);
+    final pickerMap = tester.widget<LocationPickerMap>(pickerMapFinder);
+    expect(pickerMap.initialLocation!.latitude,
+        equals(LocationPickerMap.cairoDefault.latitude));
+    expect(pickerMap.initialLocation!.longitude,
+        equals(LocationPickerMap.cairoDefault.longitude));
   });
 }

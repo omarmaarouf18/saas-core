@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 import 'package:frontend/providers/auth_provider.dart';
@@ -14,6 +16,39 @@ import 'package:frontend/screens/customer_marketplace_screen.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/models/marketplace_service.dart';
 import 'package:frontend/models/job.dart';
+
+class MockGeolocatorPlatform extends GeolocatorPlatform
+    with MockPlatformInterfaceMixin {
+  bool isServiceEnabled = true;
+  LocationPermission initialPermission = LocationPermission.denied;
+  LocationPermission requestedPermission = LocationPermission.whileInUse;
+  Position mockPosition = Position(
+    latitude: 31.2001,
+    longitude: 29.9187,
+    timestamp: DateTime.now(),
+    accuracy: 10,
+    altitude: 0,
+    altitudeAccuracy: 0,
+    heading: 0,
+    headingAccuracy: 0,
+    speed: 0,
+    speedAccuracy: 0,
+  );
+
+  @override
+  Future<bool> isLocationServiceEnabled() async => isServiceEnabled;
+
+  @override
+  Future<LocationPermission> checkPermission() async => initialPermission;
+
+  @override
+  Future<LocationPermission> requestPermission() async => requestedPermission;
+
+  @override
+  Future<Position> getCurrentPosition(
+          {LocationSettings? locationSettings}) async =>
+      mockPosition;
+}
 
 class MockAuthProvider extends ChangeNotifier implements AuthProvider {
   @override
@@ -84,6 +119,10 @@ class MockChatProvider extends ChangeNotifier implements ChatProvider {
 }
 
 void main() {
+  setUp(() {
+    GeolocatorPlatform.instance = MockGeolocatorPlatform();
+  });
+
   testWidgets('Diagnose A1: quick search area box redirect and layout',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(360, 800);

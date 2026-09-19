@@ -51,6 +51,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
       'all'; // 'all', 'delivery', 'transport', 'shipping'
   String _sortBy = 'price'; // 'price' or 'none'
   bool _nearBy = false;
+  bool _isLocating = true;
 
   @override
   void initState() {
@@ -71,12 +72,19 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
           setState(() {
             _customerLat = pos.latitude;
             _customerLon = pos.longitude;
+            _isLocating = false;
           });
           _loadServices();
+          return;
         }
       }
     } catch (_) {
       // Keep default Cairo coordinates fallback
+    }
+    if (mounted) {
+      setState(() {
+        _isLocating = false;
+      });
     }
   }
 
@@ -84,6 +92,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
     setState(() {
       _customerLat = lat;
       _customerLon = lon;
+      _isLocating = false;
     });
     _loadServices();
   }
@@ -552,11 +561,14 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                   child: PrimaryButton(
                     text: l10n.bookNowBtn,
                     isFullWidth: false,
-                    onPressed: () => _showBookingDialog(
-                      context,
-                      service,
-                      auth.token ?? '',
-                    ),
+                    isLoading: _isLocating,
+                    onPressed: _isLocating
+                        ? null
+                        : () => _showBookingDialog(
+                              context,
+                              service,
+                              auth.token ?? '',
+                            ),
                   ),
                 ),
               ],

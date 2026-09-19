@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/l10n/app_localizations.dart';
@@ -13,6 +16,44 @@ import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/screens/customer_marketplace_screen.dart';
 import 'package:frontend/widgets/primary_button.dart';
 import 'package:frontend/widgets/themed_error_banner.dart';
+
+class MockGeolocatorPlatformForMarketplace extends GeolocatorPlatform
+    with MockPlatformInterfaceMixin {
+  bool isServiceEnabled = true;
+  LocationPermission initialPermission = LocationPermission.whileInUse;
+  LocationPermission requestedPermission = LocationPermission.whileInUse;
+  Completer<Position>? positionCompleter;
+  Position mockPosition = Position(
+    latitude: 31.2001,
+    longitude: 29.9187,
+    timestamp: DateTime.now(),
+    accuracy: 10,
+    altitude: 0,
+    altitudeAccuracy: 0,
+    heading: 0,
+    headingAccuracy: 0,
+    speed: 0,
+    speedAccuracy: 0,
+  );
+
+  @override
+  Future<bool> isLocationServiceEnabled() async => isServiceEnabled;
+
+  @override
+  Future<LocationPermission> checkPermission() async => initialPermission;
+
+  @override
+  Future<LocationPermission> requestPermission() async => requestedPermission;
+
+  @override
+  Future<Position> getCurrentPosition(
+      {LocationSettings? locationSettings}) async {
+    if (positionCompleter != null) {
+      return positionCompleter!.future;
+    }
+    return mockPosition;
+  }
+}
 
 class MockAuthProviderForTest extends AuthProvider {
   final UserProfile _user;
@@ -63,10 +104,13 @@ class MockMarketplaceProviderForTest extends MarketplaceProvider {
 void main() {
   late ApiClient apiClient;
   late MockMarketplaceProviderForTest mockMarketplaceProvider;
+  late MockGeolocatorPlatformForMarketplace mockGeolocator;
 
   setUp(() {
     apiClient = ApiClient();
     mockMarketplaceProvider = MockMarketplaceProviderForTest(apiClient);
+    mockGeolocator = MockGeolocatorPlatformForMarketplace();
+    GeolocatorPlatform.instance = mockGeolocator;
   });
 
   Widget buildMarketplaceApp(AuthProvider authProvider) {
@@ -361,5 +405,116 @@ void main() {
 
     // Verify zero RenderFlex overflow
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'Book button is in loading/disabled state while _isLocating is true, then enables when location resolves',
+      (WidgetTester tester) async {
+    final mockGeolocator = MockGeolocatorPlatformForMarketplace();
+    final completer = Completer<Position>();
+    mockGeolocator.positionCompleter = completer;
+    GeolocatorPlatform.instance = mockGeolocator;
+
+    final customerUser = UserProfile(
+      id: 'cust-1',
+      email: 'customer@example.com',
+      username: 'cust_user',
+      role: 'user',
+    );
+
+    mockMarketplaceProvider.mockServices = [
+      MarketplaceService(
+        id: 'srv-123',
+        tenantId: 'tenant-456',
+        name: 'Express Delivery',
+        category: 'delivery',
+        basePrice: 20.0,
+        tenantBasePrice: 20.0,
+        tenantPricePerKM: 3.5,
+        latitude: 30.0444,
+        longitude: 31.2357,
+        distanceKM: 4.2,
+        finalPrice: 35.0,
+      ),
+    ];
+
+    await tester.pumpWidget(buildMarketplaceApp(
+      MockAuthProviderForTest(apiClient, customerUser),
+    ));
+    // Pump a frame so postFrameCallback triggers _initLocation()
+    await tester.pump();
+
+    // 1. _initLocation is waiting for completer. PrimaryButton must be loading.
+    final bookButtonFinder = find.widgetWithText(PrimaryButton, 'Book');
+    expect(bookButtonFinder, findsNothing);
+    final primaryBtnFinder = find.byType(PrimaryButton);
+    expect(primaryBtnFinder, findsOneWidget);
+    final primaryBtn = tester.widget<PrimaryButton>(primaryBtnFinder);
+    expect(primaryBtn.isLoading, isTrue);
+    expect(primaryBtn.onPressed, isNull);
+
+    // 2. Resolve GPS position
+    completer.complete(mockGeolocator.mockPosition);
+    await tester.pumpAndSettle();
+
+    // 3. Button is now enabled with "Book" text
+    expect(find.widgetWithText(PrimaryButton, 'Book'), findsOneWidget);
+    final enabledBtn = tester.widget<PrimaryButton>(primaryBtnFinder);
+    expect(enabledBtn.isLoading, isFalse);
+    expect(enabledBtn.onPressed, isNotNull);
+  });
+
+  testWidgets('setCustomerLocation resets _isLocating to false',
+      (WidgetTester tester) async {
+    final mockGeolocator = MockGeolocatorPlatformForMarketplace();
+    final completer = Completer<Position>();
+    mockGeolocator.positionCompleter = completer;
+    GeolocatorPlatform.instance = mockGeolocator;
+
+    final customerUser = UserProfile(
+      id: 'cust-1',
+      email: 'customer@example.com',
+      username: 'cust_user',
+      role: 'user',
+    );
+
+    mockMarketplaceProvider.mockServices = [
+      MarketplaceService(
+        id: 'srv-123',
+        tenantId: 'tenant-456',
+        name: 'Express Delivery',
+        category: 'delivery',
+        basePrice: 20.0,
+        tenantBasePrice: 20.0,
+        tenantPricePerKM: 3.5,
+        latitude: 30.0444,
+        longitude: 31.2357,
+        distanceKM: 4.2,
+        finalPrice: 35.0,
+      ),
+    ];
+
+    await tester.pumpWidget(buildMarketplaceApp(
+      MockAuthProviderForTest(apiClient, customerUser),
+    ));
+    await tester.pump();
+
+    // Verify loading initially
+    final primaryBtnFinder = find.byType(PrimaryButton);
+    expect(tester.widget<PrimaryButton>(primaryBtnFinder).isLoading, isTrue);
+
+    // Call setCustomerLocation directly via state
+    final state = tester.state<CustomerMarketplaceScreenState>(
+        find.byType(CustomerMarketplaceScreen));
+    state.setCustomerLocation(31.2001, 29.9187);
+    await tester.pump();
+
+    // Verify button is now loaded and enabled
+    expect(tester.widget<PrimaryButton>(primaryBtnFinder).isLoading, isFalse);
+    expect(find.widgetWithText(PrimaryButton, 'Book'), findsOneWidget);
+
+    // Complete completer to avoid dangling future
+    completer.complete(mockGeolocator.mockPosition);
+    await tester.pumpAndSettle();
   });
 }
