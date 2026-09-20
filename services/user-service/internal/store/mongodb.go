@@ -1794,6 +1794,47 @@ func (s *MongoDB) RejectPayoutRequest(ctx context.Context, payoutID, reason stri
 	return nil
 }
 
+// AdminListPayoutRequests returns payout requests across all tenants with optional status filter and pagination.
+func (s *MongoDB) AdminListPayoutRequests(ctx context.Context, status string, page, limit int64) ([]*models.PayoutRequest, int64, error) {
+	filter := bson.M{}
+	if status != "" {
+		filter["status"] = status
+	}
+
+	total, err := s.payoutRequests.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("store: count payout requests: %w", err)
+	}
+
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	if page < 1 {
+		page = 1
+	}
+	skip := (page - 1) * limit
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "created_at", Value: -1}}).
+		SetSkip(skip).
+		SetLimit(limit)
+
+	cursor, err := s.payoutRequests.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, fmt.Errorf("store: find payout requests: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var reqs []*models.PayoutRequest
+	if err := cursor.All(ctx, &reqs); err != nil {
+		return nil, 0, fmt.Errorf("store: decode payout requests: %w", err)
+	}
+	if reqs == nil {
+		reqs = make([]*models.PayoutRequest, 0)
+	}
+	return reqs, total, nil
+}
+
 // UpsertEmployeeLocation writes or updates the latest reported location for an employee in a tenant.
 func (s *MongoDB) UpsertEmployeeLocation(ctx context.Context, loc *models.EmployeeLocation) error {
 	filter := bson.M{

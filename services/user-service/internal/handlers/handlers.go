@@ -327,6 +327,10 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/subscriptions/activate", u.AdminActivateSubscription)
 	mux.HandleFunc("/users/admin/subscriptions/revoke", u.AdminRevokeSubscription)
 	mux.HandleFunc("/admin/subscriptions/revoke", u.AdminRevokeSubscription)
+	mux.HandleFunc("/users/admin/payouts", u.AdminListPayouts)
+	mux.HandleFunc("/admin/payouts", u.AdminListPayouts)
+	mux.HandleFunc("/users/admin/payouts/reject", u.AdminRejectPayoutRequest)
+	mux.HandleFunc("/admin/payouts/reject", u.AdminRejectPayoutRequest)
 }
 
 // ---------------------------------------------------------------------------

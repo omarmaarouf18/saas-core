@@ -560,3 +560,17 @@ type AdminRevokeSubscriptionRequest struct {
 	SubscriptionID string `json:"subscription_id,omitempty"`
 	Reason         string `json:"reason"` // Mandatory reason (1-1000 characters)
 }
+
+// AdminRejectPayoutRequest is the payload for POST /admin/payouts/reject.
+type AdminRejectPayoutRequest struct {
+	PayoutID string `json:"payout_id"`
+	Reason   string `json:"reason"` // Mandatory reason (1-1000 characters)
+}
+
+// AdminPayoutListResponse is the payload returned by GET /admin/payouts.
+type AdminPayoutListResponse struct {
+	Payouts []*PayoutRequest `json:"payouts"`
+	Total   int              `json:"total"`
+	Page    int              `json:"page"`
+	Limit   int              `json:"limit"`
+}
