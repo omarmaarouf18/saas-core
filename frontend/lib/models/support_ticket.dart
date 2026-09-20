@@ -26,7 +26,6 @@ class SupportTicket {
   });
 
   bool get isResolved => status.toLowerCase() == 'resolved';
-  bool get isAssigned => status.toLowerCase() == 'assigned';
   bool get isPending => status.toLowerCase() == 'pending';
 
   factory SupportTicket.fromJson(Map<String, dynamic> json) {

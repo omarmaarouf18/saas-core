@@ -121,11 +121,6 @@ class UserProfile {
   bool get isPendingApproval =>
       effectiveKycStatus == 'pending_super_admin_approval';
   bool get isRejected => effectiveKycStatus == 'rejected';
-  bool get isUnverified =>
-      effectiveKycStatus.isEmpty ||
-      effectiveKycStatus == 'none' ||
-      effectiveKycStatus == 'unverified';
-
   bool get isSuspended => accountStatus == 'suspended';
   bool get isActiveAccount => !isSuspended;
 }

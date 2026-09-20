@@ -13,13 +13,3 @@ type OTPDispatcher interface {
 	// Name returns a human-readable label for logging (e.g., "MockSMS").
 	Name() string
 }
-
-// ---------------------------------------------------------------------------
-// Noop Dispatcher — completely silent, for benchmarks
-// ---------------------------------------------------------------------------
-
-// NoopDispatcher does nothing. Used for automated tests and benchmarks.
-type NoopDispatcher struct{}
-
-func (n *NoopDispatcher) Dispatch(_, _ string) error { return nil }
-func (n *NoopDispatcher) Name() string               { return "Noop" }

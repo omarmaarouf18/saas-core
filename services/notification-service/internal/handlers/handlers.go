@@ -305,11 +305,6 @@ func (n *Notification) resolveToken(token string) (string, string, hub.Role, boo
 	return user.ID, user.TenantID, r, true, nil
 }
 
-func (n *Notification) verifyAndResolve(token string) (string, hub.Role, bool, error) {
-	_, tenantID, role, ok, err := n.resolveToken(token)
-	return tenantID, role, ok, err
-}
-
 func (n *Notification) authenticateHeader(r *http.Request) (userID, tenantID string, role hub.Role, status int, errMsg string) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {

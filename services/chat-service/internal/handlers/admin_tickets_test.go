@@ -253,7 +253,7 @@ func TestAdminTickets_Authentication_TransientFailureDiscrimination(t *testing.T
 			}
 
 			// 3. Assert AdminAcceptTicket returns the expected code
-			reqAccept := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/tkt-123/accept", nil)
+			reqAccept := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/accept", strings.NewReader(`{"ticket_id":"tkt-123"}`))
 			reqAccept.Header.Set("X-Internal-Token", "test-internal-token")
 			reqAccept.Header.Set("X-Reviewer-Token", "any-reviewer-token")
 			recAccept := httptest.NewRecorder()
@@ -288,7 +288,7 @@ func TestAdminTickets_ListingAndFiltering(t *testing.T) {
 	}
 
 	// Resolve t1
-	_ = mongoStore.ResolveTicket(ctx, t1.ID)
+	_, _ = mongoStore.AdminResolveTicket(ctx, t1.ID, "resolved for test", "reviewer-test")
 
 	t.Run("List All Tickets", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/chat/admin/tickets", nil)
@@ -845,24 +845,6 @@ func TestAdminAcceptTicket(t *testing.T) {
 			t.Fatalf("expected 409 Conflict on already resolved ticket, got %d", rec.Code)
 		}
 	})
-
-	t.Run("Path Parameter URL Accept", func(t *testing.T) {
-		ticket, err := mongoStore.CreateTicketAndAssign(ctx, "cust-accept-path", "job-103")
-		if err != nil {
-			t.Fatalf("failed to create ticket: %v", err)
-		}
-
-		url := fmt.Sprintf("/chat/admin/tickets/%s/accept", ticket.ID)
-		req := httptest.NewRequest(http.MethodPost, url, nil)
-		req.Header.Set("X-Internal-Token", "test-internal-token")
-		req.Header.Set("X-Reviewer-Token", validToken)
-		rec := httptest.NewRecorder()
-		c.AdminAcceptTicket(rec, req)
-
-		if rec.Code != http.StatusOK {
-			t.Fatalf("expected 200 OK via path parameter accept, got %d: %s", rec.Code, rec.Body.String())
-		}
-	})
 }
 
 func TestAdminAcceptTicket_CASConcurrencyRace(t *testing.T) {
@@ -1047,7 +1029,7 @@ func TestAdminTickets_CircuitBreaker_OpenHalfOpenClosedLifecycle(t *testing.T) {
 	}
 
 	// Request 2: POST /chat/admin/tickets/accept (attempts 1, 2 -> calls 4, 5 fail -> TRIPS BREAKER TO OPEN; attempt 3 fast-fails)
-	req2 := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/"+tkt.ID+"/accept", nil)
+	req2 := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/accept", strings.NewReader(fmt.Sprintf(`{"ticket_id":"%s"}`, tkt.ID)))
 	req2.Header.Set("X-Internal-Token", "test-internal-token")
 	req2.Header.Set("X-Reviewer-Token", validReviewerToken)
 	rec2 := httptest.NewRecorder()
@@ -1141,7 +1123,7 @@ func TestAdminTickets_CircuitBreaker_OpenHalfOpenClosedLifecycle(t *testing.T) {
 	}
 
 	// Success 2 (half-open): POST /chat/admin/tickets/accept
-	req6 := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/"+tkt.ID+"/accept", nil)
+	req6 := httptest.NewRequest(http.MethodPost, "/chat/admin/tickets/accept", strings.NewReader(fmt.Sprintf(`{"ticket_id":"%s"}`, tkt.ID)))
 	req6.Header.Set("X-Internal-Token", "test-internal-token")
 	req6.Header.Set("X-Reviewer-Token", validReviewerToken)
 	rec6 := httptest.NewRecorder()

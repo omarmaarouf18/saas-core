@@ -168,14 +168,32 @@ The detailed project history is distributed across categorized changelog files. 
 * **Courier Profile Standalone Screen**
   * **Decision**: A standalone courier profile screen is deferred. Driver details and verified badges are rendered inline within `job_status_screen.dart` and `customer_job_map_screen.dart`.
   * **Reasoning**: Matches the mobile ergonomics of the customer flow without adding redundant screen hops.
-* **Admin Payout Request Approval & Fulfillment Endpoint**
-  * **Decision**: Admin-side payout request fulfillment/approval endpoint is deferred to ADR-0018 / Support Agent Console. Submitted payout requests from owners remain in `"requested"` status in the consumer application.
-  * **Reasoning**: Administrative payment processing and bank ledger execution are isolated to the Support Agent Console.
+* **Admin Payout Request Operations (Reviewer Listing & Rejection)**
+  * **Status**: Shipped & Verified. Payout listing (`GET /admin/payouts`, `/users/admin/payouts`) and rejection (`POST /admin/payouts/reject`, `/users/admin/payouts/reject`) are wired to `RejectPayoutRequest` in `user-service` with CAS status checks (`$ne: rejected`), wallet balance restoration, compensation ledger records, and security audit events. Integrated into `kyc-reviewer-console` (proxy + UI tab + rejection dialog with mandatory reason). Payout approval/bank fulfillment remains isolated to external banking rails.
 * **Business Owner Configuration (Custom Pricing, Operating Hours, Geofencing)**
-  * **Custom & Negotiable Pricing**: Custom or negotiable base pricing per owner beyond fixed `TenantBasePrice` and `TenantPricePerKM` values set during service creation.
-  * **Business Operating Hours**: Operating hours defining days and times an owner's services are available for booking.
-  * **Service Coverage Area & Geographic Radius**: Service coverage areas or geographic radii limiting which customer locations an owner's services are bookable for.
-  * **Schema Absence Note**: None of these fields are currently represented in MongoDB `Service` or `Job` models; deferred to future backend service capability expansion.
+  * **Status**: Shipped & Verified. Service models in MongoDB represent photo, address, working hours, and coverage radius. Shipped in backend commit `405d0de263d2f8fd6e554800caa565b7cf311238` and frontend configuration screen in commit `54bb87a381863692f6455fc24aea308195242e47`. Dynamic pricing negotiation is implemented and verified per ADR-0017.
+
+---
+
+## Refactor Backlog
+
+The following larger-effort architectural and code quality improvements were cataloged during the Full Code Quality Audit (flagged for future dedicated sprints, not executed in cleanup passes):
+
+1. **Unified Reviewer Authentication Helper**:
+   * *Problem*: `authenticateReviewer` and reviewer token validation logic is duplicated across `user-service`, `chat-service`, and `auth-service` with slight variations in error structure.
+   * *Proposed Refactor*: Consolidate reviewer auth into `shared/infra/handlerutil` or a shared reviewer middleware with unified security event emission and circuit breaker integration.
+2. **Standardized Pagination Extraction Helper**:
+   * *Problem*: Query string pagination parsing (`page`, `limit`, bounds checks, and skip calculation) is repeated across list endpoints in multiple services (`admin_tickets.go`, `admin_payout_handlers.go`, `admin_subscriptions.go`, `admin_reconciliation.go`).
+   * *Proposed Refactor*: Introduce a shared pagination parser helper `handlerutil.ParsePaginationParams(r, defaultLimit, maxLimit)` returning standard `page`, `limit`, and `skip`.
+3. **`jobs_handlers.go` File Decomposition**:
+   * *Problem*: `services/user-service/internal/handlers/jobs_handlers.go` has grown to over 3,200 lines, consolidating job tracking, dispatch, lifecycle transitions, price negotiations, location heartbeats, and speed plausibility checks into a single file.
+   * *Proposed Refactor*: Split into domain-specific files: `jobs_lifecycle_handlers.go`, `jobs_dispatch_handlers.go`, `jobs_pricing_handlers.go`, and `jobs_location_handlers.go`.
+4. **`AI_CONTEXT.md` History Archival & Migration**:
+   * *Problem*: `AI_CONTEXT.md` has expanded beyond 1,100 lines and 370KB, accumulating historical sprint logs, resolved task lists, and detailed bug audit histories that increase LLM context overhead.
+   * *Proposed Refactor*: Migrate completed historical narratives and past session changelogs into dedicated archive files under `docs/changelog/` or `docs/archive/`, maintaining `AI_CONTEXT.md` strictly as an active operational state tracker.
+5. **Reviewer Console `app.js` Modularization**:
+   * *Problem*: `kyc-reviewer-console/web/app.js` is an 1,800+ line single script file containing auth, WebSocket handling, and logic for all 6 operations tabs (queue, accounts, disputes, subscriptions, tickets, payouts).
+   * *Proposed Refactor*: Decompose into native ES modules (`api.js`, `auth.js`, `queue.js`, `accounts.js`, `disputes.js`, `subscriptions.js`, `tickets.js`, `payouts.js`) or a structured module loader.
 
 ---
 
@@ -1122,6 +1140,29 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
       3. Fail-fast behavior (<50ms, zero upstream HTTP calls attempted) returning HTTP 503 during the 15-second `open` window.
       4. Breaker recovery through `half-open` upon cooldown expiry and transition back to `closed` after exactly 3 consecutive successes.
       5. Full state assertion on `resilience.GetBreakerStats()` across all lifecycle transitions (`closed` -> `open` -> `half-open` -> `closed`).
+
+* **Full Code Quality Audit Quick-Wins & Payout Rejection Wiring (2026-09-20)**:
+  - **Item 1 — Wired Orphaned RejectPayoutRequest to Real Endpoints & Reviewer Console**:
+    - Identified orphaned `RejectPayoutRequest` store method in `user-service/internal/store/mongodb.go:1727` with CAS state checks, wallet balance restoration, and refund ledger entry creation.
+    - Implemented HTTP endpoints `POST /admin/payouts/reject` (and companion `/users/admin/payouts/reject`) with input validation (payout_id required, reason 1-1000 chars) and security audit log emission (`ADMIN_PAYOUT_REJECTED`).
+    - Implemented list capability `GET /admin/payouts` (and companion `/users/admin/payouts`) with pagination and status filtering via `AdminListPayoutRequests` store method.
+    - Added comprehensive integration tests (`TestAdminPayout_*`) in `admin_payout_test.go` verifying reviewer authentication, reason length validation, CAS duplicate-rejection prevention (409 Conflict), wallet refund balance restoration, and list filtering.
+    - Wired into `kyc-reviewer-console`: added proxy handlers (`Payouts`, `RejectPayout`), server routing (`/api/payouts`, `/api/payouts/reject`, `/admin/payouts`, `/admin/payouts/reject`), Payout Requests UI tab with live badge counts, and modal rejection dialog with mandatory reason.
+  - **Item 2 — Executed Confirmed Quick-Win Cleanups & Dead Code Deletion**:
+    - `chat-service`: Called `ensureIndexes` in `NewMongoDB` (`mongodb.go`) and added `TestMongoDB_EnsureIndexes` in `mongodb_test.go` asserting channel-timestamp, ticket customer/agent, and unique support agent token indexes.
+    - GitHub Actions: Added `services/user-service/**` and `services/chat-service/**` to paths filter in `.github/workflows/trigger-reviewer-console-sync.yml`.
+    - Documentation: Replaced stale "Deferred" note for Owner Configuration with accurate shipped notes citing commits `405d0de` / `54bb87a`.
+    - Resolved `docs/APPLICATION_MAP.md:276` placeholder (`GET /users/subscription/internal` -> `user_db / subscriptions`) via `KnownEndpoints` in `docgen/generator.go` and regenerated application map.
+    - Dead code deletion:
+      - Deleted `verifyAndResolve` in `services/notification-service/internal/handlers/handlers.go`.
+      - Deleted `findNearestAvailableEmployee` in `services/user-service/internal/handlers/jobs_handlers.go` and updated test call to `findNextAvailableEmployee`.
+      - Deleted `ValidJobStatus` in `services/user-service/internal/models/models.go` and its test `TestValidJobStatus` in `models_test.go`.
+      - Deleted `ResolveTicket` in `services/chat-service/internal/store/mongodb.go` and updated test callers to `AdminResolveTicket`.
+      - Deleted unused Dart getters `isAssigned` (`support_ticket.dart`) and `isUnverified` (`user_profile.dart`).
+      - Moved `NoopDispatcher` from production `dispatcher.go` to `dispatcher_test.go` in `auth-service`.
+      - Removed unused `{id}/accept` duplicate route aliases in `chat-service` (`chat.go`, `admin_tickets.go`, `admin_tickets_test.go`, and parity check aliases).
+  - **Item 3 — Cataloged Refactor Backlog**:
+    - Added dedicated `## Refactor Backlog` section in `AI_CONTEXT.md` detailing the 5 audit refactoring candidates for deliberate future scheduling (Unified Reviewer Auth, Pagination Helper, `jobs_handlers.go` Decomposition, `AI_CONTEXT.md` History Archival, `app.js` Modularization).
 
 
 

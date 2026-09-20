@@ -2234,11 +2234,6 @@ func (u *UserService) findNextAvailableEmployee(ctx context.Context, tenantID st
 	return &candidates[0].loc, nil
 }
 
-// findNearestAvailableEmployee delegates to findNextAvailableEmployee with no exclusions.
-func (u *UserService) findNearestAvailableEmployee(ctx context.Context, tenantID string, customerLoc models.Location) (*models.EmployeeLocation, error) {
-	return u.findNextAvailableEmployee(ctx, tenantID, customerLoc, nil)
-}
-
 func (u *UserService) sendJobOfferNotification(job *models.Job, employeeID string) {
 	if job == nil || employeeID == "" {
 		return

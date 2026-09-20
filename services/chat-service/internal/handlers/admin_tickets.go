@@ -375,7 +375,7 @@ func (c *Chat) dispatchTicketAcceptedNotification(ctx context.Context, ticket *s
 }
 
 // AdminAcceptTicket transitions a pending ticket to assigned under the accepting reviewer's identity.
-// POST /chat/admin/tickets/accept & POST /admin/tickets/accept & POST /admin/tickets/{id}/accept
+// POST /chat/admin/tickets/accept & POST /admin/tickets/accept
 func (c *Chat) AdminAcceptTicket(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
@@ -388,26 +388,13 @@ func (c *Chat) AdminAcceptTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ticketID := r.PathValue("id")
-	if ticketID == "" && strings.HasPrefix(r.URL.Path, "/admin/tickets/") {
-		trimmed := strings.TrimPrefix(r.URL.Path, "/admin/tickets/")
-		if idx := strings.Index(trimmed, "/accept"); idx > 0 {
-			ticketID = trimmed[:idx]
-		}
-	} else if ticketID == "" && strings.HasPrefix(r.URL.Path, "/chat/admin/tickets/") {
-		trimmed := strings.TrimPrefix(r.URL.Path, "/chat/admin/tickets/")
-		if idx := strings.Index(trimmed, "/accept"); idx > 0 {
-			ticketID = trimmed[:idx]
-		}
+	var req struct {
+		TicketID string `json:"ticket_id"`
 	}
-
-	if ticketID == "" && r.Body != nil {
-		var req struct {
-			TicketID string `json:"ticket_id"`
-		}
+	if r.Body != nil {
 		_ = json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req)
-		ticketID = strings.TrimSpace(req.TicketID)
 	}
+	ticketID := strings.TrimSpace(req.TicketID)
 
 	if ticketID == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ticket_id is required"})

@@ -16,27 +16,6 @@ func TestNewGeoJSONPoint(t *testing.T) {
 	}
 }
 
-func TestValidJobStatus(t *testing.T) {
-	validStatuses := []JobStatus{
-		JobStatusPending,
-		JobStatusAwaitingPriceResponse,
-		JobStatusActive,
-		JobStatusCompleted,
-		JobStatusCancelled,
-		JobStatusEscrowReconciliationRequired,
-	}
-
-	for _, st := range validStatuses {
-		if !ValidJobStatus(st) {
-			t.Errorf("Expected status %q to be valid", st)
-		}
-	}
-
-	if ValidJobStatus("invalid_status") {
-		t.Errorf("Expected 'invalid_status' to be invalid")
-	}
-}
-
 func TestValidPriceProposal(t *testing.T) {
 	tests := []struct {
 		name      string

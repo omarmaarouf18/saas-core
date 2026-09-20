@@ -34,12 +34,12 @@ func TestResolveTicket_CAS_AlreadyResolved(t *testing.T) {
 	}
 
 	// First resolution should succeed
-	if err := s.ResolveTicket(ctx, ticket.ID); err != nil {
-		t.Fatalf("first ResolveTicket failed: %v", err)
+	if _, err := s.AdminResolveTicket(ctx, ticket.ID, "resolved for test", "reviewer-cas-1"); err != nil {
+		t.Fatalf("first AdminResolveTicket failed: %v", err)
 	}
 
 	// Second resolution on already resolved ticket must fail with ErrTicketAlreadyResolved
-	err = s.ResolveTicket(ctx, ticket.ID)
+	_, err = s.AdminResolveTicket(ctx, ticket.ID, "duplicate resolution", "reviewer-cas-1")
 	if err == nil {
 		t.Fatalf("expected ErrTicketAlreadyResolved on already resolved ticket, got nil")
 	}

@@ -125,8 +125,6 @@ func (c *Chat) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/tickets", c.AdminListTickets)
 	mux.HandleFunc("/chat/admin/tickets/accept", c.AdminAcceptTicket)
 	mux.HandleFunc("/admin/tickets/accept", c.AdminAcceptTicket)
-	mux.HandleFunc("/chat/admin/tickets/{id}/accept", c.AdminAcceptTicket)
-	mux.HandleFunc("/admin/tickets/{id}/accept", c.AdminAcceptTicket)
 	mux.HandleFunc("/chat/admin/tickets/resolve", c.AdminResolveTicket)
 	mux.HandleFunc("/admin/tickets/resolve", c.AdminResolveTicket)
 }

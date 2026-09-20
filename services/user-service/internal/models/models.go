@@ -71,15 +71,6 @@ const (
 	JobStatusEscrowReconciliationRequired JobStatus = "escrow_reconciliation_required"
 )
 
-// ValidJobStatus returns true if the given status is a known value.
-func ValidJobStatus(s JobStatus) bool {
-	switch s {
-	case JobStatusPending, JobStatusPendingDispatch, JobStatusUnavailable, JobStatusAwaitingPriceResponse, JobStatusActive, JobStatusCompleted, JobStatusCancelled, JobStatusEscrowReconciliationRequired:
-		return true
-	}
-	return false
-}
-
 // ValidPriceProposal checks if a proposed fare falls within the allowed [0.5 × P_system, 1.5 × P_system] bound.
 // Returns false if either suggested or proposed prices are non-positive (<= 0), preventing zero or negative fare manipulation.
 func ValidPriceProposal(suggested, proposed float64) bool {

@@ -377,9 +377,9 @@ func TestDispatch_NearestEmployeeSelection(t *testing.T) {
 		UpdatedAt:  now,
 	})
 
-	nearest, err := u.findNearestAvailableEmployee(ctx, ownerID, custLoc)
+	nearest, err := u.findNextAvailableEmployee(ctx, ownerID, custLoc, nil)
 	if err != nil {
-		t.Fatalf("findNearestAvailableEmployee failed: %v", err)
+		t.Fatalf("findNextAvailableEmployee failed: %v", err)
 	}
 
 	if nearest.EmployeeID != "emp-B-under-tenant-multi-candidate" {

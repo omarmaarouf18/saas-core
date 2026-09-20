@@ -4,6 +4,12 @@ import (
 	"testing"
 )
 
+// NoopDispatcher does nothing. Used for automated tests and benchmarks.
+type NoopDispatcher struct{}
+
+func (n *NoopDispatcher) Dispatch(_, _ string) error { return nil }
+func (n *NoopDispatcher) Name() string               { return "Noop" }
+
 func TestNoopDispatcher(t *testing.T) {
 	d := &NoopDispatcher{}
 	if name := d.Name(); name != "Noop" {

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/project/chat-service/internal/chat"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func setupTestMongoDB(t *testing.T) (*MongoDB, func()) {
@@ -22,8 +23,12 @@ func setupTestMongoDB(t *testing.T) (*MongoDB, func()) {
 	dbName := fmt.Sprintf("saas_chat_store_test_%d", time.Now().UnixNano())
 	s, err := NewMongoDB(ctx, mongoURI, dbName)
 	if err != nil && os.Getenv("MONGO_URI") == "" {
-		mongoURI = "mongodb://admin:adminpassword@localhost:27017"
+		mongoURI = "mongodb://root:devpassword123@localhost:27017/?authSource=admin"
 		s, err = NewMongoDB(ctx, mongoURI, dbName)
+		if err != nil {
+			mongoURI = "mongodb://admin:adminpassword@localhost:27017"
+			s, err = NewMongoDB(ctx, mongoURI, dbName)
+		}
 	}
 	if err != nil {
 		t.Skipf("Skipping MongoDB store tests: MongoDB unreachable at %s (%v)", mongoURI, err)
@@ -35,8 +40,12 @@ func setupTestMongoDB(t *testing.T) (*MongoDB, func()) {
 	if err := s.PersistMessage(ctx, testMsg); err != nil {
 		if os.Getenv("MONGO_URI") == "" {
 			_ = s.Close(ctx)
-			mongoURI = "mongodb://admin:adminpassword@localhost:27017"
+			mongoURI = "mongodb://root:devpassword123@localhost:27017/?authSource=admin"
 			s, err = NewMongoDB(ctx, mongoURI, dbName)
+			if err != nil {
+				mongoURI = "mongodb://admin:adminpassword@localhost:27017"
+				s, err = NewMongoDB(ctx, mongoURI, dbName)
+			}
 			if err == nil {
 				err = s.PersistMessage(ctx, testMsg)
 			}
@@ -278,5 +287,85 @@ func TestMongoDB_ConcurrentPersistMessageNoCollision(t *testing.T) {
 
 	if len(idMap) != numMsgs {
 		t.Errorf("Expected %d unique message IDs, got %d", numMsgs, len(idMap))
+	}
+}
+
+func TestMongoDB_EnsureIndexes(t *testing.T) {
+	s, cleanup := setupTestMongoDB(t)
+	if s == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+
+	// Assert channel-timestamp index exists on messages collection
+	curM, err := s.messages.Indexes().List(ctx)
+	if err != nil {
+		t.Fatalf("failed to list messages indexes: %v", err)
+	}
+	var msgIndexes []bson.M
+	if err := curM.All(ctx, &msgIndexes); err != nil {
+		t.Fatalf("failed to decode messages indexes: %v", err)
+	}
+	var foundMsgIndex bool
+	for _, idx := range msgIndexes {
+		if idx["name"] == "channel_1_timestamp_1" {
+			foundMsgIndex = true
+			break
+		}
+	}
+	if !foundMsgIndex {
+		t.Errorf("expected channel_1_timestamp_1 index on messages collection, found: %+v", msgIndexes)
+	}
+
+	// Assert indexes exist on complaint_tickets collection (customer_id, assigned_agent_id)
+	curT, err := s.tickets.Indexes().List(ctx)
+	if err != nil {
+		t.Fatalf("failed to list tickets indexes: %v", err)
+	}
+	var ticketIndexes []bson.M
+	if err := curT.All(ctx, &ticketIndexes); err != nil {
+		t.Fatalf("failed to decode tickets indexes: %v", err)
+	}
+	var foundCustIndex, foundAgentIndex bool
+	for _, idx := range ticketIndexes {
+		if idx["name"] == "customer_id_1" {
+			foundCustIndex = true
+		}
+		if idx["name"] == "assigned_agent_id_1" {
+			foundAgentIndex = true
+		}
+	}
+	if !foundCustIndex {
+		t.Errorf("expected customer_id_1 index on tickets collection, found: %+v", ticketIndexes)
+	}
+	if !foundAgentIndex {
+		t.Errorf("expected assigned_agent_id_1 index on tickets collection, found: %+v", ticketIndexes)
+	}
+
+	// Assert unique token index and status index exist on support_agents collection
+	curA, err := s.agents.Indexes().List(ctx)
+	if err != nil {
+		t.Fatalf("failed to list agents indexes: %v", err)
+	}
+	var agentIndexes []bson.M
+	if err := curA.All(ctx, &agentIndexes); err != nil {
+		t.Fatalf("failed to decode agents indexes: %v", err)
+	}
+	var foundTokenIndex, foundStatusIndex bool
+	for _, idx := range agentIndexes {
+		if idx["name"] == "token_1" && idx["unique"] == true {
+			foundTokenIndex = true
+		}
+		if idx["name"] == "status_1" {
+			foundStatusIndex = true
+		}
+	}
+	if !foundTokenIndex {
+		t.Errorf("expected unique token_1 index on support_agents collection, found: %+v", agentIndexes)
+	}
+	if !foundStatusIndex {
+		t.Errorf("expected status_1 index on support_agents collection, found: %+v", agentIndexes)
 	}
 }

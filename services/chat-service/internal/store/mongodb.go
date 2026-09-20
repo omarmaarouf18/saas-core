@@ -75,6 +75,10 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 		tickets:  db.Collection("complaint_tickets"),
 	}
 
+	if err := store.ensureIndexes(ctx); err != nil {
+		return nil, fmt.Errorf("store: failed to ensure indexes: %w", err)
+	}
+
 	log.Printf("[CHAT-STORE] Connected to MongoDB: %s/%s", uri, dbName)
 	return store, nil
 }
@@ -302,52 +306,6 @@ func (s *MongoDB) CreateTicketAndAssign(ctx context.Context, customerID, context
 	return ticket, nil
 }
 
-// Deprecated: Use AdminResolveTicket (POST /admin/tickets/resolve) per ADR-0023. Preserved for external support-agent-console compatibility.
-// ResolveTicket marks a ticket as resolved and sets the assigned agent to available.
-func (s *MongoDB) ResolveTicket(ctx context.Context, ticketID string) error {
-	now := time.Now().UTC()
-	filter := bson.M{
-		"_id":    ticketID,
-		"status": bson.M{"$ne": "resolved"},
-	}
-	update := bson.M{
-		"$set": bson.M{
-			"status":      "resolved",
-			"resolved_at": now,
-			"updated_at":  now,
-		},
-	}
-
-	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
-	res := s.tickets.FindOneAndUpdate(ctx, filter, update, opts)
-	if res.Err() != nil {
-		if errors.Is(res.Err(), mongo.ErrNoDocuments) {
-			var existing ComplaintTicket
-			if err := s.tickets.FindOne(ctx, bson.M{"_id": ticketID}).Decode(&existing); err == nil {
-				if existing.Status == "resolved" {
-					return ErrTicketAlreadyResolved
-				}
-			}
-			return fmt.Errorf("ticket %s not found or was concurrently modified", ticketID)
-		}
-		return res.Err()
-	}
-
-	var ticket ComplaintTicket
-	if err := res.Decode(&ticket); err != nil {
-		return err
-	}
-
-	if ticket.AssignedAgentID != "" {
-		_, _ = s.agents.UpdateOne(ctx,
-			bson.M{"_id": ticket.AssignedAgentID, "current_ticket_id": ticketID},
-			bson.M{"$set": bson.M{"status": "available", "current_ticket_id": ""}},
-		)
-	}
-
-	return nil
-}
-
 // SweepStrandedAgents finds agents in "busy" status whose current_ticket_id either does not exist
 // or is already resolved/closed, and resets their status to "available" with current_ticket_id cleared.
 func (s *MongoDB) SweepStrandedAgents(ctx context.Context) (int64, error) {
@@ -523,7 +481,7 @@ func (s *MongoDB) AdminResolveTicket(ctx context.Context, ticketID, resolutionNo
 			var existing ComplaintTicket
 			if err := s.tickets.FindOne(ctx, bson.M{"_id": ticketID}).Decode(&existing); err == nil {
 				if existing.Status == "resolved" {
-					return nil, fmt.Errorf("ticket %s is already resolved", ticketID)
+					return nil, fmt.Errorf("%w: %s", ErrTicketAlreadyResolved, ticketID)
 				}
 			}
 			return nil, fmt.Errorf("ticket %s not found or was concurrently modified", ticketID)

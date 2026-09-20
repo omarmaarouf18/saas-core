@@ -260,16 +260,6 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Atomically assigns a pending ticket to a reviewer (CAS) and dispatches customer notification.",
 		Targets:     "CAS updates `complaint_tickets` and dispatches notification via notification-service.",
 	},
-	"POST /chat/admin/tickets/{id}/accept": {
-		Permissions: "Reviewer Token & `X-Internal-Token`",
-		Function:    "Atomically assigns a pending ticket to a reviewer (CAS) and dispatches customer notification.",
-		Targets:     "CAS updates `complaint_tickets` and dispatches notification via notification-service.",
-	},
-	"POST /admin/tickets/{id}/accept": {
-		Permissions: "Reviewer Token & `X-Internal-Token`",
-		Function:    "Atomically assigns a pending ticket to a reviewer (CAS) and dispatches customer notification.",
-		Targets:     "CAS updates `complaint_tickets` and dispatches notification via notification-service.",
-	},
 	"GET /chat/admin/tickets": {
 		Permissions: "Reviewer Token & `X-Internal-Token`",
 		Function:    "Lists all support tickets globally for ops console oversight (ADR-0023).",
@@ -444,6 +434,11 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Subscribes/renews SaaS tier. Accepts tenant_id (legacy) or tenant_token (preferred), and requester_id (legacy) or requester_token (preferred).",
 		Targets:     "Updates `subscriptions`, writes `wallets`, writes `ledger`.",
 	},
+	"GET /users/subscription/internal": {
+		Permissions: "`X-Internal-Token`",
+		Function:    "InternalSubscriptionCheck allows internal services (e.g., auth-service) to verify tenant active subscription tier.",
+		Targets:     "Reads `subscriptions` collection in `user_db`.",
+	},
 	"POST /users/jobs/rate": {
 		Permissions: "Owner, Employee, User, or Customer JWT",
 		Function:    "Submits a double-blind rating. Accepts rated_by (legacy) or rated_by_token (preferred), and rated_user (legacy) or rated_user_token (preferred).",
@@ -533,6 +528,26 @@ var KnownEndpoints = map[string]struct {
 		Permissions: "Reviewer Token & `X-Internal-Token`",
 		Function:    "Revokes tenant subscription to PlanCancelled with mandatory reason (ADR-0023).",
 		Targets:     "CAS status transition on `subscriptions` collection, ships security audit event.",
+	},
+	"GET /users/admin/payouts": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Lists payout requests across all tenants with optional status filter and pagination for ops console oversight.",
+		Targets:     "Reads `payout_requests` collection. Paginated.",
+	},
+	"GET /admin/payouts": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Lists payout requests across all tenants with optional status filter and pagination for ops console oversight.",
+		Targets:     "Reads `payout_requests` collection. Paginated.",
+	},
+	"POST /users/admin/payouts/reject": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Rejects a requested payout with mandatory reason, restores wallet balance, and writes compensation ledger entry.",
+		Targets:     "CAS status transition on `payout_requests`, updates `wallets`, writes `ledger`, ships security audit event.",
+	},
+	"POST /admin/payouts/reject": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Rejects a requested payout with mandatory reason, restores wallet balance, and writes compensation ledger entry.",
+		Targets:     "CAS status transition on `payout_requests`, updates `wallets`, writes `ledger`, ships security audit event.",
 	},
 	"POST /users/employee/location": {
 		Permissions: "Employee JWT",
