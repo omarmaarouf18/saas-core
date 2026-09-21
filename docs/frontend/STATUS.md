@@ -322,7 +322,7 @@
     4. **High-Severity Real-Time Deduplication Bug (`chat_provider.dart:194-201`)**: Deduplication checks only sender, content, and message type without ID or timestamp, silently dropping identical consecutive messages (e.g. repeated "Yes", "OK", "Thank you").
     5. **Real-Time Race Condition (`ticket_chat_screen.dart:55-57`)**: History fetch and WebSocket subscription are initiated concurrently; history completion overwrites `_messages = []`, dropping incoming live messages.
     6. **Navigation Pop Trap (`customer_jobs_screen.dart:165`)**: Empty state "Browse Services" CTA calls `Navigator.pop(context)` instead of switching to Tab 1, popping out of the root `CustomerHomeScreen` shell.
-    7. **42-Control Double-Submit Matrix**: Evaluated all 42 network-triggering controls across the application (36 guarded, 5 partial, 1 unguarded driver status toggle).
+    7. **Double-Submit Protection Evaluation**: Evaluated network-triggering interactive controls across screens and dialogs (36 guarded, 5 partial reliance on provider state, 1 unguarded driver status toggle), with automated regression coverage in `frontend/test/a4_double_submit_test.dart` (8 tests).
     Defined a 3-tier prioritized remediation roadmap. **Tier 1 Remediation Completed (2026-09-18)**:
     - *TicketChatScreen Teardown Leak*: Synchronous disconnect in `dispose()` with provider caching in `didChangeDependencies()`.
     - *Customer Rating 403 Lockout*: Expanded backend `RateJob` role matrix for Customer <-> Courier and Customer <-> Owner, and aligned frontend party routing.

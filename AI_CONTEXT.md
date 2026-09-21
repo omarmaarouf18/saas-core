@@ -1021,7 +1021,7 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
 
 * **Scope & Methodology**:
   - Conducted full behavioral and dynamic UI/UX audit of all 30 screens in `frontend/lib/screens/` and 33 reusable widgets in `frontend/lib/widgets/`.
-  - Published findings, double-submit protection matrix (42 controls), and 3-tier remediation roadmap in `docs/frontend/UI_UX_BEHAVIOR_AUDIT.md`.
+  - Published narrative findings, 3-tier remediation roadmap, and double-submit behavioral evaluation in `docs/frontend/UI_UX_BEHAVIOR_AUDIT.md` (with automated regression coverage in `frontend/test/a4_double_submit_test.dart`).
   - Updated `docs/frontend/STATUS.md` screen count (29 production + 1 debug catalog = 30 total).
 
 * **Key Behavioral Vulnerabilities & Findings Identified**:
@@ -1032,7 +1032,7 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   5. **History vs WebSocket Race Condition (`ticket_chat_screen.dart:55-57`)**: History fetch and WebSocket subscription run concurrently; history completion resets `_messages = []`, overwriting live messages received during loading.
   6. **Customer Jobs Empty State Pop Trap (`customer_jobs_screen.dart:165`)**: "Browse Services" CTA calls `Navigator.pop(context)` instead of switching to Tab 1, popping out of `CustomerHomeScreen`.
   7. **Route Timeline Metric Misrepresentation (`employee_jobs_screen.dart:995`, `employee_history_screen.dart:185`)**: Locked escrow credits are passed to `RouteTimeline(distanceText:)`, rendering "50 Credits" adjacent to the road distance icon.
-  8. **42-Control Double-Submit Protection Matrix**: 36 fully guarded, 5 partial (reliance on provider state without immediate local disabled state), 1 unguarded driver status toggle.
+  8. **Double-Submit Protection Evaluation**: Evaluated network-triggering interactive controls across screens and dialogs (36 fully guarded, 5 partial reliance on provider state, 1 unguarded driver status toggle), backed by regression coverage in `frontend/test/a4_double_submit_test.dart` (8 tests).
 
 * **Tier 1 Remediation (Critical & High Severity Core Fixes — 2026-09-18)**:
   - **TicketChatScreen WebSocket Disposal Teardown**: Replaced the dead post-frame `mounted` check in `ticket_chat_screen.dart` with provider caching in `didChangeDependencies()` and synchronous `_chatProvider?.disconnect()` in `dispose()`. Hardened `chat_provider.dart:disconnect()` against widget unmount listener notifications. Verified with `frontend/test/a6_disposal_test.dart` (7/7 pass).
