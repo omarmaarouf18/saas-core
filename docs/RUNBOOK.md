@@ -36,7 +36,7 @@ Open a Pull Request from `logic-exploitation` into `main`, or, if working solo a
 ```bash
 git checkout main
 git pull origin main
-git merge --no-ff logic-exploitation
+git merge --ff-only logic-exploitation
 git push origin main
 ```
 
