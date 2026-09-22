@@ -107,6 +107,7 @@ services:
       - ./certs/ca.crt:/app/certs/ca.crt:ro
       - ./certs/chat-service.crt:/app/certs/chat-service.crt:ro
       - ./certs/chat-service.key:/app/certs/chat-service.key:ro
+      - attachments_data:/app/data/attachments
     environment:
       PORT: ${CHAT_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
@@ -120,6 +121,9 @@ services:
       LOG_LEVEL: ${LOG_LEVEL}
       JWT_SECRET: ${JWT_SECRET}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      ATTACHMENT_ENCRYPTION_KEY: ${DOCUMENT_ENCRYPTION_KEY}
+      ATTACHMENT_SIGNING_SECRET: ${DOCUMENT_SIGNING_SECRET}
+      STORAGE_BASE_DIR: /app/data/attachments
       AWS_REGION: ${AWS_REGION}
       CLOUDWATCH_LOG_GROUP: ${CLOUDWATCH_LOG_GROUP}
       TLS_CERT_PATH: /app/certs/chat-service.crt
@@ -144,6 +148,7 @@ services:
       - ./certs/ca.crt:/app/certs/ca.crt:ro
       - ./certs/auth-service.crt:/app/certs/auth-service.crt:ro
       - ./certs/auth-service.key:/app/certs/auth-service.key:ro
+      - documents_data:/app/data/documents
     environment:
       PORT: ${AUTH_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
@@ -157,6 +162,7 @@ services:
       DOCUMENT_ENCRYPTION_KEY: ${DOCUMENT_ENCRYPTION_KEY}
       GATEWAY_SECRET: ${GATEWAY_SECRET}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      STORAGE_BASE_DIR: /app/data/documents
       OTP_AES_KEY: ${OTP_AES_KEY}
       AWS_REGION: ${AWS_REGION}
       CLOUDWATCH_LOG_GROUP: ${CLOUDWATCH_LOG_GROUP}
@@ -288,6 +294,12 @@ volumes:
   redis_data:
     driver: local
     name: saas_platform_redis_data
+  documents_data:
+    driver: local
+    name: saas_platform_documents_data
+  attachments_data:
+    driver: local
+    name: saas_platform_attachments_data
 
 # ---------------------------------------------------------------------------
 # Network
